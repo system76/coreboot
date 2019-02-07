@@ -1,0 +1,102 @@
+if BOARD_SYSTEM76_GALP3_C || BOARD_SYSTEM76_DARP5
+
+config BOARD_SPECIFIC_OPTIONS
+	def_bool y
+	select ADD_FSP_BINARIES
+	select BOARD_ROMSIZE_KB_16384
+	select EC_ACPI
+	select EXCLUDE_EMMC_INTERFACE
+	select FSP_USE_REPO
+	select HAVE_ACPI_RESUME
+	select HAVE_ACPI_TABLES
+#	select HAVE_CMOS_DEFAULT
+	select HAVE_SMI_HANDLER
+	select INTEL_GMA_HAVE_VBT
+#	select MAINBOARD_HAS_SPI_TPM_CR50
+#	select MAINBOARD_HAS_TPM2
+	select SOC_INTEL_COMMON_BLOCK_HDA
+	select SOC_INTEL_COMMON_BLOCK_HDA_VERB
+	select SOC_INTEL_WHISKEYLAKE
+	select SYSTEM_TYPE_LAPTOP
+	select USE_BLOBS
+
+config MAINBOARD_DIR
+	string
+	default system76/whl-u
+
+config VARIANT_DIR
+	string
+	default "galp3-c" if BOARD_SYSTEM76_GALP3_C
+	default "darp5" if BOARD_SYSTEM76_DARP5
+
+config MAINBOARD_PART_NUMBER
+	string
+	default "galp3-c" if BOARD_SYSTEM76_GALP3_C
+	default "darp5" if BOARD_SYSTEM76_DARP5
+
+config CBFS_SIZE
+	hex
+	default 0xA00000
+
+config MAINBOARD_PCI_SUBSYSTEM_VENDOR_ID
+	hex
+	default 0x1558
+
+config MAINBOARD_PCI_SUBSYSTEM_DEVICE_ID
+	hex
+	default 0x1323 if BOARD_SYSTEM76_GALP3_C
+	default 0x1325 if BOARD_SYSTEM76_DARP5
+
+config CONSOLE_POST
+	bool
+	default y
+
+config ONBOARD_VGA_IS_PRIMARY
+	bool
+	default y
+
+config UART_FOR_CONSOLE
+	int
+	default 2
+
+config MAX_CPUS
+	int
+	default 8
+
+config DIMM_MAX
+	int
+	default 2
+
+config DIMM_SPD_SIZE
+	int
+	default 512
+
+config VGA_BIOS_FILE
+	string
+	default "pci8086,3ea0.rom"
+
+config VGA_BIOS_ID
+	string
+	default "8086,3ea0"
+
+config PXE_ROM_ID
+	string
+	default "10ec,8168"
+
+config FSP_M_XIP
+	bool
+	default y
+
+config POST_DEVICE
+	bool
+	default n
+
+#config DRIVER_TPM_SPI_BUS
+#	hex
+#	default 0x0
+
+#config DRIVER_TPM_SPI_CHIP
+#	int
+#	default 2
+
+endif

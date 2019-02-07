@@ -212,6 +212,8 @@ static void clock_gate_8254(const struct device *dev)
 
 void lpc_soc_init(struct device *dev)
 {
+	const config_t *config = dev->chip_info;
+
 	/* Legacy initialization */
 	isa_dma_init();
 	pch_misc_init();
@@ -220,7 +222,7 @@ void lpc_soc_init(struct device *dev)
 	lpc_enable_pci_clk_cntl();
 
 	/* Set LPC Serial IRQ mode */
-	if (IS_ENABLED(CONFIG_SERIRQ_CONTINUOUS_MODE))
+	if (config->SerialIrqConfigSirqMode)
 		lpc_set_serirq_mode(SERIRQ_CONTINUOUS);
 	else
 		lpc_set_serirq_mode(SERIRQ_QUIET);

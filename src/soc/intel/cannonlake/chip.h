@@ -315,6 +315,11 @@ struct soc_intel_cannonlake_config {
 	 */
 	uint8_t SerialIoDevMode[PchSerialIoIndexMAX];
 
+	enum {
+		SERIAL_IRQ_QUIET_MODE      = 0,
+		SERIAL_IRQ_CONTINUOUS_MODE = 1,
+	} SerialIrqConfigSirqMode;
+
 	/* GPIO SD card detect pin */
 	unsigned int sdcard_cd_gpio;
 

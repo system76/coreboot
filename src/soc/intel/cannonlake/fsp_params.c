@@ -255,6 +255,9 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 
 	/* Set TccActivationOffset */
 	tconfig->TccActivationOffset = config->tcc_offset;
+
+	/* Set correct Sirq mode based on config */
+	params->PchSirqMode = config->SerialIrqConfigSirqMode;
 }
 
 /* Mainboard GPIO Configuration */
