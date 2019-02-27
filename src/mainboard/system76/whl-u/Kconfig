@@ -55,9 +55,10 @@ config ONBOARD_VGA_IS_PRIMARY
 	bool
 	default y
 
-config UART_FOR_CONSOLE
-	int
-	default 2
+# This causes UEFI to hang
+#config UART_FOR_CONSOLE
+#	int
+#	default 2
 
 config MAX_CPUS
 	int
