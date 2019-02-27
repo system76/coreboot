@@ -23,7 +23,6 @@ do
 
     # Compile coreboot
     make oldconfig
-    make seabios
     time make -j$(nproc)
 
     # Copy coreboot file to product directory
