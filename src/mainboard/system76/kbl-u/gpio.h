@@ -92,7 +92,7 @@ static const struct pad_config gpio_table[] = {
 	/* TBT_FRC_PW tied to PCH_GPP_E0 */
 	_PAD_CFG_STRUCT(GPP_A21, 0x84000200, 0x1000),
 	/* PS8338B_SW */
-	_PAD_CFG_STRUCT(GPP_A22, 0x4000201, 0x0),
+	_PAD_CFG_STRUCT(GPP_A22, 0x4000200, 0x0),
 	/* PS8338B_PCH */
 	_PAD_CFG_STRUCT(GPP_A23, 0x4000200, 0x0),
 	/* CORE_VID0 with pull-up */
