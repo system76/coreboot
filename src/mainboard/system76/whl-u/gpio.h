@@ -94,7 +94,7 @@ static const struct pad_config gpio_table[] = {
 	/* NC */
 	PAD_CFG_NC(GPP_A21),
 	/* PS8338B_SW */
-	_PAD_CFG_STRUCT(GPP_A22, 0x44000201, 0x0),
+	_PAD_CFG_STRUCT(GPP_A22, 0x44000200, 0x0),
 	/* PS8338B_PCH */
 	_PAD_CFG_STRUCT(GPP_A23, 0x44000100, 0x0),
 	/* CORE_VID0 with pull-up and pull-down */
