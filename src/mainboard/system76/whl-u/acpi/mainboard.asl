@@ -20,4 +20,5 @@ Scope (\_SB)
     #include "buttons.asl"
     #include "hid.asl"
     #include "lid.asl"
+    #include "s76.asl"
 }
