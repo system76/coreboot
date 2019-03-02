@@ -1,0 +1,25 @@
+{
+    "name": "coreboot",
+    "base": "ubuntu:16.04",
+    "prepare": [
+        ["apt-get", "update"],
+        ["apt-get", "dist-upgrade", "-y"],
+        ["apt-get", "install", "-y",
+            "build-essential",
+            "bison",
+            "ccache",
+            "flex",
+            "gnat",
+            "m4",
+            "nasm",
+            "uuid-dev",
+            "zlib1g-dev"
+        ]
+    ],
+    "build": [
+        ["bash", "-c", "cd source && ./buildchain.sh ../build/"]
+    ],
+    "publish": [
+        ["bash", "-c", "mv build/* artifacts"]
+    ]
+}
