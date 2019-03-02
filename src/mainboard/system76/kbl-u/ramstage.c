@@ -14,6 +14,7 @@
  */
 
 #include <device/device.h>
+#include <option.h>
 #include <pc80/keyboard.h>
 #include <soc/ramstage.h>
 #include "gpio.h"
@@ -26,6 +27,21 @@ void mainboard_silicon_init_params(FSP_SIL_UPD *params) {
 
 static void mainboard_enable(struct device *dev) {
 	pc_keyboard_init(NO_AUX_DEVICE);
+
+	uint32_t config = 0x44000200;
+
+	uint8_t nvram = 0;
+	if (get_option(&nvram, "DisplayPort_Output") == CB_SUCCESS) {
+		if (nvram) {
+			config |= 1;
+		}
+	}
+
+	struct pad_config displayport_gpio_table[] = {
+		/* PS8338B_SW */
+		_PAD_CFG_STRUCT(GPP_A22, config, 0x0),
+	};
+	gpio_configure_pads(displayport_gpio_table, ARRAY_SIZE(displayport_gpio_table));
 }
 
 struct chip_operations mainboard_ops = {
