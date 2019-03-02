@@ -36,18 +36,24 @@ Device (EC)
     #include "acpi/ec_ram.asl"
 
     Name (ECOK, Zero)
-    Method (_REG, 2, NotSerialized)  // _REG: Region Availability
+    Name (TPSE, Zero)
+    Method (_REG, 2, Serialized)  // _REG: Region Availability
     {
         Store ("EC: _REG", Debug)
-        If (((Arg0 == 0x03) && (Arg1 == One)))
-        {
-            ECOK = Arg1
-            ECOS = One
-            WINF = One
+        If (((Arg0 == 0x03) && (Arg1 == One))) {
+            // Enable software touchpad lock and airplane mode keys
+            ECOS = 2
 
+            // Enable software backlight keys
+            WINF = 1
+
+            // Set current AC state
             ^^^^AC.ACFG = ADP
 
             PNOT ()
+
+            // EC is now available
+            ECOK = Arg1
         }
     }
 
@@ -163,8 +169,15 @@ Device (EC)
         Notify (PWRB, 0x80)
     }
 
-    Method (_Q50, 0, NotSerialized) // TODO
+    Method (_Q50, 0, NotSerialized) // Other Events
     {
-        Store ("EC: 50", Debug)
+        Local0 = OEM4
+        If (Local0 == 0x8A) { // White Keyboard Backlight
+            Store ("EC: White Keyboard Backlight", Debug)
+            Notify (^^^^S76D, 0x80)
+        } Else {
+            Store ("EC: Other", Debug)
+            Store (Local0, Debug)
+        }
     }
 }
