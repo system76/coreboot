@@ -18,8 +18,8 @@ export SHELL := env bash
 
 project_name=Tianocore
 project_dir=$(CURDIR)/tianocore
-project_git_repo=https://github.com/mrchromebox/edk2
-project_git_branch=coreboot_fb
+project_git_repo=https://github.com/system76/edk2
+project_git_branch=system76
 upstream_git_repo=https://github.com/tianocore/edk2
 
 # STABLE revision is MrChromebox's coreboot framebuffer (coreboot_fb) branch
