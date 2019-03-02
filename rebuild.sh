@@ -3,6 +3,10 @@
 set -ex
 
 MODEL="$(grep CONFIG_VARIANT_DIR .config | cut -d '"' -f2)"
+if [ -z "$MODEL" ]
+then
+    MODEL="qemu"
+fi
 
 time make -j$(nproc) BUILD_TIMELESS=1
 
