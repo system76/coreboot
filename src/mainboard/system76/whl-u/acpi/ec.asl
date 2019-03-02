@@ -36,7 +36,6 @@ Device (EC)
     #include "acpi/ec_ram.asl"
 
     Name (ECOK, Zero)
-    Name (TPSE, Zero)
     Method (_REG, 2, Serialized)  // _REG: Region Availability
     {
         Store ("EC: _REG", Debug)

@@ -22,7 +22,7 @@ Device (LID0)
     {
         If (^^PCI0.LPCB.EC.ECOK)
         {
-            Return (\_SB.PCI0.LPCB.EC.LSTE)
+            Return (^^PCI0.LPCB.EC.LSTE)
         }
         Else
         {
