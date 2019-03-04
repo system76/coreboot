@@ -171,9 +171,21 @@ Device (EC)
     Method (_Q50, 0, NotSerialized) // Other Events
     {
         Local0 = OEM4
-        If (Local0 == 0x8A) { // White Keyboard Backlight
+        If (Local0 == 0x8A) {
             Store ("EC: White Keyboard Backlight", Debug)
             Notify (^^^^S76D, 0x80)
+        } ElseIf (Local0 == 0x9F) {
+            Store ("EC: Color Keyboard Toggle", Debug)
+            Notify (^^^^S76D, 0x81)
+        } ElseIf (Local0 == 0x81) {
+            Store ("EC: Color Keyboard Down", Debug)
+            Notify (^^^^S76D, 0x82)
+        } ElseIf (Local0 == 0x82) {
+            Store ("EC: Color Keyboard Up", Debug)
+            Notify (^^^^S76D, 0x83)
+        } ElseIf (Local0 == 0x80) {
+            Store ("EC: Color Keyboard Color Change", Debug)
+            Notify (^^^^S76D, 0x84)
         } Else {
             Store ("EC: Other", Debug)
             Store (Local0, Debug)
