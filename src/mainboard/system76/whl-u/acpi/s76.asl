@@ -13,6 +13,12 @@
  * GNU General Public License for more details.
  */
 
+// Notifications:
+//   0x80 - hardware backlight toggle
+//   0x81 - backlight toggle
+//   0x82 - backlight down
+//   0x83 - backlight up
+//   0x84 - backlight color change
 Device (S76D) {
     Name (_HID, "17761776")
     Name (_UID, 0)
@@ -38,6 +44,32 @@ Device (S76D) {
         }
     }
 
+#if CONFIG_MAINBOARD_PCI_SUBSYSTEM_DEVICE_ID == 0x1325
+    // Set KB LED Brightness
+    Method (SKBL, 1, Serialized) {
+        If (^^PCI0.LPCB.EC.ECOK) {
+            ^^PCI0.LPCB.EC.FDAT = 6
+            ^^PCI0.LPCB.EC.FBUF = Arg0
+            ^^PCI0.LPCB.EC.FBF1 = 0
+            ^^PCI0.LPCB.EC.FBF2 = Arg0
+            ^^PCI0.LPCB.EC.FCMD = 0xCA
+        }
+    }
+
+    // Set Keyboard Color
+    Method (SKBC, 1, Serialized) {
+        If (^^PCI0.LPCB.EC.ECOK) {
+            ^^PCI0.LPCB.EC.FDAT = 0x3
+            ^^PCI0.LPCB.EC.FBUF = (Arg0 & 0xFF)
+            ^^PCI0.LPCB.EC.FBF1 = ((Arg0 >> 16) & 0xFF)
+            ^^PCI0.LPCB.EC.FBF2 = ((Arg0 >> 8) & 0xFF)
+            ^^PCI0.LPCB.EC.FCMD = 0xCA
+            Return (Arg0)
+        } Else {
+            Return (0)
+        }
+    }
+#elif CONFIG_MAINBOARD_PCI_SUBSYSTEM_DEVICE_ID == 0x1323
     // Get KB LED
     Method (GKBL, 0, Serialized) {
         Local0 = 0
@@ -58,4 +90,7 @@ Device (S76D) {
             ^^PCI0.LPCB.EC.FCMD = 0xCA
         }
     }
+#else
+    #error Unknown Mainboard
+#endif
 }
