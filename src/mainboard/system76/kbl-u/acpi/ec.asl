@@ -46,6 +46,9 @@ Device (EC)
             // Enable software backlight keys
             WINF = 1
 
+            // Enable software touchpad lock
+            ^^PS2K.CMD(0x97)
+
             // Set current AC state
             ^^^^AC.ACFG = ADP
 
