@@ -1,0 +1,366 @@
+/*
+ * This file is part of the coreboot project.
+ *
+ * Copyright (C) 2019 System76
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; version 2 of the License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the
+ * GNU General Public License for more details.
+ */
+
+#ifndef MAINBOARD_GPIO_H
+#define MAINBOARD_GPIO_H
+
+#include <soc/gpe.h>
+#include <soc/gpio.h>
+
+#ifndef __ACPI__
+
+/* Pad configuration in ramstage. */
+static const struct pad_config gpio_table[] = {
+	/* PM_BATLOW# */
+	_PAD_CFG_STRUCT(GPD0, 0x4000700, 0x0),
+	/* AC_PRESENT */
+	_PAD_CFG_STRUCT(GPD1, 0x4000700, 0x0),
+	/* LAN_WAKEUP# */
+	_PAD_CFG_STRUCT(GPD2, 0x880500, 0x0),
+	/* PWR_BTN# */
+	_PAD_CFG_STRUCT(GPD3, 0x4000700, 0x3000),
+	/* SUSB#_PCH */
+	_PAD_CFG_STRUCT(GPD4, 0x4000700, 0x0),
+	/* SUSC#_PCH */
+	_PAD_CFG_STRUCT(GPD5, 0x4000700, 0x0),
+	/* SLP_A# */
+	_PAD_CFG_STRUCT(GPD6, 0x4000700, 0x0),
+	/* PCH_GPD7 with pull-up */
+	_PAD_CFG_STRUCT(GPD7, 0x4000301, 0x0),
+	/* SUSCLK */
+	_PAD_CFG_STRUCT(GPD8, 0x4000700, 0x0),
+	/* PCH_SLP_WLAN#_R */
+	_PAD_CFG_STRUCT(GPD9, 0x4000700, 0x0),
+	/* NC */
+	PAD_CFG_NC(GPD10),
+	/* NC */
+	PAD_CFG_NC(GPD11),
+	/* SB_KBCRST# */
+	_PAD_CFG_STRUCT(GPP_A0, 0x44000500, 0x0),
+	/* LPC_AD0 */
+	_PAD_CFG_STRUCT(GPP_A1, 0x44000400, 0x0),
+	/* LPC_AD1 */
+	_PAD_CFG_STRUCT(GPP_A2, 0x44000400, 0x0),
+	/* LPC_AD2 */
+	_PAD_CFG_STRUCT(GPP_A3, 0x44000400, 0x0),
+	/* LPC_AD3 */
+	_PAD_CFG_STRUCT(GPP_A4, 0x44000400, 0x0),
+	/* LPC_FRAME# */
+	_PAD_CFG_STRUCT(GPP_A5, 0x44000600, 0x0),
+	/* SERIRQ with pull up */
+	_PAD_CFG_STRUCT(GPP_A6, 0x44000400, 0x0),
+	/* G_INT1 */
+	_PAD_CFG_STRUCT(GPP_A7, 0x44000100, 0x0),
+	/* PM_CLKRUN# with pull-up */
+	_PAD_CFG_STRUCT(GPP_A8, 0x44000700, 0x0),
+	/* PCLK_KBC */
+	_PAD_CFG_STRUCT(GPP_A9, 0x44000600, 0x0),
+	/* PCLK_TPM */
+	_PAD_CFG_STRUCT(GPP_A10, 0x44000600, 0x1000),
+	/* LAN_WAKEUP# */
+	_PAD_CFG_STRUCT(GPP_A11, 0x44000200, 0x0),
+	/* PCH_GPP_A12 with pull-up */
+	_PAD_CFG_STRUCT(GPP_A12, 0x44000200, 0x0),
+	/* SUSWARN# with tie to SUS_PWR_ACK */
+	_PAD_CFG_STRUCT(GPP_A13, 0x44000200, 0x0),
+	/* S4_STATE# */
+	_PAD_CFG_STRUCT(GPP_A14, 0x44000600, 0x0),
+	/* SUS_PWR_ACK with tie to SUSWARN# */
+	_PAD_CFG_STRUCT(GPP_A15, 0x44000500, 0x0),
+	/* NC */
+	PAD_CFG_NC(GPP_A16),
+	/* NC */
+	PAD_CFG_NC(GPP_A17),
+	/* TBTA_ACE_GPIO3 */
+	_PAD_CFG_STRUCT(GPP_A18, 0x44000201, 0x0),
+	/* SATA_PWR_EN */
+	_PAD_CFG_STRUCT(GPP_A19, 0x44000601, 0x0),
+	/* TBTA_ACE_GPIO0 */
+	_PAD_CFG_STRUCT(GPP_A20, 0x44000200, 0x0),
+	/* TBT_FRC_PW tied to PCH_GPP_E0 */
+	_PAD_CFG_STRUCT(GPP_A21, 0x84000200, 0x1000),
+	/* PS8338B_SW */
+	_PAD_CFG_STRUCT(GPP_A22, 0x4000201, 0x0),
+	/* PS8338B_PCH */
+	_PAD_CFG_STRUCT(GPP_A23, 0x4000200, 0x0),
+	/* CORE_VID0 with pull-up */
+	_PAD_CFG_STRUCT(GPP_B0, 0x44000700, 0x0),
+	/* CORE_VID1 with pull-up */
+	_PAD_CFG_STRUCT(GPP_B1, 0x44000700, 0x0),
+	/* VRALERT# */
+	_PAD_CFG_STRUCT(GPP_B2, 0x44000200, 0x0),
+	/* NC */
+	PAD_CFG_NC(GPP_B3),
+	/* NC */
+	PAD_CFG_NC(GPP_B4),
+	/* NC */
+	PAD_CFG_NC(GPP_B5),
+	/* NC */
+	PAD_CFG_NC(GPP_B6),
+	/* WLAN_CLKREQ# */
+	_PAD_CFG_STRUCT(GPP_B7, 0x44000700, 0x0),
+	/* LAN_CLKREQ# */
+	_PAD_CFG_STRUCT(GPP_B8, 0x44000700, 0x0),
+	/* TBT_CLKREQ# */
+	_PAD_CFG_STRUCT(GPP_B9, 0x44000700, 0x0),
+	/* SSD_CLKREQ# */
+	_PAD_CFG_STRUCT(GPP_B10, 0x44000700, 0x0),
+	/* NC */
+	PAD_CFG_NC(GPP_B11),
+	/* NC */
+	PAD_CFG_NC(GPP_B12),
+	/* PLT_RST# with pull-down */
+	_PAD_CFG_STRUCT(GPP_B13, 0x44000700, 0x0),
+	/* PCH_SPKR */
+	_PAD_CFG_STRUCT(GPP_B14, 0x44000600, 0x1000),
+	/* NC */
+	PAD_CFG_NC(GPP_B15),
+	/* T16 */
+	_PAD_CFG_STRUCT(GPP_B16, 0x44000200, 0x0),
+	/* T35 */
+	_PAD_CFG_STRUCT(GPP_B17, 0x44000200, 0x0),
+	/* PCH_GPP_B18 with pull-down - strap for disabling no reboot mode */
+	_PAD_CFG_STRUCT(GPP_B18, 0x44000600, 0x3000),
+	/* NC */
+	PAD_CFG_NC(GPP_B19),
+	/* NC */
+	PAD_CFG_NC(GPP_B20),
+	/* NC */
+	PAD_CFG_NC(GPP_B21),
+	/* PCH_GPP_B22 with pull-down - strap for BIOS on SPI on n130wu */
+	_PAD_CFG_STRUCT(GPP_B22, 0x44000700, 0x1000),
+	/* NC */
+	PAD_CFG_NC(GPP_B23),
+	/* SMB_CLK */
+	_PAD_CFG_STRUCT(GPP_C0, 0x44000700, 0x0),
+	/* SMB_DATA */
+	_PAD_CFG_STRUCT(GPP_C1, 0x44000700, 0x1000),
+	/* NC */
+	_PAD_CFG_STRUCT(GPP_C2, 0x44000201, 0x1000),
+	/* NC */
+	PAD_CFG_NC(GPP_C3),
+	/* NC */
+	PAD_CFG_NC(GPP_C4),
+	/* NC */
+	PAD_CFG_NC(GPP_C5),
+	/* NC */
+	PAD_CFG_NC(GPP_C6),
+	/* NC */
+	PAD_CFG_NC(GPP_C7),
+	/* NC */
+	PAD_CFG_NC(GPP_C8),
+	/* NC */
+	PAD_CFG_NC(GPP_C9),
+	/* NC */
+	PAD_CFG_NC(GPP_C10),
+	/* NC */
+	PAD_CFG_NC(GPP_C11),
+	/* TBTA_ACE_GPIO2 */
+	_PAD_CFG_STRUCT(GPP_C12, 0x44000700, 0x0),
+	/* TBCIO_PLUG_EVENT tied to PCH_GPP_B17 */
+	_PAD_CFG_STRUCT(GPP_C13, 0x82880100, 0x0),
+	/* TBTA_MRESET */
+	_PAD_CFG_STRUCT(GPP_C14, 0x44000700, 0x0),
+	/* TBTA_ACE_GPIO7 */
+	_PAD_CFG_STRUCT(GPP_C15, 0x44000700, 0x0),
+	/* T_SDA */
+	_PAD_CFG_STRUCT(GPP_C16, 0x44000200, 0x0),
+	/* T_SCL */
+	_PAD_CFG_STRUCT(GPP_C17, 0x44000200, 0x0),
+	/* NC */
+	PAD_CFG_NC(GPP_C18),
+	/* SWI# */
+	_PAD_CFG_STRUCT(GPP_C19, 0x40880100, 0x0),
+	/* UART2_RXD */
+	_PAD_CFG_STRUCT(GPP_C20, 0x44000700, 0x0),
+	/* UART2_TXD */
+	_PAD_CFG_STRUCT(GPP_C21, 0x44000700, 0x0),
+	/* UART2_RTS_N */
+	_PAD_CFG_STRUCT(GPP_C22, 0x44000700, 0x0),
+	/* UART2_CTS_N */
+	_PAD_CFG_STRUCT(GPP_C23, 0x44000700, 0x0),
+	/* NC */
+	PAD_CFG_NC(GPP_D0),
+	/* NC */
+	PAD_CFG_NC(GPP_D1),
+	/* NC */
+	PAD_CFG_NC(GPP_D2),
+	/* NC */
+	PAD_CFG_NC(GPP_D3),
+	/* NC */
+	PAD_CFG_NC(GPP_D4),
+	/* NC */
+	PAD_CFG_NC(GPP_D5),
+	/* NC */
+	PAD_CFG_NC(GPP_D6),
+	/* NC */
+	PAD_CFG_NC(GPP_D7),
+	/* SB_BLON */
+	_PAD_CFG_STRUCT(GPP_D8, 0x44000201, 0x0),
+	/* T_INT */
+	_PAD_CFG_STRUCT(GPP_D9, 0x44000200, 0x0),
+	/* EDP_DET */
+	_PAD_CFG_STRUCT(GPP_D10, 0x44000200, 0x0),
+	/* NC */
+	PAD_CFG_NC(GPP_D11),
+	/* NC */
+	PAD_CFG_NC(GPP_D12),
+	/* NC */
+	PAD_CFG_NC(GPP_D13),
+	/* NC */
+	PAD_CFG_NC(GPP_D14),
+	/* NC */
+	PAD_CFG_NC(GPP_D15),
+	/* NC */
+	PAD_CFG_NC(GPP_D16),
+	/* NC */
+	PAD_CFG_NC(GPP_D17),
+	/* NC */
+	PAD_CFG_NC(GPP_D18),
+	/* NC */
+	PAD_CFG_NC(GPP_D19),
+	/* NC */
+	PAD_CFG_NC(GPP_D20),
+	/* TPM_DET# */
+	_PAD_CFG_STRUCT(GPP_D21, 0x44000100, 0x0),
+	/* NC */
+	PAD_CFG_NC(GPP_D22),
+	/* NC */
+	PAD_CFG_NC(GPP_D23),
+	/* PCH_GPP_E0 tied to TBT_FRC_PW */
+	_PAD_CFG_STRUCT(GPP_E0, 0x42100100, 0x1000),
+	/* SATA_ODD_PRSNT# */
+	_PAD_CFG_STRUCT(GPP_E1, 0x44000700, 0x0),
+	/* SATAGP2 */
+	_PAD_CFG_STRUCT(GPP_E2, 0x44000500, 0x0),
+	/* NC */
+	PAD_CFG_NC(GPP_E3),
+	/* NC */
+	PAD_CFG_NC(GPP_E4),
+	/* NC */
+	PAD_CFG_NC(GPP_E5),
+	/* DEVSLP2 */
+	_PAD_CFG_STRUCT(GPP_E6, 0x44000600, 0x0),
+	/* NC */
+	PAD_CFG_NC(GPP_E7),
+	/* PCH_SATA_LED# */
+	_PAD_CFG_STRUCT(GPP_E8, 0x44000700, 0x0),
+	/* NC */
+	PAD_CFG_NC(GPP_E9),
+	/* NC */
+	PAD_CFG_NC(GPP_E10),
+	/* NC */
+	PAD_CFG_NC(GPP_E11),
+	/* NC */
+	PAD_CFG_NC(GPP_E12),
+	/* MUX_HPD */
+	_PAD_CFG_STRUCT(GPP_E13, 0x44000700, 0x0),
+	/* HDMI_HPD */
+	_PAD_CFG_STRUCT(GPP_E14, 0x44000700, 0x0),
+	/* SMI# */
+	_PAD_CFG_STRUCT(GPP_E15, 0x42840100, 0x0),
+	/* SCI# */
+	_PAD_CFG_STRUCT(GPP_E16, 0x80880100, 0x0),
+	/* EDP_HPD */
+	_PAD_CFG_STRUCT(GPP_E17, 0x44000700, 0x0),
+	/* MDP_CTRLCLK */
+	_PAD_CFG_STRUCT(GPP_E18, 0x44000700, 0x0),
+	/* MDP_CTRLDATA */
+	_PAD_CFG_STRUCT(GPP_E19, 0x44000700, 0x1000),
+	/* HDMI_CTRLCLK */
+	_PAD_CFG_STRUCT(GPP_E20, 0x44000700, 0x0),
+	/* HDMI_CTRLDATA */
+	_PAD_CFG_STRUCT(GPP_E21, 0x44000700, 0x1000),
+	/* NC */
+	PAD_CFG_NC(GPP_E22),
+	/* NC */
+	PAD_CFG_NC(GPP_E23),
+	/* NC */
+	PAD_CFG_NC(GPP_F0),
+	/* NC */
+	PAD_CFG_NC(GPP_F1),
+	/* NC */
+	PAD_CFG_NC(GPP_F2),
+	/* NC */
+	PAD_CFG_NC(GPP_F3),
+	/* Pull-up */
+	_PAD_CFG_STRUCT(GPP_F4, 0x44000700, 0x2000000),
+	/* Pull-up */
+	_PAD_CFG_STRUCT(GPP_F5, 0x44000700, 0x2000000),
+	/* Pull-up */
+	_PAD_CFG_STRUCT(GPP_F6, 0x44000700, 0x2000000),
+	/* Pull-up */
+	_PAD_CFG_STRUCT(GPP_F7, 0x44000700, 0x2000000),
+	/* Pull-up */
+	_PAD_CFG_STRUCT(GPP_F8, 0x44000700, 0x2000000),
+	/* Pull-up */
+	_PAD_CFG_STRUCT(GPP_F9, 0x44000700, 0x2000000),
+	/* NC */
+	PAD_CFG_NC(GPP_F10),
+	/* NC */
+	PAD_CFG_NC(GPP_F11),
+	/* NC */
+	PAD_CFG_NC(GPP_F12),
+	/* NC */
+	PAD_CFG_NC(GPP_F13),
+	/* NC */
+	PAD_CFG_NC(GPP_F14),
+	/* NC */
+	PAD_CFG_NC(GPP_F15),
+	/* NC */
+	PAD_CFG_NC(GPP_F16),
+	/* NC */
+	PAD_CFG_NC(GPP_F17),
+	/* NC */
+	PAD_CFG_NC(GPP_F18),
+	/* NC */
+	PAD_CFG_NC(GPP_F19),
+	/* NC */
+	PAD_CFG_NC(GPP_F20),
+	/* NC */
+	PAD_CFG_NC(GPP_F21),
+	/* NC */
+	PAD_CFG_NC(GPP_F22),
+	/* LIGHT_KB_DET# */
+	_PAD_CFG_STRUCT(GPP_F23, 0x40100100, 0x0),
+	/* NC */
+	PAD_CFG_NC(GPP_G0),
+	/* TBT_Detect */
+	_PAD_CFG_STRUCT(GPP_G1, 0x44000100, 0x0),
+	/* NC */
+	PAD_CFG_NC(GPP_G2),
+	/* ASM1543_I_SEL0 */
+	_PAD_CFG_STRUCT(GPP_G3, 0x44000200, 0x0),
+	/* ASM1543_I_SEL1 */
+	_PAD_CFG_STRUCT(GPP_G4, 0x44000200, 0x0),
+	/* NC */
+	PAD_CFG_NC(GPP_G5),
+	/* NC */
+	PAD_CFG_NC(GPP_G6),
+	/* NC */
+	PAD_CFG_NC(GPP_G7),
+};
+
+/* Early pad configuration in romstage. */
+static const struct pad_config early_gpio_table[] = {
+	/* UART2_RXD */
+	_PAD_CFG_STRUCT(GPP_C20, 0x44000700, 0x0),
+	/* UART2_TXD */
+	_PAD_CFG_STRUCT(GPP_C21, 0x44000700, 0x0),
+};
+
+#endif
+
+#endif
