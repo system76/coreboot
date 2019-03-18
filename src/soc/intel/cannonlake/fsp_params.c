@@ -343,6 +343,9 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 
 	/* Unlock all GPIO pads */
 	tconfig->PchUnlockGpioPads = config->PchUnlockGpioPads;
+
+	/* Set correct Sirq mode based on config */
+	params->PchSirqMode = config->SerialIrqConfigSirqMode;
 }
 
 /* Mainboard GPIO Configuration */

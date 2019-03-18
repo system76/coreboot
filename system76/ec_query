@@ -1,0 +1,14 @@
+0x0a - touchpad toggle
+0x0b - screen toggle
+0x0c - mute
+0x0e - volume down
+0x0f - volume up
+0x11 - brightness down
+0x12 - brightness up
+0x13 - camera toggle
+0x14 - airplane mode
+0x15 - suspend
+0x16 - ac detect
+0x1b - lid close
+0x1c - thermal trip point
+0x50 - WMI
