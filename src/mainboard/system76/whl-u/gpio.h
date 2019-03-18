@@ -235,7 +235,7 @@ static const struct pad_config gpio_table[] = {
 	/* SB_BLON */
 	_PAD_CFG_STRUCT(GPP_D8, 0x44000201, 0x0),
 	/* SWI# */
-	PAD_CFG_GPI_SCI_LOW(GPP_D9, NONE, DEEP, EDGE_SINGLE),
+	PAD_CFG_GPI_SCI_LOW(GPP_D9, NONE, DEEP, LEVEL),
 	/* NC */
 	PAD_CFG_NC(GPP_D10),
 	/* RTD3_PCIE_WAKE# */
@@ -298,7 +298,7 @@ static const struct pad_config gpio_table[] = {
 	/* SMI# */
 	_PAD_CFG_STRUCT(GPP_E15, 0x44000100, 0x0),
 	/* SCI# */
-	_PAD_CFG_STRUCT(GPP_E16, 0x80880100, 0x0),
+	PAD_CFG_GPI_SCI_LOW(GPP_E16, NONE, PLTRST, LEVEL),
 	/* EDP_HPD */
 	_PAD_CFG_STRUCT(GPP_E17, 0x44000700, 0x0),
 	/* MDP_CTRLCLK */
