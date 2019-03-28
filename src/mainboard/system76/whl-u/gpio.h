@@ -173,12 +173,12 @@ static const struct pad_config gpio_table[] = {
 	#error Unknown Mainboard
 #endif
 	/* TBT_FRC_PWR */
-	_PAD_CFG_STRUCT(GPP_C10, 0x84000200, 0x0),
+	_PAD_CFG_STRUCT(GPP_C10, 0x84000201, 0x0),
 	/* NC */
 	PAD_CFG_NC(GPP_C11),
 	/* GPP_C12_RTD3 */
 	_PAD_CFG_STRUCT(GPP_C12, 0x84000201, 0x0),
-	/* SSD_PW R_DN# */
+	/* SSD_PWR_DN# */
 	_PAD_CFG_STRUCT(GPP_C13, 0x84000201, 0x0),
 	/* TBTA_HRESET */
 	_PAD_CFG_STRUCT(GPP_C14, 0x84000200, 0x0),
