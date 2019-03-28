@@ -25,8 +25,8 @@ Device (S76D) {
 
     // Get Airplane LED
     Method (GAPL, 0, Serialized) {
-        If (^^PCI0.LPCB.EC.ECOK) {
-            If (^^PCI0.LPCB.EC.AIRP & 0x40) {
+        If (^^PCI0.LPCB.EC0.ECOK) {
+            If (^^PCI0.LPCB.EC0.AIRP & 0x40) {
                 Return (1)
             }
         }
@@ -35,11 +35,11 @@ Device (S76D) {
 
     // Set Airplane LED
     Method (SAPL, 1, Serialized) {
-        If (^^PCI0.LPCB.EC.ECOK) {
+        If (^^PCI0.LPCB.EC0.ECOK) {
             If (Arg0) {
-                ^^PCI0.LPCB.EC.AIRP |= 0x40
+                ^^PCI0.LPCB.EC0.AIRP |= 0x40
             } Else {
-                ^^PCI0.LPCB.EC.AIRP &= 0xBF
+                ^^PCI0.LPCB.EC0.AIRP &= 0xBF
             }
         }
     }
@@ -47,23 +47,23 @@ Device (S76D) {
 #if CONFIG_MAINBOARD_PCI_SUBSYSTEM_DEVICE_ID == 0x1325
     // Set KB LED Brightness
     Method (SKBL, 1, Serialized) {
-        If (^^PCI0.LPCB.EC.ECOK) {
-            ^^PCI0.LPCB.EC.FDAT = 6
-            ^^PCI0.LPCB.EC.FBUF = Arg0
-            ^^PCI0.LPCB.EC.FBF1 = 0
-            ^^PCI0.LPCB.EC.FBF2 = Arg0
-            ^^PCI0.LPCB.EC.FCMD = 0xCA
+        If (^^PCI0.LPCB.EC0.ECOK) {
+            ^^PCI0.LPCB.EC0.FDAT = 6
+            ^^PCI0.LPCB.EC0.FBUF = Arg0
+            ^^PCI0.LPCB.EC0.FBF1 = 0
+            ^^PCI0.LPCB.EC0.FBF2 = Arg0
+            ^^PCI0.LPCB.EC0.FCMD = 0xCA
         }
     }
 
     // Set Keyboard Color
     Method (SKBC, 1, Serialized) {
-        If (^^PCI0.LPCB.EC.ECOK) {
-            ^^PCI0.LPCB.EC.FDAT = 0x3
-            ^^PCI0.LPCB.EC.FBUF = (Arg0 & 0xFF)
-            ^^PCI0.LPCB.EC.FBF1 = ((Arg0 >> 16) & 0xFF)
-            ^^PCI0.LPCB.EC.FBF2 = ((Arg0 >> 8) & 0xFF)
-            ^^PCI0.LPCB.EC.FCMD = 0xCA
+        If (^^PCI0.LPCB.EC0.ECOK) {
+            ^^PCI0.LPCB.EC0.FDAT = 0x3
+            ^^PCI0.LPCB.EC0.FBUF = (Arg0 & 0xFF)
+            ^^PCI0.LPCB.EC0.FBF1 = ((Arg0 >> 16) & 0xFF)
+            ^^PCI0.LPCB.EC0.FBF2 = ((Arg0 >> 8) & 0xFF)
+            ^^PCI0.LPCB.EC0.FCMD = 0xCA
             Return (Arg0)
         } Else {
             Return (0)
@@ -73,21 +73,21 @@ Device (S76D) {
     // Get KB LED
     Method (GKBL, 0, Serialized) {
         Local0 = 0
-        If (^^PCI0.LPCB.EC.ECOK) {
-            ^^PCI0.LPCB.EC.FDAT = One
-            ^^PCI0.LPCB.EC.FCMD = 0xCA
-            Local0 = ^^PCI0.LPCB.EC.FBUF
-            ^^PCI0.LPCB.EC.FCMD = Zero
+        If (^^PCI0.LPCB.EC0.ECOK) {
+            ^^PCI0.LPCB.EC0.FDAT = One
+            ^^PCI0.LPCB.EC0.FCMD = 0xCA
+            Local0 = ^^PCI0.LPCB.EC0.FBUF
+            ^^PCI0.LPCB.EC0.FCMD = Zero
         }
         Return (Local0)
     }
 
     // Set KB Led
     Method (SKBL, 1, Serialized) {
-        If (^^PCI0.LPCB.EC.ECOK) {
-            ^^PCI0.LPCB.EC.FDAT = Zero
-            ^^PCI0.LPCB.EC.FBUF = Arg0
-            ^^PCI0.LPCB.EC.FCMD = 0xCA
+        If (^^PCI0.LPCB.EC0.ECOK) {
+            ^^PCI0.LPCB.EC0.FDAT = Zero
+            ^^PCI0.LPCB.EC0.FBUF = Arg0
+            ^^PCI0.LPCB.EC0.FCMD = 0xCA
         }
     }
 #else

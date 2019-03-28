@@ -1,7 +1,7 @@
 /*
  * This file is part of the coreboot project.
  *
- * Copyright (C) 2016 Google Inc.
+ * Copyright (C) 2019 System76
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -13,12 +13,15 @@
  * GNU General Public License for more details.
  */
 
-Scope (\_SB)
-{
+Scope (\_SB) {
     #include "ac.asl"
     #include "battery.asl"
     #include "buttons.asl"
     #include "hid.asl"
     #include "lid.asl"
     #include "s76.asl"
+}
+
+Scope (_GPE) {
+    #include "gpe.asl"
 }

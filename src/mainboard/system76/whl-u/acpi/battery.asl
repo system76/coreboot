@@ -24,9 +24,9 @@ Device (BAT0)
     Name (BFCC, Zero)
     Method (_STA, 0, NotSerialized)  // _STA: Status
     {
-        If (^^PCI0.LPCB.EC.ECOK)
+        If (^^PCI0.LPCB.EC0.ECOK)
         {
-            If (^^PCI0.LPCB.EC.BAT0)
+            If (^^PCI0.LPCB.EC0.BAT0)
             {
                 Return (0x1F)
             }
@@ -71,18 +71,18 @@ Device (BAT0)
 
     Method (UPBI, 0, NotSerialized)
     {
-        If (^^PCI0.LPCB.EC.BAT0)
+        If (^^PCI0.LPCB.EC0.BAT0)
         {
-            Local0 = (^^PCI0.LPCB.EC.BDC0 & 0xFFFF)
+            Local0 = (^^PCI0.LPCB.EC0.BDC0 & 0xFFFF)
             PBIF [One] = Local0
-            Local0 = (^^PCI0.LPCB.EC.BFC0 & 0xFFFF)
+            Local0 = (^^PCI0.LPCB.EC0.BFC0 & 0xFFFF)
             PBIF [0x02] = Local0
             BFCC = Local0
-            Local0 = (^^PCI0.LPCB.EC.BDV0 & 0xFFFF)
+            Local0 = (^^PCI0.LPCB.EC0.BDV0 & 0xFFFF)
             PBIF [0x04] = Local0
-            Local0 = (^^PCI0.LPCB.EC.BCW0 & 0xFFFF)
+            Local0 = (^^PCI0.LPCB.EC0.BCW0 & 0xFFFF)
             PBIF [0x05] = Local0
-            Local0 = (^^PCI0.LPCB.EC.BCL0 & 0xFFFF)
+            Local0 = (^^PCI0.LPCB.EC0.BCL0 & 0xFFFF)
             PBIF [0x06] = Local0
             PBIF [0x09] = "BAT"
             PBIF [0x0A] = "0001"
@@ -97,7 +97,7 @@ Device (BAT0)
 
     Method (_BIF, 0, NotSerialized)  // _BIF: Battery Information
     {
-        If (^^PCI0.LPCB.EC.ECOK)
+        If (^^PCI0.LPCB.EC0.ECOK)
         {
             UPBI ()
         }
@@ -126,22 +126,22 @@ Device (BAT0)
 
     Method (UPBS, 0, NotSerialized)
     {
-        If (^^PCI0.LPCB.EC.BAT0)
+        If (^^PCI0.LPCB.EC0.BAT0)
         {
             Local0 = Zero
             Local1 = Zero
             If (^^AC.ACFG)
             {
-                If (((^^PCI0.LPCB.EC.BST0 & 0x02) == 0x02))
+                If (((^^PCI0.LPCB.EC0.BST0 & 0x02) == 0x02))
                 {
                     Local0 |= 0x02
-                    Local1 = (^^PCI0.LPCB.EC.BPR0 & 0xFFFF)
+                    Local1 = (^^PCI0.LPCB.EC0.BPR0 & 0xFFFF)
                 }
             }
             Else
             {
                 Local0 |= One
-                Local1 = (^^PCI0.LPCB.EC.BPR0 & 0xFFFF)
+                Local1 = (^^PCI0.LPCB.EC0.BPR0 & 0xFFFF)
             }
 
             Local7 = (Local1 & 0x8000)
@@ -150,13 +150,13 @@ Device (BAT0)
                 Local1 ^= 0xFFFF
             }
 
-            Local2 = (^^PCI0.LPCB.EC.BRC0 & 0xFFFF)
-            Local3 = (^^PCI0.LPCB.EC.BPV0 & 0xFFFF)
+            Local2 = (^^PCI0.LPCB.EC0.BRC0 & 0xFFFF)
+            Local3 = (^^PCI0.LPCB.EC0.BPV0 & 0xFFFF)
             PBST [Zero] = Local0
             PBST [One] = Local1
             PBST [0x02] = Local2
             PBST [0x03] = Local3
-            If ((BFCC != ^^PCI0.LPCB.EC.BFC0))
+            If ((BFCC != ^^PCI0.LPCB.EC0.BFC0))
             {
                 Notify (BAT0, 0x81) // Information Change
             }
@@ -169,7 +169,7 @@ Device (BAT0)
 
     Method (_BST, 0, NotSerialized)  // _BST: Battery Status
     {
-        If (^^PCI0.LPCB.EC.ECOK)
+        If (^^PCI0.LPCB.EC0.ECOK)
         {
             UPBS ()
         }
