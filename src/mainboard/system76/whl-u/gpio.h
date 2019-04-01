@@ -96,7 +96,7 @@ static const struct pad_config gpio_table[] = {
 	/* PS8338B_SW */
 	_PAD_CFG_STRUCT(GPP_A22, 0x44000200, 0x0),
 	/* PS8338B_PCH */
-	_PAD_CFG_STRUCT(GPP_A23, 0x44000100, 0x0),
+	_PAD_CFG_STRUCT(GPP_A23, 0x44000200, 0x0),
 	/* CORE_VID0 with pull-up and pull-down */
 	_PAD_CFG_STRUCT(GPP_B0, 0x44000700, 0x0),
 	/* CORE_VID1 with pull-up and pull-down */
@@ -184,19 +184,10 @@ static const struct pad_config gpio_table[] = {
 	_PAD_CFG_STRUCT(GPP_C14, 0x84000200, 0x0),
 	/* TBT_PERST_N */
 	_PAD_CFG_STRUCT(GPP_C15, 0x84000201, 0x3000),
-#if CONFIG_MAINBOARD_PCI_SUBSYSTEM_DEVICE_ID == 0x1325
-	/* I2C_SDA_TP */
-	_PAD_CFG_STRUCT(GPP_C16, 0x44000700, 0x0),
-	/* I2C_SCL_TP */
-	_PAD_CFG_STRUCT(GPP_C17, 0x44000700, 0x0),
-#elif CONFIG_MAINBOARD_PCI_SUBSYSTEM_DEVICE_ID == 0x1323
 	/* T_SDA */
 	_PAD_CFG_STRUCT(GPP_C16, 0x44000700, 0x0),
 	/* T_SCL */
 	_PAD_CFG_STRUCT(GPP_C17, 0x44000700, 0x0),
-#else
-	#error Unknown Mainboard
-#endif
 	/* NC */
 	PAD_CFG_NC(GPP_C18),
 	/* NC, SWI */
@@ -367,19 +358,10 @@ static const struct pad_config gpio_table[] = {
 	PAD_CFG_NC(GPP_G1),
 	/* NC */
 	PAD_CFG_NC(GPP_G2),
-#if CONFIG_MAINBOARD_PCI_SUBSYSTEM_DEVICE_ID == 0x1325
 	/* NC */
 	_PAD_CFG_STRUCT(GPP_G3, 0x44000100, 0x0),
 	/* NC */
 	_PAD_CFG_STRUCT(GPP_G4, 0x44000100, 0x0),
-#elif CONFIG_MAINBOARD_PCI_SUBSYSTEM_DEVICE_ID == 0x1323
-	/* ASM1543_I_SEL0 */
-	_PAD_CFG_STRUCT(GPP_G3, 0x44000200, 0x0),
-	/* ASM1543_I_SEL1 */
-	_PAD_CFG_STRUCT(GPP_G4, 0x44000200, 0x0),
-#else
-	#error Unknown Mainboard
-#endif
 	/* BOARD_ID */
 	_PAD_CFG_STRUCT(GPP_G5, 0x44000100, 0x0),
 	/* NC */
@@ -431,7 +413,7 @@ static const struct pad_config gpio_table[] = {
 	/* Pull-up and pull-down */
 	_PAD_CFG_STRUCT(GPP_H21, 0x44000100, 0x0),
 	/* TBT_RTD3_PWR_EN_R */
-	_PAD_CFG_STRUCT(GPP_H22, 0x44000100, 0x0),
+	_PAD_CFG_STRUCT(GPP_H22, 0x44000201, 0x0),
 	/* NC, WIGIG_PEWAKE */
 	_PAD_CFG_STRUCT(GPP_H23, 0x84000201, 0x0),
 };
