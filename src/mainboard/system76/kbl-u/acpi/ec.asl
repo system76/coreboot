@@ -13,7 +13,7 @@
  * GNU General Public License for more details.
  */
 
-Device (EC)
+Device (EC0)
 {
     Name (_HID, EisaId ("PNP0C09") /* Embedded Controller Device */)  // _HID: Hardware ID
     Name (_GPE, 0x50 /* GPP_E16 */)  // _GPE: General Purpose Events
@@ -38,7 +38,7 @@ Device (EC)
     Name (ECOK, Zero)
     Method (_REG, 2, Serialized)  // _REG: Region Availability
     {
-        Store ("EC: _REG", Debug)
+        Debug = Concatenate("EC: _REG", Concatenate(ToHexString(Arg0), Concatenate(" ", ToHexString(Arg1))))
         If (((Arg0 == 0x03) && (Arg1 == One))) {
             // Enable software touchpad lock and airplane mode keys
             ECOS = 2
@@ -47,10 +47,13 @@ Device (EC)
             WINF = 1
 
             // Enable software touchpad lock
-            ^^PS2K.CMD(0x97)
+            // ^^PS2K.CMD(0x97)
 
             // Set current AC state
             ^^^^AC.ACFG = ADP
+            // Update battery information and status
+            ^^^^BAT0.UPBI()
+            ^^^^BAT0.UPBS()
 
             PNOT ()
 
@@ -59,73 +62,93 @@ Device (EC)
         }
     }
 
+    Method (PTS, 1, Serialized) {
+        Debug = Concatenate("EC: PTS: ", ToHexString(Arg0))
+        If (ECOK) {
+            WFNO = Zero
+        }
+    }
+
+    Method (WAK, 1, Serialized) {
+        Debug = Concatenate("EC: WAK: ", ToHexString(Arg0))
+        If (ECOK) {
+            // Set current AC state
+            ^^^^AC.ACFG = ADP
+            // Update battery information and status
+            ^^^^BAT0.UPBI()
+            ^^^^BAT0.UPBS()
+            Notify(^^^^AC, Zero)
+            Notify(^^^^BAT0, Zero)
+        }
+    }
+
     Method (_Q0A, 0, NotSerialized) // Touchpad Toggle
     {
-        Store ("EC: Touchpad Toggle", Debug)
+        Debug = "EC: Touchpad Toggle"
     }
 
     Method (_Q0B, 0, NotSerialized) // Screen Toggle
     {
-        Store ("EC: Screen Toggle", Debug)
+        Debug = "EC: Screen Toggle"
     }
 
     Method (_Q0C, 0, NotSerialized)  // Mute
     {
-        Store ("EC: Mute", Debug)
+        Debug = "EC: Mute"
     }
 
     Method (_Q0D, 0, NotSerialized) // Keyboard Backlight
     {
-        Store ("EC: Keyboard Backlight", Debug)
+        Debug = "EC: Keyboard Backlight"
     }
 
     Method (_Q0E, 0, NotSerialized) // Volume Down
     {
-        Store ("EC: Volume Down", Debug)
+        Debug = "EC: Volume Down"
     }
 
     Method (_Q0F, 0, NotSerialized) // Volume Up
     {
-        Store ("EC: Volume Up", Debug)
+        Debug = "EC: Volume Up"
     }
 
     Method (_Q10, 0, NotSerialized) // Switch Video Mode
     {
-        Store ("EC: Switch Video Mode", Debug)
+        Debug = "EC: Switch Video Mode"
     }
 
     Method (_Q11, 0, NotSerialized) // Brightness Down
     {
-        Store ("EC: Brightness Down", Debug)
+        Debug = "EC: Brightness Down"
         ^^^^HIDD.HPEM (20)
     }
 
     Method (_Q12, 0, NotSerialized) // Brightness Up
     {
-        Store ("EC: Brightness Up", Debug)
+        Debug = "EC: Brightness Up"
         ^^^^HIDD.HPEM (19)
     }
 
     Method (_Q13, 0, NotSerialized) // Camera Toggle
     {
-        Store ("EC: Camera Toggle", Debug)
+        Debug = "EC: Camera Toggle"
     }
 
     Method (_Q14, 0, NotSerialized) // Airplane Mode
     {
-        Store ("EC: Airplane Mode", Debug)
+        Debug = "EC: Airplane Mode"
         ^^^^HIDD.HPEM (8)
     }
 
     Method (_Q15, 0, NotSerialized) // Suspend Button
     {
-        Store ("EC: Suspend Button", Debug)
+        Debug = "EC: Suspend Button"
         Notify (SLPB, 0x80)
     }
 
     Method (_Q16, 0, NotSerialized) // AC Detect
     {
-        Store ("EC: AC Detect", Debug)
+        Debug = "EC: AC Detect"
         ^^^^AC.ACFG = ADP
         Notify (AC, 0x80) // Status Change
         Sleep (0x01F4)
@@ -140,25 +163,25 @@ Device (EC)
 
     Method (_Q17, 0, NotSerialized)  // BAT0 Update
     {
-        Store ("EC: BAT0 Update (17)", Debug)
+        Debug = "EC: BAT0 Update (17)"
         Notify (^^^^BAT0, 0x81) // Information Change
     }
 
     Method (_Q19, 0, NotSerialized)  // BAT0 Update
     {
-        Store ("EC: BAT0 Update (19)", Debug)
+        Debug = "EC: BAT0 Update (19)"
         Notify (^^^^BAT0, 0x81) // Information Change
     }
 
     Method (_Q1B, 0, NotSerialized) // Lid Close
     {
-        Store ("EC: Lid Close", Debug)
+        Debug = "EC: Lid Close"
         Notify (LID0, 0x80)
     }
 
     Method (_Q1C, 0, NotSerialized) // Thermal Trip
     {
-        Store ("EC: Thermal Trip", Debug)
+        Debug = "EC: Thermal Trip"
         /* TODO
         Notify (\_TZ.TZ0, 0x81) // Thermal Trip Point Change
         Notify (\_TZ.TZ0, 0x80) // Thermal Status Change
@@ -167,19 +190,18 @@ Device (EC)
 
     Method (_Q1D, 0, NotSerialized) // Power Button
     {
-        Store ("EC: Power Button", Debug)
+        Debug = "EC: Power Button"
         Notify (PWRB, 0x80)
     }
 
     Method (_Q50, 0, NotSerialized) // Other Events
     {
         Local0 = OEM4
-        If (Local0 == 0x8A) { // White Keyboard Backlight
-            Store ("EC: White Keyboard Backlight", Debug)
+        If (Local0 == 0x8A) {
+            Debug = "EC: White Keyboard Backlight"
             Notify (^^^^S76D, 0x80)
         } Else {
-            Store ("EC: Other", Debug)
-            Store (Local0, Debug)
+            Debug = Concatenate("EC: Other: ", ToHexString(Local0))
         }
     }
 }

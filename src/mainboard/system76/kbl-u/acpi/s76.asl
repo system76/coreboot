@@ -13,14 +13,20 @@
  * GNU General Public License for more details.
  */
 
+// Notifications:
+//   0x80 - hardware backlight toggle
+//   0x81 - backlight toggle
+//   0x82 - backlight down
+//   0x83 - backlight up
+//   0x84 - backlight color change
 Device (S76D) {
     Name (_HID, "17761776")
     Name (_UID, 0)
 
     // Get Airplane LED
     Method (GAPL, 0, Serialized) {
-        If (^^PCI0.LPCB.EC.ECOK) {
-            If (^^PCI0.LPCB.EC.AIRP & 0x40) {
+        If (^^PCI0.LPCB.EC0.ECOK) {
+            If (^^PCI0.LPCB.EC0.AIRP & 0x40) {
                 Return (1)
             }
         }
@@ -29,11 +35,11 @@ Device (S76D) {
 
     // Set Airplane LED
     Method (SAPL, 1, Serialized) {
-        If (^^PCI0.LPCB.EC.ECOK) {
+        If (^^PCI0.LPCB.EC0.ECOK) {
             If (Arg0) {
-                ^^PCI0.LPCB.EC.AIRP |= 0x40
+                ^^PCI0.LPCB.EC0.AIRP |= 0x40
             } Else {
-                ^^PCI0.LPCB.EC.AIRP &= 0xBF
+                ^^PCI0.LPCB.EC0.AIRP &= 0xBF
             }
         }
     }
@@ -41,21 +47,21 @@ Device (S76D) {
     // Get KB LED
     Method (GKBL, 0, Serialized) {
         Local0 = 0
-        If (^^PCI0.LPCB.EC.ECOK) {
-            ^^PCI0.LPCB.EC.FDAT = One
-            ^^PCI0.LPCB.EC.FCMD = 0xCA
-            Local0 = ^^PCI0.LPCB.EC.FBUF
-            ^^PCI0.LPCB.EC.FCMD = Zero
+        If (^^PCI0.LPCB.EC0.ECOK) {
+            ^^PCI0.LPCB.EC0.FDAT = One
+            ^^PCI0.LPCB.EC0.FCMD = 0xCA
+            Local0 = ^^PCI0.LPCB.EC0.FBUF
+            ^^PCI0.LPCB.EC0.FCMD = Zero
         }
         Return (Local0)
     }
 
     // Set KB Led
     Method (SKBL, 1, Serialized) {
-        If (^^PCI0.LPCB.EC.ECOK) {
-            ^^PCI0.LPCB.EC.FDAT = Zero
-            ^^PCI0.LPCB.EC.FBUF = Arg0
-            ^^PCI0.LPCB.EC.FCMD = 0xCA
+        If (^^PCI0.LPCB.EC0.ECOK) {
+            ^^PCI0.LPCB.EC0.FDAT = Zero
+            ^^PCI0.LPCB.EC0.FBUF = Arg0
+            ^^PCI0.LPCB.EC0.FCMD = 0xCA
         }
     }
 }
