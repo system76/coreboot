@@ -32,7 +32,7 @@ static const struct pad_config gpio_table[] = {
 	/* NC */
 	PAD_CFG_NC(GPD2),
 	/* PWR_BTN# */
-	PAD_CFG_NF(GPD3, PULL_UP_20K, DEEP, NF1),
+	PAD_CFG_NF(GPD3, UP_20K, DEEP, NF1),
 	/* SUSB#_PCH */
 	PAD_CFG_NF(GPD4, NONE, DEEP, NF1),
 	/* SUSC#_PCH */
@@ -68,7 +68,7 @@ static const struct pad_config gpio_table[] = {
 	/* PM_CLKRUN# with pull-up */
 	PAD_CFG_NF(GPP_A8, NONE, DEEP, NF1),
 	/* PCLK_KBC */
-	PAD_CFG_NF(GPP_A9, PULL_DOWN_20K, DEEP, NF1),
+	PAD_CFG_NF(GPP_A9, DN_20K, DEEP, NF1),
 	/* NC */
 	PAD_CFG_NC(GPP_A10),
 	/* NC */
@@ -80,7 +80,7 @@ static const struct pad_config gpio_table[] = {
 	/* SUS_STAT# T15 */
 	PAD_CFG_NF(GPP_A14, NONE, DEEP, NF1),
 	/* SUS_PWR_ACK with tie to SUSWARN# */
-	PAD_CFG_NF(GPP_A15, PULL_UP_20K, DEEP, NF1),
+	PAD_CFG_NF(GPP_A15, UP_20K, DEEP, NF1),
 	/* NC */
 	PAD_CFG_NC(GPP_A16),
 	/* LIGHT_KB_DET# */
@@ -261,7 +261,7 @@ static const struct pad_config gpio_table[] = {
 	PAD_CFG_GPI(GPP_E1, NONE, DEEP),
 	/* SATAGP2 */
 	//TODO: Should this be function 2?
-	PAD_CFG_NF(GPP_E2, PULL_UP_20K, DEEP, NF1),
+	PAD_CFG_NF(GPP_E2, UP_20K, DEEP, NF1),
 	/* NC */
 	PAD_CFG_NC(GPP_E3),
 	/* T64 */
@@ -317,11 +317,11 @@ static const struct pad_config gpio_table[] = {
 	/* CNVI_BRI_RSP */
 	PAD_CFG_NF(GPP_F5, NONE, DEEP, NF1),
 	/* CNVI_RGI_DT */
-	PAD_CFG_NF(GPP_F6, PULL_UP_20K, DEEP, NF1),
+	PAD_CFG_NF(GPP_F6, UP_20K, DEEP, NF1),
 	/* CNVI_RGI_RSP */
 	PAD_CFG_NF(GPP_F7, NONE, DEEP, NF1),
 	/* CNVI_MFUART2_RXD */
-	PAD_CFG_NF(GPP_F8, PULL_UP_20K, DEEP, NF1),
+	PAD_CFG_NF(GPP_F8, UP_20K, DEEP, NF1),
 	/* CNVI_MFUART2_TXD */
 	PAD_CFG_NF(GPP_F9, NONE, DEEP, NF1),
 	/* NC */
@@ -371,9 +371,9 @@ static const struct pad_config gpio_table[] = {
 	/* NC */
 	PAD_CFG_NC(GPP_H0),
 	/* CNVI_RST# */
-	PAD_CFG_NF(GPP_H1, PULL_DOWN_20K, DEEP, NF3),
+	PAD_CFG_NF(GPP_H1, DN_20K, DEEP, NF3),
 	/* CNVI_CLKREQ */
-	PAD_CFG_NF(GPP_H2, PULL_DOWN_20K, DEEP, NF3),
+	PAD_CFG_NF(GPP_H2, DN_20K, DEEP, NF3),
 	/* NC */
 	PAD_CFG_NC(GPP_H3),
 	/* T23 */
