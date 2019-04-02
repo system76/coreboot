@@ -30,7 +30,7 @@ static const struct pad_config gpio_table[] = {
 	/* LAN_WAKEUP# */
 	_PAD_CFG_STRUCT(GPD2, 0x880500, 0x0),
 	/* PWR_BTN# */
-	PAD_CFG_NF(GPD3, PULL_UP_20K, PWROK, NF1),
+	PAD_CFG_NF(GPD3, UP_20K, PWROK, NF1),
 	/* SUSB#_PCH */
 	PAD_CFG_NF(GPD4, NONE, PWROK, NF1),
 	/* SUSC#_PCH */
@@ -68,7 +68,7 @@ static const struct pad_config gpio_table[] = {
 	/* PCLK_KBC */
 	PAD_CFG_NF(GPP_A9, NONE, DEEP, NF1),
 	/* PCLK_TPM */
-	PAD_CFG_NF(GPP_A10, PULL_DOWN_20K, DEEP, NF1),
+	PAD_CFG_NF(GPP_A10, DN_20K, DEEP, NF1),
 	/* LAN_WAKEUP# */
 	PAD_CFG_GPO(GPP_A11, 0, DEEP),
 	/* PCH_GPP_A12 with pull-up */
@@ -124,7 +124,7 @@ static const struct pad_config gpio_table[] = {
 	/* PLT_RST# with pull-down */
 	PAD_CFG_NF(GPP_B13, NONE, DEEP, NF1),
 	/* PCH_SPKR */
-	PAD_CFG_NF(GPP_B14, PULL_DOWN_20K, DEEP, NF1),
+	PAD_CFG_NF(GPP_B14, DN_20K, DEEP, NF1),
 	/* NC */
 	PAD_CFG_NC(GPP_B15),
 	/* T16 */
@@ -132,7 +132,7 @@ static const struct pad_config gpio_table[] = {
 	/* T35 */
 	PAD_CFG_GPO(GPP_B17, 0, DEEP),
 	/* PCH_GPP_B18 with pull-down - strap for disabling no reboot mode */
-	PAD_CFG_NF(GPP_B18, PULL_UP_20K, DEEP, NF1),
+	PAD_CFG_NF(GPP_B18, UP_20K, DEEP, NF1),
 	/* NC */
 	PAD_CFG_NC(GPP_B19),
 	/* NC */
@@ -140,13 +140,13 @@ static const struct pad_config gpio_table[] = {
 	/* NC */
 	PAD_CFG_NC(GPP_B21),
 	/* PCH_GPP_B22 with pull-down - strap for BIOS on SPI on n130wu */
-	PAD_CFG_NF(GPP_B22, PULL_DOWN_20K, DEEP, NF1),
+	PAD_CFG_NF(GPP_B22, DN_20K, DEEP, NF1),
 	/* NC */
 	PAD_CFG_NC(GPP_B23),
 	/* SMB_CLK */
 	PAD_CFG_NF(GPP_C0, NONE, DEEP, NF1),
 	/* SMB_DATA */
-	PAD_CFG_NF(GPP_C1, PULL_DOWN_20K, DEEP, NF1),
+	PAD_CFG_NF(GPP_C1, DN_20K, DEEP, NF1),
 	/* NC */
 	PAD_CFG_NC(GPP_C2),
 	/* NC */
@@ -278,11 +278,11 @@ static const struct pad_config gpio_table[] = {
 	/* MDP_CTRLCLK */
 	PAD_CFG_NF(GPP_E18, NONE, DEEP, NF1),
 	/* MDP_CTRLDATA */
-	PAD_CFG_NF(GPP_E19, PULL_DOWN_20K, DEEP, NF1),
+	PAD_CFG_NF(GPP_E19, DN_20K, DEEP, NF1),
 	/* HDMI_CTRLCLK */
 	PAD_CFG_NF(GPP_E20, NONE, DEEP, NF1),
 	/* HDMI_CTRLDATA */
-	PAD_CFG_NF(GPP_E21, PULL_DOWN_20K, DEEP, NF1),
+	PAD_CFG_NF(GPP_E21, DN_20K, DEEP, NF1),
 	/* NC */
 	PAD_CFG_NC(GPP_E22),
 	/* NC */
