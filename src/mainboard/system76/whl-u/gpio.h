@@ -219,19 +219,19 @@ static const struct pad_config gpio_table[] = {
 		// TBCIO_PLUG_EVENT
 		_PAD_CFG_STRUCT(GPP_C9, 0x82880100, 0x3000),
 		// TBT_FRC_PWR
-		PAD_CFG_GPO(GPP_C10, 1, PLTRST),
+		PAD_CFG_GPO(GPP_C10, 1, DEEP),
 		// NC
 		PAD_CFG_NC(GPP_C11),
 
 	// UART1
 		// GPP_C12_RTD3
-		PAD_CFG_GPO(GPP_C12, 1, PLTRST),
+		PAD_CFG_GPO(GPP_C12, 1, DEEP),
 		// SSD_PWR_DN#
-		PAD_CFG_GPO(GPP_C13, 1, PLTRST),
+		PAD_CFG_GPO(GPP_C13, 1, DEEP),
 		// TBTA_HRESET
-		PAD_CFG_GPO(GPP_C14, 0, PLTRST),
+		PAD_CFG_GPO(GPP_C14, 0, DEEP),
 		// TBT_PERST_N
-		PAD_CFG_GPO(GPP_C15, 1, PLTRST),
+		PAD_CFG_GPO(GPP_C15, 1, DEEP),
 
 	// I2C
 		// T_SDA
@@ -296,7 +296,7 @@ static const struct pad_config gpio_table[] = {
 		// NC
 		PAD_CFG_NC(GPP_D15),
 		// RTD3_3G_PW R_EN
-		PAD_CFG_GPO(GPP_D16, 1, PWROK),
+		PAD_CFG_GPO(GPP_D16, 1, DEEP),
 
 	// DMIC
 		// NC
@@ -365,7 +365,7 @@ static const struct pad_config gpio_table[] = {
 		// SMI#
 		_PAD_CFG_STRUCT(GPP_E15, 0x42840100, 0x0),
 		// SCI#
-		PAD_CFG_GPI_SCI_LOW(GPP_E16, NONE, PLTRST, LEVEL),
+		PAD_CFG_GPI_SCI_LOW(GPP_E16, NONE, DEEP, LEVEL),
 		// EDP_HPD
 		PAD_CFG_NF(GPP_E17, NONE, DEEP, NF1),
 		// MDP_CTRLCLK
@@ -451,9 +451,9 @@ static const struct pad_config gpio_table[] = {
 		// NC
 		PAD_CFG_NC(GPP_G2),
 		// ASM1543_I_SEL0
-		PAD_CFG_GPI(GPP_G3, NONE, DEEP),
+		PAD_CFG_GPO(GPP_G3, 0, DEEP),
 		// ASM1543_I_SEL1
-		PAD_CFG_GPI(GPP_G4, NONE, DEEP),
+		PAD_CFG_GPO(GPP_G4, 0, DEEP),
 		// BOARD_ID
 		PAD_CFG_NC(GPP_G5),
 		// NC
@@ -526,7 +526,7 @@ static const struct pad_config gpio_table[] = {
 		// TBT_RTD3_PWR_EN_R
 		PAD_CFG_GPO(GPP_H22, 1, DEEP),
 		// NC, WIGIG_PEWAKE
-		PAD_CFG_GPO(GPP_H23, 1, PLTRST),
+		PAD_CFG_GPO(GPP_H23, 1, DEEP),
 };
 
 /* Early pad configuration in romstage. */
