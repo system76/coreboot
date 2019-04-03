@@ -28,23 +28,23 @@ static const struct pad_config gpio_table[] = {
 		// PM_BATLOW#
 		PAD_CFG_NC(GPD0),
 		// AC_PRESENT
-		PAD_CFG_NF(GPD1, NONE, PWROK, NF1),
+		PAD_CFG_NF(GPD1, NONE, DEEP, NF1),
 		// LAN_WAKEUP#
 		_PAD_CFG_STRUCT(GPD2, 0x880500, 0x0),
 		// PWR_BTN#
-		PAD_CFG_NF(GPD3, UP_20K, PWROK, NF1),
+		PAD_CFG_NF(GPD3, UP_20K, DEEP, NF1),
 		// SUSB#_PCH
-		PAD_CFG_NF(GPD4, NONE, PWROK, NF1),
+		PAD_CFG_NF(GPD4, NONE, DEEP, NF1),
 		// SUSC#_PCH
-		PAD_CFG_NF(GPD5, NONE, PWROK, NF1),
+		PAD_CFG_NF(GPD5, NONE, DEEP, NF1),
 		// SLP_A#
-		PAD_CFG_NF(GPD6, NONE, PWROK, NF1),
+		PAD_CFG_NF(GPD6, NONE, DEEP, NF1),
 		// NC
 		PAD_CFG_NC(GPD7),
 		// SUSCLK
-		PAD_CFG_NF(GPD8, NONE, PWROK, NF1),
+		PAD_CFG_NF(GPD8, NONE, DEEP, NF1),
 		// PCH_SLP_WLAN#
-		PAD_CFG_NF(GPD9, NONE, PWROK, NF1),
+		PAD_CFG_NF(GPD9, NONE, DEEP, NF1),
 		// SLP_S5#
 		PAD_CFG_NC(GPD10),
 		// PCH_GPD11
@@ -113,11 +113,11 @@ static const struct pad_config gpio_table[] = {
 		// TBTA_ACE_GPIO0
 		PAD_CFG_GPO(GPP_A20, 0, DEEP),
 		// TBT_FRC_PWR
-		PAD_CFG_GPO(GPP_A21, 1, PLTRST),
+		PAD_CFG_GPO(GPP_A21, 1, DEEP),
 		// PS8338B_SW
-		PAD_CFG_GPO(GPP_A22, 0, PWROK),
+		PAD_CFG_GPO(GPP_A22, 0, DEEP),
 		// PS8338B_PCH
-		PAD_CFG_GPO(GPP_A23, 0, PWROK),
+		PAD_CFG_GPO(GPP_A23, 0, DEEP),
 
 // GPP_B
 	// CPU Power
@@ -219,7 +219,7 @@ static const struct pad_config gpio_table[] = {
 		// TBCIO_PLUG_EVENT
 		_PAD_CFG_STRUCT(GPP_C13, 0x82880100, 0x0),
 		// TBTA_MRESET
-		PAD_CFG_GPI(GPP_C14, NONE, DEEP),
+		PAD_CFG_GPO(GPP_C14, 0, DEEP),
 		// TBTA_ACE_GPIO7
 		PAD_CFG_GPI(GPP_C15, NONE, DEEP),
 
@@ -267,7 +267,7 @@ static const struct pad_config gpio_table[] = {
 		// T_INT
 		PAD_CFG_NC(GPP_D9),
 		// EDP_DET
-		PAD_CFG_GPI(GPP_D10, NONE, DEEP),
+		PAD_CFG_NC(GPP_D10),
 		// NC
 		PAD_CFG_NC(GPP_D11),
 		// NC
@@ -293,7 +293,7 @@ static const struct pad_config gpio_table[] = {
 
 	// SPI - Touch
 		// TPM_DET#
-		PAD_CFG_GPI(GPP_D21, NONE, DEEP),
+		PAD_CFG_NC(GPP_D21),
 		// NC
 		PAD_CFG_NC(GPP_D22),
 
@@ -346,7 +346,7 @@ static const struct pad_config gpio_table[] = {
 		// SMI#
 		_PAD_CFG_STRUCT(GPP_E15, 0x42840100, 0x0),
 		// SCI#
-		PAD_CFG_GPI_SCI_LOW(GPP_E16, NONE, PLTRST, LEVEL),
+		PAD_CFG_GPI_SCI_LOW(GPP_E16, NONE, DEEP, LEVEL),
 		// EDP_HPD
 		PAD_CFG_NF(GPP_E17, NONE, DEEP, NF1),
 		// MDP_CTRLCLK
@@ -419,14 +419,14 @@ static const struct pad_config gpio_table[] = {
 
 	// SDIO/SDXC
 		// LIGHT_KB_DET#
-		PAD_CFG_GPI(GPP_F23, NONE, DEEP),
+		PAD_CFG_NC(GPP_F23),
 
 // GPP_G
 	// SDIO/SDXC
 		// NC
 		PAD_CFG_NC(GPP_G0),
 		// TBT Detect
-		PAD_CFG_GPI(GPP_G1, NONE, DEEP),
+		PAD_CFG_NC(GPP_G1),
 		// NC
 		PAD_CFG_NC(GPP_G2),
 		// ASM1543_I_SEL0
