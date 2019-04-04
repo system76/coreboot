@@ -33,8 +33,8 @@ void mainboard_fill_dq_map_data(void *dq_map_ptr) {
 void mainboard_fill_dqs_map_data(void *dqs_map_ptr) {
 	/* DQS CPU<>DRAM map */
 	const u8 dqs_map[2][8] = {
-		{0, 1, 3, 2, 4, 5, 6, 7},
-		{1, 0, 4, 5, 2, 3, 6, 7}
+		{0, 1, 2, 3, 4, 5, 6, 7},
+		{1, 0, 2, 3, 4, 5, 6, 7}
 	};
 	memcpy(dqs_map_ptr, dqs_map, sizeof(dqs_map));
 }
