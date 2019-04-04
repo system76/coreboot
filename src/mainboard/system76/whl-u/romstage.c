@@ -45,8 +45,8 @@ static const struct cnl_mb_cfg memcfg = {
 	 * on the memory part, and the values in the array represent which
 	 * pin on the CPU that DRAM pin connects to.
 	 */
-	.dqs_map[DDR_CH0] = {0, 1, 3, 2, 4, 5, 6, 7},
-	.dqs_map[DDR_CH1] = {1, 0, 4, 5, 2, 3, 6, 7},
+	.dqs_map[DDR_CH0] = {0, 1, 2, 3, 4, 5, 6, 7},
+	.dqs_map[DDR_CH1] = {1, 0, 2, 3, 4, 5, 6, 7},
 
 	/*
 	 * Rcomp resistor values.  These values represent the resistance in
