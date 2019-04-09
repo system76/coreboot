@@ -148,13 +148,14 @@ chip soc/intel/cannonlake
 	register "SerialIrqConfigSirqMode" = "1"
 
 # LPC (soc/intel/cannonlake/lpc.c)
-	# LPC configuration from lspci -xxx
-	# Decode 0x80 - 0x8F
+	# LPC configuration from lspci -s 1f.0 -xxx
+	# Address 0x84: Decode 0x80 - 0x8F
 	register "gen1_dec" = "0x000c0081"
-	# Decode 0x68 - 0x6F
+	# Address 0x88: Decode 0x68 - 0x6F
 	register "gen2_dec" = "0x00040069"
-	# Decode 0x3320 - 0x332F
+	# Address 0x8C: Decode 0x3320 - 0x332F
 	register "gen3_dec" = "0x000c3321"
+	# Address 0x90: Disabled
 	register "gen4_dec" = "0x00000000"
 
 	# 8254
