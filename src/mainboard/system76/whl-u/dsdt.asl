@@ -47,12 +47,4 @@ DefinitionBlock(
 
 	// Mainboard specific
 	#include "acpi/mainboard.asl"
-
-	Scope (\_SB.PCI0.LPCB)
-	{
-		/* ACPI code for EC SuperIO functions */
-		#include "acpi/superio.asl"
-		/* ACPI code for EC functions */
-		#include "acpi/ec.asl"
-	}
 }

@@ -451,9 +451,9 @@ static const struct pad_config gpio_table[] = {
 		// NC
 		PAD_CFG_NC(GPP_G2),
 		// ASM1543_I_SEL0
-		PAD_CFG_GPO(GPP_G3, 0, DEEP),
+		PAD_CFG_NC(GPP_G3),
 		// ASM1543_I_SEL1
-		PAD_CFG_GPO(GPP_G4, 0, DEEP),
+		PAD_CFG_NC(GPP_G4),
 		// BOARD_ID
 		PAD_CFG_NC(GPP_G5),
 		// NC

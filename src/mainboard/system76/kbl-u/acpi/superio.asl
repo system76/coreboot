@@ -14,10 +14,3 @@
  */
 
 #include <drivers/pc80/pc/ps2_controller.asl>
-
-// PS2 Keyboard Scope
-Scope (PS2K) {
-    #define LPC_DEVICE_PORT 0x60
-    #include "lpc_device.asl"
-    #undef LPC_DEVICE_PORT
-}
