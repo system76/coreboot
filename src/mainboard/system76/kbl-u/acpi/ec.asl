@@ -35,6 +35,10 @@ Device (EC0)
 
     #include "acpi/ec_ram.asl"
 
+    #define LPC_DEVICE_PORT 0x62
+    #include "lpc_device.asl"
+    #undef LPC_DEVICE_PORT
+
     Name (ECOK, Zero)
     Method (_REG, 2, Serialized)  // _REG: Region Availability
     {
@@ -47,7 +51,13 @@ Device (EC0)
             WINF = 1
 
             // Enable software touchpad lock
-            // ^^PS2K.CMD(0x97)
+            ^^PS2K.LCMD(0x97)
+
+            // Enable camera toggle
+            LCMD(0x9A)
+            Local0 = LRD()
+            LCMD(0x9B)
+            LWR(Local0 | 1)
 
             // Set current AC state
             ^^^^AC.ACFG = ADP

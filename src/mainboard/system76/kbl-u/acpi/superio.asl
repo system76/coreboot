@@ -17,43 +17,7 @@
 
 // PS2 Keyboard Scope
 Scope (PS2K) {
-    // PS2 Ports
-    OperationRegion (PORT, SystemIO, 0x60, 0x05)
-    Field (PORT, ByteAcc, NoLock, Preserve) {
-        DATA, 8,
-        Offset (4),
-        STAT, 8
-    }
-
-    // Wait for PS2 Input
-    Method (WIN, 0, Serialized) {
-        While (STAT & 1 == 0) {
-            Sleep(10)
-        }
-    }
-
-    // Wait for PS2 Output
-    Method (WOUT, 0, Serialized) {
-        While (STAT & 2 > 0) {
-            Sleep(10)
-        }
-    }
-
-    // PS2 Command
-    Method (CMD, 1, Serialized) {
-        WOUT()
-        STAT = Arg0
-    }
-
-    // PS2 Read
-    Method (READ, 0, Serialized) {
-        WIN()
-        Return (DATA)
-    }
-
-    // PS2 Write
-    Method (WRIT, 1, Serialized) {
-        WOUT()
-        DATA = Arg0
-    }
+    #define LPC_DEVICE_PORT 0x60
+    #include "lpc_device.asl"
+    #undef LPC_DEVICE_PORT
 }
