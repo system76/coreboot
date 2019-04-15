@@ -113,7 +113,7 @@ static const struct pad_config gpio_table[] = {
 		// TBTA_ACE_GPIO0
 		PAD_CFG_GPO(GPP_A20, 0, DEEP),
 		// TBT_FRC_PWR
-		PAD_CFG_GPO(GPP_A21, 1, DEEP),
+		PAD_CFG_GPO(GPP_A21, 0, DEEP),
 		// PS8338B_SW
 		PAD_CFG_GPO(GPP_A22, 0, DEEP),
 		// PS8338B_PCH
@@ -215,13 +215,13 @@ static const struct pad_config gpio_table[] = {
 
 	// ISH
 		// TBTA_ACE_GPIO2
-		PAD_CFG_GPI(GPP_C12, NONE, DEEP),
+		PAD_CFG_NC(GPP_C12),
 		// TBCIO_PLUG_EVENT
 		_PAD_CFG_STRUCT(GPP_C13, 0x82880100, 0x0),
 		// TBTA_MRESET
-		PAD_CFG_GPO(GPP_C14, 0, DEEP),
+		PAD_CFG_NC(GPP_C14),
 		// TBTA_ACE_GPIO7
-		PAD_CFG_GPI(GPP_C15, NONE, DEEP),
+		PAD_CFG_NC(GPP_C15),
 
 	// LPSS
 		// T_SDA
@@ -430,9 +430,9 @@ static const struct pad_config gpio_table[] = {
 		// NC
 		PAD_CFG_NC(GPP_G2),
 		// ASM1543_I_SEL0
-		PAD_CFG_GPO(GPP_G3, 0, DEEP),
+		PAD_CFG_NC(GPP_G3),
 		// ASM1543_I_SEL1
-		PAD_CFG_GPO(GPP_G4, 0, DEEP),
+		PAD_CFG_NC(GPP_G4),
 		// NC
 		PAD_CFG_NC(GPP_G5),
 		// NC
