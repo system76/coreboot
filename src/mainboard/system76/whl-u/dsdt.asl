@@ -45,6 +45,14 @@ DefinitionBlock(
 	// Chipset specific sleep states
 	#include <soc/intel/cannonlake/acpi/sleepstates.asl>
 
+	Scope (\_SB.PCI0.LPCB) {
+		// PS/2 bus
+	    #include <drivers/pc80/pc/ps2_controller.asl>
+
+		// Embedded controller
+	    #include "acpi/ec.asl"
+	}
+
 	// Mainboard specific
 	#include "acpi/mainboard.asl"
 }
