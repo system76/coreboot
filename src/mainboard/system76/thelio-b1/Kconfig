@@ -1,0 +1,85 @@
+if BOARD_SYSTEM76_THELIO_B1
+
+config BOARD_SPECIFIC_OPTIONS
+	def_bool y
+	select ADD_FSP_BINARIES
+	select BOARD_ROMSIZE_KB_16384
+	select EC_ACPI
+	select EXCLUDE_EMMC_INTERFACE
+	select FSP_USE_REPO
+	select HAVE_ACPI_RESUME
+	select HAVE_ACPI_TABLES
+	select HAVE_SMI_HANDLER
+	select INTEL_GMA_HAVE_VBT
+	select MAINBOARD_HAS_LPC_TPM
+	select MAINBOARD_HAS_TPM2
+	select MAINBOARD_USES_IFD_GBE_REGION
+	select SOC_INTEL_CANNONLAKE_PCH_H
+	select SOC_INTEL_COFFEELAKE
+	select SOC_INTEL_COMMON_BLOCK_HDA
+	select SOC_INTEL_COMMON_BLOCK_HDA_VERB
+	select SPD_READ_BY_WORD
+	select SYSTEM_TYPE_DESKTOP
+	select USE_BLOBS
+
+config MAINBOARD_DIR
+	string
+	default system76/thelio-b1
+
+config MAINBOARD_PART_NUMBER
+	string
+	default "thelio-b1"
+
+config CBFS_SIZE
+	hex
+	default 0xA00000
+
+config MAINBOARD_PCI_SUBSYSTEM_VENDOR_ID
+	hex
+	default 0x1458
+
+config MAINBOARD_PCI_SUBSYSTEM_DEVICE_ID
+	hex
+	default 0xa0c3
+
+config CONSOLE_POST
+	bool
+	default y
+
+config ONBOARD_VGA_IS_PRIMARY
+	bool
+	default y
+
+config MAX_CPUS
+	int
+	default 16
+
+config DIMM_MAX
+	int
+	default 2
+
+config DIMM_SPD_SIZE
+	int
+	default 512
+
+config VGA_BIOS_FILE
+	string
+	default "pci8086,3e98.rom"
+
+config VGA_BIOS_ID
+	string
+	default "8086,3e98"
+
+config PXE_ROM_ID
+	string
+	default "8086,1539"
+
+config FSP_M_XIP
+	bool
+	default y
+
+config POST_DEVICE
+	bool
+	default n
+
+endif
