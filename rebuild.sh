@@ -2,8 +2,8 @@
 
 set -ex
 
-MODEL="$(grep CONFIG_VARIANT_DIR .config | cut -d '"' -f2)"
-if [ -z "$MODEL" ]
+MODEL="$(grep CONFIG_MAINBOARD_PART_NUMBER .config | cut -d '"' -f2)"
+if [ "$MODEL" == "QEMU x86 q35/ich9" ]
 then
     MODEL="qemu"
 fi
