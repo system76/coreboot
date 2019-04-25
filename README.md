@@ -1,3 +1,18 @@
+Building coreboot for System76 hardware
+----------------------------------------
+
+sudo apt-get install git build-essential gnat flex bison libncurses5-dev wget zlib1g-dev nasm uuid-dev ccache
+
+make CPUS=(nproc) crossgcc-i386 crossgcc-x64
+
+./system76/build.sh galp3-b
+
+./system76/flash.sh
+
+# For future builds
+
+./rebuild.sh
+
 coreboot README
 ===============
 
@@ -65,7 +80,6 @@ Building coreboot
 -----------------
 
 Please consult <https://www.coreboot.org/Build_HOWTO> for details.
-
 
 Testing coreboot Without Modifying Your Hardware
 ------------------------------------------------
