@@ -28,4 +28,4 @@
 	ignore = dirty
 [submodule "opensbi"]
 	path = 3rdparty/opensbi
-	url = ../opensbi.git
+	url = https://github.com/coreboot/opensbi.git
