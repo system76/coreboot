@@ -20,7 +20,7 @@
  * shouldn't cause any fragmentation.
  */
 
-#include <assert.h>
+#include <console/console.h>
 #include <intelblocks/uart.h>
 #include <soc/gpio.h>
 #include <soc/pci_devs.h>

@@ -14,7 +14,6 @@
  */
 
 #include <assert.h>
-#include <chip.h>
 #include <cpu/x86/msr.h>
 #include <console/console.h>
 #include <fsp/util.h>
@@ -24,6 +23,8 @@
 #include <soc/pci_devs.h>
 #include <soc/romstage.h>
 #include <vendorcode/google/chromeos/chromeos.h>
+
+#include "../chip.h"
 
 static void soc_memory_init_params(FSP_M_CONFIG *m_cfg, const config_t *config)
 {
@@ -61,11 +62,8 @@ static void soc_memory_init_params(FSP_M_CONFIG *m_cfg, const config_t *config)
 	m_cfg->PcdDebugInterfaceFlags =
 				CONFIG(DRIVERS_UART_8250IO) ? 0x02 : 0x10;
 
-	/* Disable Vmx if Vt-d is already disabled */
-	if (config->VtdDisable)
-		m_cfg->VmxEnable = 0;
-	else
-		m_cfg->VmxEnable = config->VmxEnable;
+	/* Change VmxEnable UPD value according to ENABLE_VMX Kconfig */
+	m_cfg->VmxEnable = CONFIG(ENABLE_VMX);
 
 #if CONFIG(SOC_INTEL_COMMON_CANNONLAKE_BASE)
 	m_cfg->SkipMpInit = !CONFIG_USE_INTEL_FSP_MP_INIT;
@@ -111,9 +109,10 @@ void platform_fsp_memory_init_params_cb(FSPM_UPD *mupd, uint32_t version)
 		m_cfg->SmbusEnable = 0;
 	else
 		m_cfg->SmbusEnable = smbus->enabled;
-	/* Set debug probe type */
-	m_cfg->PlatformDebugConsent = config->DebugConsent;
 
+	/* Set debug probe type */
+	m_cfg->PlatformDebugConsent =
+		CONFIG_SOC_INTEL_CANNONLAKE_DEBUG_CONSENT;
 	mainboard_memory_init_params(mupd);
 }
 

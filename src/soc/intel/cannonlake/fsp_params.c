@@ -13,7 +13,6 @@
  * GNU General Public License for more details.
  */
 
-#include <chip.h>
 #include <console/console.h>
 #include <device/device.h>
 #include <device/pci.h>
@@ -24,6 +23,8 @@
 #include <soc/pci_devs.h>
 #include <soc/ramstage.h>
 #include <string.h>
+
+#include "chip.h"
 
 static const int serial_io_dev[] = {
 	PCH_DEVFN_I2C0,
@@ -211,6 +212,10 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 	params->DdiPortDDdc = config->DdiPortDDdc;
 	params->DdiPortFDdc = config->DdiPortFDdc;
 
+	/* WOL */
+	params->PchPmPcieWakeFromDeepSx = config->LanWakeFromDeepSx;
+	params->PchPmWolEnableOverride = config->WolEnableOverride;
+
 	/* S0ix */
 	params->PchPmSlpS0Enable = config->s0ix_enable;
 
@@ -249,9 +254,12 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 
 	/* Enable xDCI controller if enabled in devicetree and allowed */
 	dev = dev_find_slot(0, PCH_DEVFN_USBOTG);
-	if (!xdci_can_enable())
-		dev->enabled = 0;
-	params->XdciEnable = dev->enabled;
+	if (dev) {
+		if (!xdci_can_enable())
+			dev->enabled = 0;
+		params->XdciEnable = dev->enabled;
+	} else
+		params->XdciEnable = 0;
 
 	/* Set Debug serial port */
 	params->SerialIoDebugUartNumber = CONFIG_UART_FOR_CONSOLE;
@@ -259,9 +267,15 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 	/* Enable CNVi Wifi if enabled in device tree */
 	dev = dev_find_slot(0, PCH_DEVFN_CNViWIFI);
 #if CONFIG(SOC_INTEL_COMETLAKE)
-	params->CnviMode = dev->enabled;
+	if (dev)
+		params->CnviMode = dev->enabled;
+	else
+		params->CnviMode = 0;
 #else
-	params->PchCnviMode = dev->enabled;
+	if (dev)
+		params->PchCnviMode = dev->enabled;
+	else
+		params->PchCnviMode = 0;
 #endif
 	/* PCI Express */
 	for (i = 0; i < ARRAY_SIZE(config->PcieClkSrcUsage); i++) {

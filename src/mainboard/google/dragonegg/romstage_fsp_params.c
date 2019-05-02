@@ -13,9 +13,7 @@
  * GNU General Public License for more details.
  */
 
-#include <assert.h>
 #include <baseboard/variants.h>
-#include <console/console.h>
 #include <soc/romstage.h>
 
 void mainboard_memory_init_params(FSPM_UPD *mupd)

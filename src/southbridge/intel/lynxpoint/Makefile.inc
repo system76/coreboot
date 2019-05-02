@@ -15,6 +15,8 @@
 
 ifeq ($(CONFIG_SOUTHBRIDGE_INTEL_LYNXPOINT),y)
 
+bootblock-y += bootblock.c
+
 ramstage-y += pch.c
 ramstage-y += azalia.c
 ramstage-y += lpc.c
@@ -44,6 +46,7 @@ ramstage-$(CONFIG_HAVE_SMI_HANDLER) += smi.c pmutil.c
 smm-$(CONFIG_HAVE_SMI_HANDLER) += smihandler.c me_9.x.c pch.c
 smm-$(CONFIG_HAVE_SMI_HANDLER) += pmutil.c usb_ehci.c usb_xhci.c
 
+bootblock-y += early_pch.c
 romstage-y += early_usb.c early_smbus.c early_me.c me_status.c early_pch.c
 romstage-y += early_spi.c rcba.c pmutil.c
 
@@ -52,5 +55,8 @@ romstage-y += lp_gpio.c
 ramstage-y += lp_gpio.c
 smm-$(CONFIG_HAVE_SMI_HANDLER) += lp_gpio.c
 endif
+
+verstage-$(CONFIG_VBOOT_SEPARATE_VERSTAGE) += pmutil.c
+verstage-$(CONFIG_VBOOT_SEPARATE_VERSTAGE) += lp_gpio.c
 
 endif

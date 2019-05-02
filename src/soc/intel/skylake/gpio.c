@@ -14,7 +14,6 @@
  * GNU General Public License for more details.
  */
 
-#include <assert.h>
 #include <intelblocks/gpio.h>
 #include <intelblocks/pcr.h>
 #include <soc/pcr_ids.h>
@@ -74,6 +73,8 @@ static const struct pad_community skl_gpio_communities[] = {
 		.num_gpi_regs = NUM_GPIO_COM0_GPI_REGS,
 		.pad_cfg_base = PAD_CFG_BASE,
 		.host_own_reg_0 = HOSTSW_OWN_REG_0,
+		.gpi_int_sts_reg_0 = GPI_INT_STS_0,
+		.gpi_int_en_reg_0 = GPI_INT_EN_0,
 		.gpi_smi_sts_reg_0 = GPI_SMI_STS_0,
 		.gpi_smi_en_reg_0 = GPI_SMI_EN_0,
 		.max_pads_per_group = GPIO_MAX_NUM_PER_GROUP,
@@ -94,6 +95,8 @@ static const struct pad_community skl_gpio_communities[] = {
 		.num_gpi_regs = NUM_GPIO_COM1_GPI_REGS,
 		.pad_cfg_base = PAD_CFG_BASE,
 		.host_own_reg_0 = HOSTSW_OWN_REG_0,
+		.gpi_int_sts_reg_0 = GPI_INT_STS_0,
+		.gpi_int_en_reg_0 = GPI_INT_EN_0,
 		.gpi_smi_sts_reg_0 = GPI_SMI_STS_0,
 		.gpi_smi_en_reg_0 = GPI_SMI_EN_0,
 		.max_pads_per_group = GPIO_MAX_NUM_PER_GROUP,
@@ -115,6 +118,8 @@ static const struct pad_community skl_gpio_communities[] = {
 		.num_gpi_regs = NUM_GPIO_COM3_GPI_REGS,
 		.pad_cfg_base = PAD_CFG_BASE,
 		.host_own_reg_0 = HOSTSW_OWN_REG_0,
+		.gpi_int_sts_reg_0 = GPI_INT_STS_0,
+		.gpi_int_en_reg_0 = GPI_INT_EN_0,
 		.gpi_smi_sts_reg_0 = GPI_SMI_STS_0,
 		.gpi_smi_en_reg_0 = GPI_SMI_EN_0,
 		.max_pads_per_group = GPIO_MAX_NUM_PER_GROUP,
@@ -131,6 +136,8 @@ static const struct pad_community skl_gpio_communities[] = {
 		.num_gpi_regs = NUM_GPIO_COM2_GPI_REGS,
 		.pad_cfg_base = PAD_CFG_BASE,
 		.host_own_reg_0 = HOSTSW_OWN_REG_0,
+		.gpi_int_sts_reg_0 = GPI_INT_STS_0,
+		.gpi_int_en_reg_0 = GPI_INT_EN_0,
 		.gpi_smi_sts_reg_0 = GPI_SMI_STS_0,
 		.gpi_smi_en_reg_0 = GPI_SMI_EN_0,
 		.max_pads_per_group = GPIO_MAX_NUM_PER_GROUP,

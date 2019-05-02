@@ -13,7 +13,7 @@
  * GNU General Public License for more details.
  */
 
-#include <assert.h>
+#include <console/console.h>
 #include <soc/pmic_wrap.h>
 #include <soc/mt6358.h>
 
@@ -493,6 +493,10 @@ static struct pmic_setting init_setting[] = {
 	/* [2:1]: RG_LDO_VSRAM_PROC12_TRACK_ON_CTRL */
 	/* [2:2]: RG_LDO_VSRAM_PROC12_TRACK_VPROC12_ON_CTRL */
 	{0x1B6C, 0x6, 0x6, 0},
+
+	/* Vproc11/Vproc12 to 1.05V */
+	{0x13a6, 0x58, 0x7F, 0},
+	{0x140a, 0x58, 0x7F, 0},
 };
 
 static struct pmic_setting lp_setting[] = {

@@ -16,7 +16,6 @@
 #include <arch/io.h>
 #include <device/mmio.h>
 #include <bootstate.h>
-#include <chip.h>
 #include <console/console.h>
 #include <console/post_codes.h>
 #include <cpu/x86/smm.h>
@@ -33,6 +32,8 @@
 #include <soc/smbus.h>
 #include <soc/systemagent.h>
 #include <stdlib.h>
+
+#include "chip.h"
 
 #define CAMERA1_CLK		0x8000 /* Camera 1 Clock */
 #define CAMERA2_CLK		0x8080 /* Camera 2 Clock */
@@ -86,6 +87,8 @@ static void pch_finalize(void)
 	}
 
 	pch_handle_sideband(config);
+
+	pmc_clear_pmcon_sts();
 }
 
 static void soc_finalize(void *unused)

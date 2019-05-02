@@ -203,6 +203,19 @@ void smbios_fill_dimm_manufacturer_from_id(uint16_t mod_id,
 		}
 	}
 }
+/* this function will fill the corresponding locator */
+void __weak smbios_fill_dimm_locator(const struct dimm_info *dimm,
+	struct smbios_type17 *t)
+{
+	char locator[40];
+
+	snprintf(locator, sizeof(locator), "Channel-%d-DIMM-%d",
+		dimm->channel_num, dimm->dimm_num);
+	t->device_locator = smbios_add_string(t->eos, locator);
+
+	snprintf(locator, sizeof(locator), "BANK %d", dimm->bank_locator);
+	t->bank_locator = smbios_add_string(t->eos, locator);
+}
 
 static void trim_trailing_whitespace(char *buffer, size_t buffer_size)
 {
@@ -280,7 +293,6 @@ static int create_smbios_type17_for_dimm(struct dimm_info *dimm,
 					 unsigned long *current, int *handle)
 {
 	struct smbios_type17 *t = (struct smbios_type17 *)*current;
-	char locator[40];
 
 	memset(t, 0, sizeof(struct smbios_type17));
 	t->memory_type = dimm->ddr_type;
@@ -316,13 +328,7 @@ static int create_smbios_type17_for_dimm(struct dimm_info *dimm,
 
 	smbios_fill_dimm_manufacturer_from_id(dimm->mod_id, t);
 	smbios_fill_dimm_serial_number(dimm, t);
-
-	snprintf(locator, sizeof(locator), "Channel-%d-DIMM-%d",
-		dimm->channel_num, dimm->dimm_num);
-	t->device_locator = smbios_add_string(t->eos, locator);
-
-	snprintf(locator, sizeof(locator), "BANK %d", dimm->bank_locator);
-	t->bank_locator = smbios_add_string(t->eos, locator);
+	smbios_fill_dimm_locator(dimm, t);
 
 	/* put '\0' in the end of data */
 	dimm->module_part_number[DIMM_INFO_PART_NUMBER_SIZE - 1] = '\0';
@@ -650,7 +656,7 @@ smbios_write_type7(unsigned long *current,
 		t->max_cache_size |= SMBIOS_CACHE_SIZE_UNIT_1KB;
 		t->max_cache_size2 |= SMBIOS_CACHE_SIZE2_UNIT_1KB;
 	} else {
-		if (cache_size < (SMBIOS_CACHE_SIZE_MASK * 64 * KiB))
+		if (max_cache_size < (SMBIOS_CACHE_SIZE_MASK * 64 * KiB))
 			t->max_cache_size = max_cache_size / (64 * KiB);
 		else
 			t->max_cache_size = SMBIOS_CACHE_SIZE_OVERFLOW;
@@ -825,6 +831,41 @@ static int smbios_write_type7_cache_parameters(unsigned long *current,
 		}
 	};
 
+	return len;
+}
+int smbios_write_type9(unsigned long *current, int *handle,
+			const char *name, const enum misc_slot_type type,
+			const enum slot_data_bus_bandwidth bandwidth,
+			const enum misc_slot_usage usage,
+			const enum misc_slot_length length,
+			u8 slot_char1, u8 slot_char2, u8 bus, u8 dev_func)
+{
+	struct smbios_type9 *t = (struct smbios_type9 *)*current;
+	int len = sizeof(struct smbios_type9);
+
+	memset(t, 0, sizeof(struct smbios_type9));
+	t->type = SMBIOS_SYSTEM_SLOTS;
+	t->handle = *handle;
+	t->length = len - 2;
+	if (name)
+		t->slot_designation = smbios_add_string(t->eos, name);
+	else
+		t->slot_designation = smbios_add_string(t->eos, "SLOT");
+	t->slot_type = type;
+	/* TODO add slot_id supoort, will be "_SUN" for ACPI devices */
+	t->slot_data_bus_width = bandwidth;
+	t->current_usage = usage;
+	t->slot_length = length;
+	t->slot_characteristics_1 = slot_char1;
+	t->slot_characteristics_2 = slot_char2;
+	t->segment_group_number = 0;
+	t->bus_number = bus;
+	t->device_function_number = dev_func;
+	t->data_bus_width = SlotDataBusWidthOther;
+
+	len = t->length + smbios_string_table_len(t->eos);
+	*current += len;
+	*handle += 1;
 	return len;
 }
 

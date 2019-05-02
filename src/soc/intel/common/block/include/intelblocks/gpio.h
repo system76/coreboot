@@ -105,8 +105,10 @@ struct pad_community {
 	gpio_t		first_pad;   /* first pad in community */
 	gpio_t		last_pad;    /* last pad in community */
 	uint16_t	host_own_reg_0; /* offset to Host Ownership Reg 0 */
-	uint16_t	gpi_smi_sts_reg_0; /* offset to GPI SMI EN Reg 0 */
-	uint16_t	gpi_smi_en_reg_0; /* offset to GPI SMI STS Reg 0 */
+	uint16_t	gpi_int_sts_reg_0; /* offset to GPI Int STS Reg 0 */
+	uint16_t	gpi_int_en_reg_0; /* offset to GPI Int Enable Reg 0 */
+	uint16_t	gpi_smi_sts_reg_0; /* offset to GPI SMI STS Reg 0 */
+	uint16_t	gpi_smi_en_reg_0; /* offset to GPI SMI EN Reg 0 */
 	uint16_t	pad_cfg_base; /* offset to first PAD_GFG_DW0 Reg */
 	uint8_t		gpi_status_offset;  /* specifies offset in struct
 						gpi_status */
@@ -206,6 +208,12 @@ uint8_t gpio_get_pad_portid(const gpio_t pad);
  */
 uint32_t soc_gpio_pad_config_fixup(const struct pad_config *cfg,
 						int dw_reg, uint32_t reg_val);
+
+/*
+ * Function to reset/clear the GPI Interrupt Enable & Status registers for
+ * all GPIO pad communities.
+ */
+void gpi_clear_int_cfg(void);
 
 #endif
 #endif /* _SOC_INTELBLOCKS_GPIO_H_ */

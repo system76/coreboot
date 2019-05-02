@@ -22,6 +22,7 @@
 #include <device/pci_ops.h>
 #include <cpu/x86/msr.h>
 #include <cbmem.h>
+#include <cf9_reset.h>
 #include <arch/cbfs.h>
 #include <ip_checksum.h>
 #include <pc80/mc146818rtc.h>
@@ -1568,14 +1569,14 @@ static void write_training_data(struct raminfo *info)
 static void dump_timings(struct raminfo *info)
 {
 	int channel, slot, rank, lane, i;
-	printk(BIOS_DEBUG, "Timings:\n");
+	printk(RAM_DEBUG, "Timings:\n");
 	FOR_POPULATED_RANKS {
-		printk(BIOS_DEBUG, "channel %d, slot %d, rank %d\n", channel,
+		printk(RAM_DEBUG, "channel %d, slot %d, rank %d\n", channel,
 		       slot, rank);
 		for (lane = 0; lane < 9; lane++) {
-			printk(BIOS_DEBUG, "lane %d: ", lane);
+			printk(RAM_DEBUG, "lane %d: ", lane);
 			for (i = 0; i < 4; i++) {
-				printk(BIOS_DEBUG, "%x (%x) ",
+				printk(RAM_DEBUG, "%x (%x) ",
 				       read_500(info, channel,
 						get_timing_register_addr
 						(lane, i, slot, rank),
@@ -1584,12 +1585,12 @@ static void dump_timings(struct raminfo *info)
 				       lane_timings[i][channel][slot][rank]
 				       [lane]);
 			}
-			printk(BIOS_DEBUG, "\n");
+			printk(RAM_DEBUG, "\n");
 		}
 	}
-	printk(BIOS_DEBUG, "[178] = %x (%x)\n", read_1d0(0x178, 7),
+	printk(RAM_DEBUG, "[178] = %x (%x)\n", read_1d0(0x178, 7),
 	       info->training.reg_178);
-	printk(BIOS_DEBUG, "[10b] = %x (%x)\n", read_1d0(0x10b, 6),
+	printk(RAM_DEBUG, "[10b] = %x (%x)\n", read_1d0(0x10b, 6),
 	       info->training.reg_10b);
 }
 
@@ -1623,8 +1624,8 @@ static void save_timings(struct raminfo *info)
 	train.reg_6dc = MCHBAR32(0x6dc);
 	train.reg_6e8 = MCHBAR32(0x6e8);
 
-	printk (BIOS_SPEW, "[6dc] = %x\n", train.reg_6dc);
-	printk (BIOS_SPEW, "[6e8] = %x\n", train.reg_6e8);
+	printk(RAM_SPEW, "[6dc] = %x\n", train.reg_6dc);
+	printk(RAM_SPEW, "[6e8] = %x\n", train.reg_6e8);
 
 	/* Save the MRC S3 restore data to cbmem */
 	mrc_cache_stash_data(MRC_TRAINING_DATA, MRC_CACHE_VERSION,
@@ -3403,7 +3404,7 @@ set_6d_reg(struct raminfo *info, u16 reg, u16 freq1, u16 freq2,
 				 0, 1, &ratios2);
 	compute_frequence_ratios(info, freq1, freq2, num_cycles_3, num_cycles_4,
 				 0, 1, &ratios1);
-	printk (BIOS_SPEW, "[%x] <= %x\n", reg,
+	printk(RAM_SPEW, "[%x] <= %x\n", reg,
 		       ratios1.freq4_to_max_remainder | (ratios2.
 							 freq4_to_max_remainder
 							 << 8)
@@ -3486,7 +3487,8 @@ static void set_2dxx_series(struct raminfo *info, int s3resume)
 		     frequency_11(info) / 2, 4000, 4000, 0, 0);
 
 	if (s3resume) {
-		printk (BIOS_SPEW, "[6dc] <= %x\n", info->cached_training->reg_6dc);
+		printk(RAM_SPEW, "[6dc] <= %x\n",
+			info->cached_training->reg_6dc);
 		MCHBAR32(0x6dc) = info->cached_training->reg_6dc;
 	} else
 		set_6d_reg(info, 0x6dc, 2 * info->fsb_frequency, frequency_11(info), 0,
@@ -3497,7 +3499,8 @@ static void set_2dxx_series(struct raminfo *info, int s3resume)
 	set_2dx8_reg(info, 0x6e4, 1, 2 * info->fsb_frequency,
 		     frequency_11(info) / 2, 3500, 0, 0, 0);
 	if (s3resume) {
-		printk (BIOS_SPEW, "[6e8] <= %x\n", info->cached_training->reg_6e8);
+		printk(RAM_SPEW, "[6e8] <= %x\n",
+			info->cached_training->reg_6e8);
 		MCHBAR32(0x6e8) = info->cached_training->reg_6e8;
 	} else
 		set_6d_reg(info, 0x6e8, 2 * info->fsb_frequency, frequency_11(info), 0,
@@ -3679,8 +3682,7 @@ void chipset_init(const int s3resume)
 	if ((x2ca8 & 1) || (x2ca8 == 8 && !s3resume)) {
 		printk(BIOS_DEBUG, "soft reset detected, rebooting properly\n");
 		MCHBAR8(0x2ca8) = 0;
-		outb(0x6, 0xcf9);
-		halt();
+		system_reset();
 	}
 #if 0
 	if (!s3resume) {
@@ -3905,8 +3907,7 @@ void raminit(const int s3resume, const u8 *spd_addrmap)
 
 			printk(BIOS_INFO,
 			       "Interrupted RAM init, reset required.\n");
-			outb(0x6, 0xcf9);
-			halt();
+			system_reset();
 		}
 	}
 
@@ -4026,19 +4027,19 @@ void raminit(const int s3resume, const u8 *spd_addrmap)
 		int j;
 		if (s3resume && info.cached_training) {
 			restore_274265(&info);
-			printk(BIOS_DEBUG, "reg2ca9_bit0 = %x\n",
+			printk(RAM_DEBUG, "reg2ca9_bit0 = %x\n",
 			       info.cached_training->reg2ca9_bit0);
 			for (i = 0; i < 2; i++)
 				for (j = 0; j < 3; j++)
-					printk(BIOS_DEBUG, "reg274265[%d][%d] = %x\n",
+					printk(RAM_DEBUG, "reg274265[%d][%d] = %x\n",
 					       i, j, info.cached_training->reg274265[i][j]);
 		} else {
 			set_274265(&info);
-			printk(BIOS_DEBUG, "reg2ca9_bit0 = %x\n",
+			printk(RAM_DEBUG, "reg2ca9_bit0 = %x\n",
 			       info.training.reg2ca9_bit0);
 			for (i = 0; i < 2; i++)
 				for (j = 0; j < 3; j++)
-					printk(BIOS_DEBUG, "reg274265[%d][%d] = %x\n",
+					printk(RAM_DEBUG, "reg274265[%d][%d] = %x\n",
 					       i, j, info.training.reg274265[i][j]);
 		}
 
@@ -4344,8 +4345,7 @@ void raminit(const int s3resume, const u8 *spd_addrmap)
 			       "Couldn't find training data. Rebooting\n");
 			reg32 = inl(DEFAULT_PMBASE + 0x04);
 			outl(reg32 & ~(7 << 10), DEFAULT_PMBASE + 0x04);
-			outb(0xe, 0xcf9);
-			halt();
+			full_reset();
 		}
 		int tm;
 		info.training = *info.cached_training;
@@ -4786,7 +4786,6 @@ void raminit(const int s3resume, const u8 *spd_addrmap)
 		outl(reg32 & ~(7 << 10), DEFAULT_PMBASE + 0x04);
 
 		/* Failed S3 resume, reset to come up cleanly */
-		outb(0xe, 0xcf9);
-		halt();
+		full_reset();
 	}
 }

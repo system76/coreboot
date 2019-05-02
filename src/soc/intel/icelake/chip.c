@@ -13,8 +13,6 @@
  * GNU General Public License for more details.
  */
 
-#include <chip.h>
-#include <console/console.h>
 #include <device/device.h>
 #include <device/pci.h>
 #include <fsp/api.h>
@@ -28,6 +26,8 @@
 #include <soc/itss.h>
 #include <soc/pci_devs.h>
 #include <soc/ramstage.h>
+
+#include "chip.h"
 
 #if CONFIG(HAVE_ACPI_TABLES)
 const char *soc_acpi_name(const struct device *dev)

@@ -13,8 +13,8 @@
 ## GNU General Public License for more details.
 ##
 
-# 2016-1 tag
-STABLE_COMMIT_ID=fa85e826c16b9ce1ad302a57e9c4b24db0d8b930
+# 2019-4 tag
+STABLE_COMMIT_ID=3c99166441bf3ea325af2da83cfe65430b49c066
 
 TAG-$(CONFIG_UBOOT_MASTER)=origin/master
 TAG-$(CONFIG_UBOOT_STABLE)=$(STABLE_COMMIT_ID)
@@ -30,6 +30,7 @@ unexport KCONFIG_DEPENDENCIES
 unexport KCONFIG_SPLITCONFIG
 unexport KCONFIG_TRISTATE
 unexport KCONFIG_NEGATIVES
+unexport $(COREBOOT_EXPORTS)
 
 all: build
 
@@ -50,11 +51,11 @@ else
 	touch $(project_dir)/$(STABLE_COMMIT_ID)
 endif
 
-$(project_dir)/tag-$(TAG-y): fetch
+checkout: fetch
 	echo "    Checking out $(project_name) revision $(TAG-y)"
 	cd $(project_dir); git checkout master; git branch -D coreboot 2>/dev/null; git checkout -b coreboot $(TAG-y)
 
-config: $(project_dir)/$(TAG-y)
+config: checkout
 	rm -f $(project_config_file)
 ifneq ($(CONFIG_PAYLOAD_CONFIGFILE),)
 ifneq ("$(wildcard $(CONFIG_PAYLOAD_CONFIGFILE))","")
@@ -64,7 +65,7 @@ else
 	false
 endif
 else
-	cat $(project_dir)/configs/coreboot-x86_defconfig >> $(project_config_file)
+	cat $(project_dir)/configs/coreboot_defconfig >> $(project_config_file)
 endif
 
 	$(MAKE) -C $(project_dir) olddefconfig
@@ -82,4 +83,4 @@ distclean:
 print-repo-info:
 	echo "$(project_git_repo) $(project_dir)"
 
-.PHONY: config build clean distclean fetch print-repo-info
+.PHONY: checkout config build clean distclean fetch print-repo-info

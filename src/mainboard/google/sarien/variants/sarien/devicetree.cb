@@ -26,7 +26,6 @@ chip soc/intel/cannonlake
 	register "SataPortsDevSlp[2]" = "1"
 	register "InternalGfx" = "1"
 	register "SkipExtGfxScan" = "1"
-	register "VmxEnable" = "1"
 	register "PchPmSlpS3MinAssert" = "3"  # 50ms
 	register "PchPmSlpS4MinAssert" = "4"  # 4s
 	register "PchPmSlpSusMinAssert" = "4" # 4s
@@ -44,6 +43,7 @@ chip soc/intel/cannonlake
 	register "SlowSlewRateForFivr" = "2"
 	register "tdp_pl1_override" = "15"
 	register "tdp_pl2_override" = "51"
+	register "psys_pmax" = "136"
 	register "Device4Enable" = "1"
 	# Enable eDP device
 	register "DdiPortEdp" = "1"
@@ -52,6 +52,9 @@ chip soc/intel/cannonlake
 	register "DdiPortCHpd" = "1"
 	# Enable DDC for DDI port B
 	register "DdiPortBDdc" = "1"
+
+	register "LanWakeFromDeepSx" = "0"
+	register "WolEnableOverride" = "0"
 
 	# VR Settings Configuration for 4 Domains
 	#+----------------+-------+-------+-------+-------+
@@ -198,6 +201,7 @@ chip soc/intel/cannonlake
 
 	# PCIe port 13 for M.2 2280 SSD
 	register "PcieRpEnable[12]" = "1"
+	register "PcieRpLtrEnable[12]" = "1"
 	register "PcieClkSrcUsage[2]" = "12"
 	register "PcieClkSrcClkReq[2]" = "2"
 
@@ -307,29 +311,20 @@ chip soc/intel/cannonlake
 		device pci 14.5 off end # SDCard
 		device pci 15.0 on
 			chip drivers/i2c/hid
-				register "generic.hid" = ""ACPI0C50""
-				register "generic.desc" = ""Touchscreen""
-				register "generic.irq" = "ACPI_IRQ_EDGE_LOW(GPP_C23_IRQ)"
-				register "generic.probed" = "1"
-				register "generic.enable_gpio" =
-							"ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_E7)"
-				register "generic.enable_delay_ms" = "5"
-				register "generic.enable_off_delay_ms" = "100"
-				register "generic.has_power_resource" = "1"
-				register "hid_desc_reg_offset" = "0x0"
-				device i2c 10 on end
-			end
-			chip drivers/i2c/hid
 				register "generic.hid" = ""ELAN900C""
 				register "generic.desc" = ""ELAN Touchscreen""
 				register "generic.irq" = "ACPI_IRQ_EDGE_LOW(GPP_C23_IRQ)"
 				register "generic.probed" = "1"
+				register "generic.reset_gpio" =
+							"ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_E7)"
+				register "generic.reset_delay_ms" = "10"
 				register "generic.enable_gpio" =
-							"ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_E7)"
-				register "generic.enable_delay_ms" = "5"
-				register "generic.enable_off_delay_ms" = "100"
+							"ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_B21)"
+				register "generic.enable_delay_ms" = "55"
 				register "generic.has_power_resource" = "1"
 				register "hid_desc_reg_offset" = "0x01"
+				register "generic.device_present_gpio" = "GPP_B4"
+				register "generic.device_present_gpio_invert" = "1"
 				device i2c 10 on end
 			end
 			chip drivers/i2c/generic
@@ -337,9 +332,13 @@ chip soc/intel/cannonlake
 				register "desc" = ""Melfas Touchscreen""
 				register "irq" = "ACPI_IRQ_EDGE_LOW(GPP_C23_IRQ)"
 				register "probed" = "1"
-				register "enable_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_E7)"
-				register "enable_delay_ms" = "5"
+				register "reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_E7)"
+				register "reset_delay_ms" = "10"
+				register "enable_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_B21)"
+				register "enable_delay_ms" = "55"
 				register "has_power_resource" = "1"
+				register "device_present_gpio" = "GPP_B4"
+				register "device_present_gpio_invert" = "1"
 				device i2c 34 on end
 			end
 		end # I2C #0

@@ -26,3 +26,6 @@
 	url = https://github.com/coreboot/fsp.git
 	update = none
 	ignore = dirty
+[submodule "opensbi"]
+	path = 3rdparty/opensbi
+	url = ../opensbi.git

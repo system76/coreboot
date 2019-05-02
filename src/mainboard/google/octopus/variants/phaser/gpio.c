@@ -19,7 +19,6 @@
 #include <gpio.h>
 #include <soc/gpio.h>
 #include <ec/google/chromeec/ec.h>
-#include <console/console.h>
 
 #define SKU_UNKNOWN            0xFFFFFFFF
 
@@ -35,9 +34,6 @@ static const struct pad_config default_override_table[] = {
 					DISPUPD),
 
 	PAD_NC(GPIO_161, DN_20K),
-
-	/* EN_PP3300_WLAN_L */
-	PAD_CFG_GPO_IOSSTATE_IOSTERM(GPIO_178, 0, DEEP, NONE, Tx0RxDCRx0, DISPUPD),
 
 	PAD_NC(GPIO_213, DN_20K),
 	PAD_NC(GPIO_214, DN_20K),

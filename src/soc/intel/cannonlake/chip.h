@@ -292,15 +292,6 @@ struct soc_intel_cannonlake_config {
 	 */
 	uint8_t PchPmSlpAMinAssert;
 
-	/* Desired platform debug type. */
-	enum {
-		DebugConsent_Disabled,
-		DebugConsent_DCI_DBC,
-		DebugConsent_DCI,
-		DebugConsent_USB3_DBC,
-		DebugConsent_XDP, /* XDP/Mipi60 */
-		DebugConsent_USB2_DBC,
-	} DebugConsent;
 	/*
 	 * SerialIO device mode selection:
 	 *
@@ -359,7 +350,6 @@ struct soc_intel_cannonlake_config {
 
 	/* Intel VT configuration */
 	uint8_t VtdDisable;
-	uint8_t VmxEnable;
 
 	/*
 	 * Acoustic Noise Mitigation
@@ -415,6 +405,10 @@ struct soc_intel_cannonlake_config {
 
 	/* Unlock all GPIO Pads */
 	uint8_t PchUnlockGpioPads;
+
+	/* Enable GBE wakeup */
+	uint8_t LanWakeFromDeepSx;
+	uint8_t WolEnableOverride;
 };
 
 typedef struct soc_intel_cannonlake_config config_t;

@@ -59,6 +59,7 @@ config CPU_SPECIFIC_OPTIONS
 	select CACHE_MRC_SETTINGS
 	select CACHE_RELOCATED_RAMSTAGE_OUTSIDE_CBMEM
 	select COMMON_FADT
+	select CPU_INTEL_COMMON
 	select CPU_INTEL_FIRMWARE_INTERFACE_TABLE
 	select FSP_M_XIP
 	select GENERIC_GPIO_LIB
@@ -230,7 +231,7 @@ config CHROMEOS
 
 config VBOOT
 	select VBOOT_SEPARATE_VERSTAGE
-	select VBOOT_OPROM_MATTERS
+	select VBOOT_MUST_REQUEST_DISPLAY
 	select VBOOT_SAVE_RECOVERY_REASON_ON_REBOOT
 	select VBOOT_STARTS_IN_BOOTBLOCK
 	select VBOOT_VBNV_CMOS
@@ -289,6 +290,17 @@ config FSP_HEADER_PATH
 config FSP_FD_PATH
 	string
 	depends on FSP_USE_REPO
-	default "3rdparty/fsp/CoffeeLakeFspBinPkg/Fsp.fd" if SOC_INTEL_COFFEELAKE || SOC_INTEL_WHISKEYLAKE
+	default "3rdparty/fsp/CoffeeLakeFspBinPkg/FSP.fd" if SOC_INTEL_COFFEELAKE || SOC_INTEL_WHISKEYLAKE
+
+config SOC_INTEL_CANNONLAKE_DEBUG_CONSENT
+	int "Debug Consent for CNL"
+	# USB DBC is more common for developers so make this default to 3 if
+	# SOC_INTEL_DEBUG_CONSENT=y
+	default 3 if SOC_INTEL_DEBUG_CONSENT
+	default 0
+	help
+	  This is to control debug interface on SOC.
+	  Setting non-zero value will allow to use DBC or DCI to debug SOC.
+	  PlatformDebugConsent in FspmUpd.h has the details.
 
 endif

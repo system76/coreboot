@@ -15,10 +15,8 @@
 
 #include <device/mmio.h>
 #include <types.h>
-#include <console/console.h>
 #include <delay.h>
 #include <timestamp.h>
-
 #include <gpio.h>
 
 void gpio_configure(gpio_t gpio, uint32_t func, uint32_t pull,
@@ -72,4 +70,29 @@ void gpio_output(gpio_t gpio, int value)
 	gpio_set(gpio, value);
 	gpio_configure(gpio, GPIO_FUNC_GPIO,
 				GPIO_NO_PULL, GPIO_2MA, GPIO_ENABLE);
+}
+
+void gpio_input_irq(gpio_t gpio, enum gpio_irq_type type, uint32_t pull)
+{
+	struct tlmm_gpio *regs = (void *)(uintptr_t)gpio.addr;
+
+	gpio_configure(gpio, GPIO_FUNC_GPIO,
+				pull, GPIO_2MA, GPIO_DISABLE);
+
+	clrsetbits_le32(&regs->intr_cfg, GPIO_INTR_DECT_CTL_MASK <<
+		GPIO_INTR_DECT_CTL_SHIFT, type << GPIO_INTR_DECT_CTL_SHIFT);
+	clrsetbits_le32(&regs->intr_cfg, GPIO_INTR_RAW_STATUS_ENABLE
+		<< GPIO_INTR_RAW_STATUS_EN_SHIFT, GPIO_INTR_RAW_STATUS_ENABLE
+		<< GPIO_INTR_RAW_STATUS_EN_SHIFT);
+}
+
+int gpio_irq_status(gpio_t gpio)
+{
+	struct tlmm_gpio *regs = (void *)(uintptr_t)gpio.addr;
+
+	if (!(read32(&regs->intr_status) & GPIO_INTR_STATUS_MASK))
+		return 0;
+
+	write32(&regs->intr_status, GPIO_INTR_STATUS_DISABLE);
+	return 1;
 }

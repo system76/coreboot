@@ -104,7 +104,7 @@ static const struct pad_config gpio_table[] = {
 /* UART2_TXD */		PAD_CFG_NF(GPP_C21, NONE, DEEP, NF1), /* SERVORX_UART */
 /* UART2_RTS# */	PAD_NC(GPP_C22, NONE),
 /* UART2_CTS# */	PAD_CFG_GPI_APIC(GPP_C23, NONE, PLTRST,
-				 EDGE_SINGLE, INVERT), /* TS_INT# */
+				 LEVEL, NONE), /* TS_INT# */
 
 /* SPI1_CS# */		PAD_CFG_GPI_APIC(GPP_D0, NONE, PLTRST,
 				 EDGE_SINGLE, INVERT), /* MEDIACARD_IRQ# */
@@ -123,7 +123,7 @@ static const struct pad_config gpio_table[] = {
 /* ISH_SPI_MISO */	PAD_CFG_GPI(GPP_D11, NONE, DEEP), /* TBT_DET# */
 /* ISH_SPI_MOSI */	PAD_NC(GPP_D12, NONE),
 			/* ISH_CPU_UART0_RX */
-/* ISH_UART0_RXD */	PAD_CFG_NF(GPP_D13, NONE, DEEP, NF1),
+/* ISH_UART0_RXD */	PAD_CFG_NF(GPP_D13, UP_20K, DEEP, NF1),
 			/* ISH_CPU_UART0_TX */
 /* ISH_UART0_TXD */	PAD_CFG_NF(GPP_D14, NONE, DEEP, NF1),
 /* ISH_UART0_RTS# */	PAD_CFG_GPO(GPP_D15, 1, DEEP), /* WWAN_FULL_PWR_EN */
@@ -211,8 +211,7 @@ static const struct pad_config gpio_table[] = {
 /* I2C4_SCL */		PAD_CFG_NF(GPP_H9, NONE, DEEP, NF1), /* I2C_SCL_H1 */
 /* I2C5_SDA */		PAD_NC(GPP_H10, NONE), /* ISH_I2C2_SDA */
 /* I2C5_SCL */		PAD_NC(GPP_H11, NONE), /* ISH_I2C2_SCL */
-/* M2_SKT2_CFG0 */	PAD_NC(GPP_H12, NONE),
-/* M2_SKT2_CFG1 */	PAD_NC(GPP_H13, NONE),
+/* M2_SKT2_CFG1 */	PAD_CFG_GPO(GPP_H13, 1, DEEP), /* M.2 SSD D3 cold */
 /* M2_SKT2_CFG2 */	PAD_NC(GPP_H14, NONE),
 /* M2_SKT2_CFG3 */      PAD_CFG_GPO(GPP_H15, 1, DEEP), /* BT_RADIO_DIS# */
 /* DDPF_CTRLCLK */	PAD_NC(GPP_H16, NONE),
@@ -240,6 +239,8 @@ static const struct pad_config gpio_table[] = {
 
 /* Early pad configuration in bootblock */
 static const struct pad_config early_gpio_table[] = {
+/* SSD RESET pin will stay low first */
+/* M2_SKT2_CFG0 */	PAD_CFG_GPO(GPP_H12, 0, DEEP), /* D3 cold RST */
 /* UART2_RXD */		PAD_CFG_NF(GPP_C20, NONE, DEEP, NF1), /* SERVOTX_UART */
 /* UART2_TXD */		PAD_CFG_NF(GPP_C21, NONE, DEEP, NF1), /* SERVORX_UART */
 /* I2C4_SDA */		PAD_CFG_NF(GPP_H8, NONE, DEEP, NF1), /* I2C_SDA_H1 */
@@ -251,6 +252,7 @@ static const struct pad_config early_gpio_table[] = {
 /* CPU_GP0 */		PAD_CFG_GPI(GPP_E3, NONE, DEEP), /* MEM_INTERLEAVED */
 /* SATALED# */		PAD_CFG_GPI(GPP_E8, NONE, DEEP), /* RECOVERY# */
 /* DDPD_HPD2 */		PAD_CFG_GPI(GPP_E15, NONE, DEEP), /* PCH_WP */
+/* M2_SKT2_CFG0 */	PAD_CFG_GPO(GPP_H12, 1, DEEP), /* D3 cold RST */
 };
 
 const struct pad_config *variant_gpio_table(size_t *num)

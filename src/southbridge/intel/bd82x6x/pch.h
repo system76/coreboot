@@ -76,7 +76,7 @@ void southbridge_configure_default_intmap(void);
 void southbridge_rcba_config(void);
 void mainboard_rcba_config(void);
 void early_pch_init_native(void);
-int southbridge_detect_s3_resume(void);
+void early_pch_init(void);
 
 struct southbridge_usb_port
 {
