@@ -55,14 +55,14 @@ static const struct cnl_mb_cfg memcfg = {
 	 * ohms of the three rcomp resistors attached to the DDR_COMP_0,
 	 * DDR_COMP_1, and DDR_COMP_2 pins on the DRAM.
 	 */
-	// These are the recommended settings for CFL-S
+	// These are the recommended settings for CFL-S DDR4 UDIMM (See PDG)
 	.rcomp_resistor = { 121, 75, 100 },
 
 	/*
 	 * Rcomp target values.  These will typically be the following
 	 * values for Cannon Lake : { 80, 40, 40, 40, 30 }
 	 */
-	// These are the recommended settings for CFL-S
+	// These are the recommended settings for CFL-S DDR4 UDIMM (See PDG)
 	.rcomp_targets = { 60, 26, 20, 20, 26 },
 
 	/*
@@ -70,7 +70,7 @@ static const struct cnl_mb_cfg memcfg = {
 	 * Set to 1 for an interleaved design,
 	 * set to 0 for non-interleaved design.
 	 */
-	 // TODO: Find correct settings
+	 // These are the recommended settings for CFL-S DDR4 UDIMM (See PDG)
 	.dq_pins_interleaved = 1,
 
 	/*
@@ -79,12 +79,12 @@ static const struct cnl_mb_cfg memcfg = {
 	 * set to 1 VREF_CA goes to CH_A and VREF_DQ_A goes to CH_B,
 	 * set to 2 VREF_CA goes to CH_A and VREF_DQ_B goes to CH_B.
 	 */
-	// These are the recommended settings for DDR4
+	// These are the recommended settings for CFL-S DDR4 UDIMM (See PDG)
 	.vref_ca_config = 2,
 
 	/* Early Command Training Enabled */
-	// TODO: Find correct settings
-	.ect = 0,
+	// TODO: Find correct settings, default appears to be 1
+	.ect = 1,
 };
 
 void mainboard_memory_init_params(FSPM_UPD *memupd) {
