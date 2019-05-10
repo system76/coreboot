@@ -41,9 +41,7 @@
 asmlinkage void *romstage_main(FSP_INFO_HEADER *fih)
 {
 	void *top_of_stack;
-	struct pei_data pei_data;
 	struct romstage_params params = {
-		.pei_data = &pei_data,
 		.chipset_context = fih,
 	};
 
@@ -54,8 +52,6 @@ asmlinkage void *romstage_main(FSP_INFO_HEADER *fih)
 	/* Load microcode before RAM init */
 	if (CONFIG(SUPPORT_CPU_UCODE_IN_CBFS))
 		intel_update_microcode_from_cbfs();
-
-	memset(&pei_data, 0, sizeof(pei_data));
 
 	/* Display parameters */
 	if (!CONFIG(NO_MMCONF_SUPPORT))
@@ -94,14 +90,11 @@ void romstage_common(struct romstage_params *params)
 {
 	bool s3wake;
 	struct region_device rdev;
-	struct pei_data *pei_data;
 
 	post_code(0x32);
 
 	timestamp_add_now(TS_BEFORE_INITRAM);
 
-	pei_data = params->pei_data;
-	pei_data->boot_mode = params->power_state->prev_sleep_state;
 	s3wake = params->power_state->prev_sleep_state == ACPI_S3;
 
 	if (CONFIG(ELOG_BOOT_COUNT) && !s3wake)
@@ -112,9 +105,9 @@ void romstage_common(struct romstage_params *params)
 	post_code(0x33);
 
 	/* Check recovery and MRC cache */
-	params->pei_data->saved_data_size = 0;
-	params->pei_data->saved_data = NULL;
-	if (!params->pei_data->disable_saved_data) {
+	params->saved_data_size = 0;
+	params->saved_data = NULL;
+	if (!params->disable_saved_data) {
 		if (vboot_recovery_mode_enabled()) {
 			/* Recovery mode does not use MRC cache */
 			printk(BIOS_DEBUG,
@@ -124,12 +117,11 @@ void romstage_common(struct romstage_params *params)
 							params->fsp_version,
 							&rdev))) {
 			/* MRC cache found */
-			params->pei_data->saved_data_size =
-				region_device_sz(&rdev);
-			params->pei_data->saved_data = rdev_mmap_full(&rdev);
+			params->saved_data_size = region_device_sz(&rdev);
+			params->saved_data = rdev_mmap_full(&rdev);
 			/* Assume boot device is memory mapped. */
 			assert(CONFIG(BOOT_DEVICE_MEMORY_MAPPED));
-		} else if (params->pei_data->boot_mode == ACPI_S3) {
+		} else if (s3wake) {
 			/* Waking from S3 and no cache. */
 			printk(BIOS_DEBUG,
 			       "No MRC cache found in S3 resume path.\n");
@@ -147,15 +139,15 @@ void romstage_common(struct romstage_params *params)
 
 	/* Save MRC output */
 	if (CONFIG(CACHE_MRC_SETTINGS)) {
-		printk(BIOS_DEBUG, "MRC data at %p %d bytes\n",
-			pei_data->data_to_save, pei_data->data_to_save_size);
-		if ((params->pei_data->boot_mode != ACPI_S3)
-			&& (params->pei_data->data_to_save_size != 0)
-			&& (params->pei_data->data_to_save != NULL))
+		printk(BIOS_DEBUG, "MRC data at %p %zu bytes\n",
+			params->data_to_save, params->data_to_save_size);
+		if (!s3wake
+			&& (params->data_to_save_size != 0)
+			&& (params->data_to_save != NULL))
 			mrc_cache_stash_data(MRC_TRAINING_DATA,
 				params->fsp_version,
-				params->pei_data->data_to_save,
-				params->pei_data->data_to_save_size);
+				params->data_to_save,
+				params->data_to_save_size);
 	}
 
 	/* Save DIMM information */
@@ -341,13 +333,6 @@ __weak int mrc_cache_stash_data(int type, uint32_t version,
 					const void *data, size_t size)
 {
 	return -1;
-}
-
-/* Transition RAM from off or self-refresh to active */
-__weak void raminit(struct romstage_params *params)
-{
-	post_code(POST_MEM_PREINIT_PREP_START);
-	die("ERROR - No RAM initialization specified!\n");
 }
 
 /* Display the memory configuration */

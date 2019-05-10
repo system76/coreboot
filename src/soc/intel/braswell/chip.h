@@ -32,9 +32,6 @@
 #define SVID_CONFIG3		3
 #define SVID_PMIC_CONFIG	8
 
-#define MEM_DDR3	0
-#define MEM_LPDDR3	1
-
 enum lpe_clk_src {
 	LPE_CLK_SRC_XTAL,
 	LPE_CLK_SRC_PLL,
@@ -172,11 +169,6 @@ struct soc_intel_braswell_config {
 	UINT8  I2C4Frequency;
 	UINT8  I2C5Frequency;
 	UINT8  I2C6Frequency;
-	UINT8  D0Usb2Port0PerPortRXISet; /*setting for D0 stepping SOC*/
-	UINT8  D0Usb2Port1PerPortRXISet; /*setting for D0 stepping SOC*/
-	UINT8  D0Usb2Port2PerPortRXISet; /*setting for D0 stepping SOC*/
-	UINT8  D0Usb2Port3PerPortRXISet; /*setting for D0 stepping SOC*/
-	UINT8  D0Usb2Port4PerPortRXISet; /*setting for D0 stepping SOC*/
 };
 
 extern struct chip_operations soc_intel_braswell_ops;

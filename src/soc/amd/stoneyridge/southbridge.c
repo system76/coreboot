@@ -279,20 +279,18 @@ int sb_set_wideio_range(uint16_t start, uint16_t size)
 static void power_on_aoac_device(int aoac_device_control_register)
 {
 	uint8_t byte;
-	uint8_t *register_pointer = (uint8_t *)(uintptr_t)AOAC_MMIO_BASE
-			+ aoac_device_control_register;
 
 	/* Power on the UART and AMBA devices */
-	byte = read8(register_pointer);
+	byte = aoac_read8(aoac_device_control_register);
 	byte |= FCH_AOAC_PWR_ON_DEV;
-	write8(register_pointer, byte);
+	aoac_write8(aoac_device_control_register, byte);
 }
 
 static bool is_aoac_device_enabled(int aoac_device_status_register)
 {
 	uint8_t byte;
-	byte = read8((uint8_t *)(uintptr_t)AOAC_MMIO_BASE
-			+ aoac_device_status_register);
+
+	byte = aoac_read8(aoac_device_status_register);
 	byte &= (FCH_AOAC_PWR_RST_STATE | FCH_AOAC_RST_CLK_OK_STATE);
 	if (byte == (FCH_AOAC_PWR_RST_STATE | FCH_AOAC_RST_CLK_OK_STATE))
 		return true;
@@ -331,11 +329,9 @@ void sb_lpc_port80(void)
 	u8 byte;
 
 	/* Enable LPC controller */
-	outb(PM_LPC_GATING, PM_INDEX);
-	byte = inb(PM_DATA);
+	byte = pm_io_read8(PM_LPC_GATING);
 	byte |= PM_LPC_ENABLE;
-	outb(PM_LPC_GATING, PM_INDEX);
-	outb(byte, PM_DATA);
+	pm_io_write8(PM_LPC_GATING, byte);
 
 	/* Enable port 80 LPC decode in pci function 3 configuration space. */
 	byte = pci_read_config8(SOC_LPC_DEV, LPC_IO_OR_MEM_DEC_EN_HIGH);
@@ -369,11 +365,9 @@ void sb_acpi_mmio_decode(void)
 	uint8_t byte;
 
 	/* Enable ACPI MMIO range 0xfed80000 - 0xfed81fff */
-	outb(PM_ISA_CONTROL, PM_INDEX);
-	byte = inb(PM_DATA);
+	byte = pm_io_read8(PM_ISA_CONTROL);
 	byte |= MMIO_EN;
-	outb(PM_ISA_CONTROL, PM_INDEX);
-	outb(byte, PM_DATA);
+	pm_io_write8(PM_ISA_CONTROL, byte);
 }
 
 static void sb_enable_cf9_io(void)
@@ -393,14 +387,12 @@ static void sb_enable_legacy_io(void)
 void sb_clk_output_48Mhz(u32 osc)
 {
 	u32 ctrl;
-	u32 *misc_clk_cntl_1_ptr = (u32 *)(uintptr_t)(MISC_MMIO_BASE
-				+ MISC_CLK_CNTL1);
 
 	/*
 	 * Clear the disable for OSCOUT1 (signal typically named XnnM_25M_48M)
 	 * or OSCOUT2 (USBCLK/25M_48M_OSC).  The frequency defaults to 48MHz.
 	 */
-	ctrl = read32(misc_clk_cntl_1_ptr);
+	ctrl = misc_read32(MISC_CLK_CNTL1);
 
 	switch (osc) {
 	case 1:
@@ -412,7 +404,7 @@ void sb_clk_output_48Mhz(u32 osc)
 	default:
 		return; /* do nothing if invalid */
 	}
-	write32(misc_clk_cntl_1_ptr, ctrl);
+	misc_write32(MISC_CLK_CNTL1, ctrl);
 }
 
 static uintptr_t sb_spibase(void)
@@ -632,12 +624,12 @@ static void setup_misc(int *reboot)
 static void fch_smbus_init(void)
 {
 	pm_write8(SMB_ASF_IO_BASE, SMB_BASE_ADDR >> 8);
-	smbus_write8(SMBUS_MMIO_BASE, SMBTIMING, SMB_SPEED_400KHZ);
+	smbus_write8(SMBTIMING, SMB_SPEED_400KHZ);
 	/* Clear all SMBUS status bits */
-	smbus_write8(SMBUS_MMIO_BASE, SMBHSTSTAT, SMBHST_STAT_CLEAR);
-	smbus_write8(SMBUS_MMIO_BASE, SMBSLVSTAT, SMBSLV_STAT_CLEAR);
-	smbus_write8(ASF_MMIO_BASE, SMBHSTSTAT, SMBHST_STAT_CLEAR);
-	smbus_write8(ASF_MMIO_BASE, SMBSLVSTAT, SMBSLV_STAT_CLEAR);
+	smbus_write8(SMBHSTSTAT, SMBHST_STAT_CLEAR);
+	smbus_write8(SMBSLVSTAT, SMBSLV_STAT_CLEAR);
+	asf_write8(SMBHSTSTAT, SMBHST_STAT_CLEAR);
+	asf_write8(SMBSLVSTAT, SMBSLV_STAT_CLEAR);
 }
 
 /* Before console init */

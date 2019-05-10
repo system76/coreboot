@@ -1,7 +1,8 @@
 /*
  * This file is part of the coreboot project.
  *
- * Copyright (C) 2014 Google Inc.
+ * Copyright (C) 2017 Intel Corporation.
+ * Copyright (C) 2019 3mdeb
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -13,14 +14,16 @@
  * GNU General Public License for more details.
  */
 
-#ifndef _SOC_PEI_WRAPPER_H_
-#define _SOC_PEI_WRAPPER_H_
+#include <device/early_smbus.h>
+#include <soc/iomap.h>
+#include <southbridge/intel/common/smbus.h>
 
-#include <soc/pei_data.h>
+u8 smbus_read_byte(u32 smbus_dev, u8 addr, u8 offset)
+{
+	return do_smbus_read_byte(SMBUS_BASE_ADDRESS, addr, offset);
+}
 
-typedef int ABI_X86(*pei_wrapper_entry_t)(struct pei_data *pei_data);
-
-void broadwell_fill_pei_data(struct pei_data *pei_data);
-void mainboard_fill_pei_data(struct pei_data *pei_data);
-
-#endif
+u8 smbus_write_byte(u32 smbus_dev, u8 addr, u8 offset, u8 value)
+{
+	return do_smbus_write_byte(SMBUS_BASE_ADDRESS, addr, offset, value);
+}

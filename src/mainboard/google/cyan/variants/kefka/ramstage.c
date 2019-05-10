@@ -1,8 +1,7 @@
 /*
  * This file is part of the coreboot project.
  *
- * Copyright (C) 2014 Google Inc.
- * Copyright (C) 2015 Intel Corporation.
+ * Copyright (C) 2014 Intel Corporation
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,14 +13,18 @@
  * GNU General Public License for more details.
  */
 
-#ifndef _SOC_PEI_WRAPPER_H_
-#define _SOC_PEI_WRAPPER_H_
+#include <soc/ramstage.h>
 
-#include <soc/pei_data.h>
+void board_silicon_USB2_override(SILICON_INIT_UPD *params)
+{
+	if (SocStepping() >= SocD0) {
 
-typedef int ABI_X86(*pei_wrapper_entry_t)(struct pei_data *pei_data);
-
-void soc_fill_pei_data(struct pei_data *pei_data);
-void mainboard_fill_pei_data(struct pei_data *pei_data);
-
-#endif
+		//Follow Intel recommendation to set
+		//BSW D-stepping PERPORTRXISET 2 (low strength)
+		params->D0Usb2Port0PerPortRXISet = 2;
+		params->D0Usb2Port1PerPortRXISet = 2;
+		params->D0Usb2Port2PerPortRXISet = 2;
+		params->D0Usb2Port3PerPortRXISet = 2;
+		params->D0Usb2Port4PerPortRXISet = 2;
+	}
+}

@@ -21,7 +21,6 @@
 #include <device/pci_ops.h>
 #include <device/pci_def.h>
 #include <cbmem.h>
-#include <halt.h>
 #include <romstage_handoff.h>
 #include "i945.h"
 #include <pc80/mc146818rtc.h>
@@ -159,10 +158,10 @@ static void i945_setup_bars(void)
 	printk(BIOS_DEBUG, "Setting up static southbridge registers...");
 
 	pci_write_config32(PCI_DEV(0, 0x1f, 0), PMBASE, DEFAULT_PMBASE | 1);
-	pci_write_config8(PCI_DEV(0, 0x1f, 0), 0x44, 0x80); /* ACPI_CNTL: Enable ACPI BAR */
+	pci_write_config8(PCI_DEV(0, 0x1f, 0), ACPI_CNTL, ACPI_EN);
 
 	pci_write_config32(PCI_DEV(0, 0x1f, 0), GPIOBASE, DEFAULT_GPIOBASE | 1);
-	pci_write_config8(PCI_DEV(0, 0x1f, 0), 0x4c, 0x10);	/* GC: Enable GPIOs */
+	pci_write_config8(PCI_DEV(0, 0x1f, 0), GPIO_CNTL, GPIO_EN);
 	setup_pch_gpios(&mainboard_gpio_map);
 	printk(BIOS_DEBUG, " done.\n");
 

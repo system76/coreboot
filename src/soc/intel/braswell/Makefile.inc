@@ -14,6 +14,7 @@ romstage-y += iosf.c
 romstage-y += lpc_init.c
 romstage-y += memmap.c
 romstage-y += pmutil.c
+romstage-y += smbus.c
 romstage-y += tsc_freq.c
 
 postcar-y += tsc_freq.c
@@ -52,11 +53,9 @@ smm-y += smihandler.c
 smm-y += spi.c
 smm-y += tsc_freq.c
 
-# cpu_microcode_bins += ???
-
 CPPFLAGS_common += -I$(src)/soc/intel/braswell/
 CPPFLAGS_common += -I$(src)/soc/intel/braswell/include
-CPPFLAGS_common += -I$(src)/vendorcode/intel/fsp/fsp1_1/braswell
+CPPFLAGS_common += -I$(call strip_quotes,$(CONFIG_FSP_HEADER_PATH))
 
 CPPFLAGS_common += -I3rdparty/blobs/mainboard/$(MAINBOARDDIR)
 

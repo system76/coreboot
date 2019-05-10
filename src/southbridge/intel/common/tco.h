@@ -1,8 +1,7 @@
 /*
  * This file is part of the coreboot project.
  *
- * Copyright (C) 2014 Google Inc.
- * Copyright (C) 2015 Intel Corporation.
+ * Copyright (c) 2019 Elyes Haouas <ehaouas@noos.fr>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,16 +13,15 @@
  * GNU General Public License for more details.
  */
 
-#include <stdint.h>
-#include <soc/pei_data.h>
-#include <soc/pei_wrapper.h>
-#include "boardid.h"
-#include "spd/spd.h"
+#ifndef SOUTHBRIDGE_INTEL_COMMON_TCO_H
+#define SOUTHBRIDGE_INTEL_COMMON_TCO_H
 
-void mainboard_fill_pei_data(struct pei_data *pei_data)
-{
-	mainboard_fill_dq_map_data(&pei_data->dq_map);
-	mainboard_fill_dqs_map_data(&pei_data->dqs_map);
-	mainboard_fill_rcomp_res_data(&pei_data->RcompResistor);
-	mainboard_fill_rcomp_strength_data(&pei_data->RcompTarget);
-}
+#define PMBASE_TCO_OFFSET	0x60
+#define TCO1_STS		0x04
+#define  TCO1_TIMEOUT		(1 << 3)
+#define TCO2_STS		0x06
+#define  SECOND_TO_STS		(1 << 1)
+#define TCO1_CNT		0x08
+#define  TCO_TMR_HLT		(1 << 11)
+
+#endif /* SOUTHBRIDGE_INTEL_COMMON_TCO_H */

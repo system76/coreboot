@@ -50,6 +50,7 @@
 #include <soc/systemagent.h>
 #include <spi-generic.h>
 #include <timer.h>
+#include <soc/ramstage.h>
 
 #include "chip.h"
 
@@ -393,6 +394,12 @@ static void soc_init(void *data)
 	/* Snapshot the current GPIO IRQ polarities. FSP is setting a
 	 * default policy that doesn't honor boards' requirements. */
 	itss_snapshot_irq_polarities(GPIO_IRQ_START, GPIO_IRQ_END);
+
+	/*
+	 * Clear the GPI interrupt status and enable registers. These
+	 * registers do not get reset to default state when booting from S5.
+	 */
+	gpi_clear_int_cfg();
 
 	fsp_silicon_init(romstage_handoff_is_resume());
 
@@ -762,6 +769,8 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *silupd)
 
 	/* Set VTD feature according to devicetree */
 	silconfig->VtdEnable = cfg->enable_vtd;
+
+	mainboard_silicon_init_params(silconfig);
 }
 
 struct chip_operations soc_intel_apollolake_ops = {
@@ -877,6 +886,12 @@ void platform_fsp_notify_status(enum fsp_notify_phase phase)
 static void spi_flash_init_cb(void *unused)
 {
 	fast_spi_init();
+}
+
+__weak
+void mainboard_silicon_init_params(FSP_S_CONFIG *silconfig)
+{
+	printk(BIOS_DEBUG, "WEAK: %s/%s called\n", __FILE__, __func__);
 }
 
 BOOT_STATE_INIT_ENTRY(BS_PRE_DEVICE, BS_ON_ENTRY, spi_flash_init_cb, NULL);

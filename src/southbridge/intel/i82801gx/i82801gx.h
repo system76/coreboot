@@ -89,12 +89,12 @@ int smbus_block_write(unsigned int device, unsigned int cmd, u8 bytes,
 #define RTC_POWER_FAILED	(1 << 1)
 #define SLEEP_AFTER_POWER_FAIL	(1 << 0)
 
-#define PMBASE			0x40
 #define ACPI_CNTL		0x44
 #define   ACPI_EN		(1 << 7)
 #define BIOS_CNTL		0xDC
 #define GPIO_BASE		0x48 /* LPC GPIO Base Address Register */
 #define GPIO_CNTL		0x4C /* LPC GPIO Control Register */
+#define   GPIO_EN		(1 << 4)
 
 #define PIRQA_ROUT		0x60
 #define PIRQB_ROUT		0x61
