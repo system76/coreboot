@@ -233,9 +233,9 @@ static const struct pad_config gpio_table[] = {
 
 	// UART
 		// UART2_RXD
-		PAD_CFG_NF(GPP_C20, NONE, DEEP, NF1),
+		PAD_CFG_NC(GPP_C20), //PAD_CFG_NF(GPP_C20, NONE, DEEP, NF1),
 		// UART2_TXD
-		PAD_CFG_NF(GPP_C21, NONE, DEEP, NF1),
+		PAD_CFG_NC(GPP_C21), //PAD_CFG_NF(GPP_C21, NONE, DEEP, NF1),
 		// NC
 		PAD_CFG_NC(GPP_C22),
 		// NC
@@ -396,9 +396,9 @@ static const struct pad_config gpio_table[] = {
 		// EDP_BRIGHTNESS
 		PAD_CFG_NF(GPP_F21, NONE, DEEP, NF1),
 		// TODO: DGPU_RST#_PCH
-		PAD_CFG_GPO(GPP_F22, 1, DEEP),
+		PAD_CFG_GPO(GPP_F22, 0, DEEP),
 		// TODO: DGPU_PWR_EN
-		PAD_CFG_GPO(GPP_F23, 1, DEEP),
+		PAD_CFG_GPO(GPP_F23, 0, DEEP),
 
 // GPP_G
 	// SD
@@ -408,7 +408,7 @@ static const struct pad_config gpio_table[] = {
 		PAD_CFG_NC(GPP_G1),
 		// TODO: TPM_DET
 		PAD_CFG_NC(GPP_G2),
-		// //TODO: GPIO4_1V8_MAIN_EN_R
+		// TODO: GPIO4_1V8_MAIN_EN_R
 		PAD_CFG_NC(GPP_G3),
 		// NC
 		PAD_CFG_NC(GPP_G4),
@@ -608,9 +608,9 @@ static const struct pad_config gpio_table[] = {
 static const struct pad_config early_gpio_table[] = {
 	// UART2
 		// UART2_RXD
-		PAD_CFG_NF(GPP_C20, NONE, DEEP, NF1),
+		PAD_CFG_NC(GPP_C20), //PAD_CFG_NF(GPP_C20, NONE, DEEP, NF1),
 		// UART2_TXD
-		PAD_CFG_NF(GPP_C21, NONE, DEEP, NF1),
+		PAD_CFG_NC(GPP_C21), //PAD_CFG_NF(GPP_C21, NONE, DEEP, NF1),
 };
 
 #endif
