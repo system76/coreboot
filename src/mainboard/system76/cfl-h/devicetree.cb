@@ -149,14 +149,14 @@ chip soc/intel/cannonlake
 
 # LPC (soc/intel/cannonlake/lpc.c)
 	# LPC configuration from lspci -s 1f.0 -xxx
-	# Address 0x84: Decode 0x80 - 0x8F
-	register "gen1_dec" = "0x000c0081"
-	# Address 0x88: Decode 0x68 - 0x6F
-	register "gen2_dec" = "0x00040069"
-	# Address 0x8C: Decode 0x3320 - 0x332F
-	register "gen3_dec" = "0x000c3321"
-	# Address 0x90: Disabled
-	register "gen4_dec" = "0x00000000"
+	# Address 0x84: TODO
+	register "gen1_dec" = "0x000c1641"
+	# Address 0x88: TODO
+	register "gen2_dec" = "0x000c0681"
+	# Address 0x8C: Decode 0x80 - 0x8F
+	register "gen3_dec" = "0x000c0081"
+	# Address 0x90: Decode 0x68 - 0x6F
+	register "gen4_dec" = "0x00040069"
 
 	# 8254
 	register "clock_gate_8254" = "0"
@@ -175,7 +175,7 @@ chip soc/intel/cannonlake
 	# route. i.e. If this route changes then the affected GPE
 	# offset bits also need to be changed.
 	# sudo devmem2 0xfe001920 (pmc_bar + GPIO_GPE_CFG)
-	register "gpe0_dw0" = "PMC_GPP_C"
+	register "gpe0_dw0" = "PMC_GPP_K"
 	register "gpe0_dw1" = "PMC_GPP_D"
 	register "gpe0_dw2" = "PMC_GPP_E"
 
