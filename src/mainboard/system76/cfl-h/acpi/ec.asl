@@ -16,7 +16,7 @@
 Device (EC0)
 {
     Name (_HID, EisaId ("PNP0C09") /* Embedded Controller Device */)  // _HID: Hardware ID
-    Name (_GPE, 0x50 /* GPP_E16 */)  // _GPE: General Purpose Events
+    Name (_GPE, 3 /* GPP_K3 */)  // _GPE: General Purpose Events
     Name (_CRS, ResourceTemplate ()  // _CRS: Current Resource Settings
     {
         IO (Decode16,
