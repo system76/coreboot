@@ -1,0 +1,108 @@
+if BOARD_SYSTEM76_GAZE14_1650_15 || BOARD_SYSTEM76_GAZE14_1650_17 || BOARD_SYSTEM76_GAZE14_1660TI_15 || BOARD_SYSTEM76_GAZE14_1660TI_17
+
+config BOARD_SPECIFIC_OPTIONS
+	def_bool y
+	select ADD_FSP_BINARIES
+	select BOARD_ROMSIZE_KB_16384
+	select EC_ACPI
+	select EXCLUDE_EMMC_INTERFACE
+	select FSP_USE_REPO
+	select HAVE_ACPI_RESUME
+	select HAVE_ACPI_TABLES
+	select HAVE_SMI_HANDLER
+	select INTEL_GMA_HAVE_VBT
+#	select MAINBOARD_HAS_SPI_TPM_CR50
+#	select MAINBOARD_HAS_TPM2
+	select SOC_INTEL_CANNONLAKE_PCH_H
+	select SOC_INTEL_COFFEELAKE
+	select SOC_INTEL_COMMON_ACPI_EC_PTS_WAK
+	select SOC_INTEL_COMMON_BLOCK_HDA
+	select SOC_INTEL_COMMON_BLOCK_HDA_VERB
+	select SPD_READ_BY_WORD
+	select SYSTEM_TYPE_LAPTOP
+	select USE_BLOBS
+
+config MAINBOARD_DIR
+	string
+	default system76/cfl-h
+
+config VARIANT_DIR
+	string
+	default "gaze14_1650_15" if BOARD_SYSTEM76_GAZE14_1650_15
+	default "gaze14_1650_17" if BOARD_SYSTEM76_GAZE14_1650_17
+	default "gaze14_1660ti_15" if BOARD_SYSTEM76_GAZE14_1660TI_15
+	default "gaze14_1660ti_17" if BOARD_SYSTEM76_GAZE14_1660TI_17
+
+config MAINBOARD_PART_NUMBER
+	string
+	default "gaze14"
+
+config CBFS_SIZE
+	hex
+	default 0xA00000
+
+config MAINBOARD_PCI_SUBSYSTEM_VENDOR_ID
+	hex
+	default 0x1558
+
+config MAINBOARD_PCI_SUBSYSTEM_DEVICE_ID
+	hex
+	default 0x8560 if BOARD_SYSTEM76_GAZE14_1650_15
+	default 0x8561 if BOARD_SYSTEM76_GAZE14_1650_17
+	default 0x8550 if BOARD_SYSTEM76_GAZE14_1660TI_15
+	default 0x8551 if BOARD_SYSTEM76_GAZE14_1660TI_17
+
+config CONSOLE_POST
+	bool
+	default y
+
+config ONBOARD_VGA_IS_PRIMARY
+	bool
+	default y
+
+# This causes UEFI to hang
+#config UART_FOR_CONSOLE
+#	int
+#	default 2
+
+config MAX_CPUS
+	int
+	default 16
+
+config DIMM_MAX
+	int
+	default 2
+
+config DIMM_SPD_SIZE
+	int
+	default 512
+
+# config VGA_BIOS_FILE
+# 	string
+# 	default "pci8086,3ea0.rom"
+
+# config VGA_BIOS_ID
+# 	string
+# 	default "8086,3ea0"
+
+config PXE_ROM_ID
+	string
+	default "10ec,8168"
+
+config FSP_M_XIP
+	bool
+	default y
+
+config POST_DEVICE
+	bool
+	default n
+
+#config DRIVER_TPM_SPI_BUS
+#	hex
+#	default 0x0
+
+#config DRIVER_TPM_SPI_CHIP
+#	int
+#	default 2
+
+endif
