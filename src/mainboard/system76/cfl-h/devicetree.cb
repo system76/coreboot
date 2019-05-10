@@ -125,6 +125,9 @@ chip soc/intel/cannonlake
 	register "PcieClkSrcUsage[11]" = "20"
 	register "PcieClkSrcClkReq[11]" = "11"
 
+	# PCI Express on CPU x8, Clock 8 (GPU)
+	register "PcieClkSrcClkReq[8]" = "8"
+
 	# Misc
 	register "Device4Enable" = "1"
 	register "HeciEnabled" = "1"

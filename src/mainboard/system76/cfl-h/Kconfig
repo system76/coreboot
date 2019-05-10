@@ -67,7 +67,7 @@ config ONBOARD_VGA_IS_PRIMARY
 
 config MAX_CPUS
 	int
-	default 16
+	default 12
 
 config DIMM_MAX
 	int
