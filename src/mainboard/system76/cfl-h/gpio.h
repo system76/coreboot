@@ -495,7 +495,7 @@ static const struct pad_config gpio_table[] = {
 		// HDMI_CTRLCLK
 		PAD_CFG_NF(GPP_I7, NONE, DEEP, NF1),
 		// HDMI_CTRLDATA
-		PAD_CFG_NC(GPP_I8, NONE, DEEP, NF1),
+		PAD_CFG_NF(GPP_I8, NONE, DEEP, NF1),
 		// NC
 		PAD_CFG_NC(GPP_I9),
 		// NC
@@ -528,7 +528,7 @@ static const struct pad_config gpio_table[] = {
 
 	// CNVI
 		// CNVI_BRI_DT
-		PAD_CFG_NF(GPP_J4), NONE, DEEP, NF1,
+		PAD_CFG_NF(GPP_J4, NONE, DEEP, NF1),
 		// CNVI_BRI_RSP
 		PAD_CFG_NF(GPP_J5, NONE, DEEP, NF1),
 		// CNVI_RGI_DT
