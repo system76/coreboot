@@ -44,7 +44,6 @@ Device (S76D) {
         }
     }
 
-#if CONFIG_MAINBOARD_PCI_SUBSYSTEM_DEVICE_ID == 0x1325
     // Set KB LED Brightness
     Method (SKBL, 1, Serialized) {
         If (^^PCI0.LPCB.EC0.ECOK) {
@@ -69,28 +68,4 @@ Device (S76D) {
             Return (0)
         }
     }
-#elif CONFIG_MAINBOARD_PCI_SUBSYSTEM_DEVICE_ID == 0x1323
-    // Get KB LED
-    Method (GKBL, 0, Serialized) {
-        Local0 = 0
-        If (^^PCI0.LPCB.EC0.ECOK) {
-            ^^PCI0.LPCB.EC0.FDAT = One
-            ^^PCI0.LPCB.EC0.FCMD = 0xCA
-            Local0 = ^^PCI0.LPCB.EC0.FBUF
-            ^^PCI0.LPCB.EC0.FCMD = Zero
-        }
-        Return (Local0)
-    }
-
-    // Set KB Led
-    Method (SKBL, 1, Serialized) {
-        If (^^PCI0.LPCB.EC0.ECOK) {
-            ^^PCI0.LPCB.EC0.FDAT = Zero
-            ^^PCI0.LPCB.EC0.FBUF = Arg0
-            ^^PCI0.LPCB.EC0.FCMD = 0xCA
-        }
-    }
-#else
-    #error Unknown Mainboard
-#endif
 }
