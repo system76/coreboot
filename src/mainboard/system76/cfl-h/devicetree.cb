@@ -126,6 +126,7 @@ chip soc/intel/cannonlake
 	register "PcieClkSrcClkReq[11]" = "11"
 
 	# PCI Express on CPU x8, Clock 8 (GPU)
+	register "PcieClkSrcUsage[8]" = "0x40"
 	register "PcieClkSrcClkReq[8]" = "8"
 
 	# Misc
@@ -143,6 +144,9 @@ chip soc/intel/cannonlake
 
 	# Thermal
 	register "tcc_offset" = "2"
+
+	# Unlock GPIO pads
+	register "PchUnlockGpioPads" = "1"
 
 	# Serial IRQ Continuous
 	register "SerialIrqConfigSirqMode" = "1"

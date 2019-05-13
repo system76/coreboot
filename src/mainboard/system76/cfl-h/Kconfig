@@ -11,6 +11,7 @@ config BOARD_SPECIFIC_OPTIONS
 	select HAVE_ACPI_TABLES
 	select HAVE_SMI_HANDLER
 	select INTEL_GMA_HAVE_VBT
+	select INTEL_LPSS_UART_FOR_CONSOLE
 #	select MAINBOARD_HAS_SPI_TPM_CR50
 #	select MAINBOARD_HAS_TPM2
 	select NO_UART_ON_SUPERIO
@@ -61,10 +62,9 @@ config ONBOARD_VGA_IS_PRIMARY
 	bool
 	default y
 
-# This causes UEFI to hang
-#config UART_FOR_CONSOLE
-#	int
-#	default 2
+config UART_FOR_CONSOLE
+	int
+	default 2
 
 config MAX_CPUS
 	int
