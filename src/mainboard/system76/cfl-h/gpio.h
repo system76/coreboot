@@ -111,7 +111,7 @@ static const struct pad_config gpio_table[] = {
 		// NC
 		PAD_NC(GPP_A21, NONE),
 		// SATA_PWR_EN
-		PAD_CFG_TERM_GPO(GPP_A22, 0, NONE, DEEP),
+		PAD_CFG_TERM_GPO(GPP_A22, 1, NONE, DEEP),
 		// NC
 		PAD_NC(GPP_A23, NONE),
 
@@ -564,10 +564,10 @@ static const struct pad_config gpio_table[] = {
 		PAD_CFG_GPI_SCI_LOW(GPP_K6, UP_20K, DEEP, LEVEL),
 		// NC
 		PAD_NC(GPP_K7, NONE),
-		// TODO: SATA_M2_PWR_EN1
-		PAD_CFG_GPI(GPP_K8, NONE, DEEP),
-		// TODO: SATA_M2_PWR_EN2
-		PAD_CFG_GPI(GPP_K9, NONE, DEEP),
+		// SATA_M2_PWR_EN1
+		PAD_CFG_TERM_GPO(GPP_K8, 1, NONE, DEEP),
+		// SATA_M2_PWR_EN2
+		PAD_CFG_TERM_GPO(GPP_K9, 1, NONE, DEEP),
 		// NC
 		PAD_NC(GPP_K10, NONE),
 		// NC
