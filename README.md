@@ -6,7 +6,7 @@ Building coreboot for System76 hardware
 sudo apt-get install git build-essential gnat flex bison libncurses5-dev wget zlib1g-dev nasm uuid-dev ccache
 
 # Build cross toolchain
-make CPUS=(nproc) crossgcc-i386 crossgcc-x64
+make CPUS=$(nproc) crossgcc-i386 crossgcc-x64
 
 # Set up the configuration and rebuild
 ./system76/build.sh galp3-b
