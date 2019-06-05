@@ -99,10 +99,10 @@ int smmstore_read_region(void *buf, uint32_t *bufsize)
 	}
 
 	ssize_t tx = min(*bufsize, region_device_sz(&store));
-	*bufsize = rdev_readat(&store, buf, 0, tx);
-
-	if (*bufsize < 0)
+	ssize_t count = rdev_readat(&store, buf, 0, tx);
+	if (count < 0)
 		return -1;
+	*bufsize = (uint32_t)count;
 
 	return 0;
 }
