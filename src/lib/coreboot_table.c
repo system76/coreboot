@@ -219,7 +219,7 @@ static void lb_vboot_handoff(struct lb_header *header)
 		return;
 
 	vbho = (struct lb_range *)lb_new_record(header);
-	vbho->tag = LB_TAB_VBOOT_HANDOFF;
+	vbho->tag = LB_TAG_VBOOT_HANDOFF;
 	vbho->size = sizeof(*vbho);
 	vbho->range_start = (intptr_t)addr;
 	vbho->range_size = size;
@@ -231,7 +231,7 @@ static void lb_vboot_workbuf(struct lb_header *header)
 	struct vboot_working_data *wd = vboot_get_working_data();
 
 	vbwb = (struct lb_range *)lb_new_record(header);
-	vbwb->tag = LB_TAB_VBOOT_WORKBUF;
+	vbwb->tag = LB_TAG_VBOOT_WORKBUF;
 	vbwb->size = sizeof(*vbwb);
 	vbwb->range_start = (uintptr_t)wd + wd->buffer_offset;
 	vbwb->range_size = wd->buffer_size;
@@ -319,6 +319,22 @@ static void lb_sku_id(struct lb_header *header)
 	rec->id_code = sid;
 
 	printk(BIOS_INFO, "SKU ID: %d\n", sid);
+}
+
+static void lb_mmc_info(struct lb_header *header)
+{
+	struct lb_mmc_info *rec;
+	int32_t *ms_cbmem;
+
+	ms_cbmem = cbmem_find(CBMEM_ID_MMC_STATUS);
+	if (!ms_cbmem)
+		return;
+
+	rec = (struct lb_mmc_info *)lb_new_record(header);
+
+	rec->tag = LB_TAG_MMC_INFO;
+	rec->size = sizeof(*rec);
+	rec->early_cmd1_status = *ms_cbmem;
 }
 
 static void add_cbmem_pointers(struct lb_header *header)
@@ -558,6 +574,9 @@ static uintptr_t write_coreboot_table(uintptr_t rom_table_end)
 	lb_board_id(head);
 	lb_ram_code(head);
 	lb_sku_id(head);
+
+	/* Pass mmc early init status */
+	lb_mmc_info(head);
 
 	/* Add SPI flash description if available */
 	if (CONFIG(BOOT_DEVICE_SPI_FLASH))

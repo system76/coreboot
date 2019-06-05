@@ -47,12 +47,15 @@ DECLARE_OPTIONAL_REGION(timestamp);
 #define USE_TIMESTAMP_REGION 0
 #endif
 
-/* The cache location will sit in BSS when in ramstage. */
-#define TIMESTAMP_CACHE_IN_BSS ENV_RAMSTAGE
+/* The cache location will sit in BSS when in ramstage/postcar. */
+#define TIMESTAMP_CACHE_IN_BSS (ENV_RAMSTAGE || ENV_POSTCAR)
 
 #define HAS_CBMEM (ENV_ROMSTAGE || ENV_RAMSTAGE || ENV_POSTCAR)
 
-/* Storage of cache entries during ramstage prior to cbmem coming online. */
+/*
+ * Storage of cache entries during ramstage/postcar prior to cbmem coming
+ * online.
+ */
 static struct timestamp_cache timestamp_cache;
 
 enum {
@@ -220,7 +223,7 @@ void timestamp_init(uint64_t base)
 	/* Timestamps could have already been recovered.
 	 * In those circumstances honor the cache which sits in BSS
 	 * as it has already been initialized. */
-	if (ENV_RAMSTAGE &&
+	if (TIMESTAMP_CACHE_IN_BSS &&
 	    ts_cache->cache_state != TIMESTAMP_CACHE_UNINITIALIZED)
 		return;
 
@@ -350,6 +353,7 @@ uint32_t get_us_since_boot(void)
 }
 
 ROMSTAGE_CBMEM_INIT_HOOK(timestamp_sync_cache_to_cbmem)
+POSTCAR_CBMEM_INIT_HOOK(timestamp_sync_cache_to_cbmem)
 RAMSTAGE_CBMEM_INIT_HOOK(timestamp_sync_cache_to_cbmem)
 
 /* Provide default timestamp implementation using monotonic timer. */

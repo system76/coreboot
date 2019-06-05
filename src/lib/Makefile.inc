@@ -104,7 +104,7 @@ bootblock-$(CONFIG_ARCH_BOOTBLOCK_X86_32) += gcc.c
 verstage-$(CONFIG_ARCH_VERSTAGE_X86_32) += gcc.c
 romstage-$(CONFIG_ARCH_ROMSTAGE_X86_32) += gcc.c
 ramstage-$(CONFIG_ARCH_RAMSTAGE_X86_32) += gcc.c
-smm-$(CONFIG_ARCH_RAMSTAGE_X86_32) += gcc.c
+smm-y += gcc.c
 endif
 
 romstage-$(CONFIG_GENERIC_UDELAY) += timer.c
@@ -118,7 +118,6 @@ ramstage-y += bootmem.c
 ramstage-y += fmap.c
 ramstage-y += memchr.c
 ramstage-y += memcmp.c
-ramstage-y += string.c
 ramstage-y += malloc.c
 smm-$(CONFIG_SMM_TSEG) += malloc.c
 ramstage-y += dimm_info_util.c
@@ -167,6 +166,7 @@ postcar-y += imd.c
 postcar-y += romstage_handoff.c
 
 bootblock-y += hexdump.c
+postcar-y += hexdump.c
 ramstage-y += hexdump.c
 romstage-y += hexdump.c
 verstage-y += hexdump.c
@@ -244,6 +244,14 @@ postcar-y += reset.c
 ramstage-y += reset.c
 smm-y += reset.c
 
+decompressor-y += string.c
+bootblock-y += string.c
+verstage-y += string.c
+romstage-y += string.c
+postcar-y += string.c
+ramstage-y += string.c
+smm-y += string.c
+
 postcar-y += bootmode.c
 postcar-y += boot_device.c
 postcar-y += cbfs.c
@@ -272,7 +280,7 @@ verstage-y += program.ld
 
 ifeq ($(CONFIG_RELOCATABLE_MODULES),y)
 ramstage-y += rmodule.c
-romstage-$(CONFIG_RELOCATABLE_RAMSTAGE) += rmodule.c
+romstage-y += rmodule.c
 
 RMODULE_LDFLAGS  := -z defs -Bsymbolic
 

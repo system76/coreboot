@@ -140,13 +140,6 @@ int get_recovery_mode_from_vbnv(void)
 	return vbnv_data(RECOVERY_OFFSET);
 }
 
-/* Read the BOOT_OPROM_NEEDED flag from VBNV. */
-int vboot_wants_oprom(void)
-{
-	vbnv_setup();
-	return (vbnv_data(BOOT_OFFSET) & BOOT_OPROM_NEEDED) ? 1 : 0;
-}
-
 /* Read the USB Device Controller(UDC) enable flag from VBNV. */
 int vbnv_udc_enable_flag(void)
 {

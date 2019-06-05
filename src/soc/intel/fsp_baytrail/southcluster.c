@@ -42,9 +42,6 @@
 #include "chip.h"
 #include <arch/acpi.h>
 
-#define ENABLE_ACPI_MODE_IN_COREBOOT	0
-#define TEST_SMM_FLASH_LOCKDOWN		0
-
 typedef struct soc_intel_fsp_baytrail_config config_t;
 
 static inline void
@@ -101,7 +98,7 @@ static void sc_enable_ioapic(struct device *dev)
 	reg32 = *ioapic_data;
 	printk(BIOS_DEBUG, "Southbridge APIC ID = %x\n", (reg32 >> 24) & 0x0f);
 	if (reg32 != (1 << 25))
-		die("APIC Error\n");
+		die_with_post_code(POST_HW_INIT_FAILURE, "APIC Error\n");
 
 	printk(BIOS_SPEW, "Dumping IOAPIC registers\n");
 	for (i=0; i<3; i++) {

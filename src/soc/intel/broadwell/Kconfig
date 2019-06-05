@@ -44,6 +44,7 @@ config CPU_SPECIFIC_OPTIONS
 	select HAVE_POWER_STATE_AFTER_FAILURE
 	select HAVE_POWER_STATE_PREVIOUS_AFTER_FAILURE
 	select NO_FIXED_XIP_ROM_SIZE
+	select C_ENVIRONMENT_BOOTBLOCK
 
 config PCIEXP_ASPM
 	bool
@@ -65,21 +66,25 @@ config PCIEXP_L1_SUB_STATE
 	bool
 	default y
 
+config BROADWELL_VBOOT_IN_BOOTBLOCK
+	depends on VBOOT
+	bool "Start verstage in bootblock"
+	default y
+	select VBOOT_STARTS_IN_BOOTBLOCK
+	select VBOOT_SEPARATE_VERSTAGE
+	help
+	  Broadwell can either start verstage in a separate stage
+	  right after the bootblock has run or it can start it
+	  after romstage for compatibility reasons.
+	  Broadwell however uses a mrc.bin to initialse memory which
+	  needs to be located at a fixed offset. Therefore even with
+	  a separate verstage starting after the bootblock that same
+	  binary is used meaning a jump is made from RW to the RO region
+	  and back to the RW region after the binary is done.
+
 config VBOOT
 	select VBOOT_MUST_REQUEST_DISPLAY
-	select VBOOT_STARTS_IN_ROMSTAGE
-
-config BOOTBLOCK_CPU_INIT
-	string
-	default "soc/intel/broadwell/bootblock/cpu.c"
-
-config BOOTBLOCK_NORTHBRIDGE_INIT
-	string
-	default "soc/intel/broadwell/bootblock/systemagent.c"
-
-config BOOTBLOCK_SOUTHBRIDGE_INIT
-	string
-	default "soc/intel/broadwell/bootblock/pch.c"
+	select VBOOT_STARTS_IN_ROMSTAGE if !BROADWELL_VBOOT_IN_BOOTBLOCK
 
 config MMCONF_BASE_ADDRESS
 	hex
@@ -123,6 +128,13 @@ config DCACHE_RAM_MRC_VAR_SIZE
 	help
 	  The amount of cache-as-ram region required by the reference code.
 
+config DCACHE_BSP_STACK_SIZE
+	hex
+	default 0x2000
+	help
+	  The amount of anticipated stack usage in CAR by bootblock and
+	  other stages.
+
 config HAVE_MRC
 	bool "Add a Memory Reference Code binary"
 	help
@@ -143,6 +155,13 @@ config MRC_FILE
 config MRC_BIN_ADDRESS
 	hex
 	default 0xfffa0000
+
+# The UEFI System Agent binary needs to be at a fixed offset in the flash
+# and can therefore only reside in the COREBOOT fmap region
+config RO_REGION_ONLY
+	string
+	depends on VBOOT
+	default "mrc.bin"
 
 endif # HAVE_MRC
 

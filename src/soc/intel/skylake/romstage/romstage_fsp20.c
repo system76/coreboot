@@ -14,7 +14,6 @@
  */
 
 #include <arch/cpu.h>
-#include <arch/early_variables.h>
 #include <arch/symbols.h>
 #include <assert.h>
 #include <cpu/x86/mtrr.h>
@@ -126,6 +125,7 @@ static void save_dimm_info(void)
 				src_dimm->DimmId,
 				(const char *)src_dimm->ModulePartNum,
 				sizeof(src_dimm->ModulePartNum),
+				src_dimm->SpdSave + SPD_SAVE_OFFSET_SERIAL,
 				memory_info_hob->DataWidth);
 			index++;
 		}

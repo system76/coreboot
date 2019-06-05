@@ -788,7 +788,20 @@ static void parse_vbt(const struct fileobject *fo,
 	}
 
 	/* Duplicate fo as caller is owner and remalloc frees the object */
-	*vbt = remalloc_fo(malloc_fo_sub(fo, 0), head->vbt_size);
+	struct fileobject *dupfo = malloc_fo_sub(fo, 0);
+	if (!dupfo) {
+		printerr("malloc failed\n");
+		return;
+	}
+
+	struct fileobject *newfo = remalloc_fo(dupfo, head->vbt_size);
+	if (!newfo) {
+		printerr("remalloc failed\n");
+		free_fo(dupfo);
+		return;
+	}
+
+	*vbt = newfo;
 }
 
 /* Option ROM checksum */
@@ -1028,8 +1041,10 @@ static int patch_vbios(struct fileobject *fo,
 	if (old_vbt) {
 		if (oh->vbt_offset + vbt_size(old_vbt) == fo->size) {
 			/* Located at the end of file - reduce file size */
-			if (fo->size < vbt_size(old_vbt))
+			if (fo->size < vbt_size(old_vbt)) {
+				free_fo(old_vbt);
 				return 1;
+			}
 			fo = remalloc_fo(fo, fo->size - vbt_size(old_vbt));
 			if (!fo) {
 				printerr("Failed to allocate memory\n");

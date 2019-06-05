@@ -208,7 +208,8 @@ void main(FSP_INFO_HEADER *fsp_info_header)
 	post_code(0x48);
 	printk(BIOS_DEBUG, "Starting the Intel FSP (early_init)\n");
 	fsp_early_init(fsp_info_header);
-	die("Uh Oh! fsp_early_init should not return here.\n");
+	die_with_post_code(POST_INVALID_VENDOR_BINARY,
+		"Uh Oh! fsp_early_init should not return here.\n");
 }
 
 /*******************************************************************************
@@ -217,7 +218,6 @@ void main(FSP_INFO_HEADER *fsp_info_header)
  */
 void romstage_main_continue(EFI_STATUS status, void *hob_list_ptr)
 {
-	int cbmem_was_initted;
 	void *cbmem_hob_ptr;
 	uint32_t prev_sleep_state;
 
@@ -244,7 +244,7 @@ void romstage_main_continue(EFI_STATUS status, void *hob_list_ptr)
 	late_mainboard_romstage_entry();
 	post_code(0x4c);
 
-	cbmem_was_initted = !cbmem_recovery(prev_sleep_state == ACPI_S3);
+	cbmem_recovery(prev_sleep_state == ACPI_S3);
 
 	/* Save the HOB pointer in CBMEM to be used in ramstage*/
 	cbmem_hob_ptr = cbmem_add(CBMEM_ID_HOB_POINTER, sizeof(*hob_list_ptr));

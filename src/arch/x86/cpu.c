@@ -219,6 +219,35 @@ static void set_cpu_ops(struct device *cpu)
 	cpu->ops = driver ? driver->ops : NULL;
 }
 
+/* Keep track of default apic ids for SMM. */
+static int cpus_default_apic_id[CONFIG_MAX_CPUS];
+
+/*
+ * When CPUID executes with EAX set to 1, additional processor identification
+ * information is returned to EBX register:
+ * Default APIC ID: EBX[31-24] - this number is the 8 bit ID that is assigned
+ * to the local APIC on the processor during power on.
+ */
+static int initial_lapicid(void)
+{
+	return cpuid_ebx(1) >> 24;
+}
+
+/* Function to keep track of cpu default apic_id */
+void cpu_add_map_entry(unsigned int index)
+{
+	cpus_default_apic_id[index] = initial_lapicid();
+}
+
+/* Returns default APIC id based on logical_cpu number or < 0 on failure. */
+int cpu_get_apic_id(int logical_cpu)
+{
+	if (logical_cpu >= CONFIG_MAX_CPUS || logical_cpu < 0)
+		return -1;
+
+	return cpus_default_apic_id[logical_cpu];
+}
+
 void cpu_initialize(unsigned int index)
 {
 	/* Because we busy wait at the printk spinlock.
@@ -307,4 +336,28 @@ void arch_bootstate_coreboot_exit(void)
 
 	/* APs are waiting for work. Last thing to do is park them. */
 	mp_park_aps();
+}
+
+/*
+ * Previously cpu_index() implementation assumes that cpu_index()
+ * function will always getting called from coreboot context
+ * (ESP stack pointer will always refer to coreboot).
+ *
+ * But with FSP_USES_MP_SERVICES_PPI implementation in coreboot this
+ * assumption might not be true, where FSP context (stack pointer refers
+ * to FSP) will request to get cpu_index().
+ *
+ * Hence new logic to use cpuid to fetch lapic id and matches with
+ * cpus_default_apic_id[] variable to return correct cpu_index().
+ */
+int cpu_index(void)
+{
+	int i;
+	int lapic_id = initial_lapicid();
+
+	for (i = 0; i < CONFIG_MAX_CPUS; i++) {
+		if (cpu_get_apic_id(i) == lapic_id)
+			return i;
+	}
+	return -1;
 }

@@ -20,11 +20,14 @@
 #include <arch/cpu.h>
 #include <bootstate.h>
 #include <cbfs.h>
-#include <console/console.h>
+#include <cbmem.h>
+#include <timestamp.h>
+
 #include <northbridge/amd/agesa/state_machine.h>
 #include <northbridge/amd/agesa/agesa_helper.h>
 #include <northbridge/amd/agesa/BiosCallOuts.h>
 #include <amdlib.h>
+
 #include <AMD.h>
 
 #if CONFIG(CPU_AMD_AGESA_OPENSOURCE)
@@ -146,6 +149,11 @@ static AGESA_STATUS romstage_dispatch(struct sysinfo *cb,
 			platform_BeforeInitPost(cb, param);
 			board_BeforeInitPost(cb, param);
 			status = module_dispatch(func, StdHeader);
+
+			/* FIXME: Detect if TSC frequency really
+			 * changed during raminit? */
+			timestamp_rescale_table(1, 4);
+
 			platform_AfterInitPost(cb, param);
 			break;
 		}
@@ -155,6 +163,11 @@ static AGESA_STATUS romstage_dispatch(struct sysinfo *cb,
 			AMD_RESUME_PARAMS *param = (void *)StdHeader;
 			platform_BeforeInitResume(cb, param);
 			status = module_dispatch(func, StdHeader);
+
+			/* FIXME: Detect if TSC frequency really
+			 * changed during raminit? */
+			timestamp_rescale_table(1, 4);
+
 			platform_AfterInitResume(cb, param);
 			break;
 		}
@@ -229,38 +242,6 @@ static AGESA_STATUS ramstage_dispatch(struct sysinfo *cb,
 	return status;
 }
 
-/* DEBUG trace helper */
-
-struct agesa_state
-{
-	u8 apic_id;
-
-	AGESA_STRUCT_NAME func;
-	const char *function_name;
-};
-
-static void state_on_entry(struct agesa_state *task, AGESA_STRUCT_NAME func,
-	const char *struct_name)
-{
-	task->apic_id = (u8) (cpuid_ebx(1) >> 24);
-	task->func = func;
-	task->function_name = struct_name;
-
-	printk(BIOS_DEBUG, "\nAPIC %02d: ** Enter %s [%08x]\n",
-		task->apic_id, task->function_name, task->func);
-}
-
-static void state_on_exit(struct agesa_state *task,
-	AMD_CONFIG_PARAMS *StdHeader)
-{
-	printk(BIOS_DEBUG, "APIC %02d: Heap in %s (%d) at 0x%08x\n",
-		task->apic_id, heap_status_name(StdHeader->HeapStatus),
-		StdHeader->HeapStatus, (u32)StdHeader->HeapBasePtr);
-
-	printk(BIOS_DEBUG, "APIC %02d: ** Exit  %s [%08x]\n",
-		task->apic_id, task->function_name, task->func);
-}
-
 int agesa_execute_state(struct sysinfo *cb, AGESA_STRUCT_NAME func)
 {
 	AMD_INTERFACE_PARAMS aip;
@@ -270,13 +251,12 @@ int agesa_execute_state(struct sysinfo *cb, AGESA_STRUCT_NAME func)
 	} agesa_params;
 	void *buf = NULL;
 	size_t len = 0;
-	const char *state_name = agesa_struct_name(func);
 
 	AGESA_STATUS status, final;
 
 	struct agesa_state task;
 	memset(&task, 0, sizeof(task));
-	state_on_entry(&task, func, state_name);
+	agesa_state_on_entry(&task, func);
 
 	aip.StdHeader = cb->StdHeader;
 
@@ -294,19 +274,25 @@ int agesa_execute_state(struct sysinfo *cb, AGESA_STRUCT_NAME func)
 	AMD_CONFIG_PARAMS *StdHeader = aip.NewStructPtr;
 	ASSERT(StdHeader->Func == func);
 
+	if (CONFIG(AGESA_EXTRA_TIMESTAMPS) && task.ts_entry_id)
+		timestamp_add_now(task.ts_entry_id);
+
 	if (ENV_ROMSTAGE)
 		final = romstage_dispatch(cb, func, StdHeader);
 
 	if (ENV_RAMSTAGE)
 		final = ramstage_dispatch(cb, func, StdHeader);
 
-	agesawrapper_trace(final, StdHeader, state_name);
+	if (CONFIG(AGESA_EXTRA_TIMESTAMPS) && task.ts_exit_id)
+		timestamp_add_now(task.ts_exit_id);
+
+	agesawrapper_trace(final, StdHeader, task.function_name);
 	ASSERT(final < AGESA_FATAL);
 
 	status = amd_release_struct(&aip);
 	ASSERT(status == AGESA_SUCCESS);
 
-	state_on_exit(&task, &aip.StdHeader);
+	agesa_state_on_exit(&task, &aip.StdHeader);
 
 	return (final < AGESA_FATAL) ? 0 : -1;
 }

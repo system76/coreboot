@@ -1989,7 +1989,7 @@ static struct occurrence *new_occurrence(struct compile_state *state)
 		(last->line == line) &&
 		(last->function == function) &&
 		((last->filename == filename) ||
-			(strcmp(last->filename, filename) == 0)))
+		(filename != NULL && strcmp(last->filename, filename) == 0)))
 	{
 		get_occurrence(last);
 		return last;
@@ -6228,6 +6228,8 @@ static size_t field_offset(struct compile_state *state,
 			size += size_of(state, member->left);
 			member = member->right;
 		}
+		if (member == NULL)
+			internal_error(state, 0, "Member is NULL");
 		size += needed_padding(state, member, size);
 	}
 	else if ((type->type & TYPE_MASK) == TYPE_UNION) {
@@ -6350,10 +6352,12 @@ static size_t index_offset(struct compile_state *state,
 			i++;
 			member = member->right;
 		}
-		size += needed_padding(state, member, size);
+		if (member == NULL)
+			internal_error(state, 0, "Member is NULL");
 		if (i != index) {
 			internal_error(state, 0, "Missing member index: %u", index);
 		}
+		size += needed_padding(state, member, size);
 	}
 	else if ((type->type & TYPE_MASK) == TYPE_JOIN) {
 		ulong_t i;
@@ -6402,6 +6406,8 @@ static size_t index_reg_offset(struct compile_state *state,
 			i++;
 			member = member->right;
 		}
+		if (member == NULL)
+			internal_error(state, 0, "Member is NULL");
 		if (i != index) {
 			internal_error(state, 0, "Missing member index: %u", index);
 		}
@@ -6640,6 +6646,8 @@ static struct type *reg_type(
 				offset += size;
 				member = member->right;
 			}
+			if (member == NULL)
+				internal_error(state, 0, "Member is NULL");
 			offset += reg_needed_padding(state, member, offset);
 			member = reg_type(state, member, reg_offset - offset);
 			break;
@@ -10782,6 +10790,15 @@ static struct triple *string_constant(struct compile_state *state)
 		} while(str < end);
 		type->elements = ptr - buf;
 	} while(peek(state) == TOK_LIT_STRING);
+
+	/* buf contains the allocated buffer for the string constant. However,
+	   if buf is NULL, then the string constant is empty, but we still
+	   need to allocate one byte for the null character. */
+	if (buf == NULL) {
+		buf = xmalloc(1, "string_constant");
+		ptr = buf;
+	}
+
 	*ptr = '\0';
 	type->elements += 1;
 	def = triple(state, OP_BLOBCONST, type, 0, 0);
@@ -11236,6 +11253,7 @@ static struct triple *relational_expr(struct compile_state *state)
 
 			arg_type = arithmetic_result(state, left, right);
 			sign = is_signed(arg_type);
+			xfree(arg_type);
 			op = -1;
 			switch(tok) {
 			case TOK_LESS:   op = sign? OP_SLESS : OP_ULESS; break;
@@ -12583,7 +12601,9 @@ static struct type *struct_declarator(
 		}
 		type = new_type(TYPE_BITFIELD, type, 0);
 		type->elements = value->u.cval;
-	}
+	} else
+		type = clone_type(0, type);
+
 	return type;
 }
 
@@ -12638,7 +12658,6 @@ static struct type *struct_or_union_specifier(
 					done = 0;
 					eat(state, TOK_COMMA);
 				}
-				type = clone_type(0, type);
 				type->field_ident = fident;
 				if (*next) {
 					*next = new_type(type_join, *next, type);
@@ -14111,9 +14130,9 @@ static void compute_closure_variables(struct compile_state *state,
 	struct block *block;
 	struct triple *old_result, *first, *ins;
 	size_t count, idx;
-	unsigned long used_indicies;
+	uint64_t used_indices;
 	int i, max_index;
-#define MAX_INDICIES (sizeof(used_indicies)*CHAR_BIT)
+#define MAX_INDICES (sizeof(used_indices)*CHAR_BIT)
 #define ID_BITS(X) ((X) & (TRIPLE_FLAG_LOCAL -1))
 	struct {
 		unsigned id;
@@ -14183,7 +14202,7 @@ static void compute_closure_variables(struct compile_state *state,
 	 *
 	 * To gurantee that stability I lookup the variables
 	 * to see where they have been used before and
-	 * I build my final list with the assigned indicies.
+	 * I build my final list with the assigned indices.
 	 */
 	vars = 0;
 	if (enclose_triple(old_result)) {
@@ -14202,8 +14221,8 @@ static void compute_closure_variables(struct compile_state *state,
 		ordered_triple_set(&vars, set->member);
 	}
 
-	/* Lookup the current indicies of the live varialbe */
-	used_indicies = 0;
+	/* Lookup the current indices of the live varialbe */
+	used_indices = 0;
 	max_index = -1;
 	for(set = vars; set ; set = set->next) {
 		struct triple *ins;
@@ -14214,14 +14233,14 @@ static void compute_closure_variables(struct compile_state *state,
 		if (index < 0) {
 			continue;
 		}
-		if (index >= MAX_INDICIES) {
+		if (index >= MAX_INDICES) {
 			internal_error(state, ins, "index unexpectedly large");
 		}
-		if (used_indicies & (1 << index)) {
+		if (used_indices & ((uint64_t)1 << index)) {
 			internal_error(state, ins, "index previously used?");
 		}
-		/* Remember which indicies have been used */
-		used_indicies |= (1 << index);
+		/* Remember which indices have been used */
+		used_indices |= ((uint64_t)1 << index);
 		if (index > max_index) {
 			max_index = index;
 		}
@@ -14239,31 +14258,31 @@ static void compute_closure_variables(struct compile_state *state,
 			continue;
 		}
 		/* Find the lowest unused index value */
-		for(index = 0; index < MAX_INDICIES; index++) {
-			if (!(used_indicies & ((uint64_t)1 << index))) {
+		for(index = 0; index < MAX_INDICES; index++) {
+			if (!(used_indices & ((uint64_t)1 << index))) {
 				break;
 			}
 		}
-		if (index == MAX_INDICIES) {
-			internal_error(state, ins, "no free indicies?");
+		if (index == MAX_INDICES) {
+			internal_error(state, ins, "no free indices?");
 		}
 		info[ID_BITS(ins->id)].index = index;
-		/* Remember which indicies have been used */
-		used_indicies |= (1 << index);
+		/* Remember which indices have been used */
+		used_indices |= ((uint64_t)1 << index);
 		if (index > max_index) {
 			max_index = index;
 		}
 	}
 
 	/* Build the return list of variables with positions matching
-	 * their indicies.
+	 * their indices.
 	 */
 	*enclose = 0;
 	last_var = enclose;
 	for(i = 0; i <= max_index; i++) {
 		struct triple *var;
 		var = 0;
-		if (used_indicies & (1 << i)) {
+		if (used_indices & ((uint64_t)1 << i)) {
 			for(set = vars; set; set = set->next) {
 				int index;
 				index = info[ID_BITS(set->member->id)].index;
@@ -20925,7 +20944,8 @@ static void scc_visit_phi(struct compile_state *state, struct scc_state *scc,
 			}
 		}
 		/* meet(const, const) = const or lattice low */
-		else if (!constants_equal(state, lnode->val, tmp->val)) {
+		else if (lnode->val != 0 &&
+				!constants_equal(state, lnode->val, tmp->val)) {
 			lnode->val = 0;
 		}
 
@@ -22150,6 +22170,7 @@ static unsigned arch_regcm_normalize(struct compile_state *state, unsigned regcm
 		}
 		if (class > LAST_REGC) {
 			result &= ~mask;
+			continue;
 		}
 		for(class2 = 0; class2 <= LAST_REGC; class2++) {
 			if ((regcm_bound[class2].first >= regcm_bound[class].first) &&

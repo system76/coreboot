@@ -10,7 +10,6 @@
  * (at your option) any later version.
  */
 
-#include <arch/early_variables.h>
 #include <device/mmio.h>
 #include <cbmem.h>
 #include <commonlib/helpers.h>
@@ -100,7 +99,7 @@ struct hob_resource *fsp_hob_header_to_resource(const struct hob_header *hob)
  * Utilities for locating and identifying HOBs
  */
 
-static void *fsp_hob_list_ptr CAR_GLOBAL;
+static void *fsp_hob_list_ptr;
 
 static void save_hob_list(int is_recovery)
 {
@@ -122,14 +121,14 @@ const void *fsp_get_hob_list(void)
 	uint32_t *list_loc;
 
 	if (ENV_ROMSTAGE)
-		return (void *)car_get_var(fsp_hob_list_ptr);
+		return fsp_hob_list_ptr;
 	list_loc = cbmem_find(CBMEM_ID_FSP_RUNTIME);
 	return (list_loc) ? (void *)(uintptr_t)(*list_loc) : NULL;
 }
 
 void *fsp_get_hob_list_ptr(void)
 {
-	return car_get_var_ptr(&fsp_hob_list_ptr);
+	return &fsp_hob_list_ptr;
 }
 
 static const
@@ -237,9 +236,9 @@ static void display_fsp_version_info_hob(const void *hob, size_t size)
 
 		/*  Don't show ingredient name and version if its all 0xFF */
 		if (fvi[index].Version.MajorVersion == 0xFF &&
-			fvi[index].Version.MajorVersion == 0xFF &&
-			fvi[index].Version.MajorVersion == 0xFF &&
-			fvi[index].Version.MajorVersion == 0xFF &&
+			fvi[index].Version.MinorVersion == 0xFF &&
+			fvi[index].Version.Revision == 0xFF &&
+			fvi[index].Version.BuildNumber == 0xFF &&
 			fvi[index].VersionStringIndex == 0) {
 			str_ptr = (char *)((uintptr_t)str_ptr + cnt +
 					sizeof(uint8_t));

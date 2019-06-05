@@ -44,7 +44,6 @@ void __weak mainboard_post(uint8_t value)
 
 DECLARE_SPIN_LOCK(cmos_post_lock)
 
-#if ENV_RAMSTAGE
 void cmos_post_log(void)
 {
 	u8 code = 0;
@@ -82,7 +81,7 @@ void cmos_post_log(void)
 	default:
 		printk(BIOS_WARNING, "POST: Unexpected post code "
 		       "in previous boot: 0x%02x\n", code);
-#if CONFIG(ELOG)
+#if CONFIG(ELOG) && (ENV_RAMSTAGE || CONFIG(ELOG_PRERAM))
 		elog_add_event_word(ELOG_TYPE_LAST_POST_CODE, code);
 #if CONFIG(CMOS_POST_EXTRA)
 		if (extra)
@@ -125,7 +124,6 @@ void post_log_clear(void)
 	post_log_extra(0);
 }
 #endif /* CONFIG_CMOS_POST_EXTRA */
-#endif /* ENV_RAMSTAGE */
 
 static void cmos_post_code(u8 value)
 {

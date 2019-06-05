@@ -70,13 +70,14 @@ void pch_iobp_update(u32 address, u32 andvalue, u32 orvalue);
 void enable_smbus(void);
 void enable_usb_bar(void);
 int smbus_read_byte(unsigned device, unsigned address);
-int early_spi_read(u32 offset, u32 size, u8 *buffer);
 void early_thermal_init(void);
 void southbridge_configure_default_intmap(void);
 void southbridge_rcba_config(void);
 void mainboard_rcba_config(void);
 void early_pch_init_native(void);
 void early_pch_init(void);
+void early_pch_init_native_dmi_pre(void);
+void early_pch_init_native_dmi_post(void);
 
 struct southbridge_usb_port
 {
@@ -309,6 +310,8 @@ early_usb_init (const struct southbridge_usb_port *portmap);
 #define IOTR1		0x1e88	/* 64bit */
 #define IOTR2		0x1e90	/* 64bit */
 #define IOTR3		0x1e98	/* 64bit */
+
+#define  VCNEGPND	2
 
 #define TCTL		0x3000	/*  8bit */
 

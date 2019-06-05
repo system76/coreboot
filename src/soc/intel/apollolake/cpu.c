@@ -76,7 +76,7 @@ void soc_core_init(struct device *cpu)
 			  scope. For now every CPU clears every bank. */
 	if (CONFIG(SOC_INTEL_COMMON_BLOCK_SGX) ||
 	    acpi_get_sleep_type() == ACPI_S5)
-		mca_configure(NULL);
+		mca_configure();
 
 	/* Set core MSRs */
 	reg_script_run(core_msr_script);
@@ -119,6 +119,7 @@ static const struct cpu_device_id cpu_table[] = {
 	{ X86_VENDOR_INTEL, CPUID_APOLLOLAKE_E0 },
 	{ X86_VENDOR_INTEL, CPUID_GLK_A0 },
 	{ X86_VENDOR_INTEL, CPUID_GLK_B0 },
+	{ X86_VENDOR_INTEL, CPUID_GLK_R0 },
 	{ 0, 0 },
 };
 

@@ -38,7 +38,6 @@ static struct smm_relocation_attrs relo_attrs;
 static void dnv_configure_mca(void)
 {
 	msr_t msr;
-	int num_banks;
 	struct cpuid_result cpuid_regs;
 
 	/* Check feature flag in CPUID.(EAX=1):EDX[7]==1  MCE
@@ -48,7 +47,6 @@ static void dnv_configure_mca(void)
 		return;
 
 	msr = rdmsr(IA32_MCG_CAP);
-	num_banks = msr.lo & IA32_MCG_CAP_COUNT_MASK;
 	if (msr.lo & IA32_MCG_CAP_CTL_P_MASK) {
 		/* Enable all error logging */
 		msr.lo = msr.hi = 0xffffffff;
@@ -58,7 +56,7 @@ static void dnv_configure_mca(void)
 	/* TODO(adurbin): This should only be done on a cold boot. Also, some
 	   of these banks are core vs package scope. For now every CPU clears
 	   every bank. */
-	mca_configure(NULL);
+	mca_configure();
 }
 
 static void denverton_core_init(struct device *cpu)

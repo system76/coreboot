@@ -159,7 +159,7 @@ void wilco_ec_power_off(enum ec_power_off_reason reason)
 
 int wilco_ec_radio_control(enum ec_radio radio, uint8_t state)
 {
-	uint8_t radio_control[3] = { 0, radio, state };
+	uint8_t radio_control[3] = { radio, RADIO_WRITE, state };
 
 	return wilco_ec_mailbox(WILCO_EC_MSG_DEFAULT, KB_RADIO_CONTROL,
 				radio_control, ARRAY_SIZE(radio_control),
@@ -180,4 +180,47 @@ int wilco_ec_signed_fw(void)
 	ec_set_ports(CONFIG_EC_BASE_ACPI_COMMAND,
 		     CONFIG_EC_BASE_ACPI_DATA);
 	return !!ec_read(EC_RAM_SIGNED_FW);
+}
+
+struct err_code_entry {
+	uint8_t post_code;
+	enum ec_err_code ec_err;
+};
+
+/*
+ * Any post codes not listed in the post_code_err_map[] use default.
+ */
+static const enum ec_err_code default_ec_err = DLED_ROM;
+static const struct err_code_entry post_code_err_map[] = {
+	{ .post_code = POST_RAM_FAILURE, .ec_err = DLED_MEMORY, },
+	{ .post_code = POST_VIDEO_FAILURE, .ec_err = DLED_PANEL, },
+};
+
+/* Records the most recent post code during boot */
+static uint8_t wilco_ec_saved_post_code;
+
+void wilco_ec_save_post_code(uint8_t post_code)
+{
+	wilco_ec_saved_post_code = post_code;
+}
+
+/* Send error code to the EC based on last saved post code */
+void die_notify(void)
+{
+	size_t i;
+	enum ec_err_code err_code = default_ec_err;
+
+	for (i = 0; i < ARRAY_SIZE(post_code_err_map); i++) {
+		if (post_code_err_map[i].post_code ==
+		    wilco_ec_saved_post_code) {
+			err_code = post_code_err_map[i].ec_err;
+			break;
+		}
+	}
+
+	printk(BIOS_EMERG, "Fatal error: post_code 0x%02x, EC err 0x%02x\n",
+	       wilco_ec_saved_post_code, err_code);
+
+	wilco_ec_mailbox(WILCO_EC_MSG_DEFAULT, KB_ERR_CODE,
+			 &err_code, 1, NULL, 0);
 }

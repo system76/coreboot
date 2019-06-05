@@ -350,6 +350,9 @@ int set_option_from_string(const struct nvram_accessor *nvram, struct cb_cmos_op
 typedef enum {
 	CONSOLE_INPUT_TYPE_UNKNOWN = 0,
 	CONSOLE_INPUT_TYPE_USB,
+	CONSOLE_INPUT_TYPE_EC,
+	CONSOLE_INPUT_TYPE_UART,
+	CONSOLE_INPUT_TYPE_GPIO,
 } console_input_type;
 
 void console_init(void);
@@ -431,9 +434,12 @@ void hexdump(const void *memory, size_t length);
 void fatal(const char *msg) __attribute__((noreturn));
 
 /* Count Leading Zeroes: clz(0) == 32, clz(0xf) == 28, clz(1 << 31) == 0 */
-static inline int clz(u32 x) { return x ? __builtin_clz(x) : sizeof(x) * 8; }
+static inline int clz(u32 x)
+{
+	return x ? __builtin_clz(x) : (int)sizeof(x) * 8;
+}
 /* Integer binary logarithm (rounding down): log2(0) == -1, log2(5) == 2 */
-static inline int log2(u32 x) { return sizeof(x) * 8 - clz(x) - 1; }
+static inline int log2(u32 x) { return (int)sizeof(x) * 8 - clz(x) - 1; }
 /* Find First Set: __ffs(0xf) == 0, __ffs(0) == -1, __ffs(1 << 31) == 31 */
 static inline int __ffs(u32 x) { return log2(x & (u32)(-(s32)x)); }
 /** @} */

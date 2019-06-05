@@ -43,11 +43,12 @@ static void uart_lpss_init(uintptr_t baseaddr)
 			CONFIG_SOC_INTEL_COMMON_LPSS_UART_CLK_N_VAL);
 }
 
-#if CONFIG(DRIVERS_UART_8250MEM)
+#if CONFIG(INTEL_LPSS_UART_FOR_CONSOLE)
 uintptr_t uart_platform_base(int idx)
 {
-	/* return Base address for UART console index */
-	return UART_BASE_0_ADDR(idx);
+	if (idx == CONFIG_UART_FOR_CONSOLE)
+		return CONFIG_CONSOLE_UART_BASE_ADDRESS;
+	return 0;
 }
 #endif
 
@@ -136,12 +137,7 @@ static void uart_configure_gpio_pads(void)
 void uart_bootblock_init(void)
 {
 	/* Program UART BAR0, command, reset and clock register */
-	uart_common_init(uart_get_device(),
-		UART_BASE(CONFIG_UART_FOR_CONSOLE));
-
-	if (!CONFIG(DRIVERS_UART_8250MEM_32))
-		/* Put UART in byte access mode for 16550 compatibility */
-		soc_uart_set_legacy_mode();
+	uart_common_init(uart_get_device(), CONFIG_CONSOLE_UART_BASE_ADDRESS);
 
 	/* Configure the 2 pads per UART. */
 	uart_configure_gpio_pads();
@@ -158,8 +154,8 @@ static void uart_read_resources(struct device *dev)
 	    uart_is_debug_controller(dev)) {
 		struct resource *res = find_resource(dev, PCI_BASE_ADDRESS_0);
 		/* Need to set the base and size for the resource allocator. */
-		res->base = UART_BASE(CONFIG_UART_FOR_CONSOLE);
-		res->size = UART_BASE_SIZE;
+		res->base = CONFIG_CONSOLE_UART_BASE_ADDRESS;
+		res->size = 0x1000;
 		res->flags = IORESOURCE_MEM | IORESOURCE_ASSIGNED |
 				IORESOURCE_FIXED;
 	}

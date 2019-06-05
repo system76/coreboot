@@ -1452,9 +1452,8 @@ static void test_timC(ramctr_timing * ctrl, int channel, int slotrank)
 	int lane;
 
 	FOR_ALL_LANES {
-		volatile u32 tmp;
 		MCHBAR32(0x4340 + 0x400 * channel + 4 * lane) = 0;
-		tmp = MCHBAR32(0x4140 + 0x400 * channel + 4 * lane);
+		MCHBAR32(0x4140 + 0x400 * channel + 4 * lane);
 	}
 
 	wait_428c(channel);
@@ -1524,6 +1523,24 @@ static void test_timC(ramctr_timing * ctrl, int channel, int slotrank)
 	wait_428c(channel);
 }
 
+static void timC_threshold_process(int *data, const int count)
+{
+	int min = data[0];
+	int max = min;
+	int i;
+	for (i = 1; i < count; i++) {
+		if (min > data[i])
+			min = data[i];
+		if (max < data[i])
+			max = data[i];
+	}
+	int threshold = min/2 + max/2;
+	for (i = 0; i < count; i++)
+		data[i] = data[i] > threshold;
+	printram("threshold=%d min=%d max=%d\n",
+		 threshold, min, max);
+}
+
 static int discover_timC(ramctr_timing *ctrl, int channel, int slotrank)
 {
 	int timC;
@@ -1554,14 +1571,25 @@ static int discover_timC(ramctr_timing *ctrl, int channel, int slotrank)
 		}
 	}
 	FOR_ALL_LANES {
-		struct run rn =
-		    get_longest_zero_run(statistics[lane], MAX_TIMC + 1);
-		ctrl->timings[channel][slotrank].lanes[lane].timC = rn.middle;
-		if (rn.all) {
+		struct run rn = get_longest_zero_run(
+			statistics[lane], ARRAY_SIZE(statistics[lane]));
+		if (rn.all || rn.length < 8) {
 			printk(BIOS_EMERG, "timC discovery failed: %d, %d, %d\n",
 			       channel, slotrank, lane);
-			return MAKE_ERR;
+			/* With command training not happend yet, the lane can
+			 * be erroneous. Take the avarage as reference and try
+			 * again to find a run.
+			 */
+			timC_threshold_process(statistics[lane],
+					       ARRAY_SIZE(statistics[lane]));
+			rn = get_longest_zero_run(statistics[lane],
+						 ARRAY_SIZE(statistics[lane]));
+			if (rn.all || rn.length < 8) {
+				printk(BIOS_EMERG, "timC recovery failed\n");
+				return MAKE_ERR;
+			}
 		}
+		ctrl->timings[channel][slotrank].lanes[lane].timC = rn.middle;
 		printram("timC: %d, %d, %d: 0x%02x-0x%02x-0x%02x\n",
 			channel, slotrank, lane, rn.start, rn.middle, rn.end);
 	}
@@ -1997,9 +2025,8 @@ int write_training(ramctr_timing * ctrl)
 	MCHBAR32_OR(0x5030, 8);
 
 	FOR_ALL_POPULATED_CHANNELS {
-		volatile u32 tmp;
 		MCHBAR32_AND(0x4020 + 0x400 * channel, ~0x00200000);
-		tmp = MCHBAR32(0x428c + 0x400 * channel);
+		MCHBAR32(0x428c + 0x400 * channel);
 		wait_428c(channel);
 
 		/* DRAM command ZQCS */
@@ -2344,9 +2371,8 @@ static int discover_edges_real(ramctr_timing *ctrl, int channel, int slotrank,
 		program_timings(ctrl, channel);
 
 		FOR_ALL_LANES {
-			volatile u32 tmp;
 			MCHBAR32(0x4340 + 0x400 * channel + 4 * lane) = 0;
-			tmp = MCHBAR32(0x400 * channel + 4 * lane + 0x4140);
+			MCHBAR32(0x400 * channel + 4 * lane + 0x4140);
 		}
 
 		wait_428c(channel);
@@ -2425,8 +2451,7 @@ int discover_edges(ramctr_timing *ctrl)
 		fill_pattern0(ctrl, channel, 0, 0);
 		MCHBAR32(0x4288 + (channel << 10)) = 0;
 		FOR_ALL_LANES {
-			volatile u32 tmp;
-			tmp = MCHBAR32(0x400 * channel + lane * 4 + 0x4140);
+			MCHBAR32(0x400 * channel + lane * 4 + 0x4140);
 		}
 
 		FOR_ALL_POPULATED_RANKS FOR_ALL_LANES {
@@ -2626,10 +2651,9 @@ static int discover_edges_write_real(ramctr_timing *ctrl, int channel,
 				program_timings(ctrl, channel);
 
 				FOR_ALL_LANES {
-					volatile u32 tmp;
 					MCHBAR32(0x4340 + 0x400 * channel +
 						4 * lane) = 0;
-					tmp = MCHBAR32(0x400 * channel +
+					MCHBAR32(0x400 * channel +
 						4 * lane + 0x4140);
 				}
 				wait_428c(channel);
@@ -2674,8 +2698,7 @@ static int discover_edges_write_real(ramctr_timing *ctrl, int channel,
 
 				wait_428c(channel);
 				FOR_ALL_LANES {
-					volatile u32 tmp;
-					tmp = MCHBAR32(0x4340 +
+					MCHBAR32(0x4340 +
 					       0x400 * channel + lane * 4);
 				}
 

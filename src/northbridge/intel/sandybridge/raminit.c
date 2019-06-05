@@ -21,7 +21,6 @@
 #include <cf9_reset.h>
 #include <string.h>
 #include <arch/cpu.h>
-#include <arch/io.h>
 #include <device/mmio.h>
 #include <device/pci_ops.h>
 #include <cbmem.h>
@@ -31,6 +30,7 @@
 #include <southbridge/intel/common/smbus.h>
 #include <southbridge/intel/bd82x6x/pch.h>
 #include <cpu/x86/msr.h>
+#include <types.h>
 
 #include "raminit_native.h"
 #include "raminit_common.h"
@@ -316,6 +316,7 @@ static void init_dram_ddr3(int min_tck, int s3resume)
 	}
 
 	early_pch_init_native();
+	early_init_dmi();
 	early_thermal_init();
 
 	/* try to find timings in MRC cache */

@@ -20,6 +20,7 @@
 /* Nehalem bus clock is fixed at 133MHz */
 #define NEHALEM_BCLK		133
 
+#define CORE_THREAD_COUNT_MSR		0x35
 #define MSR_FEATURE_CONFIG		0x13c
 #define MSR_FLEX_RATIO			0x194
 #define  FLEX_RATIO_LOCK		(1 << 20)
@@ -77,6 +78,24 @@ void intel_model_2065x_finalize_smm(void);
 /* Configure power limits for turbo mode */
 void set_power_limits(u8 power_limit_1_time);
 int cpu_config_tdp_levels(void);
+#endif
+
+/*
+ * Region of SMM space is reserved for multipurpose use. It falls below
+ * the IED region and above the SMM handler.
+ */
+#define RESERVED_SMM_SIZE CONFIG_SMM_RESERVED_SIZE
+#define RESERVED_SMM_OFFSET (CONFIG_SMM_TSEG_SIZE - RESERVED_SMM_SIZE)
+
+/* Sanity check config options. */
+#if (CONFIG_SMM_TSEG_SIZE <= RESERVED_SMM_SIZE)
+# error "CONFIG_SMM_TSEG_SIZE <= RESERVED_SMM_SIZE"
+#endif
+#if (CONFIG_SMM_TSEG_SIZE < 0x800000)
+# error "CONFIG_SMM_TSEG_SIZE must at least be 8MiB"
+#endif
+#if ((CONFIG_SMM_TSEG_SIZE & (CONFIG_SMM_TSEG_SIZE - 1)) != 0)
+# error "CONFIG_SMM_TSEG_SIZE is not a power of 2"
 #endif
 
 #endif

@@ -15,7 +15,6 @@
 
 #include <console/console.h>
 #include <string.h>
-#include <arch/io.h>
 #include <cbmem.h>
 #include <arch/cbfs.h>
 #include <cbfs.h>
@@ -167,7 +166,8 @@ void sdram_initialize(struct pei_data *pei_data)
 			default:
 				printk(BIOS_ERR, "MRC returned %x.\n", rv);
 			}
-			die("Nonzero MRC return value.\n");
+			die_with_post_code(POST_INVALID_VENDOR_BINARY,
+					   "Nonzero MRC return value.\n");
 		}
 	} else {
 		die("UEFI PEI System Agent not found.\n");
@@ -186,7 +186,7 @@ void sdram_initialize(struct pei_data *pei_data)
 
 void setup_sdram_meminfo(struct pei_data *pei_data)
 {
-	u32 addr_decoder_common, addr_decode_ch[2];
+	u32 addr_decode_ch[2];
 	struct memory_info* mem_info;
 	struct dimm_info *dimm;
 	int ddr_frequency;
@@ -199,7 +199,8 @@ void setup_sdram_meminfo(struct pei_data *pei_data)
 		die("Failed to add memory info to CBMEM.\n");
 	memset(mem_info, 0, sizeof(struct memory_info));
 
-	addr_decoder_common = MCHBAR32(0x5000);
+	/* FIXME: Do we need to read MCHBAR32(0x5000) ? */
+	MCHBAR32(0x5000);
 	addr_decode_ch[0] = MCHBAR32(0x5004);
 	addr_decode_ch[1] = MCHBAR32(0x5008);
 

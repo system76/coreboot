@@ -13,7 +13,7 @@
  * GNU General Public License for more details.
  */
 
-#include <arch/early_variables.h>
+#include <arch/symbols.h>
 #include <console/console.h>
 #include <cbmem.h>
 #include "../chip.h"
@@ -26,7 +26,7 @@
 #include <soc/reg_access.h>
 #include <soc/storage_test.h>
 
-asmlinkage void *car_stage_c_entry(void)
+asmlinkage void car_stage_c_entry(void)
 {
 	struct postcar_frame pcf;
 	bool s3wake;
@@ -83,23 +83,21 @@ asmlinkage void *car_stage_c_entry(void)
 	postcar_frame_add_romcache(&pcf, MTRR_TYPE_WRTHROUGH);
 
 	run_postcar_phase(&pcf);
-	return NULL;
 }
 
-static struct chipset_power_state power_state CAR_GLOBAL;
+static struct chipset_power_state power_state;
 
 struct chipset_power_state *get_power_state(void)
 {
-	return (struct chipset_power_state *)car_get_var_ptr(&power_state);
+	return &power_state;
 }
 
 int fill_power_state(void)
 {
-	struct chipset_power_state *ps = get_power_state();
-
-	ps->prev_sleep_state = 0;
-	printk(BIOS_SPEW, "prev_sleep_state %d\n", ps->prev_sleep_state);
-	return ps->prev_sleep_state;
+	power_state.prev_sleep_state = 0;
+	printk(BIOS_SPEW, "prev_sleep_state %d\n",
+	       power_state.prev_sleep_state);
+	return power_state.prev_sleep_state;
 }
 
 void platform_fsp_memory_init_params_cb(FSPM_UPD *fspm_upd, uint32_t version)
@@ -117,7 +115,8 @@ void platform_fsp_memory_init_params_cb(FSPM_UPD *fspm_upd, uint32_t version)
 	/* Locate the RMU data file in flash */
 	rmu_data = locate_rmu_file(&rmu_data_len);
 	if (!rmu_data)
-		die("Microcode file (rmu.bin) not found.");
+		die_with_post_code(POST_INVALID_CBFS,
+			"Microcode file (rmu.bin) not found.");
 
 	/* Locate the configuration data from devicetree.cb */
 	dev = pcidev_path_on_root(LPC_DEV_FUNC);

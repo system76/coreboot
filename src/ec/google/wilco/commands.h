@@ -50,6 +50,8 @@ enum {
 	KB_SLP_EN = 0x64,
 	/* Inform the EC about BIOS boot progress */
 	KB_BIOS_PROGRESS = 0xc2,
+	/* Inform the EC that a fatal error occurred */
+	KB_ERR_CODE = 0x7b,
 };
 
 enum ec_ram_addr {
@@ -78,12 +80,26 @@ enum ec_audio_mute {
 };
 
 enum ec_radio {
-	RADIO_WIFI = 0x02,
+	RADIO_WIFI = 0,
+	RADIO_WWAN,
+	RADIO_BT,
+};
+
+enum ec_radio_action {
+	RADIO_READ = 1,
+	RADIO_WRITE,
+	RADIO_TOGGLE,
 };
 
 enum ec_camera {
 	CAMERA_ON = 0,
 	CAMERA_OFF
+};
+
+enum ec_err_code {
+	DLED_MEMORY = 0x03,
+	DLED_PANEL = 0x10,
+	DLED_ROM = 0x19,
 };
 
 /**
@@ -309,5 +325,16 @@ enum ec_acpi_wake_events {
  * Returns 1 if EC uses signed firmware, otherwise returns 0
  */
 int wilco_ec_signed_fw(void);
+
+/**
+ * wilco_ec_save_post_code
+ *
+ * Save this post code as the most recent progress step.  If the boot fails
+ * and calls die_notify() this post code will be used to send an error code
+ * to the EC indicating the failure.
+ *
+ * @post_code: Post code to save
+ */
+void wilco_ec_save_post_code(uint8_t post_code);
 
 #endif /* EC_GOOGLE_WILCO_COMMANDS_H */

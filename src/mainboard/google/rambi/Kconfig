@@ -90,8 +90,8 @@ config EC_GOOGLE_CHROMEEC_BOARDNAME
 	string
 	default ""
 
-config VGA_BIOS_FILE
+config MAINBOARD_SMBIOS_MANUFACTURER
 	string
-	default "pci8086,0f31.rom"
+	default "GOOGLE"
 
 endif # BOARD_GOOGLE_BASEBOARD_RAMBI

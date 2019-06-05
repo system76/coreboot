@@ -36,6 +36,7 @@
 #include <soc/intel/broadwell/chip.h>
 #include <security/vboot/vbnv.h>
 #include <soc/igd.h>
+#include <types.h>
 
 #define GT_RETRY		1000
 enum {
@@ -513,7 +514,7 @@ static void igd_init(struct device *dev)
 	/* Wait for any configured pre-graphics delay */
 	if (!acpi_is_wakeup_s3()) {
 #if CONFIG(CHROMEOS)
-		if (display_init_required() || vboot_wants_oprom())
+		if (display_init_required())
 			mdelay(CONFIG_PRE_GRAPHICS_DELAY);
 #else
 		mdelay(CONFIG_PRE_GRAPHICS_DELAY);

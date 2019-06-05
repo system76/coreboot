@@ -14,7 +14,6 @@
  * GNU General Public License for more details.
  */
 
-#include <arch/early_variables.h>
 #include <device/mmio.h>
 #include <assert.h>
 #include <console/console.h>
@@ -262,15 +261,13 @@ static uint32_t gspi_get_bus_clk_mhz(unsigned int gspi_bus)
 	return cfg[gspi_bus].speed_mhz;
 }
 
-static uintptr_t gspi_base[CONFIG_SOC_INTEL_COMMON_BLOCK_GSPI_MAX] CAR_GLOBAL;
+static uintptr_t gspi_base[CONFIG_SOC_INTEL_COMMON_BLOCK_GSPI_MAX];
 static uintptr_t gspi_get_bus_base_addr(unsigned int gspi_bus)
 {
-	uintptr_t *base = car_get_var_ptr(gspi_base);
+	if (!gspi_base[gspi_bus])
+		gspi_base[gspi_bus] = gspi_calc_base_addr(gspi_bus);
 
-	if (!base[gspi_bus])
-		base[gspi_bus] = gspi_calc_base_addr(gspi_bus);
-
-	return base[gspi_bus];
+	return gspi_base[gspi_bus];
 }
 
 /* Parameters for GSPI controller operation. */
@@ -437,9 +434,11 @@ static uint32_t gspi_get_clk_div(unsigned int gspi_bus)
 {
 	const uint32_t ref_clk_mhz =
 		CONFIG_SOC_INTEL_COMMON_BLOCK_GSPI_CLOCK_MHZ;
-	const uint32_t gspi_clk_mhz = gspi_get_bus_clk_mhz(gspi_bus);
+	uint32_t gspi_clk_mhz = gspi_get_bus_clk_mhz(gspi_bus);
 
-	assert(gspi_clk_mhz != 0);
+	if (!gspi_clk_mhz)
+		gspi_clk_mhz = 1;
+
 	assert(ref_clk_mhz != 0);
 	return (DIV_ROUND_UP(ref_clk_mhz, gspi_clk_mhz) - 1) & SSCR0_SCR_MASK;
 }

@@ -17,6 +17,7 @@ ramstage-$(CONFIG_EC_GOOGLE_CHROMEEC) += ec.c
 
 romstage-$(CONFIG_CHROMEOS) += chromeos.c
 ramstage-$(CONFIG_CHROMEOS) += chromeos.c
+bootblock-$(CONFIG_CHROMEOS) += chromeos.c
 
 smm-$(CONFIG_HAVE_SMI_HANDLER) += smihandler.c
 
@@ -32,3 +33,5 @@ subdirs-y += variants/$(VARIANT_DIR)
 subdirs-y += variants/$(VARIANT_DIR)/spd
 
 CPPFLAGS_common += -I$(src)/mainboard/$(MAINBOARDDIR)/variants/$(VARIANT_DIR)/include
+
+romstage-y += variants/$(VARIANT_DIR)/gpio.c

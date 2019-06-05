@@ -120,6 +120,7 @@ on the vendor firmware with just one module in channel 0, slot 0, and check the 
 the EEPROM has. Under Linux, you can use these commands to see what is on SMBus:
 
 	$ sudo modprobe i2c-dev
+	$ sudo modprobe i2c-i801
 	$ sudo i2cdetect -l
 	i2c-0	i2c		i915 gmbus ssc				I2C adapter
 	i2c-1	i2c		i915 gmbus vga				I2C adapter
@@ -266,6 +267,12 @@ If several slots are soldered there are two ways to handle them:
 * If all use the same SPD data, use the same file for all the slots. Do
   not forget to copy the data on all the array elements that need it.
 * If they use different data, use several files.
+
+If memory initialization is not working, in particular write training (timB)
+on DIMM's second rank fails, try enbling rank 1 mirroring, which can't be
+detected by inteltool. It is described by SPD field "Address Mapping from Edge
+Connector to DRAM", byte `63` (`0x3f`). Bit 0 describes Rank 1 Mapping,
+0 = standard, 1 = mirrored; set it to 1. Bits 1-7 are reserved.
 
 ### `board_info.txt`
 

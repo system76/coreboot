@@ -1,6 +1,8 @@
 /*
  * This file is part of the coreboot project.
  *
+ * Copyright (C) 2016-2019 Kyösti Mälkki
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; version 2 of the License.
@@ -14,62 +16,126 @@
 #include <console/console.h>
 #include <stdint.h>
 #include <string.h>
+#include <timestamp.h>
 
 #include <northbridge/amd/agesa/state_machine.h>
 #include <northbridge/amd/agesa/BiosCallOuts.h>
 #include <amdlib.h>
+#include <debug_util.h>
 #include <AGESA.h>
 #include <AMD.h>
 
-#include <heapManager.h>
-
 static const char undefined[] = "undefined";
 
-/* Match order of enum AGESA_STRUCT_NAME. */
-static const char *AgesaFunctionNameStr[] = {
-	"AmdInitRecovery", "AmdCreateStruct", "AmdInitEarly", "AmdInitEnv", "AmdInitLate",
-	"AmdInitMid", "AmdInitPost", "AmdInitReset", "AmdInitResume", "AmdReleaseStruct",
-	"AmdS3LateRestore","AmdS3Save", "AmdGetApicId", "AmdGetPciAddress", "AmdIdentifyCore",
-	"AmdReadEventLog", "AmdGetAvailableExeCacheSize", "AmdLateRunApTask", "AmdIdentifyDimm",
-};
-
-/* heapManager.h */
-static const char *HeapStatusStr[] = {
-	"DoNotExistYet", "LocalCache", "TempMem", "SystemMem", "DoNotExistAnymore","S3Resume"
-};
-
-/* This function has to match with enumeration of AGESA_STRUCT_NAME defined
- * inside AMD.h header file. Unfortunately those are different across
- * different vendorcode subtrees.
- *
- * TBD: Fix said header or move this function together with the strings above
- * under vendorcode/ tree.
- */
-
-const char *agesa_struct_name(int state)
+struct agesa_mapping
 {
-#if CONFIG(CPU_AMD_AGESA_OPENSOURCE)
-	if ((state < AMD_INIT_RECOVERY) || (state > AMD_IDENTIFY_DIMMS))
-		return undefined;
+	AGESA_STRUCT_NAME func;
+	const char *name;
+	uint32_t entry_id;
+	uint32_t exit_id;
+};
 
-	int index = state - AMD_INIT_RECOVERY;
-#else
-	state >>= 12;
-	if ((state < AMD_INIT_RECOVERY >> 12) || (state > AMD_IDENTIFY_DIMMS >> 12))
-		return undefined;
-
-	int index = state - (AMD_INIT_RECOVERY >> 12);
+static const struct agesa_mapping entrypoint[] = {
+	{
+		.func = AMD_INIT_RESET,
+		.name = "AmdInitReset",
+		.entry_id = TS_AGESA_INIT_RESET_START,
+		.exit_id = TS_AGESA_INIT_RESET_DONE,
+	},
+	{
+		.func = AMD_INIT_EARLY,
+		.name = "AmdInitEarly",
+		.entry_id = TS_AGESA_INIT_EARLY_START,
+		.exit_id = TS_AGESA_INIT_EARLY_DONE,
+	},
+	{
+		.func = AMD_INIT_POST,
+		.name = "AmdInitPost",
+		.entry_id = TS_AGESA_INIT_POST_START,
+		.exit_id = TS_AGESA_INIT_POST_DONE,
+	},
+	{
+		.func = AMD_INIT_RESUME,
+		.name = "AmdInitResume",
+		.entry_id = TS_AGESA_INIT_RESUME_START,
+		.exit_id = TS_AGESA_INIT_RESUME_DONE,
+	},
+	{
+		.func = AMD_INIT_ENV,
+		.name = "AmdInitEnv",
+		.entry_id = TS_AGESA_INIT_ENV_START,
+		.exit_id = TS_AGESA_INIT_ENV_DONE,
+	},
+	{
+		.func = AMD_INIT_MID,
+		.name = "AmdInitMid",
+		.entry_id = TS_AGESA_INIT_MID_START,
+		.exit_id = TS_AGESA_INIT_MID_DONE,
+	},
+	{
+		.func = AMD_INIT_LATE,
+		.name = "AmdInitLate",
+		.entry_id = TS_AGESA_INIT_LATE_START,
+		.exit_id = TS_AGESA_INIT_LATE_DONE,
+	},
+	{
+		.func = AMD_S3LATE_RESTORE,
+		.name = "AmdS3LateRestore",
+		.entry_id = TS_AGESA_S3_LATE_START,
+		.exit_id = TS_AGESA_S3_LATE_DONE,
+	},
+#if !defined(AMD_S3_SAVE_REMOVED)
+	{
+		.func = AMD_S3_SAVE,
+		.name = "AmdS3Save",
+		.entry_id = TS_AGESA_INIT_RTB_START,
+		.exit_id = TS_AGESA_INIT_RTB_DONE,
+	},
 #endif
-	return AgesaFunctionNameStr[index];
+	{
+		.func = AMD_S3FINAL_RESTORE,
+		.name = "AmdS3FinalRestore",
+		.entry_id = TS_AGESA_S3_FINAL_START,
+		.exit_id = TS_AGESA_S3_FINAL_DONE,
+	},
+	{
+		.func = AMD_INIT_RTB,
+		.name = "AmdInitRtb",
+		.entry_id = TS_AGESA_INIT_RTB_START,
+		.exit_id = TS_AGESA_INIT_RTB_DONE,
+	},
+};
+
+void agesa_state_on_entry(struct agesa_state *task, AGESA_STRUCT_NAME func)
+{
+	int i;
+
+	task->apic_id = (u8) (cpuid_ebx(1) >> 24);
+	task->func = func;
+	task->function_name = undefined;
+
+	for (i = 0; i < ARRAY_SIZE(entrypoint); i++) {
+		if (task->func == entrypoint[i].func) {
+			task->function_name = entrypoint[i].name;
+			task->ts_entry_id = entrypoint[i].entry_id;
+			task->ts_exit_id = entrypoint[i].exit_id;
+			break;
+		}
+	}
+
+	printk(BIOS_DEBUG, "\nAPIC %02d: ** Enter %s [%08x]\n",
+		task->apic_id, task->function_name, task->func);
 }
 
-const char *heap_status_name(int status)
+void agesa_state_on_exit(struct agesa_state *task,
+	AMD_CONFIG_PARAMS *StdHeader)
 {
-	if ((status < HEAP_DO_NOT_EXIST_YET) || (status > HEAP_S3_RESUME))
-		return undefined;
+	printk(BIOS_DEBUG, "APIC %02d: Heap in %s (%d) at 0x%08x\n",
+		task->apic_id, heap_status_name(StdHeader->HeapStatus),
+		StdHeader->HeapStatus, (u32)StdHeader->HeapBasePtr);
 
-	int index = status - HEAP_DO_NOT_EXIST_YET;
-	return HeapStatusStr[index];
+	printk(BIOS_DEBUG, "APIC %02d: ** Exit  %s [%08x]\n",
+		task->apic_id, task->function_name, task->func);
 }
 
 /*

@@ -14,7 +14,6 @@
  * GNU General Public License for more details.
  */
 
-#include <arch/io.h>
 #include <device/pci_ops.h>
 #include <cbmem.h>
 #include <cf9_reset.h>
@@ -33,6 +32,7 @@
 #include <device/dram/ddr3.h>
 #include <mrc_cache.h>
 #include <timestamp.h>
+#include <types.h>
 
 #include "iomap.h"
 #include "x4x.h"

@@ -2,6 +2,7 @@
 ## This file is part of the coreboot project.
 ##
 ## Copyright (C) 2009 Ronald G. Minnich
+## Copyright (C) 2018 Eltan B.V.
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -13,6 +14,7 @@
 ## GNU General Public License for more details.
 ##
 
+subdirs-y += aspeed
 subdirs-y += fintek
 subdirs-y += intel
 subdirs-y += ite

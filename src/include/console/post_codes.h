@@ -319,6 +319,50 @@
 #define POST_JUMPING_TO_PAYLOAD			0xf3
 
 /**
+ * \brief Invalid or corrupt ROM
+ *
+ * Set if firmware failed to find or validate a resource that is stored in ROM.
+ */
+#define POST_INVALID_ROM			0xe0
+
+/**
+ * \brief Invalid or corrupt CBFS
+ *
+ * Set if firmware failed to find or validate a resource that is stored in CBFS.
+ */
+#define POST_INVALID_CBFS			0xe1
+
+/**
+ * \brief Vendor binary error
+ *
+ * Set if firmware failed to find or validate a vendor binary, or the binary
+ * generated a fatal error.
+ */
+#define POST_INVALID_VENDOR_BINARY		0xe2
+
+/**
+ * \brief RAM failure
+ *
+ * Set if RAM could not be initialized.  This includes RAM is missing,
+ * unsupported RAM configuration, or RAM failure.
+ */
+#define POST_RAM_FAILURE			0xe3
+
+/**
+ * \brief Hardware initialization failure
+ *
+ * Set when a required hardware component was not found or is unsupported.
+ */
+#define POST_HW_INIT_FAILURE			0xe4
+
+/**
+ * \brief Video failure
+ *
+ * Video subsystem failed to initialize.
+ */
+#define POST_VIDEO_FAILURE			0xe5
+
+/**
  * \brief TPM failure
  *
  * An error with the TPM, either unexepcted state or communications failure.

@@ -56,11 +56,11 @@
 #define OEM_ID			"COREv4"    /* Must be exactly 6 bytes long! */
 
 #if !defined(__ASSEMBLER__) && !defined(__ACPI__) && !defined(__ROMCC__)
-#include <stdint.h>
 #include <commonlib/helpers.h>
 #include <device/device.h>
 #include <uuid.h>
 #include <cper.h>
+#include <types.h>
 
 #define RSDP_SIG		"RSD PTR "  /* RSDT pointer signature */
 #define ASLC			"CORE"      /* Must be exactly 4 bytes long! */
@@ -838,14 +838,12 @@ void acpi_create_ivrs(acpi_ivrs_t *ivrs,
 		      unsigned long (*acpi_fill_ivrs)(acpi_ivrs_t *ivrs_struct,
 		      unsigned long current));
 
-#if ENV_RAMSTAGE && !defined(__SIMPLE_DEVICE__)
 void acpi_create_hpet(acpi_hpet_t *hpet);
 unsigned long acpi_write_hpet(struct device *device, unsigned long start,
 			      acpi_rsdp_t *rsdp);
 
 /* cpu/intel/speedstep/acpi.c */
 void generate_cpu_entries(struct device *device);
-#endif
 
 void acpi_create_mcfg(acpi_mcfg_t *mcfg);
 

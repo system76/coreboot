@@ -44,7 +44,7 @@ int smbios_write_type38(unsigned long *current, int *handle,
 			const u8 irq);
 int smbios_write_type41(unsigned long *current, int *handle,
 			const char *name, u8 instance, u16 segment,
-			u8 bus, u8 device, u8 function);
+			u8 bus, u8 device, u8 function, u8 device_type);
 
 const char *smbios_system_manufacturer(void);
 const char *smbios_system_product_name(void);
@@ -755,6 +755,8 @@ typedef enum {
 	SMBIOS_DEVICE_TYPE_SATA,
 	SMBIOS_DEVICE_TYPE_SAS,
 } smbios_onboard_device_type;
+
+#define SMBIOS_DEVICE_TYPE_COUNT 10
 
 struct smbios_type41 {
 	u8 type;

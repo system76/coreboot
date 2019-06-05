@@ -16,6 +16,7 @@
  */
 
 #include <assert.h>
+#include <commonlib/stdlib.h>
 #include <console/console.h>
 #include <device_tree.h>
 #include <endian.h>
@@ -56,13 +57,19 @@ int fdt_next_property(const void *blob, uint32_t offset,
 int fdt_node_name(const void *blob, uint32_t offset, const char **name)
 {
 	uint8_t *ptr = ((uint8_t *)blob) + offset;
-	if (be32toh(*(uint32_t *)ptr) != FDT_TOKEN_BEGIN_NODE)
+	if (be32dec(ptr) != FDT_TOKEN_BEGIN_NODE)
 		return 0;
 
 	ptr += 4;
 	if (name)
 		*name = (char *)ptr;
 	return ALIGN_UP(strlen((char *)ptr) + 1, sizeof(uint32_t)) + 4;
+}
+
+static int dt_prop_is_phandle(struct device_tree_property *prop)
+{
+	return !(strcmp("phandle", prop->prop.name) &&
+		 strcmp("linux,phandle", prop->prop.name));
 }
 
 
@@ -73,21 +80,36 @@ int fdt_node_name(const void *blob, uint32_t offset, const char **name)
 
 static void print_indent(int depth)
 {
-	while (depth--)
-		printk(BIOS_DEBUG, "  ");
+	printk(BIOS_DEBUG, "%*s", depth * 8, "");
 }
 
 static void print_property(const struct fdt_property *prop, int depth)
 {
+	int is_string = prop->size > 0 &&
+			((char *)prop->data)[prop->size - 1] == '\0';
+
+	if (is_string)
+		for (const char *c = prop->data; *c != '\0'; c++)
+			if (!isprint(*c))
+				is_string = 0;
+
 	print_indent(depth);
-	printk(BIOS_DEBUG, "prop \"%s\" (%d bytes).\n", prop->name, prop->size);
-	print_indent(depth + 1);
-	for (int i = 0; i < MIN(25, prop->size); i++) {
-		printk(BIOS_DEBUG, "%02x ", ((uint8_t *)prop->data)[i]);
+	if (is_string) {
+		printk(BIOS_DEBUG, "%s = \"%s\";\n",
+		       prop->name, (const char *)prop->data);
+	} else {
+		printk(BIOS_DEBUG, "%s = < ", prop->name);
+		for (int i = 0; i < MIN(128, prop->size); i += 4) {
+			uint32_t val = 0;
+			for (int j = 0; j < MIN(4, prop->size - i); j++)
+				val |= ((uint8_t *)prop->data)[i + j] <<
+					(24 - j * 8);
+			printk(BIOS_DEBUG, "%#.2x ", val);
+		}
+		if (prop->size > 128)
+			printk(BIOS_DEBUG, "...");
+		printk(BIOS_DEBUG, ">;\n");
 	}
-	if (prop->size > 25)
-		printk(BIOS_DEBUG, "...");
-	printk(BIOS_DEBUG, "\n");
 }
 
 static int print_flat_node(const void *blob, uint32_t start_offset, int depth)
@@ -102,7 +124,7 @@ static int print_flat_node(const void *blob, uint32_t start_offset, int depth)
 	offset += size;
 
 	print_indent(depth);
-	printk(BIOS_DEBUG, "name = %s\n", name);
+	printk(BIOS_DEBUG, "%s {\n", name);
 
 	struct fdt_property prop;
 	while ((size = fdt_next_property(blob, offset, &prop))) {
@@ -111,8 +133,13 @@ static int print_flat_node(const void *blob, uint32_t start_offset, int depth)
 		offset += size;
 	}
 
+	printk(BIOS_DEBUG, "\n");	// empty line between props and nodes
+
 	while ((size = print_flat_node(blob, offset, depth + 1)))
 		offset += size;
+
+	print_indent(depth);
+	printk(BIOS_DEBUG, "}\n");
 
 	return offset - start_offset + sizeof(uint32_t);
 }
@@ -153,26 +180,9 @@ int fdt_skip_node(const void *blob, uint32_t start_offset)
 /*
  * Functions to turn a flattened tree into an unflattened one.
  */
-static struct device_tree_node *alloc_node(void)
-{
-	struct device_tree_node *buf = malloc(sizeof(struct device_tree_node));
-	if (!buf)
-		return NULL;
-	memset(buf, 0, sizeof(*buf));
-	return buf;
-}
-
-static struct device_tree_property *alloc_prop(void)
-{
-	struct device_tree_property *buf =
-		malloc(sizeof(struct device_tree_property));
-	if (!buf)
-		return NULL;
-	memset(buf, 0, sizeof(*buf));
-	return buf;
-}
 
 static int fdt_unflatten_node(const void *blob, uint32_t start_offset,
+			      struct device_tree *tree,
 			      struct device_tree_node **new_node)
 {
 	struct list_node *last;
@@ -185,19 +195,21 @@ static int fdt_unflatten_node(const void *blob, uint32_t start_offset,
 		return 0;
 	offset += size;
 
-	struct device_tree_node *node = alloc_node();
+	struct device_tree_node *node = xzalloc(sizeof(*node));
 	*new_node = node;
-	if (!node)
-		return 0;
 	node->name = name;
 
 	struct fdt_property fprop;
 	last = &node->properties;
 	while ((size = fdt_next_property(blob, offset, &fprop))) {
-		struct device_tree_property *prop = alloc_prop();
-		if (!prop)
-			return 0;
+		struct device_tree_property *prop = xzalloc(sizeof(*prop));
 		prop->prop = fprop;
+
+		if (dt_prop_is_phandle(prop)) {
+			node->phandle = be32dec(prop->prop.data);
+			if (node->phandle > tree->max_phandle)
+				tree->max_phandle = node->phandle;
+		}
 
 		list_insert_after(&prop->list_node, last);
 		last = &prop->list_node;
@@ -207,7 +219,7 @@ static int fdt_unflatten_node(const void *blob, uint32_t start_offset,
 
 	struct device_tree_node *child;
 	last = &node->children;
-	while ((size = fdt_unflatten_node(blob, offset, &child))) {
+	while ((size = fdt_unflatten_node(blob, offset, tree, &child))) {
 		list_insert_after(&child->list_node, last);
 		last = &child->list_node;
 
@@ -227,10 +239,7 @@ static int fdt_unflatten_map_entry(const void *blob, uint32_t offset,
 	if (!size)
 		return 0;
 
-	struct device_tree_reserve_map_entry *entry = malloc(sizeof(*entry));
-	if (!entry)
-		return 0;
-	memset(entry, 0, sizeof(*entry));
+	struct device_tree_reserve_map_entry *entry = xzalloc(sizeof(*entry));
 	*new = entry;
 	entry->start = start;
 	entry->size = size;
@@ -240,12 +249,27 @@ static int fdt_unflatten_map_entry(const void *blob, uint32_t offset,
 
 struct device_tree *fdt_unflatten(const void *blob)
 {
-	struct device_tree *tree = malloc(sizeof(*tree));
+	struct device_tree *tree = xzalloc(sizeof(*tree));
 	const struct fdt_header *header = (const struct fdt_header *)blob;
-	if (!tree)
-		return NULL;
-	memset(tree, 0, sizeof(*tree));
 	tree->header = header;
+
+	uint32_t magic = be32toh(header->magic);
+	uint32_t version = be32toh(header->version);
+	uint32_t last_comp_version = be32toh(header->last_comp_version);
+
+	if (magic != FDT_HEADER_MAGIC) {
+		printk(BIOS_DEBUG, "Invalid device tree magic %#.8x!\n", magic);
+		return NULL;
+	}
+	if (last_comp_version > FDT_SUPPORTED_VERSION) {
+		printk(BIOS_DEBUG, "Unsupported device tree version %u(>=%u)\n",
+		       version, last_comp_version);
+		return NULL;
+	}
+	if (version > FDT_SUPPORTED_VERSION)
+		printk(BIOS_DEBUG,
+		       "NOTE: FDT version %u too new, should add support!\n",
+		       version);
 
 	uint32_t struct_offset = be32toh(header->structure_offset);
 	uint32_t strings_offset = be32toh(header->strings_offset);
@@ -269,7 +293,7 @@ struct device_tree *fdt_unflatten(const void *blob)
 		offset += size;
 	}
 
-	fdt_unflatten_node(blob, struct_offset, &tree->root);
+	fdt_unflatten_node(blob, struct_offset, tree, &tree->root);
 
 	return tree;
 }
@@ -358,14 +382,14 @@ static void dt_flatten_prop(struct device_tree_property *prop,
 	uint8_t *dstruct = (uint8_t *)*struct_start;
 	uint8_t *dstrings = (uint8_t *)*strings_start;
 
-	*((uint32_t *)dstruct) = htobe32(FDT_TOKEN_PROPERTY);
+	be32enc(dstruct, FDT_TOKEN_PROPERTY);
 	dstruct += sizeof(uint32_t);
 
-	*((uint32_t *)dstruct) = htobe32(prop->prop.size);
+	be32enc(dstruct, prop->prop.size);
 	dstruct += sizeof(uint32_t);
 
 	uint32_t name_offset = (uintptr_t)dstrings - (uintptr_t)strings_base;
-	*((uint32_t *)dstruct) = htobe32(name_offset);
+	be32enc(dstruct, name_offset);
 	dstruct += sizeof(uint32_t);
 
 	strcpy((char *)dstrings, prop->prop.name);
@@ -385,7 +409,7 @@ static void dt_flatten_node(const struct device_tree_node *node,
 	uint8_t *dstruct = (uint8_t *)*struct_start;
 	uint8_t *dstrings = (uint8_t *)*strings_start;
 
-	*((uint32_t *)dstruct) = htobe32(FDT_TOKEN_BEGIN_NODE);
+	be32enc(dstruct, FDT_TOKEN_BEGIN_NODE);
 	dstruct += sizeof(uint32_t);
 
 	strcpy((char *)dstruct, node->name);
@@ -401,7 +425,7 @@ static void dt_flatten_node(const struct device_tree_node *node,
 		dt_flatten_node(child, (void **)&dstruct, strings_base,
 				(void **)&dstrings);
 
-	*((uint32_t *)dstruct) = htobe32(FDT_TOKEN_END_NODE);
+	be32enc(dstruct, FDT_TOKEN_END_NODE);
 	dstruct += sizeof(uint32_t);
 
 	*struct_start = dstruct;
@@ -454,15 +478,22 @@ void dt_flatten(const struct device_tree *tree, void *start_dest)
 static void print_node(const struct device_tree_node *node, int depth)
 {
 	print_indent(depth);
-	printk(BIOS_DEBUG, "name = %s\n", node->name);
+	if (depth == 0)		// root node has no name, print a starting slash
+		printk(BIOS_DEBUG, "/");
+	printk(BIOS_DEBUG, "%s {\n", node->name);
 
 	struct device_tree_property *prop;
 	list_for_each(prop, node->properties, list_node)
 		print_property(&prop->prop, depth + 1);
 
+	printk(BIOS_DEBUG, "\n");	// empty line between props and nodes
+
 	struct device_tree_node *child;
 	list_for_each(child, node->children, list_node)
 		print_node(child, depth + 1);
+
+	print_indent(depth);
+	printk(BIOS_DEBUG, "};\n");
 }
 
 void dt_print_node(const struct device_tree_node *node)
@@ -489,9 +520,9 @@ void dt_read_cell_props(const struct device_tree_node *node, u32 *addrcp,
 	struct device_tree_property *prop;
 	list_for_each(prop, node->properties, list_node) {
 		if (addrcp && !strcmp("#address-cells", prop->prop.name))
-			*addrcp = be32toh(*(u32 *)prop->prop.data);
+			*addrcp = be32dec(prop->prop.data);
 		if (sizecp && !strcmp("#size-cells", prop->prop.name))
-			*sizecp = be32toh(*(u32 *)prop->prop.data);
+			*sizecp = be32dec(prop->prop.data);
 	}
 }
 
@@ -534,7 +565,7 @@ struct device_tree_node *dt_find_node(struct device_tree_node *parent,
 		if (!create)
 			return NULL;
 
-		found = alloc_node();
+		found = malloc(sizeof(*found));
 		if (!found)
 			return NULL;
 		found->name = strdup(*path);
@@ -548,11 +579,11 @@ struct device_tree_node *dt_find_node(struct device_tree_node *parent,
 }
 
 /*
- * Find a node from a string device tree path, relative to a parent node.
+ * Find a node in the tree from a string device tree path.
  *
- * @param parent	The node from which to start the relative path lookup.
+ * @param tree		The device tree to search.
  * @param path          A string representing a path in the device tree, with
- *			nodes separated by '/'. Example: "soc/firmware/coreboot"
+ *			nodes separated by '/'. Example: "/firmware/coreboot"
  * @param addrcp	Pointer that will be updated with any #address-cells
  *			value found in the path. May be NULL to ignore.
  * @param sizecp	Pointer that will be updated with any #size-cells
@@ -560,27 +591,65 @@ struct device_tree_node *dt_find_node(struct device_tree_node *parent,
  * @param create	1: Create node(s) if not found. 0: Return NULL instead.
  * @return		The found/created node, or NULL.
  *
- * It is the caller responsibility to provide the correct path string, namely
- * not starting or ending with a '/', and not having "//" anywhere in it.
- */
-struct device_tree_node *dt_find_node_by_path(struct device_tree_node *parent,
+ * It is the caller responsibility to provide a path string that doesn't end
+ * with a '/' and doesn't contain any "//". If the path does not start with a
+ * '/', the first segment is interpreted as an alias. */
+struct device_tree_node *dt_find_node_by_path(struct device_tree *tree,
 					      const char *path, u32 *addrcp,
 					      u32 *sizecp, int create)
 {
-	char *dup_path = strdup(path);
+	char *sub_path;
+	char *duped_str;
+	struct device_tree_node *parent;
+	char *next_slash;
 	/* Hopefully enough depth for any node. */
 	const char *path_array[15];
 	int i;
-	char *next_slash;
 	struct device_tree_node *node = NULL;
 
-	if (!dup_path)
-		return NULL;
+	if (path[0] == '/') { // regular path
+		if (path[1] == '\0') {	// special case: "/" is root node
+			dt_read_cell_props(tree->root, addrcp, sizecp);
+			return tree->root;
+		}
 
-	next_slash = dup_path;
-	path_array[0] = dup_path;
+		sub_path = duped_str = strdup(&path[1]);
+		if (!sub_path)
+			return NULL;
+
+		parent = tree->root;
+	} else { // alias
+		char *alias;
+
+		alias = duped_str = strdup(path);
+		if (!alias)
+			return NULL;
+
+		sub_path = strchr(alias, '/');
+		if (sub_path)
+			*sub_path = '\0';
+
+		parent = dt_find_node_by_alias(tree, alias);
+		if (!parent) {
+			printk(BIOS_DEBUG,
+			       "Could not find node '%s', alias '%s' does not exist\n",
+			       path, alias);
+			free(duped_str);
+			return NULL;
+		}
+
+		if (!sub_path) {
+			// it's just the alias, no sub-path
+			free(duped_str);
+			return parent;
+		}
+
+		sub_path++;
+	}
+
+	next_slash = sub_path;
+	path_array[0] = sub_path;
 	for (i = 1; i < (ARRAY_SIZE(path_array) - 1); i++) {
-
 		next_slash = strchr(next_slash, '/');
 		if (!next_slash)
 			break;
@@ -595,8 +664,52 @@ struct device_tree_node *dt_find_node_by_path(struct device_tree_node *parent,
 				    addrcp, sizecp, create);
 	}
 
-	free(dup_path);
+	free(duped_str);
 	return node;
+}
+
+/*
+ * Find a node from an alias
+ *
+ * @param tree		The device tree.
+ * @param alias		The alias name.
+ * @return		The found node, or NULL.
+ */
+struct device_tree_node *dt_find_node_by_alias(struct device_tree *tree,
+					       const char *alias)
+{
+	struct device_tree_node *node;
+	const char *alias_path;
+
+	node = dt_find_node_by_path(tree, "/aliases", NULL, NULL, 0);
+	if (!node)
+		return NULL;
+
+	alias_path = dt_find_string_prop(node, alias);
+	if (!alias_path)
+		return NULL;
+
+	return dt_find_node_by_path(tree, alias_path, NULL, NULL, 0);
+}
+
+struct device_tree_node *dt_find_node_by_phandle(struct device_tree_node *root,
+						 uint32_t phandle)
+{
+	if (!root)
+		return NULL;
+
+	if (root->phandle == phandle)
+		return root;
+
+	struct device_tree_node *node;
+	struct device_tree_node *result;
+	list_for_each(node, root->children, list_node) {
+		result = dt_find_node_by_phandle(node, phandle);
+		if (result)
+			return result;
+	}
+
+	return NULL;
 }
 
 /*
@@ -728,28 +841,6 @@ struct device_tree_node *dt_find_prop_value(struct device_tree_node *parent,
 	return NULL;
 }
 
-/**
- * Find the phandle of a node.
- *
- * @param node Pointer to node containing the phandle
- * @return Zero on error, the phandle on success
- */
-uint32_t dt_get_phandle(const struct device_tree_node *node)
-{
-	const uint32_t *phandle;
-	size_t len;
-
-	dt_find_bin_prop(node, "phandle", (const void **)&phandle, &len);
-	if (phandle != NULL && len == sizeof(*phandle))
-		return be32_to_cpu(*phandle);
-
-	dt_find_bin_prop(node, "linux,phandle", (const void **)&phandle, &len);
-	if (phandle != NULL && len == sizeof(*phandle))
-		return be32_to_cpu(*phandle);
-
-	return 0;
-}
-
 /*
  * Write an arbitrary sized big-endian integer into a pointer.
  *
@@ -792,7 +883,7 @@ void dt_delete_prop(struct device_tree_node *node, const char *name)
  * @param size		The size of data in bytes.
  */
 void dt_add_bin_prop(struct device_tree_node *node, const char *name,
-		     const void *data, size_t size)
+		     void *data, size_t size)
 {
 	struct device_tree_property *prop;
 
@@ -804,9 +895,7 @@ void dt_add_bin_prop(struct device_tree_node *node, const char *name,
 		}
 	}
 
-	prop = alloc_prop();
-	if (!prop)
-		return;
+	prop = xzalloc(sizeof(*prop));
 	list_insert_after(&prop->list_node, &node->properties);
 	prop->prop.name = name;
 	prop->prop.data = data;
@@ -866,7 +955,7 @@ void dt_find_bin_prop(const struct device_tree_node *node, const char *name,
 void dt_add_string_prop(struct device_tree_node *node, const char *name,
 			const char *str)
 {
-	dt_add_bin_prop(node, name, str, strlen(str) + 1);
+	dt_add_bin_prop(node, name, (char *)str, strlen(str) + 1);
 }
 
 /*
@@ -878,9 +967,7 @@ void dt_add_string_prop(struct device_tree_node *node, const char *name,
  */
 void dt_add_u32_prop(struct device_tree_node *node, const char *name, u32 val)
 {
-	u32 *val_ptr = malloc(sizeof(val));
-	if (!val_ptr)
-		return;
+	u32 *val_ptr = xmalloc(sizeof(val));
 	*val_ptr = htobe32(val);
 	dt_add_bin_prop(node, name, val_ptr, sizeof(*val_ptr));
 }
@@ -894,9 +981,7 @@ void dt_add_u32_prop(struct device_tree_node *node, const char *name, u32 val)
  */
 void dt_add_u64_prop(struct device_tree_node *node, const char *name, u64 val)
 {
-	u64 *val_ptr = malloc(sizeof(val));
-	if (!val_ptr)
-		return;
+	u64 *val_ptr = xmalloc(sizeof(val));
 	*val_ptr = htobe64(val);
 	dt_add_bin_prop(node, name, val_ptr, sizeof(*val_ptr));
 }
@@ -916,9 +1001,7 @@ void dt_add_reg_prop(struct device_tree_node *node, u64 *addrs, u64 *sizes,
 {
 	int i;
 	size_t length = (addr_cells + size_cells) * sizeof(u32) * count;
-	u8 *data = malloc(length);
-	if (!data)
-		return;
+	u8 *data = xmalloc(length);
 	u8 *cur = data;
 
 	for (i = 0; i < count; i++) {
@@ -971,7 +1054,7 @@ int dt_set_bin_prop_by_path(struct device_tree *tree, const char *path,
 
 	*prop_name++ = '\0'; /* Separate path from the property name. */
 
-	dt_node = dt_find_node_by_path(tree->root, path_copy, NULL,
+	dt_node = dt_find_node_by_path(tree, path_copy, NULL,
 				       NULL, create);
 
 	if (!dt_node) {
@@ -1001,7 +1084,7 @@ struct device_tree_node *dt_init_reserved_memory_node(struct device_tree *tree)
 	struct device_tree_node *reserved;
 	u32 addr = 0, size = 0;
 
-	reserved = dt_find_node_by_path(tree->root, "reserved-memory", &addr,
+	reserved = dt_find_node_by_path(tree, "/reserved-memory", &addr,
 					&size, 1);
 	if (!reserved)
 		return NULL;

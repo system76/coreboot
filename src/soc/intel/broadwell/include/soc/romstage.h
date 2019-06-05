@@ -18,17 +18,16 @@
 
 #include <stdint.h>
 #include <arch/cpu.h>
+#include <soc/pei_data.h>
 
 struct chipset_power_state;
-struct pei_data;
 struct romstage_params {
-	unsigned long bist;
 	struct chipset_power_state *power_state;
-	struct pei_data *pei_data;
+	struct pei_data pei_data;
 };
 
-void mainboard_romstage_entry(struct romstage_params *params);
-void romstage_common(struct romstage_params *params);
+void mainboard_pre_raminit(struct romstage_params *params);
+void mainboard_post_raminit(struct romstage_params *params);
 
 void raminit(struct pei_data *pei_data);
 
@@ -47,8 +46,4 @@ void intel_early_me_status(void);
 void enable_smbus(void);
 int smbus_read_byte(unsigned int device, unsigned int address);
 
-int early_spi_read(u32 offset, u32 size, u8 *buffer);
-int early_spi_read_wpsr(u8 *sr);
-
-void mainboard_pre_console_init(void);
 #endif

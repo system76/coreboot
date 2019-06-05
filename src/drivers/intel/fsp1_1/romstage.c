@@ -18,7 +18,6 @@
 #include <stddef.h>
 #include <arch/acpi.h>
 #include <arch/cbfs.h>
-#include <arch/early_variables.h>
 #include <assert.h>
 #include <console/console.h>
 #include <cbmem.h>
@@ -38,55 +37,7 @@
 #include <timestamp.h>
 #include <vendorcode/google/chromeos/chromeos.h>
 
-asmlinkage void *romstage_main(FSP_INFO_HEADER *fih)
-{
-	void *top_of_stack;
-	struct romstage_params params = {
-		.chipset_context = fih,
-	};
-
-	post_code(0x30);
-
-	timestamp_add_now(TS_START_ROMSTAGE);
-
-	/* Load microcode before RAM init */
-	if (CONFIG(SUPPORT_CPU_UCODE_IN_CBFS))
-		intel_update_microcode_from_cbfs();
-
-	/* Display parameters */
-	if (!CONFIG(NO_MMCONF_SUPPORT))
-		printk(BIOS_SPEW, "CONFIG_MMCONF_BASE_ADDRESS: 0x%08x\n",
-			CONFIG_MMCONF_BASE_ADDRESS);
-	printk(BIOS_INFO, "Using FSP 1.1\n");
-
-	/* Display FSP banner */
-	print_fsp_info(fih);
-
-	/* Stash FSP version. */
-	params.fsp_version = fsp_version(fih);
-
-	/* Get power state */
-	params.power_state = fill_power_state();
-
-	/* Call into mainboard. */
-	mainboard_romstage_entry(&params);
-	soc_after_ram_init(&params);
-	post_code(0x38);
-
-	top_of_stack = setup_stack_and_mtrrs();
-
-	printk(BIOS_DEBUG, "Calling FspTempRamExit API\n");
-	timestamp_add_now(TS_FSP_TEMP_RAM_EXIT_START);
-	return top_of_stack;
-}
-
-void *cache_as_ram_stage_main(FSP_INFO_HEADER *fih)
-{
-	return romstage_main(fih);
-}
-
-/* Entry from the mainboard. */
-void romstage_common(struct romstage_params *params)
+static void raminit_common(struct romstage_params *params)
 {
 	bool s3wake;
 	struct region_device rdev;
@@ -161,11 +112,45 @@ void romstage_common(struct romstage_params *params)
 		full_reset();
 }
 
-void after_cache_as_ram_stage(void)
+void cache_as_ram_stage_main(FSP_INFO_HEADER *fih)
 {
-	/* Load the ramstage. */
-	run_ramstage();
-	die("ERROR - Failed to load ramstage!");
+	struct romstage_params params = {
+		.chipset_context = fih,
+	};
+
+	post_code(0x30);
+
+	timestamp_add_now(TS_START_ROMSTAGE);
+
+	/* Load microcode before RAM init */
+	if (CONFIG(SUPPORT_CPU_UCODE_IN_CBFS))
+		intel_update_microcode_from_cbfs();
+
+	/* Display parameters */
+	if (!CONFIG(NO_MMCONF_SUPPORT))
+		printk(BIOS_SPEW, "CONFIG_MMCONF_BASE_ADDRESS: 0x%08x\n",
+			CONFIG_MMCONF_BASE_ADDRESS);
+	printk(BIOS_INFO, "Using FSP 1.1\n");
+
+	/* Display FSP banner */
+	print_fsp_info(fih);
+
+	/* Stash FSP version. */
+	params.fsp_version = fsp_version(fih);
+
+	/* Get power state */
+	params.power_state = fill_power_state();
+
+	/* Board initialization before and after RAM is enabled */
+	mainboard_pre_raminit(&params);
+
+	post_code(0x31);
+
+	/* Initialize memory */
+	raminit_common(&params);
+
+	soc_after_ram_init(&params);
+	post_code(0x38);
 }
 
 /* Initialize the power state */
@@ -175,13 +160,8 @@ __weak struct chipset_power_state *fill_power_state(void)
 }
 
 /* Board initialization before and after RAM is enabled */
-__weak void mainboard_romstage_entry(
-	struct romstage_params *params)
+__weak void mainboard_pre_raminit(struct romstage_params *params)
 {
-	post_code(0x31);
-
-	/* Initialize memory */
-	romstage_common(params);
 }
 
 /* Save the DIMM information for SMBIOS table 17 */
@@ -338,13 +318,6 @@ __weak int mrc_cache_stash_data(int type, uint32_t version,
 /* Display the memory configuration */
 __weak void report_memory_config(void)
 {
-}
-
-/* Choose top of stack and setup MTRRs */
-__weak void *setup_stack_and_mtrrs(void)
-{
-	die("ERROR - Must specify top of stack!\n");
-	return NULL;
 }
 
 /* SOC initialization after RAM is enabled */

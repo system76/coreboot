@@ -15,7 +15,6 @@
 
 #include <string.h>
 #include <bootmode.h>
-#include <arch/io.h>
 #include <device/pci_ops.h>
 #include <device/device.h>
 #include <device/pci.h>
@@ -33,7 +32,7 @@ void fill_lb_gpios(struct lb_gpios *gpios)
 		{48, ACTIVE_LOW, !get_write_protect_state(), "write protect"},
 
 		/* Recovery: GPIO22 */
-		{22, ACTIVE_LOW, !get_recovery_mode_switch(), "recovery"},
+		{22, ACTIVE_LOW, !get_recovery_mode_switch(), "presence"},
 
 		/* Hard code the lid switch GPIO to open. */
 		{-1, ACTIVE_HIGH, 1, "lid"},

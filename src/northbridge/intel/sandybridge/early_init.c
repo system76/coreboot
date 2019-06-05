@@ -14,15 +14,15 @@
  * GNU General Public License for more details.
  */
 
-#include <stdint.h>
 #include <stdlib.h>
 #include <console/console.h>
 #include <arch/io.h>
 #include <device/pci_ops.h>
 #include <device/pci_def.h>
-#include <elog.h>
 #include <pc80/mc146818rtc.h>
 #include <romstage_handoff.h>
+#include <types.h>
+
 #include "sandybridge.h"
 
 static void sandybridge_setup_bars(void)
@@ -45,22 +45,7 @@ static void sandybridge_setup_bars(void)
 	pci_write_config8(PCI_DEV(0, 0x00, 0), PAM5, 0x33);
 	pci_write_config8(PCI_DEV(0, 0x00, 0), PAM6, 0x33);
 
-#if CONFIG(ELOG_BOOT_COUNT)
-	/* Increment Boot Counter for non-S3 resume */
-	if ((inw(DEFAULT_PMBASE + PM1_STS) & WAK_STS) &&
-	    ((inl(DEFAULT_PMBASE + PM1_CNT) >> 10) & 7) != SLP_TYP_S3)
-		boot_count_increment();
-#endif
-
-	printk(BIOS_DEBUG, " done.\n");
-
-#if CONFIG(ELOG_BOOT_COUNT)
-	/* Increment Boot Counter except when resuming from S3 */
-	if ((inw(DEFAULT_PMBASE + PM1_STS) & WAK_STS) &&
-	    ((inl(DEFAULT_PMBASE + PM1_CNT) >> 10) & 7) == SLP_TYP_S3)
-		return;
-	boot_count_increment();
-#endif
+	printk(BIOS_DEBUG, " done\n");
 }
 
 static void sandybridge_setup_graphics(void)

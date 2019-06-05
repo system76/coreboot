@@ -23,21 +23,7 @@
 #include <soc/romstage.h>
 #include "spd/spd.h"
 #include <spd_bin.h>
-#include <superio/nuvoton/common/nuvoton.h>
-#include <superio/nuvoton/nct6776/nct6776.h>
 
-#define SERIAL_DEV PNP_DEV(0x2e, NCT6776_SP1)
-
-void car_mainboard_pre_console_init(void)
-{
-	nuvoton_enable_serial(SERIAL_DEV, CONFIG_TTYS0_BASE);
-}
-
-void mainboard_romstage_entry(struct romstage_params *params)
-{
-	post_code(0x31);
-	romstage_common(params);
-}
 
 void mainboard_memory_init_params(
 	struct romstage_params *params,

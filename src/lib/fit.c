@@ -27,7 +27,7 @@
 #include <fit.h>
 #include <boardid.h>
 #include <commonlib/cbfs_serialized.h>
-#include <commonlib/include/commonlib/stdlib.h>
+#include <commonlib/stdlib.h>
 
 static struct list_node image_nodes;
 static struct list_node config_nodes;
@@ -59,6 +59,14 @@ static void fit_add_default_compat_strings(void)
 		snprintf(compat_string, sizeof(compat_string),
 			 "%s,%s-rev%u-sku%u", CONFIG_MAINBOARD_VENDOR,
 			 CONFIG_MAINBOARD_PART_NUMBER, board_id(), sku_id());
+
+		fit_add_compat_string(compat_string);
+	}
+
+	if (sku_id() != UNDEFINED_STRAPPING_ID) {
+		snprintf(compat_string, sizeof(compat_string), "%s,%s-sku%u",
+			 CONFIG_MAINBOARD_VENDOR, CONFIG_MAINBOARD_PART_NUMBER,
+			 sku_id());
 
 		fit_add_compat_string(compat_string);
 	}
@@ -415,19 +423,17 @@ static void fit_update_compat(const void *fdt_blob,
 
 struct fit_config_node *fit_load(void *fit)
 {
-	struct fdt_header *header = (struct fdt_header *)fit;
 	struct fit_image_node *image;
 	struct fit_config_node *config;
 	struct compat_string_entry *compat_node;
 
 	printk(BIOS_DEBUG, "FIT: Loading FIT from %p\n", fit);
 
-	if (be32toh(header->magic) != FDT_HEADER_MAGIC) {
-		printk(BIOS_ERR, "FIT: Bad header magic value 0x%08x.\n",
-		       be32toh(header->magic));
+	struct device_tree *tree = fdt_unflatten(fit);
+	if (!tree) {
+		printk(BIOS_ERR, "ERROR: Failed to unflatten FIT image!\n");
 		return NULL;
 	}
-	struct device_tree *tree = fdt_unflatten(fit);
 
 	const char *default_config_name = NULL;
 	struct fit_config_node *default_config = NULL;

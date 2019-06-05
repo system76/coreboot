@@ -291,9 +291,9 @@ struct lb_gpios {
 };
 
 #define LB_TAG_VBNV		0x0019
-#define LB_TAB_VBOOT_HANDOFF	0x0020
-#define LB_TAB_VBOOT_WORKBUF	0x0034
-#define LB_TAB_DMA		0x0022
+#define LB_TAG_VBOOT_HANDOFF	0x0020
+#define LB_TAG_VBOOT_WORKBUF	0x0034
+#define LB_TAG_DMA		0x0022
 #define LB_TAG_RAM_OOPS		0x0023
 #define LB_TAG_MTC		0x002b
 struct lb_range {
@@ -310,7 +310,7 @@ void lb_ramoops(struct lb_header *header);
 #define LB_TAG_CBMEM_CONSOLE	0x0017
 #define LB_TAG_MRC_CACHE	0x0018
 #define LB_TAG_ACPI_GNVS	0x0024
-#define LB_TAG_TCPA_LOG		0x0034
+#define LB_TAG_TCPA_LOG		0x0036
 #define LB_TAG_WIFI_CALIBRATION	0x0027
 #define LB_TAG_VPD		0x002c
 struct lb_cbmem_ref {
@@ -383,6 +383,21 @@ struct lb_tsc_info {
 struct mac_address {
 	uint8_t mac_addr[6];
 	uint8_t pad[2];		/* Pad it to 8 bytes to keep it simple. */
+};
+
+#define LB_TAG_MMC_INFO		0x0035
+struct lb_mmc_info {
+	uint32_t tag;
+	uint32_t size;
+	/*
+	 * Passes the early mmc status to payload to indicate if firmware
+	 * successfully sent CMD0, CMD1 to the card or not. In case of
+	 * success, the payload can skip the first step of the initialization
+	 * sequence which is to send CMD0, and instead start by sending CMD1
+	 * as described in Jedec Standard JESD83-B1 section 6.4.3.
+	 * passes 1 on success
+	 */
+	int32_t early_cmd1_status;
 };
 
 struct lb_macs {

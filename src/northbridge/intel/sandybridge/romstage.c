@@ -17,7 +17,6 @@
 
 #include <stdint.h>
 #include <console/console.h>
-#include <arch/io.h>
 #include <cf9_reset.h>
 #include <device/pci_ops.h>
 #include <cpu/x86/lapic.h>
@@ -30,6 +29,7 @@
 #include <northbridge/intel/sandybridge/chip.h>
 #include <southbridge/intel/bd82x6x/pch.h>
 #include <southbridge/intel/common/pmclib.h>
+#include <elog.h>
 
 static void early_pch_reset_pmcon(void)
 {
@@ -78,6 +78,9 @@ void mainboard_romstage_entry(unsigned long bist)
 	printk(BIOS_DEBUG, "Back from sandybridge_early_initialization()\n");
 
 	s3resume = southbridge_detect_s3_resume();
+
+	if (CONFIG(ELOG_BOOT_COUNT) && !s3resume)
+		boot_count_increment();
 
 	post_code(0x38);
 

@@ -16,17 +16,18 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <arch/cbfs.h>
-#include <arch/early_variables.h>
 #include <bootblock_common.h>
 #include <bootmode.h>
 #include <cbmem.h>
 #include <console/console.h>
+#include <cpu/intel/romstage.h>
 #include <cpu/x86/mtrr.h>
 #include <elog.h>
 #include <program_loading.h>
 #include <romstage_handoff.h>
 #include <stage_cache.h>
 #include <timestamp.h>
+#include <soc/gpio.h>
 #include <soc/me.h>
 #include <soc/pei_data.h>
 #include <soc/pm.h>
@@ -38,7 +39,7 @@
 /* platform_enter_postcar() determines the stack to use after
  * cache-as-ram is torn down as well as the MTRR settings to use,
  * and continues execution in postcar stage. */
-static void platform_enter_postcar(void)
+void platform_enter_postcar(void)
 {
 	struct postcar_frame pcf;
 	uintptr_t top_of_ram;
@@ -62,34 +63,18 @@ static void platform_enter_postcar(void)
 	run_postcar_phase(&pcf);
 }
 
-/* Entry from cache-as-ram.inc. */
-static void romstage_main(uint64_t tsc, uint32_t bist)
+/* Entry from cpu/intel/car/romstage.c. */
+void mainboard_romstage_entry(unsigned long bist)
 {
-	struct romstage_params rp = {
-		.bist = bist,
-		.pei_data = NULL,
-	};
+	struct romstage_params rp = { 0 };
 
 	post_code(0x30);
-
-	/* Save initial timestamp from bootblock. */
-	timestamp_init(tsc);
-
-	/* Save romstage begin */
-	timestamp_add_now(TS_START_ROMSTAGE);
 
 	/* System Agent Early Initialization */
 	systemagent_early_init();
 
 	/* PCH Early Initialization */
 	pch_early_init();
-
-	/* Call into mainboard pre console init. Needed to enable serial port
-	   on IT8772 */
-	mainboard_pre_console_init();
-
-	/* Start console drivers */
-	console_init();
 
 	/* Get power state */
 	rp.power_state = fill_power_state();
@@ -100,47 +85,35 @@ static void romstage_main(uint64_t tsc, uint32_t bist)
 	/* Set CPU frequency to maximum */
 	set_max_freq();
 
-	/* Call into mainboard. */
-	mainboard_romstage_entry(&rp);
+	/* Initialize GPIOs */
+	init_gpios(mainboard_gpio_config);
 
-	platform_enter_postcar();
-}
+	/* Fill in mainboard pei_date. */
+	mainboard_pre_raminit(&rp);
 
-/* This wrapper enables easy transition towards C_ENVIRONMENT_BOOTBLOCK,
- * keeping changes in cache_as_ram.S easy to manage.
- */
-asmlinkage void bootblock_c_entry_bist(uint64_t base_timestamp, uint32_t bist)
-{
-	romstage_main(base_timestamp, bist);
-}
-
-/* Entry from the mainboard. */
-void romstage_common(struct romstage_params *params)
-{
 	post_code(0x32);
 
 	timestamp_add_now(TS_BEFORE_INITRAM);
 
-	params->pei_data->boot_mode = params->power_state->prev_sleep_state;
+	rp.pei_data.boot_mode = rp.power_state->prev_sleep_state;
 
-#if CONFIG(ELOG_BOOT_COUNT)
-	if (params->power_state->prev_sleep_state != ACPI_S3)
+	if (CONFIG(ELOG_BOOT_COUNT)
+			&& rp.power_state->prev_sleep_state != ACPI_S3)
 		boot_count_increment();
-#endif
 
 	/* Print ME state before MRC */
 	intel_me_status();
 
 	/* Save ME HSIO version */
-	intel_me_hsio_version(&params->power_state->hsio_version,
-			      &params->power_state->hsio_checksum);
+	intel_me_hsio_version(&rp.power_state->hsio_version,
+			      &rp.power_state->hsio_checksum);
 
 	/* Initialize RAM */
-	raminit(params->pei_data);
+	raminit(&rp.pei_data);
 
 	timestamp_add_now(TS_AFTER_INITRAM);
 
-	romstage_handoff_init(params->power_state->prev_sleep_state == ACPI_S3);
-}
+	romstage_handoff_init(rp.power_state->prev_sleep_state == ACPI_S3);
 
-void __weak mainboard_pre_console_init(void) {}
+	mainboard_post_raminit(&rp);
+}
