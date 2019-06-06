@@ -16,7 +16,7 @@
 #include <bootblock_common.h>
 #include <gpio.h>
 #include <soc/gpio.h>
-#include "gpio.h"
+#include <variant/gpio.h>
 
 void bootblock_mainboard_init(void) {
 	gpio_configure_pads(early_gpio_table, ARRAY_SIZE(early_gpio_table));

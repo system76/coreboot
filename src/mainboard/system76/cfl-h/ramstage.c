@@ -17,7 +17,7 @@
 #include <device/device.h>
 #include <pc80/keyboard.h>
 #include <soc/ramstage.h>
-#include "gpio.h"
+#include <variant/gpio.h>
 
 void mainboard_silicon_init_params(FSP_S_CONFIG *params) {
 	/* Configure pads prior to SiliconInit() in case there's any
