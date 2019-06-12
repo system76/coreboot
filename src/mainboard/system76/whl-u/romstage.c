@@ -18,6 +18,18 @@
 
 //TODO: find correct values
 static const struct cnl_mb_cfg memcfg = {
+	/* Parameters required to access SPD for CH0D0/CH0D1/CH1D0/CH1D1. */
+	.spd[0] = {
+		.read_type = READ_SMBUS,
+		.spd_spec = {.spd_smbus_address = 0xa0},
+	},
+	.spd[1] = {.read_type = NOT_EXISTING},
+	.spd[2] = {
+		.read_type = READ_SMBUS,
+		.spd_spec = {.spd_smbus_address = 0xa4},
+	},
+	.spd[3] = {.read_type = NOT_EXISTING},
+
 	/*
 	 * For each channel, there are 3 sets of DQ byte mappings,
 	 * where each set has a package 0 and a package 1 value (package 0
@@ -77,14 +89,9 @@ static const struct cnl_mb_cfg memcfg = {
 	.vref_ca_config = 2,
 
 	/* Early Command Training Enabled */
-	.ect = 1,
+	.ect = 0,
 };
 
 void mainboard_memory_init_params(FSPM_UPD *memupd) {
-	const struct spd_info spd = {
-		.spd_smbus_address[0] = 0xA0,
-		.spd_smbus_address[2] = 0xA4,
-	};
-
-	cannonlake_memcfg_init(&memupd->FspmConfig, &memcfg, &spd);
+	cannonlake_memcfg_init(&memupd->FspmConfig, &memcfg);
 }
