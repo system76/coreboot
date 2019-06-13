@@ -22,11 +22,12 @@
 #include <device/pci_ids.h>
 #include <device/pci_ops.h>
 #include <cbmem.h>
-#include <elog.h>
 #include <amdblocks/amd_pci_util.h>
 #include <amdblocks/agesawrapper.h>
 #include <amdblocks/reset.h>
 #include <amdblocks/acpimmio.h>
+#include <amdblocks/lpc.h>
+#include <amdblocks/acpi.h>
 #include <soc/southbridge.h>
 #include <soc/smbus.h>
 #include <soc/smi.h>
@@ -152,128 +153,10 @@ const static struct irq_idx_name irq_association[] = {
 	{ PIRQ_UART1,	"UART1" },
 };
 
-/*
- * Structure to simplify code obtaining the total of used wide IO
- * registers and the size assigned to each.
- */
-static struct wide_io_ioport_and_bits {
-	uint32_t enable;
-	uint16_t port;
-	uint8_t alt;
-} wio_io_en[TOTAL_WIDEIO_PORTS] = {
-	{
-		LPC_WIDEIO0_ENABLE,
-		LPC_WIDEIO_GENERIC_PORT,
-		LPC_ALT_WIDEIO0_ENABLE
-	},
-	{
-		LPC_WIDEIO1_ENABLE,
-		LPC_WIDEIO1_GENERIC_PORT,
-		LPC_ALT_WIDEIO1_ENABLE
-	},
-	{
-		LPC_WIDEIO2_ENABLE,
-		LPC_WIDEIO2_GENERIC_PORT,
-		LPC_ALT_WIDEIO2_ENABLE
-	}
-};
-
 const struct irq_idx_name *sb_get_apic_reg_association(size_t *size)
 {
 	*size = ARRAY_SIZE(irq_association);
 	return irq_association;
-}
-
-/**
- * @brief Find the size of a particular wide IO
- *
- * @param index = index of desired wide IO
- *
- * @return size of desired wide IO
- */
-uint16_t sb_wideio_size(int index)
-{
-	uint32_t enable_register;
-	uint16_t size = 0;
-	uint8_t alternate_register;
-
-	if (index >= TOTAL_WIDEIO_PORTS)
-		return size;
-	enable_register = pci_read_config32(SOC_LPC_DEV,
-				LPC_IO_OR_MEM_DECODE_ENABLE);
-	alternate_register = pci_read_config8(SOC_LPC_DEV,
-				LPC_ALT_WIDEIO_RANGE_ENABLE);
-	if (enable_register & wio_io_en[index].enable)
-		size = (alternate_register & wio_io_en[index].alt) ?
-				16 : 512;
-	return size;
-}
-
-/**
- * @brief Identify if any LPC wide IO is covering the IO range
- *
- * @param start = start of IO range
- * @param size = size of IO range
- *
- * @return Index of wide IO covering the range or error
- */
-int sb_find_wideio_range(uint16_t start, uint16_t size)
-{
-	int i, index = WIDEIO_RANGE_ERROR;
-	uint16_t end, current_size, start_wideio, end_wideio;
-
-	end = start + size;
-	for (i = 0; i < TOTAL_WIDEIO_PORTS; i++) {
-		current_size = sb_wideio_size(i);
-		if (current_size == 0)
-			continue;
-		start_wideio = pci_read_config16(SOC_LPC_DEV,
-						 wio_io_en[i].port);
-		end_wideio = start_wideio + current_size;
-		if ((start >= start_wideio) && (end <= end_wideio)) {
-			index = i;
-			break;
-		}
-	}
-	return index;
-}
-
-/**
- * @brief Program a LPC wide IO to support an IO range
- *
- * @param start = start of range to be routed through wide IO
- * @param size = size of range to be routed through wide IO
- *
- * @return Index of wide IO register used or error
- */
-int sb_set_wideio_range(uint16_t start, uint16_t size)
-{
-	int i, index = WIDEIO_RANGE_ERROR;
-	uint32_t enable_register;
-	uint8_t alternate_register;
-
-	enable_register = pci_read_config32(SOC_LPC_DEV,
-					   LPC_IO_OR_MEM_DECODE_ENABLE);
-	alternate_register = pci_read_config8(SOC_LPC_DEV,
-					      LPC_ALT_WIDEIO_RANGE_ENABLE);
-	for (i = 0; i < TOTAL_WIDEIO_PORTS; i++) {
-		if (enable_register & wio_io_en[i].enable)
-			continue;
-		index = i;
-		pci_write_config16(SOC_LPC_DEV, wio_io_en[i].port, start);
-		enable_register |= wio_io_en[i].enable;
-		pci_write_config32(SOC_LPC_DEV, LPC_IO_OR_MEM_DECODE_ENABLE,
-				   enable_register);
-		if (size <= 16)
-			alternate_register |= wio_io_en[i].alt;
-		else
-			alternate_register &= ~wio_io_en[i].alt;
-		pci_write_config8(SOC_LPC_DEV,
-				  LPC_ALT_WIDEIO_RANGE_ENABLE,
-				  alternate_register);
-		break;
-	}
-	return index;
 }
 
 static void power_on_aoac_device(int aoac_device_control_register)
@@ -315,16 +198,7 @@ void enable_aoac_devices(void)
 	} while (!status);
 }
 
-void sb_pci_port80(void)
-{
-	u8 byte;
-
-	byte = pci_read_config8(SOC_LPC_DEV, LPC_IO_OR_MEM_DEC_EN_HIGH);
-	byte &= ~DECODE_IO_PORT_ENABLE4_H; /* disable lpc port 80 */
-	pci_write_config8(SOC_LPC_DEV, LPC_IO_OR_MEM_DEC_EN_HIGH, byte);
-}
-
-void sb_lpc_port80(void)
+static void sb_enable_lpc(void)
 {
 	u8 byte;
 
@@ -332,14 +206,9 @@ void sb_lpc_port80(void)
 	byte = pm_io_read8(PM_LPC_GATING);
 	byte |= PM_LPC_ENABLE;
 	pm_io_write8(PM_LPC_GATING, byte);
-
-	/* Enable port 80 LPC decode in pci function 3 configuration space. */
-	byte = pci_read_config8(SOC_LPC_DEV, LPC_IO_OR_MEM_DEC_EN_HIGH);
-	byte |= DECODE_IO_PORT_ENABLE4_H; /* enable port 80 */
-	pci_write_config8(SOC_LPC_DEV, LPC_IO_OR_MEM_DEC_EN_HIGH, byte);
 }
 
-void sb_lpc_decode(void)
+static void sb_lpc_decode(void)
 {
 	u32 tmp = 0;
 
@@ -357,7 +226,11 @@ void sb_lpc_decode(void)
 		| DECODE_ENABLE_KBC_PORT | DECODE_ENABLE_ACPIUC_PORT
 		| DECODE_ENABLE_ADLIB_PORT;
 
-	pci_write_config32(SOC_LPC_DEV, LPC_IO_PORT_DECODE_ENABLE, tmp);
+	/* Decode SIOs at 2E/2F and 4E/4F */
+	if (CONFIG(STONEYRIDGE_LEGACY_FREE))
+		tmp |= DECODE_ALTERNATE_SIO_ENABLE | DECODE_SIO_ENABLE;
+
+	lpc_enable_decode(tmp);
 }
 
 static void sb_enable_cf9_io(void)
@@ -397,27 +270,23 @@ void sb_clk_output_48Mhz(u32 osc)
 	misc_write32(MISC_CLK_CNTL1, ctrl);
 }
 
-static uintptr_t sb_spibase(void)
+static uintptr_t sb_init_spi_base(void)
 {
-	u32 base, enables;
+	uintptr_t base;
 
 	/* Make sure the base address is predictable */
-	base = pci_read_config32(SOC_LPC_DEV, SPIROM_BASE_ADDRESS_REGISTER);
-	enables = base & SPI_PRESERVE_BITS;
-	base &= ~(SPI_PRESERVE_BITS | SPI_BASE_RESERVED);
+	base = lpc_get_spibase();
 
-	if (!base) {
-		base = SPI_BASE_ADDRESS;
-		pci_write_config32(SOC_LPC_DEV, SPIROM_BASE_ADDRESS_REGISTER,
-					base | enables | SPI_ROM_ENABLE);
-		/* PCI_COMMAND_MEMORY is read-only and enabled. */
-	}
-	return (uintptr_t)base;
+	if (base)
+		return base;
+
+	lpc_set_spibase(SPI_BASE_ADDRESS, SPI_ROM_ENABLE);
+	return SPI_BASE_ADDRESS;
 }
 
 void sb_set_spi100(u16 norm, u16 fast, u16 alt, u16 tpm)
 {
-	uintptr_t base = sb_spibase();
+	uintptr_t base = sb_init_spi_base();
 	write16((void *)(base + SPI100_SPEED_CONFIG),
 				(norm << SPI_NORM_SPEED_NEW_SH) |
 				(fast << SPI_FAST_SPEED_NEW_SH) |
@@ -428,7 +297,7 @@ void sb_set_spi100(u16 norm, u16 fast, u16 alt, u16 tpm)
 
 void sb_disable_4dw_burst(void)
 {
-	uintptr_t base = sb_spibase();
+	uintptr_t base = sb_init_spi_base();
 	write16((void *)(base + SPI100_HOST_PREF_CONFIG),
 			read16((void *)(base + SPI100_HOST_PREF_CONFIG))
 					& ~SPI_RD4DW_EN_HOST);
@@ -436,113 +305,10 @@ void sb_disable_4dw_burst(void)
 
 void sb_read_mode(u32 mode)
 {
-	uintptr_t base = sb_spibase();
+	uintptr_t base = sb_init_spi_base();
 	write32((void *)(base + SPI_CNTRL0),
 			(read32((void *)(base + SPI_CNTRL0))
 					& ~SPI_READ_MODE_MASK) | mode);
-}
-
-/*
- * Enable FCH to decode TPM associated Memory and IO regions
- *
- * Enable decoding of TPM cycles defined in TPM 1.2 spec
- * Enable decoding of legacy TPM addresses: IO addresses 0x7f-
- * 0x7e and 0xef-0xee.
- * This function should be called if TPM is connected in any way to the FCH and
- * conforms to the regions decoded.
- * Absent any other routing configuration the TPM cycles will be claimed by the
- * LPC bus
- */
-void sb_tpm_decode(void)
-{
-	u32 value;
-
-	value = pci_read_config32(SOC_LPC_DEV, LPC_TRUSTED_PLATFORM_MODULE);
-	value |= TPM_12_EN | TPM_LEGACY_EN;
-	pci_write_config32(SOC_LPC_DEV, LPC_TRUSTED_PLATFORM_MODULE, value);
-}
-
-/*
- * Enable FCH to decode TPM associated Memory and IO regions to SPI
- *
- * This should be used if TPM is connected to SPI bus.
- * Assumes SPI address space is already configured via a call to sb_spibase().
- */
-void sb_tpm_decode_spi(void)
-{
-	/* Enable TPM decoding to FCH */
-	sb_tpm_decode();
-
-	/* Route TPM accesses to SPI */
-	u32 spibase = pci_read_config32(SOC_LPC_DEV,
-					SPIROM_BASE_ADDRESS_REGISTER);
-	pci_write_config32(SOC_LPC_DEV, SPIROM_BASE_ADDRESS_REGISTER, spibase
-					| ROUTE_TPM_2_SPI);
-}
-
-/*
- * Enable 4MB (LPC) ROM access at 0xFFC00000 - 0xFFFFFFFF.
- *
- * Hardware should enable LPC ROM by pin straps. This function does not
- * handle the theoretically possible PCI ROM, FWH, or SPI ROM configurations.
- *
- * The southbridge power-on default is to map 512K ROM space.
- *
- */
-void sb_enable_rom(void)
-{
-	u8 reg8;
-
-	/*
-	 * Decode variable LPC ROM address ranges 1 and 2.
-	 * Bits 3-4 are not defined in any publicly available datasheet
-	 */
-	reg8 = pci_read_config8(SOC_LPC_DEV, LPC_IO_OR_MEM_DECODE_ENABLE);
-	reg8 |= (1 << 3) | (1 << 4);
-	pci_write_config8(SOC_LPC_DEV, LPC_IO_OR_MEM_DECODE_ENABLE, reg8);
-
-	/*
-	 * LPC ROM address range 1:
-	 * Enable LPC ROM range mirroring start at 0x000e(0000).
-	 */
-	pci_write_config16(SOC_LPC_DEV, ROM_ADDRESS_RANGE1_START, 0x000e);
-
-	/* Enable LPC ROM range mirroring end at 0x000f(ffff). */
-	pci_write_config16(SOC_LPC_DEV, ROM_ADDRESS_RANGE1_END, 0x000f);
-
-	/*
-	 * LPC ROM address range 2:
-	 *
-	 * Enable LPC ROM range start at:
-	 * 0xfff8(0000): 512KB
-	 * 0xfff0(0000): 1MB
-	 * 0xffe0(0000): 2MB
-	 * 0xffc0(0000): 4MB
-	 */
-	pci_write_config16(SOC_LPC_DEV, ROM_ADDRESS_RANGE2_START, 0x10000
-					- (CONFIG_COREBOOT_ROMSIZE_KB >> 6));
-
-	/* Enable LPC ROM range end at 0xffff(ffff). */
-	pci_write_config16(SOC_LPC_DEV, ROM_ADDRESS_RANGE2_END, 0xffff);
-}
-
-static void sb_lpc_early_setup(void)
-{
-	uint32_t dword;
-
-	/* Enable SPI prefetch */
-	dword = pci_read_config32(SOC_LPC_DEV, LPC_ROM_DMA_EC_HOST_CONTROL);
-	dword |= SPI_FROM_HOST_PREFETCH_EN | SPI_FROM_USB_PREFETCH_EN;
-	pci_write_config32(SOC_LPC_DEV, LPC_ROM_DMA_EC_HOST_CONTROL, dword);
-
-	if (CONFIG(STONEYRIDGE_LEGACY_FREE)) {
-		/* Decode SIOs at 2E/2F and 4E/4F */
-		dword = pci_read_config32(SOC_LPC_DEV,
-						LPC_IO_OR_MEM_DECODE_ENABLE);
-		dword |= DECODE_ALTERNATE_SIO_ENABLE | DECODE_SIO_ENABLE;
-		pci_write_config32(SOC_LPC_DEV,
-					LPC_IO_OR_MEM_DECODE_ENABLE, dword);
-	}
 }
 
 static void setup_spread_spectrum(int *reboot)
@@ -627,11 +393,12 @@ void bootblock_fch_early_init(void)
 {
 	int reboot = 0;
 
-	sb_enable_rom();
-	sb_lpc_port80();
+	lpc_enable_rom();
+	sb_enable_lpc();
+	lpc_enable_port80();
 	sb_lpc_decode();
-	sb_lpc_early_setup();
-	sb_spibase();
+	lpc_enable_spi_prefetch();
+	sb_init_spi_base();
 	sb_disable_4dw_burst(); /* Must be disabled on CZ(ST) */
 	enable_acpimmio_decode();
 	fch_smbus_init();
@@ -755,83 +522,6 @@ static void sb_init_acpi_ports(void)
 				PM_ACPI_TIMER_EN_EN);
 }
 
-static uint16_t reset_pm1_status(void)
-{
-	uint16_t pm1_sts = acpi_read16(MMIO_ACPI_PM1_STS);
-	acpi_write16(MMIO_ACPI_PM1_STS, pm1_sts);
-	return pm1_sts;
-}
-
-static uint16_t print_pm1_status(uint16_t pm1_sts)
-{
-	static const char *const pm1_sts_bits[16] = {
-		[0] = "TMROF",
-		[4] = "BMSTATUS",
-		[5] = "GBL",
-		[8] = "PWRBTN",
-		[10] = "RTC",
-		[14] = "PCIEXPWAK",
-		[15] = "WAK",
-	};
-
-	if (!pm1_sts)
-		return 0;
-
-	printk(BIOS_DEBUG, "PM1_STS: ");
-	print_num_status_bits(ARRAY_SIZE(pm1_sts_bits), pm1_sts, pm1_sts_bits);
-	printk(BIOS_DEBUG, "\n");
-
-	return pm1_sts;
-}
-
-static void sb_log_pm1_status(uint16_t pm1_sts)
-{
-	if (!CONFIG(ELOG))
-		return;
-
-	if (pm1_sts & WAK_STS)
-		elog_add_event_byte(ELOG_TYPE_ACPI_WAKE,
-				    acpi_is_wakeup_s3() ? ACPI_S3 : ACPI_S5);
-
-	if (pm1_sts & PWRBTN_STS)
-		elog_add_event_wake(ELOG_WAKE_SOURCE_PWRBTN, 0);
-
-	if (pm1_sts & RTC_STS)
-		elog_add_event_wake(ELOG_WAKE_SOURCE_RTC, 0);
-
-	if (pm1_sts & PCIEXPWAK_STS)
-		elog_add_event_wake(ELOG_WAKE_SOURCE_PCIE, 0);
-}
-
-static void sb_save_sws(uint16_t pm1_status)
-{
-	struct soc_power_reg *sws;
-	uint32_t reg32;
-	uint16_t reg16;
-
-	sws = cbmem_add(CBMEM_ID_POWER_STATE, sizeof(struct soc_power_reg));
-	if (sws == NULL)
-		return;
-	sws->pm1_sts = pm1_status;
-	sws->pm1_en = acpi_read16(MMIO_ACPI_PM1_EN);
-	reg32 = acpi_read32(MMIO_ACPI_GPE0_STS);
-	acpi_write32(MMIO_ACPI_GPE0_STS, reg32);
-	sws->gpe0_sts = reg32;
-	sws->gpe0_en = acpi_read32(MMIO_ACPI_GPE0_EN);
-	reg16 = acpi_read16(MMIO_ACPI_PM1_CNT_BLK);
-	reg16 &= SLP_TYP;
-	sws->wake_from = reg16 >> SLP_TYP_SHIFT;
-}
-
-static void sb_clear_pm1_status(void)
-{
-	uint16_t pm1_sts = reset_pm1_status();
-
-	sb_save_sws(pm1_sts);
-	sb_log_pm1_status(pm1_sts);
-	print_pm1_status(pm1_sts);
-}
-
 static int get_index_bit(uint32_t value, uint16_t limit)
 {
 	uint16_t i;
@@ -884,7 +574,7 @@ BOOT_STATE_INIT_ENTRY(BS_OS_RESUME, BS_ON_ENTRY, set_nvs_sws, NULL);
 void southbridge_init(void *chip_info)
 {
 	sb_init_acpi_ports();
-	sb_clear_pm1_status();
+	acpi_clear_pm1_status();
 }
 
 static void set_sb_final_nvs(void)
@@ -959,3 +649,27 @@ static void set_pci_irqs(void *unused)
  * on entry into BS_DEV_ENABLE.
  */
 BOOT_STATE_INIT_ENTRY(BS_DEV_ENABLE, BS_ON_ENTRY, set_pci_irqs, NULL);
+
+void save_uma_size(uint32_t size)
+{
+	biosram_write32(BIOSRAM_UMA_SIZE, size);
+}
+
+void save_uma_base(uint64_t base)
+{
+	biosram_write32(BIOSRAM_UMA_BASE, (uint32_t) base);
+	biosram_write32(BIOSRAM_UMA_BASE + 4, (uint32_t) (base >> 32));
+}
+
+uint32_t get_uma_size(void)
+{
+	return biosram_read32(BIOSRAM_UMA_SIZE);
+}
+
+uint64_t get_uma_base(void)
+{
+	uint64_t base;
+	base = biosram_read32(BIOSRAM_UMA_BASE);
+	base |= ((uint64_t)(biosram_read32(BIOSRAM_UMA_BASE + 4)) << 32);
+	return base;
+}

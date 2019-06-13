@@ -1,8 +1,7 @@
 /*
  * This file is part of the coreboot project.
  *
- * Copyright (C) 2013 Google Inc.
- * Copyright (C) 2015 Intel Corp.
+ * Copyright (C) 2018 Patrick Rudolph <siro@das-labor.org>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,15 +13,14 @@
  * GNU General Public License for more details.
  */
 
-#include <arch/io.h>
-#include <soc/iomap.h>
-#include <soc/romstage.h>
-
-void tco_disable(void)
+Method(_WAK, 1, NotSerialized)
 {
-	uint32_t reg;
+	\_SB.PCI0.LPCB.SIO0.SIOW (Arg0)
 
-	reg = inl(ACPI_BASE_ADDRESS + TCO1_CNT);
-	reg |= TCO_TMR_HALT;
-	outl(reg, ACPI_BASE_ADDRESS + TCO1_CNT);
+	Return(Package(){0,0})
+}
+
+Method(_PTS, 1, NotSerialized)
+{
+	\_SB.PCI0.LPCB.SIO0.SIOS (Arg0)
 }

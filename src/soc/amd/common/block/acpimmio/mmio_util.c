@@ -67,38 +67,41 @@ void pm_io_write32(uint8_t reg, uint32_t value)
 
 /* smbus pci read/write - access registers at 0xfed80000 - currently unused */
 
+#if SUPPORTS_ACPIMMIO_SMI_BASE
 /* smi read/write - access registers at 0xfed80200 */
 
-uint8_t smi_read8(uint8_t offset)
+uint8_t smi_read8(uint8_t reg)
 {
-	return read8((void *)(ACPIMMIO_SMI_BASE + offset));
+	return read8((void *)(ACPIMMIO_SMI_BASE + reg));
 }
 
-uint16_t smi_read16(uint8_t offset)
+uint16_t smi_read16(uint8_t reg)
 {
-	return read16((void *)(ACPIMMIO_SMI_BASE + offset));
+	return read16((void *)(ACPIMMIO_SMI_BASE + reg));
 }
 
-uint32_t smi_read32(uint8_t offset)
+uint32_t smi_read32(uint8_t reg)
 {
-	return read32((void *)(ACPIMMIO_SMI_BASE + offset));
+	return read32((void *)(ACPIMMIO_SMI_BASE + reg));
 }
 
-void smi_write8(uint8_t offset, uint8_t value)
+void smi_write8(uint8_t reg, uint8_t value)
 {
-	write8((void *)(ACPIMMIO_SMI_BASE + offset), value);
+	write8((void *)(ACPIMMIO_SMI_BASE + reg), value);
 }
 
-void smi_write16(uint8_t offset, uint16_t value)
+void smi_write16(uint8_t reg, uint16_t value)
 {
-	write16((void *)(ACPIMMIO_SMI_BASE + offset), value);
+	write16((void *)(ACPIMMIO_SMI_BASE + reg), value);
 }
 
-void smi_write32(uint8_t offset, uint32_t value)
+void smi_write32(uint8_t reg, uint32_t value)
 {
-	write32((void *)(ACPIMMIO_SMI_BASE + offset), value);
+	write32((void *)(ACPIMMIO_SMI_BASE + reg), value);
 }
+#endif /* SUPPORTS_ACPIMMIO_SMI_BASE */
 
+#if SUPPORTS_ACPIMMIO_PMIO_BASE
 /* pm read/write - access registers at 0xfed80300 */
 
 u8 pm_read8(u8 reg)
@@ -130,58 +133,60 @@ void pm_write32(u8 reg, u32 value)
 {
 	write32((void *)(ACPIMMIO_PMIO_BASE + reg), value);
 }
+#endif /* SUPPORTS_ACPIMMIO_PMIO_BASE */
 
-/* pm2 read/write - access registers at 0xfed80400 - currently unused */
+#if SUPPORTS_ACPIMMIO_PMIO2_BASE
+/* pm2 read/write - access registers at 0xfed80400 - currently unused by any soc */
+#endif
 
+#if SUPPORTS_ACPIMMIO_BIOSRAM_BASE
 /* biosram read/write - access registers at 0xfed80500 */
 
-uint8_t biosram_read8(uint8_t offset)
+uint8_t biosram_read8(uint8_t reg)
 {
-	return read8((void *)(ACPIMMIO_BIOSRAM_BASE + offset));
+	return read8((void *)(ACPIMMIO_BIOSRAM_BASE + reg));
 }
 
-uint16_t biosram_read16(uint8_t offset) /* Must be 1 byte at a time */
+uint16_t biosram_read16(uint8_t reg) /* Must be 1 byte at a time */
 {
-	int i;
-	uint16_t value = 0;
-	for (i = sizeof(value) - 1 ; i >= 0 ; i--)
-		value = (value << 8) | biosram_read8(offset + i);
-	return value;
+	return (biosram_read8(reg + sizeof(uint8_t)) << 8 | biosram_read8(reg));
 }
 
-uint32_t biosram_read32(uint8_t offset)
+uint32_t biosram_read32(uint8_t reg)
 {
-	uint32_t value = biosram_read16(offset + sizeof(uint16_t)) << 16;
-	return value | biosram_read16(offset);
+	uint32_t value = biosram_read16(reg + sizeof(uint16_t)) << 16;
+	return value | biosram_read16(reg);
 }
 
-void biosram_write8(uint8_t offset, uint8_t value)
+void biosram_write8(uint8_t reg, uint8_t value)
 {
-	write8((void *)(ACPIMMIO_BIOSRAM_BASE + offset), value);
+	write8((void *)(ACPIMMIO_BIOSRAM_BASE + reg), value);
 }
 
-void biosram_write16(uint8_t offset, uint16_t value)
+void biosram_write16(uint8_t reg, uint16_t value)
 {
-	int i;
-	for (i = 0 ; i < sizeof(value) ; i++) {
-		biosram_write8(offset + i, value & 0xff);
-		value >>= 8;
-	}
+	biosram_write8(reg, value & 0xff);
+	value >>= 8;
+	biosram_write8(reg + sizeof(uint8_t), value & 0xff);
 }
 
-void biosram_write32(uint8_t offset, uint32_t value)
+void biosram_write32(uint8_t reg, uint32_t value)
 {
-	int i;
-	for (i = 0 ; i < sizeof(value) ; i++) {
-		biosram_write8(offset + i, value & 0xff);
-		value >>= 8;
-	}
+	biosram_write16(reg, value & 0xffff);
+	value >>= 16;
+	biosram_write16(reg + sizeof(uint16_t), value & 0xffff);
 }
+#endif /* SUPPORTS_ACPIMMIO_BIOSRAM_BASE */
 
-/* cmosram read/write - access registers at 0xfed80600 - currently unused */
+#if SUPPORTS_ACPIMMIO_CMOSRAM_BASE
+/* cmosram read/write - access registers at 0xfed80600 - currently unused by any soc */
+#endif
 
-/* cmos read/write - access registers at 0xfed80700 - currently unused */
+#if SUPPORTS_ACPIMMIO_CMOS_BASE
+/* cmos read/write - access registers at 0xfed80700 - currently unused by any soc */
+#endif
 
+#if SUPPORTS_ACPIMMIO_ACPI_BASE
 /* acpi read/write - access registers at 0xfed80800 */
 
 u8 acpi_read8(u8 reg)
@@ -213,8 +218,10 @@ void acpi_write32(u8 reg, u32 value)
 {
 	write32((void *)(ACPIMMIO_ACPI_BASE + reg), value);
 }
+#endif /* SUPPORTS_ACPIMMIO_ACPI_BASE */
 
-/* asf read/write - access registers at 0xfed80900 - not currently used */
+#if SUPPORTS_ACPIMMIO_ASF_BASE
+/* asf read/write - access registers at 0xfed80900 */
 
 u8 asf_read8(u8 reg)
 {
@@ -235,8 +242,10 @@ void asf_write16(u8 reg, u16 value)
 {
 	write16((void *)(ACPIMMIO_ASF_BASE + reg), value);
 }
+#endif /* SUPPORTS_ACPIMMIO_ASF_BASE */
 
-/* smbus read/write - access registers at 0xfed80a00 and ASF at 0xfed80900 */
+#if SUPPORTS_ACPIMMIO_SMBUS_BASE
+/* smbus read/write - access registers at 0xfed80a00 */
 
 u8 smbus_read8(u8 reg)
 {
@@ -257,11 +266,17 @@ void smbus_write16(u8 reg, u16 value)
 {
 	write16((void *)(ACPIMMIO_SMBUS_BASE + reg), value);
 }
+#endif /* SUPPORTS_ACPIMMIO_SMBUS_BASE */
 
-/* wdt read/write - access registers at 0xfed80b00 - not currently used */
+#if SUPPORTS_ACPIMMIO_WDT_BASE
+/* wdt read/write - access registers at 0xfed80b00 - not currently used by any soc */
+#endif
 
-/* hpet read/write - access registers at 0xfed80c00 - not currently used */
+#if SUPPORTS_ACPIMMIO_HPET_BASE
+/* hpet read/write - access registers at 0xfed80c00 - not currently used by any soc */
+#endif
 
+#if SUPPORTS_ACPIMMIO_IOMUX_BASE
 /* iomux read/write - access registers at 0xfed80d00 */
 
 u8 iomux_read8(u8 reg)
@@ -293,7 +308,9 @@ void iomux_write32(u8 reg, u32 value)
 {
 	write32((void *)(ACPIMMIO_IOMUX_BASE + reg), value);
 }
+#endif /* SUPPORTS_ACPIMMIO_IOMUX_BASE */
 
+#if SUPPORTS_ACPIMMIO_MISC_BASE
 /* misc read/write - access registers at 0xfed80e00 */
 
 u8 misc_read8(u8 reg)
@@ -325,13 +342,25 @@ void misc_write32(u8 reg, u32 value)
 {
 	write32((void *)(ACPIMMIO_MISC_BASE + reg), value);
 }
+#endif /* SUPPORTS_ACPIMMIO_MISC_BASE */
 
-/* dpvga read/write - access registers at 0xfed81400 - not currently used */
+#if SUPPORTS_ACPIMMIO_DPVGA_BASE
+/* dpvga read/write - access registers at 0xfed81400 - not currently used by any soc */
+#endif
 
-/* gpio bk 0 read/write - access registers at 0xfed81500 - not currently used */
-/* gpio bk 1 read/write - access registers at 0xfed81600 - not currently used */
-/* gpio bk 2 read/write - access registers at 0xfed81700 - not currently used */
+#if SUPPORTS_ACPIMMIO_GPIO0_BASE || SUPPORTS_ACPIMMIO_GPIO1_BASE \
+				 || SUPPORTS_ACPIMMIO_GPIO2_BASE
+/*
+ * No helpers are currently in use however common/block//gpio.c accesses
+ * the registers directly.
+ */
 
+/* gpio bk 0 read/write - access registers at 0xfed81500 */
+/* gpio bk 1 read/write - access registers at 0xfed81600 */
+/* gpio bk 2 read/write - access registers at 0xfed81700 */
+#endif
+
+#if SUPPORTS_ACPIMMIO_XHCIPM_BASE
 /* xhci_pm read/write - access registers at 0xfed81c00 */
 
 uint8_t xhci_pm_read8(uint8_t reg)
@@ -363,10 +392,14 @@ void xhci_pm_write32(uint8_t reg, uint32_t value)
 {
 	write32((void *)(ACPIMMIO_XHCIPM_BASE + reg), value);
 }
+#endif /* SUPPORTS_ACPIMMIO_XHCIPM_BASE */
 
-/* acdc_tmr read/write - access registers at 0xfed81d00 */
+#if SUPPORTS_ACPIMMIO_ACDCTMR_BASE
+/* acdc_tmr read/write - access registers at 0xfed81d00 - not currently used by any soc */
+#endif
 
-/* aoac read/write - access registers at 0xfed81e00 - not currently used */
+#if SUPPORTS_ACPIMMIO_AOAC_BASE
+/* aoac read/write - access registers at 0xfed81e00 */
 
 u8 aoac_read8(u8 reg)
 {
@@ -377,3 +410,4 @@ void aoac_write8(u8 reg, u8 value)
 {
 	write8((void *)(ACPIMMIO_AOAC_BASE + reg), value);
 }
+#endif /* SUPPORTS_ACPIMMIO_AOAC_BASE */

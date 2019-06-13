@@ -28,7 +28,7 @@ chip soc/intel/cannonlake
 	# Enable System Agent dynamic frequency
 	register "SaGv" = "SaGv_Enabled"
 	# Enable heci communication
-	register "HeciEnabled" = "1"
+	register "HeciEnabled" = "0"
 	# Enable Speed Shift Technology support
 	register "speed_shift_enable" = "1"
 	# Enable S0ix
@@ -99,7 +99,9 @@ chip soc/intel/cannonlake
 	register "gpio_pm[COMM_1]" = "MISCCFG_ENABLE_GPIO_PM_CONFIG"
 	register "gpio_pm[COMM_2]" = "MISCCFG_ENABLE_GPIO_PM_CONFIG"
 	register "gpio_pm[COMM_3]" = "MISCCFG_ENABLE_GPIO_PM_CONFIG"
-	register "gpio_pm[COMM_4]" = "MISCCFG_GPSIDEDPCGEN | MISCCFG_GPRTCDLCGEN | MISCCFG_GSXSLCGEN | MISCCFG_GPDPCGEN | MISCCFG_GPDLCGEN"
+	# Disable clock gating on this community so that cr50's short irq
+	# pulses won't be missed.
+	register "gpio_pm[COMM_4]" = "0"
 
 	device cpu_cluster 0 on
 		device lapic 0 on end

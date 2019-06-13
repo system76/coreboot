@@ -1,7 +1,7 @@
 /*
  * This file is part of the coreboot project.
  *
- * Copyright (C) 2018 Google Inc.
+ * Copyright (C) 2017 Advanced Micro Devices, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -13,21 +13,11 @@
  * GNU General Public License for more details.
  */
 
-#include <arch/acpi.h>
-#include <soc/southbridge.h>
-#include <amdblocks/acpimmio.h>
-#include <halt.h>
+#ifndef __AMDBLOCKS_SATA_H__
+#define __AMDBLOCKS_SATA_H__
 
-void poweroff(void)
-{
-	acpi_write32(MMIO_ACPI_PM1_CNT_BLK,
-			  (SLP_TYP_S5 << SLP_TYP_SHIFT) | SLP_EN);
+#include <device/device.h>
 
-	/*
-	 * Setting SLP_TYP_S5 in PM1 triggers SLP_SMI, which is handled by SMM
-	 * to transition to S5 state. If halt is called in SMM, then it prevents
-	 * the SMI handler from being triggered and system never enters S5.
-	 */
-	if (!ENV_SMM)
-		halt();
-}
+void soc_enable_sata_features(struct device *dev);
+
+#endif /* __AMDBLOCKS_SATA_H__ */
