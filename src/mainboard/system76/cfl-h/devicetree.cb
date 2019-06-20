@@ -177,7 +177,7 @@ chip soc/intel/cannonlake
 	# offset bits also need to be changed.
 	# sudo devmem2 0xfe001920 (pmc_bar + GPIO_GPE_CFG)
 	register "gpe0_dw0" = "PMC_GPP_K"
-	register "gpe0_dw1" = "PMC_GPP_D"
+	register "gpe0_dw1" = "PMC_GPP_G"
 	register "gpe0_dw2" = "PMC_GPP_E"
 
 # Actual device tree
