@@ -189,15 +189,15 @@ const struct pad_community *soc_gpio_get_community(size_t *num_communities)
 const struct pmc_to_gpio_route *soc_pmc_gpio_routes(size_t *num)
 {
 	static const struct pmc_to_gpio_route routes[] = {
-		{ PMC_GPP_A, GPP_A },
-		{ PMC_GPP_B, GPP_B },
-		{ PMC_GPP_C, GPP_C },
-		{ PMC_GPP_D, GPP_D },
-		{ PMC_GPP_E, GPP_E },
-		{ PMC_GPP_F, GPP_F },
-		{ PMC_GPP_G, GPP_G },
-		{ PMC_GPP_H, GPP_H },
-		{ PMC_GPD, GPD },
+		{ PMC_GPP_A, PMC_GPP_A },
+		{ PMC_GPP_B, PMC_GPP_B },
+		{ PMC_GPP_C, PMC_GPP_C },
+		{ PMC_GPP_D, PMC_GPP_D },
+		{ PMC_GPP_E, PMC_GPP_E },
+		{ PMC_GPP_F, PMC_GPP_F },
+		{ PMC_GPP_G, PMC_GPP_G },
+		{ PMC_GPP_H, PMC_GPP_H },
+		{ PMC_GPD, PMC_GPD },
 	};
 	*num = ARRAY_SIZE(routes);
 	return routes;
