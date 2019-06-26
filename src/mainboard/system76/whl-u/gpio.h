@@ -232,7 +232,7 @@ static const struct pad_config gpio_table[] = {
 		// TBCIO_PLUG_EVENT
 		_PAD_CFG_STRUCT(GPP_C9, 0x82880100, 0x3000),
 		// TBT_FRC_PWR
-		PAD_CFG_TERM_GPO(GPP_C10, 0, NONE, PLTRST),
+		PAD_CFG_TERM_GPO(GPP_C10, 1, NONE, PLTRST),
 		// NC
 		PAD_CFG_NC(GPP_C11),
 
