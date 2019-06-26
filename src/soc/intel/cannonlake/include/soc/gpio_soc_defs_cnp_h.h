@@ -27,13 +27,13 @@
 #define GPP_C			2
 #define GPP_D			3
 #define GPP_G			4
-#define GPP_K			5
-#define GPP_H			6
-#define GPP_E			7
-#define GPP_F			8
-#define GPP_I			9
-#define GPP_J			0xA
-#define GPD			0xC
+#define GPP_K			9
+#define GPP_H			8
+#define GPP_E			6
+#define GPP_F			7
+#define GPP_I			0xA
+#define GPP_J			0xB
+#define GPD			5
 #define GPIO_NUM_GROUPS		12
 #define GPIO_MAX_NUM_PER_GROUP	24
 
