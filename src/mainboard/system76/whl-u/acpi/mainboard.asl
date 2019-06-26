@@ -22,6 +22,8 @@ Scope (\_SB) {
     #include "s76.asl"
 }
 
+#include "tbt.asl"
+
 Scope (_GPE) {
     #include "gpe.asl"
 }
