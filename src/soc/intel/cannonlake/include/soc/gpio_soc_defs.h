@@ -31,7 +31,7 @@
 #define GPP_H			0x7
 #define GROUP_VGPIO0		0x8
 #define GROUP_VGPIO1		0x9
-#define GPD			0x9
+#define GPD			0xA
 #define GROUP_AZA		0xB
 #define GROUP_CPU		0xC
 #define GPP_C			0x4
