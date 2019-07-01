@@ -18,6 +18,7 @@
 #include <assert.h>
 #include <commonlib/stdlib.h>
 #include <console/console.h>
+#include <ctype.h>
 #include <device_tree.h>
 #include <endian.h>
 #include <stdint.h>
@@ -133,7 +134,7 @@ static int print_flat_node(const void *blob, uint32_t start_offset, int depth)
 		offset += size;
 	}
 
-	printk(BIOS_DEBUG, "\n");	// empty line between props and nodes
+	printk(BIOS_DEBUG, "\n");	/* empty line between props and nodes */
 
 	while ((size = print_flat_node(blob, offset, depth + 1)))
 		offset += size;
@@ -259,11 +260,13 @@ struct device_tree *fdt_unflatten(const void *blob)
 
 	if (magic != FDT_HEADER_MAGIC) {
 		printk(BIOS_DEBUG, "Invalid device tree magic %#.8x!\n", magic);
+		free(tree);
 		return NULL;
 	}
 	if (last_comp_version > FDT_SUPPORTED_VERSION) {
 		printk(BIOS_DEBUG, "Unsupported device tree version %u(>=%u)\n",
 		       version, last_comp_version);
+		free(tree);
 		return NULL;
 	}
 	if (version > FDT_SUPPORTED_VERSION)
@@ -277,9 +280,9 @@ struct device_tree *fdt_unflatten(const void *blob)
 	uint32_t min_offset = 0;
 	min_offset = MIN(struct_offset, strings_offset);
 	min_offset = MIN(min_offset, reserve_offset);
-	// Assume everything up to the first non-header component is part of
-	// the header and needs to be preserved. This will protect us against
-	// new elements being added in the future.
+	/* Assume everything up to the first non-header component is part of
+	   the header and needs to be preserved. This will protect us against
+	   new elements being added in the future. */
 	tree->header_size = min_offset;
 
 	struct device_tree_reserve_map_entry *entry;
@@ -307,25 +310,25 @@ struct device_tree *fdt_unflatten(const void *blob)
 static void dt_flat_prop_size(struct device_tree_property *prop,
 			      uint32_t *struct_size, uint32_t *strings_size)
 {
-	// Starting token.
+	/* Starting token. */
 	*struct_size += sizeof(uint32_t);
-	// Size.
+	/* Size. */
 	*struct_size += sizeof(uint32_t);
-	// Name offset.
+	/* Name offset. */
 	*struct_size += sizeof(uint32_t);
-	// Property value.
+	/* Property value. */
 	*struct_size += ALIGN_UP(prop->prop.size, sizeof(uint32_t));
 
-	// Property name.
+	/* Property name. */
 	*strings_size += strlen(prop->prop.name) + 1;
 }
 
 static void dt_flat_node_size(struct device_tree_node *node,
 			      uint32_t *struct_size, uint32_t *strings_size)
 {
-	// Starting token.
+	/* Starting token. */
 	*struct_size += sizeof(uint32_t);
-	// Node name.
+	/* Node name. */
 	*struct_size += ALIGN_UP(strlen(node->name) + 1, sizeof(uint32_t));
 
 	struct device_tree_property *prop;
@@ -336,7 +339,7 @@ static void dt_flat_node_size(struct device_tree_node *node,
 	list_for_each(child, node->children, list_node)
 		dt_flat_node_size(child, struct_size, strings_size);
 
-	// End token.
+	/* End token. */
 	*struct_size += sizeof(uint32_t);
 }
 
@@ -353,7 +356,7 @@ uint32_t dt_flat_size(const struct device_tree *tree)
 	dt_flat_node_size(tree->root, &struct_size, &strings_size);
 
 	size += struct_size;
-	// End token.
+	/* End token. */
 	size += sizeof(uint32_t);
 
 	size += strings_size;
@@ -478,7 +481,7 @@ void dt_flatten(const struct device_tree *tree, void *start_dest)
 static void print_node(const struct device_tree_node *node, int depth)
 {
 	print_indent(depth);
-	if (depth == 0)		// root node has no name, print a starting slash
+	if (depth == 0)	/* root node has no name, print a starting slash */
 		printk(BIOS_DEBUG, "/");
 	printk(BIOS_DEBUG, "%s {\n", node->name);
 
@@ -486,7 +489,7 @@ static void print_node(const struct device_tree_node *node, int depth)
 	list_for_each(prop, node->properties, list_node)
 		print_property(&prop->prop, depth + 1);
 
-	printk(BIOS_DEBUG, "\n");	// empty line between props and nodes
+	printk(BIOS_DEBUG, "\n");	/* empty line between props and nodes */
 
 	struct device_tree_node *child;
 	list_for_each(child, node->children, list_node)
@@ -546,13 +549,13 @@ struct device_tree_node *dt_find_node(struct device_tree_node *parent,
 {
 	struct device_tree_node *node, *found = NULL;
 
-	// Update #address-cells and #size-cells for this level.
+	/* Update #address-cells and #size-cells for this level. */
 	dt_read_cell_props(parent, addrcp, sizecp);
 
 	if (!*path)
 		return parent;
 
-	// Find the next node in the path, if it exists.
+	/* Find the next node in the path, if it exists. */
 	list_for_each(node, parent->children, list_node) {
 		if (!strcmp(node->name, *path)) {
 			found = node;
@@ -560,7 +563,7 @@ struct device_tree_node *dt_find_node(struct device_tree_node *parent,
 		}
 	}
 
-	// Otherwise create it or return NULL.
+	/* Otherwise create it or return NULL. */
 	if (!found) {
 		if (!create)
 			return NULL;
@@ -607,8 +610,8 @@ struct device_tree_node *dt_find_node_by_path(struct device_tree *tree,
 	int i;
 	struct device_tree_node *node = NULL;
 
-	if (path[0] == '/') { // regular path
-		if (path[1] == '\0') {	// special case: "/" is root node
+	if (path[0] == '/') { /* regular path */
+		if (path[1] == '\0') {	/* special case: "/" is root node */
 			dt_read_cell_props(tree->root, addrcp, sizecp);
 			return tree->root;
 		}
@@ -618,7 +621,7 @@ struct device_tree_node *dt_find_node_by_path(struct device_tree *tree,
 			return NULL;
 
 		parent = tree->root;
-	} else { // alias
+	} else { /* alias */
 		char *alias;
 
 		alias = duped_str = strdup(path);
@@ -639,7 +642,7 @@ struct device_tree_node *dt_find_node_by_path(struct device_tree *tree,
 		}
 
 		if (!sub_path) {
-			// it's just the alias, no sub-path
+			/* it's just the alias, no sub-path */
 			free(duped_str);
 			return parent;
 		}
@@ -754,7 +757,7 @@ static int dt_check_compat_match(struct device_tree_node *node,
 struct device_tree_node *dt_find_compat(struct device_tree_node *parent,
 					const char *compat)
 {
-	// Check if the parent node itself is compatible.
+	/* Check if the parent node itself is compatible. */
 	if (dt_check_compat_match(parent, compat))
 		return parent;
 
@@ -1089,12 +1092,493 @@ struct device_tree_node *dt_init_reserved_memory_node(struct device_tree *tree)
 	if (!reserved)
 		return NULL;
 
-	// Binding doc says this should have the same #{address,size}-cells as
-	// the root.
+	/* Binding doc says this should have the same #{address,size}-cells as
+	   the root. */
 	dt_add_u32_prop(reserved, "#address-cells", addr);
 	dt_add_u32_prop(reserved, "#size-cells", size);
-	// Binding doc says this should be empty (i.e., 1:1 mapping from root).
+	/* Binding doc says this should be empty (1:1 mapping from root). */
 	dt_add_bin_prop(reserved, "ranges", NULL, 0);
 
 	return reserved;
+}
+
+/*
+ * Increment a single phandle in prop at a given offset by a given adjustment.
+ *
+ * @param prop		Property whose phandle should be adjusted.
+ * @param adjustment	Value that should be added to the existing phandle.
+ * @param offset	Byte offset of the phandle in the property data.
+ *
+ * @return		New phandle value, or 0 on error.
+ */
+static uint32_t dt_adjust_phandle(struct device_tree_property *prop,
+				  uint32_t adjustment, uint32_t offset)
+{
+	if (offset + 4 > prop->prop.size)
+		return 0;
+
+	uint32_t phandle = be32dec(prop->prop.data + offset);
+	if (phandle == 0 ||
+	    phandle == FDT_PHANDLE_ILLEGAL ||
+	    phandle == 0xffffffff)
+		return 0;
+
+	phandle += adjustment;
+	if (phandle >= FDT_PHANDLE_ILLEGAL)
+		return 0;
+
+	be32enc(prop->prop.data + offset, phandle);
+	return phandle;
+}
+
+/*
+ * Adjust all phandles in subtree by adding a new base offset.
+ *
+ * @param node		Root node of the subtree to work on.
+ * @param base		New phandle base to be added to all phandles.
+ *
+ * @return		New highest phandle in the subtree, or 0 on error.
+ */
+static uint32_t dt_adjust_all_phandles(struct device_tree_node *node,
+				       uint32_t base)
+{
+	uint32_t new_max = MAX(base, 1);  /* make sure we don't return 0 */
+	struct device_tree_property *prop;
+	struct device_tree_node *child;
+
+	if (!node)
+		return new_max;
+
+	list_for_each(prop, node->properties, list_node)
+		if (dt_prop_is_phandle(prop)) {
+			node->phandle = dt_adjust_phandle(prop, base, 0);
+			if (!node->phandle)
+				return 0;
+			new_max = MAX(new_max, node->phandle);
+		}  /* no break -- can have more than one phandle prop */
+
+	list_for_each(child, node->children, list_node)
+		new_max = MAX(new_max, dt_adjust_all_phandles(child, base));
+
+	return new_max;
+}
+
+/*
+ * Apply a /__local_fixup__ subtree to the corresponding overlay subtree.
+ *
+ * @param node		Root node of the overlay subtree to fix up.
+ * @param node		Root node of the /__local_fixup__ subtree.
+ * @param base		Adjustment that was added to phandles in the overlay.
+ *
+ * @return		0 on success, -1 on error.
+ */
+static int dt_fixup_locals(struct device_tree_node *node,
+		    struct device_tree_node *fixup, uint32_t base)
+{
+	struct device_tree_property *prop;
+	struct device_tree_property *fixup_prop;
+	struct device_tree_node *child;
+	struct device_tree_node *fixup_child;
+	int i;
+
+	/*
+	 * For local fixups the /__local_fixup__ subtree contains the same node
+	 * hierarchy as the main tree we're fixing up. Each property contains
+	 * the fixup offsets for the respective property in the main tree. For
+	 * each property in the fixup node, find the corresponding property in
+	 * the base node and apply fixups to all offsets it specifies.
+	 */
+	list_for_each(fixup_prop, fixup->properties, list_node) {
+		struct device_tree_property *base_prop = NULL;
+		list_for_each(prop, node->properties, list_node)
+			if (!strcmp(prop->prop.name, fixup_prop->prop.name)) {
+				base_prop = prop;
+				break;
+			}
+
+		/* We should always find a corresponding base prop for a fixup,
+		   and fixup props contain a list of 32-bit fixup offsets. */
+		if (!base_prop || fixup_prop->prop.size % sizeof(uint32_t))
+			return -1;
+
+		for (i = 0; i < fixup_prop->prop.size; i += sizeof(uint32_t))
+			if (!dt_adjust_phandle(base_prop, base, be32dec(
+					fixup_prop->prop.data + i)))
+				return -1;
+	}
+
+	/* Now recursively descend both the base tree and the /__local_fixups__
+	   subtree in sync to apply all fixups. */
+	list_for_each(fixup_child, fixup->children, list_node) {
+		struct device_tree_node *base_child = NULL;
+		list_for_each(child, node->children, list_node)
+			if (!strcmp(child->name, fixup_child->name)) {
+				base_child = child;
+				break;
+			}
+
+		/* All fixup nodes should have a corresponding base node. */
+		if (!base_child)
+			return -1;
+
+		if (dt_fixup_locals(base_child, fixup_child, base) < 0)
+			return -1;
+	}
+
+	return 0;
+}
+
+/*
+ * Update all /__symbols__ properties in an overlay that start with
+ * "/fragment@X/__overlay__" with corresponding path prefix in the base tree.
+ *
+ * @param symbols	/__symbols__ done to update.
+ * @param fragment	/fragment@X node that references to should be updated.
+ * @param base_path	Path of base tree node that the fragment overlaid.
+ */
+static void dt_fix_symbols(struct device_tree_node *symbols,
+			   struct device_tree_node *fragment,
+			   const char *base_path)
+{
+	struct device_tree_property *prop;
+	char buf[512]; /* Should be enough for maximum DT path length? */
+	char node_path[64]; /* easily enough for /fragment@XXXX/__overlay__ */
+
+	if (!symbols) /* If the overlay has no /__symbols__ node, we're done! */
+		return;
+
+	int len = snprintf(node_path, sizeof(node_path), "/%s/__overlay__",
+			   fragment->name);
+
+	list_for_each(prop, symbols->properties, list_node)
+		if (!strncmp(prop->prop.data, node_path, len)) {
+			prop->prop.size = snprintf(buf, sizeof(buf), "%s%s",
+				base_path, (char *)prop->prop.data + len) + 1;
+			free(prop->prop.data);
+			prop->prop.data = strdup(buf);
+		}
+}
+
+/*
+ * Fix up overlay according to a property in /__fixup__. If the fixed property
+ * is a /fragment@X:target, also update /__symbols__ references to fragment.
+ *
+ * @params overlay	Overlay to fix up.
+ * @params fixup	/__fixup__ property.
+ * @params phandle	phandle value to insert where the fixup points to.
+ * @params base_path	Path to the base DT node that the fixup points to.
+ * @params overlay_symbols /__symbols__ node of the overlay.
+ *
+ * @return		0 on success, -1 on error.
+ */
+static int dt_fixup_external(struct device_tree *overlay,
+			     struct device_tree_property *fixup,
+			     uint32_t phandle, const char *base_path,
+			     struct device_tree_node *overlay_symbols)
+{
+	struct device_tree_property *prop;
+
+	/* External fixup properties are encoded as "<path>:<prop>:<offset>". */
+	char *entry = fixup->prop.data;
+	while ((void *)entry < fixup->prop.data + fixup->prop.size) {
+		/* okay to destroy fixup property value, won't need it again */
+		char *node_path = entry;
+		entry = strchr(node_path, ':');
+		if (!entry)
+			return -1;
+		*entry++ = '\0';
+
+		char *prop_name = entry;
+		entry = strchr(prop_name, ':');
+		if (!entry)
+			return -1;
+		*entry++ = '\0';
+
+		struct device_tree_node *ovl_node = dt_find_node_by_path(
+			overlay, node_path, NULL, NULL, 0);
+		if (!ovl_node || !isdigit(*entry))
+			return -1;
+
+		struct device_tree_property *ovl_prop = NULL;
+		list_for_each(prop, ovl_node->properties, list_node)
+			if (!strcmp(prop->prop.name, prop_name)) {
+				ovl_prop = prop;
+				break;
+			}
+
+		/* Move entry to first char after number, must be a '\0'. */
+		uint32_t offset = skip_atoi(&entry);
+		if (!ovl_prop || offset + 4 > ovl_prop->prop.size || entry[0])
+			return -1;
+		entry++;  /* jump over '\0' to potential next fixup */
+
+		be32enc(ovl_prop->prop.data + offset, phandle);
+
+		/* If this is a /fragment@X:target property, update references
+		   to this fragment in the overlay __symbols__ now. */
+		if (offset == 0 && !strcmp(prop_name, "target") &&
+		    !strchr(node_path + 1, '/')) /* only toplevel nodes */
+			dt_fix_symbols(overlay_symbols, ovl_node, base_path);
+	}
+
+	return 0;
+}
+
+/*
+ * Apply all /__fixup__ properties in the overlay. This will destroy the
+ * property data in /__fixup__ and it should not be accessed again.
+ *
+ * @params tree		Base device tree that the overlay updates.
+ * @params symbols	/__symbols__ node of the base device tree.
+ * @params overlay	Overlay to fix up.
+ * @params fixups	/__fixup__ node in the overlay.
+ * @params overlay_symbols /__symbols__ node of the overlay.
+ *
+ * @return		0 on success, -1 on error.
+ */
+static int dt_fixup_all_externals(struct device_tree *tree,
+				  struct device_tree_node *symbols,
+				  struct device_tree *overlay,
+				  struct device_tree_node *fixups,
+				  struct device_tree_node *overlay_symbols)
+{
+	struct device_tree_property *fix;
+
+	/* If we have any external fixups, base tree must have /__symbols__. */
+	if (!symbols)
+		return -1;
+
+	/*
+	 * Unlike /__local_fixups__, /__fixups__ is not a whole subtree that
+	 * mirrors the node hierarchy. It's just a directory of fixup properties
+	 * that each directly contain all information necessary to apply them.
+	 */
+	list_for_each(fix, fixups->properties, list_node) {
+		/* The name of a fixup property is the label of the node we want
+		   a property to phandle-reference. Look up in /__symbols__. */
+		const char *path = dt_find_string_prop(symbols, fix->prop.name);
+		if (!path)
+			return -1;
+
+		/* Find node the label pointed to to figure out its phandle. */
+		struct device_tree_node *node = dt_find_node_by_path(tree, path,
+			NULL, NULL, 0);
+		if (!node)
+			return -1;
+
+		/* Write into the overlay property(s) pointing to that node. */
+		if (dt_fixup_external(overlay, fix, node->phandle,
+				      path, overlay_symbols) < 0)
+			return -1;
+	}
+
+	return 0;
+}
+
+/*
+ * Copy all nodes and properties from one DT subtree into another. This is a
+ * shallow copy so both trees will point to the same property data afterwards.
+ *
+ * @params dst		Destination subtree to copy into.
+ * @params src		Source subtree to copy from.
+ * @params upd		1 to overwrite same-name properties, 0 to discard them.
+ */
+static void dt_copy_subtree(struct device_tree_node *dst,
+			    struct device_tree_node *src, int upd)
+{
+	struct device_tree_property *prop;
+	struct device_tree_property *src_prop;
+	list_for_each(src_prop, src->properties, list_node) {
+		if (dt_prop_is_phandle(src_prop) ||
+		    !strcmp(src_prop->prop.name, "name")) {
+			printk(BIOS_DEBUG,
+			       "WARNING: ignoring illegal overlay prop '%s'\n",
+			       src_prop->prop.name);
+			continue;
+		}
+
+		struct device_tree_property *dst_prop = NULL;
+		list_for_each(prop, dst->properties, list_node)
+			if (!strcmp(prop->prop.name, src_prop->prop.name)) {
+				dst_prop = prop;
+				break;
+			}
+
+		if (dst_prop) {
+			if (!upd) {
+				printk(BIOS_DEBUG,
+				       "WARNING: ignoring prop update '%s'\n",
+				       src_prop->prop.name);
+				continue;
+			}
+		} else {
+			dst_prop = xzalloc(sizeof(*dst_prop));
+			list_insert_after(&dst_prop->list_node,
+					  &dst->properties);
+		}
+
+		dst_prop->prop = src_prop->prop;
+	}
+
+	struct device_tree_node *node;
+	struct device_tree_node *src_node;
+	list_for_each(src_node, src->children, list_node) {
+		struct device_tree_node *dst_node = NULL;
+		list_for_each(node, dst->children, list_node)
+			if (!strcmp(node->name, src_node->name)) {
+				dst_node = node;
+				break;
+			}
+
+		if (!dst_node) {
+			dst_node = xzalloc(sizeof(*dst_node));
+			*dst_node = *src_node;
+			list_insert_after(&dst_node->list_node, &dst->children);
+		} else {
+			dt_copy_subtree(dst_node, src_node, upd);
+		}
+	}
+}
+
+/*
+ * Apply an overlay /fragment@X node to a base device tree.
+ *
+ * @param tree		Base device tree.
+ * @param fragment	/fragment@X node.
+ * @params overlay_symbols /__symbols__ node of the overlay.
+ *
+ * @return		0 on success, -1 on error.
+ */
+static int dt_import_fragment(struct device_tree *tree,
+			      struct device_tree_node *fragment,
+			      struct device_tree_node *overlay_symbols)
+{
+	/* The actual overlaid nodes/props are in an __overlay__ child node. */
+	static const char *overlay_path[] = { "__overlay__", NULL };
+	struct device_tree_node *overlay = dt_find_node(fragment, overlay_path,
+							NULL, NULL, 0);
+
+	/* If it doesn't have an __overlay__ child, it's not a fragment. */
+	if (!overlay)
+		return 0;
+
+	/* Target node of the fragment can be given by path or by phandle. */
+	struct device_tree_property *prop;
+	struct device_tree_property *phandle = NULL;
+	struct device_tree_property *path = NULL;
+	list_for_each(prop, fragment->properties, list_node) {
+		if (!strcmp(prop->prop.name, "target")) {
+			phandle = prop;
+			break; /* phandle target has priority, stop looking */
+		}
+		if (!strcmp(prop->prop.name, "target-path"))
+			path = prop;
+	}
+
+	struct device_tree_node *target = NULL;
+	if (phandle) {
+		if (phandle->prop.size != sizeof(uint32_t))
+			return -1;
+		target = dt_find_node_by_phandle(tree->root,
+						 be32dec(phandle->prop.data));
+		/* Symbols already updated as part of dt_fixup_external(). */
+	} else if (path) {
+		target = dt_find_node_by_path(tree, path->prop.data,
+					      NULL, NULL, 0);
+		dt_fix_symbols(overlay_symbols, fragment, path->prop.data);
+	}
+	if (!target)
+		return -1;
+
+	dt_copy_subtree(target, overlay, 1);
+	return 0;
+}
+
+/*
+ * Apply a device tree overlay to a base device tree. This will
+ * destroy/incorporate the overlay data, so it should not be freed or reused.
+ * See dtc.git/Documentation/dt-object-internal.txt for overlay format details.
+ *
+ * @param tree		Unflattened base device tree to add the overlay into.
+ * @param overlay	Unflattened overlay device tree to apply to the base.
+ *
+ * @return		0 on success, -1 on error.
+ */
+int dt_apply_overlay(struct device_tree *tree, struct device_tree *overlay)
+{
+	/*
+	 * First, we need to make sure phandles inside the overlay don't clash
+	 * with those in the base tree. We just define the highest phandle value
+	 * in the base tree as the "phandle offset" for this overlay and
+	 * increment all phandles in it by that value.
+	 */
+	uint32_t phandle_base = tree->max_phandle;
+	uint32_t new_max = dt_adjust_all_phandles(overlay->root, phandle_base);
+	if (!new_max) {
+		printk(BIOS_DEBUG, "ERROR: invalid phandles in overlay\n");
+		return -1;
+	}
+	tree->max_phandle = new_max;
+
+	/* Now that we changed phandles in the overlay, we need to update any
+	   nodes referring to them. Those are listed in /__local_fixups__. */
+	struct device_tree_node *local_fixups = dt_find_node_by_path(overlay,
+					"/__local_fixups__", NULL, NULL, 0);
+	if (local_fixups && dt_fixup_locals(overlay->root, local_fixups,
+					    phandle_base) < 0) {
+		printk(BIOS_DEBUG, "ERROR: invalid local fixups in overlay\n");
+		return -1;
+	}
+
+	/*
+	 * Besides local phandle references (from nodes within the overlay to
+	 * other nodes within the overlay), the overlay may also contain phandle
+	 * references to the base tree. These are stored with invalid values and
+	 * must be updated now. /__symbols__ contains a list of all labels in
+	 * the base tree, and /__fixups__ describes all nodes in the overlay
+	 * that contain external phandle references.
+	 * We also take this opportunity to update all /fragment@X/__overlay__/
+	 * prefixes in the overlay's /__symbols__ node to the correct path that
+	 * the fragment will be placed in later, since this is the only step
+	 * where we have all necessary information for that easily available.
+	 */
+	struct device_tree_node *symbols = dt_find_node_by_path(tree,
+		"/__symbols__", NULL, NULL, 0);
+	struct device_tree_node *fixups = dt_find_node_by_path(overlay,
+		"/__fixups__", NULL, NULL, 0);
+	struct device_tree_node *overlay_symbols = dt_find_node_by_path(overlay,
+		"/__symbols__", NULL, NULL, 0);
+	if (fixups && dt_fixup_all_externals(tree, symbols, overlay,
+					     fixups, overlay_symbols) < 0) {
+		printk(BIOS_DEBUG,
+		       "ERROR: cannot match external fixups from overlay\n");
+		return -1;
+	}
+
+	/* After all this fixing up, we can finally merge overlay into the tree
+	   (one fragment at a time, because for some reason it's split up). */
+	struct device_tree_node *fragment;
+	list_for_each(fragment, overlay->root->children, list_node)
+		if (dt_import_fragment(tree, fragment, overlay_symbols) < 0) {
+			printk(BIOS_DEBUG, "ERROR: bad DT fragment '%s'\n",
+			       fragment->name);
+			return -1;
+		}
+
+	/*
+	 * We need to also update /__symbols__ to include labels from this
+	 * overlay, in case we want to load further overlays with external
+	 * phandle references to it. If the base tree already has a /__symbols__
+	 * we merge them together, otherwise we just insert the overlay's
+	 * /__symbols__ node into the base tree root.
+	 */
+	if (overlay_symbols) {
+		if (symbols)
+			dt_copy_subtree(symbols, overlay_symbols, 0);
+		else
+			list_insert_after(&overlay_symbols->list_node,
+					  &tree->root->children);
+	}
+
+	return 0;
 }

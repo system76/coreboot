@@ -29,6 +29,7 @@
  */
 #include <stdlib.h>
 #include <arch/cpu.h>
+#include <commonlib/helpers.h>
 
 /* Return the CPU struct which is at the high memory address of the stack.
  */
@@ -39,7 +40,7 @@ struct cpu_info *cpu_info(void)
 	"feature, make sure you add the proper assertions " \
 	"(and maybe consider revising the whole thing to work closer to what " \
 	"arm64 is doing now)."
-	uintptr_t addr = ALIGN((uintptr_t)__builtin_frame_address(0),
+	uintptr_t addr = ALIGN_UP((uintptr_t)__builtin_frame_address(0),
 		CONFIG_STACK_SIZE);
 	addr -= sizeof(struct cpu_info);
 	return (void *)addr;

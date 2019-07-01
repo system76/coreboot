@@ -21,7 +21,6 @@ cbfsobj += cbfs-mkpayload.o
 cbfsobj += elfheaders.o
 cbfsobj += rmodule.o
 cbfsobj += xdr.o
-cbfsobj += fit.o
 cbfsobj += partitioned_file.o
 # COMMONLIB
 cbfsobj += cbfs.o
@@ -65,6 +64,35 @@ rmodobj += xdr.o
 ifwiobj :=
 ifwiobj += ifwitool.o
 ifwiobj += common.o
+
+ifitobj :=
+ifitobj += ifittool.o
+ifitobj += common.o
+ifitobj += fit.o
+ifitobj += cbfs_image.o
+# Make it link ....
+ifitobj += xdr.o
+ifitobj += elfheaders.o
+ifitobj += partitioned_file.o
+ifitobj += cbfs-mkstage.o
+ifitobj += cbfs-mkpayload.o
+ifitobj += rmodule.o
+# COMMONLIB
+ifitobj += cbfs.o
+ifitobj += mem_pool.o
+ifitobj += region.o
+# CRYPTOLIB
+ifitobj += 2sha_utility.o
+ifitobj += 2sha1.o
+ifitobj += 2sha256.o
+ifitobj += 2sha512.o
+# FMAP
+ifitobj += fmap.o
+ifitobj += kv_pair.o
+ifitobj += valstr.o
+# compression algorithms
+ifitobj += $(compressionobj)
+
 
 cbfscompobj :=
 cbfscompobj += $(compressionobj)
@@ -148,6 +176,10 @@ $(objutil)/cbfstool/rmodtool: $(addprefix $(objutil)/cbfstool/,$(rmodobj))
 $(objutil)/cbfstool/ifwitool: $(addprefix $(objutil)/cbfstool/,$(ifwiobj))
 	printf "    HOSTCC     $(subst $(objutil)/,,$(@)) (link)\n"
 	$(HOSTCC) $(TOOLLDFLAGS) -o $@ $(addprefix $(objutil)/cbfstool/,$(ifwiobj))
+
+$(objutil)/cbfstool/ifittool: $(addprefix $(objutil)/cbfstool/,$(ifitobj))
+	printf "    HOSTCC     $(subst $(objutil)/,,$(@)) (link)\n"
+	$(HOSTCC) $(TOOLLDFLAGS) -o $@ $(addprefix $(objutil)/cbfstool/,$(ifitobj))
 
 $(objutil)/cbfstool/cbfs-compression-tool: $(addprefix $(objutil)/cbfstool/,$(cbfscompobj))
 	printf "    HOSTCC     $(subst $(objutil)/,,$(@)) (link)\n"

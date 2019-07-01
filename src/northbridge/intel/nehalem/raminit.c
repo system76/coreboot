@@ -2235,26 +2235,11 @@ train_ram_at_178(struct raminfo *info, u8 channel, int slot, int rank,
 	u8 lower_usable[8];
 	u8 upper_usable[8];
 	unsigned short num_successfully_checked[8];
-	u8 secondary_total_rank;
 	u8 reg1b3;
+	int i;
 
-	if (info->populated_ranks_mask[1]) {
-		if (channel == 1)
-			secondary_total_rank =
-			    info->populated_ranks[1][0][0] +
-			    info->populated_ranks[1][0][1]
-			    + info->populated_ranks[1][1][0] +
-			    info->populated_ranks[1][1][1];
-		else
-			secondary_total_rank = 0;
-	} else
-		secondary_total_rank = total_rank;
-
-	{
-		int i;
-		for (i = 0; i < 8; i++)
-			state[i] = BEFORE_USABLE;
-	}
+	for (i = 0; i < 8; i++)
+		state[i] = BEFORE_USABLE;
 
 	if (!first_run) {
 		int is_all_ok = 1;
@@ -2270,7 +2255,6 @@ train_ram_at_178(struct raminfo *info, u8 channel, int slot, int rank,
 				is_all_ok = 0;
 			}
 		if (is_all_ok) {
-			int i;
 			for (i = 0; i < 8; i++)
 				state[i] = COMPLETE;
 		}
@@ -2336,7 +2320,6 @@ train_ram_at_178(struct raminfo *info, u8 channel, int slot, int rank,
 
 		do {
 			u8 failmask = 0;
-			int i;
 			for (i = 0; i < niter; i++) {
 				if (failmask == 0xFF)
 					break;
@@ -2437,7 +2420,6 @@ train_ram_at_178(struct raminfo *info, u8 channel, int slot, int rank,
 
 		do {
 			int failmask = 0;
-			int i;
 			for (i = 0; i < niter; i++) {
 				if (failmask == 0xFF)
 					break;
@@ -3740,11 +3722,6 @@ void raminit(const int s3resume, const u8 *spd_addrmap)
 	u16 deven;
 	int cbmem_wasnot_inited;
 
-	/* only used for dummy reads */
-	volatile u8 tmp8;
-	volatile u16 tmp16;
-	volatile u32 tmp32;
-
 	x2ca8 = MCHBAR8(0x2ca8);
 	deven = pci_read_config16(NORTHBRIDGE, D0F0_DEVEN);
 
@@ -4058,10 +4035,10 @@ void raminit(const int s3resume, const u8 *spd_addrmap)
 			pci_read_config8(PCI_DEV (0, 0x2, 0x0), 0x4c);
 			pci_read_config8(PCI_DEV (0, 0x2, 0x0), 0x4e);
 
-			tmp8 = MCHBAR8(0x1150);
-			tmp8 = MCHBAR8(0x1151);
-			tmp8 = MCHBAR8(0x1022);
-			tmp8 = MCHBAR8(0x16d0);
+			MCHBAR8(0x1150);
+			MCHBAR8(0x1151);
+			MCHBAR8(0x1022);
+			MCHBAR8(0x16d0);
 			MCHBAR32(0x1300) = 0x60606060;
 			MCHBAR32(0x1304) = 0x60606060;
 			MCHBAR32(0x1308) = 0x78797a7b;
@@ -4249,10 +4226,10 @@ void raminit(const int s3resume, const u8 *spd_addrmap)
 	}
 
 	MCHBAR32_AND_OR(0x2c80, 0, 0x1053688);	// !!!!
-	tmp32 = MCHBAR32(0x1c04);	// !!!!
+	MCHBAR32(0x1c04);	// !!!!
 	MCHBAR32(0x1804) = 0x406080;
 
-	tmp8 = MCHBAR8(0x2ca8);
+	MCHBAR8(0x2ca8);
 
 	if (x2ca8 == 0) {
 		MCHBAR8_AND(0x2ca8, ~3);
@@ -4264,9 +4241,9 @@ void raminit(const int s3resume, const u8 *spd_addrmap)
 	MCHBAR8(0x2ca8) = MCHBAR8(0x2ca8);
 	MCHBAR32_AND_OR(0x2c80, 0, 0x53688);	// !!!!
 	pci_write_config32(PCI_DEV (0xff, 0, 0), 0x60, 0x20220);
-	tmp16 = MCHBAR16(0x2c20);	// !!!!
-	tmp16 = MCHBAR16(0x2c10);	// !!!!
-	tmp16 = MCHBAR16(0x2c00);	// !!!!
+	MCHBAR16(0x2c20);	// !!!!
+	MCHBAR16(0x2c10);	// !!!!
+	MCHBAR16(0x2c00);	// !!!!
 	MCHBAR16(0x2c00) = 0x8c0;
 	udelay(1000);
 	write_1d0(0, 0x33d, 0, 0);
@@ -4372,7 +4349,7 @@ void raminit(const int s3resume, const u8 *spd_addrmap)
 	MCHBAR32_AND_OR(0x1f4, 0, 0x20000);	// !!!!
 	MCHBAR32(0x1f0) = 0x1d000200;
 	MCHBAR8_AND_OR(0x1f0, 0, 0x1);	// !!!!
-	tmp8 = MCHBAR8(0x1f0);	// !!!!
+	MCHBAR8(0x1f0);	// !!!!
 
 	program_board_delay(&info);
 
@@ -4431,7 +4408,7 @@ void raminit(const int s3resume, const u8 *spd_addrmap)
 			info.populated_ranks[channel][0][0] ? 9 : 1);
 
 	rmw_1d0(0x116, 0xe, 1, 4, 1);	// = 0x4040432 // !!!!
-	tmp32 = MCHBAR32(0x144);	// !!!!
+	MCHBAR32(0x144);	// !!!!
 	write_1d0(2, 0xae, 6, 1);
 	write_1d0(2, 0x300, 6, 1);
 	write_1d0(2, 0x121, 3, 1);
@@ -4681,7 +4658,7 @@ void raminit(const int s3resume, const u8 *spd_addrmap)
 	reg1c = read32p(DEFAULT_EPBAR | 0x01c);	// = 0x8001 // OK
 	pci_read_config32(NORTHBRIDGE, 0x40);	// = DEFAULT_EPBAR | 0x001 // OK
 	write32p(DEFAULT_EPBAR | 0x01c, reg1c);	// OK
-	tmp8 = MCHBAR8(0xe08);	// = 0x0
+	MCHBAR8(0xe08);	// = 0x0
 	pci_read_config32(NORTHBRIDGE, 0xe4);	// = 0x316126
 	MCHBAR8_OR(0x1210, 2);
 	MCHBAR32(0x1200) = 0x8800440;

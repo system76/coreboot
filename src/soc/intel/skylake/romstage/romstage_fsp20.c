@@ -129,7 +129,9 @@ static void save_dimm_info(void)
 				src_dimm->SpdSave + SPD_SAVE_OFFSET_SERIAL,
 				memory_info_hob->DataWidth,
 				memory_info_hob->VddVoltage[memProfNum],
-				memory_info_hob->EccSupport);
+				memory_info_hob->EccSupport,
+				src_dimm->MfgId,
+				src_dimm->SpdModuleType);
 			index++;
 		}
 	}
@@ -156,7 +158,7 @@ asmlinkage void car_stage_entry(void)
 	pmc_set_disb();
 	if (!s3wake)
 		save_dimm_info();
-	if (postcar_frame_init(&pcf, 1*KiB))
+	if (postcar_frame_init(&pcf, 8*KiB))
 		die("Unable to initialize postcar frame.\n");
 
 	/*

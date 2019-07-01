@@ -13,7 +13,6 @@
 
 #include <stdint.h>
 #include <string.h>
-#include <arch/byteorder.h>
 #include <device/pci_ops.h>
 #include <device/pci_def.h>
 #include <northbridge/intel/sandybridge/sandybridge.h>
@@ -24,10 +23,6 @@
 void pch_enable_lpc(void)
 {
 	pci_write_config16(PCI_DEV(0, 0x1f, 0), 0x82, 0x3f0f);
-	pci_write_config32(PCI_DEV(0, 0x1f, 0), 0x84, 0x000c0681);
-	pci_write_config32(PCI_DEV(0, 0x1f, 0), 0x88, 0x000c1641);
-	pci_write_config32(PCI_DEV(0, 0x1f, 0), 0x8c, 0x001c0301);
-	pci_write_config32(PCI_DEV(0, 0x1f, 0), 0x90, 0x00fc0701);
 	pci_write_config16(PCI_DEV(0, 0x1f, 0), 0x80, 0x0070);
 	pci_write_config32(PCI_DEV(0, 0x1f, 0), 0xac, 0x80000000);
 }

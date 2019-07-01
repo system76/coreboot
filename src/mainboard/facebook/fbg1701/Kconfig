@@ -54,7 +54,7 @@ config MAINBOARD_PART_NUMBER
 
 config CBFS_SIZE
 	hex
-	default 0x00800000
+	default 0x00600000
 
 config CPU_MICROCODE_CBFS_LEN
 	hex
@@ -77,14 +77,6 @@ config FSP_LOC
 config FSP1_1_DISPLAY_LOGO
 	bool
 	default n
-
-config BOOTBLOCK_LOC
-	hex
-	default 0xFFFF0000
-
-config BOOTBLOCK_SIZE
-	hex
-	default 0x10000
 
 config SPI_FLASH_INCLUDE_ALL_DRIVERS
 	bool

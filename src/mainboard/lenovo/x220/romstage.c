@@ -16,7 +16,6 @@
  */
 
 #include <stdint.h>
-#include <arch/byteorder.h>
 #include <device/pci_ops.h>
 #include <device/pci_def.h>
 #include <cpu/x86/lapic.h>
@@ -34,10 +33,6 @@ void pch_enable_lpc(void)
 	/* Enable EC, PS/2 Keyboard/Mouse */
 	pci_write_config16(PCH_LPC_DEV, LPC_EN,
 			   CNF2_LPC_EN | CNF1_LPC_EN | MC_LPC_EN | KBC_LPC_EN);
-
-	pci_write_config32(PCH_LPC_DEV, LPC_GEN1_DEC, 0x7c1601);
-	pci_write_config32(PCH_LPC_DEV, LPC_GEN2_DEC, 0xc15e1);
-	pci_write_config32(PCH_LPC_DEV, LPC_GEN4_DEC, 0x0c06a1);
 
 	pci_write_config32(PCH_LPC_DEV, ETR3, 0x10000);
 }

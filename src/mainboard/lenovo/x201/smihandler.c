@@ -15,15 +15,11 @@
  */
 
 #include <arch/io.h>
-#include <device/pci_ops.h>
 #include <console/console.h>
 #include <cpu/x86/smm.h>
 #include <southbridge/intel/ibexpeak/nvs.h>
 #include <southbridge/intel/common/pmutil.h>
-#include <southbridge/intel/ibexpeak/me.h>
-#include <southbridge/intel/common/finalize.h>
 #include <northbridge/intel/nehalem/nehalem.h>
-#include <cpu/intel/model_2065x/model_2065x.h>
 #include <ec/acpi/ec.h>
 #include <ec/lenovo/h8/h8.h>
 #include <delay.h>
@@ -74,23 +70,6 @@ int mainboard_io_trap_handler(int smif)
 	return 1;
 }
 
-static void mainboard_smi_brightness_up(void)
-{
-	u8 value;
-
-	if ((value = pci_read_config8(PCI_DEV(0, 2, 1), 0xf4)) < 0xf0)
-		pci_write_config8(PCI_DEV(0, 2, 1), 0xf4, (value + 0x10) | 0xf);
-}
-
-static void mainboard_smi_brightness_down(void)
-{
-	u8 value;
-
-	if ((value = pci_read_config8(PCI_DEV(0, 2, 1), 0xf4)) > 0x10)
-		pci_write_config8(PCI_DEV(0, 2, 1), 0xf4,
-				  (value - 0x10) & 0xf0);
-}
-
 static void mainboard_smi_handle_ec_sci(void)
 {
 	u8 status = inb(EC_SC);
@@ -103,14 +82,6 @@ static void mainboard_smi_handle_ec_sci(void)
 	printk(BIOS_DEBUG, "EC event %02x\n", event);
 
 	switch (event) {
-	case 0x14:
-		/* brightness up */
-		mainboard_smi_brightness_up();
-		break;
-	case 0x15:
-		/* brightness down */
-		mainboard_smi_brightness_down();
-		break;
 	case 0x18:
 		/* Fn-F9 key */
 	case 0x27:
@@ -135,25 +106,9 @@ void mainboard_smi_gpi(u32 gpi_sts)
 		mainboard_smi_handle_ec_sci();
 }
 
-static int mainboard_finalized = 0;
-
 int mainboard_smi_apmc(u8 data)
 {
 	switch (data) {
-	case APM_CNT_FINALIZE:
-		printk(BIOS_DEBUG, "APMC: FINALIZE\n");
-		if (mainboard_finalized) {
-			printk(BIOS_DEBUG, "APMC#: Already finalized\n");
-			return 0;
-		}
-
-		intel_me_finalize_smm();
-		intel_pch_finalize_smm();
-		intel_nehalem_finalize_smm();
-		intel_model_2065x_finalize_smm();
-
-		mainboard_finalized = 1;
-		break;
 	case APM_CNT_ACPI_ENABLE:
 		/* use 0x1600/0x1604 to prevent races with userspace */
 		ec_set_ports(0x1604, 0x1600);

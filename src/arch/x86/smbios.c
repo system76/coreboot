@@ -30,6 +30,7 @@
 #include <memory_info.h>
 #include <spd.h>
 #include <cbmem.h>
+#include <commonlib/helpers.h>
 #include <device/pci_ids.h>
 #include <device/pci_def.h>
 #include <device/pci.h>
@@ -1150,12 +1151,12 @@ unsigned long smbios_write_tables(unsigned long current)
 	int max_struct_size = 0;
 	int handle = 0;
 
-	current = ALIGN(current, 16);
+	current = ALIGN_UP(current, 16);
 	printk(BIOS_DEBUG, "%s: %08lx\n", __func__, current);
 
 	se = (struct smbios_entry *)current;
 	current += sizeof(struct smbios_entry);
-	current = ALIGN(current, 16);
+	current = ALIGN_UP(current, 16);
 
 	tables = current;
 	update_max(len, max_struct_size, smbios_write_type0(&current,
@@ -1193,7 +1194,7 @@ unsigned long smbios_write_tables(unsigned long current)
 	memcpy(se->anchor, "_SM_", 4);
 	se->length = sizeof(struct smbios_entry);
 	se->major_version = 2;
-	se->minor_version = 7;
+	se->minor_version = 8;
 	se->max_struct_size = max_struct_size;
 	se->struct_count = handle;
 	memcpy(se->intermediate_anchor_string, "_DMI_", 5);

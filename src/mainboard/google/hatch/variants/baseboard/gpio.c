@@ -138,9 +138,9 @@ static const struct pad_config gpio_table[] = {
 	/* C9  : UART_PCH_TX_DEBUG_RX */
 	PAD_CFG_NF(GPP_C9, NONE, DEEP, NF1),
 	/* C10 : GPP_10 ==> GPP_C10_TP */
-	PAD_NC(GPP_C10, DN_20K),
-	/* C11 : GPP_11 ==> GPP_C11_TP */
-	PAD_NC(GPP_C11, DN_20K),
+	PAD_NC(GPP_C10, NONE),
+	/* C11 : GPP_11 ==> EN_FP_RAILS */
+	PAD_CFG_GPO(GPP_C11, 1, DEEP),
 	/* C12 : GPP_C12 ==> NC */
 	PAD_NC(GPP_C12, NONE),
 	/* C13 : EC_PCH_INT_L
@@ -284,7 +284,7 @@ static const struct pad_config gpio_table[] = {
 	/* F1  : WWAN_RESET_1V8_ODL */
 	PAD_CFG_GPO(GPP_F1, 1, DEEP),
 	/* F2  : MEM_CH_SEL */
-	PAD_CFG_GPI(GPP_F2, DN_20K, PLTRST),
+	PAD_CFG_GPI(GPP_F2, NONE, PLTRST),
 	/* F3  : GPP_F3 ==> NC */
 	PAD_NC(GPP_F3, NONE),
 	/* F4  : CNV_BRI_DT */
@@ -343,7 +343,7 @@ static const struct pad_config gpio_table[] = {
 	/* G6  : SD_CLK */
 	PAD_CFG_NF(GPP_G6, NONE, DEEP, NF1),
 	/* G7  : SD_WP => NC */
-	PAD_NC(GPP_G7, DN_20K),
+	PAD_NC(GPP_G7, NONE),
 	/*
 	 * H0  : HP_INT_L
 	 */
@@ -460,7 +460,7 @@ static const struct pad_config early_gpio_table[] = {
 	/* C23 : WLAN_PE_RST# */
 	PAD_CFG_GPO(GPP_C23, 1, DEEP),
 	/* F2  : MEM_CH_SEL */
-	PAD_CFG_GPI(GPP_F2, DN_20K, PLTRST),
+	PAD_CFG_GPI(GPP_F2, NONE, PLTRST),
 	/* F11 : PCH_MEM_STRAP2 */
 	PAD_CFG_GPI(GPP_F11, NONE, PLTRST),
 	/* F20 : PCH_MEM_STRAP0 */

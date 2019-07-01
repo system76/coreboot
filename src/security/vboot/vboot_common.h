@@ -53,17 +53,6 @@ struct vboot_handoff {
  */
 int vboot_get_handoff_info(void **addr, uint32_t *size);
 
-/*
- * The following functions read vboot_handoff structure to obtain requested
- * information. If vboot handoff is not available, 0 is returned by default.
- * If vboot handoff is available:
- * Returns 1 for flag if true
- * Returns 0 for flag if false
- * Returns value read for other fields
- */
-int vboot_handoff_check_recovery_flag(void);
-int vboot_handoff_get_recovery_reason(void);
-
 /* ============================ VBOOT REBOOT ============================== */
 /*
  * vboot_reboot handles the reboot requests made by vboot_reference library. It

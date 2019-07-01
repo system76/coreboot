@@ -1,4 +1,4 @@
-ifeq ($(CONFIG_SOC_INTEL_SKYLAKE),y)
+ifeq ($(CONFIG_SOC_INTEL_COMMON_SKYLAKE_BASE),y)
 
 subdirs-y += nhlt
 subdirs-y += romstage
@@ -81,15 +81,17 @@ postcar-y += spi.c
 postcar-y += i2c.c
 postcar-y += uart.c
 
-
-# Skylake D0
-cpu_microcode_bins += 3rdparty/blobs/cpu/intel/model_406ex/microcode.bin
+ifeq ($(CONFIG_SKYLAKE_SOC_PCH_H),y)
 # Skylake H Q0
-cpu_microcode_bins += 3rdparty/blobs/cpu/intel/model_506ex/microcode.bin
-# Kabylake H0, Y0
-cpu_microcode_bins += 3rdparty/blobs/cpu/intel/model_806ex/microcode.bin
+cpu_microcode_bins += 3rdparty/intel-microcode/intel-ucode/06-5e-03
 # Kabylake HB0
-cpu_microcode_bins += 3rdparty/blobs/cpu/intel/model_906ex/microcode.bin
+cpu_microcode_bins += 3rdparty/intel-microcode/intel-ucode/06-9e-09
+else
+# Skylake D0
+cpu_microcode_bins += 3rdparty/intel-microcode/intel-ucode/06-4e-03
+# Kabylake H0, Y0
+cpu_microcode_bins += 3rdparty/intel-microcode/intel-ucode/06-8e-09
+endif
 # Missing for Skylake C0 (0x406e2), Kabylake G0 (0x406e8), Kabylake HA0 (0x506e8)
 # since those are probably pre-release samples.
 
@@ -105,7 +107,5 @@ endif
 
 # Currently used for microcode path.
 CPPFLAGS_common += -I3rdparty/blobs/mainboard/$(MAINBOARDDIR)
-
-ROMCCFLAGS := -mcpu=p4 -fno-simplify-phi -O2
 
 endif

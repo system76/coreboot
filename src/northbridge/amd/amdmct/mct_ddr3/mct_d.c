@@ -3071,11 +3071,6 @@ void fam15EnableTrainingMode(struct MCTStatStruc *pMCTstat,
 		 */
 		uint8_t dimm_event_l_pin_support = 0;
 
-		if (pDCTstat->DIMMValidDCT[dct] == 0)
-			ddr_voltage_index = 1;
-		else
-			ddr_voltage_index = dct_ddr_voltage_index(pDCTstat, dct);
-
 		ddr_voltage_index = dct_ddr_voltage_index(pDCTstat, dct);
 		max_dimms_installable = mctGet_NVbits(NV_MAX_DIMMS_PER_CH);
 
@@ -3089,12 +3084,6 @@ void fam15EnableTrainingMode(struct MCTStatStruc *pMCTstat,
 
 		if (pDCTstat->DIMMValidDCT[0] && pDCTstat->DIMMValidDCT[1] && mctGet_NVbits(NV_Unganged))
 			interleave_channels = 1;
-
-		dword = (Get_NB32_DCT(dev, dct, 0x240) >> 4) & 0xf;
-		if (dword > 6)
-			read_odt_delay = dword - 6;
-		else
-			read_odt_delay = 0;
 
 		dword = Get_NB32_DCT(dev, dct, 0x240);
 		delay = (dword >> 4) & 0xf;

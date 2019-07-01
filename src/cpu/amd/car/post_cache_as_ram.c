@@ -16,10 +16,12 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  */
+
 #include <string.h>
 #include <console/console.h>
 #include <arch/stages.h>
 #include <arch/early_variables.h>
+#include <commonlib/helpers.h>
 #include <cpu/x86/mtrr.h>
 #include <cpu/amd/mtrr.h>
 #include <cpu/amd/car.h>
@@ -45,7 +47,7 @@
 static size_t backup_size(void)
 {
 	size_t car_size = car_data_size();
-	return ALIGN(car_size + 1024, 1024);
+	return ALIGN_UP(car_size + 1024, 1024);
 }
 
 static void memcpy_(void *d, const void *s, size_t len)

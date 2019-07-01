@@ -1,49 +1,50 @@
-config SOC_INTEL_CANNONLAKE
+config SOC_INTEL_CANNONLAKE_BASE
 	bool
-	help
-	  Intel Cannonlake support
 
-config SOC_INTEL_COMMON_CANNONLAKE_BASE
+config SOC_INTEL_CANNONLAKE_ALTERNATE_HEADERS
 	bool
-	default n
-	select SOC_INTEL_CANNONLAKE
+	default y if SOC_INTEL_CANNONLAKE_BASE && !SOC_INTEL_CANNONLAKE
 	help
 	  Single Kconfig option to select common base Cannonlake support.
 	  This Kconfig will help to select majority of CNL SoC features.
 	  Major difference that exist today between
-	  SOC_INTEL_COMMON_CANNONLAKE_BASE and SOC_INTEL_CANNONLAKE Kconfig
+	  SOC_INTEL_CANNONLAKE_ALTERNATE_HEADERS and SOC_INTEL_CANNONLAKE Kconfig
 	  are in FSP Header Files. Hence this Kconfig might help to select
 	  required SoC support FSP headers. Any future Intel SoC would
 	  like to make use of CNL support might just select this Kconfig.
 
+config SOC_INTEL_CANNONLAKE
+	bool
+	select SOC_INTEL_CANNONLAKE_BASE
+	select MICROCODE_BLOB_NOT_IN_BLOB_REPO
+	help
+	  Intel Cannonlake support
+
 config SOC_INTEL_COFFEELAKE
 	bool
-	default n
-	select SOC_INTEL_COMMON_CANNONLAKE_BASE
+	select SOC_INTEL_CANNONLAKE_BASE
 	help
 	  Intel Coffeelake support
 
 config SOC_INTEL_WHISKEYLAKE
 	bool
-	default n
-	select SOC_INTEL_COMMON_CANNONLAKE_BASE
+	select SOC_INTEL_CANNONLAKE_BASE
 	help
 	  Intel Whiskeylake support
 
 config SOC_INTEL_COMETLAKE
 	bool
-	default n
-	select SOC_INTEL_COMMON_CANNONLAKE_BASE
+	select SOC_INTEL_CANNONLAKE_BASE
+	select MICROCODE_BLOB_UNDISCLOSED
 	help
 	  Intel Cometlake support
 
 config SOC_INTEL_CANNONLAKE_PCH_H
 	bool
-	default n
 	help
 	  Choose this option if you have a PCH-H chipset.
 
-if SOC_INTEL_CANNONLAKE
+if SOC_INTEL_CANNONLAKE_BASE
 
 config CPU_SPECIFIC_OPTIONS
 	def_bool y
@@ -297,7 +298,7 @@ config FSP_HEADER_PATH
 	string "Location of FSP headers"
 	default "3rdparty/fsp/CoffeeLakeFspBinPkg/Include/" if SOC_INTEL_COFFEELAKE || SOC_INTEL_WHISKEYLAKE
 	default "src/vendorcode/intel/fsp/fsp2_0/cometlake/" if SOC_INTEL_COMETLAKE
-	default "src/vendorcode/intel/fsp/fsp2_0/cannonlake/"
+	default "src/vendorcode/intel/fsp/fsp2_0/cannonlake/" if SOC_INTEL_CANNONLAKE
 
 config FSP_FD_PATH
 	string
@@ -314,5 +315,13 @@ config SOC_INTEL_CANNONLAKE_DEBUG_CONSENT
 	  This is to control debug interface on SOC.
 	  Setting non-zero value will allow to use DBC or DCI to debug SOC.
 	  PlatformDebugConsent in FspmUpd.h has the details.
+
+config USE_LEGACY_8254_TIMER
+	bool "Use Legacy 8254 Timer"
+	default y if PAYLOAD_SEABIOS
+	default n
+	help
+	  This sets the Enable8254ClockGating UPD, which according to the FSP Integration
+	  guide needs to be disabled in order to boot SeaBIOS, but should otherwise be enabled.
 
 endif
