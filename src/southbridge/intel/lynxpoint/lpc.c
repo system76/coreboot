@@ -36,6 +36,7 @@
 #include <drivers/intel/gma/i915.h>
 #include <southbridge/intel/common/acpi_pirq_gen.h>
 #include <southbridge/intel/common/rtc.h>
+#include <southbridge/intel/common/spi.h>
 
 #define NMI_OFF	0
 
@@ -490,8 +491,7 @@ static void enable_lp_clock_gating(struct device *dev)
 
 static void pch_set_acpi_mode(void)
 {
-#if CONFIG(HAVE_SMI_HANDLER)
-	if (!acpi_is_wakeup_s3()) {
+	if (CONFIG(HAVE_SMI_HANDLER) && !acpi_is_wakeup_s3()) {
 #if ENABLE_ACPI_MODE_IN_COREBOOT
 		printk(BIOS_DEBUG, "Enabling ACPI via APMC:\n");
 		outb(APM_CNT_ACPI_ENABLE, APM_CNT);
@@ -502,7 +502,6 @@ static void pch_set_acpi_mode(void)
 		printk(BIOS_DEBUG, "done.\n");
 #endif
 	}
-#endif /* CONFIG_HAVE_SMI_HANDLER */
 }
 
 static void pch_disable_smm_only_flashing(struct device *dev)
@@ -960,10 +959,7 @@ static unsigned long southbridge_write_acpi_tables(struct device *device,
 
 static void lpc_final(struct device *dev)
 {
-	RCBA16(0x3894) = SPI_OPPREFIX;
-	RCBA16(0x3896) = SPI_OPTYPE;
-	RCBA32(0x3898) = SPI_OPMENU_LOWER;
-	RCBA32(0x389c) = SPI_OPMENU_UPPER;
+	spi_finalize_ops();
 
 	if (acpi_is_wakeup_s3() || CONFIG(INTEL_CHIPSET_LOCKDOWN))
 		outb(APM_CNT_FINALIZE, APM_CNT);

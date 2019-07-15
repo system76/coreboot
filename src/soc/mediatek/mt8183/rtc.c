@@ -33,20 +33,19 @@ static int rtc_enable_dcxo(void)
 
 	mdelay(1);
 	if (!rtc_writeif_unlock()) { /* Unlock for reload */
-		rtc_info("rtc_writeif_unlock() fail\n");
+		rtc_info("rtc_writeif_unlock() failed\n");
 		return 0;
 	}
 
 	rtc_read(RTC_OSC32CON, &osc32con);
-	osc32con &= ~RTC_EMBCK_SRC_SEL;
-	osc32con |= RTC_XOSC32_ENB | RTC_REG_XOSC32_ENB;
+	osc32con &= ~(RTC_EMBCK_SRC_SEL | RTC_EMBCK_SEL_MODE_MASK
+		      | RTC_GPS_CKOUT_EN);
+	osc32con |= RTC_XOSC32_ENB | RTC_REG_XOSC32_ENB
+		    | RTC_EMB_K_EOSC32_MODE | RTC_EMBCK_SEL_OPTION;
 	if (!rtc_xosc_write(osc32con)) {
-		rtc_info("rtc_xosc_write() fail\n");
+		rtc_info("rtc_xosc_write() failed\n");
 		return 0;
 	}
-	rtc_read(RTC_BBPU, &bbpu);
-	rtc_write(RTC_BBPU, bbpu | RTC_BBPU_KEY | RTC_BBPU_RELOAD);
-	rtc_write_trigger();
 
 	rtc_read(RTC_CON, &con);
 	rtc_read(RTC_OSC32CON, &osc32con);
@@ -197,12 +196,6 @@ int rtc_init(u8 recover)
 		goto err;
 	}
 
-	/* using dcxo 32K clock */
-	if (!rtc_enable_dcxo()) {
-		ret = -RTC_STATUS_OSC_SETTING_FAIL;
-		goto err;
-	}
-
 	if (recover)
 		mdelay(20);
 
@@ -264,7 +257,7 @@ void poweroff(void)
 	u16 bbpu;
 
 	if (!rtc_writeif_unlock())
-		rtc_info("rtc_writeif_unlock() fail\n");
+		rtc_info("rtc_writeif_unlock() failed\n");
 	/* pull PWRBB low */
 	bbpu = RTC_BBPU_KEY | RTC_BBPU_RELOAD | RTC_BBPU_PWREN;
 	rtc_write(RTC_BBPU, bbpu);
@@ -281,9 +274,10 @@ static void dcxo_init(void)
 	rtc_write(PMIC_RG_DCXO_CW16, 0x9855);
 
 	/* 26M enable control */
-	/* Enable clock buffer XO_SOC, XO_CEL */
-	rtc_write(PMIC_RG_DCXO_CW00, 0x4805);
+	/* Enable clock buffer XO_SOC */
+	rtc_write(PMIC_RG_DCXO_CW00, 0x4005);
 	rtc_write(PMIC_RG_DCXO_CW11, 0x8000);
+	rtc_write(PMIC_RG_DCXO_CW23, 0x0053);
 
 	/* Load thermal coefficient */
 	rtc_write(PMIC_RG_TOP_TMA_KEY, 0x9CA7);
@@ -310,6 +304,10 @@ void rtc_boot(void)
 	/* dcxo 32k init settings */
 	pwrap_write_field(PMIC_RG_DCXO_CW02, 0xF, 0xF, 0);
 	pwrap_write_field(PMIC_RG_SCK_TOP_CON0, 0x1, 0x1, 0);
+
+	/* use dcxo 32K clock */
+	if (!rtc_enable_dcxo())
+		rtc_info("rtc_enable_dcxo() failed\n");
 
 	rtc_boot_common();
 	rtc_bbpu_power_on();

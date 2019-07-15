@@ -41,6 +41,9 @@ DefinitionBlock(
 			#include <soc/intel/cannonlake/acpi/northbridge.asl>
 			#include <soc/intel/cannonlake/acpi/southbridge.asl>
 		}
+
+		/* Mainboard hooks */
+		#include "mainboard.asl"
 	}
 
 #if CONFIG(CHROMEOS)
@@ -50,6 +53,9 @@ DefinitionBlock(
 
 	/* Chipset specific sleep states */
 	#include <soc/intel/cannonlake/acpi/sleepstates.asl>
+
+        /* Low power idle table */
+        #include <soc/intel/cannonlake/acpi/lpit.asl>
 
 	/* Chrome OS Embedded Controller */
 	Scope (\_SB.PCI0.LPCB)

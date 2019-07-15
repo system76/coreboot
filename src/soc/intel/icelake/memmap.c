@@ -23,10 +23,9 @@
 #include <intelblocks/systemagent.h>
 #include <soc/pci_devs.h>
 #include <soc/smm.h>
+#include <soc/soc_chip.h>
 #include <soc/systemagent.h>
 #include <stdlib.h>
-
-#include "chip.h"
 
 void smm_region(void **start, size_t *size)
 {
@@ -218,7 +217,7 @@ static uintptr_t calculate_dram_base(size_t *reserved_mem_size)
 	uintptr_t dram_base;
 	const struct device *dev;
 
-	dev = dev_find_slot(0, PCI_DEVFN(SA_DEV_SLOT_IGD, 0));
+	dev = pcidev_on_root(SA_DEV_SLOT_IGD, 0);
 	if (!dev)
 		die_with_post_code(POST_HW_INIT_FAILURE,
 				   "ERROR - IGD device not found!");

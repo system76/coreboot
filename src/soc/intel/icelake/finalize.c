@@ -30,10 +30,9 @@
 #include <soc/pcr_ids.h>
 #include <soc/pm.h>
 #include <soc/smbus.h>
+#include <soc/soc_chip.h>
 #include <soc/systemagent.h>
 #include <stdlib.h>
-
-#include "chip.h"
 
 #define CAMERA1_CLK		0x8000 /* Camera 1 Clock */
 #define CAMERA2_CLK		0x8080 /* Camera 2 Clock */
@@ -69,8 +68,13 @@ static void pch_finalize(void)
 	 *
 	 * Disabling ACPI PM timer is necessary for XTAL OSC shutdown.
 	 * Disabling ACPI PM timer also switches off TCO
+	 *
+	 * SA_DEV_ROOT device is used here instead of PCH_DEV_PMC since it is
+	 * just required to get to chip config. PCH_DEV_PMC is hidden by this
+	 * point and hence removed from the root bus. pcidev_path_on_root thus
+	 * returns NULL for PCH_DEV_PMC device.
 	 */
-	dev = PCH_DEV_PMC;
+	dev = SA_DEV_ROOT;
 	config = dev->chip_info;
 	pmcbase = pmc_mmio_regs();
 	if (config->PmTimerDisabled) {

@@ -98,8 +98,7 @@ unsigned int pci_match_simple_dev(struct device *dev, pci_devfn_t sdev);
 
 const char *pin_to_str(int pin);
 int get_pci_irq_pins(struct device *dev, struct device **parent_bdg);
-void pci_assign_irqs(unsigned int bus, unsigned int slot,
-		     const unsigned char pIntAtoD[4]);
+void pci_assign_irqs(struct device *dev, const unsigned char pIntAtoD[4]);
 const char *get_pci_class_name(struct device *dev);
 const char *get_pci_subclass_name(struct device *dev);
 
@@ -110,30 +109,11 @@ struct msix_entry *pci_msix_get_table(struct device *dev);
 #define PCI_IO_BRIDGE_ALIGN 4096
 #define PCI_MEM_BRIDGE_ALIGN (1024*1024)
 
-static inline const struct pci_operations *ops_pci(struct device *dev)
-{
-	const struct pci_operations *pops;
-	pops = 0;
-	if (dev && dev->ops)
-		pops = dev->ops->ops_pci;
-	return pops;
-}
-
 #define PCI_ID(VENDOR_ID, DEVICE_ID) \
 	((((DEVICE_ID) & 0xFFFF) << 16) | ((VENDOR_ID) & 0xFFFF))
 
 pci_devfn_t pci_locate_device(unsigned int pci_id, pci_devfn_t dev);
 pci_devfn_t pci_locate_device_on_bus(unsigned int pci_id, unsigned int bus);
-
-#ifdef __SIMPLE_DEVICE__
-unsigned int pci_find_next_capability(pci_devfn_t dev, unsigned int cap,
-	unsigned int last);
-unsigned int pci_find_capability(pci_devfn_t dev, unsigned int cap);
-#else /* !__SIMPLE_DEVICE__ */
-unsigned int pci_find_next_capability(struct device *dev, unsigned int cap,
-	unsigned int last);
-unsigned int pci_find_capability(struct device *dev, unsigned int cap);
-#endif /* __SIMPLE_DEVICE__ */
 
 void pci_early_mmio_window(pci_devfn_t p2p_bridge, u32 mmio_base,
 			   u32 mmio_size);

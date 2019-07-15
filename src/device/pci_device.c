@@ -102,73 +102,6 @@ u32 pci_moving_config32(struct device *dev, unsigned int reg)
 }
 
 /**
- * Given a device, a capability type, and a last position, return the next
- * matching capability. Always start at the head of the list.
- *
- * @param dev Pointer to the device structure.
- * @param cap PCI_CAP_LIST_ID of the PCI capability we're looking for.
- * @param last Location of the PCI capability register to start from.
- * @return The next matching capability.
- */
-unsigned pci_find_next_capability(struct device *dev, unsigned cap,
-				  unsigned last)
-{
-	unsigned pos = 0;
-	u16 status;
-	unsigned reps = 48;
-
-	status = pci_read_config16(dev, PCI_STATUS);
-	if (!(status & PCI_STATUS_CAP_LIST))
-		return 0;
-
-	switch (dev->hdr_type & 0x7f) {
-	case PCI_HEADER_TYPE_NORMAL:
-	case PCI_HEADER_TYPE_BRIDGE:
-		pos = PCI_CAPABILITY_LIST;
-		break;
-	case PCI_HEADER_TYPE_CARDBUS:
-		pos = PCI_CB_CAPABILITY_LIST;
-		break;
-	default:
-		return 0;
-	}
-
-	pos = pci_read_config8(dev, pos);
-	while (reps-- && (pos >= 0x40)) { /* Loop through the linked list. */
-		int this_cap;
-
-		pos &= ~3;
-		this_cap = pci_read_config8(dev, pos + PCI_CAP_LIST_ID);
-		printk(BIOS_SPEW, "Capability: type 0x%02x @ 0x%02x\n",
-		       this_cap, pos);
-		if (this_cap == 0xff)
-			break;
-
-		if (!last && (this_cap == cap))
-			return pos;
-
-		if (last == pos)
-			last = 0;
-
-		pos = pci_read_config8(dev, pos + PCI_CAP_LIST_NEXT);
-	}
-	return 0;
-}
-
-/**
- * Given a device, and a capability type, return the next matching
- * capability. Always start at the head of the list.
- *
- * @param dev Pointer to the device structure.
- * @param cap PCI_CAP_LIST_ID of the PCI capability we're looking for.
- * @return The next matching capability.
- */
-unsigned int pci_find_capability(struct device *dev, unsigned int cap)
-{
-	return pci_find_next_capability(dev, cap, 0);
-}
-
-/**
  * Given a device and register, read the size of the BAR for that register.
  *
  * @param dev Pointer to the device structure.
@@ -659,11 +592,12 @@ void pci_dev_set_resources(struct device *dev)
 
 void pci_dev_enable_resources(struct device *dev)
 {
-	const struct pci_operations *ops;
+	const struct pci_operations *ops = NULL;
 	u16 command;
 
 	/* Set the subsystem vendor and device ID for mainboard devices. */
-	ops = ops_pci(dev);
+	if (dev->ops)
+		ops = dev->ops->ops_pci;
 	if (dev->on_mainboard && ops && ops->set_subsystem) {
 		if (CONFIG_SUBSYSTEM_VENDOR_ID)
 			dev->subsystem_vendor = CONFIG_SUBSYSTEM_VENDOR_ID;
@@ -1566,27 +1500,24 @@ int get_pci_irq_pins(struct device *dev, struct device **parent_bdg)
  *
  * This function should be called for each PCI slot in your system.
  *
- * @param bus Pointer to the bus structure.
- * @param slot TODO
+ * @param dev Pointer to dev structure.
  * @param pIntAtoD An array of IRQ #s that are assigned to PINTA through PINTD
  *        of this slot. The particular IRQ #s that are passed in depend on the
  *        routing inside your southbridge and on your board.
  */
-void pci_assign_irqs(unsigned bus, unsigned slot,
-		     const unsigned char pIntAtoD[4])
+void pci_assign_irqs(struct device *dev, const unsigned char pIntAtoD[4])
 {
-	unsigned int funct;
-	struct device *pdev;
-	u8 line, irq;
+	u8 slot, line, irq;
 
-	/* Each slot may contain up to eight functions. */
-	for (funct = 0; funct < 8; funct++) {
-		pdev = dev_find_slot(bus, (slot << 3) + funct);
+	/* Each device may contain up to eight functions. */
+	slot = dev->path.pci.devfn >> 3;
 
-		if (!pdev)
-			continue;
+	for (; dev ; dev = dev->sibling) {
 
-		line = pci_read_config8(pdev, PCI_INTERRUPT_PIN);
+		if (dev->path.pci.devfn >> 3 != slot)
+			break;
+
+		line = pci_read_config8(dev, PCI_INTERRUPT_PIN);
 
 		/* PCI spec says all values except 1..4 are reserved. */
 		if ((line < 1) || (line > 4))
@@ -1594,11 +1525,9 @@ void pci_assign_irqs(unsigned bus, unsigned slot,
 
 		irq = pIntAtoD[line - 1];
 
-		printk(BIOS_DEBUG, "Assigning IRQ %d to %d:%x.%d\n",
-		       irq, bus, slot, funct);
+		printk(BIOS_DEBUG, "Assigning IRQ %d to %s\n", irq, dev_path(dev));
 
-		pci_write_config8(pdev, PCI_INTERRUPT_LINE,
-				  pIntAtoD[line - 1]);
+		pci_write_config8(dev, PCI_INTERRUPT_LINE, pIntAtoD[line - 1]);
 
 #ifdef PARANOID_IRQ_ASSIGNMENTS
 		irq = pci_read_config8(pdev, PCI_INTERRUPT_LINE);

@@ -51,9 +51,7 @@
 #define SERIAL_0_DEV PNP_DEV(0x2e, W83667HG_A_SP1)
 #define SERIAL_1_DEV PNP_DEV(0x2e, W83667HG_A_SP2)
 
-void activate_spd_rom(const struct mem_controller *ctrl);
 int spd_read_byte(unsigned int device, unsigned int address);
-extern struct sys_info sysinfo_car;
 
 int spd_read_byte(unsigned int device, unsigned int address)
 {
@@ -179,8 +177,9 @@ static const uint8_t spd_addr_fam10[] = {
 	RC01, DIMM0, DIMM1, 0, 0, DIMM2, DIMM3, 0, 0,
 };
 
-void activate_spd_rom(const struct mem_controller *ctrl) {
-	struct sys_info *sysinfo = &sysinfo_car;
+void activate_spd_rom(const struct mem_controller *ctrl)
+{
+	struct sys_info *sysinfo = get_sysinfo();
 	printk(BIOS_DEBUG, "activate_spd_rom() for node %02x\n", ctrl->node_id);
 	if (ctrl->node_id == 0) {
 		printk(BIOS_DEBUG, "enable_spd_node0()\n");
@@ -467,7 +466,7 @@ void cache_as_ram_main(unsigned long bist, unsigned long cpu_init_detectedx)
 		: "=r" (esp)
 		);
 
-	struct sys_info *sysinfo = &sysinfo_car;
+	struct sys_info *sysinfo = get_sysinfo();
 
 	/* Limit the maximum HT speed to 2.6GHz to prevent lockups
 	 * due to HT CPU <--> CPU wiring not being validated to 3.2GHz

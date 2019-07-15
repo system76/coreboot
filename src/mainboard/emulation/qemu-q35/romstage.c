@@ -14,6 +14,7 @@
  * GNU General Public License for more details.
  */
 
+#include <arch/cpu.h>
 #include <stdint.h>
 #include <cbmem.h>
 #include <console/console.h>
@@ -21,6 +22,18 @@
 #include <timestamp.h>
 #include <southbridge/intel/i82801ix/i82801ix.h>
 #include <program_loading.h>
+#include <device/pci_ops.h>
+
+#define D0F0_PCIEXBAR_LO 0x60
+
+static void mainboard_machine_check(void)
+{
+	/* Check that MCFG is active. If it's not qemu was started for machine PC */
+	if (!CONFIG(BOOTBLOCK_CONSOLE) &&
+	    (pci_read_config32(PCI_DEV(0, 0, 0), D0F0_PCIEXBAR_LO) !=
+	     (CONFIG_MMCONF_BASE_ADDRESS | 1)))
+		die("You must run qemu for machine Q35 (-M q35)");
+}
 
 asmlinkage void car_stage_entry(void)
 {
@@ -28,15 +41,13 @@ asmlinkage void car_stage_entry(void)
 	i82801ix_early_init();
 	console_init();
 
+	mainboard_machine_check();
+
 	cbmem_recovery(0);
 
 	timestamp_add_now(TS_START_ROMSTAGE);
 
-	/**
-	 * The LZMA decoder needs about 4 KiB stack.
-	 * Leave 1 KiB stack for general postcar code.
-	 */
-	if (postcar_frame_init(&pcf, 5 * KiB))
+	if (postcar_frame_init(&pcf, 0))
 		die("Unable to initialize postcar frame.\n");
 
 	/**

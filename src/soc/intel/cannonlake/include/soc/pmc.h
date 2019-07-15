@@ -117,6 +117,11 @@
 #define  GPE0_DW_SHIFT(x)		(4*(x))
 
 #if CONFIG(SOC_INTEL_CANNONLAKE_PCH_H)
+/*
+ * The values for GPIO_CFG in Intel Document #572235 are incorrect.
+ * These values now match what is used by the Intel CoffeeLake FSP,
+ * please do not modify them.
+ */
 #define PMC_GPP_A			0x0
 #define PMC_GPP_B			0x1
 #define PMC_GPP_C			0x2
@@ -166,7 +171,6 @@
 #define  SCIS_IRQ22			6
 #define  SCIS_IRQ23			7
 
-struct device;
-void pmc_set_afterg3(struct device *dev, int s5pwr);
+void pmc_set_afterg3(int s5pwr);
 
 #endif

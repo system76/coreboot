@@ -24,8 +24,8 @@
 
 #if !defined(__SIMPLE_DEVICE__)
 #include <device/device.h>
-#define _SA_DEV(slot)		dev_find_slot(0, _SA_DEVFN(slot))
-#define _PCH_DEV(slot, func)	dev_find_slot(0, _PCH_DEVFN(slot, func))
+#define _SA_DEV(slot)		pcidev_path_on_root(_SA_DEVFN(slot))
+#define _PCH_DEV(slot, func)	pcidev_path_on_root(_PCH_DEVFN(slot, func))
 #else
 #define _SA_DEV(slot)		PCI_DEV(0, SA_DEV_SLOT_ ## slot, 0)
 #define _PCH_DEV(slot, func)	PCI_DEV(0, PCH_DEV_SLOT_ ## slot, func)
@@ -187,7 +187,19 @@
 #define  PCH_DEVFN_TRACEHUB	_PCH_DEVFN(LPC, 7)
 #define  PCH_DEV_LPC		_PCH_DEV(LPC, 0)
 #define  PCH_DEV_P2SB		_PCH_DEV(LPC, 1)
+
+#if !ENV_RAMSTAGE
+/*
+ * PCH_DEV_PMC is intentionally not defined in RAMSTAGE since PMC device gets
+ * hidden from PCI bus after call to FSP-S. This leads to resource allocator
+ * dropping it from the root bus as unused device. All references to PCH_DEV_PMC
+ * would then return NULL and can go unnoticed if not handled properly. Since,
+ * this device does not have any special chip config associated with it, it is
+ * okay to not provide the definition for it in ramstage.
+ */
 #define  PCH_DEV_PMC		_PCH_DEV(LPC, 2)
+#endif
+
 #define  PCH_DEV_HDA		_PCH_DEV(LPC, 3)
 #define  PCH_DEV_SMBUS		_PCH_DEV(LPC, 4)
 #define  PCH_DEV_SPI		_PCH_DEV(LPC, 5)

@@ -42,13 +42,8 @@
 
 #include "cpu/amd/quadcore/quadcore.c"
 
-void activate_spd_rom(const struct mem_controller *ctrl);
 int spd_read_byte(unsigned int device, unsigned int address);
-extern struct sys_info sysinfo_car;
 
-void activate_spd_rom(const struct mem_controller *ctrl)
-{
-}
 
 int spd_read_byte(u32 device, u32 address)
 {
@@ -57,7 +52,7 @@ int spd_read_byte(u32 device, u32 address)
 
 void cache_as_ram_main(unsigned long bist, unsigned long cpu_init_detectedx)
 {
-	struct sys_info *sysinfo = &sysinfo_car;
+	struct sys_info *sysinfo = get_sysinfo();
 	static const u8 spd_addr[] = {
 				RC00, 0x52,  0x53,  0, 0, 0x50,  0x51,  0, 0,
 				//RC00, DIMM2, DIMM3, 0, 0, DIMM0, DIMM1, 0, 0,

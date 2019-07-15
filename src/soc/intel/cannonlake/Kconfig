@@ -66,7 +66,6 @@ config CPU_SPECIFIC_OPTIONS
 	select GENERIC_GPIO_LIB
 	select HAVE_FSP_GOP
 	select INTEL_DESCRIPTOR_MODE_CAPABLE
-	select HAVE_MONOTONIC_TIMER
 	select HAVE_SMI_HANDLER
 	select IDT_IN_EVERY_STAGE
 	select INTEL_GMA_ACPI
@@ -80,7 +79,6 @@ config CPU_SPECIFIC_OPTIONS
 	select POSTCAR_CONSOLE
 	select POSTCAR_STAGE
 	select REG_SCRIPT
-	select SMM_TSEG
 	select SMP
 	select SOC_AHCI_PORT_IMPLEMENTED_INVERT
 	select PMC_GLOBAL_RESET_ENABLE_LOCK
@@ -95,6 +93,8 @@ config CPU_SPECIFIC_OPTIONS
 	select SOC_INTEL_COMMON_BLOCK_GSPI_VERSION_2
 	select SOC_INTEL_COMMON_BLOCK_HDA
 	select SOC_INTEL_COMMON_BLOCK_SA
+	select SOC_INTEL_COMMON_BLOCK_XHCI
+	select SOC_INTEL_COMMON_BLOCK_XHCI_ELOG
 	select SOC_INTEL_COMMON_BLOCK_SMM
 	select SOC_INTEL_COMMON_BLOCK_SMM_IO_TRAP
 	select SOC_INTEL_COMMON_PCH_BASE
@@ -316,12 +316,8 @@ config SOC_INTEL_CANNONLAKE_DEBUG_CONSENT
 	  Setting non-zero value will allow to use DBC or DCI to debug SOC.
 	  PlatformDebugConsent in FspmUpd.h has the details.
 
-config USE_LEGACY_8254_TIMER
-	bool "Use Legacy 8254 Timer"
-	default y if PAYLOAD_SEABIOS
-	default n
-	help
-	  This sets the Enable8254ClockGating UPD, which according to the FSP Integration
-	  guide needs to be disabled in order to boot SeaBIOS, but should otherwise be enabled.
+config PRERAM_CBMEM_CONSOLE_SIZE
+	hex
+	default 0xe00
 
 endif

@@ -25,6 +25,8 @@ config SLOT_SPECIFIC_OPTIONS # dummy
 	select CPU_INTEL_MODEL_68X
 	select CPU_INTEL_MODEL_6BX
 	select CPU_INTEL_MODEL_6XX
+	select NO_SMM
+	select NO_MONOTONIC_TIMER
 
 config DCACHE_RAM_BASE
 	hex

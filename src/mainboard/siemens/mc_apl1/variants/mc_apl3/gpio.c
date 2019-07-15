@@ -49,7 +49,7 @@ static const struct pad_config gpio_table[] = {
 	PAD_CFG_GPI(GPIO_166, DN_20K, DEEP),		/* SDIO_CLK */
 	PAD_CFG_GPI(GPIO_167, UP_20K, DEEP),		/* SDIO_D0 */
 	/* Configure SDIO to enable power gating. */
-	PAD_CFG_GPI(GPIO_168, UP_20K, DEEP),		/* SDIO_D1 */
+	PAD_CFG_NF(GPIO_168, UP_20K, DEEP, NF1),	/* SDIO_D1 */
 	PAD_CFG_GPI(GPIO_169, UP_20K, DEEP),		/* SDIO_D2 */
 	PAD_CFG_GPI(GPIO_170, UP_20K, DEEP),		/* SDIO_D3 */
 	PAD_CFG_GPI(GPIO_171, UP_20K, DEEP),		/* SDIO_CMD */
@@ -325,8 +325,9 @@ static const struct pad_config gpio_table[] = {
 	PAD_CFG_GPI(GPIO_39, DN_20K, DEEP),	/* LPSS_UART0_TXD - unused */
 	PAD_CFG_GPI(GPIO_40, DN_20K, DEEP),	/* LPSS_UART0_RTS - unused */
 	PAD_CFG_GPI(GPIO_41, UP_20K, DEEP),	/* LPSS_UART0_CTS - unused */
-	PAD_CFG_GPI(GPIO_42, UP_20K, DEEP),	/* LPSS_UART1_RXD - unused */
-	PAD_CFG_GPI(GPIO_43, DN_20K, DEEP),	/* LPSS_UART1_TXD - unused */
+	PAD_CFG_NF(GPIO_42, UP_20K, DEEP, NF1), /* LPSS_UART1_RXD */
+	/* LPSS_UART1_TXD */
+	PAD_CFG_NF_IOSSTATE(GPIO_43, NATIVE, DEEP, NF1, Tx1RxDCRx0),
 	PAD_CFG_GPI(GPIO_44, UP_20K, DEEP),	/* LPSS_UART1_RTS - unused */
 	PAD_CFG_GPI(GPIO_45, UP_20K, DEEP),	/* LPSS_UART1_CTS - unused */
 	PAD_CFG_NF(GPIO_46, UP_20K, DEEP, NF1),	/* LPSS_UART2_RXD */

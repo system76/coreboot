@@ -29,11 +29,19 @@
 
 /* Global allocation of sysinfo_car */
 #include <arch/early_variables.h>
-struct sys_info sysinfo_car CAR_GLOBAL;
+static struct sys_info sysinfo_car CAR_GLOBAL;
+
+struct sys_info *get_sysinfo(void)
+{
+	return car_get_var_ptr(&sysinfo_car);
+}
 
 struct mem_controller;
-extern void activate_spd_rom(const struct mem_controller *ctrl);
 extern int spd_read_byte(unsigned int device, unsigned int address);
+
+void __weak activate_spd_rom(const struct mem_controller *ctrl)
+{
+}
 
 void fam15h_switch_dct(uint32_t dev, uint8_t dct)
 {

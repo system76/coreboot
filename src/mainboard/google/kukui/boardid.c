@@ -51,15 +51,15 @@ static const int lcm_voltages[ADC_LEVELS] = {
 	/* ID : Voltage (unit: uV) */
 	/*  0 : */       0,
 	/*  1 : */  283000,
-	/*  2 : */  440000,
+	/*  2 : */  394000,
 	/*  3 : */  503000,
 	/*  4 : */  608000,
-	/*  5 : */  703000,
-	/*  6 : */  830000,
-	/*  7 : */  865000,
-	/*  8 : */  953000,
-	/*  9 : */ 1079000,
-	/* 10 : */ 1128000,
+	/*  5 : */  712000,
+	/*  6 : */  823000,
+	/*  7 : */  937000,
+	/*  8 : */ 1046000,
+	/*  9 : */ 1155000,
+	/* 10 : */ 1277000,
 	/* 11 : */ 1434000,
 };
 
@@ -82,15 +82,7 @@ static uint32_t get_adc_index(unsigned int channel)
 	for (id = 0; id < ADC_LEVELS - 1; id++)
 		if (value < (voltages[id] + voltages[id + 1]) / 2)
 			break;
-
-	/* The last level is NC and may be larger than standard tolerance. */
-	const int tolerance = 10000; /* 10,000 uV */
-	if (id < ADC_LEVELS - 1 && ABS(value - voltages[id]) > tolerance) {
-		printk(BIOS_ERR, "ADC channel %u value out of range: %d\n",
-		       channel, value);
-		assert(0);
-	}
-
+	printk(BIOS_DEBUG, "ADC[%d]: Raw value=%d ID=%d\n", channel, value, id);
 	return id;
 }
 

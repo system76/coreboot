@@ -17,11 +17,6 @@ config PARALLEL_MP_AP_WORK
 	 Allow APs to do other work after initialization instead of going
 	 to sleep.
 
-config UDELAY_IO
-	bool
-	default y if !UDELAY_LAPIC && !UDELAY_TSC && !UDELAY_TIMER2 && !GENERIC_UDELAY
-	default n
-
 config UDELAY_LAPIC
 	bool
 	default n
@@ -29,7 +24,6 @@ config UDELAY_LAPIC
 config LAPIC_MONOTONIC_TIMER
 	def_bool n
 	depends on UDELAY_LAPIC
-	select HAVE_MONOTONIC_TIMER
 	help
 	  Expose monotonic time using the local APIC.
 
@@ -50,14 +44,8 @@ config TSC_CONSTANT_RATE
 config TSC_MONOTONIC_TIMER
 	def_bool n
 	depends on UDELAY_TSC
-	select HAVE_MONOTONIC_TIMER
 	help
 	  Expose monotonic time using the TSC.
-
-# This option is used in code but never selected.
-config UDELAY_TIMER2
-	bool
-	default n
 
 config TSC_SYNC_LFENCE
 	bool
@@ -98,14 +86,30 @@ config LOGICAL_CPUS
 	bool
 	default y
 
-config SMM_TSEG
+config HAVE_SMI_HANDLER
 	bool
 	default n
+	depends on (SMM_ASEG || SMM_TSEG)
+
+config NO_SMM
+	bool
+	default n
+
+config SMM_ASEG
+	bool
+	default n
+	depends on !NO_SMM
+
+config SMM_TSEG
+	bool
+	default y
+	depends on !(NO_SMM || SMM_ASEG)
+
+if SMM_TSEG
 
 config SMM_MODULE_HEAP_SIZE
 	hex
 	default 0x4000
-	depends on SMM_TSEG
 	help
 	  This option determines the size of the heap within the SMM handler
 	  modules.
@@ -113,7 +117,6 @@ config SMM_MODULE_HEAP_SIZE
 config SMM_MODULE_STACK_SIZE
 	hex
 	default 0x400
-	depends on SMM_TSEG
 	help
 	  This option determines the size of the stack within the SMM handler
 	  modules.
@@ -121,10 +124,11 @@ config SMM_MODULE_STACK_SIZE
 config SMM_STUB_STACK_SIZE
 	hex
 	default 0x400
-	depends on SMM_TSEG
 	help
 	  This option determines the size of the stack within the SMM handler
 	  modules.
+
+endif
 
 config SMM_LAPIC_REMAP_MITIGATION
 	bool

@@ -13,7 +13,6 @@
  * GNU General Public License for more details.
  */
 
-#include <chip.h>
 #include <console/console.h>
 #include <device/device.h>
 #include <device/pci.h>
@@ -23,6 +22,7 @@
 #include <soc/intel/common/vbt.h>
 #include <soc/pci_devs.h>
 #include <soc/ramstage.h>
+#include <soc/soc_chip.h>
 #include <string.h>
 #include <intelblocks/mp_init.h>
 #include <fsp/ppi/mp_service_ppi.h>
@@ -80,9 +80,20 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 
 	mainboard_silicon_init_params(params);
 
-	params->PeiGraphicsPeimInit = 1;
-	params->GtFreqMax = 2;
-	params->CdClock = 3;
+	dev = pcidev_path_on_root(SA_DEVFN_IGD);
+
+	if (!dev || !dev->enabled) {
+		/*
+		 * Skip IGD initialization in FSP in case device is disabled
+		 * in the devicetree.cb.
+		 */
+		params->PeiGraphicsPeimInit = 0;
+	} else {
+		params->PeiGraphicsPeimInit = 1;
+		params->GtFreqMax = 2;
+		params->CdClock = 3;
+	}
+
 	/* Unlock upper 8 bytes of RTC RAM */
 	params->PchLockDownRtcMemoryLock = 0;
 
@@ -123,6 +134,10 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 
 	/* disable Legacy PME */
 	memset(params->PcieRpPmSci, 0, sizeof(params->PcieRpPmSci));
+
+	/* Legacy 8254 timer support */
+	params->Enable8254ClockGating = !CONFIG_USE_LEGACY_8254_TIMER;
+	params->Enable8254ClockGatingOnS3 = 1;
 
 	/* S0ix */
 	params->PchPmSlpS0Enable = config->s0ix_enable;

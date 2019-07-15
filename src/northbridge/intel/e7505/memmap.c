@@ -35,7 +35,13 @@ void *cbmem_top(void)
 	return (void *)tolm;
 }
 
-#define ROMSTAGE_RAM_STACK_SIZE 0x5000
+void northbridge_write_smram(u8 smram);
+
+void northbridge_write_smram(u8 smram)
+{
+	pci_devfn_t mch = PCI_DEV(0, 0, 0);
+	pci_write_config8(mch, SMRAMC, smram);
+}
 
 /* platform_enter_postcar() determines the stack to use after
  * cache-as-ram is torn down as well as the MTRR settings to use,
@@ -45,7 +51,7 @@ void platform_enter_postcar(void)
 	struct postcar_frame pcf;
 	uintptr_t top_of_ram;
 
-	if (postcar_frame_init(&pcf, ROMSTAGE_RAM_STACK_SIZE))
+	if (postcar_frame_init(&pcf, 0))
 		die("Unable to initialize postcar frame.\n");
 
 	/*

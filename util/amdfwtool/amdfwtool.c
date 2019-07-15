@@ -203,6 +203,7 @@ static void usage(void)
 	printf("-K | --drv-entry-pts <FILE>    Add PSP driver entry points\n");
 	printf("-L | --ikek <FILE>             Add Wrapped iKEK\n");
 	printf("-Y | --s0i3drv <FILE>          Add s0i3 driver\n");
+	printf("-Z | --verstage <FILE>         Add verstage\n");
 	printf("\nBIOS options:\n");
 	printf("-I | --instance <number>       Sets instance field for the next BIOS firmware\n");
 	printf("-a | --apcb <FILE>             Add AGESA PSP customization block\n");
@@ -211,7 +212,7 @@ static void usage(void)
 	printf("-H | --apob-nv-size <HEX_VAL>  Size of S3 resume data\n");
 	printf("-y | --pmu-inst <FILE>         Add PMU firmware instruction portion\n");
 	printf("-G | --pmu-data <FILE>         Add PMU firmware data portion\n");
-	printf("-u | --ucode <FILE>            Add microcode patch\n");
+	printf("-O | --ucode <FILE>            Add microcode patch\n");
 	printf("-X | --mp2-config <FILE>       Add MP2 configuration\n");
 	printf("-V | --bios-bin <FILE>         Add compressed image; auto source address\n");
 	printf("-e | --bios-bin-src <HEX_VAL>  Address in flash of source if -V not used\n");
@@ -290,6 +291,7 @@ typedef enum _amd_fw_type {
 	AMD_ABL7 = 0x37,
 	AMD_FW_PSP_WHITELIST = 0x3a,
 	AMD_FW_L2_PTR = 0x40,
+	AMD_FW_PSP_VERSTAGE = 0x52,
 	AMD_FW_IMC,
 	AMD_FW_GEC,
 	AMD_FW_XHCI,
@@ -345,6 +347,7 @@ static amd_fw_entry amd_psp_fw_table[] = {
 	{ .type = AMD_FW_PSP_SMU_FIRMWARE, .subprog = 1, .level = PSP_BOTH },
 	{ .type = AMD_FW_PSP_SMU_FIRMWARE2, .subprog = 1, .level = PSP_BOTH },
 	{ .type = AMD_FW_PSP_WHITELIST, .level = PSP_LVL2 },
+	{ .type = AMD_FW_PSP_VERSTAGE, .level = PSP_BOTH },
 	{ .type = AMD_FW_INVALID },
 };
 
@@ -493,6 +496,7 @@ static void *new_psp_dir(context *ctx, int multi)
 	return ptr;
 }
 
+#if PSP_COMBO
 static void *new_combo_dir(context *ctx)
 {
 	void *ptr;
@@ -503,6 +507,7 @@ static void *new_combo_dir(context *ctx)
 			+ MAX_COMBO_ENTRIES * sizeof(psp_combo_entry);
 	return ptr;
 }
+#endif
 
 static void fill_dir_header(void *directory, uint32_t count, uint32_t cookie)
 {
@@ -566,11 +571,13 @@ static ssize_t copy_blob(void *dest, const char *src_file, size_t room)
 
 	if (fstat(fd, &fd_stat)) {
 		printf("fstat error: %s\n", strerror(errno));
+		close(fd);
 		return -2;
 	}
 
 	if (fd_stat.st_size > room) {
 		printf("Error: %s will not fit.  Exiting.\n", src_file);
+		close(fd);
 		return -3;
 	}
 
@@ -798,7 +805,7 @@ static void integrate_bios_firmwares(context *ctx,
 					uint32_t cookie)
 {
 	ssize_t bytes;
-	unsigned int i, j, count;
+	unsigned int i, count;
 	int level;
 
 	/* This function can create a primary table, a secondary table, or a
@@ -971,8 +978,8 @@ static void integrate_bios_firmwares(context *ctx,
 
 	fill_dir_header(biosdir, count, cookie);
 }
-
-static const char *optstring  = "x:i:g:AMS:p:b:s:r:k:c:n:d:t:u:w:m:T:z:J:B:K:L:Y:N:UW:I:a:Q:V:e:v:j:y:G:O:X:F:H:o:f:l:h";
+// Unused values: CDEPqR
+static const char *optstring  = "x:i:g:AMS:p:b:s:r:k:c:n:d:t:u:w:m:T:z:J:B:K:L:Y:N:UW:I:a:Q:V:e:v:j:y:G:O:X:F:H:o:f:l:hZ:";
 
 static struct option long_options[] = {
 	{"xhci",             required_argument, 0, 'x' },
@@ -1004,6 +1011,7 @@ static struct option long_options[] = {
 	{"secdebug",         required_argument, 0, 'N' },
 	{"token-unlock",           no_argument, 0, 'U' },
 	{"whitelist",        required_argument, 0, 'W' },
+	{"verstage",         required_argument, 0, 'Z' },
 	/* BIOS Directory Table items */
 	{"instance",         required_argument, 0, 'I' },
 	{"apcb",             required_argument, 0, 'a' },
@@ -1088,7 +1096,7 @@ static void register_bdt_data(amd_bios_type type, int sub, int ins, char name[])
 	}
 }
 
-static void register_fw_addr(amd_fw_type type, char *src_str,
+static void register_fw_addr(amd_bios_type type, char *src_str,
 					char *dst_str, char *size_str)
 {
 	int i;
@@ -1316,6 +1324,10 @@ int main(int argc, char **argv)
 			break;
 		case 'W':
 			register_fw_filename(AMD_FW_PSP_WHITELIST, sub, optarg);
+			sub = instance = 0;
+			break;
+		case 'Z':
+			register_fw_filename(AMD_FW_PSP_VERSTAGE, sub, optarg);
 			sub = instance = 0;
 			break;
 		case 'o':

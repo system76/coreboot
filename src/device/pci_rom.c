@@ -56,9 +56,9 @@ struct rom_header *pci_rom_probe(struct device *dev)
 		printk(BIOS_DEBUG, "In CBFS, ROM address for %s = %p\n",
 		       dev_path(dev), rom_header);
 	} else if (!CONFIG(ON_DEVICE_ROM_LOAD)) {
-			printk(BIOS_DEBUG, "PCI Option ROM loading disabled "
-				"for %s\n", dev_path(dev));
-			return NULL;
+		printk(BIOS_DEBUG, "PCI Option ROM loading disabled for %s\n",
+		       dev_path(dev));
+		return NULL;
 	} else {
 		uintptr_t rom_address;
 
@@ -76,6 +76,8 @@ struct rom_header *pci_rom_probe(struct device *dev)
 			pci_write_config32(dev, PCI_ROM_ADDRESS,
 					   rom_address|PCI_ROM_ADDRESS_ENABLE);
 		}
+
+		rom_address &= PCI_ROM_ADDRESS_MASK;
 
 		printk(BIOS_DEBUG, "Option ROM address for %s = %lx\n",
 		       dev_path(dev), (unsigned long)rom_address);
@@ -207,8 +209,6 @@ pci_rom_acpi_fill_vfct(struct device *device, struct acpi_vfct *vfct_struct,
 	struct acpi_vfct_image_hdr *header = &vfct_struct->image_hdr;
 	struct rom_header *rom;
 
-	vfct_struct->VBIOSImageOffset = (size_t)header - (size_t)vfct_struct;
-
 	rom = check_initialized(device);
 	if (!rom)
 		rom = pci_rom_probe(device);
@@ -231,6 +231,8 @@ pci_rom_acpi_fill_vfct(struct device *device, struct acpi_vfct *vfct_struct,
 	header->ImageLength = rom->size * 512;
 	memcpy((void *)&header->VbiosContent, rom, header->ImageLength);
 
+	vfct_struct->VBIOSImageOffset = (size_t)header - (size_t)vfct_struct;
+
 	current += header->ImageLength;
 	return current;
 }
@@ -239,9 +241,6 @@ unsigned long
 pci_rom_write_acpi_tables(struct device *device, unsigned long current,
 			  struct acpi_rsdp *rsdp)
 {
-	struct acpi_vfct *vfct;
-	struct rom_header *rom;
-
 	/* Only handle VGA devices */
 	if ((device->class >> 8) != PCI_CLASS_DISPLAY_VGA)
 		return current;
@@ -250,19 +249,18 @@ pci_rom_write_acpi_tables(struct device *device, unsigned long current,
 	if (!device->enabled)
 		return current;
 
-	/* Probe for option rom */
-	rom = pci_rom_probe(device);
-	if (!rom)
-		return current;
-
 	/* AMD/ATI uses VFCT */
 	if (device->vendor == PCI_VENDOR_ID_ATI) {
+		struct acpi_vfct *vfct;
+
 		current = ALIGN_UP(current, 8);
-		printk(BIOS_DEBUG, "ACPI:    * VFCT at %lx\n", current);
 		vfct = (struct acpi_vfct *)current;
 		acpi_create_vfct(device, vfct, pci_rom_acpi_fill_vfct);
-		current += vfct->header.length;
-		acpi_add_table(rsdp, vfct);
+		if (vfct->header.length) {
+			printk(BIOS_DEBUG, "ACPI:    * VFCT at %lx\n", current);
+			current += vfct->header.length;
+			acpi_add_table(rsdp, vfct);
+		}
 	}
 
 	return current;
