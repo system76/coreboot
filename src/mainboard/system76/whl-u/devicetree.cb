@@ -156,9 +156,6 @@ chip soc/intel/cannonlake
 	# Address 0x90: Disabled
 	register "gen4_dec" = "0x00000000"
 
-	# 8254
-	register "clock_gate_8254" = "0"
-
 # PMC (soc/intel/cannonlake/pmc.c)
 	# Enable deep Sx states
 	register "deep_s3_enable_ac" = "0"
