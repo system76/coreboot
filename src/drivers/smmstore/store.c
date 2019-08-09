@@ -13,6 +13,7 @@
  * GNU General Public License for more details.
  */
 
+#include <stdlib.h>
 #include <boot_device.h>
 #include <cbfs.h>
 #include <fmap.h>
