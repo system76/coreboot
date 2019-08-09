@@ -15,12 +15,12 @@
 
 ifeq ($(CONFIG_NORTHBRIDGE_INTEL_I945),y)
 
-ramstage-y += ram_calc.c
+ramstage-y += memmap.c
 ramstage-y += northbridge.c
 ramstage-y += gma.c
 ramstage-y += acpi.c
 
-romstage-y += ram_calc.c
+romstage-y += memmap.c
 romstage-y += raminit.c
 romstage-y += early_init.c
 romstage-y += errata.c
@@ -29,10 +29,6 @@ romstage-y += rcven.c
 
 smm-y += udelay.c
 
-postcar-y += ram_calc.c
-
-romstage-$(CONFIG_CACHE_RELOCATED_RAMSTAGE_OUTSIDE_CBMEM) += stage_cache.c
-ramstage-$(CONFIG_CACHE_RELOCATED_RAMSTAGE_OUTSIDE_CBMEM) += stage_cache.c
-postcar-$(CONFIG_CACHE_RELOCATED_RAMSTAGE_OUTSIDE_CBMEM) += stage_cache.c
+postcar-y += memmap.c
 
 endif

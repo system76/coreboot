@@ -134,6 +134,15 @@
 #define PAD_RESET(value)	PAD_CFG0_LOGICAL_RESET_##value
 #define PAD_PULL(value)		PAD_CFG1_PULL_##value
 
+/* Disable the input/output buffer of the pad */
+#define PAD_CFG0_BUF_NO_DISABLE		(0)
+#define PAD_CFG0_BUF_TX_DISABLE		PAD_CFG0_TX_DISABLE
+#define PAD_CFG0_BUF_RX_DISABLE		PAD_CFG0_RX_DISABLE
+#define PAD_CFG0_BUF_TX_RX_DISABLE \
+	(PAD_CFG0_TX_DISABLE | PAD_CFG0_RX_DISABLE)
+
+#define PAD_BUF(value)		PAD_CFG0_BUF_##value
+
 #if CONFIG(SOC_INTEL_COMMON_BLOCK_GPIO_IOSTANDBY)
 #define PAD_IOSSTATE(value)	PAD_CFG1_IOSSTATE_##value
 #define PAD_IOSTERM(value)	PAD_CFG1_IOSTERM_##value
@@ -180,6 +189,15 @@
 	_PAD_CFG_STRUCT(pad, PAD_RESET(rst) | PAD_FUNC(func), PAD_PULL(pull) | \
 		PAD_IOSSTATE(TxLASTRxE))
 
+/*
+ * Set native function with RX Level/Edge configuration and disable
+ * input/output buffer if necessary
+ */
+#define PAD_CFG_NF_BUF_TRIG(pad, pull, rst, func, bufdis, trig) \
+	_PAD_CFG_STRUCT(pad, PAD_RESET(rst) | PAD_CFG0_TRIG_##trig | \
+		PAD_BUF(bufdis) | PAD_FUNC(func), \
+		PAD_PULL(pull) | PAD_IOSSTATE(TxLASTRxE))
+
 #if CONFIG(SOC_INTEL_COMMON_BLOCK_GPIO_PADCFG_PADTOL)
 /* Native 1.8V tolerant pad, only applies to some pads like I2C/I2S
     Not applicable to all SOCs. Refer EDS
@@ -209,25 +227,29 @@
 /* General purpose output, no pullup/down. */
 #define PAD_CFG_GPO(pad, val, rst)	\
 	_PAD_CFG_STRUCT(pad,		\
-		PAD_FUNC(GPIO) | PAD_RESET(rst) | PAD_CFG0_RX_DISABLE | !!val, \
+		PAD_FUNC(GPIO) | PAD_RESET(rst) | \
+		PAD_CFG0_TRIG_OFF | PAD_CFG0_RX_DISABLE | !!val, \
 		PAD_PULL(NONE) | PAD_IOSSTATE(TxLASTRxE))
 
 /* General purpose output, with termination specified */
 #define PAD_CFG_TERM_GPO(pad, val, pull, rst)	\
 	_PAD_CFG_STRUCT(pad,		\
-		PAD_FUNC(GPIO) | PAD_RESET(rst) | PAD_CFG0_RX_DISABLE | !!val, \
+		PAD_FUNC(GPIO) | PAD_RESET(rst) | \
+		PAD_CFG0_TRIG_OFF | PAD_CFG0_RX_DISABLE | !!val, \
 		PAD_PULL(pull) | PAD_IOSSTATE(TxLASTRxE))
 
 /* General purpose output, no pullup/down. */
 #define PAD_CFG_GPO_GPIO_DRIVER(pad, val, rst, pull)	\
 	_PAD_CFG_STRUCT(pad,		\
-		PAD_FUNC(GPIO) | PAD_RESET(rst) | PAD_CFG0_RX_DISABLE | !!val, \
+		PAD_FUNC(GPIO) | PAD_RESET(rst) | \
+		PAD_CFG0_TRIG_OFF | PAD_CFG0_RX_DISABLE | !!val, \
 		PAD_PULL(pull) | PAD_IOSSTATE(TxLASTRxE) | PAD_CFG1_GPIO_DRIVER)
 
 /* General purpose output. */
 #define PAD_CFG_GPO_IOSSTATE_IOSTERM(pad, val, rst, pull, iosstate, ioterm)	\
 	_PAD_CFG_STRUCT(pad,		\
-		PAD_FUNC(GPIO) | PAD_RESET(rst) | PAD_CFG0_RX_DISABLE | !!val, \
+		PAD_FUNC(GPIO) | PAD_RESET(rst) | \
+		PAD_CFG0_TRIG_OFF | PAD_CFG0_RX_DISABLE | !!val, \
 		PAD_PULL(pull) | PAD_IOSSTATE(iosstate) | PAD_IOSTERM(ioterm))
 
 /* General purpose input */

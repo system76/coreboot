@@ -18,7 +18,9 @@
 #include <device/pci.h>
 #include <fsp/api.h>
 #include <fsp/util.h>
+#include <intelblocks/lpss.h>
 #include <intelblocks/xdci.h>
+#include <intelpch/lockdown.h>
 #include <soc/intel/common/vbt.h>
 #include <soc/pci_devs.h>
 #include <soc/ramstage.h>
@@ -26,7 +28,7 @@
 
 #include "chip.h"
 
-static const int serial_io_dev[] = {
+static const pci_devfn_t serial_io_dev[] = {
 	PCH_DEVFN_I2C0,
 	PCH_DEVFN_I2C1,
 	PCH_DEVFN_I2C2,
@@ -97,13 +99,7 @@ static void parse_devicetree_param(const config_t *config, FSP_S_CONFIG *params)
 
 static void parse_devicetree(FSP_S_CONFIG *params)
 {
-	struct device *dev = SA_DEV_ROOT;
-	if (!dev) {
-		printk(BIOS_ERR, "Could not find root device\n");
-		return;
-	}
-
-	const config_t *config = dev->chip_info;
+	const config_t *config = config_of_path(SA_DEVFN_ROOT);
 
 	parse_devicetree_param(config, params);
 }
@@ -147,8 +143,9 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 	int i;
 	FSP_S_CONFIG *params = &supd->FspsConfig;
 	FSP_S_TEST_CONFIG *tconfig = &supd->FspsTestConfig;
-	struct device *dev = SA_DEV_ROOT;
-	config_t *config = dev->chip_info;
+	struct device *dev;
+
+	config_t *config = config_of_path(SA_DEVFN_ROOT);
 
 	/* Parse device tree and enable/disable devices */
 	parse_devicetree(params);
@@ -371,6 +368,9 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 	params->PchPwrOptEnable = config->dmipwroptimize;
 	params->SataPwrOptEnable = config->satapwroptimize;
 
+	/* Disable PCH ACPI timer */
+	params->EnableTcoTimer = !config->PmTimerDisabled;
+
 	/* Apply minimum assertion width settings if non-zero */
 	if (config->PchPmSlpS3MinAssert)
 		params->PchPmSlpS3MinAssert = config->PchPmSlpS3MinAssert;
@@ -410,10 +410,50 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 
 	/* Set correct Sirq mode based on config */
 	params->PchSirqMode = config->SerialIrqConfigSirqMode;
+
+	/* Chipset Lockdown */
+	if (get_lockdown_config() == CHIPSET_LOCKDOWN_COREBOOT) {
+		tconfig->PchLockDownGlobalSmi = 0;
+		tconfig->PchLockDownBiosInterface = 0;
+		params->PchLockDownBiosLock = 0;
+		params->PchLockDownRtcMemoryLock = 0;
+		/*
+		 * TODO: Disable SpiFlashCfgLockDown config after FSP provides
+		 * dedicated UPD
+		 *
+		 * Skip SPI Flash Lockdown from inside FSP.
+		 * Making this config "0" means FSP won't set the FLOCKDN bit
+		 * of SPIBAR + 0x04 (i.e., Bit 15 of BIOS_HSFSTS_CTL).
+		 * So, it becomes coreboot's responsibility to set this bit
+		 * before end of POST for security concerns.
+		 */
+		// params->SpiFlashCfgLockDown = 0;
+	} else {
+		tconfig->PchLockDownGlobalSmi = 1;
+		tconfig->PchLockDownBiosInterface = 1;
+		params->PchLockDownBiosLock = 1;
+		params->PchLockDownRtcMemoryLock = 1;
+		/*
+		 * TODO: Enable SpiFlashCfgLockDown config after FSP provides
+		 * dedicated UPD
+		 *
+		 * Enable SPI Flash Lockdown from inside FSP.
+		 * Making this config "1" means FSP will set the FLOCKDN bit
+		 * of SPIBAR + 0x04 (i.e., Bit 15 of BIOS_HSFSTS_CTL).
+		 */
+		// params->SpiFlashCfgLockDown = 1;
+	}
 }
 
 /* Mainboard GPIO Configuration */
 __weak void mainboard_silicon_init_params(FSP_S_CONFIG *params)
 {
 	printk(BIOS_DEBUG, "WEAK: %s/%s called\n", __FILE__, __func__);
+}
+
+/* Return list of SOC LPSS controllers */
+const pci_devfn_t *soc_lpss_controllers_list(size_t *size)
+{
+	*size = ARRAY_SIZE(serial_io_dev);
+	return serial_io_dev;
 }

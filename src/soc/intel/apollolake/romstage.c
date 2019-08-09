@@ -27,10 +27,10 @@
 #include <cpu/x86/mtrr.h>
 #include <cpu/x86/pae.h>
 #include <delay.h>
+#include <cpu/x86/smm.h>
 #include <device/pci_def.h>
 #include <device/resource.h>
 #include <fsp/api.h>
-#include <fsp/memmap.h>
 #include <fsp/util.h>
 #include <intelblocks/cpulib.h>
 #include <intelblocks/lpc_lib.h>
@@ -100,17 +100,8 @@ static void soc_early_romstage_init(void)
 /* Thermal throttle activation offset */
 static void configure_thermal_target(void)
 {
-	const struct device *dev = pcidev_path_on_root(SA_DEVFN_ROOT);
-	if (!dev) {
-		printk(BIOS_ERR, "Could not find SOC devicetree config\n");
-		return;
-	}
-	const config_t *conf = dev->chip_info;
-	if (!dev->chip_info) {
-		printk(BIOS_ERR, "Could not find chip info\n");
-		return;
-	}
 	msr_t msr;
+	const config_t *conf = config_of_path(SA_DEVFN_ROOT);
 
 	if (!conf->tcc_offset)
 		return;
@@ -211,10 +202,9 @@ asmlinkage void car_stage_entry(void)
 	uintptr_t top_of_ram;
 	bool s3wake;
 	struct chipset_power_state *ps = pmc_get_power_state();
-	void *smm_base;
+	uintptr_t smm_base;
 	size_t smm_size, var_size;
 	const void *new_var_data;
-	uintptr_t tseg_base;
 
 	timestamp_add_now(TS_START_ROMSTAGE);
 
@@ -266,9 +256,8 @@ asmlinkage void car_stage_entry(void)
 	* when relocating the SMM handler as well as using the TSEG
 	* region for other purposes.
 	*/
-	smm_region_info(&smm_base, &smm_size);
-	tseg_base = (uintptr_t)smm_base;
-	postcar_frame_add_mtrr(&pcf, tseg_base, smm_size, MTRR_TYPE_WRBACK);
+	smm_region(&smm_base, &smm_size);
+	postcar_frame_add_mtrr(&pcf, smm_base, smm_size, MTRR_TYPE_WRBACK);
 
 	run_postcar_phase(&pcf);
 }
@@ -320,13 +309,9 @@ static void soc_memory_init_params(FSPM_UPD *mupd)
 {
 #if CONFIG(SOC_INTEL_GLK)
 	/* Only for GLK */
-	const struct device *dev = pcidev_path_on_root(PCH_DEVFN_LPC);
-	assert(dev != NULL);
-	const config_t *config = dev->chip_info;
 	FSP_M_CONFIG *m_cfg = &mupd->FspmConfig;
 
-	if (!config)
-		die("Can not find SoC devicetree\n");
+	const config_t *config = config_of_path(PCH_DEVFN_LPC);
 
 	m_cfg->PrmrrSize = config->PrmrrSize;
 

@@ -57,7 +57,7 @@ enum {
 	CB_TAG_CBMEM_CONSOLE		= 0x0017,
 	CB_TAG_MRC_CACHE		= 0x0018,
 	CB_TAG_VBNV			= 0x0019,
-	CB_TAG_VBOOT_HANDOFF		= 0x0020,
+	CB_TAG_VBOOT_HANDOFF		= 0x0020,  /* deprecated */
 	CB_TAG_X86_ROM_MTRR		= 0x0021,
 	CB_TAG_DMA			= 0x0022,
 	CB_TAG_RAM_OOPS			= 0x0023,
@@ -189,6 +189,14 @@ struct cb_forward {
 	u64 forward;
 };
 
+/* Panel orientation, matches drm_connector.h in the Linux kernel. */
+enum cb_fb_orientation {
+	CB_FB_ORIENTATION_NORMAL = 0,
+	CB_FB_ORIENTATION_BOTTOM_UP = 1,
+	CB_FB_ORIENTATION_LEFT_UP = 2,
+	CB_FB_ORIENTATION_RIGHT_UP = 3,
+};
+
 struct cb_framebuffer {
 	u32 tag;
 	u32 size;
@@ -206,6 +214,7 @@ struct cb_framebuffer {
 	u8 blue_mask_size;
 	u8 reserved_mask_pos;
 	u8 reserved_mask_size;
+	u8 orientation;
 };
 
 #define CB_GPIO_ACTIVE_LOW 0

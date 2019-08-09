@@ -51,6 +51,8 @@ static const struct pad_config gpio_table[] = {
 	PAD_NC(GPP_D8, NONE),
 	/* D10 : ISH_SPI_CLK ==> EN_PP3300_PP1800_FP */
 	PAD_CFG_GPO(GPP_D10, 0, DEEP),
+	/* D16 : USI_INT_L */
+	PAD_CFG_GPI_APIC(GPP_D16, NONE, PLTRST, LEVEL, INVERT),
 	/* D21 : SPI1_IO2 ==> NC */
 	PAD_NC(GPP_D21, NONE),
 	/* F0  : GPP_F0 ==> NC */
@@ -83,14 +85,16 @@ static const struct pad_config gpio_table[] = {
 	PAD_NC(GPP_G5, NONE),
 	/* G6  : GPP_G6 ==> NC  */
 	PAD_NC(GPP_G6, NONE),
+	/* H3  : SPKR_PA_EN */
+	PAD_CFG_GPO(GPP_H3, 1, DEEP),
 	/* H4  : I2C2_SDA ==> NC */
 	PAD_NC(GPP_H4, NONE),
 	/* H5  : I2C2_SCL ==> NC */
 	PAD_NC(GPP_H5, NONE),
 	/* H13 : M2_SKT2_CFG1 ==> SPKR_RST_L */
-	PAD_CFG_GPO(GPP_H13, 0, PLTRST),
+	PAD_CFG_GPO(GPP_H13, 1, DEEP),
 	/* H14 : M2_SKT2_CFG2 ==> TOUCHSCREEN_STOP_L */
-	PAD_CFG_GPO(GPP_H14, 0, PLTRST),
+	PAD_CFG_GPO(GPP_H14, 1, PLTRST),
 	/* H19 : TIMESYNC[0] ==> MEM_STRAP_0 */
 	PAD_CFG_GPI(GPP_H19, NONE, PLTRST),
 	/* H22 : MEM_STRAP_1 */
@@ -103,12 +107,39 @@ const struct pad_config *override_gpio_table(size_t *num)
 	return gpio_table;
 }
 
-/* GPIOs configured before ramstage */
+/*
+ * GPIOs configured before ramstage
+ * Note: the Hatch platform's romstage will configure
+ * the MEM_STRAP_* (a.k.a GPIO_MEM_CONFIG_*) pins
+ * as inputs before it reads them, so they are not
+ * needed in this table.
+ */
 static const struct pad_config early_gpio_table[] = {
-	PAD_NC(GPP_C23, NONE),
+	/* A12 : FPMCU_RST_ODL */
+	PAD_CFG_GPO(GPP_A12, 0, DEEP),
+	/* B15 : H1_SLAVE_SPI_CS_L */
+	PAD_CFG_NF(GPP_B15, NONE, DEEP, NF1),
+	/* B16 : H1_SLAVE_SPI_CLK */
+	PAD_CFG_NF(GPP_B16, NONE, DEEP, NF1),
+	/* B17 : H1_SLAVE_SPI_MISO_R */
+	PAD_CFG_NF(GPP_B17, NONE, DEEP, NF1),
+	/* B18 : H1_SLAVE_SPI_MOSI_R */
+	PAD_CFG_NF(GPP_B18, NONE, DEEP, NF1),
+	/* C14 : BT_DISABLE_L */
+	PAD_CFG_GPO(GPP_C14, 0, DEEP),
+	/* PCH_WP_OD */
+	PAD_CFG_GPI(GPP_C20, NONE, DEEP),
+	/* C21 : H1_PCH_INT_ODL */
+	PAD_CFG_GPI_APIC(GPP_C21, NONE, PLTRST, LEVEL, INVERT),
+	/* E1  : M2_SSD_PEDET */
+	PAD_CFG_NF(GPP_E1, NONE, DEEP, NF1),
+	/* E5  : SATA_DEVSLP1 */
+	PAD_CFG_NF(GPP_E5, NONE, PLTRST, NF1),
+	/* F2  : MEM_CH_SEL */
+	PAD_CFG_GPI(GPP_F2, NONE, PLTRST),
 };
 
-const struct pad_config *override_early_gpio_table(size_t *num)
+const struct pad_config *variant_early_gpio_table(size_t *num)
 {
 	*num = ARRAY_SIZE(early_gpio_table);
 	return early_gpio_table;

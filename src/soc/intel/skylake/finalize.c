@@ -26,6 +26,7 @@
 #include <intelblocks/lpc_lib.h>
 #include <intelblocks/p2sb.h>
 #include <intelblocks/pcr.h>
+#include <intelblocks/thermal.h>
 #include <reg_script.h>
 #include <spi-generic.h>
 #include <soc/me.h>
@@ -35,7 +36,6 @@
 #include <soc/pm.h>
 #include <soc/smbus.h>
 #include <soc/systemagent.h>
-#include <soc/thermal.h>
 #include <stdlib.h>
 #include <timer.h>
 
@@ -76,7 +76,7 @@ static void pch_finalize_script(struct device *dev)
 	intel_me_status();
 
 	pmcbase = pmc_mmio_regs();
-	config = dev->chip_info;
+	config = config_of(dev);
 
 	/*
 	 * Set low maximum temp value used for dynamic thermal sensor
@@ -117,7 +117,7 @@ static void soc_lockdown(struct device *dev)
 	struct soc_intel_skylake_config *config;
 	u8 reg8;
 
-	config = dev->chip_info;
+	config = config_of(dev);
 
 	/* Global SMI Lock */
 	if (config->LockDownConfigGlobalSmi == 0) {
@@ -134,7 +134,7 @@ static void soc_finalize(void *unused)
 	dev = PCH_DEV_PMC;
 
 	/* Check if PMC is enabled, else return */
-	if (dev == NULL || dev->chip_info == NULL)
+	if (dev == NULL)
 		return;
 
 	printk(BIOS_DEBUG, "Finalizing chipset.\n");

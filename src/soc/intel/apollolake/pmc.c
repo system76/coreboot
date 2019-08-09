@@ -92,9 +92,22 @@ static void set_slp_s3_assertion_width(int width_usecs)
 	write32((void *)gen_pmcon3, reg);
 }
 
+void pmc_soc_set_afterg3_en(const bool on)
+{
+	void *const gen_pmcon1 = (void *)(soc_read_pmc_base() + GEN_PMCON1);
+	uint32_t reg32;
+
+	reg32 = read32(gen_pmcon1);
+	if (on)
+		reg32 &= ~SLEEP_AFTER_POWER_FAIL;
+	else
+		reg32 |= SLEEP_AFTER_POWER_FAIL;
+	write32(gen_pmcon1, reg32);
+}
+
 void pmc_soc_init(struct device *dev)
 {
-	const struct soc_intel_apollolake_config *cfg = dev->chip_info;
+	const struct soc_intel_apollolake_config *cfg = config_of(dev);
 
 	/* Set up GPE configuration */
 	pmc_gpe_init();
@@ -108,4 +121,6 @@ void pmc_soc_init(struct device *dev)
 
 	/* Now that things have been logged clear out the PMC state. */
 	pmc_clear_prsts();
+
+	pmc_set_power_failure_state(true);
 }

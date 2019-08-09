@@ -32,10 +32,7 @@ decompressor-y += memcmp.c
 decompressor-y += prog_ops.c
 decompressor-$(CONFIG_COLLECT_TIMESTAMPS) += timestamp.c
 
-ifneq ($(CONFIG_BOOTBLOCK_CUSTOM),y)
 bootblock-y += bootblock.c
-endif
-
 bootblock-y += prog_loaders.c
 bootblock-y += prog_ops.c
 bootblock-y += cbfs.c
@@ -60,6 +57,7 @@ verstage-y += halt.c
 verstage-y += fmap.c
 verstage-y += libgcc.c
 verstage-y += memcmp.c
+verstage-y += string.c
 verstage-$(CONFIG_COLLECT_TIMESTAMPS) += timestamp.c
 verstage-y += boot_device.c
 verstage-$(CONFIG_CONSOLE_CBMEM) += cbmem_console.c
@@ -67,6 +65,7 @@ verstage-$(CONFIG_CONSOLE_CBMEM) += cbmem_console.c
 verstage-$(CONFIG_GENERIC_UDELAY) += timer.c
 verstage-$(CONFIG_GENERIC_GPIO_LIB) += gpio.c
 
+romstage-$(CONFIG_VENDOR_EMULATION) += ramdetect.c
 romstage-y += prog_loaders.c
 romstage-y += prog_ops.c
 romstage-y += memchr.c
@@ -107,6 +106,7 @@ endif
 
 romstage-$(CONFIG_GENERIC_UDELAY) += timer.c
 
+ramstage-$(CONFIG_VENDOR_EMULATION) += ramdetect.c
 ramstage-y += prog_loaders.c
 ramstage-y += prog_ops.c
 ramstage-y += hardwaremain.c
@@ -127,6 +127,7 @@ ramstage-y += stack.c
 ramstage-y += hexstrtobin.c
 ramstage-y += wrdd.c
 ramstage-$(CONFIG_CONSOLE_CBMEM) += cbmem_console.c
+ramstage-$(CONFIG_BOOTSPLASH) += bootsplash.c
 ramstage-$(CONFIG_BOOTSPLASH) += jpeg.c
 ramstage-$(CONFIG_TRACE) += trace.c
 postcar-$(CONFIG_TRACE) += trace.c
@@ -156,6 +157,7 @@ ramstage-y += cbmem_common.c
 ramstage-y += imd_cbmem.c
 ramstage-y += imd.c
 
+postcar-$(CONFIG_VENDOR_EMULATION) += ramdetect.c
 postcar-y += cbmem_common.c
 postcar-$(CONFIG_CONSOLE_CBMEM) += cbmem_console.c
 postcar-y += imd_cbmem.c
@@ -174,16 +176,13 @@ verstage-$(CONFIG_REG_SCRIPT) += reg_script.c
 romstage-$(CONFIG_REG_SCRIPT) += reg_script.c
 ramstage-$(CONFIG_REG_SCRIPT) += reg_script.c
 
-ifeq ($(CONFIG_CACHE_RELOCATED_RAMSTAGE_OUTSIDE_CBMEM),y)
-ramstage-y += ext_stage_cache.c
-romstage-y += ext_stage_cache.c
-postcar-y += ext_stage_cache.c
-else
-ramstage-$(CONFIG_RELOCATABLE_RAMSTAGE) += cbmem_stage_cache.c
-romstage-$(CONFIG_RELOCATABLE_RAMSTAGE) += cbmem_stage_cache.c
-postcar-$(CONFIG_RELOCATABLE_RAMSTAGE) += cbmem_stage_cache.c
-endif
+ramstage-$(CONFIG_TSEG_STAGE_CACHE) += ext_stage_cache.c
+romstage-$(CONFIG_TSEG_STAGE_CACHE) += ext_stage_cache.c
+postcar-$(CONFIG_TSEG_STAGE_CACHE) += ext_stage_cache.c
 
+ramstage-$(CONFIG_CBMEM_STAGE_CACHE) += cbmem_stage_cache.c
+romstage-$(CONFIG_CBMEM_STAGE_CACHE) += cbmem_stage_cache.c
+postcar-$(CONFIG_CBMEM_STAGE_CACHE) += cbmem_stage_cache.c
 
 romstage-y += boot_device.c
 ramstage-y += boot_device.c

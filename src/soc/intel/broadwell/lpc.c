@@ -104,7 +104,7 @@ static void enable_hpet(struct device *dev)
 static void pch_pirq_init(struct device *dev)
 {
 	struct device *irq_dev;
-	config_t *config = dev->chip_info;
+	config_t *config = config_of(dev);
 
 	pci_write_config8(dev, PIRQA_ROUT, config->pirqa_routing);
 	pci_write_config8(dev, PIRQB_ROUT, config->pirqb_routing);
@@ -151,7 +151,7 @@ static void pch_power_options(struct device *dev)
 	u16 reg16;
 	const char *state;
 	/* Get the chip configuration */
-	config_t *config = dev->chip_info;
+	config_t *config = config_of(dev);
 	int pwr_on = CONFIG_MAINBOARD_POWER_FAILURE_STATE;
 
 	/* Which state do we want to goto after g3 (power restored)?
@@ -318,7 +318,7 @@ static void pch_enable_mphy(void)
 
 static void pch_init_deep_sx(struct device *dev)
 {
-	config_t *config = dev->chip_info;
+	config_t *config = config_of(dev);
 
 	if (config->deep_sx_enable_ac) {
 		RCBA32_OR(DEEP_S3_POL, DEEP_S3_EN_AC);
@@ -365,6 +365,7 @@ static void pch_cg_init(struct device *dev)
 {
 	u32 reg32;
 	u16 reg16;
+	struct device *igd_dev = pcidev_path_on_root(SA_DEVFN_IGD);
 
 	/* DMI */
 	RCBA32_OR(0x2234, 0xf);
@@ -388,7 +389,7 @@ static void pch_cg_init(struct device *dev)
 	RCBA32_AND_OR(0x2614, ~0x64ff0000, 0x0a206500);
 
 	/* Check for 0:2.0@0x08 >= 0x0b */
-	if (pch_is_wpt() || pci_read_config8(SA_DEV_IGD, 0x8) >= 0x0b)
+	if (pch_is_wpt() || pci_read_config8(igd_dev, 0x8) >= 0x0b)
 		RCBA32_OR(0x2614, (1 << 26));
 
 	RCBA32_OR(0x900, 0x0000031f);
@@ -550,7 +551,7 @@ static void pch_lpc_add_gen_io_resources(struct device *dev, int reg_value,
 static void pch_lpc_add_io_resources(struct device *dev)
 {
 	struct resource *res;
-	config_t *config = dev->chip_info;
+	config_t *config = config_of(dev);
 
 	/* Add the default claimed IO range for the LPC device. */
 	res = new_resource(dev, 0);

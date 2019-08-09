@@ -30,7 +30,7 @@ static const struct pad_config gpio_table[] = {
 	PAD_CFG_GPI_INT(GPP_A6, NONE, PLTRST, LEVEL),
 	/* A7  : PP3300_SOC_A */
 	PAD_NC(GPP_A7, NONE),
-	/* A8  : PEN_GARAGE_DET_L */
+	/* A8  : PEN_GARAGE_DET_L (wake) */
 	PAD_CFG_GPI_GPIO_DRIVER_SCI(GPP_A8, NONE, DEEP, LEVEL, NONE),
 	/* A9  : ESPI_CLK */
 	/* A10 : FPMCU_PCH_BOOT1 */
@@ -324,8 +324,12 @@ static const struct pad_config gpio_table[] = {
 	PAD_CFG_NF(GPP_G5, NONE, PLTRST, NF1),
 	/* G6  : SD_CLK */
 	PAD_CFG_NF(GPP_G6, NONE, DEEP, NF1),
-	/* G7  : SD_WP => NC */
-	PAD_NC(GPP_G7, NONE),
+	/* G7  : SD_WP
+	 * As per schematics SD host controller SD_WP pin is not connected to
+	 * uSD card connector. In order to overcome gpio default state, ensures
+	 * to configure gpio pin as NF1 with internal 20K pull down.
+	 */
+	PAD_CFG_NF(GPP_G7, DN_20K, DEEP, NF1),
 	/*
 	 * H0  : HP_INT_L
 	 */
@@ -382,6 +386,9 @@ static const struct pad_config gpio_table[] = {
 
 	/* SD card detect VGPIO */
 	PAD_CFG_GPI_GPIO_DRIVER(vSD3_CD_B, NONE, DEEP),
+
+	/* CNV_WCEN  : Disable Wireless Charging */
+	PAD_CFG_GPO(CNV_WCEN, 0, DEEP),
 };
 
 const struct pad_config *base_gpio_table(size_t *num)
@@ -419,42 +426,6 @@ const struct pad_config *__weak variant_sleep_gpio_table(
 	return default_sleep_gpio_table;
 }
 
-/* GPIOs needed prior to ramstage. */
-static const struct pad_config early_gpio_table[] = {
-	/* A12 : FPMCU_RST_ODL */
-	PAD_CFG_GPO(GPP_A12, 0, DEEP),
-	/* B15 : H1_SLAVE_SPI_CS_L */
-	PAD_CFG_NF(GPP_B15, NONE, DEEP, NF1),
-	/* B16 : H1_SLAVE_SPI_CLK */
-	PAD_CFG_NF(GPP_B16, NONE, DEEP, NF1),
-	/* B17 : H1_SLAVE_SPI_MISO_R */
-	PAD_CFG_NF(GPP_B17, NONE, DEEP, NF1),
-	/* B18 : H1_SLAVE_SPI_MOSI_R */
-	PAD_CFG_NF(GPP_B18, NONE, DEEP, NF1),
-	/* PCH_WP_OD */
-	PAD_CFG_GPI(GPP_C20, NONE, DEEP),
-	/* C21 : H1_PCH_INT_ODL */
-	PAD_CFG_GPI_APIC(GPP_C21, NONE, PLTRST, LEVEL, INVERT),
-	/* C23 : WLAN_PE_RST# */
-	PAD_CFG_GPO(GPP_C23, 1, DEEP),
-	/* F2  : MEM_CH_SEL */
-	PAD_CFG_GPI(GPP_F2, NONE, PLTRST),
-	/* F11 : PCH_MEM_STRAP2 */
-	PAD_CFG_GPI(GPP_F11, NONE, PLTRST),
-	/* F20 : PCH_MEM_STRAP0 */
-	PAD_CFG_GPI(GPP_F20, NONE, PLTRST),
-	/* F21 : PCH_MEM_STRAP1 */
-	PAD_CFG_GPI(GPP_F21, NONE, PLTRST),
-	/* F22 : PCH_MEM_STRAP3 */
-	PAD_CFG_GPI(GPP_F22, NONE, PLTRST),
-};
-
-const struct pad_config *base_early_gpio_table(size_t *num)
-{
-	*num = ARRAY_SIZE(early_gpio_table);
-	return early_gpio_table;
-}
-
 static const struct cros_gpio cros_gpios[] = {
 	CROS_GPIO_REC_AL(CROS_GPIO_VIRTUAL, CROS_GPIO_DEVICE_NAME),
 	CROS_GPIO_WP_AH(GPIO_PCH_WP, CROS_GPIO_DEVICE_NAME),
@@ -468,12 +439,6 @@ const struct cros_gpio *__weak variant_cros_gpios(size_t *num)
 
 /* Weak implementation of overrides */
 const struct pad_config *__weak override_gpio_table(size_t *num)
-{
-	*num = 0;
-	return NULL;
-}
-
-const struct pad_config *__weak override_early_gpio_table(size_t *num)
 {
 	*num = 0;
 	return NULL;

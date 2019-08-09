@@ -21,6 +21,7 @@ chip soc/intel/cannonlake
 	#+-------------------+---------------------------+
 	#| Field	     |	Value			 |
 	#+-------------------+---------------------------+
+	#| GSPI1             | FP MCU                    |
 	#| I2C0		     | Trackpad			 |
 	#| I2C1		     | Touchscreen		 |
 	#| I2C4		     | Audio			 |
@@ -28,12 +29,24 @@ chip soc/intel/cannonlake
 	register "common_soc_config" = "{
 		.i2c[0] = {
 			.speed = I2C_SPEED_FAST,
+			.rise_time_ns = 50,
+			.fall_time_ns = 15,
+		        .data_hold_time_ns = 330,
 		},
 		.i2c[1] = {
 			.speed = I2C_SPEED_FAST,
+			.rise_time_ns = 60,
+			.fall_time_ns = 25,
+		},
+		.i2c[3] = {
+			.speed = I2C_SPEED_FAST,
+			.rise_time_ns = 150,
+			.fall_time_ns = 150,
 		},
 		.i2c[4] = {
 			.speed = I2C_SPEED_FAST,
+			.rise_time_ns = 120,
+			.fall_time_ns = 120,
 		},
 		.gspi[0] = {
 		       .speed_mhz = 1,
@@ -82,12 +95,17 @@ chip soc/intel/cannonlake
 			chip drivers/i2c/hid
 				register "generic.hid" = ""GDIX0000""
 				register "generic.desc" = ""Goodix Touchscreen""
-				register "generic.irq" = "ACPI_IRQ_EDGE_LOW(GPP_D16_IRQ)"
+				register "generic.irq" =
+					"ACPI_IRQ_EDGE_LOW(GPP_D16_IRQ)"
 				register "generic.probed" = "1"
 				register "generic.reset_gpio" =
-							"ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_D15)"
+					"ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_D15)"
 				register "generic.reset_delay_ms" = "10"
 				register "generic.reset_off_delay_ms" = "1"
+				register "generic.enable_gpio" =
+					"ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_D9)"
+				register "generic.enable_delay_ms" = "10"
+				register "generic.enable_off_delay_ms" = "1"
 				register "generic.has_power_resource" = "1"
 				register "hid_desc_reg_offset" = "0x01"
 				device i2c 5d on end
@@ -124,6 +142,44 @@ chip soc/intel/cannonlake
 				register "property_list[0].integer" = "1"
 				device i2c 1a on end
 			end
+			chip drivers/i2c/generic
+				register "hid" = ""10EC1011""
+				register "desc" = ""RT1011 Tweeter Left Speaker Amp""
+				register "uid" = "0"
+				register "name" = ""TL""
+				device i2c 38 on end
+			end
+			chip drivers/i2c/generic
+				register "hid" = ""10EC1011""
+				register "desc" = ""RT1011 Tweeter Right Speaker Amp""
+				register "uid" = "1"
+				register "name" = ""TR""
+				device i2c 39 on end
+			end
+			chip drivers/i2c/generic
+				register "hid" = ""10EC1011""
+				register "desc" = ""RT1011 Woofer Left Speaker Amp""
+				register "uid" = "2"
+				register "name" = ""WL""
+				device i2c 3a on end
+			end
+			chip drivers/i2c/generic
+				register "hid" = ""10EC1011""
+				register "desc" = ""RT1011 Woofer Right Speaker Amp""
+				register "uid" = "3"
+				register "name" = ""WR""
+				device i2c 3b on end
+			end
 		end #I2C #4
+		device pci 1e.3 on
+			chip drivers/spi/acpi
+				register "name" = ""CRFP""
+				register "hid" = "ACPI_DT_NAMESPACE_HID"
+				register "uid" = "1"
+				register "compat_string" = ""google,cros-ec-spi""
+				register "irq" = "ACPI_IRQ_LEVEL_LOW(GPP_A23_IRQ)"
+				device spi 1 on end
+			end # FPMCU
+		end # GSPI #1
 	end
 end

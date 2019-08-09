@@ -18,8 +18,8 @@
 #include <assert.h>
 #include <cbmem.h>
 #include <console/console.h>
+#include <cpu/x86/smm.h>
 #include <device/pci.h>
-#include <fsp/memmap.h>
 #include <intelblocks/smm.h>
 #include <soc/systemagent.h>
 #include <soc/pci_devs.h>
@@ -28,20 +28,13 @@
 
 void *cbmem_top(void)
 {
-	const struct device *dev;
 	const config_t *config;
 	void *tolum = (void *)sa_get_tseg_base();
 
 	if (!CONFIG(SOC_INTEL_GLK))
 		return tolum;
 
-	dev = pcidev_path_on_root(PCH_DEVFN_LPC);
-	assert(dev != NULL);
-	config = dev->chip_info;
-
-	if (!config)
-		die_with_post_code(POST_HW_INIT_FAILURE,
-			"Failed to get chip_info\n");
+	config = config_of_path(PCH_DEVFN_LPC);
 
 	/* FSP allocates 2x PRMRR Size Memory for alignment */
 	if (config->sgx_enable)
@@ -50,17 +43,19 @@ void *cbmem_top(void)
 	return tolum;
 }
 
-int smm_subregion(int sub, void **start, size_t *size)
+void smm_region(uintptr_t *start, size_t *size)
+{
+	*start = sa_get_tseg_base();
+	*size = sa_get_tseg_size();
+}
+
+int smm_subregion(int sub, uintptr_t *start, size_t *size)
 {
 	uintptr_t sub_base;
 	size_t sub_size;
-	void *smm_base;
 	const size_t cache_size = CONFIG_SMM_RESERVED_SIZE;
 
-	smm_region_info(&smm_base, &sub_size);
-	sub_base = (uintptr_t)smm_base;
-
-	assert(sub_size > CONFIG_SMM_RESERVED_SIZE);
+	smm_region(&sub_base, &sub_size);
 
 	switch (sub) {
 	case SMM_SUBREGION_HANDLER:
@@ -73,11 +68,12 @@ int smm_subregion(int sub, void **start, size_t *size)
 		sub_size = cache_size;
 		break;
 	default:
+		*start = 0;
+		*size = 0;
 		return -1;
 	}
 
-	*start = (void *)sub_base;
+	*start = sub_base;
 	*size = sub_size;
-
 	return 0;
 }

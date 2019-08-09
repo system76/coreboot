@@ -18,6 +18,7 @@
 #include <device/pci.h>
 #include <fsp/api.h>
 #include <fsp/util.h>
+#include <intelblocks/lpss.h>
 #include <intelblocks/xdci.h>
 #include <soc/intel/common/vbt.h>
 #include <soc/pci_devs.h>
@@ -29,13 +30,8 @@
 
 static void parse_devicetree(FSP_S_CONFIG *params)
 {
-	struct device *dev = pcidev_on_root(0, 0);
-	if (!dev) {
-		printk(BIOS_ERR, "Could not find root device\n");
-		return;
-	}
-
-	const struct soc_intel_icelake_config *config = dev->chip_info;
+	const struct soc_intel_icelake_config *config;
+	config = config_of_path(SA_DEVFN_ROOT);
 
 	for (int i = 0; i < CONFIG_SOC_INTEL_I2C_DEV_MAX; i++)
 		params->SerialIoI2cMode[i] = config->SerialIoI2cMode[i];
@@ -50,13 +46,30 @@ static void parse_devicetree(FSP_S_CONFIG *params)
 		params->SerialIoUartMode[i] = config->SerialIoUartMode[i];
 }
 
+static const pci_devfn_t serial_io_dev[] = {
+	PCH_DEVFN_I2C0,
+	PCH_DEVFN_I2C1,
+	PCH_DEVFN_I2C2,
+	PCH_DEVFN_I2C3,
+	PCH_DEVFN_I2C4,
+	PCH_DEVFN_I2C5,
+	PCH_DEVFN_GSPI0,
+	PCH_DEVFN_GSPI1,
+	PCH_DEVFN_GSPI2,
+	PCH_DEVFN_UART0,
+	PCH_DEVFN_UART1,
+	PCH_DEVFN_UART2
+};
+
 /* UPD parameters to be initialized before SiliconInit */
 void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 {
 	int i;
 	FSP_S_CONFIG *params = &supd->FspsConfig;
-	struct device *dev = SA_DEV_ROOT;
-	config_t *config = dev->chip_info;
+
+	struct device *dev;
+	struct soc_intel_icelake_config *config;
+	config = config_of_path(SA_DEVFN_ROOT);
 
 	/* Parse device tree and enable/disable devices */
 	parse_devicetree(params);
@@ -231,4 +244,11 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 __weak void mainboard_silicon_init_params(FSP_S_CONFIG *params)
 {
 	printk(BIOS_DEBUG, "WEAK: %s/%s called\n", __FILE__, __func__);
+}
+
+/* Return list of SOC LPSS controllers */
+const pci_devfn_t *soc_lpss_controllers_list(size_t *size)
+{
+	*size = ARRAY_SIZE(serial_io_dev);
+	return serial_io_dev;
 }

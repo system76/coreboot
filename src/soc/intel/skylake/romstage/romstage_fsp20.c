@@ -18,11 +18,11 @@
 #include <assert.h>
 #include <cpu/x86/mtrr.h>
 #include <cpu/x86/msr.h>
+#include <cpu/x86/smm.h>
 #include <cbmem.h>
 #include <console/console.h>
 #include <device/pci_def.h>
 #include <fsp/util.h>
-#include <fsp/memmap.h>
 #include <intelblocks/pmclib.h>
 #include <memory_info.h>
 #include <smbios.h>
@@ -173,9 +173,8 @@ asmlinkage void car_stage_entry(void)
 	postcar_frame_add_mtrr(&pcf, top_of_ram, 16*MiB, MTRR_TYPE_WRBACK);
 
 	if (CONFIG(HAVE_SMI_HANDLER)) {
-		void *smm_base;
+		uintptr_t smm_base;
 		size_t smm_size;
-		uintptr_t tseg_base;
 
 		/*
 		 * Cache the TSEG region at the top of ram. This region is
@@ -185,8 +184,7 @@ asmlinkage void car_stage_entry(void)
 		 * region for other purposes.
 		 */
 		smm_region(&smm_base, &smm_size);
-		tseg_base = (uintptr_t)smm_base;
-		postcar_frame_add_mtrr(&pcf, tseg_base, smm_size,
+		postcar_frame_add_mtrr(&pcf, smm_base, smm_size,
 					MTRR_TYPE_WRBACK);
 	}
 
@@ -223,7 +221,7 @@ static void soc_peg_init_params(FSP_M_CONFIG *m_cfg,
 	 * If PEG port is not defined in the device tree, it will be disabled
 	 * in FSP
 	 */
-	dev = SA_DEV_PEG0; /* PEG 0:1:0 */
+	dev = pcidev_on_root(SA_DEV_SLOT_PEG, 0); /* PEG 0:1:0 */
 	if (!dev || !dev->enabled)
 		m_cfg->Peg0Enable = 0;
 	else if (dev->enabled) {
@@ -238,7 +236,7 @@ static void soc_peg_init_params(FSP_M_CONFIG *m_cfg,
 		m_t_cfg->Peg0Gen3EqPh3Method = 0;
 	}
 
-	dev = SA_DEV_PEG1; /* PEG 0:1:1 */
+	dev = pcidev_on_root(SA_DEV_SLOT_PEG, 1); /* PEG 0:1:1 */
 	if (!dev || !dev->enabled)
 		m_cfg->Peg1Enable = 0;
 	else if (dev->enabled) {
@@ -250,7 +248,7 @@ static void soc_peg_init_params(FSP_M_CONFIG *m_cfg,
 		m_t_cfg->Peg1Gen3EqPh3Method = 0;
 	}
 
-	dev = SA_DEV_PEG2; /* PEG 0:1:2 */
+	dev = pcidev_on_root(SA_DEV_SLOT_PEG, 2); /* PEG 0:1:2 */
 	if (!dev || !dev->enabled)
 		m_cfg->Peg2Enable = 0;
 	else if (dev->enabled) {
@@ -326,13 +324,11 @@ static void soc_primary_gfx_config_params(FSP_M_CONFIG *m_cfg,
 
 void platform_fsp_memory_init_params_cb(FSPM_UPD *mupd, uint32_t version)
 {
-	const struct device *dev;
 	const struct soc_intel_skylake_config *config;
 	FSP_M_CONFIG *m_cfg = &mupd->FspmConfig;
 	FSP_M_TEST_CONFIG *m_t_cfg = &mupd->FspmTestConfig;
 
-	dev = pcidev_on_root(PCH_DEV_SLOT_LPC, 0);
-	config = dev->chip_info;
+	config = config_of_path(PCH_DEVFN_LPC);
 
 	soc_memory_init_params(m_cfg, config);
 	soc_peg_init_params(m_cfg, m_t_cfg, config);

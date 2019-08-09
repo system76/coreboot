@@ -380,8 +380,8 @@ static int tegra_dsi_configure(struct tegra_dsi *dsi, unsigned int pipe,
 		}
 
 		tegra_dsi_writel(dsi, 0, DSI_PKT_LEN_0_1);
-		tegra_dsi_writel(dsi, bytes << 16, DSI_PKT_LEN_2_3);
-		tegra_dsi_writel(dsi, bytes << 16, DSI_PKT_LEN_4_5);
+		tegra_dsi_writel(dsi, (u32)bytes << 16, DSI_PKT_LEN_2_3);
+		tegra_dsi_writel(dsi, (u32)bytes << 16, DSI_PKT_LEN_4_5);
 		tegra_dsi_writel(dsi, 0, DSI_PKT_LEN_6_7);
 
 		value = MIPI_DCS_WRITE_MEMORY_START << 8 |
@@ -769,7 +769,7 @@ static ssize_t tegra_dsi_host_transfer(struct mipi_dsi_host *host,
 	tegra_dsi_writel(dsi, value, DSI_WR_DATA);
 
 	/* write payload (if any) */
-	if (msg->tx_len > 2) {
+	if (tx && msg->tx_len > 2) {
 		for (j = 2; j < msg->tx_len; j += 4) {
 			value = 0;
 

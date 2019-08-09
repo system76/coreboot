@@ -56,12 +56,15 @@ ramstage-y += systemagent.c
 ramstage-y += uart.c
 ramstage-y += vr_config.c
 ramstage-y += sd.c
+ramstage-y += xhci.c
 
 smm-y += elog.c
 smm-y += p2sb.c
+smm-y += pmc.c
 smm-y += pmutil.c
 smm-y += smihandler.c
 smm-y += uart.c
+smm-y += xhci.c
 
 postcar-y += memmap.c
 postcar-y += pmutil.c

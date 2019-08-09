@@ -27,9 +27,9 @@
 #include <soc/systemagent.h>
 #include <stdlib.h>
 
-void smm_region(void **start, size_t *size)
+void smm_region(uintptr_t *start, size_t *size)
 {
-	*start = (void *)sa_get_tseg_base();
+	*start = sa_get_tseg_base();
 	*size = sa_get_tseg_size();
 }
 
@@ -44,16 +44,14 @@ void smm_region(void **start, size_t *size)
  *     |         (TSEG)          |
  *     +-------------------------+ TSEG
  */
-int smm_subregion(int sub, void **start, size_t *size)
+int smm_subregion(int sub, uintptr_t *start, size_t *size)
 {
 	uintptr_t sub_base;
 	size_t sub_size;
-	void *smm_base;
 	const size_t ied_size = CONFIG_IED_REGION_SIZE;
 	const size_t cache_size = CONFIG_SMM_RESERVED_SIZE;
 
-	smm_region(&smm_base, &sub_size);
-	sub_base = (uintptr_t)smm_base;
+	smm_region(&sub_base, &sub_size);
 
 	switch (sub) {
 	case SMM_SUBREGION_HANDLER:
@@ -72,12 +70,13 @@ int smm_subregion(int sub, void **start, size_t *size)
 		sub_size = ied_size;
 		break;
 	default:
+		*start = 0;
+		*size = 0;
 		return -1;
 	}
 
-	*start = (void *)sub_base;
+	*start = sub_base;
 	*size = sub_size;
-
 	return 0;
 }
 
@@ -166,7 +165,7 @@ static size_t calculate_reserved_mem_size(uintptr_t dram_base,
 	size_t reserve_mem_size;
 	const struct soc_intel_icelake_config *config;
 
-	config = dev->chip_info;
+	config = config_of(dev);
 
 	/* Get PRMRR size */
 	reserve_mem_base -= get_prmrr_size(reserve_mem_base, config);

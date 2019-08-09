@@ -234,6 +234,28 @@ DEVTREE_CONST struct device *pcidev_on_root(uint8_t dev, uint8_t fn)
 	return pcidev_path_on_root(PCI_DEVFN(dev, fn));
 }
 
+DEVTREE_CONST struct device *pcidev_path_on_root_debug(pci_devfn_t devfn, const char *func)
+{
+	DEVTREE_CONST struct device *dev = pcidev_path_on_root(devfn);
+	if (dev)
+		return dev;
+
+	devtree_bug(func, devfn);
+
+	/* FIXME: This can return wrong device. */
+	return dev_find_slot(0, devfn);
+}
+
+void devtree_bug(const char *func, pci_devfn_t devfn)
+{
+	printk(BIOS_ERR, "BUG: %s requests hidden 00:%02x.%u\n", func, devfn >> 3, devfn & 7);
+}
+
+void __noreturn devtree_die(void)
+{
+	die("DEVTREE: dev or chip_info is NULL\n");
+}
+
 /**
  * Given an SMBus bus and a device number, find the device structure.
  *

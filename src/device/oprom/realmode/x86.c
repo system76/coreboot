@@ -18,14 +18,12 @@
 #include <arch/interrupt.h>
 #include <arch/registers.h>
 #include <boot/coreboot_tables.h>
-#include <cbfs.h>
 #include <console/console.h>
 #include <cpu/amd/lxdef.h>
 #include <cpu/amd/vr.h>
 #include <delay.h>
 #include <device/pci.h>
 #include <device/pci_ids.h>
-#include <lib/jpeg.h>
 #include <pc80/i8259.h>
 #include <pc80/i8254.h>
 #include <string.h>
@@ -35,6 +33,16 @@
 #include <x86emu/regs.h>
 
 #include "x86.h"
+
+typedef struct {
+	char signature[4];
+	u16 version;
+	u8 *oem_string_ptr;
+	u32 capabilities;
+	u32 video_mode_ptr;
+	u16 total_memory;
+	char reserved[236];
+} __packed vbe_info_block;
 
 /* The following symbols cannot be used directly. They need to be fixed up
  * to point to the correct address location after the code has been copied
@@ -50,11 +58,11 @@ extern unsigned char __realmode_buffer;
 /* to have a common register file for interrupt handlers */
 X86EMU_sysEnv _X86EMU_env;
 
-void (*realmode_call)(u32 addr, u32 eax, u32 ebx, u32 ecx, u32 edx,
+unsigned int (*realmode_call)(u32 addr, u32 eax, u32 ebx, u32 ecx, u32 edx,
 		u32 esi, u32 edi) asmlinkage;
 
-void (*realmode_interrupt)(u32 intno, u32 eax, u32 ebx, u32 ecx, u32 edx,
-		u32 esi, u32 edi) asmlinkage;
+unsigned int (*realmode_interrupt)(u32 intno, u32 eax, u32 ebx, u32 ecx,
+		u32 edx, u32 esi, u32 edi) asmlinkage;
 
 static void setup_realmode_code(void)
 {
@@ -213,7 +221,7 @@ static void setup_realmode_idt(void)
 }
 
 #if CONFIG(FRAMEBUFFER_SET_VESA_MODE)
-vbe_mode_info_t mode_info;
+static vbe_mode_info_t mode_info;
 static int mode_info_valid;
 
 static int vbe_mode_info_valid(void)
@@ -221,6 +229,92 @@ static int vbe_mode_info_valid(void)
 	return mode_info_valid;
 }
 
+const vbe_mode_info_t *vbe_mode_info(void)
+{
+	if (!mode_info_valid || !mode_info.vesa.phys_base_ptr)
+		return NULL;
+	return &mode_info;
+}
+
+static int vbe_check_for_failure(int ah);
+
+static void vbe_get_ctrl_info(vbe_info_block *info)
+{
+	char *buffer = PTR_TO_REAL_MODE(__realmode_buffer);
+	u16 buffer_seg = (((unsigned long)buffer) >> 4) & 0xff00;
+	u16 buffer_adr = ((unsigned long)buffer) & 0xffff;
+	X86_EAX = realmode_interrupt(0x10, VESA_GET_INFO, 0x0000, 0x0000,
+			0x0000, buffer_seg, buffer_adr);
+	/* If the VBE function completed successfully, 0x0 is returned in AH */
+	if (X86_AH)
+		die("\nError: In %s function\n", __func__);
+	memcpy(info, buffer, sizeof(vbe_info_block));
+}
+
+static void vbe_oprom_list_supported_mode(uint16_t *video_mode_ptr)
+{
+	uint16_t mode;
+	printk(BIOS_DEBUG, "Supported Video Mode list for OpRom:\n");
+	do {
+		mode = *video_mode_ptr++;
+		if (mode != 0xffff)
+			printk(BIOS_DEBUG, "%x\n", mode);
+	} while (mode != 0xffff);
+}
+
+static void vbe_oprom_supported_mode_list(void)
+{
+	uint16_t segment, offset;
+	vbe_info_block info;
+
+	vbe_get_ctrl_info(&info);
+
+	offset = info.video_mode_ptr;
+	segment = info.video_mode_ptr >> 16;
+
+	vbe_oprom_list_supported_mode((uint16_t *)((segment << 4) + offset));
+}
+/*
+ * EAX register is used to indicate the completion status upon return from
+ * VBE function in real mode.
+ *
+ * If the VBE function completed successfully then 0x0 is returned in the AH
+ * register. Otherwise the AH register is set with the nature of the failure:
+ *
+ * AH == 0x00: Function call successful
+ * AH == 0x01: Function call failed
+ * AH == 0x02: Function is not supported in the current HW configuration
+ * AH == 0x03: Function call invalid in current video mode
+ *
+ * Return 0 on success else -1 for failure
+ */
+static int vbe_check_for_failure(int ah)
+{
+	int status;
+
+	switch (ah) {
+	case 0x0:
+		status = 0;
+		break;
+	case 1:
+		printk(BIOS_DEBUG, "VBE: Function call failed!\n");
+		status = -1;
+		break;
+	case 2:
+		printk(BIOS_DEBUG, "VBE: Function is not supported!\n");
+		status = -1;
+		break;
+	case 3:
+	default:
+		printk(BIOS_DEBUG, "VBE: Unsupported video mode %x!\n",
+			CONFIG_FRAMEBUFFER_VESA_MODE);
+		vbe_oprom_supported_mode_list();
+		status = -1;
+		break;
+	}
+
+	return status;
+}
 static u8 vbe_get_mode_info(vbe_mode_info_t * mi)
 {
 	printk(BIOS_DEBUG, "VBE: Getting information about VESA mode %04x\n",
@@ -228,8 +322,10 @@ static u8 vbe_get_mode_info(vbe_mode_info_t * mi)
 	char *buffer = PTR_TO_REAL_MODE(__realmode_buffer);
 	u16 buffer_seg = (((unsigned long)buffer) >> 4) & 0xff00;
 	u16 buffer_adr = ((unsigned long)buffer) & 0xffff;
-	realmode_interrupt(0x10, VESA_GET_MODE_INFO, 0x0000,
+	X86_EAX = realmode_interrupt(0x10, VESA_GET_MODE_INFO, 0x0000,
 			mi->video_mode, 0x0000, buffer_seg, buffer_adr);
+	if (vbe_check_for_failure(X86_AH))
+		die("\nError: In %s function\n", __func__);
 	memcpy(mi->mode_info_block, buffer, sizeof(mi->mode_info_block));
 	mode_info_valid = 1;
 	return 0;
@@ -242,8 +338,10 @@ static u8 vbe_set_mode(vbe_mode_info_t * mi)
 	mi->video_mode |= (1 << 14);
 	// request clearing of framebuffer
 	mi->video_mode &= ~(1 << 15);
-	realmode_interrupt(0x10, VESA_SET_MODE, mi->video_mode,
+	X86_EAX = realmode_interrupt(0x10, VESA_SET_MODE, mi->video_mode,
 			0x0000, 0x0000, 0x0000, 0x0000);
+	if (vbe_check_for_failure(X86_AH))
+		die("\nError: In %s function\n", __func__);
 	return 0;
 }
 
@@ -260,6 +358,7 @@ void vbe_set_graphics(void)
 		le16_to_cpu(mode_info.vesa.x_resolution),
 		le16_to_cpu(mode_info.vesa.y_resolution),
 		mode_info.vesa.bits_per_pixel);
+
 	printk(BIOS_DEBUG, "VBE: framebuffer: %p\n", framebuffer);
 	if (!framebuffer) {
 		printk(BIOS_DEBUG, "VBE: Mode does not support linear "
@@ -268,26 +367,15 @@ void vbe_set_graphics(void)
 	}
 
 	vbe_set_mode(&mode_info);
-#if CONFIG(BOOTSPLASH)
-	struct jpeg_decdata *decdata;
-	unsigned char *jpeg = cbfs_boot_map_with_leak("bootsplash.jpg",
-							CBFS_TYPE_BOOTSPLASH,
-							NULL);
-	if (!jpeg) {
-		printk(BIOS_DEBUG, "VBE: No bootsplash found.\n");
-		return;
-	}
-	decdata = malloc(sizeof(*decdata));
-	int ret = 0;
-	ret = jpeg_decode(jpeg, framebuffer, 1024, 768, 16, decdata);
-#endif
 }
 
 void vbe_textmode_console(void)
 {
 	delay(2);
-	realmode_interrupt(0x10, 0x0003, 0x0000, 0x0000,
+	X86_EAX = realmode_interrupt(0x10, 0x0003, 0x0000, 0x0000,
 				0x0000, 0x0000, 0x0000);
+	if (vbe_check_for_failure(X86_AH))
+		die("\nError: In %s function\n", __func__);
 }
 
 int fill_lb_framebuffer(struct lb_framebuffer *framebuffer)

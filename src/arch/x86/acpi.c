@@ -386,10 +386,15 @@ static void acpi_create_tpm2(acpi_tpm2_t *tpm2)
 
 	/* Hard to detect for coreboot. Just set it to 0 */
 	tpm2->platform_class = 0;
-	/* Must be set to 0 for TIS interface support */
-	tpm2->control_area = 0;
-	/* coreboot only supports the TIS interface driver. */
-	tpm2->start_method = 6;
+	if (CONFIG(CRB_TPM)) {
+		/* Must be set to 7 for CRB Support */
+		tpm2->control_area = CONFIG_CRB_TPM_BASE_ADDRESS + 0x40;
+		tpm2->start_method = 7;
+	} else {
+		/* Must be set to 0 for FIFO interface support */
+		tpm2->control_area = 0;
+		tpm2->start_method = 6;
+	}
 	memset(tpm2->msp, 0, sizeof(tpm2->msp));
 
 	/* Fill the log area size and start address fields. */
@@ -946,7 +951,7 @@ void acpi_create_dbg2(acpi_dbg2_header_t *dbg2,
 }
 
 unsigned long acpi_write_dbg2_pci_uart(acpi_rsdp_t *rsdp, unsigned long current,
-				       struct device *dev, uint8_t access_size)
+				const struct device *dev, uint8_t access_size)
 {
 	acpi_dbg2_header_t *dbg2 = (acpi_dbg2_header_t *)current;
 	struct resource *res;

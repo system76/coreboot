@@ -22,8 +22,6 @@
 #include <security/tpm/tss.h>
 #include <device/device.h>
 #include <intelblocks/pmclib.h>
-#include <soc/pmc.h>
-#include <soc/pci_devs.h>
 
 enum rec_mode_state {
 	REC_MODE_UNINITIALIZED,
@@ -120,8 +118,7 @@ int get_lid_switch(void)
 
 void mainboard_prepare_cr50_reset(void)
 {
-#if ENV_RAMSTAGE
 	/* Ensure system powers up after CR50 reset */
-	pmc_set_afterg3(MAINBOARD_POWER_STATE_ON);
-#endif
+	if (ENV_RAMSTAGE)
+		pmc_soc_set_afterg3_en(true);
 }

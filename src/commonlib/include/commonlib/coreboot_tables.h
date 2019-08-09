@@ -68,7 +68,7 @@ enum {
 	LB_TAG_CBMEM_CONSOLE		= 0x0017,
 	LB_TAG_MRC_CACHE		= 0x0018,
 	LB_TAG_VBNV			= 0x0019,
-	LB_TAG_VBOOT_HANDOFF		= 0x0020,
+	LB_TAG_VBOOT_HANDOFF		= 0x0020,  /* deprecated */
 	LB_TAG_X86_ROM_MTRR		= 0x0021,
 	LB_TAG_DMA			= 0x0022,
 	LB_TAG_RAM_OOPS			= 0x0023,
@@ -283,6 +283,18 @@ struct lb_forward {
  * fields described above. It may, however, only implement a subset
  * of the possible color formats.
  */
+
+/*
+ * Framebuffer orientation, matches drm_connector.h drm_panel_orientation in the
+ * Linux kernel.
+ */
+enum lb_fb_orientation {
+	LB_FB_ORIENTATION_NORMAL = 0,
+	LB_FB_ORIENTATION_BOTTOM_UP = 1,
+	LB_FB_ORIENTATION_LEFT_UP = 2,
+	LB_FB_ORIENTATION_RIGHT_UP = 3,
+};
+
 struct lb_framebuffer {
 	uint32_t tag;
 	uint32_t size;
@@ -300,6 +312,7 @@ struct lb_framebuffer {
 	uint8_t blue_mask_size;
 	uint8_t reserved_mask_pos;
 	uint8_t reserved_mask_size;
+	uint8_t orientation;
 };
 
 

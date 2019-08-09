@@ -229,7 +229,7 @@ const char *dev_path(const struct device *dev)
 				 dev->path.usb.port_type, dev->path.usb.port_id);
 			break;
 		case DEVICE_PATH_MMIO:
-			snprintf(buffer, sizeof(buffer), "MMIO: %08x",
+			snprintf(buffer, sizeof(buffer), "MMIO: %08lx",
 				 dev->path.mmio.addr);
 			break;
 		default:
@@ -331,7 +331,7 @@ void compact_resources(struct device *dev)
  * @param index The index of the resource on the device.
  * @return The resource, if it already exists.
  */
-struct resource *probe_resource(struct device *dev, unsigned index)
+struct resource *probe_resource(const struct device *dev, unsigned index)
 {
 	struct resource *res;
 
@@ -401,7 +401,7 @@ struct resource *new_resource(struct device *dev, unsigned index)
  * @param index The index of the resource on the device.
  * return TODO.
  */
-struct resource *find_resource(struct device *dev, unsigned index)
+struct resource *find_resource(const struct device *dev, unsigned index)
 {
 	struct resource *resource;
 

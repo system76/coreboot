@@ -19,10 +19,10 @@
 #include <stdint.h>
 #include <console/console.h>
 #include <cpu/x86/msr.h>
+#include <cpu/x86/smm.h>
 #include <cpu/amd/msr.h>
 #include <cpu/amd/mtrr.h>
 #include <cbmem.h>
-#include <stage_cache.h>
 #include <arch/bert_storage.h>
 #include <soc/northbridge.h>
 #include <soc/iomap.h>
@@ -81,18 +81,9 @@ static size_t smm_region_size(void)
 	return CONFIG_SMM_TSEG_SIZE;
 }
 
-void stage_cache_external_region(void **base, size_t *size)
+void smm_region(uintptr_t *start, size_t *size)
 {
-	if (smm_subregion(SMM_SUBREGION_CACHE, base, size)) {
-		printk(BIOS_ERR, "ERROR: No cache SMM subregion.\n");
-		*base = NULL;
-		*size = 0;
-	}
-}
-
-void smm_region_info(void **start, size_t *size)
-{
-	*start = (void *)smm_region_start();
+	*start = smm_region_start();
 	*size = smm_region_size();
 }
 
@@ -118,16 +109,20 @@ static void clear_tvalid(void)
 	wrmsr(SMM_MASK_MSR, mask);
 }
 
-int smm_subregion(int sub, void **start, size_t *size)
+int smm_subregion(int sub, uintptr_t *start, size_t *size)
 {
+	static int once;
 	uintptr_t sub_base;
 	size_t sub_size;
 	const size_t cache_size = CONFIG_SMM_RESERVED_SIZE;
 
-	sub_base = smm_region_start();
-	sub_size = smm_region_size();
-
+	smm_region(&sub_base, &sub_size);
 	assert(sub_size > CONFIG_SMM_RESERVED_SIZE);
+
+	if (!once) {
+		clear_tvalid();
+		once = 1;
+	}
 
 	switch (sub) {
 	case SMM_SUBREGION_HANDLER:
@@ -138,14 +133,14 @@ int smm_subregion(int sub, void **start, size_t *size)
 		/* External cache is in the middle of TSEG. */
 		sub_base += sub_size - cache_size;
 		sub_size = cache_size;
-		clear_tvalid();
 		break;
 	default:
+		*start = 0;
+		*size = 0;
 		return -1;
 	}
 
-	*start = (void *)sub_base;
+	*start = sub_base;
 	*size = sub_size;
-
 	return 0;
 }

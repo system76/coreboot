@@ -401,7 +401,7 @@ endif
 
 CFLAGS_common += -pipe -g -nostdinc -std=gnu11
 CFLAGS_common += -nostdlib -Wall -Wundef -Wstrict-prototypes -Wmissing-prototypes
-CFLAGS_common += -Wwrite-strings -Wredundant-decls -Wno-trigraphs
+CFLAGS_common += -Wwrite-strings -Wredundant-decls -Wno-trigraphs -Wimplicit-fallthrough
 CFLAGS_common += -Wstrict-aliasing -Wshadow -Wdate-time -Wtype-limits
 CFLAGS_common += -fno-common -ffreestanding -fno-builtin -fomit-frame-pointer
 CFLAGS_common += -ffunction-sections -fdata-sections -fno-pie
@@ -704,6 +704,11 @@ endif	# CONFIG_COMPRESS_BOOTBLOCK
 $(objcbfs)/bootblock.raw.bin: $(objcbfs)/bootblock.raw.elf
 	@printf "    OBJCOPY    $(notdir $(@))\n"
 	$(OBJCOPY_bootblock) -O binary $< $@
+
+ifneq ($(CONFIG_HAVE_BOOTBLOCK),y)
+$(objcbfs)/bootblock.bin:
+	dd if=/dev/zero of=$@ bs=64 count=1
+endif
 
 $(objcbfs)/%.bin: $(objcbfs)/%.raw.bin
 	cp $< $@

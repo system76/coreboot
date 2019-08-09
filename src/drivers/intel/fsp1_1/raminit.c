@@ -19,7 +19,7 @@
 #include <cf9_reset.h>
 #include <commonlib/helpers.h>
 #include <console/console.h>
-#include <fsp/memmap.h>
+#include <cpu/x86/smm.h>
 #include <fsp/romstage.h>
 #include <fsp/util.h>
 #include <lib.h> /* hexdump */
@@ -53,7 +53,7 @@ void raminit(struct romstage_params *params)
 	UPD_DATA_REGION *upd_ptr;
 	int fsp_verification_failure = 0;
 	EFI_PEI_HOB_POINTERS hob_ptr;
-	char *smm_base;
+	uintptr_t smm_base;
 	size_t smm_size;
 
 	/*
@@ -148,9 +148,9 @@ void raminit(struct romstage_params *params)
 
 	/* Display SMM area */
 	if (CONFIG(HAVE_SMI_HANDLER)) {
-		smm_region((void **)&smm_base, &smm_size);
+		smm_region(&smm_base, &smm_size);
 		printk(BIOS_DEBUG, "0x%08x: smm_size\n", (unsigned int)smm_size);
-		printk(BIOS_DEBUG, "0x%p: smm_base\n", smm_base);
+		printk(BIOS_DEBUG, "0x%08x: smm_base\n", (unsigned int)smm_base);
 	}
 
 	/* Migrate CAR data */
@@ -238,7 +238,7 @@ void raminit(struct romstage_params *params)
 		printk(BIOS_ERR, "ERROR - Reserving FSP memory area!\n");
 
 		if (CONFIG(HAVE_SMI_HANDLER) && cbmem_root != NULL) {
-			size_t delta_bytes = (unsigned int)smm_base
+			size_t delta_bytes = smm_base
 				- cbmem_root->PhysicalStart
 				- cbmem_root->ResourceLength;
 			printk(BIOS_ERR,
@@ -259,7 +259,7 @@ void raminit(struct romstage_params *params)
 
 	/* Locate the memory configuration data to speed up the next reboot */
 	mrc_hob = get_next_guid_hob(&mrc_guid, hob_list_ptr);
-	if ((mrc_hob == NULL) && CONFIG(DISPLAY_HOBS))
+	if (mrc_hob == NULL)
 		printk(BIOS_DEBUG,
 			"Memory Configuration Data Hob not present\n");
 	else if (!vboot_recovery_mode_enabled()) {

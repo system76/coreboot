@@ -482,6 +482,9 @@ static int start_aps(struct bus *cpu_bus, int ap_count, atomic_t *num_aps)
 	/* Wait for CPUs to check in up to 200 us. */
 	wait_for_aps(num_aps, ap_count, 200 /* us */, 15 /* us */);
 
+	if (CONFIG(X86_AMD_INIT_SIPI))
+		return 0;
+
 	/* Send 2nd SIPI */
 	if ((lapic_read(LAPIC_ICR) & LAPIC_ICR_BUSY)) {
 		printk(BIOS_DEBUG, "Waiting for ICR not to be busy...");
@@ -910,7 +913,7 @@ static int run_ap_work(struct mp_callback *val, long expire_us)
 			return 0;
 	} while (expire_us <= 0 || !stopwatch_expired(&sw));
 
-	printk(BIOS_ERR, "AP call expired. %d/%d CPUs accepted.\n",
+	printk(BIOS_CRIT, "CIRTICAL ERROR: AP call expired. %d/%d CPUs accepted.\n",
 		cpus_accepted, global_num_aps);
 	return -1;
 }

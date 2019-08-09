@@ -25,6 +25,7 @@
 #include <security/vboot/misc.h>
 #include <security/vboot/vbnv.h>
 #include <security/vboot/vboot_crtm.h>
+#include <security/vboot/tpm_common.h>
 
 #include "antirollback.h"
 
@@ -334,7 +335,8 @@ void verstage_main(void)
 	 * check the return value here because vb2api_fw_phase1 will catch
 	 * invalid secdata and tell us what to do (=reboot). */
 	timestamp_add_now(TS_START_TPMINIT);
-	antirollback_read_space_firmware(&ctx);
+	if (vboot_setup_tpm(&ctx) == TPM_SUCCESS)
+		antirollback_read_space_firmware(&ctx);
 	timestamp_add_now(TS_END_TPMINIT);
 
 	/* Enable measured boot mode */
@@ -473,6 +475,9 @@ void verstage_main(void)
 	   of running this function. */
 	if (ENV_ROMSTAGE && CONFIG(VBOOT_STARTS_IN_ROMSTAGE))
 		vboot_log_and_clear_recovery_mode_switch(0);
+
+	/* Save recovery reason in case of unexpected reboots on x86. */
+	vboot_save_recovery_reason_vbnv();
 
 	vboot_finalize_work_context(&ctx);
 	timestamp_add_now(TS_END_VBOOT);

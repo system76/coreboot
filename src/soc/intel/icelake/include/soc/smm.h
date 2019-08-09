@@ -18,7 +18,7 @@
 
 #include <stdint.h>
 #include <cpu/x86/msr.h>
-#include <fsp/memmap.h>
+#include <cpu/x86/smm.h>
 #include <soc/gpio.h>
 
 struct ied_header {
@@ -28,10 +28,8 @@ struct ied_header {
 } __packed;
 
 struct smm_relocation_params {
-	u32 smram_base;
-	u32 smram_size;
-	u32 ied_base;
-	u32 ied_size;
+	uintptr_t ied_base;
+	size_t ied_size;
 	msr_t smrr_base;
 	msr_t smrr_mask;
 	msr_t emrr_base;

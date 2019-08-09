@@ -1772,9 +1772,17 @@ void print_gpio_groups(struct pci_dev *const sb)
 	size_t pad_stepping = 8;
 
 	switch (sb->device_id) {
+	case PCI_DEVICE_ID_INTEL_H110:
+	case PCI_DEVICE_ID_INTEL_H170:
+	case PCI_DEVICE_ID_INTEL_Z170:
+	case PCI_DEVICE_ID_INTEL_Q170:
+	case PCI_DEVICE_ID_INTEL_Q150:
 	case PCI_DEVICE_ID_INTEL_B150:
-	case PCI_DEVICE_ID_INTEL_CM236:
 	case PCI_DEVICE_ID_INTEL_C236:
+	case PCI_DEVICE_ID_INTEL_C232:
+	case PCI_DEVICE_ID_INTEL_QM170:
+	case PCI_DEVICE_ID_INTEL_HM170:
+	case PCI_DEVICE_ID_INTEL_CM236:
 		community_count = ARRAY_SIZE(sunrise_communities);
 		communities = sunrise_communities;
 		pcr_init(sb);

@@ -14,7 +14,6 @@ config CPU_SPECIFIC_OPTIONS
 	select ARCH_VERSTAGE_X86_32
 	select BOOT_DEVICE_SUPPORTS_WRITES
 	select CACHE_MRC_SETTINGS
-	select CACHE_RELOCATED_RAMSTAGE_OUTSIDE_CBMEM
 	select COLLECT_TIMESTAMPS
 	select SUPPORT_CPU_UCODE_IN_CBFS
 	select MICROCODE_BLOB_NOT_IN_BLOB_REPO
@@ -74,10 +73,6 @@ config MAX_CPUS
 	int
 	default 4
 
-config CPU_ADDR_BITS
-	int
-	default 36
-
 config SMM_TSEG_SIZE
 	hex
 	default 0x800000
@@ -129,10 +124,6 @@ config ENABLE_BUILTIN_COM1
 	  The PMC has a legacy COM1 serial port. Choose this option to
 	  configure the pads and enable it. This serial port can be used for
 	  the debug console.
-
-config IED_REGION_SIZE
-	hex
-	default 0x400000
 
 config DISABLE_HPET
 	bool "Disable the HPET device"

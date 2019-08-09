@@ -52,7 +52,6 @@ config CPU_SPECIFIC_OPTIONS
 	select C_ENVIRONMENT_BOOTBLOCK
 	select BOOT_DEVICE_SUPPORTS_WRITES if BOOT_DEVICE_SPI_FLASH
 	select BOOT_DEVICE_SPI_FLASH_RW_NOMMAP_EARLY if BOOT_DEVICE_SPI_FLASH
-	select CACHE_RELOCATED_RAMSTAGE_OUTSIDE_CBMEM
 	select PARALLEL_MP
 	select PARALLEL_MP_AP_WORK
 	select HAVE_SMI_HANDLER
@@ -71,6 +70,10 @@ config VBOOT
 config UDELAY_LAPIC_FIXED_FSB
 	int
 	default 200
+
+config HAVE_BOOTBLOCK
+	bool
+	default n
 
 # TODO: Sync these with definitions in PI vendorcode.
 # DCACHE_RAM_BASE must equal BSP_STACK_BASE_ADDR.
@@ -292,10 +295,6 @@ comment "AMD Firmware Directory Table set to location for 8MB ROM"
 	depends on AMD_FWM_POSITION_INDEX = 4
 comment "AMD Firmware Directory Table set to location for 16MB ROM"
 	depends on AMD_FWM_POSITION_INDEX = 5
-
-config DIMM_SPD_SIZE
-	int
-	default 512	# DDR4
 
 config RO_REGION_ONLY
 	string

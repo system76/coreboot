@@ -26,6 +26,7 @@
 const struct pad_config *variant_base_gpio_table(size_t *num);
 const struct pad_config *variant_override_gpio_table(size_t *num);
 const struct pad_config *variant_early_gpio_table(size_t *num);
+const struct pad_config *variant_early_override_gpio_table(size_t *num);
 const struct pad_config *variant_sleep_gpio_table(size_t *num, int slp_typ);
 
 /* Baseboard default swizzle. Can be reused if swizzle is same. */
@@ -46,8 +47,22 @@ void variant_nhlt_init(struct nhlt *nhlt);
 /* Modify devictree settings during ramstage. */
 struct device;
 void variant_update_devtree(struct device *dev);
+/**
+ * variant_ext_usb_status() - Get status of externally visible USB ports
+ * @port_type: Type of USB port i.e. USB2/USB3
+ * @port_id: USB Port ID
+ *
+ * This function is supplied by the mainboard/variant to SoC's XHCI driver to
+ * identify the status of externally visible USB ports.
+ *
+ * Return: true if the port is present, false if the port is absent.
+ */
+bool variant_ext_usb_status(unsigned int port_type, unsigned int port_id);
 
 /* Get no touchscreen SKU ID. */
 bool no_touchscreen_sku(uint32_t sku_id);
+
+/* allow each variants to customize smi sleep flow. */
+void variant_smi_sleep(u8 slp_typ);
 
 #endif /* BASEBOARD_VARIANTS_H */

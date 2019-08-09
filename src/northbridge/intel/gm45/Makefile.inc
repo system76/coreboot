@@ -25,22 +25,18 @@ romstage-y += pcie.c
 romstage-y += thermal.c
 romstage-y += igd.c
 romstage-y += pm.c
-romstage-y += ram_calc.c
+romstage-y += memmap.c
 romstage-y += iommu.c
 romstage-y += romstage.c
 
 ramstage-y += acpi.c
 
-ramstage-y += ram_calc.c
+ramstage-y += memmap.c
 ramstage-y += northbridge.c
 ramstage-y += gma.c
 
 smm-y += ../../../cpu/x86/lapic/apic_timer.c
 
-postcar-y += ram_calc.c
-
-romstage-$(CONFIG_CACHE_RELOCATED_RAMSTAGE_OUTSIDE_CBMEM) += stage_cache.c
-ramstage-$(CONFIG_CACHE_RELOCATED_RAMSTAGE_OUTSIDE_CBMEM) += stage_cache.c
-postcar-$(CONFIG_CACHE_RELOCATED_RAMSTAGE_OUTSIDE_CBMEM) += stage_cache.c
+postcar-y += memmap.c
 
 endif

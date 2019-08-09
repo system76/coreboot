@@ -195,8 +195,7 @@ static int pcode_mailbox_write(u32 command, u32 data)
 
 static void initialize_vr_config(void)
 {
-	struct device *dev = SA_DEV_ROOT;
-	config_t *conf = dev->chip_info;
+	config_t *conf = config_of_path(SA_DEVFN_ROOT);
 	msr_t msr;
 
 	printk(BIOS_DEBUG, "Initializing VR config.\n");
@@ -325,8 +324,8 @@ void set_power_limits(u8 power_limit_1_time)
 	unsigned int tdp, min_power, max_power, max_time;
 	u8 power_limit_1_val;
 
-	if (power_limit_1_time > ARRAY_SIZE(power_limit_time_sec_to_msr))
-		power_limit_1_time = 28;
+	if (power_limit_1_time >= ARRAY_SIZE(power_limit_time_sec_to_msr))
+		power_limit_1_time = ARRAY_SIZE(power_limit_time_sec_to_msr) - 1;
 
 	if (!(msr.lo & PLATFORM_INFO_SET_TDP))
 		return;
@@ -450,9 +449,9 @@ static void configure_c_states(void)
 
 static void configure_thermal_target(void)
 {
-	struct device *dev = SA_DEV_ROOT;
-	config_t *conf = dev->chip_info;
+	config_t *conf = config_of_path(SA_DEVFN_ROOT);
 	msr_t msr;
+
 
 	/* Set TCC activation offset if supported */
 	msr = rdmsr(MSR_PLATFORM_INFO);

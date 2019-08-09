@@ -29,10 +29,10 @@
 #include <cpu/intel/turbo.h>
 #include <cpu/x86/msr.h>
 #include <cpu/x86/mtrr.h>
+#include <cpu/x86/smm.h>
 #include <device/device.h>
 #include <device/pci.h>
 #include <fsp/api.h>
-#include <fsp/memmap.h>
 #include <intelblocks/cpulib.h>
 #include <intelblocks/fast_spi.h>
 #include <intelblocks/mp_init.h>
@@ -205,24 +205,24 @@ void get_microcode_info(const void **microcode, int *parallel)
 static void get_smm_info(uintptr_t *perm_smbase, size_t *perm_smsize,
 				size_t *smm_save_state_size)
 {
-	void *smm_base;
+	uintptr_t smm_base;
 	size_t smm_size;
-	void *handler_base;
+	uintptr_t handler_base;
 	size_t handler_size;
 
 	/* All range registers are aligned to 4KiB */
 	const uint32_t rmask = ~((1 << 12) - 1);
 
 	/* Initialize global tracking state. */
-	smm_region_info(&smm_base, &smm_size);
+	smm_region(&smm_base, &smm_size);
 	smm_subregion(SMM_SUBREGION_HANDLER, &handler_base, &handler_size);
 
-	relo_attrs.smbase = (uint32_t)smm_base;
+	relo_attrs.smbase = smm_base;
 	relo_attrs.smrr_base = relo_attrs.smbase | MTRR_TYPE_WRBACK;
 	relo_attrs.smrr_mask = ~(smm_size - 1) & rmask;
 	relo_attrs.smrr_mask |= MTRR_PHYS_MASK_VALID;
 
-	*perm_smbase = (uintptr_t)handler_base;
+	*perm_smbase = handler_base;
 	*perm_smsize = handler_size;
 	*smm_save_state_size = sizeof(em64t100_smm_state_save_area_t);
 }
@@ -295,14 +295,7 @@ void cpu_lock_sgx_memory(void)
 
 int soc_fill_sgx_param(struct sgx_param *sgx_param)
 {
-	struct device *dev = SA_DEV_ROOT;
-	assert(dev != NULL);
-	config_t *conf = dev->chip_info;
-
-	if (!conf) {
-		printk(BIOS_ERR, "Failed to get chip_info for SGX param\n");
-		return -1;
-	}
+	config_t *conf = config_of_path(SA_DEVFN_ROOT);
 
 	sgx_param->enable = conf->sgx_enable;
 	return 0;

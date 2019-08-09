@@ -17,7 +17,7 @@ ifeq ($(CONFIG_SOC_MEDIATEK_MT8173),y)
 
 bootblock-y += bootblock.c
 bootblock-$(CONFIG_SPI_FLASH) += flash_controller.c
-bootblock-y += i2c.c
+bootblock-y += ../common/i2c.c i2c.c
 bootblock-y += ../common/pll.c pll.c
 bootblock-y += ../common/spi.c spi.c
 bootblock-y += ../common/timer.c
@@ -32,7 +32,7 @@ bootblock-y += ../common/mmu_operations.c mmu_operations.c
 
 ################################################################################
 
-verstage-y += i2c.c
+verstage-y += ../common/i2c.c i2c.c
 verstage-y += ../common/spi.c spi.c
 
 verstage-y += ../common/uart.c
@@ -49,7 +49,7 @@ romstage-$(CONFIG_SPI_FLASH) += flash_controller.c
 romstage-y += ../common/pll.c pll.c
 romstage-y += ../common/timer.c
 romstage-y += timer.c
-romstage-y += i2c.c
+romstage-y += ../common/i2c.c i2c.c
 
 romstage-y += ../common/uart.c
 romstage-y += ../common/cbmem.c
@@ -71,7 +71,8 @@ ramstage-y += soc.c ../common/mtcmos.c
 ramstage-y += ../common/timer.c
 ramstage-y += timer.c
 ramstage-y += ../common/uart.c
-ramstage-y += ../common/pmic_wrap.c pmic_wrap.c mt6391.c i2c.c
+ramstage-y += ../common/i2c.c i2c.c
+ramstage-y += ../common/pmic_wrap.c pmic_wrap.c mt6391.c
 ramstage-y += mt6311.c
 ramstage-y += da9212.c
 ramstage-y += ../common/gpio.c gpio.c
@@ -81,7 +82,7 @@ ramstage-y += ../common/rtc.c rtc.c
 
 ramstage-y += ../common/usb.c usb.c
 
-ramstage-y += ddp.c
+ramstage-y += ../common/ddp.c ddp.c
 ramstage-y += dsi.c
 
 ramstage-$(CONFIG_ARM64_USE_ARM_TRUSTED_FIRMWARE) += bl31_plat_params.c

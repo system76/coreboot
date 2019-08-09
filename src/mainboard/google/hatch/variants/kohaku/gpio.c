@@ -24,7 +24,9 @@ static const struct pad_config gpio_table[] = {
 	/* A6  : SERIRQ ==> NC */
 	PAD_NC(GPP_A6, NONE),
 	/* A10 : PEN_RESET_ODL */
-	PAD_CFG_GPO(GPP_A10, 0, DEEP),
+	PAD_CFG_GPO(GPP_A10, 1, DEEP),
+	/* A16 : EMR_GARAGE_DET (notification) */
+	PAD_CFG_GPI_APIC(GPP_A16, NONE, PLTRST, LEVEL, NONE),
 	/* A17 : PIRQA# ==> NC */
 	PAD_NC(GPP_A17, NONE),
 	/* A18 : ISH_GP0 ==> NC */
@@ -39,18 +41,16 @@ static const struct pad_config gpio_table[] = {
 	PAD_NC(GPP_B8, NONE),
 	/* C1  : SMBDATA: NC  */
 	PAD_NC(GPP_C1, NONE),
-	/*
-	 * C12 : EMR_GARAGE_INT
-	 * The same signal is routed to both A8 and C12.  Currently C12
-	 * is the interrupt source, and A8 is the wake source.
-	 * Hoping that GPP_A8 can be used for both interrupt (SCI) and wake
-	 * (GPIO). Keeping as GPI for now.
-	*/
-	PAD_CFG_GPI_SCI(GPP_C12, NONE, DEEP, EDGE_SINGLE, INVERT),
-	/* C15 : EN_PP3300_TSP_DIG_DX */
+	/* C7  : PEN_IRQ_OD_L */
+	PAD_CFG_GPI_APIC(GPP_C7, NONE, PLTRST, LEVEL, INVERT),
+	/* C12 : EN_PP3300_TSP_DX */
+	PAD_CFG_GPO(GPP_C12, 0, DEEP),
+	/* C15 : EN_PP3300_DIG_DX */
 	PAD_CFG_GPO(GPP_C15, 0, DEEP),
 	/* C23 : UART2_CTS# ==> NC */
 	PAD_NC(GPP_C23, NONE),
+	/* D16 : TOUCHSCREEN_INT_L */
+	PAD_CFG_GPI_APIC(GPP_D16, NONE, PLTRST, LEVEL, INVERT),
 	/* E23 : GPP_E23 ==> NC */
 	PAD_NC(GPP_E23, NONE),
 	/* F1 : GPP_F1 ==> NC */
@@ -69,6 +69,10 @@ static const struct pad_config gpio_table[] = {
 	PAD_NC(GPP_G5, NONE),
 	/* G6 : GPP_G6 ==> NC  */
 	PAD_NC(GPP_G6, NONE),
+	/* H4  : PCH_I2C_PEN_SDA */
+	PAD_CFG_NF(GPP_H4, NONE, DEEP, NF1),
+	/* H5  : PCH_I2C_PEN_SCL */
+	PAD_CFG_NF(GPP_H5, NONE, DEEP, NF1),
 };
 
 const struct pad_config *override_gpio_table(size_t *num)
@@ -77,12 +81,39 @@ const struct pad_config *override_gpio_table(size_t *num)
 	return gpio_table;
 }
 
-/* GPIOs configured before ramstage */
+/*
+ * GPIOs configured before ramstage
+ * Note: the Hatch platform's romstage will configure
+ * the MEM_STRAP_* (a.k.a GPIO_MEM_CONFIG_*) pins
+ * as inputs before it reads them, so they are not
+ * needed in this table.
+ */
 static const struct pad_config early_gpio_table[] = {
-	PAD_NC(GPP_C23, NONE),
+	/* A12 : FPMCU_RST_ODL */
+	PAD_CFG_GPO(GPP_A12, 0, DEEP),
+	/* B15 : H1_SLAVE_SPI_CS_L */
+	PAD_CFG_NF(GPP_B15, NONE, DEEP, NF1),
+	/* B16 : H1_SLAVE_SPI_CLK */
+	PAD_CFG_NF(GPP_B16, NONE, DEEP, NF1),
+	/* B17 : H1_SLAVE_SPI_MISO_R */
+	PAD_CFG_NF(GPP_B17, NONE, DEEP, NF1),
+	/* B18 : H1_SLAVE_SPI_MOSI_R */
+	PAD_CFG_NF(GPP_B18, NONE, DEEP, NF1),
+	/* C14 : BT_DISABLE_L */
+	PAD_CFG_GPO(GPP_C14, 0, DEEP),
+	/* PCH_WP_OD */
+	PAD_CFG_GPI(GPP_C20, NONE, DEEP),
+	/* C21 : H1_PCH_INT_ODL */
+	PAD_CFG_GPI_APIC(GPP_C21, NONE, PLTRST, LEVEL, INVERT),
+	/* E1  : M2_SSD_PEDET */
+	PAD_CFG_NF(GPP_E1, NONE, DEEP, NF1),
+	/* E5  : SATA_DEVSLP1 */
+	PAD_CFG_NF(GPP_E5, NONE, PLTRST, NF1),
+	/* F2  : MEM_CH_SEL */
+	PAD_CFG_GPI(GPP_F2, NONE, PLTRST),
 };
 
-const struct pad_config *override_early_gpio_table(size_t *num)
+const struct pad_config *variant_early_gpio_table(size_t *num)
 {
 	*num = ARRAY_SIZE(early_gpio_table);
 	return early_gpio_table;

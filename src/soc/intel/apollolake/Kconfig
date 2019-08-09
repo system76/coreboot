@@ -40,7 +40,6 @@ config CPU_SPECIFIC_OPTIONS
 	# Misc options
 	select C_ENVIRONMENT_BOOTBLOCK
 	select CACHE_MRC_SETTINGS
-	select CACHE_RELOCATED_RAMSTAGE_OUTSIDE_CBMEM
 	select COLLECT_TIMESTAMPS
 	select COMMON_FADT
 	select FSP_PLATFORM_MEMORY_SETTINGS_VERSIONS
@@ -155,10 +154,6 @@ config DCACHE_BSP_STACK_SIZE
 	help
 	  The amount of anticipated stack usage in CAR by bootblock and
 	  other stages.
-
-config CPU_ADDR_BITS
-	int
-	default 39
 
 config SOC_INTEL_COMMON_BLOCK_GSPI_CLOCK_MHZ
 	int

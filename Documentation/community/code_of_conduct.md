@@ -22,19 +22,30 @@ Refrain from insulting anyone or the group they belong to. Remember that
 people might be sensitive to other things than you are.
 
 Most of our community members are not native English speakers, thus
-misunderstandings can (and do) happen. Always assume that others are
-friendly and may have picked less-than-stellar wording by accident.
+misunderstandings can (and do) happen. Assume that others are friendly
+and may have picked less-than-stellar wording by accident as long as
+you possibly can.
 
-If you have a grievance due to conduct in this community, we want to hear
-about it so we can handle the situation. Please contact our arbitration
-team directly: They will listen to you and react in a timely fashion.
+## Reporting Issues
+
+If you have a grievance due to conduct in this community, we're sorry
+that you have had a bad experience, and we want to hear about it so
+we can resolve the situation.
+
+Please contact members of our arbitration team (listed below) promptly
+and directly, in person (if available) or by email: They will listen
+to you and react in a timely fashion.
+
+If you feel uncomfortable, please don't wait it out, ask for help,
+so we can work on setting things right.
 
 For transparency there is no alias or private mailing list address for
 you to reach out to, since we want to make sure that you know who will
-(and who won't) read your message.
+and who won't read your message.
 
-However since people might be on travel or otherwise be unavailable at
-times, consider reaching out to multiple persons.
+However since people might be on travel or otherwise be unavailable
+at times, please reach out to multiple persons at once, especially
+when using email.
 
 The team will treat your messages confidential as far as the law permits.
 For the purpose of knowing what law applies, the list provides the usual
@@ -73,15 +84,10 @@ immediately.
 If a community member engages in unacceptable behavior, the community
 organizers may take any action they deem appropriate, up to and including
 a temporary ban or permanent expulsion from the community without warning
-(and without refund in the case of a paid event). Community organizers
-can be part of the arbitration team, or organizers of events and online
-communities.
+(and without refund in the case of a paid event).
 
-## If You Witness or Are Subject to Unacceptable Behavior
-
-If you are subject to or witness unacceptable behavior, or have any other
-concerns, please notify someone from the arbitration team immediately.
-
+Community organizers can be members of the arbitration team, or organizers
+of events and online communities.
 
 ## Addressing Grievances
 
@@ -102,7 +108,7 @@ Our arbitration team consists of the following people
 * Stefan Reinauer <stefan.reinauer@coreboot.org> (USA)
 * Patrick Georgi <patrick@coreboot.org> (Germany)
 * Ronald Minnich <rminnich@coreboot.org> (USA)
-* Marc Jones <mjones@coreboot.org> (USA)
+* Martin Roth <martin@coreboot.org> (USA)
 
 ## License and attribution
 

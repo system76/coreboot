@@ -24,6 +24,7 @@ The boards in this section are not real mainboards, but emulators.
 
 - [Spike RISC-V emulator](emulation/spike-riscv.md)
 - [Qemu RISC-V emulator](emulation/qemu-riscv.md)
+- [Qemu AArch64 emulator](emulation/qemu-aarch64.md)
 
 ## Intel
 
@@ -68,6 +69,10 @@ The boards in this section are not real mainboards, but emulators.
 - [Hardware Maintenance Manual of ThinkPads](lenovo/thinkpad_hmm.md)
 - [T4xx common](lenovo/t4xx_series.md)
 - [X2xx common](lenovo/x2xx_series.md)
+
+## Portwell
+
+- [PQ7-M107](portwell/pq7-m107.md)
 
 ### Sandy Bridge series
 

@@ -16,6 +16,14 @@
 #ifndef _SPI_GENERIC_H_
 #define _SPI_GENERIC_H_
 
+/* Common parameters -- kind of high, but they should only occur when there
+ * is a problem (and well your system already is broken), so err on the side
+ * of caution in case we're dealing with slower SPI buses and/or processors.
+ */
+#define SPI_FLASH_PROG_TIMEOUT_MS		200
+#define SPI_FLASH_PAGE_ERASE_TIMEOUT_MS		500
+#define SPI_FLASH_SECTOR_ERASE_TIMEOUT_MS	1000
+
 #include <commonlib/region.h>
 #include <stdint.h>
 #include <stddef.h>

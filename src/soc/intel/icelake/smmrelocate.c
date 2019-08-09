@@ -170,14 +170,9 @@ void smm_relocation_handler(int cpu, uintptr_t curr_smbase,
 		write_smrr(relo_params);
 }
 
-static void fill_in_relocation_params(struct device *dev,
-				      struct smm_relocation_params *params)
+static void fill_in_relocation_params(struct smm_relocation_params *params)
 {
-	void *handler_base;
-	size_t handler_size;
-	void *ied_base;
-	size_t ied_size;
-	void *tseg_base;
+	uintptr_t tseg_base;
 	size_t tseg_size;
 	u32 emrr_base;
 	u32 emrr_size;
@@ -192,20 +187,12 @@ static void fill_in_relocation_params(struct device *dev,
 	phys_bits = cpu_phys_address_size();
 
 	smm_region(&tseg_base, &tseg_size);
-	smm_subregion(SMM_SUBREGION_HANDLER, &handler_base, &handler_size);
-	smm_subregion(SMM_SUBREGION_CHIPSET, &ied_base, &ied_size);
-
-	params->smram_size = handler_size;
-	params->smram_base = (uintptr_t)handler_base;
-
-	params->ied_base = (uintptr_t)ied_base;
-	params->ied_size = ied_size;
+	smm_subregion(SMM_SUBREGION_CHIPSET, &params->ied_base, &params->ied_size);
 
 	/* SMRR has 32-bits of valid address aligned to 4KiB. */
-	params->smrr_base.lo = (params->smram_base & rmask) | MTRR_TYPE_WRBACK;
+	params->smrr_base.lo = (tseg_base & rmask) | MTRR_TYPE_WRBACK;
 	params->smrr_base.hi = 0;
-	params->smrr_mask.lo = (~(tseg_size - 1) & rmask)
-		| MTRR_PHYS_MASK_VALID;
+	params->smrr_mask.lo = (~(tseg_size - 1) & rmask) | MTRR_PHYS_MASK_VALID;
 	params->smrr_mask.hi = 0;
 
 	/* The EMRR and UNCORE_EMRR are at IEDBASE + 2MiB */
@@ -242,8 +229,8 @@ static void setup_ied_area(struct smm_relocation_params *params)
 
 	ied_base = (void *)params->ied_base;
 
-	printk(BIOS_DEBUG, "IED base = 0x%08x\n", params->ied_base);
-	printk(BIOS_DEBUG, "IED size = 0x%08x\n", params->ied_size);
+	printk(BIOS_DEBUG, "IED base = 0x%08x\n", (u32)params->ied_base);
+	printk(BIOS_DEBUG, "IED size = 0x%08x\n", (u32)params->ied_size);
 
 	/* Place IED header at IEDBASE. */
 	memcpy(ied_base, &ied, sizeof(ied));
@@ -255,17 +242,15 @@ static void setup_ied_area(struct smm_relocation_params *params)
 void smm_info(uintptr_t *perm_smbase, size_t *perm_smsize,
 				size_t *smm_save_state_size)
 {
-	struct device *dev = SA_DEV_ROOT;
-
 	printk(BIOS_DEBUG, "Setting up SMI for CPU\n");
 
-	fill_in_relocation_params(dev, &smm_reloc_params);
+	fill_in_relocation_params(&smm_reloc_params);
+
+	smm_subregion(SMM_SUBREGION_HANDLER, perm_smbase, perm_smsize);
 
 	if (smm_reloc_params.ied_size)
 		setup_ied_area(&smm_reloc_params);
 
-	*perm_smbase = smm_reloc_params.smram_base;
-	*perm_smsize = smm_reloc_params.smram_size;
 	*smm_save_state_size = sizeof(em64t101_smm_state_save_area_t);
 }
 
@@ -300,11 +285,12 @@ void smm_relocate(void)
 
 void smm_lock(void)
 {
+	struct device *sa_dev = pcidev_path_on_root(SA_DEVFN_ROOT);
 	/*
 	 * LOCK the SMM memory window and enable normal SMM.
 	 * After running this function, only a full reset can
 	 * make the SMM registers writable again.
 	 */
 	printk(BIOS_DEBUG, "Locking SMM.\n");
-	pci_write_config8(SA_DEV_ROOT, SMRAM, D_LCK | G_SMRAME | C_BASE_SEG);
+	pci_write_config8(sa_dev, SMRAM, D_LCK | G_SMRAME | C_BASE_SEG);
 }

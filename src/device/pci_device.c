@@ -34,6 +34,7 @@
 #include <arch/acpi.h>
 #include <device/pci_ops.h>
 #include <bootmode.h>
+#include <bootsplash.h>
 #include <console/console.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -49,6 +50,8 @@
 #include <pc80/i8259.h>
 #include <security/vboot/vbnv.h>
 #include <timestamp.h>
+#include <types.h>
+
 
 u8 pci_moving_config8(struct device *dev, unsigned int reg)
 {
@@ -627,11 +630,6 @@ void pci_dev_enable_resources(struct device *dev)
 	pci_write_config16(dev, PCI_COMMAND, command);
 }
 
-void __noreturn pcidev_die(void)
-{
-	die("PCI: dev is NULL!\n");
-}
-
 void pci_bus_enable_resources(struct device *dev)
 {
 	u16 ctrl;
@@ -764,9 +762,13 @@ void pci_dev_init(struct device *dev)
 		return;
 
 	run_bios(dev, (unsigned long)ram);
+
 	gfx_set_init_done(1);
 	printk(BIOS_DEBUG, "VGA Option ROM was run\n");
 	timestamp_add_now(TS_OPROM_END);
+
+	if (CONFIG(BOOTSPLASH))
+		set_vesa_bootsplash();
 }
 
 /** Default device operation for PCI devices */

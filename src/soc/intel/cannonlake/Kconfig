@@ -36,6 +36,7 @@ config SOC_INTEL_COMETLAKE
 	bool
 	select SOC_INTEL_CANNONLAKE_BASE
 	select MICROCODE_BLOB_UNDISCLOSED
+	select FSP_USES_CB_STACK
 	help
 	  Intel Cometlake support
 
@@ -58,7 +59,6 @@ config CPU_SPECIFIC_OPTIONS
 	select BOOT_DEVICE_SUPPORTS_WRITES
 	select C_ENVIRONMENT_BOOTBLOCK
 	select CACHE_MRC_SETTINGS
-	select CACHE_RELOCATED_RAMSTAGE_OUTSIDE_CBMEM
 	select COMMON_FADT
 	select CPU_INTEL_COMMON
 	select CPU_INTEL_FIRMWARE_INTERFACE_TABLE
@@ -121,6 +121,7 @@ config DCACHE_RAM_SIZE
 
 config DCACHE_BSP_STACK_SIZE
 	hex
+	default 0x20000 if FSP_USES_CB_STACK
 	default 0x4000
 	help
 	  The amount of anticipated stack usage in CAR by bootblock and
@@ -269,8 +270,7 @@ config MB_HAS_ACTIVE_HIGH_SD_PWR_ENABLE
 
 choice
 	prompt "Cache-as-ram implementation"
-	default USE_CANNONLAKE_CAR_NEM_ENHANCED if MAINBOARD_HAS_CHROMEOS
-	default USE_CANNONLAKE_FSP_CAR
+	default USE_CANNONLAKE_CAR_NEM_ENHANCED
 	help
 	  This option allows you to select how cache-as-ram (CAR) is set up.
 

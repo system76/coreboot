@@ -462,10 +462,26 @@ function build_config
 		return
 	fi
 
+	local required_arches
+
 	required_arches=$(grep -E "^CONFIG_ARCH_(BOOTBLOCK|R.MSTAGE|VERSTAGE)" "$TARGET/${BUILD_NAME}/config.build" | \
 			sed "s,^CONFIG_ARCH_[^_]*_\([^=]*\)=.*$,\1," |sort -u |tr 'A-Z\n\r' 'a-z  ')
-	# shellcheck disable=SC2016,SC2059
-	missing_arches=$(printf 'include .xcompile\nall: ; @echo $(foreach arch,'"$required_arches"',$(if $(filter $(arch),$(SUBARCH_SUPPORTED)),,$(arch)))' | $MAKE --no-print-directory -f -)
+
+	missing_arches="$($MAKE --no-print-directory -f - \
+		REQUIRED_ARCHES="$required_arches" <<'EOF'
+include .xcompile
+.PHONY: missing_arches
+missing_arches:
+	$(if $(XCOMPILE_COMPLETE),,$(error .xcompile is invalid.))
+	@echo $(foreach arch,$(REQUIRED_ARCHES),$(if $(filter $(arch),$(SUBARCH_SUPPORTED)),,$(arch)))
+EOF
+)"
+	# shellcheck disable=SC2181
+	if [[ $? -ne 0 ]]; then
+		echo "Calculating missing_arches failed" >&2
+		exit 1
+	fi
+
 	if [ -n "$missing_arches" ]; then
 		printf "skipping %s because we're missing compilers for (%s)\n" "$BUILD_NAME" "$missing_arches"
 		return
@@ -625,7 +641,7 @@ getoptbrand="$(getopt -V)"
 # shellcheck disable=SC2086
 if [ "${getoptbrand:0:6}" == "getopt" ]; then
 	# Detected GNU getopt that supports long options.
-	args=$(getopt -l version,verbose,quiet,help,all,target:,board-variant:,payloads:,cpus:,silent,junit,config,loglevel:,remove,prefix:,update,scan-build,ccache,blobs,clang,any-toolchain,clean,outdir:,chromeos,xmlfile:,kconfig:,dir:,root:,recursive,checksum:,timeless,exitcode -o Vvqhat:b:p:c:sJCl:rP:uyBLAzo:xX:K:d:R:Ie -- "$@") || exit 1
+	args=$(getopt -l version,verbose,quiet,help,all,target:,board-variant:,payloads:,cpus:,silent,junit,config,loglevel:,remove,prefix:,update,scan-build,ccache,blobs,clang,any-toolchain,clean,outdir:,chromeos,xmlfile:,kconfig:,dir:,root:,recursive,checksum:,timeless,exitcode,asserts -o Vvqhat:b:p:c:sJCl:rP:uyBLAzo:xX:K:d:R:Ie -- "$@") || exit 1
 	eval set -- $args
 	retval=$?
 else
@@ -675,6 +691,9 @@ while true ; do
 			scanbuild=true
 			customizing="${customizing}, scan-build"
 			SCANBUILD_ARGS=${SCANBUILD_ARGS:-'-k'}
+			configoptions="${configoptions}CONFIG_FATAL_ASSERTS=y\n"
+			;;
+		--asserts)	shift
 			configoptions="${configoptions}CONFIG_FATAL_ASSERTS=y\n"
 			;;
 		-y|--ccache)    shift
@@ -743,13 +762,18 @@ if [ -z "$TARGET" ] || [ "$TARGET" = "/" ]; then
 	exit 1
 fi
 
+if ! mkdir -p "$TARGET"; then
+	echo "Unable to create build directory"
+	exit 1
+fi
+
 customizing=$(echo "$customizing" | cut -c3-)
 if [ "$customizing" = "" ]; then
 	customizing="default configuration"
 fi
 
-FAILED_BOARDS="${TARGET}/failed_boards"
-PASSED_BOARDS="${TARGET}/passing_boards"
+FAILED_BOARDS="$(realpath ${TARGET}/failed_boards)"
+PASSED_BOARDS="$(realpath ${TARGET}/passing_boards)"
 
 if [ "$recursive" = "false" ]; then
 	rm -f "$FAILED_BOARDS" "$PASSED_BOARDS"

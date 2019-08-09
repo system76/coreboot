@@ -28,7 +28,6 @@
 #include <device/device.h>
 #include <device/pci.h>
 #include <spi_flash.h>
-
 #include <spi-generic.h>
 
 #include "spi.h"
@@ -727,7 +726,7 @@ static int ich_hwseq_erase(const struct spi_flash *flash, u32 offset,
 	u32 start, end, erase_size;
 	int ret;
 	uint16_t hsfc;
-	uint16_t timeout = 1000 * 60;
+	unsigned int timeout = 1000 * SPI_FLASH_SECTOR_ERASE_TIMEOUT_MS;
 
 	erase_size = flash->sector_size;
 	if (offset % erase_size || len % erase_size) {
@@ -1082,7 +1081,7 @@ void spi_finalize_ops(void)
 		optype |= (spi_config.ops[i].type & 3) << (i * 2);
 		writeb_(spi_config.ops[i].op, &cntlr->opmenu[i]);
 	}
-	writew_(optype, &cntlr->optype);
+	writew_(optype, cntlr->optype);
 }
 
 __weak void intel_southbridge_override_spi(struct intel_swseq_spi_config *spi_config)
