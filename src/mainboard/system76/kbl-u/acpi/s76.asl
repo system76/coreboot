@@ -23,6 +23,26 @@ Device (S76D) {
     Name (_HID, "17761776")
     Name (_UID, 0)
 
+    Method (INIT, 0, Serialized) {
+        Debug = "INIT"
+        If (^^PCI0.LPCB.EC0.ECOK) {
+            //TODO: Set flags to use software control
+            Return (0)
+        } Else {
+            Return (1)
+        }
+    }
+
+    Method (FINI, 0, Serialized) {
+        Debug = "FINI"
+        If (^^PCI0.LPCB.EC0.ECOK) {
+            //TODO: Set flags to use hardware control
+            Return (0)
+        } Else {
+            Return (1)
+        }
+    }
+
     // Get Airplane LED
     Method (GAPL, 0, Serialized) {
         If (^^PCI0.LPCB.EC0.ECOK) {
