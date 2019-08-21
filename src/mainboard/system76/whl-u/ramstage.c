@@ -26,9 +26,28 @@ void mainboard_silicon_init_params(FSP_S_CONFIG *params) {
 	cnl_configure_pads(gpio_table, ARRAY_SIZE(gpio_table));
 }
 
+static int ec_cmd(u8 data) {
+	int i = 1000000;
+	while ((inb(0x66) & 2) == 2 && i > 0) {
+		i -= 1;
+	}
+	if (i == 0) {
+		return 1;
+	} else {
+		outb(data, 0x66);
+		return 0;
+	}
+}
+
 static void mainboard_init(struct device *dev) {
 	printk(BIOS_INFO, "system76: keyboard init\n");
 	pc_keyboard_init(NO_AUX_DEVICE);
+
+	// Rescan for EC devices - fixes camera toggle
+	printk(BIOS_INFO, "system76: EC init\n");
+	if (ec_cmd(0xA8)) {
+		printk(BIOS_ERR, "system76: failed to send EC command 0xA8\n");
+	}
 }
 
 static void mainboard_enable(struct device *dev) {
