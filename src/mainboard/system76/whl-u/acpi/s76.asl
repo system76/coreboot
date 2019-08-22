@@ -23,10 +23,21 @@ Device (S76D) {
     Name (_HID, "17761776")
     Name (_UID, 0)
 
+    Method (RSET, 0, Serialized) {
+        Debug = "S76D: RSET"
+        SAPL(0)
+        SKBL(0)
+        #if COLOR_KEYBOARD
+            SKBC(0xFFFFFF)
+        #endif
+    }
+
     Method (INIT, 0, Serialized) {
-        Debug = "INIT"
+        Debug = "S76D: INIT"
+        RSET()
         If (^^PCI0.LPCB.EC0.ECOK) {
-            //TODO: Set flags to use software control
+            // Set flags to use software control
+            ^^PCI0.LPCB.EC0.ECOS = 2
             Return (0)
         } Else {
             Return (1)
@@ -34,9 +45,11 @@ Device (S76D) {
     }
 
     Method (FINI, 0, Serialized) {
-        Debug = "FINI"
+        Debug = "S76D: FINI"
+        RSET()
         If (^^PCI0.LPCB.EC0.ECOK) {
-            //TODO: Set flags to use hardware control
+            // Set flags to use hardware control
+            ^^PCI0.LPCB.EC0.ECOS = 1
             Return (0)
         } Else {
             Return (1)
@@ -64,7 +77,7 @@ Device (S76D) {
         }
     }
 
-#if CONFIG_MAINBOARD_PCI_SUBSYSTEM_DEVICE_ID == 0x1325
+#if COLOR_KEYBOARD
     // Set KB LED Brightness
     Method (SKBL, 1, Serialized) {
         If (^^PCI0.LPCB.EC0.ECOK) {
@@ -89,7 +102,7 @@ Device (S76D) {
             Return (0)
         }
     }
-#elif CONFIG_MAINBOARD_PCI_SUBSYSTEM_DEVICE_ID == 0x1323
+#else
     // Get KB LED
     Method (GKBL, 0, Serialized) {
         Local0 = 0
@@ -110,7 +123,5 @@ Device (S76D) {
             ^^PCI0.LPCB.EC0.FCMD = 0xCA
         }
     }
-#else
-    #error Unknown Mainboard
 #endif
 }

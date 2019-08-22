@@ -13,26 +13,12 @@
  * GNU General Public License for more details.
  */
 
-#if CONFIG_MAINBOARD_PCI_SUBSYSTEM_DEVICE_ID == 0x1325
-    #define COLOR_KEYBOARD 1
-#elif CONFIG_MAINBOARD_PCI_SUBSYSTEM_DEVICE_ID == 0x1323
-    #define COLOR_KEYBOARD 0
-#else
-    #error Unknown Mainboard
-#endif
-
-Scope (\_SB) {
-    #include "ac.asl"
-    #include "battery.asl"
-    #include "buttons.asl"
-    #include "hid.asl"
-    #include "lid.asl"
-    #include "s76.asl"
-    #include "sleep.asl"
+/* Method called from _PTS prior to enter sleep state */
+Method (MPTS, 1) {
+	\_SB.PCI0.LPCB.EC0.PTS (Arg0)
 }
 
-#include "tbt.asl"
-
-Scope (_GPE) {
-    #include "gpe.asl"
+/* Method called from _WAK prior to wakeup */
+Method (MWAK, 1) {
+	\_SB.PCI0.LPCB.EC0.WAK (Arg0)
 }
