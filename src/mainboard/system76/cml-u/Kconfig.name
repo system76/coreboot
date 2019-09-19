@@ -2,4 +2,4 @@ config BOARD_SYSTEM76_GALP4
 	bool "galp4"
 
 config BOARD_SYSTEM76_DARP6
-	bool "darp5"
+	bool "darp6"
