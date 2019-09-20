@@ -343,7 +343,7 @@ static void southbridge_smi_apmc(void)
 		break;
 #endif
 	case APM_CNT_SMMSTORE:
-		if (IS_ENABLED(CONFIG_SMMSTORE))
+		if (CONFIG(SMMSTORE))
 			southbridge_smi_store();
 		break;
 	}
