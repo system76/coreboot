@@ -26,27 +26,52 @@ void mainboard_silicon_init_params(FSP_S_CONFIG *params) {
 	cnl_configure_pads(gpio_table, ARRAY_SIZE(gpio_table));
 }
 
-static int ec_cmd(u8 data) {
-	int i = 1000000;
-	while ((inb(0x66) & 2) == 2 && i > 0) {
-		i -= 1;
-	}
-	if (i == 0) {
-		return 1;
-	} else {
-		outb(data, 0x66);
-		return 0;
-	}
+static u8 superio_read(u8 reg) {
+	outb(reg, 0x2E);
+	return inb(0x2F);
+}
+
+static void superio_write(u8 reg, u8 value) {
+	outb(reg, 0x2E);
+	outb(value, 0x2F);
+}
+
+static u8 d2_read(u8 reg) {
+	superio_write(0x2E, reg);
+	return superio_read(0x2F);
+}
+
+static void d2_write(u8 reg, u8 value) {
+	superio_write(0x2E, reg);
+	superio_write(0x2F, value);
+}
+
+static u8 i2ec_read(u16 addr) {
+	d2_write(0x11, (u8)(addr >> 8));
+	d2_write(0x10, (u8)addr);
+	return d2_read(0x12);
+}
+
+static void i2ec_write(u16 addr, u8 value) {
+	d2_write(0x11, (u8)(addr >> 8));
+	d2_write(0x10, (u8)addr);
+	d2_write(0x12, value);
 }
 
 static void mainboard_init(struct device *dev) {
 	printk(BIOS_INFO, "system76: keyboard init\n");
 	pc_keyboard_init(NO_AUX_DEVICE);
 
-	// Rescan for EC devices - fixes camera toggle
 	printk(BIOS_INFO, "system76: EC init\n");
-	if (ec_cmd(0xA8)) {
-		printk(BIOS_ERR, "system76: failed to send EC command 0xA8\n");
+
+	// Black magic - force enable camera toggle
+	u16 addr = 0x01CA;
+	u8 value = i2ec_read(addr);
+	if ((value & (1 << 2)) == 0) {
+		printk(BIOS_INFO, "system76: enabling camera toggle\n");
+		i2ec_write(addr, value | (1 << 2));
+	} else {
+		printk(BIOS_INFO, "system76: camera toggle already enabled\n");
 	}
 }
 
