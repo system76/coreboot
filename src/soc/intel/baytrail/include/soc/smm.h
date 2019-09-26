@@ -16,30 +16,14 @@
 #ifndef _BAYTRAIL_SMM_H_
 #define _BAYTRAIL_SMM_H_
 
-/* There is a bug in the order of Kconfig includes in that arch/x86/Kconfig
- * is included after chipset code. This causes the chipset's Kconfig to be
- * clobbered by the arch/x86/Kconfig if they have the same name. */
-static inline int smm_region_size(void)
-{
-	/* Make it 8MiB by default. */
-	if (CONFIG_SMM_TSEG_SIZE == 0)
-		return (8 << 20);
-	return CONFIG_SMM_TSEG_SIZE;
-}
-
-uintptr_t smm_region_start(void);
-
-#if !defined(__PRE_RAM__) && !defined(__SMM___)
-#include <stdint.h>
-void southcluster_smm_clear_state(void);
-void southcluster_smm_enable_smi(void);
-void southcluster_smm_save_param(int param, uint32_t data);
-#endif
+#include <types.h>
 
 enum {
 	SMM_SAVE_PARAM_GPIO_ROUTE = 0,
 	SMM_SAVE_PARAM_PCIE_WAKE_ENABLE,
 	SMM_SAVE_PARAM_COUNT
 };
+
+void smm_southcluster_save_param(int param, uint32_t data);
 
 #endif /* _BAYTRAIL_SMM_H_ */

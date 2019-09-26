@@ -26,6 +26,9 @@ config CPU_SPECIFIC_OPTIONS
 	select TSC_CONSTANT_RATE
 	select HAVE_FSP_BIN
 	select CPU_INTEL_FIRMWARE_INTERFACE_TABLE
+	select SOC_INTEL_COMMON
+	select SOC_INTEL_COMMON_BLOCK
+	select SOC_INTEL_COMMON_BLOCK_IMC
 
 config VBOOT
 	select VBOOT_STARTS_IN_ROMSTAGE
@@ -70,14 +73,9 @@ config INTEGRATED_UART
 	bool "Integrated UART ports"
 	default y
 	select DRIVERS_UART_8250IO
-	select DRIVERS_UART_8250IO_SKIP_INIT
 	select CONSOLE_SERIAL
 	help
 	  Use Broadwell-DE Integrated UART ports @3F8h and 2F8h.
-
-config CONSOLE_CBMEM
-	bool "Send console output to a CBMEM buffer"
-	default n
 
 config SERIRQ_CONTINUOUS_MODE
 	bool
@@ -85,6 +83,14 @@ config SERIRQ_CONTINUOUS_MODE
 	help
 	  If you set this option to y, the serial IRQ machine will be
 	  operated in continuous mode.
+
+config DIMM_SPD_SIZE
+	int
+	default 512
+
+config HPET_MIN_TICKS
+	hex
+	default 0x80
 
 ## Broadwell-DE Specific FSP Kconfig
 source src/soc/intel/fsp_broadwell_de/fsp/Kconfig

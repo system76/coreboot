@@ -62,6 +62,8 @@ struct device_operations {
 	void (*acpi_fill_ssdt_generator)(struct device *dev);
 	void (*acpi_inject_dsdt_generator)(struct device *dev);
 	const char *(*acpi_name)(const struct device *dev);
+	/* Returns the optional _HID (Hardware ID) */
+	const char *(*acpi_hid)(const struct device *dev);
 #endif
 	const struct pci_operations *ops_pci;
 	const struct i2c_bus_operations *ops_i2c_bus;
@@ -219,6 +221,12 @@ void set_cpu_topology(struct device *cpu, unsigned int node,
 
 #define intel_cpu_topology(cpu, package, core, thread) \
 	set_cpu_topology(cpu, 0, package, core, thread)
+
+void mp_init_cpus(DEVTREE_CONST struct bus *cpu_bus);
+static inline void mp_cpu_bus_init(struct device *dev)
+{
+	mp_init_cpus(dev->link_list);
+}
 
 /* Debug functions */
 void print_resource_tree(const struct device *root, int debug_level,

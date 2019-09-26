@@ -1,8 +1,6 @@
 /*
  * This file is part of the coreboot project.
  *
- * Copyright 2016 Google, Inc.
- *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; version 2 of the License.
@@ -13,7 +11,7 @@
  * GNU General Public License for more details.
  */
 
-#include <arch/cpu.h>
+#include <arch/romstage.h>
 #include <cbmem.h>
 #include <console/console.h>
 #include <cpu/x86/mtrr.h>
@@ -33,7 +31,10 @@ void main(void)
 
 	console_init();
 
-	/* Recover cbmem so infrastruture using it is functional. */
+	/*
+	 * CBMEM needs to be recovered because timestamps rely on
+	 * the cbmem infrastructure being around. Explicitly recover it.
+	 */
 	cbmem_initialize();
 
 	timestamp_add_now(TS_START_POSTCAR);

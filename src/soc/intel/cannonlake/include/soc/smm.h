@@ -22,21 +22,12 @@
 #include <cpu/x86/smm.h>
 #include <soc/gpio.h>
 
-struct ied_header {
-	char signature[10];
-	u32 size;
-	u8 reserved[34];
-} __packed;
 
 struct smm_relocation_params {
 	uintptr_t ied_base;
 	size_t ied_size;
 	msr_t smrr_base;
 	msr_t smrr_mask;
-	msr_t emrr_base;
-	msr_t emrr_mask;
-	msr_t uncore_emrr_base;
-	msr_t uncore_emrr_mask;
 	/*
 	 * The smm_save_state_in_msrs field indicates if SMM save state
 	 * locations live in MSRs. This indicates to the CPUs how to adjust
@@ -44,16 +35,5 @@ struct smm_relocation_params {
 	 */
 	int smm_save_state_in_msrs;
 };
-
-/* Mainboard handler for eSPI SMIs */
-void mainboard_smi_espi_handler(void);
-
-void smm_relocation_handler(int cpu, uintptr_t curr_smbase,
-				uintptr_t staggered_smbase);
-void smm_info(uintptr_t *perm_smbase, size_t *perm_smsize,
-		size_t *smm_save_state_size);
-void smm_initialize(void);
-void smm_relocate(void);
-void smm_lock(void);
 
 #endif

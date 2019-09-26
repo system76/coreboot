@@ -1,9 +1,6 @@
 /*
  * This file is part of the coreboot project.
  *
- * Copyright 2016 Google Inc.
- * Copyright (C) 2016 Intel Corp.
- *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; version 2 of the License.
@@ -35,12 +32,13 @@ _start:
 	/* reset stack pointer to CAR stack */
 	mov	$_car_stack_end, %esp
 
-	/* clear CAR_GLOBAL area as it is not shared */
+	/* clear .bss section as it is not shared */
 	cld
 	xor	%eax, %eax
-	movl	$(_car_global_end), %ecx
-	movl	$(_car_global_start), %edi
+	movl	$(_ebss), %ecx
+	movl	$(_bss), %edi
 	sub	%edi, %ecx
+	shrl	$2, %ecx
 	rep	stosl
 
 #if ((ENV_VERSTAGE && CONFIG(VERSTAGE_DEBUG_SPINLOOP)) \
@@ -60,9 +58,7 @@ debug_spinloop:
 #endif
 	call	car_stage_entry
 
-/* This is here for linking purposes. */
-.weak car_stage_entry
-car_stage_entry:
+	/* Expect to never return. */
 1:
 	jmp	1b
 

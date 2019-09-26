@@ -1,10 +1,6 @@
 /*
  * This file is part of the coreboot project.
  *
- * Copyright (C) 2005 Linux Networx
- * (Written by Eric Biederman <ebiederman@lnxi.com> for Linux Networx)
- * Copyright (C) 2005 Ronald G. Minnich <rminnich@gmail.com>
- *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; version 2 of the License.
@@ -156,16 +152,14 @@ void cardbus_enable_resources(struct device *dev)
 
 	ctrl = pci_read_config16(dev, PCI_CB_BRIDGE_CONTROL);
 	ctrl |= (dev->link_list->bridge_ctrl & (
-			PCI_BRIDGE_CTL_PARITY |
-			PCI_BRIDGE_CTL_SERR |
 			PCI_BRIDGE_CTL_NO_ISA |
 			PCI_BRIDGE_CTL_VGA |
 			PCI_BRIDGE_CTL_MASTER_ABORT |
 			PCI_BRIDGE_CTL_BUS_RESET));
 	/* Error check */
-	ctrl |= (PCI_CB_BRIDGE_CTL_PARITY + PCI_CB_BRIDGE_CTL_SERR);
+	ctrl |= (PCI_CB_BRIDGE_CTL_PARITY | PCI_CB_BRIDGE_CTL_SERR);
 	printk(BIOS_DEBUG, "%s bridge ctrl <- %04x\n", dev_path(dev), ctrl);
-	pci_write_config16(dev, PCI_BRIDGE_CONTROL, ctrl);
+	pci_write_config16(dev, PCI_CB_BRIDGE_CONTROL, ctrl);
 
 	pci_dev_enable_resources(dev);
 }

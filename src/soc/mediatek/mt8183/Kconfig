@@ -15,12 +15,20 @@ config VBOOT
 	select VBOOT_MUST_REQUEST_DISPLAY
 	select VBOOT_STARTS_IN_BOOTBLOCK
 	select VBOOT_SEPARATE_VERSTAGE
+	select VBOOT_RETURN_FROM_VERSTAGE
 
 config DEBUG_DRAM
 	bool "Output verbose DRAM related debug messages"
 	default n
 	help
 	  This option enables additional DRAM related debug messages.
+
+config MT8183_DRAM_EMCP
+	bool
+	default n
+	help
+	  The eMCP platform should select this option to run at different DRAM
+	  frequencies.
 
 config MEMORY_TEST
 	bool

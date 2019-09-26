@@ -21,7 +21,6 @@
 /*
  * Management Engine PCI registers
  */
-#define PCI_ME_HFSTS1		0x40
 #define  ME_HFS_CWS_RESET	0
 #define  ME_HFS_CWS_INIT	1
 #define  ME_HFS_CWS_REC		2
@@ -48,30 +47,6 @@
 #define  ME_HFS_POWER_SOURCE_AC 1
 #define  ME_HFS_POWER_SOURCE_DC 2
 
-union me_hfs {
-	u32 data;
-	struct {
-	u32 working_state: 4;
-	u32 mfg_mode: 1;
-	u32 fpt_bad: 1;
-	u32 operation_state: 3;
-	u32 fw_init_complete: 1;
-	u32 ft_bup_ld_flr: 1;
-	u32 update_in_progress: 1;
-	u32 error_code: 4;
-	u32 operation_mode: 4;
-	u32 reset_count: 4;
-	u32 boot_options_present: 1;
-	u32 reserved1: 1;
-	u32 bist_test_state: 1;
-	u32 bist_reset_request: 1;
-	u32 current_power_source: 2;
-	u32 d3_support_valid: 1;
-	u32 d0i3_support_valid: 1;
-	} __packed fields;
-};
-
-#define PCI_ME_HFSTS2		0x48
 /* Infrastructure Progress Values */
 #define  ME_HFS2_PHASE_ROM		0
 #define  ME_HFS2_PHASE_UKERNEL		2
@@ -169,7 +144,6 @@ union me_hfs2 {
 	} __packed fields;
 };
 
-#define PCI_ME_HFSTS3			0x60
 #define  ME_HFS3_FW_SKU_CONSUMER	0x2
 #define  ME_HFS3_FW_SKU_CORPORATE	0x3
 
@@ -186,9 +160,6 @@ union me_hfs3 {
 	} __packed fields;
 };
 
-#define PCI_ME_HFSTS4			0x64
-#define PCI_ME_HFSTS5			0x68
-#define PCI_ME_HFSTS6			0x6c
 #define ME_HFS6_FPF_NOT_COMMITTED	0x0
 #define ME_HFS6_FPF_ERROR		0x2
 
@@ -202,19 +173,7 @@ union me_hfs6 {
 
 #define MKHI_GEN_GROUP_ID	0xff
 
-/* Reset Request  */
-#define MKHI_GLOBAL_RESET	0x0b
-
 #define MKHI_GET_FW_VERSION	0x02
-
-#define GR_ORIGIN_BIOS_MEM_INIT	0x01
-#define GR_ORIGIN_BIOS_POST	0x02
-#define GR_ORIGIN_MEBX	0x03
-
-#define GLOBAL_RST_TYPE	0x01
-
-#define BIOS_HOST_ADD	0x00
-#define HECI_MKHI_ADD	0x07
 
 void intel_me_status(void);
 int send_global_reset(void);

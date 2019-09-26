@@ -15,34 +15,11 @@
  */
 
 #include <device/device.h>
+#include <pc80/mc146818rtc.h>
+#include <cf9_reset.h>
 #include <smbios.h>
-#if CONFIG(VGA_ROM_RUN)
-#include <x86emu/x86emu.h>
-#endif
-
-#define BMC_KCS_BASE 0xca2
-#define INTERFACE_IS_IO 0x1
-
-#if CONFIG(GENERATE_SMBIOS_TABLES)
-static int mainboard_smbios_data(struct device *dev, int *handle,
-				 unsigned long *current)
-{
-	int len = 0;
-
-	// add IPMI Device Information
-	len += smbios_write_type38(
-		current, handle,
-		SMBIOS_BMC_INTERFACE_KCS,
-		0x20,				// IPMI Version
-		0x20,				// I2C address
-		0xff,				// no NV storage
-		BMC_KCS_BASE | INTERFACE_IS_IO, // IO port interface address
-		0x40,
-		0); // no IRQ
-
-	return len;
-}
-#endif
+#include <string.h>
+#include "ipmi.h"
 
 /*
  * mainboard_enable is executed as first thing after enumerate_buses().
@@ -50,18 +27,31 @@ static int mainboard_smbios_data(struct device *dev, int *handle,
  */
 static void mainboard_enable(struct device *dev)
 {
-#if CONFIG(GENERATE_SMBIOS_TABLES)
-	dev->ops->get_smbios_data = mainboard_smbios_data;
-#endif
+	ipmi_oem_rsp_t rsp;
 
-	/* Enable access to the BMC IPMI via KCS */
-	struct device *lpc_sio_dev = dev_find_slot_pnp(BMC_KCS_BASE, 0);
-	struct resource *res = new_resource(lpc_sio_dev, BMC_KCS_BASE);
-	res->base = BMC_KCS_BASE;
-	res->size = 1;
-	res->flags = IORESOURCE_IO | IORESOURCE_ASSIGNED | IORESOURCE_FIXED;
+	if (is_ipmi_clear_cmos_set(&rsp)) {
+		/* TODO: Should also try to restore CMOS to cmos.default
+		 * if USE_OPTION_TABLE is set */
+		cmos_init(1);
+		clear_ipmi_flags(&rsp);
+		system_reset();
+	}
 }
 
 struct chip_operations mainboard_ops = {
 	.enable_dev = mainboard_enable,
 };
+
+void smbios_fill_dimm_locator(const struct dimm_info *dimm, struct smbios_type17 *t)
+{
+
+	char locator[64] = {0};
+
+	snprintf(locator, sizeof(locator), "DIMM_%c%u", 'A' + dimm->channel_num,
+		 dimm->dimm_num);
+	t->device_locator = smbios_add_string(t->eos, locator);
+
+	snprintf(locator, sizeof(locator), "_Node0_Channel%d_Dimm%d", dimm->channel_num,
+		 dimm->dimm_num);
+	t->bank_locator = smbios_add_string(t->eos, locator);
+}

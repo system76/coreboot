@@ -1,8 +1,6 @@
 ##
 ## This file is part of the coreboot project.
 ##
-## Copyright (C) 2013 Gerd Hoffmann <kraxel@redhat.com>
-##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
 ## the Free Software Foundation; version 2 of the License.
@@ -21,6 +19,6 @@ config CPU_QEMU_X86
 	select ARCH_RAMSTAGE_X86_32
 	select SMP
 	select UDELAY_TSC
-	select NO_MONOTONIC_TIMER
+	select TSC_MONOTONIC_TIMER
 	select C_ENVIRONMENT_BOOTBLOCK
 	select SMM_ASEG

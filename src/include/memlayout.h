@@ -30,24 +30,6 @@
 #define ARCH_CACHELINE_ALIGN_SIZE 64
 #endif
 
-/* Default to data as well as bss. */
-#ifndef ARCH_STAGE_HAS_DATA_SECTION
-#define ARCH_STAGE_HAS_DATA_SECTION 1
-#endif
-
-#ifndef ARCH_STAGE_HAS_BSS_SECTION
-#define ARCH_STAGE_HAS_BSS_SECTION 1
-#endif
-
-/*
- * Default is that currently ENV_PAYLOAD_LOADER enable stage, smm,
- * and rmodules have a heap.
- */
-#ifndef ARCH_STAGE_HAS_HEAP_SECTION
-#define ARCH_STAGE_HAS_HEAP_SECTION (ENV_PAYLOAD_LOADER || ENV_SMM || \
-		ENV_RMODULE)
-#endif
-
 #define STR(x) #x
 
 #define ALIGN_COUNTER(align) \
@@ -91,7 +73,7 @@
 	ALIAS_REGION(cbfs_cache, preram_cbfs_cache) \
 	ALIAS_REGION(cbfs_cache, postram_cbfs_cache)
 
-#if defined(__PRE_RAM__)
+#if ENV_ROMSTAGE_OR_BEFORE
 	#define PRERAM_CBFS_CACHE(addr, size) \
 		REGION(preram_cbfs_cache, addr, size, 4) \
 		ALIAS_REGION(preram_cbfs_cache, cbfs_cache)

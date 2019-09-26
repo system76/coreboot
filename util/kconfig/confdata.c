@@ -764,12 +764,22 @@ next_menu:
 	return 0;
 }
 
+
+int conf_mktemp(const char *path, char *tmpfile)
+{
+	if (snprintf(tmpfile, PATH_MAX, "%s.tmp.XXXXXX", path) >= PATH_MAX) {
+		errno = EOVERFLOW;
+		return -1;
+	}
+	return mkstemp(tmpfile);
+}
+
 int conf_write(const char *name)
 {
 	FILE *out;
 	struct symbol *sym;
 	struct menu *menu;
-	const char *basename;
+	const char *basename = NULL;
 	const char *str;
 	char dirname[PATH_MAX+1], tmpname[PATH_MAX+1], newname[PATH_MAX+1];
 	char *env;
@@ -777,13 +787,20 @@ int conf_write(const char *name)
 	dirname[0] = 0;
 	if (name && name[0]) {
 		struct stat st;
-		char *slash;
 
 		if (!stat(name, &st) && S_ISDIR(st.st_mode)) {
 			strcpy(dirname, name);
 			strcat(dirname, "/");
 			basename = conf_get_configname();
-		} else if ((slash = strrchr(name, '/'))) {
+		}
+	} else {
+		name = conf_get_configname();
+	}
+
+	if (!basename) {
+		char *slash = strrchr(name, '/');
+
+		if (slash) {
 			int size = slash - name + 1;
 			memcpy(dirname, name, size);
 			dirname[size] = 0;
@@ -791,15 +808,15 @@ int conf_write(const char *name)
 				basename = slash + 1;
 			else
 				basename = conf_get_configname();
-		} else
+		} else {
 			basename = name;
-	} else
-		basename = conf_get_configname();
+		}
+	}
 
 	sprintf(newname, "%s%s", dirname, basename);
 	env = getenv("KCONFIG_OVERWRITECONFIG");
 	if (!env || !*env) {
-		sprintf(tmpname, "%s.tmpconfig.%d", dirname, (int)getpid());
+		conf_mktemp(newname, tmpname);
 		out = fopen(tmpname, "w");
 	} else {
 		*tmpname = 0;
@@ -984,7 +1001,6 @@ out:
 int conf_write_autoconf(void)
 {
 	struct symbol *sym;
-	const char *name;
 	FILE *out, *tristate, *out_h;
 	int i;
 	int print_negatives;
@@ -1001,49 +1017,41 @@ int conf_write_autoconf(void)
 	if (conf_split_config())
 		return 1;
 
-	char *tmpconfig_name = malloc(PATH_MAX);
-	if (getenv("COREBOOT_BUILD_DIR")) {
-		sprintf(tmpconfig_name, "%s/.tmpconfig.XXXXXX",
-			getenv("COREBOOT_BUILD_DIR"));
-	} else {
-		tmpconfig_name = strdup(".tmpconfig.XXXXXX");
-	}
-	if ((i = mkstemp(tmpconfig_name)) == -1)
-		return 1;
+	char tmpconfig_name[PATH_MAX];
+	const char *config_name = conf_get_autoconfig_name();
+
+	i = conf_mktemp(config_name, tmpconfig_name);
+	if (i == -1)
+		goto error_auto_conf_cmd_tmp;
 	out = fdopen(i, "w");
 	if (!out)
-		return 1;
+		goto error_auto_conf_cmd_open;
 
-	char *tmpconfig_triname = malloc(PATH_MAX);
-	if (getenv("COREBOOT_BUILD_DIR")) {
-		sprintf(tmpconfig_triname, "%s/.tmpconfig_tristate.XXXXXX",
-			getenv("COREBOOT_BUILD_DIR"));
-	} else {
-		tmpconfig_triname = strdup(".tmpconfig_tristate.XXXXXX");
-	}
-	if ((i = mkstemp(tmpconfig_triname)) == -1)
-		return 1;
+	char tmpconfig_triname[PATH_MAX];
+	const char *config_triname = getenv("KCONFIG_TRISTATE");
+	if (!config_triname)
+		config_triname = "include/config/tristate.conf";
+
+	i = conf_mktemp(config_triname, tmpconfig_triname);
+	if (i == -1)
+		goto error_tristate_tmp;
+
 	tristate = fdopen(i, "w");
-	if (!tristate) {
-		fclose(out);
-		return 1;
-	}
+	if (!tristate)
+		goto error_tristate_open;
 
-	char *tmpconfig_h = malloc(PATH_MAX);
-	if (getenv("COREBOOT_BUILD_DIR")) {
-		sprintf(tmpconfig_h, "%s/.tmpconfig_tristate.XXXXXX",
-			getenv("COREBOOT_BUILD_DIR"));
-	} else {
-		tmpconfig_h = strdup(".tmpconfig_tristate.XXXXXX");
-	}
-	if ((i = mkstemp(tmpconfig_h)) == -1)
-		return 1;
+	char tmpconfig_h[PATH_MAX];
+	const char *config_h = getenv("KCONFIG_AUTOHEADER");
+	if (!config_h)
+		config_h = "include/generated/autoconf.h";
+
+	i = conf_mktemp(config_h, tmpconfig_h);
+	if (i == -1)
+		goto error_auto_conf_h_tmp;
+
 	out_h = fdopen(i, "w");
-	if (!out_h) {
-		fclose(out);
-		fclose(tristate);
-		return 1;
-	}
+	if (!out_h)
+		goto error_auto_conf_h_open;
 
 	conf_write_heading(out, &kconfig_printer_cb, NULL);
 
@@ -1077,25 +1085,38 @@ int conf_write_autoconf(void)
 	fclose(tristate);
 	fclose(out_h);
 
-	name = getenv("KCONFIG_AUTOHEADER");
-	if (!name)
-		name = "include/generated/autoconf.h";
-	if (rename(tmpconfig_h, name))
+	if (rename(tmpconfig_h, config_h))
 		return 1;
-	name = getenv("KCONFIG_TRISTATE");
-	if (!name)
-		name = "include/config/tristate.conf";
-	if (rename(tmpconfig_triname, name))
+
+	if (rename(tmpconfig_triname, config_triname))
 		return 1;
-	name = conf_get_autoconfig_name();
+
 	/*
 	 * This must be the last step, kbuild has a dependency on auto.conf
 	 * and this marks the successful completion of the previous steps.
 	 */
-	if (rename(tmpconfig_name, name))
+	if (rename(tmpconfig_name, config_name))
 		return 1;
 
 	return 0;
+
+error_auto_conf_h_open:
+	unlink(tmpconfig_h);
+
+error_auto_conf_h_tmp:
+	fclose(tristate);
+
+error_tristate_open:
+	unlink(tmpconfig_triname);
+
+error_tristate_tmp:
+	fclose(out);
+
+error_auto_conf_cmd_open:
+	unlink(tmpconfig_name);
+
+error_auto_conf_cmd_tmp:
+	return 1;
 }
 
 static int sym_change_count;

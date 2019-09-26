@@ -100,6 +100,7 @@ int spi_flash_cmd(const struct spi_slave *spi, u8 cmd, void *response, size_t le
 #pragma GCC diagnostic push
 #if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic ignored "-Wstack-usage="
+#pragma GCC diagnostic ignored "-Wvla"
 #endif
 int spi_flash_cmd_write(const struct spi_slave *spi, const u8 *cmd,
 			size_t cmd_len, const void *data, size_t data_len)
@@ -281,38 +282,38 @@ static struct {
 } flashes[] = {
 	/* Keep it sorted by define name */
 #if CONFIG(SPI_FLASH_AMIC)
-	{ 0, 0x37, spi_flash_probe_amic, },
+	{ 0, VENDOR_ID_AMIC, spi_flash_probe_amic, },
 #endif
 #if CONFIG(SPI_FLASH_ATMEL)
-	{ 0, 0x1f, spi_flash_probe_atmel, },
+	{ 0, VENDOR_ID_ATMEL, spi_flash_probe_atmel, },
 #endif
 #if CONFIG(SPI_FLASH_EON)
-	{ 0, 0x1c, spi_flash_probe_eon, },
+	{ 0, VENDOR_ID_EON, spi_flash_probe_eon, },
 #endif
 #if CONFIG(SPI_FLASH_GIGADEVICE)
-	{ 0, 0xc8, spi_flash_probe_gigadevice, },
+	{ 0, VENDOR_ID_GIGADEVICE, spi_flash_probe_gigadevice, },
 #endif
 #if CONFIG(SPI_FLASH_MACRONIX)
-	{ 0, 0xc2, spi_flash_probe_macronix, },
+	{ 0, VENDOR_ID_MACRONIX, spi_flash_probe_macronix, },
 #endif
 #if CONFIG(SPI_FLASH_SPANSION)
-	{ 0, 0x01, spi_flash_probe_spansion, },
+	{ 0, VENDOR_ID_SPANSION, spi_flash_probe_spansion, },
 #endif
 #if CONFIG(SPI_FLASH_SST)
-	{ 0, 0xbf, spi_flash_probe_sst, },
+	{ 0, VENDOR_ID_SST, spi_flash_probe_sst, },
 #endif
 #if CONFIG(SPI_FLASH_STMICRO)
-	{ 0, 0x20, spi_flash_probe_stmicro, },
+	{ 0, VENDOR_ID_STMICRO, spi_flash_probe_stmicro, },
 #endif
 #if CONFIG(SPI_FLASH_WINBOND)
-	{ 0, 0xef, spi_flash_probe_winbond, },
+	{ 0, VENDOR_ID_WINBOND, spi_flash_probe_winbond, },
 #endif
 	/* Keep it sorted by best detection */
 #if CONFIG(SPI_FLASH_STMICRO)
-	{ 0, 0xff, spi_flash_probe_stmicro, },
+	{ 0, VENDOR_ID_STMICRO_FF, spi_flash_probe_stmicro, },
 #endif
 #if CONFIG(SPI_FLASH_ADESTO)
-	{ 0, 0x1f, spi_flash_probe_adesto, },
+	{ 0, VENDOR_ID_ADESTO, spi_flash_probe_adesto, },
 #endif
 };
 #define IDCODE_LEN (IDCODE_CONT_LEN + IDCODE_PART_LEN)

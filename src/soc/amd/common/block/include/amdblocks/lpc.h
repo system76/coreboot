@@ -17,6 +17,7 @@
 #define __AMDBLOCKS_LPC_H__
 
 #include <types.h>
+#include <stdint.h>
 
 /* PCI registers for D14F3 */
 #define LPC_PCI_CONTROL			0x40
@@ -67,6 +68,7 @@
 #define   DECODE_IO_PORT_ENABLE2	BIT(18)
 #define   DECODE_IO_PORT_ENABLE1	BIT(17)
 #define   DECODE_IO_PORT_ENABLE0	BIT(16)
+#define   LPC_SYNC_TIMEOUT_COUNT_MASK	(0xff << 8)
 #define   LPC_SYNC_TIMEOUT_COUNT_ENABLE	BIT(7)
 #define   LPC_DECODE_RTC_IO_ENABLE	BIT(6)
 #define   DECODE_MEM_PORT_ENABLE0	BIT(5)
@@ -88,6 +90,14 @@
 #define   DECODE_IO_PORT_ENABLE0_H	BIT(0)
 
 #define LPC_MEM_PORT1			0x4c
+#define ROM_PROTECT_RANGE0		0x50
+#define   ROM_BASE_MASK			0xfffff000		/* bits 31-12 */
+#define   ROM_RANGE_WP			BIT(10)
+#define   ROM_RANGE_RP			BIT(9)
+#define   RANGE_UNIT			BIT(8)
+#define   RANGE_ADDR_MASK		0x000000ff		/* Range defined by bits 7-0 */
+#define ROM_PROTECT_RANGE_REG(n)	(ROM_PROTECT_RANGE0 + (4 * n))
+#define MAX_ROM_PROTECT_RANGES		4
 #define LPC_MEM_PORT0			0x60
 
 /* Register 0x64 is 32-bit, composed by two 16-bit sub-registers.
@@ -133,6 +143,9 @@
 #define   PREFETCH_EN_SPI_FROM_HOST	BIT(0)
 #define   T_START_ENH			BIT(3)
 
+/* Clear all decoding to the LPC bus and erase any range registers associated
+ * with the enable bits. */
+void lpc_disable_decodes(void);
 /* LPC is typically enabled very early, but this function is last opportunity */
 void soc_late_lpc_bridge_enable(void);
 void lpc_enable_port80(void);

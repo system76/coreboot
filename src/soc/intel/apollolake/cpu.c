@@ -30,6 +30,8 @@
 #include <cpu/x86/msr.h>
 #include <cpu/x86/mtrr.h>
 #include <cpu/x86/smm.h>
+#include <cpu/intel/em64t100_save_state.h>
+#include <cpu/intel/smm_reloc.h>
 #include <device/device.h>
 #include <device/pci.h>
 #include <fsp/api.h>
@@ -38,7 +40,6 @@
 #include <intelblocks/mp_init.h>
 #include <intelblocks/msr.h>
 #include <intelblocks/sgx.h>
-#include <intelblocks/smm.h>
 #include <reg_script.h>
 #include <romstage_handoff.h>
 #include <soc/cpu.h>
@@ -255,7 +256,7 @@ static void post_mp_init(void)
 	smm_southbridge_enable(PWRBTN_EN | GBL_EN);
 
 	if (CONFIG(SOC_INTEL_COMMON_BLOCK_SGX))
-		mp_run_on_all_cpus(sgx_configure, NULL, 2000);
+		mp_run_on_all_cpus(sgx_configure, NULL);
 }
 
 static const struct mp_ops mp_ops = {

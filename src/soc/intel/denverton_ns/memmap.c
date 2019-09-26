@@ -14,8 +14,10 @@
  * GNU General Public License for more details.
  */
 
+#include <arch/romstage.h>
 #include <cbmem.h>
 #include <assert.h>
+#include <cpu/x86/mtrr.h>
 #include <cpu/x86/smm.h>
 #include <device/device.h>
 #include <device/pci_def.h>
@@ -76,32 +78,19 @@ void smm_region(uintptr_t *start, size_t *size)
 	*size = smm_region_size();
 }
 
-int smm_subregion(int sub, uintptr_t *start, size_t *size)
+void fill_postcar_frame(struct postcar_frame *pcf)
 {
-	uintptr_t sub_base;
-	size_t sub_size;
-	const size_t cache_size = CONFIG_SMM_RESERVED_SIZE;
+	uintptr_t top_of_ram;
 
-	smm_region(&sub_base, &sub_size);
-	assert(sub_size > CONFIG_SMM_RESERVED_SIZE);
+	/*
+	 * We need to make sure ramstage will be run cached. At this point exact
+	 * location of ramstage in cbmem is not known. Instruct postcar to cache
+	 * 16 megs under cbmem top which is a safe bet to cover ramstage.
+	 */
+	top_of_ram = (uintptr_t)cbmem_top();
+	postcar_frame_add_mtrr(pcf, top_of_ram - 16 * MiB, 16 * MiB,
+			       MTRR_TYPE_WRBACK);
 
-	switch (sub) {
-	case SMM_SUBREGION_HANDLER:
-		/* Handler starts at the base of TSEG. */
-		sub_size -= cache_size;
-		break;
-	case SMM_SUBREGION_CACHE:
-		/* External cache is in the middle of TSEG. */
-		sub_base += sub_size - cache_size;
-		sub_size = cache_size;
-		break;
-	default:
-		*start = 0;
-		*size = 0;
-		return -1;
-	}
-
-	*start = sub_base;
-	*size = sub_size;
-	return 0;
+	/* Cache the TSEG region */
+	postcar_enable_tseg_cache(pcf);
 }

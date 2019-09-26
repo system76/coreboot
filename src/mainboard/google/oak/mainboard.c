@@ -22,8 +22,6 @@
 #include <device/device.h>
 #include <drivers/parade/ps8640/ps8640.h>
 #include <edid.h>
-
-#include <elog.h>
 #include <gpio.h>
 #include <soc/da9212.h>
 #include <soc/ddp.h>
@@ -234,7 +232,7 @@ static void display_startup(void)
 	edid_set_framebuffer_bits_per_pixel(&edid, 32, 0);
 
 	mtk_ddp_init();
-	ret = mtk_dsi_init(mipi_dsi_flags, MIPI_DSI_FMT_RGB888, 4, &edid);
+	ret = mtk_dsi_init(mipi_dsi_flags, MIPI_DSI_FMT_RGB888, 4, &edid, NULL);
 	if (ret < 0) {
 		printk(BIOS_ERR, "dsi init fail\n");
 		return;

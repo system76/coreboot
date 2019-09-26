@@ -30,7 +30,6 @@
 #include <ec/google/chromeec/ec.h>
 #include <intelblocks/cpulib.h>
 #include <intelblocks/lpc_lib.h>
-#include <intelblocks/p2sb.h>
 #include <intelblocks/sgx.h>
 #include <intelblocks/uart.h>
 #include <intelblocks/systemagent.h>
@@ -39,7 +38,6 @@
 #include <soc/cpu.h>
 #include <soc/iomap.h>
 #include <soc/msr.h>
-#include <soc/p2sb.h>
 #include <soc/pci_devs.h>
 #include <soc/pm.h>
 #include <soc/ramstage.h>
@@ -350,25 +348,26 @@ void acpi_fill_fadt(acpi_fadt_t *fadt)
 	fadt->x_gpe1_blk.addrh = 0x0;
 }
 
-static void generate_c_state_entries(int s0ix_enable, int max_cstate)
+static void write_c_state_entries(acpi_cstate_t *map, const int *set, size_t max_c_state)
 {
-
-	acpi_cstate_t map[max_cstate];
-	int *set;
-	int i;
-
-	if (s0ix_enable)
-		set = cstate_set_s0ix;
-	else
-		set = cstate_set_non_s0ix;
-
-	for (i = 0; i < max_cstate; i++) {
+	for (size_t i = 0; i < max_c_state; i++) {
 		memcpy(&map[i], &cstate_map[set[i]], sizeof(acpi_cstate_t));
 		map[i].ctype = i + 1;
 	}
 
 	/* Generate C-state tables */
-	acpigen_write_CST_package(map, ARRAY_SIZE(map));
+	acpigen_write_CST_package(map, max_c_state);
+}
+
+static void generate_c_state_entries(int s0ix_enable)
+{
+	if (s0ix_enable) {
+		acpi_cstate_t map[ARRAY_SIZE(cstate_set_s0ix)];
+		write_c_state_entries(map, cstate_set_s0ix, ARRAY_SIZE(map));
+	} else {
+		acpi_cstate_t map[ARRAY_SIZE(cstate_set_non_s0ix)];
+		write_c_state_entries(map, cstate_set_non_s0ix, ARRAY_SIZE(map));
+	}
 }
 
 static int calculate_power(int tdp, int p1_ratio, int ratio)
@@ -506,12 +505,6 @@ void generate_cpu_entries(struct device *device)
 	int numcpus = totalcores/cores_per_package;
 	config_t *config = config_of_path(SA_DEVFN_ROOT);
 	int is_s0ix_enable = config->s0ix_enable;
-	int max_c_state;
-
-	if (is_s0ix_enable)
-		max_c_state = ARRAY_SIZE(cstate_set_s0ix);
-	else
-		max_c_state = ARRAY_SIZE(cstate_set_non_s0ix);
 
 	printk(BIOS_DEBUG, "Found %d CPU(s) with %d core(s) each.\n",
 	       numcpus, cores_per_package);
@@ -534,8 +527,7 @@ void generate_cpu_entries(struct device *device)
 				cpu_id*cores_per_package+core_id,
 				pcontrol_blk, plen);
 			/* Generate C-state tables */
-			generate_c_state_entries(is_s0ix_enable,
-				max_c_state);
+			generate_c_state_entries(is_s0ix_enable);
 
 			if (config->eist_enable) {
 				/* Generate P-state tables */
@@ -581,30 +573,20 @@ static unsigned long acpi_fill_dmar(unsigned long current)
 		acpi_dmar_rmrr_fixup(tmp, current);
 	}
 
-	struct device *const p2sb_dev = pcidev_path_on_root(PCH_DEVFN_P2SB);
 	const u32 vtvc0bar = MCHBAR32(VTVC0BAR) & ~0xfff;
 	const bool vtvc0en = MCHBAR32(VTVC0BAR) & 1;
 
 	/* General VTBAR has to be set and in 32-bit space. */
-	if (p2sb_dev && vtvc0bar && vtvc0en && !MCHBAR32(VTVC0BAR + 4)) {
+	if (vtvc0bar && vtvc0en && !MCHBAR32(VTVC0BAR + 4)) {
 		const unsigned long tmp = current;
 
-		/* P2SB may already be hidden. There's no clear rule, when. */
-		const u8 p2sb_hidden =
-			pci_read_config8(p2sb_dev, PCH_P2SB_E0 + 1);
-		pci_write_config8(p2sb_dev, PCH_P2SB_E0 + 1, 0);
+		current += acpi_create_dmar_drhd(current, DRHD_INCLUDE_PCI_ALL, 0, vtvc0bar);
 
-		const u16 ibdf = pci_read_config16(p2sb_dev, PCH_P2SB_IBDF);
-		const u16 hbdf = pci_read_config16(p2sb_dev, PCH_P2SB_HBDF);
+		current += acpi_create_dmar_ds_ioapic(current, 2, V_P2SB_IBDF_BUS,
+						      V_P2SB_IBDF_DEV, V_P2SB_IBDF_FUN);
 
-		pci_write_config8(p2sb_dev, PCH_P2SB_E0 + 1, p2sb_hidden);
-
-		current += acpi_create_dmar_drhd(current,
-				DRHD_INCLUDE_PCI_ALL, 0, vtvc0bar);
-		current += acpi_create_dmar_ds_ioapic(current,
-				2, ibdf >> 8, PCI_SLOT(ibdf), PCI_FUNC(ibdf));
-		current += acpi_create_dmar_ds_msi_hpet(current,
-				0, hbdf >> 8, PCI_SLOT(hbdf), PCI_FUNC(hbdf));
+		current += acpi_create_dmar_ds_msi_hpet(current, 0, V_P2SB_HBDF_BUS,
+							V_P2SB_HBDF_DEV, V_P2SB_HBDF_FUN);
 
 		acpi_dmar_drhd_fixup(tmp, current);
 	}
@@ -811,6 +793,10 @@ const char *soc_acpi_name(const struct device *dev)
 	case PCH_DEVFN_PCIE10:	return "RP10";
 	case PCH_DEVFN_PCIE11:	return "RP11";
 	case PCH_DEVFN_PCIE12:	return "RP12";
+	case PCH_DEVFN_PCIE13:	return "RP13";
+	case PCH_DEVFN_PCIE14:	return "RP14";
+	case PCH_DEVFN_PCIE15:	return "RP15";
+	case PCH_DEVFN_PCIE16:	return "RP16";
 	case PCH_DEVFN_UART0:	return "UAR0";
 	case PCH_DEVFN_UART1:	return "UAR1";
 	case PCH_DEVFN_GSPI0:	return "SPI0";

@@ -25,7 +25,6 @@ config BOARD_SPECIFIC_OPTIONS
 	select MAINBOARD_HAS_TPM2
 	select PLATFORM_USES_FSP2_0
 	select UDK_2015_BINDING
-	select POSTCAR_STAGE
 
 
 config MAINBOARD_DIR
@@ -95,12 +94,10 @@ config FSP_DEBUG_ALL
 # Enable display and verification for coreboot build tests
 	select DISPLAY_HOBS
 	select DISPLAY_MTRRS
-	select DISPLAY_SMM_MEMORY_MAP
 	select DISPLAY_UPD_DATA
 	select DISPLAY_ESRAM_LAYOUT
 	select DISPLAY_FSP_CALLS_AND_STATUS
 	select DISPLAY_FSP_HEADER
-	select POSTCAR_CONSOLE
 	select VERIFY_HOBS
 	help
 	  Turn on debug support to display HOBS, MTRRS, SMM_MEMORY_MAP, UPD_DATA

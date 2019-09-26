@@ -1,8 +1,6 @@
 #
 # This file is part of the coreboot project.
 #
-# Copyright (C) 2012 Advanced Micro Devices, Inc.
-#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; version 2 of the License.
@@ -14,8 +12,6 @@
 #
 
 romstage-y += fixme.c
-romstage-y += update_microcode.c
-romstage-y += microcode_fam16h.c
 
 ramstage-y += fixme.c
 ramstage-y += chip_name.c

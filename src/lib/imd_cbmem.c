@@ -41,7 +41,7 @@
  */
 #define CAN_USE_GLOBALS \
 	(!CONFIG(ARCH_X86) || ENV_RAMSTAGE || ENV_POSTCAR || \
-	 CONFIG(NO_CAR_GLOBAL_MIGRATION))
+	 !CONFIG(CAR_GLOBAL_MIGRATION))
 
 static inline struct imd *cbmem_get_imd(void)
 {
@@ -172,14 +172,13 @@ int cbmem_initialize_id_size(u32 id, u64 size)
 	if (imd_recover(imd))
 		return 1;
 
-#if defined(__PRE_RAM__)
 	/*
 	 * Lock the imd in romstage on a recovery. The assumption is that
 	 * if the imd area was recovered in romstage then S3 resume path
 	 * is being taken.
 	 */
-	imd_lockdown(imd);
-#endif
+	if (ENV_ROMSTAGE)
+		imd_lockdown(imd);
 
 	/* Add the specified range first */
 	if (size)

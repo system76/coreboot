@@ -78,6 +78,11 @@ config CPU_SPECIFIC_OPTIONS
 	select TSC_SYNC_MFENCE
 	select UDELAY_TSC
 
+config FSP_HYPERTHREADING
+	bool "Enable Hyper-Threading"
+	depends on MAINBOARD_USES_FSP2_0
+	default y
+
 config CPU_INTEL_NUM_FIT_ENTRIES
 	int
 	default 10
@@ -92,8 +97,6 @@ config USE_FSP2_0_DRIVER
 	select PLATFORM_USES_FSP2_0
 	select UDK_2015_BINDING
 	select INTEL_GMA_ADD_VBT if RUN_FSP_GOP
-	select POSTCAR_CONSOLE
-	select POSTCAR_STAGE
 
 config USE_FSP1_1_DRIVER
 	def_bool y
@@ -303,5 +306,9 @@ config SOC_INTEL_COMMON_LPSS_UART_CLK_N_VAL
 config IFD_CHIPSET
 	string
 	default "sklkbl"
+
+config INTEL_TXT_BIOSACM_ALIGNMENT
+	hex
+	default 0x40000 # 256KB
 
 endif

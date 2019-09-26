@@ -28,7 +28,6 @@
 #include <soc/iosf.h>
 #include <soc/pci_devs.h>
 #include <soc/ramstage.h>
-#include <soc/smm.h>
 #include <vendorcode/google/chromeos/chromeos.h>
 #include <stddef.h>
 
@@ -72,7 +71,7 @@
 
 uint32_t nc_read_top_of_low_memory(void)
 {
-	MAYBE_STATIC uint32_t tolm = 0;
+	MAYBE_STATIC_BSS uint32_t tolm = 0;
 
 	if (tolm)
 		return tolm;

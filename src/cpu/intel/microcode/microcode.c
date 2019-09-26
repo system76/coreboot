@@ -1,9 +1,6 @@
 /*
  * This file is part of the coreboot project.
  *
- * Copyright (C) 2012 The ChromiumOS Authors.  All rights reserved.
- * Copyright (C) 2000 Ronald G. Minnich
- *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; version 2 of the License.
@@ -27,11 +24,9 @@
 #include <arch/cpu.h>
 #include <cpu/x86/msr.h>
 #include <cpu/intel/microcode.h>
-
-#if !defined(__PRE_RAM__)
 #include <smp/spinlock.h>
+
 DECLARE_SPIN_LOCK(microcode_lock)
-#endif
 
 struct microcode {
 	u32 hdrver;	/* Header Version */
@@ -228,15 +223,11 @@ void intel_update_microcode_from_cbfs(void)
 {
 	const void *patch = intel_microcode_find();
 
-#if !defined(__ROMCC__) && !defined(__PRE_RAM__)
 	spin_lock(&microcode_lock);
-#endif
 
 	intel_microcode_load_unlocked(patch);
 
-#if !defined(__ROMCC__) && !defined(__PRE_RAM__)
 	spin_unlock(&microcode_lock);
-#endif
 }
 
 #if ENV_RAMSTAGE

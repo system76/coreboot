@@ -1,9 +1,6 @@
 /*
  * This file is part of the coreboot project.
  *
- * Copyright (C) 2007 Advanced Micro Devices, Inc.
- * Copyright (C) 2009-2010 coresystems GmbH
- *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; version 2 of the License.
@@ -19,8 +16,6 @@
 #include <arch/registers.h>
 #include <boot/coreboot_tables.h>
 #include <console/console.h>
-#include <cpu/amd/lxdef.h>
-#include <cpu/amd/vr.h>
 #include <delay.h>
 #include <device/pci.h>
 #include <device/pci_ids.h>

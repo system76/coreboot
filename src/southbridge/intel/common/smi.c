@@ -21,7 +21,7 @@
 #include <arch/io.h>
 #include <cpu/x86/cache.h>
 #include <cpu/x86/smm.h>
-#include <cpu/intel/smm/gen1/smi.h>
+#include <cpu/intel/smm_reloc.h>
 #include <southbridge/intel/common/pmbase.h>
 #include <southbridge/intel/common/pmutil.h>
 
@@ -34,7 +34,7 @@ u16 get_pmbase(void)
 	return lpc_get_pmbase();
 }
 
-void southbridge_smm_init(void)
+void smm_southbridge_enable_smi(void)
 {
 	u32 smi_en;
 	u16 pm1_en;
@@ -123,7 +123,7 @@ void smm_setup_structures(void *gnvs, void *tcg, void *smi1)
 	);
 }
 
-void southbridge_smm_clear_state(void)
+void smm_southbridge_clear_state(void)
 {
 	u32 smi_en;
 

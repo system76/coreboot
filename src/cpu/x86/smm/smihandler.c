@@ -1,8 +1,6 @@
 /*
  * This file is part of the coreboot project.
  *
- * Copyright (C) 2008-2009 coresystems GmbH
- *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
  * published by the Free Software Foundation; version 2 of
@@ -18,10 +16,33 @@
 #include <console/console.h>
 #include <cpu/x86/cache.h>
 #include <cpu/x86/smm.h>
+#include <cpu/x86/smi_deprecated.h>
+#include <cpu/amd/amd64_save_state.h>
+#include <cpu/intel/em64t_save_state.h>
+#include <cpu/intel/em64t100_save_state.h>
+#include <cpu/intel/em64t101_save_state.h>
+#include <cpu/x86/legacy_save_state.h>
 
 #if CONFIG(SPI_FLASH_SMM)
 #include <spi-generic.h>
 #endif
+
+typedef enum {
+	AMD64,
+	EM64T,
+	EM64T101,
+	LEGACY
+} save_state_type_t;
+
+typedef struct {
+	save_state_type_t type;
+	union {
+	amd64_smm_state_save_area_t *amd64_state_save;
+	em64t_smm_state_save_area_t *em64t_state_save;
+	em64t101_smm_state_save_area_t *em64t101_state_save;
+	legacy_smm_state_save_area_t *legacy_state_save;
+	};
+} smm_state_save_area_t;
 
 static int do_driver_init = 1;
 
@@ -193,9 +214,7 @@ void smi_handler(u32 smm_revision)
 	}
 
 	/* Call chipset specific SMI handlers. */
-	cpu_smi_handler(node, &state_save);
-	northbridge_smi_handler(node, &state_save);
-	southbridge_smi_handler(node, &state_save);
+	southbridge_smi_handler();
 
 	smi_restore_pci_address();
 
@@ -210,12 +229,7 @@ void smi_handler(u32 smm_revision)
  * weak relocations w/o a symbol have a 0 address which is where the modules
  * are linked at. */
 int __weak mainboard_io_trap_handler(int smif) { return 0; }
-void __weak cpu_smi_handler(unsigned int node,
-	smm_state_save_area_t *state_save) {}
-void __weak northbridge_smi_handler(unsigned int node,
-	smm_state_save_area_t *state_save) {}
-void __weak southbridge_smi_handler(unsigned int node,
-	smm_state_save_area_t *state_save) {}
+void __weak southbridge_smi_handler(void) {}
 void __weak mainboard_smi_gpi(u32 gpi_sts) {}
 int __weak mainboard_smi_apmc(u8 data) { return 0; }
 void __weak mainboard_smi_sleep(u8 slp_typ) {}

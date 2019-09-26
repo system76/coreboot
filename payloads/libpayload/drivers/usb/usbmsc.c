@@ -157,6 +157,9 @@ reset_transport (usbdev_t *dev)
 	dr.wIndex = 0;
 	dr.wLength = 0;
 
+	if (MSC_INST (dev)->quirks & USB_MSC_QUIRK_NO_RESET)
+		return MSC_COMMAND_FAIL;
+
 	/* if any of these fails, detach device, as we are lost */
 	if (dev->controller->control (dev, OUT, sizeof (dr), &dr, 0, 0) < 0 ||
 			clear_stall (MSC_INST (dev)->bulk_in) ||
@@ -185,7 +188,8 @@ initialize_luns (usbdev_t *dev)
 	dr.wValue = 0;
 	dr.wIndex = 0;
 	dr.wLength = 1;
-	if (dev->controller->control (dev, IN, sizeof (dr), &dr,
+	if (MSC_INST (dev)->quirks & USB_MSC_QUIRK_NO_LUNS ||
+	    dev->controller->control (dev, IN, sizeof (dr), &dr,
 			sizeof (msc->num_luns), &msc->num_luns) < 0)
 		msc->num_luns = 0;	/* assume only 1 lun if req fails */
 	msc->num_luns++;	/* Get Max LUN returns number of last LUN */
@@ -218,14 +222,23 @@ wrap_cbw (cbw_t *cbw, int datalen, cbw_direction dir, const u8 *cmd,
 static int
 get_csw (endpoint_t *ep, csw_t *csw)
 {
-	if (ep->dev->controller->bulk (ep, sizeof (csw_t), (u8 *) csw, 1) < 0) {
+	hci_t *ctrlr = ep->dev->controller;
+	int ret = ctrlr->bulk (ep, sizeof (csw_t), (u8 *) csw, 1);
+
+	/* Some broken sticks send a zero-length packet at the end of their data
+	   transfer which would show up here. Skip it to get the actual CSW. */
+	if (ret == 0)
+		ret = ctrlr->bulk (ep, sizeof (csw_t), (u8 *) csw, 1);
+
+	if (ret < 0) {
 		clear_stall (ep);
-		if (ep->dev->controller->bulk
-				(ep, sizeof (csw_t), (u8 *) csw, 1) < 0) {
+		if (ctrlr->bulk (ep, sizeof (csw_t), (u8 *) csw, 1) < 0) {
 			return reset_transport (ep->dev);
 		}
 	}
-	if (csw->dCSWTag != tag) {
+	if (ret != sizeof(csw_t) || csw->dCSWTag != tag ||
+	    csw->dCSWSignature != csw_signature) {
+		usb_debug ("MSC: received malformed CSW\n");
 		return reset_transport (ep->dev);
 	}
 	return MSC_COMMAND_OK;
@@ -591,14 +604,6 @@ usb_msc_test_unit_ready (usbdev_t *dev)
 void
 usb_msc_init (usbdev_t *dev)
 {
-	int i;
-
-	/* init .data before setting .destroy */
-	dev->data = NULL;
-
-	dev->destroy = usb_msc_destroy;
-	dev->poll = usb_msc_poll;
-
 	configuration_descriptor_t *cd =
 		(configuration_descriptor_t *) dev->configuration;
 	interface_descriptor_t *interface =
@@ -625,6 +630,19 @@ usb_msc_init (usbdev_t *dev)
 		return;
 	}
 
+	usb_msc_force_init (dev, 0);
+}
+
+void usb_msc_force_init (usbdev_t *dev, u32 quirks)
+{
+	int i;
+
+	/* init .data before setting .destroy */
+	dev->data = NULL;
+
+	dev->destroy = usb_msc_destroy;
+	dev->poll = usb_msc_poll;
+
 	dev->data = malloc (sizeof (usbmsc_inst_t));
 	if (!dev->data)
 		fatal("Not enough memory for USB MSC device.\n");
@@ -632,6 +650,7 @@ usb_msc_init (usbdev_t *dev)
 	MSC_INST (dev)->bulk_in = 0;
 	MSC_INST (dev)->bulk_out = 0;
 	MSC_INST (dev)->usbdisk_created = 0;
+	MSC_INST (dev)->quirks = quirks;
 
 	for (i = 1; i <= dev->num_endp; i++) {
 		if (dev->endpoints[i].endpoint == 0)

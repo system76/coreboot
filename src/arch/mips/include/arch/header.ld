@@ -1,8 +1,6 @@
 /*
  * This file is part of the coreboot project.
  *
- * Copyright 2014 Google Inc.
- *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; version 2 of the License.
@@ -21,7 +19,7 @@ PHDRS
 	to_load PT_LOAD;
 }
 
-#ifdef __BOOTBLOCK__
+#if ENV_BOOTBLOCK
 ENTRY(_start)
 #else
 ENTRY(stage_entry)

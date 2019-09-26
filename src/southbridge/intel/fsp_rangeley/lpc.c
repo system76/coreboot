@@ -28,10 +28,11 @@
 #include <arch/ioapic.h>
 #include <arch/acpi.h>
 #include <arch/cpu.h>
-#include <elog.h>
+#include <cpu/x86/smm.h>
 #include <string.h>
 #include <cbmem.h>
 #include <arch/acpigen.h>
+#include "chip.h"
 #include "soc.h"
 #include "irq.h"
 #include "nvs.h"

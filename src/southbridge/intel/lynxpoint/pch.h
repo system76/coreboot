@@ -88,13 +88,10 @@
 
 #ifndef __ACPI__
 
-#if defined(__SMM__) && !defined(__ASSEMBLER__)
 void usb_ehci_sleep_prepare(pci_devfn_t dev, u8 slp_typ);
 void usb_ehci_disable(pci_devfn_t dev);
 void usb_xhci_sleep_prepare(pci_devfn_t dev, u8 slp_typ);
 void usb_xhci_route_all(void);
-#endif
-
 
 /* State Machine configuration. */
 #define RCBA_REG_SIZE_MASK 0x8000
@@ -135,7 +132,6 @@ struct rcba_config_instruction
 	u32 or_value;
 };
 
-#if !defined(__ASSEMBLER__)
 void pch_config_rcba(const struct rcba_config_instruction *rcba_config);
 int pch_silicon_revision(void);
 int pch_silicon_id(void);
@@ -169,38 +165,26 @@ void disable_all_gpe(void);
 void enable_gpe(u32 mask);
 void disable_gpe(u32 mask);
 
-#if !defined(__PRE_RAM__) && !defined(__SMM__)
-#include <device/device.h>
-#include "chip.h"
 void pch_enable(struct device *dev);
 void pch_disable_devfn(struct device *dev);
 u32 pch_iobp_read(u32 address);
 void pch_iobp_write(u32 address, u32 data);
 void pch_iobp_update(u32 address, u32 andvalue, u32 orvalue);
-#if CONFIG(ELOG)
 void pch_log_state(void);
-#endif
 void acpi_create_intel_hpet(acpi_hpet_t * hpet);
 void acpi_create_serialio_ssdt(acpi_header_t *ssdt);
 
-/* These helpers are for performing SMM relocation. */
-void southbridge_trigger_smi(void);
-void southbridge_clear_smi_status(void);
-/* The initialization of the southbridge is split into 2 compoments. One is
- * for clearing the state in the SMM registers. The other is for enabling
- * SMIs. They are split so that other work between the 2 actions. */
-void southbridge_smm_clear_state(void);
-void southbridge_smm_enable_smi(void);
-#else
 void enable_smbus(void);
-void enable_usb_bar(void);
+
+#if ENV_ROMSTAGE
 int smbus_read_byte(unsigned device, unsigned address);
+#endif
+
+void enable_usb_bar(void);
 int early_pch_init(const void *gpio_map,
                    const struct rcba_config_instruction *rcba_config);
 void pch_enable_lpc(void);
 void mainboard_config_superio(void);
-#endif /* !__PRE_RAM__ && !__SMM__ */
-#endif /* __ASSEMBLER__ */
 
 #define MAINBOARD_POWER_OFF	0
 #define MAINBOARD_POWER_ON	1

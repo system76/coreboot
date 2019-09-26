@@ -67,6 +67,24 @@
 #define MEI_HDR_CSE_ADDR_START	0
 #define MEI_HDR_CSE_ADDR	(((1 << 8) - 1) << MEI_HDR_CSE_ADDR_START)
 
+#define HECI_OP_MODE_SEC_OVERRIDE 5
+
+/* Global Reset Command ID */
+#define MKHI_GLOBAL_RESET_REQ	0xb
+#define MKHI_GROUP_ID_CBM	0
+
+/* RST Origin */
+#define GR_ORIGIN_BIOS_POST	2
+
+#define MKHI_HMRFPO_GROUP_ID	5
+
+/* HMRFPO Command Ids */
+#define MKHI_HMRFPO_ENABLE	1
+#define MKHI_HMRFPO_GET_STATUS	3
+
+#define ME_HFS_CWS_NORMAL	5
+#define ME_HFS_MODE_NORMAL	0
+#define ME_HFS_TEMP_DISABLE	3
 
 static struct cse_device {
 	uintptr_t sec_bar;
@@ -237,6 +255,43 @@ static int cse_ready(void)
 	uint32_t csr;
 	csr = read_cse_csr();
 	return csr & CSR_READY;
+}
+
+/*
+ * Checks if CSE is in SEC_OVERRIDE operation mode. This is the mode where
+ * CSE will allow reflashing of CSE region.
+ */
+static uint8_t check_cse_sec_override_mode(void)
+{
+	union me_hfsts1 hfs1;
+	hfs1.data = me_read_config32(PCI_ME_HFSTS1);
+	if (hfs1.fields.operation_mode == HECI_OP_MODE_SEC_OVERRIDE)
+		return 1;
+	return 0;
+}
+
+/* Makes the host ready to communicate with CSE */
+void set_host_ready(void)
+{
+	uint32_t csr;
+	csr = read_host_csr();
+	csr &= ~CSR_RESET;
+	csr |= (CSR_IG | CSR_READY);
+	write_host_csr(csr);
+}
+
+/* Polls for ME state 'HECI_OP_MODE_SEC_OVERRIDE' for 15 seconds */
+uint8_t wait_cse_sec_override_mode(void)
+{
+	struct stopwatch sw;
+	stopwatch_init_msecs_expire(&sw, HECI_DELAY_READY);
+	while (!check_cse_sec_override_mode()) {
+		udelay(HECI_DELAY);
+		if (stopwatch_expired(&sw))
+			return 0;
+	}
+
+	return 1;
 }
 
 static int wait_heci_ready(void)
@@ -458,6 +513,22 @@ int heci_receive(void *buff, size_t *maxlen)
 	return 0;
 }
 
+int heci_send_receive(const void *snd_msg, size_t snd_sz, void *rcv_msg, size_t *rcv_sz)
+{
+	if (!heci_send(snd_msg, snd_sz, BIOS_HOST_ADDR, HECI_MKHI_ADDR)) {
+		printk(BIOS_ERR, "HECI: send Failed\n");
+		return 0;
+	}
+
+	if (rcv_msg != NULL) {
+		if (!heci_receive(rcv_msg, rcv_sz)) {
+			printk(BIOS_ERR, "HECI: receive Failed\n");
+			return 0;
+		}
+	}
+	return 1;
+}
+
 /*
  * Attempt to reset the device. This is useful when host and ME are out
  * of sync during transmission or ME didn't understand the message.
@@ -468,23 +539,186 @@ int heci_reset(void)
 
 	/* Send reset request */
 	csr = read_host_csr();
-	csr |= CSR_RESET;
-	csr |= CSR_IG;
+	csr |= (CSR_RESET | CSR_IG);
 	write_host_csr(csr);
 
 	if (wait_heci_ready()) {
 		/* Device is back on its imaginary feet, clear reset */
-		csr = read_host_csr();
-		csr &= ~CSR_RESET;
-		csr |= CSR_IG;
-		csr |= CSR_READY;
-		write_host_csr(csr);
+		set_host_ready();
 		return 1;
 	}
 
 	printk(BIOS_CRIT, "HECI: reset failed\n");
 
 	return 0;
+}
+
+bool is_cse_enabled(void)
+{
+	const struct device *cse_dev = pcidev_path_on_root(PCH_DEVFN_CSE);
+
+	if (!cse_dev || !cse_dev->enabled) {
+		printk(BIOS_WARNING, "HECI: No CSE device\n");
+		return false;
+	}
+
+	if (pci_read_config16(PCH_DEV_CSE, PCI_VENDOR_ID) == 0xFFFF) {
+		printk(BIOS_WARNING, "HECI: CSE device is hidden\n");
+		return false;
+	}
+
+	return true;
+}
+
+uint32_t me_read_config32(int offset)
+{
+	return pci_read_config32(PCH_DEV_CSE, offset);
+}
+
+/*
+ * Sends GLOBAL_RESET_REQ cmd to CSE.The reset type can be GLOBAL_RESET/
+ * HOST_RESET_ONLY/CSE_RESET_ONLY.
+ */
+int send_heci_reset_req_message(uint8_t rst_type)
+{
+	int status;
+	struct mkhi_hdr reply;
+	struct reset_message {
+		struct mkhi_hdr hdr;
+		uint8_t req_origin;
+		uint8_t reset_type;
+	} __packed;
+	struct reset_message msg = {
+		.hdr = {
+			.group_id = MKHI_GROUP_ID_CBM,
+			.command = MKHI_GLOBAL_RESET_REQ,
+		},
+		.req_origin = GR_ORIGIN_BIOS_POST,
+		.reset_type = rst_type
+	};
+	size_t reply_size;
+
+	if (!((rst_type == GLOBAL_RESET) ||
+		(rst_type == HOST_RESET_ONLY) || (rst_type == CSE_RESET_ONLY)))
+		return -1;
+
+	heci_reset();
+
+	reply_size = sizeof(reply);
+	memset(&reply, 0, reply_size);
+
+	printk(BIOS_DEBUG, "HECI: Global Reset(Type:%d) Command\n", rst_type);
+	if (rst_type == CSE_RESET_ONLY)
+		status = heci_send_receive(&msg, sizeof(msg), NULL, 0);
+	else
+		status = heci_send_receive(&msg, sizeof(msg), &reply,
+						&reply_size);
+
+	if (status != 1)
+		return -1;
+
+	printk(BIOS_DEBUG, "HECI: Global Reset success!\n");
+	return 0;
+}
+
+/* Sends HMRFPO Enable command to CSE */
+int send_hmrfpo_enable_msg(void)
+{
+	struct hmrfpo_enable_msg {
+		struct mkhi_hdr hdr;
+		uint32_t nonce[2];
+	} __packed;
+
+	/* HMRFPO Enable message */
+	struct hmrfpo_enable_msg msg = {
+		.hdr = {
+			.group_id = MKHI_HMRFPO_GROUP_ID,
+			.command = MKHI_HMRFPO_ENABLE,
+		},
+		.nonce = {0},
+	};
+
+	/* HMRFPO Enable response */
+	struct hmrfpo_enable_resp {
+		struct mkhi_hdr hdr;
+		uint32_t fct_base;
+		uint32_t fct_limit;
+		uint8_t status;
+		uint8_t padding[3];
+	} __packed;
+
+	struct hmrfpo_enable_resp resp;
+	size_t resp_size = sizeof(struct hmrfpo_enable_resp);
+	union me_hfsts1 hfs1;
+
+	printk(BIOS_DEBUG, "HECI: Send HMRFPO Enable Command\n");
+	hfs1.data = me_read_config32(PCI_ME_HFSTS1);
+	/*
+	 * This command can be run only if:
+	 * - Working state is normal and
+	 * - Operation mode is normal or temporary disable mode.
+	 */
+	if (hfs1.fields.working_state != ME_HFS_CWS_NORMAL ||
+		(hfs1.fields.operation_mode != ME_HFS_MODE_NORMAL &&
+		hfs1.fields.operation_mode != ME_HFS_TEMP_DISABLE)) {
+		printk(BIOS_ERR, "HECI: ME not in required Mode\n");
+		goto failed;
+	}
+
+	if (!heci_send_receive(&msg, sizeof(struct hmrfpo_enable_msg),
+				&resp, &resp_size))
+		goto failed;
+
+	if (resp.hdr.result) {
+		printk(BIOS_ERR, "HECI: Resp Failed:%d\n", resp.hdr.result);
+		goto failed;
+	}
+	return 1;
+
+failed:
+	return 0;
+}
+
+/*
+ * Sends HMRFPO Get Status command to CSE to get the HMRFPO status.
+ * The status can be DISABLES/LOCKED/ENABLED
+ */
+int send_hmrfpo_get_status_msg(void)
+{
+	struct hmrfpo_get_status_msg {
+		struct mkhi_hdr hdr;
+	} __packed;
+
+	struct hmrfpo_get_status_resp {
+		struct mkhi_hdr hdr;
+		uint8_t status;
+		uint8_t padding[3];
+	} __packed;
+
+	struct hmrfpo_get_status_msg msg = {
+		.hdr = {
+			.group_id = MKHI_HMRFPO_GROUP_ID,
+			.command = MKHI_HMRFPO_GET_STATUS,
+		},
+	};
+	struct hmrfpo_get_status_resp resp;
+	size_t resp_size = sizeof(struct hmrfpo_get_status_resp);
+
+	printk(BIOS_INFO, "HECI: Sending Get HMRFPO Status Command\n");
+
+	if (!heci_send_receive(&msg, sizeof(struct hmrfpo_get_status_msg),
+				&resp, &resp_size)) {
+		printk(BIOS_ERR, "HECI: HMRFPO send/receive fail\n");
+		return -1;
+	}
+
+	if (resp.hdr.result) {
+		printk(BIOS_ERR, "HECI: HMRFPO Resp Failed:%d\n",
+				resp.hdr.result);
+		return -1;
+	}
+
+	return resp.status;
 }
 
 #if ENV_RAMSTAGE
@@ -515,6 +749,8 @@ static const unsigned short pci_device_ids[] = {
 	PCI_DEVICE_ID_INTEL_GLK_CSE0,
 	PCI_DEVICE_ID_INTEL_CNL_CSE0,
 	PCI_DEVICE_ID_INTEL_SKL_CSE0,
+	PCI_DEVICE_ID_INTEL_LWB_CSE0,
+	PCI_DEVICE_ID_INTEL_LWB_CSE0_SUPER,
 	PCI_DEVICE_ID_INTEL_CNP_H_CSE0,
 	PCI_DEVICE_ID_INTEL_ICL_CSE0,
 	PCI_DEVICE_ID_INTEL_CMP_CSE0,

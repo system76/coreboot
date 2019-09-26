@@ -34,6 +34,8 @@
 #include <fsp/memory_init.h>
 #include <types.h>
 
+static uint8_t temp_ram[CONFIG_FSP_TEMP_RAM_SIZE] __aligned(sizeof(uint64_t));
+
 /* TPM MRC hash functionality depends on vboot starting before memory init. */
 _Static_assert(!CONFIG(FSP2_0_USES_TPM_MRC_HASH) ||
 	       CONFIG(VBOOT_STARTS_IN_BOOTBLOCK),
@@ -161,22 +163,12 @@ static enum cb_err check_region_overlap(const struct memranges *ranges,
 
 	return CB_SUCCESS;
 }
+
 static enum cb_err setup_fsp_stack_frame(FSPM_ARCH_UPD *arch_upd,
 		const struct memranges *memmap)
 {
 	uintptr_t stack_begin;
 	uintptr_t stack_end;
-
-	/*
-	 * FSP 2.1 version would use same stack as coreboot instead of
-	 * setting up seprate stack frame. FSP 2.1 would not relocate stack
-	 * top and does not reinitialize stack pointer.
-	 */
-	if (CONFIG(FSP_USES_CB_STACK)) {
-		arch_upd->StackBase = (void *)_car_stack_start;
-		arch_upd->StackSize = CONFIG_DCACHE_BSP_STACK_SIZE;
-		return CB_SUCCESS;
-	}
 
 	/*
 	 * FSPM_UPD passed here is populated with default values
@@ -197,8 +189,19 @@ static enum cb_err fsp_fill_common_arch_params(FSPM_ARCH_UPD *arch_upd,
 					bool s3wake, uint32_t fsp_version,
 					const struct memranges *memmap)
 {
-	if (setup_fsp_stack_frame(arch_upd, memmap))
+	/*
+	 * FSP 2.1 version would use same stack as coreboot instead of
+	 * setting up separate stack frame. FSP 2.1 would not relocate stack
+	 * top and does not reinitialize stack pointer. The parameters passed
+	 * as StackBase and StackSize are actually for temporary RAM and HOBs
+	 * and are not related to FSP stack at all.
+	 */
+	if (CONFIG(FSP_USES_CB_STACK)) {
+		arch_upd->StackBase = temp_ram;
+		arch_upd->StackSize = sizeof(temp_ram);
+	} else if (setup_fsp_stack_frame(arch_upd, memmap)) {
 		return CB_ERR;
+	}
 
 	fsp_fill_mrc_cache(arch_upd, fsp_version);
 
@@ -222,7 +225,7 @@ static enum cb_err fsp_fill_common_arch_params(FSPM_ARCH_UPD *arch_upd,
 			arch_upd->BootMode = FSP_BOOT_WITH_FULL_CONFIGURATION;
 	}
 
-	printk(BIOS_SPEW, "bootmode is set to :%d\n", arch_upd->BootMode);
+	printk(BIOS_SPEW, "bootmode is set to: %d\n", arch_upd->BootMode);
 
 	return CB_SUCCESS;
 }
@@ -389,8 +392,7 @@ void fsp_memory_init(bool s3wake)
 	struct memranges memmap;
 	struct range_entry freeranges[2];
 
-	if (CONFIG(ELOG_BOOT_COUNT) && !s3wake)
-		boot_count_increment();
+	elog_boot_notify(s3wake);
 
 	if (cbfs_boot_locate(&file_desc, name, NULL)) {
 		printk(BIOS_CRIT, "Could not locate %s in CBFS\n", name);
@@ -402,7 +404,7 @@ void fsp_memory_init(bool s3wake)
 	/* Build up memory map of romstage address space including CAR. */
 	memranges_init_empty(&memmap, &freeranges[0], ARRAY_SIZE(freeranges));
 	memranges_insert(&memmap, (uintptr_t)_car_region_start,
-		_car_relocatable_data_end - _car_region_start, 0);
+		_car_unallocated_start - _car_region_start, 0);
 	memranges_insert(&memmap, (uintptr_t)_program, REGION_SIZE(program), 0);
 
 	if (!CONFIG(FSP_M_XIP))
@@ -416,5 +418,9 @@ void fsp_memory_init(bool s3wake)
 	/* Signal that FSP component has been loaded. */
 	prog_segment_loaded(hdr.image_base, hdr.image_size, SEG_FINAL);
 
+	timestamp_add_now(TS_BEFORE_INITRAM);
+
 	do_fsp_memory_init(&hdr, s3wake, &memmap);
+
+	timestamp_add_now(TS_AFTER_INITRAM);
 }

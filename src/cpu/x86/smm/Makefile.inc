@@ -1,8 +1,6 @@
 ##
 ## This file is part of the coreboot project.
 ##
-## Copyright (C) 2008-2010 coresystems GmbH
-##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
 ## the Free Software Foundation; version 2 of the License.
@@ -42,9 +40,9 @@ endif
 
 ifeq ($(CONFIG_SMM_TSEG),y)
 
-ramstage-y += stage_cache.c
-romstage-y += stage_cache.c
-postcar-y += stage_cache.c
+ramstage-y += tseg_region.c
+romstage-y += tseg_region.c
+postcar-y += tseg_region.c
 
 smmstub-y += smm_stub.S
 

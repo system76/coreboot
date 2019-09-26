@@ -170,6 +170,20 @@ static inline uint32_t inl(unsigned port)
 #define PCI_DEVICE_ID_INTEL_QM175		0xa153
 #define PCI_DEVICE_ID_INTEL_CM238		0xa154
 
+#define PCI_DEVICE_ID_INTEL_C621		0xa1c1
+#define PCI_DEVICE_ID_INTEL_C622		0xa1c2
+#define PCI_DEVICE_ID_INTEL_C624		0xa1c3
+#define PCI_DEVICE_ID_INTEL_C625		0xa1c4
+#define PCI_DEVICE_ID_INTEL_C626		0xa1c5
+#define PCI_DEVICE_ID_INTEL_C627		0xa1c6
+#define PCI_DEVICE_ID_INTEL_C628		0xa1c7
+#define PCI_DEVICE_ID_INTEL_C629		0xa1ca
+#define PCI_DEVICE_ID_INTEL_C624_SUPER		0xa242
+#define PCI_DEVICE_ID_INTEL_C627_SUPER_1	0xa243
+#define PCI_DEVICE_ID_INTEL_C621_SUPER		0xa244
+#define PCI_DEVICE_ID_INTEL_C627_SUPER_2	0xa245
+#define PCI_DEVICE_ID_INTEL_C628_SUPER		0xa246
+
 #define PCI_DEVICE_ID_INTEL_H310		0xa303
 #define PCI_DEVICE_ID_INTEL_H370		0xa304
 #define PCI_DEVICE_ID_INTEL_Z390		0xa305
@@ -272,6 +286,7 @@ static inline uint32_t inl(unsigned port)
 #define PCI_DEVICE_ID_INTEL_CORE_6TH_GEN_M	0x1910 /* Skylake (Mobile) */
 #define PCI_DEVICE_ID_INTEL_CORE_6TH_GEN_WST	0x1918 /* Skylake (Workstation) */
 #define PCI_DEVICE_ID_INTEL_CORE_6TH_GEN_D	0x191f /* Skylake (Desktop) */
+#define PCI_DEVICE_ID_INTEL_CORE_6TH_GEN_E	0x2020 /* Skylake-E (Server) */
 #define PCI_DEVICE_ID_INTEL_CORE_7TH_GEN_U	0x5904 /* Kabylake (Mobile) */
 #define PCI_DEVICE_ID_INTEL_CORE_7TH_GEN_Y	0x590C /* Kabylake (Mobile) */
 #define PCI_DEVICE_ID_INTEL_CORE_7TH_GEN_U_Q	0x5914 /* Kabylake (Mobile) */
@@ -316,6 +331,7 @@ static inline uint32_t inl(unsigned port)
 #define PCI_DEVICE_ID_INTEL_HD_4000_2		0x016A
 #define PCI_DEVICE_ID_INTEL_HD_4600		0x0412
 #define PCI_DEVICE_ID_INTEL_HD_4600_1		0x0416
+#define PCI_DEVICE_ID_INTEL_HD_4400		0x041E
 #define PCI_DEVICE_ID_INTEL_HD_5000		0x0422
 #define PCI_DEVICE_ID_INTEL_HD_5000_1		0x0426
 #define PCI_DEVICE_ID_INTEL_HD_5000_2		0x042A

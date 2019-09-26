@@ -283,6 +283,10 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 	       sizeof(params->SataPortsEnable));
 	memcpy(params->SataPortsDevSlp, config->SataPortsDevSlp,
 	       sizeof(params->SataPortsDevSlp));
+	memcpy(params->SataPortsHotPlug, config->SataPortsHotPlug,
+	       sizeof(params->SataPortsHotPlug));
+	memcpy(params->SataPortsSpinUp, config->SataPortsSpinUp,
+	       sizeof(params->SataPortsSpinUp));
 	memcpy(params->PcieRpClkReqSupport, config->PcieRpClkReqSupport,
 	       sizeof(params->PcieRpClkReqSupport));
 	memcpy(params->PcieRpClkReqNumber, config->PcieRpClkReqNumber,
@@ -354,10 +358,7 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 
 	/* If ISH is enabled, enable ISH elements */
 	dev = pcidev_path_on_root(PCH_DEVFN_ISH);
-	if (dev)
-		params->PchIshEnable = dev->enabled;
-	else
-		params->PchIshEnable = 0;
+	params->PchIshEnable = dev ? dev->enabled : 0;
 
 	params->PchHdaEnable = config->EnableAzalia;
 	params->PchHdaIoBufferOwnership = config->IoBufferOwnership;
@@ -372,6 +373,7 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 	tconfig->PchLockDownGlobalSmi = config->LockDownConfigGlobalSmi;
 	tconfig->PchLockDownRtcLock = config->LockDownConfigRtcLock;
 	tconfig->PowerLimit4 = config->PowerLimit4;
+	tconfig->SataTestMode = config->SataTestMode;
 	/*
 	 * To disable HECI, the Psf needs to be left unlocked
 	 * by FSP till end of post sequence. Based on the devicetree
@@ -433,13 +435,21 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 
 	/* Show SPI controller if enabled in devicetree.cb */
 	dev = pcidev_path_on_root(PCH_DEVFN_SPI);
-	params->ShowSpiController = dev->enabled;
+	params->ShowSpiController = dev ? dev->enabled : 0;
 
 	/* Enable xDCI controller if enabled in devicetree and allowed */
 	dev = pcidev_path_on_root(PCH_DEVFN_USBOTG);
-	if (!xdci_can_enable())
-		dev->enabled = 0;
-	params->XdciEnable = dev->enabled;
+	if (dev) {
+		if (!xdci_can_enable())
+			dev->enabled = 0;
+		params->XdciEnable = dev->enabled;
+	} else {
+		params->XdciEnable = 0;
+	}
+
+	/* Enable or disable Gaussian Mixture Model in devicetree */
+	dev = pcidev_path_on_root(SA_DEVFN_GMM);
+	params->GmmEnable = dev ? dev->enabled : 0;
 
 	/*
 	 * Send VR specific mailbox commands:
@@ -485,9 +495,9 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 		tconfig->VtdDisable = 0;
 
 		params->PchIoApicBdfValid = 1;
-		params->PchIoApicBusNumber = 250;
-		params->PchIoApicDeviceNumber = 31;
-		params->PchIoApicFunctionNumber = 0;
+		params->PchIoApicBusNumber = V_P2SB_IBDF_BUS;
+		params->PchIoApicDeviceNumber = V_P2SB_IBDF_DEV;
+		params->PchIoApicFunctionNumber = V_P2SB_IBDF_FUN;
 	}
 
 	soc_irq_settings(params);

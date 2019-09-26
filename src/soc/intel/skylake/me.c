@@ -26,10 +26,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-static inline u32 me_read_config32(int offset)
-{
-	return pci_read_config32(PCH_DEV_CSE, offset);
-}
 
 /* HFSTS1[3:0] Current Working State Values */
 static const char *const me_cws_values[] = {
@@ -204,14 +200,6 @@ static const char *const me_progress_bup_values[] = {
 
 static void print_me_version(void *unused)
 {
-	struct mkhi_hdr {
-		uint8_t group_id;
-		uint8_t command:7;
-		uint8_t is_resp:1;
-		uint8_t rsvd;
-		uint8_t result;
-	} __packed;
-
 	struct version {
 		uint16_t minor;
 		uint16_t major;
@@ -233,7 +221,7 @@ static void print_me_version(void *unused)
 
 	struct fw_ver_resp resp;
 	size_t resp_size = sizeof(resp);
-	union me_hfs hfs;
+	union me_hfsts1 hfs1;
 
 	/*
 	 * Print ME version only if UART debugging is enabled. Else, it takes ~1
@@ -242,14 +230,17 @@ static void print_me_version(void *unused)
 	if (!CONFIG(CONSOLE_SERIAL))
 		return;
 
-	hfs.data = me_read_config32(PCI_ME_HFSTS1);
+	if (!is_cse_enabled())
+		return;
+
+	hfs1.data = me_read_config32(PCI_ME_HFSTS1);
 	/*
 	 * This command can be run only if:
 	 * - Working state is normal and
 	 * - Operation mode is normal.
 	 */
-	if ((hfs.fields.working_state != ME_HFS_CWS_NORMAL) ||
-	    (hfs.fields.operation_mode != ME_HFS_MODE_NORMAL))
+	if ((hfs1.fields.working_state != ME_HFS_CWS_NORMAL) ||
+	    (hfs1.fields.operation_mode != ME_HFS_MODE_NORMAL))
 		goto failed;
 
 	/*
@@ -258,8 +249,8 @@ static void print_me_version(void *unused)
 	 */
 	heci_reset();
 
-	if (!heci_send(&fw_ver_msg, sizeof(fw_ver_msg), BIOS_HOST_ADD,
-		       HECI_MKHI_ADD))
+	if (!heci_send(&fw_ver_msg, sizeof(fw_ver_msg), BIOS_HOST_ADDR,
+		       HECI_MKHI_ADDR))
 		goto failed;
 
 	if (!heci_receive(&resp, &resp_size))
@@ -283,18 +274,21 @@ BOOT_STATE_INIT_ENTRY(BS_DEV_ENABLE, BS_ON_EXIT, print_me_version, NULL);
 
 void intel_me_status(void)
 {
-	union me_hfs hfs;
+	union me_hfsts1 hfs1;
 	union me_hfs2 hfs2;
 	union me_hfs3 hfs3;
 	union me_hfs6 hfs6;
 
-	hfs.data = me_read_config32(PCI_ME_HFSTS1);
+	if (!is_cse_enabled())
+		return;
+
+	hfs1.data = me_read_config32(PCI_ME_HFSTS1);
 	hfs2.data = me_read_config32(PCI_ME_HFSTS2);
 	hfs3.data = me_read_config32(PCI_ME_HFSTS3);
 	hfs6.data = me_read_config32(PCI_ME_HFSTS6);
 
 	printk(BIOS_DEBUG, "ME: Host Firmware Status Register 1 : 0x%08X\n",
-		hfs.data);
+		hfs1.data);
 	printk(BIOS_DEBUG, "ME: Host Firmware Status Register 2 : 0x%08X\n",
 		hfs2.data);
 	printk(BIOS_DEBUG, "ME: Host Firmware Status Register 3 : 0x%08X\n",
@@ -307,21 +301,21 @@ void intel_me_status(void)
 		hfs6.data);
 	/* Check Current States */
 	printk(BIOS_DEBUG, "ME: FW Partition Table      : %s\n",
-	       hfs.fields.fpt_bad ? "BAD" : "OK");
+	       hfs1.fields.fpt_bad ? "BAD" : "OK");
 	printk(BIOS_DEBUG, "ME: Bringup Loader Failure  : %s\n",
-	       hfs.fields.ft_bup_ld_flr ? "YES" : "NO");
+	       hfs1.fields.ft_bup_ld_flr ? "YES" : "NO");
 	printk(BIOS_DEBUG, "ME: Firmware Init Complete  : %s\n",
-	       hfs.fields.fw_init_complete ? "YES" : "NO");
+	       hfs1.fields.fw_init_complete ? "YES" : "NO");
 	printk(BIOS_DEBUG, "ME: Manufacturing Mode      : %s\n",
-	       hfs.fields.mfg_mode ? "YES" : "NO");
+	       hfs1.fields.mfg_mode ? "YES" : "NO");
 	printk(BIOS_DEBUG, "ME: Boot Options Present    : %s\n",
-	       hfs.fields.boot_options_present ? "YES" : "NO");
+	       hfs1.fields.boot_options_present ? "YES" : "NO");
 	printk(BIOS_DEBUG, "ME: Update In Progress      : %s\n",
-	       hfs.fields.update_in_progress ? "YES" : "NO");
+	       hfs1.fields.update_in_progress ? "YES" : "NO");
 	printk(BIOS_DEBUG, "ME: D3 Support              : %s\n",
-	       hfs.fields.d3_support_valid ? "YES" : "NO");
+	       hfs1.fields.d3_support_valid ? "YES" : "NO");
 	printk(BIOS_DEBUG, "ME: D0i3 Support            : %s\n",
-	       hfs.fields.d0i3_support_valid ? "YES" : "NO");
+	       hfs1.fields.d0i3_support_valid ? "YES" : "NO");
 	printk(BIOS_DEBUG, "ME: Low Power State Enabled : %s\n",
 	       hfs2.fields.low_power_state ? "YES" : "NO");
 	printk(BIOS_DEBUG, "ME: CPU Replaced            : %s\n",
@@ -329,13 +323,13 @@ void intel_me_status(void)
 	printk(BIOS_DEBUG, "ME: CPU Replacement Valid   : %s\n",
 	       hfs2.fields.cpu_replaced_valid ? "YES" : "NO");
 	printk(BIOS_DEBUG, "ME: Current Working State   : %s\n",
-	       me_cws_values[hfs.fields.working_state]);
+	       me_cws_values[hfs1.fields.working_state]);
 	printk(BIOS_DEBUG, "ME: Current Operation State : %s\n",
-	       me_opstate_values[hfs.fields.operation_state]);
+	       me_opstate_values[hfs1.fields.operation_state]);
 	printk(BIOS_DEBUG, "ME: Current Operation Mode  : %s\n",
-	       me_opmode_values[hfs.fields.operation_mode]);
+	       me_opmode_values[hfs1.fields.operation_mode]);
 	printk(BIOS_DEBUG, "ME: Error Code              : %s\n",
-	       me_error_values[hfs.fields.error_code]);
+	       me_error_values[hfs1.fields.error_code]);
 	printk(BIOS_DEBUG, "ME: Progress Phase          : %s\n",
 	       me_progress_values[hfs2.fields.progress_code]);
 	printk(BIOS_DEBUG, "ME: Power Management Event  : %s\n",
@@ -435,62 +429,21 @@ void intel_me_status(void)
 	}
 }
 
-static int send_heci_reset_message(void)
-{
-	int status;
-	struct reset_reply {
-		u8 group_id;
-		u8 command;
-		u8 reserved;
-		u8 result;
-	} __packed reply;
-	struct reset_message {
-		u8 group_id;
-		u8 cmd;
-		u8 reserved;
-		u8 result;
-		u8 req_origin;
-		u8 reset_type;
-	} __packed;
-	struct reset_message msg = {
-		.cmd = MKHI_GLOBAL_RESET,
-		.req_origin = GR_ORIGIN_BIOS_POST,
-		.reset_type = GLOBAL_RST_TYPE
-	};
-	size_t reply_size;
-
-	heci_reset();
-
-	status = heci_send(&msg, sizeof(msg), BIOS_HOST_ADD, HECI_MKHI_ADD);
-	if (!status)
-		return -1;
-
-	reply_size = sizeof(reply);
-	memset(&reply, 0, reply_size);
-	status = heci_receive(&reply, &reply_size);
-	if (!status)
-		return -1;
-	/* get reply result from HECI MSG  */
-	if (reply.result) {
-		printk(BIOS_DEBUG, "%s: Exit with Failure\n", __func__);
-		return -1;
-	}
-	printk(BIOS_DEBUG, "%s: Exit with Success\n",  __func__);
-	return 0;
-}
-
 int send_global_reset(void)
 {
 	int status = -1;
-	union me_hfs hfs;
+	union me_hfsts1 hfs1;
+
+	if (!is_cse_enabled())
+		goto ret;
 
 	/* Check ME operating mode */
-	hfs.data = me_read_config32(PCI_ME_HFSTS1);
-	if (hfs.fields.operation_mode)
+	hfs1.data = me_read_config32(PCI_ME_HFSTS1);
+	if (hfs1.fields.operation_mode)
 		goto ret;
 
 	/* ME should be in Normal Mode for this command */
-	status = send_heci_reset_message();
+	status = send_heci_reset_req_message(GLOBAL_RESET);
 ret:
 	return status;
 }

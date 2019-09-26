@@ -18,8 +18,9 @@
 #define __SOC_PICASSO_IOMAP_H__
 
 /* MMIO Ranges */
+/* IO_APIC_ADDR defined in arch/x86	0xfec00000 */
 #define SPI_BASE_ADDRESS		0xfec10000
-#define IO_APIC2_ADDR			0xfec20000
+#define ESPI_BASE_ADDRESS		0xfec20000
 
 /*
  * AcpiMmio blocks are at fixed offsets from FED8_0000h and enabled in PMx04[1].
@@ -43,9 +44,16 @@
 #define ALINK_AHB_ADDRESS		0xfedc0000
 
 /* I2C fixed address */
-#define I2C_BASE_ADDRESS		0xfedc2000
+#define APU_I2C2_BASE			0xfedc4000
+#define APU_I2C3_BASE			0xfedc5000
+#define APU_I2C4_BASE			0xfedc6000
+#define APU_I2C_MIN_BUS			2
+#define APU_I2C_MAX_BUS			4
+#define APU_I2C_BLOCK_SIZE		0x1000
+#define I2C_BASE_ADDRESS		APU_I2C2_BASE
 #define I2C_DEVICE_SIZE			0x00001000
-#define I2C_DEVICE_COUNT		4
+#define I2C_DEVICE_COUNT		3
+
 
 #if CONFIG(HPET_ADDRESS_OVERRIDE)
 #error HPET address override is not allowed and must be fixed at 0xfed00000
@@ -69,6 +77,7 @@
 #define  ACPI_GPE0_STS		(ACPI_GPE0_BLK + 0x00)		  /* 4 bytes */
 #define  ACPI_GPE0_EN		(ACPI_GPE0_BLK + 0x04)		  /* 4 bytes */
 #define  ACPI_PM_TMR_BLK	(PICASSO_ACPI_IO_BASE + 0x18)     /* 4 bytes */
+#define NCP_ERR				0xf0
 #define SMB_BASE_ADDR			0xb00
 #define PM2_INDEX			0xcd0
 #define PM2_DATA			0xcd1

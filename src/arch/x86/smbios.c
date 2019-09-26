@@ -1,11 +1,6 @@
 /*
  * This file is part of the coreboot project.
  *
- * Copyright (C) 2015 Timothy Pearson <tpearson@raptorengineeringinc.com>,
- * Raptor Engineering
- * Copyright (C) 2011 Sven Schnelle <svens@stackframe.org>
- * Copyright (C) 2018 Patrick Rudolph <siro@das-labor.org>
- *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
  * published by the Free Software Foundation; version 2 of
@@ -275,20 +270,18 @@ static void trim_trailing_whitespace(char *buffer, size_t buffer_size)
 static void smbios_fill_dimm_part_number(const char *part_number,
 					 struct smbios_type17 *t)
 {
-	const size_t trimmed_buffer_size = DIMM_INFO_PART_NUMBER_SIZE;
-
 	int invalid;
 	size_t i, len;
-	char trimmed_part_number[trimmed_buffer_size];
+	char trimmed_part_number[DIMM_INFO_PART_NUMBER_SIZE];
 
-	strncpy(trimmed_part_number, part_number, trimmed_buffer_size);
-	trimmed_part_number[trimmed_buffer_size - 1] = '\0';
+	strncpy(trimmed_part_number, part_number, sizeof(trimmed_part_number));
+	trimmed_part_number[sizeof(trimmed_part_number) - 1] = '\0';
 
 	/*
 	 * SPD mandates that unused characters be represented with a ' '.
 	 * We don't want to publish the whitespace in the SMBIOS tables.
 	 */
-	trim_trailing_whitespace(trimmed_part_number, trimmed_buffer_size);
+	trim_trailing_whitespace(trimmed_part_number, sizeof(trimmed_part_number));
 
 	len = strlen(trimmed_part_number);
 
@@ -304,8 +297,7 @@ static void smbios_fill_dimm_part_number(const char *part_number,
 		/* Null String in Part Number will have "None" instead. */
 		t->part_number = smbios_add_string(t->eos, "None");
 	} else if (invalid) {
-		char string_buffer[trimmed_buffer_size +
-			   10 /* strlen("Invalid ()") */];
+		char string_buffer[sizeof(trimmed_part_number) + 10];
 
 		snprintf(string_buffer, sizeof(string_buffer), "Invalid (%s)",
 			 trimmed_part_number);

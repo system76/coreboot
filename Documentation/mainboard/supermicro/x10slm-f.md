@@ -12,7 +12,7 @@ Please see :doc:`../../northbridge/intel/haswell/mrc.bin`.
 
 ```eval_rst
 If you haven't already, build the coreboot toolchain as described in
-:doc:`../../lessons/lesson1`.
+:doc:`../../tutorial/part1`.
 ```
 
 A fully working image should be possible so long as you have the
@@ -135,7 +135,7 @@ for caveats.
   can't be used for temperature readings.
 
 - There is no automatic, OS-independent fan control. This is because
-  the super I/O hardware monitor can only obtain valid CPU temperature
+  the Super I/O hardware monitor can only obtain valid CPU temperature
   readings from the PECI agent, but the required driver doesn't exist
   in coreboot. The `coretemp` driver can still be used for accurate CPU
   temperature readings from an OS, and hence the OS can do fan control.

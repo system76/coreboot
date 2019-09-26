@@ -14,16 +14,18 @@
  * GNU General Public License for more details.
  */
 
+#include <arch/romstage.h>
 #include <arch/ebda.h>
 #include <cbmem.h>
 #include <console/console.h>
+#include <cpu/x86/mtrr.h>
+#include <cpu/x86/smm.h>
 #include <device/device.h>
 #include <device/pci.h>
 #include <fsp/util.h>
 #include <intelblocks/ebda.h>
 #include <intelblocks/systemagent.h>
 #include <soc/pci_devs.h>
-#include <soc/smm.h>
 #include <soc/systemagent.h>
 #include <stdlib.h>
 
@@ -33,69 +35,6 @@ void smm_region(uintptr_t *start, size_t *size)
 {
 	*start = sa_get_tseg_base();
 	*size = sa_get_tseg_size();
-}
-
-/*
- *        Subregions within SMM
- *     +-------------------------+ BGSM
- *     |          IED            | IED_REGION_SIZE
- *     +-------------------------+
- *     |  External Stage Cache   | SMM_RESERVED_SIZE
- *     +-------------------------+
- *     |      code and data      |
- *     |         (TSEG)          |
- *     +-------------------------+ TSEG
- */
-int smm_subregion(int sub, uintptr_t *start, size_t *size)
-{
-	uintptr_t sub_base;
-	size_t sub_size;
-	const size_t ied_size = CONFIG_IED_REGION_SIZE;
-	const size_t cache_size = CONFIG_SMM_RESERVED_SIZE;
-
-	smm_region(&sub_base, &sub_size);
-
-	switch (sub) {
-	case SMM_SUBREGION_HANDLER:
-		/* Handler starts at the base of TSEG. */
-		sub_size -= ied_size;
-		sub_size -= cache_size;
-		break;
-	case SMM_SUBREGION_CACHE:
-		/* External cache is in the middle of TSEG. */
-		sub_base += sub_size - (ied_size + cache_size);
-		sub_size = cache_size;
-		break;
-	case SMM_SUBREGION_CHIPSET:
-		/* IED is at the top. */
-		sub_base += sub_size - ied_size;
-		sub_size = ied_size;
-		break;
-	default:
-		*start = 0;
-		*size = 0;
-		return -1;
-	}
-
-	*start = sub_base;
-	*size = sub_size;
-	return 0;
-}
-
-static bool is_ptt_enable(void)
-{
-	if ((read32((void *)PTT_TXT_BASE_ADDRESS) & PTT_PRESENT) ==
-			PTT_PRESENT)
-		return true;
-
-	return false;
-}
-
-/* Calculate PTT size */
-static size_t get_ptt_size(void)
-{
-	/* Allocate 4KB for PTT if enabled */
-	return is_ptt_enable() ? 4*KiB : 0;
 }
 
 /* Calculate ME Stolen size */
@@ -190,9 +129,6 @@ static size_t calculate_reserved_mem_size(uintptr_t dram_base,
 
 	/* Get Tracehub size */
 	reserve_mem_base -= get_imr_size();
-
-	/* Get PTT size */
-	reserve_mem_base -= get_ptt_size();
 
 	/* Traditional Area Size */
 	reserve_mem_size = dram_base - reserve_mem_base;
@@ -329,4 +265,22 @@ void *cbmem_top(void)
 	retrieve_ebda_object(&ebda_cfg);
 
 	return (void *)(uintptr_t)ebda_cfg.tolum_base;
+}
+
+void fill_postcar_frame(struct postcar_frame *pcf)
+{
+	uintptr_t top_of_ram;
+	/*
+	 * We need to make sure ramstage will be run cached. At this
+	 * point exact location of ramstage in cbmem is not known.
+	 * Instruct postcar to cache 16 megs under cbmem top which is
+	 * a safe bet to cover ramstage.
+	 */
+	top_of_ram = (uintptr_t) cbmem_top();
+	printk(BIOS_DEBUG, "top_of_ram = 0x%lx\n", top_of_ram);
+	top_of_ram -= 16*MiB;
+	postcar_frame_add_mtrr(pcf, top_of_ram, 16*MiB, MTRR_TYPE_WRBACK);
+
+	/* Cache the TSEG region */
+	postcar_enable_tseg_cache(pcf);
 }

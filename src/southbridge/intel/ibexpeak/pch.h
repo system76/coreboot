@@ -51,29 +51,26 @@
 #ifndef __ACPI__
 #define DEBUG_PERIODIC_SMIS 0
 
-#if !defined(__ASSEMBLER__)
-#if !defined(__PRE_RAM__)
-#if !defined(__SIMPLE_DEVICE__)
-#include "chip.h"
-void pch_enable(struct device *dev);
-#endif
 int pch_silicon_revision(void);
 int pch_silicon_type(void);
 int pch_silicon_supported(int type, int rev);
 void pch_iobp_update(u32 address, u32 andvalue, u32 orvalue);
-#if CONFIG(ELOG)
-void pch_log_state(void);
-#endif
-#else /* __PRE_RAM__ */
 void enable_smbus(void);
 void enable_usb_bar(void);
+
+#if ENV_ROMSTAGE
 int smbus_read_byte(unsigned device, unsigned address);
 int smbus_write_byte(unsigned device, unsigned address, u8 data);
 int smbus_block_read(unsigned device, unsigned cmd, u8 bytes, u8 *buf);
 int smbus_block_write(unsigned device, unsigned cmd, u8 bytes, const u8 *buf);
+#endif
+
 void early_thermal_init(void);
 void southbridge_configure_default_intmap(void);
-#endif
+
+#ifndef __ROMCC__
+#include <device/device.h>
+void pch_enable(struct device *dev);
 #endif
 
 #define MAINBOARD_POWER_OFF	0
@@ -354,6 +351,8 @@ void southbridge_configure_default_intmap(void);
 #define OIC		0x31fe	/* 16bit */
 #define SOFT_RESET_CTRL 0x38f4
 #define SOFT_RESET_DATA 0x38f8
+
+#define PRSTS		0x3310
 
 #define DIR_ROUTE(x,a,b,c,d) \
   RCBA32(x) = (((d) << DIR_IDR) | ((c) << DIR_ICR) | \

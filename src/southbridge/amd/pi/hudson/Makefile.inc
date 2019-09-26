@@ -72,78 +72,43 @@ smm-y += smi_util.c
 #
 # EC ROM should be 64K aligned.
 
+ifeq ($(CONFIG_AMDFW_OUTSIDE_CBFS),y)
 HUDSON_FWM_POSITION=$(call int-add, $(call int-subtract, 0xffffffff $(CONFIG_ROM_SIZE)) 0x20000 1)
+else
+HUDSON_FWM_POSITION=0xfff20000
+endif
 
-##
 ifeq ($(CONFIG_HUDSON_PSP), y)
-##
-### 0
 
-##
 ifeq ($(CONFIG_CPU_AMD_PI_00730F01), y)
 FIRMWARE_LOCATE=$(dir $(call strip_quotes, $(CONFIG_AMD_PUBKEY_FILE)))
 FIRMWARE_TYPE=
+
+PSPBTLDR_FILE=$(top)/$(FIRMWARE_LOCATE)/PspBootLoader.Bypass.sbin
+#PSPRCVR_FILE=$(top)/$(FIRMWARE_LOCATE)/PspRecovery.sbin
+#PSPSCUREOS_FILE=$(top)/$(FIRMWARE_LOCATE)/PspSecureOs.sbin
+#PSPTRUSTLETS_FILE=$(top)/$(FIRMWARE_LOCATE)/trustlets.bin
+#TRUSTLETKEY_FILE=$(top)/$(FIRMWARE_LOCATE)/Trustlet.tkn.cert
 endif
-##
+
 ifeq ($(CONFIG_CPU_AMD_PI_00660F01), y)
 FIRMWARE_LOCATE=$(dir $(call strip_quotes, $(CONFIG_AMD_PUBKEY_FILE)))
 FIRMWARE_TYPE=CZ
+
+PSPBTLDR_FILE=$(top)/$(FIRMWARE_LOCATE)/PspBootLoader_prod_CZ.sbin
+PSPRCVR_FILE=$(top)/$(FIRMWARE_LOCATE)/PspRecoveryBootLoader_prod_CZ.sbin
+PSPSCUREOS_FILE=$(top)/$(FIRMWARE_LOCATE)/PspSecureOs_prod_CZ.csbin
+PSPTRUSTLETS_FILE=$(top)/$(FIRMWARE_LOCATE)/PspTrustlets_prod_CZ.cbin
+TRUSTLETKEY_FILE=$(top)/$(FIRMWARE_LOCATE)/TrustletKey_prod_CZ.sbin
+SMUFIRMWARE2_FILE=$(top)/$(FIRMWARE_LOCATE)/SmuFirmware2_prod_CZ.sbin
 endif
 
-###5
-PUBSIGNEDKEY_FILE=$(top)/$(FIRMWARE_LOCATE)/RtmPubSigned$(FIRMWARE_TYPE).key
-###1
-ifeq ($(CONFIG_CPU_AMD_PI_00730F01), y)
-PSPBTLDR_FILE=$(top)/$(FIRMWARE_LOCATE)/PspBootLoader$(FIRMWARE_TYPE).Bypass.sbin
-else ifeq ($(CONFIG_CPU_AMD_PI_00660F01), y)
-PSPBTLDR_FILE=$(top)/$(FIRMWARE_LOCATE)/PspBootLoader_prod_$(FIRMWARE_TYPE).sbin
-endif
-
-###3
-ifeq ($(CONFIG_CPU_AMD_PI_00730F01), y)
-PSPRCVR_FILE=$(top)/$(FIRMWARE_LOCATE)/PspRecovery$(FIRMWARE_TYPE).sbin
-else ifeq ($(CONFIG_CPU_AMD_PI_00660F01), y)
-PSPRCVR_FILE=$(top)/$(FIRMWARE_LOCATE)/PspRecoveryBootLoader_prod_$(FIRMWARE_TYPE).sbin
-endif
-
-###2
-ifeq ($(CONFIG_CPU_AMD_PI_00730F01), y)
-PSPSCUREOS_FILE=$(top)/$(FIRMWARE_LOCATE)/PspSecureOs$(FIRMWARE_TYPE).sbin
-else ifeq ($(CONFIG_CPU_AMD_PI_00660F01), y)
-PSPSCUREOS_FILE=$(top)/$(FIRMWARE_LOCATE)/PspSecureOs_prod_$(FIRMWARE_TYPE).csbin
-endif
-
-###4
-PSPNVRAM_FILE=$(top)/$(FIRMWARE_LOCATE)/PspNvram$(FIRMWARE_TYPE).bin
-
-###8
+#PUBSIGNEDKEY_FILE=$(top)/$(FIRMWARE_LOCATE)/RtmPubSigned$(FIRMWARE_TYPE).key
+#PSPNVRAM_FILE=$(top)/$(FIRMWARE_LOCATE)/PspNvram$(FIRMWARE_TYPE).bin
 SMUFWM_FILE=$(top)/$(FIRMWARE_LOCATE)/SmuFirmware$(FIRMWARE_TYPE).sbin
 SMUFWM_FN_FILE=$(top)/$(FIRMWARE_LOCATE)/SmuFirmware$(FIRMWARE_TYPE)_FN.sbin
-
-###95
 SMUSCS_FILE=$(top)/$(FIRMWARE_LOCATE)/SmuScs$(FIRMWARE_TYPE).bin
-
-###9
-PSPSECUREDEBUG_FILE=$(top)/$(FIRMWARE_LOCATE)/PspSecureDebug$(FIRMWARE_TYPE).Key
-
-###12
-ifeq ($(CONFIG_CPU_AMD_PI_00730F01), y)
-PSPTRUSTLETS_FILE=$(top)/$(FIRMWARE_LOCATE)/trustlets.bin
-else ifeq ($(CONFIG_CPU_AMD_PI_00660F01), y)
-PSPTRUSTLETS_FILE=$(top)/$(FIRMWARE_LOCATE)/PspTrustlets_prod_$(FIRMWARE_TYPE).cbin
-endif
-
-###13
-ifeq ($(CONFIG_CPU_AMD_PI_00730F01), y)
-TRUSTLETKEY_FILE=$(top)/$(FIRMWARE_LOCATE)/Trustlet.tkn.cert
-else ifeq ($(CONFIG_CPU_AMD_PI_00660F01), y)
-TRUSTLETKEY_FILE=$(top)/$(FIRMWARE_LOCATE)/TrustletKey_prod_$(FIRMWARE_TYPE).sbin
-endif
-
-###18
-ifeq ($(CONFIG_CPU_AMD_PI_00660F01), y)
-SMUFIRMWARE2_FILE=$(top)/$(FIRMWARE_LOCATE)/SmuFirmware2_prod_$(FIRMWARE_TYPE).sbin
-endif
+#PSPSECUREDEBUG_FILE=$(top)/$(FIRMWARE_LOCATE)/PspSecureDebug$(FIRMWARE_TYPE).Key
 
 endif
 
@@ -229,6 +194,7 @@ $(obj)/amdfw.rom:	$(call strip_quotes, $(CONFIG_HUDSON_XHCI_FWM_FILE)) \
 		$(OPT_2SMUFIRMWARE2_FN_FILE) \
 		$(OPT_2SMUSCS_FILE) \
 		--flashsize $(CONFIG_ROM_SIZE) \
+		--location $(HUDSON_FWM_POSITION) \
 		--output	$@
 
 ifeq ($(CONFIG_AMDFW_OUTSIDE_CBFS),y)

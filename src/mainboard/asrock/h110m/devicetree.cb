@@ -33,6 +33,9 @@ chip soc/intel/skylake
 	register "gpe0_dw1" = "GPP_D"
 	register "gpe0_dw2" = "GPP_E"
 
+	# Set @0x280-0x2ff I/O Range for SuperIO HWM
+	register "gen1_dec" = "0x007c0281"
+
 	# Enable "Intel Speed Shift Technology"
 	register "speed_shift_enable" = "1"
 
@@ -89,64 +92,63 @@ chip soc/intel/skylake
 	#| Psi4Enable     | 1     | 1     | 1           | 1           | 1     |
 	#| ImonSlope      | 0     | 0     | 0           | 0           | 0     |
 	#| ImonOffset     | 0     | 0     | 0           | 0           | 0     |
-	#| IccMax         | 7A    | 34A   | 34A         | 35A         | 35A   |
+	#| IccMax*        | 0     | 0     | 0           | 0           | 0     |
 	#| VrVoltageLimit | 1.52V | 1.52V | 1.52V       | 1.52V       | 1.52V |
 	#+----------------+-------+-------+-------------+-------------+-------+
+	# * - is set automatically for the KBL-S/KBL-DT CPUs in the vr_config.c
 	register "domain_vr_config[VR_SYSTEM_AGENT]" = "{
 		.vr_config_enable = 1, \
-		.psi1threshold = 0x50, \
-		.psi2threshold = 0x10, \
-		.psi3threshold = 0x4, \
+		.psi1threshold = VR_CFG_AMP(20), \
+		.psi2threshold = VR_CFG_AMP(4), \
+		.psi3threshold = VR_CFG_AMP(1), \
 		.psi3enable = 1, \
 		.psi4enable = 1, \
 		.imon_slope = 0x0, \
 		.imon_offset = 0x0, \
 		.icc_max = 0x0, \
-		.voltage_limit = 0x0 \
+		.voltage_limit = 1520 \
 	}"
 
 	register "domain_vr_config[VR_IA_CORE]" = "{
 		.vr_config_enable = 1, \
-		.psi1threshold = 0x50, \
-		.psi2threshold = 0x14, \
-		.psi3threshold = 0x4, \
+		.psi1threshold = VR_CFG_AMP(20), \
+		.psi2threshold = VR_CFG_AMP(5), \
+		.psi3threshold = VR_CFG_AMP(1), \
 		.psi3enable = 1, \
 		.psi4enable = 1, \
 		.imon_slope = 0x0, \
 		.imon_offset = 0x0, \
 		.icc_max = 0x0, \
-		.voltage_limit = 0x0 \
+		.voltage_limit = 1520 \
 	}"
 
 	register "domain_vr_config[VR_GT_UNSLICED]" = "{
 		.vr_config_enable = 1, \
-		.psi1threshold = 0x50, \
-		.psi2threshold = 0x14, \
-		.psi3threshold = 0x4, \
+		.psi1threshold = VR_CFG_AMP(20), \
+		.psi2threshold = VR_CFG_AMP(5), \
+		.psi3threshold = VR_CFG_AMP(1), \
 		.psi3enable = 1, \
 		.psi4enable = 1, \
 		.imon_slope = 0x0, \
 		.imon_offset = 0x0, \
 		.icc_max = 0x0 ,\
-		.voltage_limit = 0x0 \
+		.voltage_limit = 1520 \
 	}"
 
 	register "domain_vr_config[VR_GT_SLICED]" = "{
 		.vr_config_enable = 1, \
-		.psi1threshold = 0x50, \
-		.psi2threshold = 0x14, \
-		.psi3threshold = 0x4, \
+		.psi1threshold = VR_CFG_AMP(20), \
+		.psi2threshold = VR_CFG_AMP(5), \
+		.psi3threshold = VR_CFG_AMP(1), \
 		.psi3enable = 1, \
 		.psi4enable = 1, \
 		.imon_slope = 0x0, \
 		.imon_offset = 0x0, \
 		.icc_max = 0x0, \
-		.voltage_limit = 0x0 \
+		.voltage_limit = 1520 \
 	}"
 
 	register "EnableLan" = "0"
-	register "i2c_voltage[4]" = "I2C_VOLTAGE_1V8"  # I2C4 is 1.8V
-
 	register "PmTimerDisabled" = "0"
 
 	# USB
@@ -183,21 +185,23 @@ chip soc/intel/skylake
 		[1]     = 1, \
 		[2]     = 1, \
 		[3]     = 1, \
-		[4]     = 1, \
-		[5]     = 1, \
-		[6]     = 1, \
-		[7]     = 1, \
+		[4]     = 0, \
+		[5]     = 0, \
+		[6]     = 0, \
+		[7]     = 0, \
 	}"
+	# SATA4 and SATA5 are located in the lower right corner
+	# of the board, but there is no connector for this
 
 	# PCH UART, SPI, I2C
 	register "SerialIoDevMode" = "{ \
-		[PchSerialIoIndexI2C0]  = PchSerialIoPci, \
-		[PchSerialIoIndexI2C1]  = PchSerialIoPci, \
+		[PchSerialIoIndexI2C0]  = PchSerialIoDisabled, \
+		[PchSerialIoIndexI2C1]  = PchSerialIoDisabled, \
 		[PchSerialIoIndexI2C2]  = PchSerialIoDisabled, \
 		[PchSerialIoIndexI2C3]  = PchSerialIoDisabled, \
 		[PchSerialIoIndexI2C4]  = PchSerialIoDisabled, \
 		[PchSerialIoIndexI2C5]  = PchSerialIoDisabled, \
-		[PchSerialIoIndexSpi0]  = PchSerialIoPci, \
+		[PchSerialIoIndexSpi0]  = PchSerialIoDisabled, \
 		[PchSerialIoIndexSpi1]  = PchSerialIoDisabled, \
 		[PchSerialIoIndexUart0] = PchSerialIoDisabled, \
 		[PchSerialIoIndexUart1] = PchSerialIoDisabled, \
@@ -274,6 +278,8 @@ chip soc/intel/skylake
 		device pci 02.0 on # Integrated Graphics Device
 			subsystemid 0x1849 0x1912
 		end
+		device pci 04.0 on  end # Thermal Subsystem
+		device pci 08.0 off end # Gaussian Mixture Model
 		device pci 14.0 on # USB xHCI
 			subsystemid 0x1849 0xa131
 		end
@@ -321,12 +327,22 @@ chip soc/intel/skylake
 			subsystemid 0x1849 0x1a43
 			chip superio/nuvoton/nct6791d
 				device pnp 2e.0   off end # Floppy
-				device pnp 2e.1   on      # Parallel
-					# global
-					irq 0x1c = 0x10
+				device pnp 2e.1   on
+					# Global Control Registers
+					# Device IRQ Polarity
+					irq 0x13 = 0x00
+					irq 0x14 = 0x00
+					# Global Option
+					irq 0x24 = 0xfb
 					irq 0x27 = 0x10
-					irq 0x2a = 0x64
-					# parallel port
+					# Multi Function
+					irq 0x1a = 0xb0
+					irq 0x1b = 0xe6
+					irq 0x2a = 0x04
+					irq 0x2c = 0x40
+					irq 0x2d = 0x03
+
+					# Parallel Port
 					io  0x60 = 0x0378
 					irq 0x70 = 7
 					drq 0x74 = 4      # No DMA
@@ -347,19 +363,46 @@ chip soc/intel/skylake
 					irq 0x72 = 12     # Mouse
 				end
 				device pnp 2e.6   off end # CIR
-				device pnp 2e.7   off end # GPIO6
-				device pnp 2e.107 off end # GPIO7
-				device pnp 2e.207 off end # GPIO8
+				device pnp 2e.7   on      # GPIO6
+					irq 0xf6 = 0xff
+					irq 0xf7 = 0xff
+					irq 0xf8 = 0xff
+				end
+				device pnp 2e.107 on      # GPIO7
+					irq 0xe0 = 0x7f
+					irq 0xe1 = 0x0d
+				end
+				device pnp 2e.207 on      # GPIO8
+					irq 0xe6 = 0xff
+					irq 0xe7 = 0xff
+					irq 0xed = 0xff
+				end
 				device pnp 2e.8   off end # WDT
-				device pnp 2e.108 off end # GPIO0
+				device pnp 2e.108 on  end # GPIO0
 				device pnp 2e.308 off end # GPIO base
 				device pnp 2e.408 off end # WDTMEM
-				device pnp 2e.708 off end # GPIO1
-				device pnp 2e.9   off end # GPIO2
-				device pnp 2e.109 off end # GPIO3
-				device pnp 2e.209 off end # GPIO4
-				device pnp 2e.309 off end # GPIO5
-				device pnp 2e.a   off end # ACPI
+				device pnp 2e.708 on  end # GPIO1
+				device pnp 2e.9   on  end # GPIO2
+				device pnp 2e.109 on      # GPIO3
+					irq 0xe4 = 0x7b
+					irq 0xe5 = 0x02
+					irq 0xea = 0x04
+				end
+				device pnp 2e.209 on      # GPIO4
+					irq 0xf0 = 0x7f
+					irq 0xf1 = 0x80
+				end
+				device pnp 2e.309 on      # GPIO5
+					irq 0xf4 = 0xdf
+					irq 0xf5 = 0xd5
+				end
+				device pnp 2e.a   on
+					# Power RAM in S3 and let the PCH
+					# handle power failure actions
+					irq 0xe4 = 0x70
+					# Set HWM reset source to LRESET#
+					irq 0xe7 = 0x01
+				end # ACPI
 				device pnp 2e.b   on      # HWM, LED
 					io  0x60 = 0x0290
 					io  0x62 = 0

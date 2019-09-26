@@ -402,7 +402,7 @@ endif
 CFLAGS_common += -pipe -g -nostdinc -std=gnu11
 CFLAGS_common += -nostdlib -Wall -Wundef -Wstrict-prototypes -Wmissing-prototypes
 CFLAGS_common += -Wwrite-strings -Wredundant-decls -Wno-trigraphs -Wimplicit-fallthrough
-CFLAGS_common += -Wstrict-aliasing -Wshadow -Wdate-time -Wtype-limits
+CFLAGS_common += -Wstrict-aliasing -Wshadow -Wdate-time -Wtype-limits -Wvla
 CFLAGS_common += -fno-common -ffreestanding -fno-builtin -fomit-frame-pointer
 CFLAGS_common += -ffunction-sections -fdata-sections -fno-pie
 ifeq ($(CONFIG_COMPILER_GCC),y)
@@ -497,14 +497,14 @@ build_h_exports := BUILD_TIMELESS KERNELVERSION COREBOOT_EXTRA_VERSION
 # Report new `build.ht` as dependency if `build.h` differs.
 build_h_check := \
 	export $(foreach exp,$(build_h_exports),$(exp)="$($(exp))"); \
-	util/genbuild_h/genbuild_h.sh >$(build_h)t 2>/dev/null; \
+	util/genbuild_h/genbuild_h.sh .xcompile >$(build_h)t 2>/dev/null; \
 	cmp -s $(build_h)t $(build_h) >/dev/null 2>&1 || echo $(build_h)t
 
 $(build_h): $$(shell $$(build_h_check))
 	@printf "    GEN        build.h\n"
 	mv $< $@
 
-build-dirs:
+build-dirs $(objcbfs) $(objgenerated):
 	mkdir -p $(objcbfs) $(objgenerated)
 
 #######################################################################
@@ -646,7 +646,7 @@ install-git-commit-clangfmt:
 include util/crossgcc/Makefile.inc
 
 .PHONY: tools
-tools: $(objutil)/kconfig/conf $(CBFSTOOL) $(objutil)/cbfstool/cbfs-compression-tool $(FMAPTOOL) $(RMODTOOL) $(IFWITOOL) $(objutil)/nvramtool/nvramtool $(ROMCC_BIN) $(objutil)/sconfig/sconfig $(IFDTOOL) $(CBOOTIMAGE) $(AMDFWTOOL) $(AMDCOMPRESS) $(FUTILITY) $(BINCFG) $(IFITTOOL)
+tools: $(objutil)/kconfig/conf $(objutil)/kconfig/toada $(CBFSTOOL) $(objutil)/cbfstool/cbfs-compression-tool $(FMAPTOOL) $(RMODTOOL) $(IFWITOOL) $(objutil)/nvramtool/nvramtool $(ROMCC_BIN) $(objutil)/sconfig/sconfig $(IFDTOOL) $(CBOOTIMAGE) $(AMDFWTOOL) $(AMDCOMPRESS) $(FUTILITY) $(BINCFG) $(IFITTOOL)
 
 ###########################################################################
 # Common recipes for all stages
@@ -706,7 +706,7 @@ $(objcbfs)/bootblock.raw.bin: $(objcbfs)/bootblock.raw.elf
 	$(OBJCOPY_bootblock) -O binary $< $@
 
 ifneq ($(CONFIG_HAVE_BOOTBLOCK),y)
-$(objcbfs)/bootblock.bin:
+$(objcbfs)/bootblock.bin: $(objcbfs)
 	dd if=/dev/zero of=$@ bs=64 count=1
 endif
 

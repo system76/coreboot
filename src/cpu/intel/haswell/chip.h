@@ -1,8 +1,6 @@
 /*
  * This file is part of the coreboot project.
  *
- * Copyright (C) 2011 The Chromium OS Authors.  All rights reserved.
- *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; version 2 of the License.
@@ -12,8 +10,6 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  */
-
-extern struct chip_operations cpu_intel_haswell_ops;
 
 /* Magic value used to locate this chip in the device tree */
 #define SPEEDSTEP_APIC_MAGIC 0xACAC

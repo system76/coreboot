@@ -1,8 +1,6 @@
 /*
  * This file is part of the coreboot project.
  *
- * Copyright 2014 Google Inc.
- *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; version 2 of the License.
@@ -20,9 +18,6 @@
 
 static inline unsigned int smp_processor_id(void) { return 0; }
 
-
-#if !defined(__PRE_RAM__)
 struct cpu_driver { };
-#endif
 
 #endif /* __ARCH_CPU_H__ */

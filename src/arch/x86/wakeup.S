@@ -1,9 +1,6 @@
 /*
  * This file is part of the coreboot project.
  *
- * Copyright (C) 2009 Rudolf Marek <r.marek@assembler.cz>
- * Copyright (C) 2009 coresystems GmbH
- *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; version 2 of the License.
@@ -63,14 +60,6 @@ __wakeup:
 	/* the rest is taken as segment */
 	shr	$4, %eax
 	movw	%ax, (__wakeup_segment)
-
-	/* Then overwrite coreboot with our backed up memory */
-	cld
-	movl	8(%esp), %esi
-	movl	12(%esp), %edi
-	movl	16(%esp), %ecx
-	shrl	$2, %ecx
-	rep	movsl
 
 	/* Activate the right segment descriptor real mode. */
 	ljmp	$0x28, $RELOCATED(1f)

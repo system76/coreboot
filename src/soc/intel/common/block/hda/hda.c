@@ -19,7 +19,6 @@
 #include <device/azalia_device.h>
 #include <device/pci.h>
 #include <device/pci_ids.h>
-#include <device/pci_ops.h>
 #include <soc/intel/common/hda_verb.h>
 #include <soc/ramstage.h>
 
@@ -75,6 +74,8 @@ static struct device_operations hda_ops = {
 static const unsigned short pci_device_ids[] = {
 	PCI_DEVICE_ID_INTEL_SKL_AUDIO,
 	PCI_DEVICE_ID_INTEL_SKL_H_AUDIO,
+	PCI_DEVICE_ID_INTEL_LWB_AUDIO,
+	PCI_DEVICE_ID_INTEL_LWB_AUDIO_SUPER,
 	PCI_DEVICE_ID_INTEL_KBL_AUDIO,
 	PCI_DEVICE_ID_INTEL_CNL_AUDIO,
 	PCI_DEVICE_ID_INTEL_CNP_H_AUDIO,

@@ -143,7 +143,6 @@ void uart_tx_flush(int idx)
 	uart8250_mem_tx_flush(CONFIG_CONSOLE_SERIAL_UART_ADDRESS);
 }
 
-#ifndef __PRE_RAM__
 void uart_fill_lb(void *data)
 {
 	struct lb_serial serial;
@@ -151,8 +150,9 @@ void uart_fill_lb(void *data)
 	serial.baseaddr = CONFIG_CONSOLE_SERIAL_UART_ADDRESS;
 	serial.baud = get_uart_baudrate();
 	serial.regwidth = 1 << UART_SHIFT;
+	serial.input_hertz = uart_platform_refclk();
+	serial.uart_pci_addr = CONFIG_UART_PCI_ADDR;
 	lb_add_serial(&serial, data);
 
 	lb_add_console(LB_TAG_CONSOLE_SERIAL8250MEM, data);
 }
-#endif

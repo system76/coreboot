@@ -1,12 +1,6 @@
 /*
  * This file is part of the coreboot project.
  *
- * Copyright (C) 2015 Timothy Pearson <tpearson@raptorengineeringinc.com>,
- *	 Raptor Engineering
- * Copyright (C) 2012 Google LLC
- * 2005.6 by yhlu
- * 2006.3 yhlu add copy data from CAR to ram
- *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; version 2 of the License.
@@ -27,6 +21,7 @@
 #include <cpu/amd/car.h>
 #include <cpu/amd/msr.h>
 #include <arch/acpi.h>
+#include <program_loading.h>
 #include <romstage_handoff.h>
 
 #include "cpu/amd/car/disable_cache_as_ram.c"
@@ -44,12 +39,6 @@
 #define print_car_debug(format, arg...)
 #endif
 
-static size_t backup_size(void)
-{
-	size_t car_size = car_data_size();
-	return ALIGN_UP(car_size + 1024, 1024);
-}
-
 static void memcpy_(void *d, const void *s, size_t len)
 {
 	print_car_debug(" Copy [%08x-%08x] to [%08x - %08x] ...",
@@ -58,54 +47,12 @@ static void memcpy_(void *d, const void *s, size_t len)
 	memcpy(d, s, len);
 }
 
-static void memset_(void *d, int val, size_t len)
-{
-	print_car_debug(" Fill [%08x-%08x] ...",
-	(uint32_t) d, (uint32_t) (d + len - 1));
-	memset(d, val, len);
-}
-
 static int memcmp_(void *d, const void *s, size_t len)
 {
 	print_car_debug(" Compare [%08x-%08x] with [%08x - %08x] ...",
 		(uint32_t) s, (uint32_t) (s + len - 1),
 		(uint32_t) d, (uint32_t) (d + len - 1));
 	return memcmp(d, s, len);
-}
-
-static void prepare_romstage_ramstack(int s3resume)
-{
-	size_t backup_top = backup_size();
-	print_car_debug("Prepare CAR migration and stack regions...");
-
-	if (s3resume) {
-		void *resume_backup_memory =
-		acpi_backup_container(CONFIG_RAMBASE, HIGH_MEMORY_SAVE);
-		if (resume_backup_memory)
-			memcpy_(resume_backup_memory
-			+ HIGH_MEMORY_SAVE - backup_top,
-				(void *)(CONFIG_RAMTOP - backup_top),
-				backup_top);
-	}
-	memset_((void *)(CONFIG_RAMTOP - backup_top), 0, backup_top);
-
-	print_car_debug(" Done\n");
-}
-
-static void prepare_ramstage_region(int s3resume)
-{
-	size_t backup_top = backup_size();
-	print_car_debug("Prepare ramstage memory region...");
-
-	if (s3resume) {
-		void *resume_backup_memory =
-		acpi_backup_container(CONFIG_RAMBASE, HIGH_MEMORY_SAVE);
-		if (resume_backup_memory)
-			memcpy_(resume_backup_memory, (void *) CONFIG_RAMBASE,
-				HIGH_MEMORY_SAVE - backup_top);
-	}
-
-	print_car_debug(" Done\n");
 }
 
 /* Disable Erratum 343 Workaround, see RevGuide for Fam10h, Pub#41322 Rev 3.33
@@ -131,15 +78,16 @@ asmlinkage void *post_cache_as_ram(void)
 	 * boundary during romstage execution
 	 */
 	volatile uint32_t *lower_stack_boundary;
-	lower_stack_boundary =
-	(void *)((CONFIG_DCACHE_RAM_BASE + CONFIG_DCACHE_RAM_SIZE)
-	- CONFIG_DCACHE_BSP_STACK_SIZE);
+	lower_stack_boundary = (void *)((CONFIG_DCACHE_RAM_BASE + CONFIG_DCACHE_RAM_SIZE) -
+					CONFIG_DCACHE_BSP_TOP_STACK_SIZE);
+
 	if ((*lower_stack_boundary) != 0xdeadbeef)
 		printk(BIOS_WARNING, "BSP overran lower stack boundary.  Undefined behaviour may result!\n");
 
-	s3resume = acpi_is_wakeup_s3();
 
-	prepare_romstage_ramstack(s3resume);
+	/* ACPI S3 is not supported without RELOCATABLE_RAMSTAGE and
+	 * this will always return 0. */
+	s3resume = acpi_is_wakeup_s3();
 
 	romstage_handoff_init(s3resume);
 
@@ -153,11 +101,11 @@ asmlinkage void *post_cache_as_ram(void)
 	void *migrated_car = (void *)(CONFIG_RAMTOP - car_size);
 
 	print_car_debug("Copying data from cache to RAM...");
-	memcpy_(migrated_car, _car_relocatable_data_start, car_size);
+	memcpy_(migrated_car, _car_global_start, car_size);
 	print_car_debug(" Done\n");
 
 	print_car_debug("Verifying data integrity in RAM...");
-	if (memcmp_(migrated_car, _car_relocatable_data_start, car_size) == 0)
+	if (memcmp_(migrated_car, _car_global_start, car_size) == 0)
 		print_car_debug(" Done\n");
 	else
 		print_car_debug(" FAILED\n");
@@ -176,8 +124,6 @@ asmlinkage void cache_as_ram_new_stack(void)
 	/* Enable cached access to RAM in the range 0M to CACHE_TMP_RAMTOP */
 	set_var_mtrr(0, 0x00000000, CACHE_TMP_RAMTOP, MTRR_TYPE_WRBACK);
 	enable_cache();
-
-	prepare_ramstage_region(acpi_is_wakeup_s3());
 
 	set_sysinfo_in_ram(1); // So other core0 could start to train mem
 

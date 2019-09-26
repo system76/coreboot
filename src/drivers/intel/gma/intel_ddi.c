@@ -30,10 +30,8 @@
 #include <stdlib.h>
 #include <device/device.h>
 #include <device/pci_def.h>
-#include <device/pci_ops.h>
 #include <console/console.h>
 #include <arch/acpi.h>
-#include <arch/interrupt.h>
 #include <boot/coreboot_tables.h>
 #include <smbios.h>
 #include <device/pci.h>

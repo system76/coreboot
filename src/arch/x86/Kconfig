@@ -1,8 +1,6 @@
 ##
 ## This file is part of the coreboot project.
 ##
-## Copyright (C) 2009-2010 coresystems GmbH
-##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
 ## the Free Software Foundation; version 2 of the License.
@@ -80,6 +78,13 @@ config AP_IN_SIPI_WAIT
 	bool
 	default n
 	depends on ARCH_X86 && SMP
+
+config RESET_VECTOR_IN_RAM
+	bool
+	depends on ARCH_X86
+	help
+	  Select this option if the x86 soc implements custom code to handle the
+	  reset vector in RAM instead of the traditional 0xfffffff0 location.
 
 # Aligns 16bit entry code in bootblock so that hyper-threading CPUs
 # can boot AP CPUs to enable their shared caches.
@@ -222,8 +227,9 @@ config VERSTAGE_ADDR
 # Use the post CAR infrastructure for tearing down cache-as-ram
 # from a program loaded in RAM and subsequently loading ramstage.
 config POSTCAR_STAGE
-	def_bool n
-	select NO_CAR_GLOBAL_MIGRATION
+	def_bool y
+	depends on ARCH_X86
+	depends on !CAR_GLOBAL_MIGRATION
 
 config VERSTAGE_DEBUG_SPINLOOP
 	bool

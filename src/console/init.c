@@ -1,8 +1,6 @@
 /*
  * This file is part of the coreboot project.
  *
- * Copyright (C) 2003 Eric Biederman
- *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
  * published by the Free Software Foundation; version 2 of
@@ -24,11 +22,7 @@
 #include <version.h>
 
 /* Mutable console log level only allowed when RAM comes online. */
-#if defined(__PRE_RAM__)
-#define CONSOLE_LEVEL_CONST 1
-#else
-#define CONSOLE_LEVEL_CONST 0
-#endif
+#define CONSOLE_LEVEL_CONST !ENV_STAGE_HAS_DATA_SECTION
 
 static int console_inited CAR_GLOBAL;
 static int console_loglevel = CONFIG_DEFAULT_CONSOLE_LOGLEVEL;

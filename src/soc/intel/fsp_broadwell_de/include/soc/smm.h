@@ -20,17 +20,10 @@
 #include <stdint.h>
 #include <cpu/x86/msr.h>
 
-struct ied_header {
-	char signature[10];
-	u32 size;
-	u8 reserved[34];
-} __packed;
 
 struct smm_relocation_params {
-	u32 smram_base;
-	u32 smram_size;
-	u32 ied_base;
-	u32 ied_size;
+	uintptr_t ied_base;
+	size_t ied_size;
 	msr_t smrr_base;
 	msr_t smrr_mask;
 	msr_t prmrr_base;
@@ -41,37 +34,5 @@ struct smm_relocation_params {
 	int smm_save_state_in_msrs;
 };
 
-/*
- * There is a bug in the order of Kconfig includes in that arch/x86/Kconfig
- * is included after chipset code. This causes the chipset's Kconfig to be
- * clobbered by the arch/x86/Kconfig if they have the same name.
- */
-static inline int smm_region_size(void)
-{
-	/* Make it 8MiB by default. */
-	if (CONFIG_SMM_TSEG_SIZE == 0)
-		return (8 << 20);
-	return CONFIG_SMM_TSEG_SIZE;
-}
-
-void smm_relocation_handler(int cpu, uintptr_t curr_smbase,
-				uintptr_t staggered_smbase);
-void smm_info(uintptr_t *perm_smbase, size_t *perm_smsize,
-		size_t *smm_save_state_size);
-void smm_initialize(void);
-void smm_relocate(void);
-void smm_lock(void);
-
-/* These helpers are for performing SMM relocation. */
-void southbridge_trigger_smi(void);
-void southbridge_clear_smi_status(void);
-
-/*
- * The initialization of the southbridge is split into 2 components. One is
- * for clearing the state in the SMM registers. The other is for enabling
- * SMIs. They are split so that other work between the 2 actions.
- */
-void southbridge_smm_clear_state(void);
-void southbridge_smm_enable_smi(void);
 
 #endif

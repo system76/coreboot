@@ -29,11 +29,13 @@ tarball_dir:=$(project_dir)/tarball
 decompress_flag=.done
 
 OBJCOPY:=$(LINUXBOOT_CROSS_COMPILE)objcopy
+KERNEL_MAKE_FLAGS = \
+	ARCH=$(ARCH-y)
 
 ifeq ($(CONFIG_LINUXBOOT_KERNEL_CUSTOM),y)
 	kernel_version:=$(CONFIG_LINUXBOOT_KERNEL_CUSTOM_VERSION)
 else
-	kernel_version:=$(shell curl -s -k https://www.kernel.org/feeds/kdist.xml | \
+	kernel_version:=$(shell curl -sS -k https://www.kernel.org/feeds/kdist.xml | \
 		sed -n -e 's@.*<guid isPermaLink="false">\(.*\)</guid>.*@\1@p' | \
 		awk -F ',' '/$(TAG-y)/{ print $$3 }' | \
 		head -n 1)
@@ -67,7 +69,7 @@ ifneq ($(shell [[ -d "$(kernel_dir)" && -f "$(kernel_dir)/$(decompress_flag)" ]]
 	if [[ ! -f $(tarball_dir)/$(kernel_tarball).xz && ! -f $(tarball_dir)/$(kernel_tarball).xz ]]; then \
 	echo "    WWW        $(kernel_tarball).xz"; \
 	cd $(tarball_dir); \
-	curl -OLs "$(kernel_mirror_path)/$(kernel_tarball).xz"; \
+	curl -OLSs "$(kernel_mirror_path)/$(kernel_tarball).xz"; \
 	cd $(pwd); \
 	fi
 endif
@@ -90,15 +92,15 @@ ifeq ($(CONFIG_LINUXBOOT_KERNEL_CUSTOM_CONFIG),y)
 else
 	cp $(ARCH-y)/defconfig $(kernel_dir)/.config
 endif
-	$(MAKE) -C $(kernel_dir) olddefconfig ARCH=$(ARCH-y)
+	$(MAKE) -C $(kernel_dir) $(KERNEL_MAKE_FLAGS) olddefconfig
 
 build: $(kernel_dir)/.config
 	@echo "    MAKE       Linux $(kernel_version)"
 ifeq ($(CONFIG_LINUXBOOT_KERNEL_BZIMAGE),y)
-	$(MAKE) -C $(kernel_dir) CROSS_COMPILE=$(LINUXBOOT_CROSS_COMPILE) ARCH=$(ARCH-y) bzImage
+	$(MAKE) -C $(kernel_dir) $(KERNEL_MAKE_FLAGS) CROSS_COMPILE=$(LINUXBOOT_CROSS_COMPILE) bzImage
 else
 ifeq ($(CONFIG_LINUXBOOT_KERNEL_UIMAGE),y)
-	$(MAKE) -C $(kernel_dir) CROSS_COMPILE=$(LINUXBOOT_CROSS_COMPILE) ARCH=$(ARCH-y) vmlinux
+	$(MAKE) -C $(kernel_dir) $(KERNEL_MAKE_FLAGS) CROSS_COMPILE=$(LINUXBOOT_CROSS_COMPILE) vmlinux
 endif
 endif
 

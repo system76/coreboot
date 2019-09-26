@@ -30,12 +30,12 @@ uint32_t vboot_setup_tpm(struct vb2_context *ctx)
 	return result;
 }
 
-uint32_t vboot_extend_pcr(struct vb2_context *ctx, int pcr,
-			  enum vb2_pcr_digest which_digest)
+vb2_error_t vboot_extend_pcr(struct vb2_context *ctx, int pcr,
+			     enum vb2_pcr_digest which_digest)
 {
 	uint8_t buffer[VB2_PCR_DIGEST_RECOMMENDED_SIZE];
 	uint32_t size = sizeof(buffer);
-	int rv;
+	vb2_error_t rv;
 
 	rv = vb2api_get_pcr_digest(ctx, which_digest, buffer, &size);
 	if (rv != VB2_SUCCESS)
@@ -46,7 +46,7 @@ uint32_t vboot_extend_pcr(struct vb2_context *ctx, int pcr,
 	switch (which_digest) {
 	/* SHA1 of (devmode|recmode|keyblock) bits */
 	case BOOT_MODE_PCR:
-		return tpm_extend_pcr(pcr, VB2_HASH_SHA1, buffer, size,
+		return tpm_extend_pcr(pcr, VB2_HASH_SHA256, buffer, size,
 				      TPM_PCR_BOOT_MODE);
 	 /* SHA256 of HWID */
 	case HWID_DIGEST_PCR:

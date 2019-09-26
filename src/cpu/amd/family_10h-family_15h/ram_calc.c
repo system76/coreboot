@@ -1,9 +1,6 @@
 /*
  * This file is part of the coreboot project.
  *
- * Copyright (C) 2015 Timothy Pearson <tpearson@raptorengineeringinc.com>, Raptor Engineering
- * Copyright (C) 2007 Advanced Micro Devices, Inc.
- *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; version 2 of the License.
@@ -68,7 +65,7 @@ uint64_t get_cc6_memory_size()
 	if (is_fam15h()) {
 		enable_cc6 = 0;
 
-#ifdef __PRE_RAM__
+#ifdef __SIMPLE_DEVICE__
 		if (pci_read_config32(PCI_DEV(0, 0x18, 2), 0x118) & (0x1 << 18))
 			enable_cc6 = 1;
 #else

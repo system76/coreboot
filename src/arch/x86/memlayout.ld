@@ -1,8 +1,6 @@
 /*
  * This file is part of the coreboot project.
  *
- * Copyright 2015 Google Inc
- *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; version 2 of the License.
@@ -15,6 +13,15 @@
 
 #include <memlayout.h>
 #include <arch/header.ld>
+
+/* Pull in the either CAR or early DRAM rules. */
+#if ENV_ROMSTAGE_OR_BEFORE
+#if ENV_CACHE_AS_RAM
+#define EARLY_MEMLAYOUT	"car.ld"
+#else
+#error "Early DRAM environment for x86 is work-in-progress. */
+#endif
+#endif
 
 SECTIONS
 {
@@ -34,23 +41,20 @@ SECTIONS
 	 * Link at 32MiB address and rely on cbfstool to relocate to XIP. */
 	ROMSTAGE(CONFIG_ROMSTAGE_ADDR, 1M)
 
-	/* Pull in the cache-as-ram rules. */
-	#include "car.ld"
+	#include EARLY_MEMLAYOUT
 #elif ENV_VERSTAGE
 	/* The 1M size is not allocated. It's just for basic size checking.
 	 * Link at 32MiB address and rely on cbfstool to relocate to XIP. */
 	VERSTAGE(CONFIG_VERSTAGE_ADDR, 1M)
 
-	/* Pull in the cache-as-ram rules. */
-	#include "car.ld"
+	#include EARLY_MEMLAYOUT
 #elif ENV_BOOTBLOCK
 	/* This is for C_ENVIRONMENT_BOOTBLOCK. arch/x86/bootblock.ld contains
 	 * the logic for the romcc linking. */
 	BOOTBLOCK(0xffffffff - CONFIG_C_ENV_BOOTBLOCK_SIZE + 1,
 			CONFIG_C_ENV_BOOTBLOCK_SIZE)
 
-	/* Pull in the cache-as-ram rules. */
-	#include "car.ld"
+	#include EARLY_MEMLAYOUT
 
 #elif ENV_POSTCAR
 	POSTCAR(32M, 1M)

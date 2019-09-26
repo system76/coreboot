@@ -2,12 +2,6 @@
 ##
 ## This file is part of the coreboot project.
 ##
-## Copyright (C) 2014 Google Inc.
-## Copyright (C) 2012-2013 The ChromiumOS Authors
-## Copyright (C) 2012 Alexandru Gagniuc <mr.nuke.me@gmail.com>
-## Copyright (C) 2009-2010 coresystems GmbH
-## Copyright (C) 2009 Ronald G. Minnich
-##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
 ## the Free Software Foundation; version 2 of the License.
@@ -107,6 +101,7 @@ romstage-$(CONFIG_ARM64_USE_ARCH_TIMER) += arch_timer.c
 romstage-y += memset.S
 romstage-y += memcpy.S
 romstage-y += memmove.S
+romstage-y += ramdetect.c
 romstage-y += romstage.c
 romstage-y += transition.c transition_asm.S
 
@@ -131,11 +126,12 @@ ramstage-y += div0.c
 ramstage-y += eabi_compat.c
 ramstage-y += boot.c
 ramstage-y += tables.c
+ramstage-y += ramdetect.c
 ramstage-$(CONFIG_ARM64_USE_ARCH_TIMER) += arch_timer.c
 ramstage-y += memset.S
 ramstage-y += memcpy.S
 ramstage-y += memmove.S
-ramstage-$(CONFIG_ARM64_USE_ARM_TRUSTED_FIRMWARE) += arm_tf.c
+ramstage-$(CONFIG_ARM64_USE_ARM_TRUSTED_FIRMWARE) += bl31.c
 ramstage-y += transition.c transition_asm.S
 ramstage-$(CONFIG_PAYLOAD_FIT_SUPPORT) += fit_payload.c
 

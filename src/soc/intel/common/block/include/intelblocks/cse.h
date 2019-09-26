@@ -19,6 +19,49 @@
 
 #include <stdint.h>
 
+/* HFSTS register offsets in PCI config space */
+enum {
+	PCI_ME_HFSTS1 = 0x40,
+	PCI_ME_HFSTS2 = 0x48,
+	PCI_ME_HFSTS3 = 0x60,
+	PCI_ME_HFSTS4 = 0x64,
+	PCI_ME_HFSTS5 = 0x68,
+	PCI_ME_HFSTS6 = 0x6C,
+};
+
+/* ME Host Firmware Status register 1 */
+union me_hfsts1 {
+	u32 data;
+	struct {
+		u32 working_state: 4;
+		u32 mfg_mode: 1;
+		u32 fpt_bad: 1;
+		u32 operation_state: 3;
+		u32 fw_init_complete: 1;
+		u32 ft_bup_ld_flr: 1;
+		u32 update_in_progress: 1;
+		u32 error_code: 4;
+		u32 operation_mode: 4;
+		u32 reset_count: 4;
+		u32 boot_options_present: 1;
+		u32 reserved1: 1;
+		u32 bist_test_state: 1;
+		u32 bist_reset_request: 1;
+		u32 current_power_source: 2;
+		u32 d3_support_valid: 1;
+		u32 d0i3_support_valid: 1;
+	} __packed fields;
+};
+
+/* HECI Message Header */
+struct mkhi_hdr {
+	uint8_t group_id;
+	uint8_t command:7;
+	uint8_t is_resp:1;
+	uint8_t rsvd;
+	uint8_t result;
+} __packed;
+
 /* set up device for use in early boot enviroument with temp bar */
 void heci_init(uintptr_t bar);
 /*
@@ -37,6 +80,14 @@ int heci_receive(void *buff, size_t *maxlen);
  */
 int
 heci_send(const void *msg, size_t len, uint8_t host_addr, uint8_t cse_addr);
+
+/*
+ * Sends snd_msg of size snd_sz, and reads message into buffer pointed by
+ * rcv_msg of size rcv_sz
+ * Returns 0 on failure a 1 on success.
+ */
+int heci_send_receive(const void *snd_msg, size_t snd_sz, void *rcv_msg, size_t *rcv_sz);
+
 /*
  * Attempt device reset. This is useful and perhaps only thing left to do when
  * CPU and CSE are out of sync or CSE fails to respond.
@@ -44,7 +95,58 @@ heci_send(const void *msg, size_t len, uint8_t host_addr, uint8_t cse_addr);
  */
 int heci_reset(void);
 
+/* Reads config value from a specified offset in the CSE PCI Config space. */
+uint32_t me_read_config32(int offset);
+
+/*
+ * Check if the CSE device is enabled in device tree. Also check if the device
+ * is visible on the PCI bus by reading config space.
+ * Return true if device present and config space enabled, else return false.
+ */
+bool is_cse_enabled(void);
+
+
+/* Makes the host ready to communicate with CSE*/
+void set_host_ready(void);
+
+/*
+ * Polls for ME state 'HECI_OP_MODE_SEC_OVERRIDE' for 15 seconds.
+ * Returns 0 on failure a 1 on success.
+ */
+uint8_t wait_cse_sec_override_mode(void);
+
+/*
+ * Sends GLOBAL_RESET_REQ cmd to CSE.The reset type can be
+ * GLOBAL_RESET/HOST_RESET_ONLY/CSE_RESET_ONLY.
+ * Returns -1 on failure a 0 on success.
+ */
+int send_heci_reset_req_message(uint8_t rst_type);
+
+/*
+ * Send HMRFPO_ENABLE command.
+ * returns 0 on failure and 1 on success.
+ */
+int send_hmrfpo_enable_msg(void);
+
+/*
+ * Send HMRFPO_GET_STATUS command.
+ * returns -1 on failure and 0 (DISABLED)/ 1 (LOCKED)/ 2 (ENABLED)
+ * on success.
+ */
+int send_hmrfpo_get_status_msg(void);
+
+
 #define BIOS_HOST_ADDR							0x00
 #define HECI_MKHI_ADDR							0x07
+
+/* Command GLOBAL_RESET_REQ Reset Types */
+#define GLOBAL_RESET       1
+#define HOST_RESET_ONLY    2
+#define CSE_RESET_ONLY     3
+
+/*HMRFPO Status types */
+#define MKHI_HMRFPO_DISABLED	0
+#define MKHI_HMRFPO_LOCKED	1
+#define MKHI_HMRFPO_ENABLED	2
 
 #endif // SOC_INTEL_COMMON_MSR_H

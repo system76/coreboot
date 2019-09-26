@@ -18,14 +18,9 @@
 #ifndef _QUARK_ROMSTAGE_H_
 #define _QUARK_ROMSTAGE_H_
 
-#if !defined(__PRE_RAM__)
-#error "Don't include romstage.h from a ramstage compilation unit!"
-#endif
-
 #include <soc/car.h>
 #include <soc/reg_access.h>
 
-asmlinkage void car_stage_c_entry(void);
 void clear_smi_and_wake_events(void);
 void disable_rom_shadow(void);
 void *locate_rmu_file(size_t *rmu_file_len);

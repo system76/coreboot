@@ -266,6 +266,27 @@
 #define ENV_PAYLOAD_LOADER ENV_RAMSTAGE
 #endif
 
+#define ENV_ROMSTAGE_OR_BEFORE \
+	(ENV_DECOMPRESSOR || ENV_BOOTBLOCK || ENV_ROMSTAGE || \
+	(ENV_VERSTAGE && CONFIG(VBOOT_STARTS_IN_BOOTBLOCK)))
+
+#if CONFIG(ARCH_X86)
+/* Indicates memory layout is determined with arch/x86/car.ld. */
+#define ENV_CACHE_AS_RAM		(ENV_ROMSTAGE_OR_BEFORE && !CONFIG(RESET_VECTOR_IN_RAM))
+/* No .data sections with execute-in-place from ROM.  */
+#define ENV_STAGE_HAS_DATA_SECTION	!ENV_CACHE_AS_RAM
+/* No .bss sections for stage with CAR teardown. */
+#define ENV_STAGE_HAS_BSS_SECTION	!(ENV_ROMSTAGE && CONFIG(CAR_GLOBAL_MIGRATION))
+#else
+/* Both .data and .bss, sometimes SRAM not DRAM. */
+#define ENV_STAGE_HAS_DATA_SECTION	1
+#define ENV_STAGE_HAS_BSS_SECTION	1
+#define ENV_CACHE_AS_RAM		0
+#endif
+
+/* Currently rmodules, ramstage and smm have heap. */
+#define ENV_STAGE_HAS_HEAP_SECTION	(ENV_RMODULE || ENV_RAMSTAGE || ENV_SMM)
+
 /**
  * For pre-DRAM stages and post-CAR always build with simple device model, ie.
  * PCI, PNP and CPU functions operate without use of devicetree. The reason
@@ -277,16 +298,8 @@
  * be built with simple device model.
  */
 
-#if (defined(__PRE_RAM__) || ENV_SMM || !ENV_PAYLOAD_LOADER)
+#if !ENV_RAMSTAGE
 #define __SIMPLE_DEVICE__
-#endif
-
-/* x86 specific. Indicates that the current stage is running with cache-as-ram
- * enabled from the beginning of the stage in C code. */
-#if defined(__PRE_RAM__)
-#define ENV_CACHE_AS_RAM CONFIG(CACHE_AS_RAM)
-#else
-#define ENV_CACHE_AS_RAM 0
 #endif
 
 #endif /* _RULES_H */

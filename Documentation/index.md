@@ -161,7 +161,7 @@ for example OpenBSD, is probably the closest cousin of our approach.
 Contents:
 
 * [Getting Started](getting_started/index.md)
-* [Rookie Guide](lessons/index.md)
+* [Tutorial](tutorial/index.md)
 * [Coding Style](coding_style.md)
 * [Project Ideas](contributing/project_ideas.md)
 * [Code of Conduct](community/code_of_conduct.md)
@@ -172,6 +172,7 @@ Contents:
 * [Intel IFD Binary Extraction](Binary_Extraction.md)
 * [Dealing with Untrusted Input in SMM](technotes/2017-02-dealing-with-untrusted-input-in-smm.md)
 * [GPIO toggling in ACPI AML](acpi/gpio.md)
+* [Adding devices to a device tree](acpi/devicetree.md)
 * [Native Graphics Initialization with libgfxinit](gfx/libgfxinit.md)
 * [Display panel-specific documentation](gfx/display-panel.md)
 * [Architecture-specific documentation](arch/index.md)

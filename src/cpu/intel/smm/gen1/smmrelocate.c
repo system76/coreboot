@@ -1,8 +1,6 @@
 /*
  * This file is part of the coreboot project.
  *
- * Copyright (C) 2013 Google LLC
- *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; version 2 of the License.
@@ -27,9 +25,10 @@
 #include <cpu/x86/msr.h>
 #include <cpu/x86/mtrr.h>
 #include <cpu/x86/smm.h>
+#include <cpu/intel/em64t101_save_state.h>
+#include <cpu/intel/smm_reloc.h>
 #include <console/console.h>
 #include <smp/node.h>
-#include "smi.h"
 
 #define SMRR_SUPPORTED (1 << 11)
 
@@ -39,18 +38,11 @@
 #define  G_SMRAME	(1 << 3)
 #define  C_BASE_SEG	((0 << 2) | (1 << 1) | (0 << 0))
 
-struct ied_header {
-	char signature[10];
-	u32 size;
-	u8 reserved[34];
-} __packed;
 
 
 struct smm_relocation_params {
-	u32 smram_base;
-	u32 smram_size;
-	u32 ied_base;
-	u32 ied_size;
+	uintptr_t ied_base;
+	size_t ied_size;
 	msr_t smrr_base;
 	msr_t smrr_mask;
 };
@@ -77,75 +69,61 @@ bool cpu_has_alternative_smrr(void)
 	}
 }
 
+static void write_smrr_alt(struct smm_relocation_params *relo_params)
+{
+	msr_t msr;
+	msr = rdmsr(IA32_FEATURE_CONTROL);
+	/* SMRR enabled and feature locked */
+	if (!((msr.lo & SMRR_ENABLE)
+			&& (msr.lo & FEATURE_CONTROL_LOCK_BIT))) {
+		printk(BIOS_WARNING,
+			"SMRR not enabled, skip writing SMRR...\n");
+		return;
+	}
+
+	printk(BIOS_DEBUG, "Writing SMRR. base = 0x%08x, mask=0x%08x\n",
+	       relo_params->smrr_base.lo, relo_params->smrr_mask.lo);
+
+	wrmsr(MSR_SMRR_PHYS_BASE, relo_params->smrr_base);
+	wrmsr(MSR_SMRR_PHYS_MASK, relo_params->smrr_mask);
+}
+
 static void write_smrr(struct smm_relocation_params *relo_params)
 {
 	printk(BIOS_DEBUG, "Writing SMRR. base = 0x%08x, mask=0x%08x\n",
 	       relo_params->smrr_base.lo, relo_params->smrr_mask.lo);
 
-	if (cpu_has_alternative_smrr()) {
-		msr_t msr;
-		msr = rdmsr(IA32_FEATURE_CONTROL);
-		/* SMRR enabled and feature locked */
-		if (!((msr.lo & SMRR_ENABLE)
-				&& (msr.lo & FEATURE_CONTROL_LOCK_BIT))) {
-			printk(BIOS_WARNING,
-				"SMRR not enabled, skip writing SMRR...\n");
-			return;
-		}
-		wrmsr(MSR_SMRR_PHYS_BASE, relo_params->smrr_base);
-		wrmsr(MSR_SMRR_PHYS_MASK, relo_params->smrr_mask);
-	} else {
-		wrmsr(IA32_SMRR_PHYS_BASE, relo_params->smrr_base);
-		wrmsr(IA32_SMRR_PHYS_MASK, relo_params->smrr_mask);
-	}
+	wrmsr(IA32_SMRR_PHYS_BASE, relo_params->smrr_base);
+	wrmsr(IA32_SMRR_PHYS_MASK, relo_params->smrr_mask);
 }
 
 static void fill_in_relocation_params(struct smm_relocation_params *params)
 {
+	uintptr_t tseg_base;
+	size_t tseg_size;
+
 	/* All range registers are aligned to 4KiB */
 	const u32 rmask = ~((1 << 12) - 1);
 
-	const u32 tsegmb = northbridge_get_tseg_base();
-	/* TSEG base is usually aligned down (to 8MiB). So we can't
-	   derive the TSEG size from the distance to GTT but use the
-	   configuration value instead. */
-	const u32 tseg_size = northbridge_get_tseg_size();
+	smm_region(&tseg_base, &tseg_size);
 
-	params->smram_base = tsegmb;
-	params->smram_size = tseg_size;
-	if (CONFIG_IED_REGION_SIZE != 0) {
-		ASSERT(params->smram_size > CONFIG_IED_REGION_SIZE);
-		params->smram_size -= CONFIG_IED_REGION_SIZE;
-		params->ied_base = tsegmb + tseg_size - CONFIG_IED_REGION_SIZE;
-		params->ied_size = CONFIG_IED_REGION_SIZE;
-	}
-
-	/* Adjust available SMM handler memory size. */
-	if (CONFIG(TSEG_STAGE_CACHE)) {
-		ASSERT(params->smram_size > CONFIG_SMM_RESERVED_SIZE);
-		params->smram_size -= CONFIG_SMM_RESERVED_SIZE;
-	}
-
-	if (IS_ALIGNED(tsegmb, tseg_size)) {
-		/* SMRR has 32-bits of valid address aligned to 4KiB. */
-		struct cpuinfo_x86 c;
-
-		/* On model_6fx and model_1067x bits [0:11] on smrr_base
-		   are reserved */
-		get_fms(&c, cpuid_eax(1));
-		if (cpu_has_alternative_smrr())
-			params->smrr_base.lo = (params->smram_base & rmask);
-		else
-			params->smrr_base.lo = (params->smram_base & rmask)
-				| MTRR_TYPE_WRBACK;
-		params->smrr_base.hi = 0;
-		params->smrr_mask.lo = (~(tseg_size - 1) & rmask)
-			| MTRR_PHYS_MASK_VALID;
-		params->smrr_mask.hi = 0;
-	} else {
+	if (!IS_ALIGNED(tseg_base, tseg_size)) {
 		printk(BIOS_WARNING,
 		       "TSEG base not aligned with TSEG SIZE! Not setting SMRR\n");
+		return;
 	}
+
+	/* SMRR has 32-bits of valid address aligned to 4KiB. */
+	params->smrr_base.lo = (tseg_base & rmask) | MTRR_TYPE_WRBACK;
+	params->smrr_base.hi = 0;
+	params->smrr_mask.lo = (~(tseg_size - 1) & rmask) | MTRR_PHYS_MASK_VALID;
+	params->smrr_mask.hi = 0;
+
+	/* On model_6fx and model_1067x bits [0:11] on smrr_base are reserved */
+	if (cpu_has_alternative_smrr())
+		params->smrr_base.lo &= ~rmask;
+
+	smm_subregion(SMM_SUBREGION_CHIPSET, &params->ied_base, &params->ied_size);
 }
 
 static void setup_ied_area(struct smm_relocation_params *params)
@@ -185,18 +163,18 @@ void smm_info(uintptr_t *perm_smbase, size_t *perm_smsize,
 
 	fill_in_relocation_params(&smm_reloc_params);
 
-	if (CONFIG_IED_REGION_SIZE != 0)
+	smm_subregion(SMM_SUBREGION_HANDLER, perm_smbase, perm_smsize);
+
+	if (smm_reloc_params.ied_size)
 		setup_ied_area(&smm_reloc_params);
 
-	*perm_smbase = smm_reloc_params.smram_base;
-	*perm_smsize = smm_reloc_params.smram_size;
 	*smm_save_state_size = sizeof(em64t101_smm_state_save_area_t);
 }
 
 void smm_initialize(void)
 {
 	/* Clear the SMM state in the southbridge. */
-	southbridge_smm_clear_state();
+	smm_southbridge_clear_state();
 
 	/*
 	 * Run the relocation handler for on the BSP to check and set up
@@ -220,7 +198,7 @@ void smm_relocation_handler(int cpu, uintptr_t curr_smbase,
 	printk(BIOS_DEBUG, "In relocation handler: cpu %d\n", cpu);
 
 	/* Make appropriate changes to the save state map. */
-	if (CONFIG_IED_REGION_SIZE != 0)
+	if (relo_params->ied_size)
 		printk(BIOS_DEBUG, "New SMBASE=0x%08x IEDBASE=0x%08x\n",
 		       smbase, iedbase);
 	else
@@ -234,7 +212,12 @@ void smm_relocation_handler(int cpu, uintptr_t curr_smbase,
 
 	/* Write EMRR and SMRR MSRs based on indicated support. */
 	mtrr_cap = rdmsr(MTRR_CAP_MSR);
-	if (mtrr_cap.lo & SMRR_SUPPORTED && relo_params->smrr_mask.lo != 0)
+	if (!(mtrr_cap.lo & SMRR_SUPPORTED))
+		return;
+
+	if (cpu_has_alternative_smrr())
+		write_smrr_alt(relo_params);
+	else
 		write_smrr(relo_params);
 }
 

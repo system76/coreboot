@@ -1,4 +1,7 @@
 chip soc/intel/cannonlake
+	register "tdp_pl1_override" = "13"
+	register "tdp_pl2_override" = "64"
+
 	register "SerialIoDevMode" = "{
 		[PchSerialIoIndexI2C0] = PchSerialIoPci,
 		[PchSerialIoIndexI2C1] = PchSerialIoPci,
@@ -100,7 +103,7 @@ chip soc/intel/cannonlake
 				register "generic.probed" = "1"
 				register "generic.reset_gpio" =
 					"ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_D15)"
-				register "generic.reset_delay_ms" = "10"
+				register "generic.reset_delay_ms" = "500"
 				register "generic.reset_off_delay_ms" = "1"
 				register "generic.enable_gpio" =
 					"ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_D9)"

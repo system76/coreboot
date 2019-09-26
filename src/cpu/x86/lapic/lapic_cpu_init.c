@@ -1,13 +1,6 @@
 /*
  * This file is part of the coreboot project.
  *
- * Copyright (C) 2001 Eric Biederman
- * Copyright (C) 2001 Ronald G. Minnich
- * Copyright (C) 2005 Yinghai Lu
- * Copyright (C) 2008 coresystems GmbH
- * Copyright (C) 2015 Timothy Pearson <tpearson@raptorengineeringinc.com>,
- * Raptor Engineering
- *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; version 2 of the License.
@@ -21,6 +14,7 @@
 #include <cpu/x86/cr.h>
 #include <cpu/x86/gdt.h>
 #include <cpu/x86/lapic.h>
+#include <cpu/x86/smi_deprecated.h>
 #include <arch/acpi.h>
 #include <delay.h>
 #include <halt.h>
@@ -590,14 +584,3 @@ void initialize_cpus(struct bus *cpu_bus)
 	if (is_smp_boot())
 		recover_lowest_1M();
 }
-
-#if !CONFIG(HAVE_SMI_HANDLER)
-/* Empty stubs for platforms without SMI handlers. */
-void smm_init(void)
-{
-}
-
-void smm_init_completion(void)
-{
-}
-#endif

@@ -14,42 +14,28 @@
  */
 
 #include <stddef.h>
-#include <arch/cpu.h>
 #include <arch/io.h>
+#include <arch/romstage.h>
 #include <device/mmio.h>
 #include <device/pci_ops.h>
-#include <bootblock_common.h>
 #include <console/console.h>
 #include <cbmem.h>
-#include <cpu/x86/mtrr.h>
 #if CONFIG(EC_GOOGLE_CHROMEEC)
 #include <ec/google/chromeec/ec.h>
 #endif
 #include <elog.h>
-#include <program_loading.h>
 #include <romstage_handoff.h>
-#include <stage_cache.h>
 #include <string.h>
 #include <timestamp.h>
 #include <vendorcode/google/chromeos/chromeos.h>
 #include <soc/gpio.h>
 #include <soc/iomap.h>
 #include <soc/lpc.h>
+#include <soc/msr.h>
 #include <soc/pci_devs.h>
 #include <soc/pmc.h>
 #include <soc/romstage.h>
-#include <soc/smm.h>
 #include <soc/spi.h>
-
-/* The cache-as-ram assembly file calls romstage_main() after setting up
- * cache-as-ram.  romstage_main() will then call the mainboards's
- * mainboard_romstage_entry() function. That function then calls
- * romstage_common() below. The reason for the back and forth is to provide
- * common entry point from cache-as-ram while still allowing for code sharing.
- * Because we can't use global variables the stack is used for allocations --
- * thus the need to call back and forth. */
-
-static void platform_enter_postcar(void);
 
 static void program_base_addresses(void)
 {
@@ -94,52 +80,6 @@ static void spi_init(void)
 	reg = (read32(bcr) & ~SRC_MASK) | SRC_CACHE_PREFETCH | BCR_WPD;
 	reg &= ~EISS;
 	write32(bcr, reg);
-}
-
-/* Entry from cache-as-ram.inc. */
-static void romstage_main(uint64_t tsc, uint32_t bist)
-{
-	struct romstage_params rp = {
-		.bist = bist,
-		.mrc_params = NULL,
-	};
-
-	/* Save initial timestamp from bootblock. */
-	timestamp_init(tsc);
-
-	/* Save romstage begin */
-	timestamp_add_now(TS_START_ROMSTAGE);
-
-	program_base_addresses();
-
-	tco_disable();
-
-	byt_config_com1_and_enable();
-
-	console_init();
-
-	spi_init();
-
-	set_max_freq();
-
-	punit_init();
-
-	gfx_init();
-
-	/* Call into mainboard. */
-	mainboard_romstage_entry(&rp);
-
-	platform_enter_postcar();
-
-	/* We don't return here */
-}
-
-/* This wrapper enables easy transition towards C_ENVIRONMENT_BOOTBLOCK,
- * keeping changes in cache_as_ram.S easy to manage.
- */
-asmlinkage void bootblock_c_entry_bist(uint64_t base_timestamp, uint32_t bist)
-{
-	romstage_main(base_timestamp, bist);
 }
 
 static struct chipset_power_state power_state;
@@ -211,11 +151,32 @@ static int chipset_prev_sleep_state(struct chipset_power_state *ps)
 	return prev_sleep_state;
 }
 
-/* Entry from the mainboard. */
-void romstage_common(struct romstage_params *params)
+/* Entry from cpu/intel/car/romstage.c */
+void mainboard_romstage_entry(void)
 {
 	struct chipset_power_state *ps;
 	int prev_sleep_state;
+	struct mrc_params mp;
+
+	program_base_addresses();
+
+	tco_disable();
+
+	if (CONFIG(ENABLE_BUILTIN_COM1))
+		byt_config_com1_and_enable();
+
+	console_init();
+
+	spi_init();
+
+	set_max_freq();
+
+	punit_init();
+
+	gfx_init();
+
+	memset(&mp, 0, sizeof(mp));
+	mainboard_fill_mrc_params(&mp);
 
 	timestamp_add_now(TS_BEFORE_INITRAM);
 
@@ -224,42 +185,12 @@ void romstage_common(struct romstage_params *params)
 
 	printk(BIOS_DEBUG, "prev_sleep_state = S%d\n", prev_sleep_state);
 
-#if CONFIG(ELOG_BOOT_COUNT)
-	if (prev_sleep_state != ACPI_S3)
-		boot_count_increment();
-#endif
-
+	elog_boot_notify(prev_sleep_state == ACPI_S3);
 
 	/* Initialize RAM */
-	raminit(params->mrc_params, prev_sleep_state);
+	raminit(&mp, prev_sleep_state);
 
 	timestamp_add_now(TS_AFTER_INITRAM);
 
 	romstage_handoff_init(prev_sleep_state == ACPI_S3);
-}
-
-/* setup_stack_and_mtrrs() determines the stack to use after
- * cache-as-ram is torn down as well as the MTRR settings to use. */
-static void platform_enter_postcar(void)
-{
-	struct postcar_frame pcf;
-	uintptr_t top_of_ram;
-
-	if (postcar_frame_init(&pcf, 0))
-		die("Unable to initialize postcar frame.\n");
-	/* Cache the ROM as WP just below 4GiB. */
-	postcar_frame_add_romcache(&pcf, MTRR_TYPE_WRPROT);
-
-	/* Cache RAM as WB from 0 -> CACHE_TMP_RAMTOP. */
-	postcar_frame_add_mtrr(&pcf, 0, CACHE_TMP_RAMTOP, MTRR_TYPE_WRBACK);
-
-	/* Cache at least 8 MiB below the top of ram, and at most 8 MiB
-	 * above top of the ram. This satisfies MTRR alignment requirement
-	 * with different TSEG size configurations.
-	 */
-	top_of_ram = ALIGN_DOWN((uintptr_t)cbmem_top(), 8*MiB);
-	postcar_frame_add_mtrr(&pcf, top_of_ram - 8*MiB, 16*MiB,
-			       MTRR_TYPE_WRBACK);
-
-	run_postcar_phase(&pcf);
 }

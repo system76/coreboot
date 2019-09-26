@@ -1,8 +1,6 @@
 /*
  * This file is part of the coreboot project.
  *
- * Copyright 2016 Google Inc.
- *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; version 2 of the License.
@@ -13,12 +11,13 @@
  * GNU General Public License for more details.
  */
 
-#include <arch/cpu.h>
+#include <arch/romstage.h>
 #include <cbmem.h>
 #include <console/console.h>
 #include <cpu/cpu.h>
 #include <cpu/x86/msr.h>
 #include <cpu/x86/mtrr.h>
+#include <cpu/x86/smm.h>
 #include <program_loading.h>
 #include <rmodule.h>
 #include <romstage_handoff.h>
@@ -120,7 +119,31 @@ void postcar_frame_add_romcache(struct postcar_frame *pcf, int type)
 	postcar_frame_add_mtrr(pcf, CACHE_ROM_BASE, CACHE_ROM_SIZE, type);
 }
 
-void *postcar_commit_mtrrs(struct postcar_frame *pcf)
+void postcar_frame_common_mtrrs(struct postcar_frame *pcf)
+{
+	if (pcf->skip_common_mtrr)
+		return;
+
+	/* Cache the ROM as WP just below 4GiB. */
+	postcar_frame_add_romcache(pcf, MTRR_TYPE_WRPROT);
+}
+
+/* prepare_and_run_postcar() determines the stack to use after
+ * cache-as-ram is torn down as well as the MTRR settings to use. */
+void prepare_and_run_postcar(struct postcar_frame *pcf)
+{
+	if (postcar_frame_init(pcf, 0))
+		die("Unable to initialize postcar frame.\n");
+
+	fill_postcar_frame(pcf);
+
+	postcar_frame_common_mtrrs(pcf);
+
+	run_postcar_phase(pcf);
+	/* We do not return here. */
+}
+
+static void postcar_commit_mtrrs(struct postcar_frame *pcf)
 {
 	/*
 	 * Place the number of used variable MTRRs on stack then max number
@@ -128,7 +151,6 @@ void *postcar_commit_mtrrs(struct postcar_frame *pcf)
 	 */
 	stack_push(pcf, pcf->num_var_mtrrs);
 	stack_push(pcf, pcf->max_var_mtrrs);
-	return (void *) pcf->stack;
 }
 
 static void finalize_load(uintptr_t *stack_top_ptr, uintptr_t stack_top)
@@ -164,6 +186,23 @@ static void load_postcar_cbfs(struct prog *prog, struct postcar_frame *pcf)
 	finalize_load(rsl.params, pcf->stack);
 
 	stage_cache_add(STAGE_POSTCAR, prog);
+}
+
+/*
+ * Cache the TSEG region at the top of ram. This region is
+ * not restricted to SMM mode until SMM has been relocated.
+ * By setting the region to cacheable it provides faster access
+ * when relocating the SMM handler as well as using the TSEG
+ * region for other purposes.
+ */
+void postcar_enable_tseg_cache(struct postcar_frame *pcf)
+{
+	uintptr_t smm_base;
+	size_t smm_size;
+
+	smm_region(&smm_base, &smm_size);
+	postcar_frame_add_mtrr(pcf, smm_base, smm_size,
+				MTRR_TYPE_WRBACK);
 }
 
 void run_postcar_phase(struct postcar_frame *pcf)

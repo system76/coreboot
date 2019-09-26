@@ -18,11 +18,9 @@
 #include <smbios.h>
 #include <device/device.h>
 #include <device/pci_def.h>
-#include <device/pci_ops.h>
 #include <drivers/intel/gma/int15.h>
 #include <arch/acpi.h>
 #include <arch/io.h>
-#include <arch/interrupt.h>
 #include <boot/coreboot_tables.h>
 #include <southbridge/intel/lynxpoint/pch.h>
 #include <vendorcode/google/chromeos/chromeos.h>

@@ -30,10 +30,6 @@ config MAINBOARD_VENDOR
 	string
 	default "Packard Bell"
 
-config MMCONF_BASE_ADDRESS
-	hex
-	default 0xe0000000
-
 config USBDEBUG_HCD_INDEX
 	int
 	default 2
@@ -45,9 +41,5 @@ config DRAM_RESET_GATE_GPIO
 config MAX_CPUS
 	int
 	default 4
-
-config CPU_ADDR_BITS
-	int
-	default 36
 
 endif

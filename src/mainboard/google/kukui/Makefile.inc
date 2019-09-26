@@ -1,4 +1,5 @@
 subdirs-y += sdram_params/
+subdirs-y += panel_params/
 
 bootblock-y += boardid.c
 bootblock-y += bootblock.c
@@ -24,4 +25,9 @@ ramstage-y += boardid.c
 ramstage-y += chromeos.c
 ramstage-y += mainboard.c
 ramstage-y += memlayout.ld
+ramstage-$(CONFIG_BOARD_GOOGLE_FLAPJACK) += panel_flapjack.c
+ramstage-$(CONFIG_BOARD_GOOGLE_KODAMA) += panel_kodama.c
+ramstage-$(CONFIG_BOARD_GOOGLE_KRANE) += panel_krane.c
+ramstage-$(CONFIG_BOARD_GOOGLE_KUKUI) += panel_kukui.c
+ramstage-$(CONFIG_DRIVER_PARADE_PS8640) += panel_ps8640.c
 ramstage-y += reset.c

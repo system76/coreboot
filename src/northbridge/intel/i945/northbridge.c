@@ -21,9 +21,8 @@
 #include <device/pci.h>
 #include <device/pci_ids.h>
 #include <stdlib.h>
-#include <cpu/cpu.h>
 #include <arch/acpi.h>
-#include <cpu/intel/smm/gen1/smi.h>
+#include <cpu/intel/smm_reloc.h>
 #include "i945.h"
 
 static int get_pcie_bar(u32 *base)
@@ -215,16 +214,11 @@ static const struct pci_driver mc_driver __pci_driver = {
 	.devices = pci_device_ids,
 };
 
-static void cpu_bus_init(struct device *dev)
-{
-	bsp_init_and_start_aps(dev->link_list);
-}
-
 static struct device_operations cpu_bus_ops = {
 	.read_resources   = DEVICE_NOOP,
 	.set_resources    = DEVICE_NOOP,
 	.enable_resources = DEVICE_NOOP,
-	.init             = cpu_bus_init,
+	.init             = mp_cpu_bus_init,
 	.scan_bus         = 0,
 };
 

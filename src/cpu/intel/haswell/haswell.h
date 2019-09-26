@@ -1,8 +1,6 @@
 /*
  * This file is part of the coreboot project.
  *
- * Copyright (C) 2011 The ChromiumOS Authors. All rights reserved.
- *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
  * published by the Free Software Foundation; version 2 of
@@ -132,46 +130,26 @@
 # error "CONFIG_IED_REGION_SIZE is not a power of 2"
 #endif
 
-#if !defined(__ROMCC__) // FIXME romcc should handle below constructs
-
-#if defined(__PRE_RAM__)
 struct pei_data;
 struct rcba_config_instruction;
 struct romstage_params {
 	struct pei_data *pei_data;
 	const void *gpio_map;
 	const struct rcba_config_instruction *rcba_config;
-	unsigned long bist;
 	void (*copy_spd)(struct pei_data *);
 };
 void romstage_common(const struct romstage_params *params);
-#endif
 
-#ifdef __SMM__
 /* Lock MSRs */
 void intel_cpu_haswell_finalize_smm(void);
-#else
+
 /* Configure power limits for turbo mode */
 void set_power_limits(u8 power_limit_1_time);
 int cpu_config_tdp_levels(void);
-void smm_relocation_handler(int cpu, uintptr_t curr_smbase,
-				uintptr_t staggered_smbase);
-void smm_info(uintptr_t *perm_smbase, size_t *perm_smsize,
-		size_t *smm_save_state_size);
-void smm_initialize(void);
-void smm_relocate(void);
-void smm_lock(void);
-struct bus;
-void bsp_init_and_start_aps(struct bus *cpu_bus);
-/* Determine if HyperThreading is disabled. The variable is not valid until
- * setup_ap_init() has been called. */
-#endif
 
 /* CPU identification */
 int haswell_family_model(void);
 int haswell_stepping(void);
 int haswell_is_ult(void);
-
-#endif
 
 #endif

@@ -399,24 +399,9 @@ void google_chromeec_ioport_range(uint16_t *out_base, size_t *out_size)
 	*out_size = size;
 }
 
-#ifdef __PRE_RAM__
-
 int google_chromeec_command(struct chromeec_command *cec_command)
 {
-	switch (google_chromeec_command_version()) {
-	case EC_HOST_CMD_FLAG_VERSION_3:
-		return google_chromeec_command_v3(cec_command);
-	case EC_HOST_CMD_FLAG_LPC_ARGS_SUPPORTED:
-		return google_chromeec_command_v1(cec_command);
-	}
-	return -1;
-}
-
-#else /* !__PRE_RAM__ */
-
-int google_chromeec_command(struct chromeec_command *cec_command)
-{
-	static int command_version = 0;
+	MAYBE_STATIC_BSS int command_version = 0;
 
 	if (command_version <= 0)
 		command_version = google_chromeec_command_version();
@@ -430,7 +415,6 @@ int google_chromeec_command(struct chromeec_command *cec_command)
 	return -1;
 }
 
-#ifndef __SMM__
 static void lpc_ec_init(struct device *dev)
 {
 	if (!dev->enabled)
@@ -485,8 +469,6 @@ struct chip_operations ec_google_chromeec_ops = {
 	.enable_dev = enable_dev,
 };
 
-#endif /* __SMM__ */
-
 static int google_chromeec_data_ready(u16 port)
 {
 	return google_chromeec_status_check(port, EC_LPC_CMDR_DATA,
@@ -516,4 +498,3 @@ u8 google_chromeec_get_event(void)
 	/* Event (or 0 if none) is returned directly in the data byte */
 	return read_byte(EC_LPC_ADDR_ACPI_DATA);
 }
-#endif

@@ -21,19 +21,14 @@
 #include <console/console.h>
 #include <arch/io.h>
 #include <cpu/x86/smm.h>
+#include <cpu/intel/smm_reloc.h>
 
 #include <soc/iomap.h>
 #include <soc/soc_util.h>
 #include <soc/pm.h>
 #include <soc/smm.h>
 
-/* Save the gpio route register. The settings are committed from
- * southcluster_smm_enable_smi(). */
-static uint32_t gpio_route;
-
-void southcluster_smm_save_gpio_route(uint32_t route) { gpio_route = route; }
-
-void southcluster_smm_clear_state(void)
+void smm_southbridge_clear_state(void)
 {
 	uint32_t smi_en;
 
@@ -54,7 +49,7 @@ void southcluster_smm_clear_state(void)
 	clear_pmc_status();
 }
 
-void southcluster_smm_enable_smi(void)
+void smm_southbridge_enable_smi(void)
 {
 
 	printk(BIOS_DEBUG, "Enabling SMIs.\n");

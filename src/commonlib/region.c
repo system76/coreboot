@@ -1,8 +1,6 @@
 /*
  * This file is part of the coreboot project.
  *
- * Copyright 2015 Google Inc.
- *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; version 2 of the License.
@@ -27,10 +25,10 @@ int region_is_subregion(const struct region *p, const struct region *c)
 	if (region_offset(c) < region_offset(p))
 		return 0;
 
-	if (region_sz(c) > region_sz(p))
+	if (region_end(c) > region_end(p))
 		return 0;
 
-	if (region_end(c) > region_end(p))
+	if (region_end(c) < region_offset(c))
 		return 0;
 
 	return 1;

@@ -1,9 +1,6 @@
 /*
  * This file is part of the coreboot project.
  *
- * Copyright (C) 2007-2009 coresystems GmbH
- *               2012 secunet Security Networks AG
- *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
  * published by the Free Software Foundation; version 2 of
@@ -19,8 +16,9 @@
 #include <cpu/x86/mtrr.h>
 #include <cpu/x86/mp.h>
 #include <cpu/intel/microcode.h>
-#include <cpu/intel/smm/gen1/smi.h>
+#include <cpu/intel/smm_reloc.h>
 #include <cpu/intel/common/common.h>
+#include <device/device.h>
 
 /* Parallel MP initialization support. */
 static const void *microcode_patch;
@@ -93,7 +91,7 @@ static void post_mp_init(void)
 {
 	/* Now that all APs have been relocated as well as the BSP let SMIs
 	 * start flowing. */
-	southbridge_smm_init();
+	smm_southbridge_enable_smi();
 
 	/* Lock down the SMRAM space. */
 	smm_lock();
@@ -110,7 +108,7 @@ static const struct mp_ops mp_ops = {
 	.post_mp_init = post_mp_init,
 };
 
-void bsp_init_and_start_aps(struct bus *cpu_bus)
+void mp_init_cpus(struct bus *cpu_bus)
 {
 	microcode_patch = intel_microcode_find();
 

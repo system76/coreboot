@@ -46,6 +46,7 @@ romstage-y += ../common/wdt.c
 ramstage-y += auxadc.c
 ramstage-y += ../common/cbmem.c emi.c
 ramstage-y += ../common/ddp.c ddp.c
+ramstage-y += ../common/dsi.c dsi.c
 ramstage-y += ../common/gpio.c gpio.c
 ramstage-y += ../common/i2c.c i2c.c
 ramstage-y += ../common/mmu_operations.c mmu_operations.c
@@ -65,6 +66,8 @@ cbfs-files-y += sspm.bin
 sspm.bin-file := 3rdparty/blobs/soc/mediatek/mt8183/sspm.bin
 sspm.bin-type := raw
 sspm.bin-compression := $(CBFS_COMPRESS_FLAG)
+
+BL31_MAKEARGS += PLAT=mt8183
 
 CPPFLAGS_common += -Isrc/soc/mediatek/mt8183/include
 CPPFLAGS_common += -Isrc/soc/mediatek/common/include

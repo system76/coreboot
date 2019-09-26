@@ -15,8 +15,6 @@
  * GNU General Public License for more details.
  */
 
-// __PRE_RAM__ means: use "unsigned" for device, not a struct.
-
 #include <stdint.h>
 #include <cf9_reset.h>
 #include <delay.h>
@@ -27,8 +25,7 @@
 #include <cpu/x86/lapic.h>
 #include <arch/acpi.h>
 #include <console/console.h>
-#include <cpu/x86/bist.h>
-#include <cpu/intel/romstage.h>
+#include <arch/romstage.h>
 #include <northbridge/intel/i945/i945.h>
 #include <northbridge/intel/i945/raminit.h>
 #include <southbridge/intel/i82801gx/i82801gx.h>
@@ -159,13 +156,12 @@ static void early_ich7_init(void)
 	RCBA32(0x2034) = reg32;
 }
 
-void mainboard_romstage_entry(unsigned long bist)
+void mainboard_romstage_entry(void)
 {
 	int s3resume = 0;
 	const u8 spd_addrmap[2 * DIMM_SOCKETS] = { 0x50, 0, 0x51, 0 };
 
-	if (bist == 0)
-		enable_lapic();
+	enable_lapic();
 
 	/* Enable GPIOs */
 	pci_write_config32(PCI_DEV(0, 0x1f, 0), GPIOBASE, DEFAULT_GPIOBASE | 1);
@@ -191,9 +187,6 @@ void mainboard_romstage_entry(unsigned long bist)
 		printk(BIOS_DEBUG, "Dock is present\n");
 	else
 		printk(BIOS_DEBUG, "Dock is not present\n");
-
-	/* Halt if there was a built in self test failure */
-	report_bist_failure(bist);
 
 	if (MCHBAR16(SSKPD) == 0xCAFE) {
 		printk(BIOS_DEBUG,

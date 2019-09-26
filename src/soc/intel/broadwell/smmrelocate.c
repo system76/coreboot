@@ -24,6 +24,8 @@
 #include <cpu/x86/msr.h>
 #include <cpu/x86/mtrr.h>
 #include <cpu/x86/smm.h>
+#include <cpu/intel/em64t101_save_state.h>
+#include <cpu/intel/smm_reloc.h>
 #include <console/console.h>
 #include <soc/cpu.h>
 #include <soc/msr.h>
@@ -42,22 +44,22 @@ static inline void write_smrr(struct smm_relocation_params *relo_params)
 	wrmsr(IA32_SMRR_PHYS_MASK, relo_params->smrr_mask);
 }
 
-static inline void write_emrr(struct smm_relocation_params *relo_params)
+static inline void write_prmrr(struct smm_relocation_params *relo_params)
 {
-	printk(BIOS_DEBUG, "Writing EMRR. base = 0x%08x, mask=0x%08x\n",
-	       relo_params->emrr_base.lo, relo_params->emrr_mask.lo);
-	wrmsr(MSR_PRMRR_PHYS_BASE, relo_params->emrr_base);
-	wrmsr(MSR_PRMRR_PHYS_MASK, relo_params->emrr_mask);
+	printk(BIOS_DEBUG, "Writing PRMRR. base = 0x%08x, mask=0x%08x\n",
+	       relo_params->prmrr_base.lo, relo_params->prmrr_mask.lo);
+	wrmsr(MSR_PRMRR_PHYS_BASE, relo_params->prmrr_base);
+	wrmsr(MSR_PRMRR_PHYS_MASK, relo_params->prmrr_mask);
 }
 
-static inline void write_uncore_emrr(struct smm_relocation_params *relo_params)
+static inline void write_uncore_prmrr(struct smm_relocation_params *relo_params)
 {
 	printk(BIOS_DEBUG,
-	       "Writing UNCORE_EMRR. base = 0x%08x, mask=0x%08x\n",
-	       relo_params->uncore_emrr_base.lo,
-	       relo_params->uncore_emrr_mask.lo);
-	wrmsr(MSR_UNCORE_PRMRR_PHYS_BASE, relo_params->uncore_emrr_base);
-	wrmsr(MSR_UNCORE_PRMRR_PHYS_MASK, relo_params->uncore_emrr_mask);
+	       "Writing UNCORE_PRMRR. base = 0x%08x, mask=0x%08x\n",
+	       relo_params->uncore_prmrr_base.lo,
+	       relo_params->uncore_prmrr_mask.lo);
+	wrmsr(MSR_UNCORE_PRMRR_PHYS_BASE, relo_params->uncore_prmrr_base);
+	wrmsr(MSR_UNCORE_PRMRR_PHYS_MASK, relo_params->uncore_prmrr_mask);
 }
 
 static void update_save_state(int cpu, uintptr_t curr_smbase,
@@ -165,38 +167,26 @@ void smm_relocation_handler(int cpu, uintptr_t curr_smbase,
 	/* Make appropriate changes to the save state map. */
 	update_save_state(cpu, curr_smbase, staggered_smbase, relo_params);
 
-	/* Write EMRR and SMRR MSRs based on indicated support. */
+	/* Write PRMRR and SMRR MSRs based on indicated support. */
 	mtrr_cap = rdmsr(MTRR_CAP_MSR);
 	if (mtrr_cap.lo & SMRR_SUPPORTED)
 		write_smrr(relo_params);
 
-	if (mtrr_cap.lo & EMRR_SUPPORTED) {
-		write_emrr(relo_params);
-		/* UNCORE_EMRR msrs are package level. Therefore, only
+	if (mtrr_cap.lo & PRMRR_SUPPORTED) {
+		write_prmrr(relo_params);
+		/* UNCORE_PRMRR msrs are package level. Therefore, only
 		 * configure these MSRs on the BSP. */
 		if (cpu == 0)
-			write_uncore_emrr(relo_params);
+			write_uncore_prmrr(relo_params);
 	}
 }
 
-static u32 northbridge_get_base_reg(struct device *dev, int reg)
+static void fill_in_relocation_params(struct smm_relocation_params *params)
 {
-	u32 value;
-
-	value = pci_read_config32(dev, reg);
-	/* Base registers are at 1MiB granularity. */
-	value &= ~((1 << 20) - 1);
-	return value;
-}
-
-static void fill_in_relocation_params(struct device *dev,
-				      struct smm_relocation_params *params)
-{
-	u32 tseg_size;
-	u32 tsegmb;
-	u32 bgsm;
-	u32 emrr_base;
-	u32 emrr_size;
+	uintptr_t tseg_base;
+	size_t tseg_size;
+	u32 prmrr_base;
+	u32 prmrr_size;
 	int phys_bits;
 	/* All range registers are aligned to 4KiB */
 	const u32 rmask = ~((1 << 12) - 1);
@@ -209,43 +199,34 @@ static void fill_in_relocation_params(struct device *dev,
 	 * SMRAM range as well as the IED range. However, the SMRAM available
 	 * to the handler is 4MiB since the IEDRAM lives TSEGMB + 4MiB.
 	 */
-	tsegmb = northbridge_get_base_reg(dev, TSEG);
-	bgsm = northbridge_get_base_reg(dev, BGSM);
-	tseg_size = bgsm - tsegmb;
-
-	params->smram_base = tsegmb;
-	params->smram_size = 4 << 20;
-	params->ied_base = tsegmb + params->smram_size;
-	params->ied_size = tseg_size - params->smram_size;
-
-	/* Adjust available SMM handler memory size. */
-	params->smram_size -= CONFIG_SMM_RESERVED_SIZE;
+	smm_region(&tseg_base, &tseg_size);
 
 	/* SMRR has 32-bits of valid address aligned to 4KiB. */
-	params->smrr_base.lo = (params->smram_base & rmask) | MTRR_TYPE_WRBACK;
+	params->smrr_base.lo = (tseg_base & rmask) | MTRR_TYPE_WRBACK;
 	params->smrr_base.hi = 0;
-	params->smrr_mask.lo = (~(tseg_size - 1) & rmask)
-		| MTRR_PHYS_MASK_VALID;
+	params->smrr_mask.lo = (~(tseg_size - 1) & rmask) | MTRR_PHYS_MASK_VALID;
 	params->smrr_mask.hi = 0;
 
-	/* The EMRR and UNCORE_EMRR are at IEDBASE + 2MiB */
-	emrr_base = (params->ied_base + (2 << 20)) & rmask;
-	emrr_size = params->ied_size - (2 << 20);
+	smm_subregion(SMM_SUBREGION_CHIPSET, &params->ied_base, &params->ied_size);
 
-	/* EMRR has 46 bits of valid address aligned to 4KiB. It's dependent
+	/* The PRMRR and UNCORE_PRMRR are at IEDBASE + 2MiB */
+	prmrr_base = (params->ied_base + (2 << 20)) & rmask;
+	prmrr_size = params->ied_size - (2 << 20);
+
+	/* PRMRR has 46 bits of valid address aligned to 4KiB. It's dependent
 	 * on the number of physical address bits supported. */
-	params->emrr_base.lo = emrr_base | MTRR_TYPE_WRBACK;
-	params->emrr_base.hi = 0;
-	params->emrr_mask.lo = (~(emrr_size - 1) & rmask)
+	params->prmrr_base.lo = prmrr_base | MTRR_TYPE_WRBACK;
+	params->prmrr_base.hi = 0;
+	params->prmrr_mask.lo = (~(prmrr_size - 1) & rmask)
 		| MTRR_PHYS_MASK_VALID;
-	params->emrr_mask.hi = (1 << (phys_bits - 32)) - 1;
+	params->prmrr_mask.hi = (1 << (phys_bits - 32)) - 1;
 
-	/* UNCORE_EMRR has 39 bits of valid address aligned to 4KiB. */
-	params->uncore_emrr_base.lo = emrr_base;
-	params->uncore_emrr_base.hi = 0;
-	params->uncore_emrr_mask.lo = (~(emrr_size - 1) & rmask) |
+	/* UNCORE_PRMRR has 39 bits of valid address aligned to 4KiB. */
+	params->uncore_prmrr_base.lo = prmrr_base;
+	params->uncore_prmrr_base.hi = 0;
+	params->uncore_prmrr_mask.lo = (~(prmrr_size - 1) & rmask) |
 					MTRR_PHYS_MASK_VALID;
-	params->uncore_emrr_mask.hi = (1 << (39 - 32)) - 1;
+	params->uncore_prmrr_mask.hi = (1 << (39 - 32)) - 1;
 }
 
 static void setup_ied_area(struct smm_relocation_params *params)
@@ -270,23 +251,21 @@ static void setup_ied_area(struct smm_relocation_params *params)
 void smm_info(uintptr_t *perm_smbase, size_t *perm_smsize,
 				size_t *smm_save_state_size)
 {
-	struct device *dev = pcidev_path_on_root(SA_DEVFN_ROOT);
-
 	printk(BIOS_DEBUG, "Setting up SMI for CPU\n");
 
-	fill_in_relocation_params(dev, &smm_reloc_params);
+	fill_in_relocation_params(&smm_reloc_params);
+
+	smm_subregion(SMM_SUBREGION_HANDLER, perm_smbase, perm_smsize);
 
 	setup_ied_area(&smm_reloc_params);
 
-	*perm_smbase = smm_reloc_params.smram_base;
-	*perm_smsize = smm_reloc_params.smram_size;
 	*smm_save_state_size = sizeof(em64t101_smm_state_save_area_t);
 }
 
 void smm_initialize(void)
 {
 	/* Clear the SMM state in the southbridge. */
-	southbridge_smm_clear_state();
+	smm_southbridge_clear_state();
 
 	/*
 	 * Run the relocation handler for on the BSP to check and set up

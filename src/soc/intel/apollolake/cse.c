@@ -28,12 +28,6 @@
 #include <device/pci_ops.h>
 #include <stdint.h>
 
-#define PCI_ME_HFSTS1	0x40
-#define PCI_ME_HFSTS2	0x48
-#define PCI_ME_HFSTS3	0x60
-#define PCI_ME_HFSTS4	0x64
-#define PCI_ME_HFSTS5	0x68
-#define PCI_ME_HFSTS6	0x6c
 
 #define MKHI_GROUP_ID_MCA			0x0a
 #define READ_FILE				0x02
@@ -58,17 +52,6 @@ static enum fuse_flash_state {
 
 #define FPF_STATUS_FMAP				"FPF_STATUS"
 
-union mkhi_header {
-	uint32_t data;
-	struct {
-		uint32_t group_id: 8;
-		uint32_t command: 7;
-		uint32_t is_response: 1;
-		uint32_t reserved: 8;
-		uint32_t result: 8;
-	} __packed fields;
-};
-
 /*
  * Read file from CSE internal filesystem.
  * size is maximum length of provided buffer buff, which is updated with actual
@@ -82,7 +65,7 @@ static int read_cse_file(const char *path, void *buff, size_t *size,
 	size_t reply_size;
 
 	struct mca_command {
-		union mkhi_header mkhi_hdr;
+		struct mkhi_hdr hdr;
 		char file_name[MCA_MAX_FILE_PATH_SIZE];
 		uint32_t offset;
 		uint32_t data_size;
@@ -90,7 +73,7 @@ static int read_cse_file(const char *path, void *buff, size_t *size,
 	} __packed msg;
 
 	struct mca_response {
-		union mkhi_header mkhi_hdr;
+		struct mkhi_hdr hdr;
 		uint32_t data_size;
 		uint8_t buffer[128];
 	} __packed rmsg;
@@ -105,8 +88,8 @@ static int read_cse_file(const char *path, void *buff, size_t *size,
 		return 0;
 	}
 	strncpy(msg.file_name, path, sizeof(msg.file_name));
-	msg.mkhi_hdr.fields.group_id = MKHI_GROUP_ID_MCA;
-	msg.mkhi_hdr.fields.command = READ_FILE;
+	msg.hdr.group_id = MKHI_GROUP_ID_MCA;
+	msg.hdr.command = READ_FILE;
 	msg.flags = flags;
 	msg.data_size = *size;
 	msg.offset = offset;
@@ -188,7 +171,9 @@ static void fpf_blown(void *unused)
 
 static uint32_t dump_status(int index, int reg_addr)
 {
-	uint32_t reg = pci_read_config32(PCH_DEV_CSE, reg_addr);
+	uint32_t reg;
+
+	reg = me_read_config32(reg_addr);
 
 	printk(BIOS_DEBUG, "CSE FWSTS%d: 0x%08x\n", index, reg);
 
@@ -199,11 +184,7 @@ static void dump_cse_version(void *unused)
 {
 	int res;
 	size_t reply_size;
-
-	struct fw_version_cmd {
-		union mkhi_header mkhi_hdr;
-	} __packed msg;
-
+	struct mkhi_hdr msg;
 	struct version {
 		uint16_t minor;
 		uint16_t major;
@@ -212,7 +193,7 @@ static void dump_cse_version(void *unused)
 	} __packed;
 
 	struct fw_version_response {
-		union mkhi_header mkhi_hdr;
+		struct mkhi_hdr hdr;
 		struct version code;
 		struct version nftp;
 		struct version fitc;
@@ -225,8 +206,8 @@ static void dump_cse_version(void *unused)
 	if (!CONFIG(CONSOLE_SERIAL))
 		return;
 
-	msg.mkhi_hdr.fields.group_id = MKHI_GROUP_ID_GEN;
-	msg.mkhi_hdr.fields.command = GET_FW_VERSION;
+	msg.group_id = MKHI_GROUP_ID_GEN;
+	msg.command = GET_FW_VERSION;
 
 	res = heci_send(&msg, sizeof(msg), BIOS_HOST_ADDR, HECI_MKHI_ADDR);
 
@@ -243,7 +224,7 @@ static void dump_cse_version(void *unused)
 		return;
 	}
 
-	if (rsp.mkhi_hdr.fields.result != 0) {
+	if (rsp.hdr.result != 0) {
 		printk(BIOS_ERR, "Failed to get ME version.\n");
 		return;
 	}
@@ -255,6 +236,9 @@ static void dump_cse_version(void *unused)
 static void dump_cse_state(void)
 {
 	uint32_t fwsts1;
+
+	if (!is_cse_enabled())
+		return;
 
 	fwsts1 = dump_status(1, PCI_ME_HFSTS1);
 	dump_status(2, PCI_ME_HFSTS2);

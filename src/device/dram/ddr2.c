@@ -1,9 +1,6 @@
 /*
  * This file is part of the coreboot project.
  *
- * Copyright (C) 2017 Patrick Rudolph <siro@das-labor.org>
- * Copyright (C) 2017 Arthur Heymans <arthur@aheymans.xyz>
- *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 2 of the License, or
@@ -93,7 +90,7 @@ u16 spd_ddr2_calc_unique_crc(const u8 *spd, int len)
 	for (i = 93; i <= 98; i++)
 		id_bytes[j++] = spd[i];
 
-	return ddr3_crc16(id_bytes, 15);
+	return ddr_crc16(id_bytes, 15);
 }
 
 /**

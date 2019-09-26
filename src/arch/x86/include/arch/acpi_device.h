@@ -1,8 +1,6 @@
 /*
  * This file is part of the coreboot project.
  *
- * Copyright 2016 Google Inc.
- *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; version 2 of the License.
@@ -63,6 +61,7 @@ struct acpi_dp {
 
 struct device;
 const char *acpi_device_name(const struct device *dev);
+const char *acpi_device_hid(const struct device *dev);
 const char *acpi_device_path(const struct device *dev);
 const char *acpi_device_scope(const struct device *dev);
 const char *acpi_device_path_join(const struct device *dev, const char *name);

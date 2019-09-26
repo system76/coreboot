@@ -38,12 +38,28 @@ typedef TPM_HANDLE TPMI_SH_AUTH_SESSION;
 typedef TPM_HANDLE TPM_RH;
 
 /* Some hardcoded algorithm values. */
-#define TPM_ALG_HMAC   ((TPM_ALG_ID)0x0005)
-#define TPM_ALG_NULL   ((TPM_ALG_ID)0x0010)
-#define TPM_ALG_SHA1   ((TPM_ALG_ID)0x0004)
-#define TPM_ALG_SHA256 ((TPM_ALG_ID)0x000b)
+/* Table 7 - TPM_ALG_ID Constants */
+#define TPM_ALG_ERROR   ((TPM_ALG_ID)0x0000)
+#define TPM_ALG_HMAC    ((TPM_ALG_ID)0x0005)
+#define TPM_ALG_NULL    ((TPM_ALG_ID)0x0010)
+#define TPM_ALG_SHA1    ((TPM_ALG_ID)0x0004)
+#define TPM_ALG_SHA256  ((TPM_ALG_ID)0x000b)
+#define TPM_ALG_SHA384  ((TPM_ALG_ID)0x000C)
+#define TPM_ALG_SHA512  ((TPM_ALG_ID)0x000D)
+#define TPM_ALG_SM3_256 ((TPM_ALG_ID)0x0012)
 
-#define SHA256_DIGEST_SIZE 32
+/* Annex A Algorithm Constants */
+
+/* Table 205 - Defines for SHA1 Hash Values */
+#define SHA1_DIGEST_SIZE    20
+/* Table 206 - Defines for SHA256 Hash Values */
+#define SHA256_DIGEST_SIZE  32
+/* Table 207 - Defines for SHA384 Hash Values */
+#define SHA384_DIGEST_SIZE  48
+/* Table 208 - Defines for SHA512 Hash Values */
+#define SHA512_DIGEST_SIZE  64
+/* Table 209 - Defines for SM3_256 Hash Values */
+#define SM3_256_DIGEST_SIZE 32
 
 /* Some hardcoded hierarchies. */
 #define TPM_RH_NULL         0x40000007
@@ -80,6 +96,12 @@ struct tpm_header {
 /* TPM2 specifies vendor commands need to have this bit set. Vendor command
    space is defined by the lower 16 bits. */
 #define TPM_CC_VENDOR_BIT_MASK 0x20000000
+
+/* Table 15 - TPM_RC Constants (Actions) */
+#define RC_FMT1                (TPM_RC)(0x080)
+#define TPM_RC_HASH            (TPM_RC)(RC_FMT1 + 0x003)
+#define TPM_RC_P               (TPM_RC)(0x040)
+#define TPM_RC_N_MASK          (TPM_RC)(0xF00)
 
 /* Startup values. */
 #define TPM_SU_CLEAR 0
@@ -295,12 +317,13 @@ typedef union {
 	TPM2B b;
 } TPM2B_MAX_NV_BUFFER;
 
-/*
- * This is a union, but as of now we support just one digest - sha256, so
- * there is just one element.
- */
+/* Table 66 - TPMU_HA Union */
 typedef union {
-	uint8_t  sha256[SHA256_DIGEST_SIZE];
+	uint8_t sha1[SHA1_DIGEST_SIZE];
+	uint8_t sha256[SHA256_DIGEST_SIZE];
+	uint8_t sm3_256[SM3_256_DIGEST_SIZE];
+	uint8_t sha384[SHA384_DIGEST_SIZE];
+	uint8_t sha512[SHA512_DIGEST_SIZE];
 } TPMU_HA;
 
 typedef struct {
@@ -308,9 +331,10 @@ typedef struct {
 	TPMU_HA        digest;
 } TPMT_HA;
 
+/* Table 96 -- TPML_DIGEST_VALUES Structure <I/O> */
 typedef struct {
 	uint32_t   count;
-	TPMT_HA  digests[1];  /* Limit max number of hashes to 1. */
+	TPMT_HA digests[HASH_COUNT];
 } TPML_DIGEST_VALUES;
 
 struct nv_read_response {

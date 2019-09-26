@@ -16,8 +16,6 @@
  * GNU General Public License for more details.
  */
 
-/* __PRE_RAM__ means: use "unsigned" for device, not a struct.  */
-
 #include <stdint.h>
 #include <arch/io.h>
 #include <device/pci_ops.h>
@@ -25,8 +23,7 @@
 #include <cpu/x86/lapic.h>
 #include <romstage_handoff.h>
 #include <console/console.h>
-#include <cpu/x86/bist.h>
-#include <cpu/intel/romstage.h>
+#include <arch/romstage.h>
 #include <ec/acpi/ec.h>
 #include <timestamp.h>
 #include <arch/acpi.h>
@@ -169,14 +166,12 @@ static void set_fsb_frequency(void)
 	smbus_block_write(0x69, 0, 5, block);
 }
 
-void mainboard_romstage_entry(unsigned long bist)
+void mainboard_romstage_entry(void)
 {
 	u32 reg32;
 	int s3resume = 0;
 	const u8 spd_addrmap[4] = { 0x50, 0, 0x51, 0 };
-
-	if (bist == 0)
-		enable_lapic();
+	enable_lapic();
 
 	nehalem_early_initialization(NEHALEM_MOBILE);
 
@@ -198,9 +193,6 @@ void mainboard_romstage_entry(unsigned long bist)
 	rcba_config();
 
 	console_init();
-
-	/* Halt if there was a built in self test failure */
-	report_bist_failure(bist);
 
 	/* Read PM1_CNT */
 	reg32 = inl(DEFAULT_PMBASE + 0x04);

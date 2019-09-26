@@ -16,12 +16,11 @@
 
 #include <console/console.h>
 #include <cpu/x86/smm.h>
-#include <elog.h>
 #include <ec/google/chromeec/smm.h>
 #include <soc/iomap.h>
 #include <soc/nvs.h>
 #include <soc/pm.h>
-#include <soc/smm.h>
+#include <intelblocks/smihandler.h>
 #include "ec.h"
 #include <variant/gpio.h>
 

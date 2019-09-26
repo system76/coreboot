@@ -64,6 +64,7 @@ int google_chromeec_kbbacklight(int percent);
 void google_chromeec_post(u8 postcode);
 int google_chromeec_vbnv_context(int is_read, uint8_t *data, int len);
 uint8_t google_chromeec_get_switches(void);
+bool google_chromeec_get_ap_watchdog_flag(void);
 
 /* Temporary secure storage commands */
 int google_chromeec_vstore_supported(void);
@@ -94,13 +95,6 @@ int google_chromeec_cbi_get_oem_name(char *buf, size_t bufsize);
 #define MEC_EMI_RANGE_START EC_HOST_CMD_REGION0
 #define MEC_EMI_RANGE_END   (EC_LPC_ADDR_MEMMAP + EC_MEMMAP_SIZE)
 
-enum usb_charge_mode {
-	USB_CHARGE_MODE_DISABLED,
-	USB_CHARGE_MODE_CHARGE_AUTO,
-	USB_CHARGE_MODE_CHARGE_BC12,
-	USB_CHARGE_MODE_DOWNSTREAM_500MA,
-	USB_CHARGE_MODE_DOWNSTREAM_1500MA,
-};
 int google_chromeec_set_usb_charge_mode(u8 port_id, enum usb_charge_mode mode);
 int google_chromeec_set_usb_pd_role(u8 port, enum usb_pd_control_role role);
 /*

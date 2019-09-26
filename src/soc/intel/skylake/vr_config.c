@@ -19,87 +19,8 @@
 #include <fsp/api.h>
 #include <soc/ramstage.h>
 #include <soc/vr_config.h>
-
-#define KBLY_ICCMAX_SA					VR_CFG_AMP(4.1)
-#define KBLY_ICCMAX_CORE				VR_CFG_AMP(24)
-#define AMLY_ICCMAX_CORE				VR_CFG_AMP(28)
-#define KBLY_ICCMAX_GTS_GTUS			VR_CFG_AMP(24)
-#define KBLR_ICCMAX_SA_U42				VR_CFG_AMP(6)
-#define KBLU_ICCMAX_SA_U22				VR_CFG_AMP(4.5)
-#define KBLR_ICCMAX_CORE_U42			VR_CFG_AMP(64)
-#define KBLU_ICCMAX_CORE_U22_PREMIUM	VR_CFG_AMP(32)
-#define KBLU_ICCMAX_CORE_U22_BASE		VR_CFG_AMP(29)
-#define KBLUR_ICCMAX_GTS_GTUS			VR_CFG_AMP(31)
-
-enum kbl_sku {
-	KBL_Y_SKU,
-	KBL_R_SKU,
-	KBL_U_BASE_SKU,
-	KBL_U_PREMIUM_SKU,
-	AML_Y_SKU,
-};
-
-/*
- * Iccmax table from Doc #559100 Section 7.2 DC Specifications, the
- * Iccmax is the same among KBL-Y but KBL-U/R.
- * Addendum for AML-Y #594883, IccMax for IA core is 28A.
- * +----------------+-------------+---------------+------+-----+
- * | Domain/Setting |  SA         |  IA           | GTUS | GTS |
- * +----------------+-------------+---------------+------+-----+
- * | IccMax(KBL-U/R)| 6A(U42)     | 64A(U42)      | 31A  | 31A |
- * |                | 4.5A(Others)| 29A(P/C)      |      |     |
- * |                |             | 32A(i3/i5)    |      |     |
- * +----------------+-------------+---------------+------+-----+
- * | IccMax(KBL-Y)  | 4.1A        | 24A           | 24A  | 24A |
- * +----------------+-------------+---------------+------+-----+
- * | IccMax(AML-Y)  | 4.1A        | 28A           | 24A  | 24A |
- * +----------------+-------------+---------------+------+-----+
- */
-
-static const struct {
-	uint16_t icc_max[NUM_VR_DOMAINS];
-}sku_icc_max_mapping[] = {
-	[KBL_Y_SKU] = {
-		.icc_max = {
-			KBLY_ICCMAX_SA,
-			KBLY_ICCMAX_CORE,
-			KBLY_ICCMAX_GTS_GTUS,
-			KBLY_ICCMAX_GTS_GTUS
-		}
-	},
-	[KBL_R_SKU] = {
-		.icc_max = {
-			KBLR_ICCMAX_SA_U42,
-			KBLR_ICCMAX_CORE_U42,
-			KBLUR_ICCMAX_GTS_GTUS,
-			KBLUR_ICCMAX_GTS_GTUS
-		}
-	},
-	[KBL_U_BASE_SKU] = {
-		.icc_max = {
-			KBLU_ICCMAX_SA_U22,
-			KBLU_ICCMAX_CORE_U22_BASE,
-			KBLUR_ICCMAX_GTS_GTUS,
-			KBLUR_ICCMAX_GTS_GTUS
-		}
-	},
-	[KBL_U_PREMIUM_SKU] = {
-		.icc_max = {
-			KBLU_ICCMAX_SA_U22,
-			KBLU_ICCMAX_CORE_U22_PREMIUM,
-			KBLUR_ICCMAX_GTS_GTUS,
-			KBLUR_ICCMAX_GTS_GTUS
-		}
-	},
-	[AML_Y_SKU] = {
-		.icc_max = {
-			KBLY_ICCMAX_SA,
-			AMLY_ICCMAX_CORE,
-			KBLY_ICCMAX_GTS_GTUS,
-			KBLY_ICCMAX_GTS_GTUS
-		}
-	},
-};
+#include <console/console.h>
+#include <intelblocks/cpulib.h>
 
 /* Default values for domain configuration. PSI3 and PSI4 are disabled. */
 static const struct vr_config default_configs[NUM_VR_DOMAINS] = {
@@ -167,54 +88,212 @@ static const struct vr_config default_configs[NUM_VR_DOMAINS] = {
 	},
 };
 
-static uint16_t get_dev_id(struct device *dev)
+static uint16_t get_sku_icc_max(int domain)
 {
-	return pci_read_config16(dev, PCI_DEVICE_ID);
-}
+	const uint16_t tdp = cpu_get_power_max();
 
-static int get_kbl_sku(void)
-{
-	struct device *sa_dev = pcidev_path_on_root(SA_DEVFN_ROOT);
-	static int sku = -1;
-	uint16_t id;
-
-	if (sku != -1)
-		return sku;
-
-	id = get_dev_id(sa_dev);
-	if (id == PCI_DEVICE_ID_INTEL_KBL_U_R)
-		sku = KBL_R_SKU;
-	else if (id == PCI_DEVICE_ID_INTEL_KBL_ID_Y) {
-		struct device *igd_dev = pcidev_path_on_root(SA_DEVFN_IGD);
-		id = get_dev_id(igd_dev);
-		if (id == PCI_DEVICE_ID_INTEL_AML_GT2_ULX)
-			sku = AML_Y_SKU;
+	static uint16_t mch_id = 0, igd_id = 0, lpc_id = 0;
+	if (!mch_id) {
+		struct device *dev = pcidev_path_on_root(SA_DEVFN_ROOT);
+		mch_id = pci_read_config16(dev, PCI_DEVICE_ID);
+	}
+	if (!igd_id) {
+		struct device *dev = pcidev_path_on_root(SA_DEVFN_IGD);
+		if (dev)
+			igd_id = pci_read_config16(dev, PCI_DEVICE_ID);
 		else
-			sku = KBL_Y_SKU;
-	} else if (id == PCI_DEVICE_ID_INTEL_KBL_ID_U) {
-		id = get_dev_id(PCH_DEV_LPC);
-		if (id == PCI_DEVICE_ID_INTEL_SPT_LP_U_BASE_HDCP22)
-			sku = KBL_U_BASE_SKU;
-		else
-			sku = KBL_U_PREMIUM_SKU;
-	} else
-		/* Not one of the skus with available Icc max mapping. */
-		sku = -2;
-	return sku;
+			igd_id = 0xffff;
+	}
+	if (!lpc_id) {
+		struct device *dev = pcidev_path_on_root(PCH_DEVFN_LPC);
+		lpc_id = pci_read_config16(dev, PCI_DEVICE_ID);
+	}
+
+	/*
+	 * Iccmax table from Doc #559100 Section 7.2 DC Specifications, the
+	 * Iccmax is the same among KBL-Y but KBL-U/R.
+	 * Addendum for AML-Y #594883, IccMax for IA core is 28A.
+	 * KBL-S #335195, KBL-H #335190
+	 * +----------------+-------------+---------------+------+-----+
+	 * | Domain/Setting |  SA         |  IA           | GTUS | GTS |
+	 * +----------------+-------------+---------------+------+-----+
+	 * | IccMax(KBL-S)  | 11.1A       | 100A          | 45A  | 45A |
+	 * |                |             | ...           |      |     |
+	 * |                |             | 40A           |      |     |
+	 * +----------------+-------------+---------------+------+-----+
+	 * | IccMax(KBL-H)  | 11.1A(45W)  | 68A           | 55A  | 55A |
+	 * |                | 6.6A(Others)| 60A           |      |     |
+	 * +----------------+-------------+---------------+------+-----+
+	 * | IccMax(KBL-U/R)| 6A(U42)     | 64A(U42)      | 31A  | 31A |
+	 * |                | 4.5A(Others)| 29A(P/C)      |      |     |
+	 * |                |             | 32A(i3/i5)    |      |     |
+	 * +----------------+-------------+---------------+------+-----+
+	 * | IccMax(KBL-Y)  | 4.1A        | 24A           | 24A  | 24A |
+	 * +----------------+-------------+---------------+------+-----+
+	 * | IccMax(AML-Y)  | 4.1A        | 28A           | 24A  | 24A |
+	 * +----------------+-------------+---------------+------+-----+
+	 */
+
+	switch (mch_id) {
+	case PCI_DEVICE_ID_INTEL_KBL_ID_S: {
+		uint16_t icc_max[NUM_VR_DOMAINS] = {
+			VR_CFG_AMP(11.1),
+			VR_CFG_AMP(40),
+			VR_CFG_AMP(45),
+			VR_CFG_AMP(45),
+		};
+		if (tdp >= 54)
+			icc_max[VR_IA_CORE] = VR_CFG_AMP(58);
+		else if (tdp >= 51)
+			icc_max[VR_IA_CORE] = VR_CFG_AMP(45);
+
+		return icc_max[domain];
+
+	}
+	case PCI_DEVICE_ID_INTEL_KBL_ID_DT_2: /* fallthrough */
+	case PCI_DEVICE_ID_INTEL_KBL_ID_DT: {
+		uint16_t icc_max[NUM_VR_DOMAINS] = {
+			VR_CFG_AMP(11.1),
+			VR_CFG_AMP(66),
+			VR_CFG_AMP(55),
+			VR_CFG_AMP(55),
+		};
+		if (tdp >= 91)
+			icc_max[VR_IA_CORE] = VR_CFG_AMP(100);
+		else if (tdp >= 65)
+			icc_max[VR_IA_CORE] = VR_CFG_AMP(79);
+
+		return icc_max[domain];
+	}
+	case PCI_DEVICE_ID_INTEL_KBL_ID_H: {
+		uint16_t icc_max[NUM_VR_DOMAINS] = {
+			VR_CFG_AMP(6.6),
+			VR_CFG_AMP(60),
+			VR_CFG_AMP(55),
+			VR_CFG_AMP(55),
+		};
+		if (tdp >= 45) {
+			icc_max[VR_SYSTEM_AGENT] = VR_CFG_AMP(11.1);
+			icc_max[VR_IA_CORE] = VR_CFG_AMP(68);
+		}
+
+		return icc_max[domain];
+	}
+	case PCI_DEVICE_ID_INTEL_KBL_U_R: {
+		static const uint16_t icc_max[NUM_VR_DOMAINS] = {
+			VR_CFG_AMP(6),
+			VR_CFG_AMP(64),
+			VR_CFG_AMP(31),
+			VR_CFG_AMP(31),
+		};
+		return icc_max[domain];
+	}
+	case PCI_DEVICE_ID_INTEL_KBL_ID_Y: {
+		uint16_t icc_max[NUM_VR_DOMAINS] = {
+			VR_CFG_AMP(4.1),
+			VR_CFG_AMP(24),
+			VR_CFG_AMP(24),
+			VR_CFG_AMP(24),
+		};
+
+		if (igd_id == PCI_DEVICE_ID_INTEL_AML_GT2_ULX)
+			icc_max[VR_IA_CORE] = VR_CFG_AMP(28);
+
+		return icc_max[domain];
+	}
+	case PCI_DEVICE_ID_INTEL_KBL_ID_U: {
+		uint16_t icc_max[NUM_VR_DOMAINS] = {
+			VR_CFG_AMP(4.5),
+			VR_CFG_AMP(32),
+			VR_CFG_AMP(31),
+			VR_CFG_AMP(31),
+		};
+
+		if (igd_id == PCI_DEVICE_ID_INTEL_SPT_LP_U_BASE_HDCP22)
+			icc_max[VR_IA_CORE] = VR_CFG_AMP(29);
+
+		return icc_max[domain];
+	}
+	default:
+		printk(BIOS_ERR, "ERROR: Unknown MCH in VR-config\n");
+	}
+	return 0;
 }
 
-static uint16_t get_sku_icc_max(int domain, uint16_t board_icc_max)
+#if CONFIG(PLATFORM_USES_FSP2_0)
+static uint16_t get_sku_ac_dc_loadline(const int domain)
 {
-	/* If board provided non-zero value, use it. */
-	if (board_icc_max)
-		return board_icc_max;
+	static uint16_t mch_id = 0, igd_id = 0;
+	if (!mch_id) {
+		struct device *dev = pcidev_path_on_root(SA_DEVFN_ROOT);
+		mch_id = pci_read_config16(dev, PCI_DEVICE_ID);
+	}
+	if (!igd_id) {
+		struct device *dev = pcidev_path_on_root(SA_DEVFN_IGD);
+		if (dev)
+			igd_id = pci_read_config16(dev, PCI_DEVICE_ID);
+		else
+			igd_id = 0xffff;
+	}
 
-	/* Check if this SKU has a mapping table entry. */
-	int sku_id = get_kbl_sku();
-	if (sku_id < 0)
-		return 0;
-	return sku_icc_max_mapping[sku_id].icc_max[domain];
+	switch (mch_id) {
+	case PCI_DEVICE_ID_INTEL_KBL_ID_S: /* fallthrough */
+	case PCI_DEVICE_ID_INTEL_KBL_ID_DT: /* fallthrough */
+	case PCI_DEVICE_ID_INTEL_KBL_ID_DT_2: {
+		static const uint16_t loadline[NUM_VR_DOMAINS] = {
+			VR_CFG_MOHMS(0), /* Not specified */
+			VR_CFG_MOHMS(2.1),
+			VR_CFG_MOHMS(3.1),
+			VR_CFG_MOHMS(3.1),
+		};
+
+		return loadline[domain];
+	}
+	case PCI_DEVICE_ID_INTEL_KBL_ID_H: {
+		static const uint16_t loadline[NUM_VR_DOMAINS] = {
+			VR_CFG_MOHMS(10),
+			VR_CFG_MOHMS(1.8),
+			VR_CFG_MOHMS(2.65),
+			VR_CFG_MOHMS(2.65),
+		};
+
+		return loadline[domain];
+	}
+	case PCI_DEVICE_ID_INTEL_KBL_ID_Y: {
+		uint16_t loadline[NUM_VR_DOMAINS] = {
+			VR_CFG_MOHMS(18),
+			VR_CFG_MOHMS(5.9),
+			VR_CFG_MOHMS(5.7),
+			VR_CFG_MOHMS(5.7),
+		};
+
+		if (igd_id == PCI_DEVICE_ID_INTEL_AML_GT2_ULX)
+			loadline[VR_IA_CORE] = VR_CFG_MOHMS(4);
+
+		return loadline[domain];
+	}
+	case PCI_DEVICE_ID_INTEL_KBL_U_R: /* fallthrough */
+	case PCI_DEVICE_ID_INTEL_KBL_ID_U: {
+		uint16_t loadline[NUM_VR_DOMAINS] = {
+			VR_CFG_MOHMS(10.3),
+			VR_CFG_MOHMS(2.4),
+			VR_CFG_MOHMS(3.1),
+			VR_CFG_MOHMS(3.1),
+		};
+
+		if (igd_id == PCI_DEVICE_ID_INTEL_SPT_LP_U_PREMIUM_HDCP22) {
+			loadline[VR_GT_UNSLICED] = VR_CFG_MOHMS(6);
+			loadline[VR_GT_SLICED] = VR_CFG_MOHMS(6);
+		}
+
+		return loadline[domain];
+	}
+	default:
+		printk(BIOS_ERR, "ERROR: Unknown MCH in VR-config\n");
+	}
+	return 0;
 }
+#endif
 
 void fill_vr_domain_config(void *params,
 		int domain, const struct vr_config *chip_cfg)
@@ -239,11 +318,21 @@ void fill_vr_domain_config(void *params,
 	vr_params->Psi4Enable[domain] = cfg->psi4enable;
 	vr_params->ImonSlope[domain] = cfg->imon_slope;
 	vr_params->ImonOffset[domain] = cfg->imon_offset;
-	vr_params->IccMax[domain] = get_sku_icc_max(domain, cfg->icc_max);
+	/* If board provided non-zero value, use it. */
+	if (cfg->icc_max)
+		vr_params->IccMax[domain] = cfg->icc_max;
+	else
+		vr_params->IccMax[domain] = get_sku_icc_max(domain);
 	vr_params->VrVoltageLimit[domain] = cfg->voltage_limit;
 
 #if CONFIG(PLATFORM_USES_FSP2_0)
-	vr_params->AcLoadline[domain] = cfg->ac_loadline;
-	vr_params->DcLoadline[domain] = cfg->dc_loadline;
+	if (cfg->ac_loadline)
+		vr_params->AcLoadline[domain] = cfg->ac_loadline;
+	else
+		vr_params->AcLoadline[domain] = get_sku_ac_dc_loadline(domain);
+	if (cfg->dc_loadline)
+		vr_params->DcLoadline[domain] = cfg->dc_loadline;
+	else
+		vr_params->DcLoadline[domain] = get_sku_ac_dc_loadline(domain);
 #endif
 }

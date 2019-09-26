@@ -17,16 +17,15 @@
 #define __SIMPLE_DEVICE__
 
 #include <device/pci_ops.h>
-#include <arch/cpu.h>
+#include <arch/romstage.h>
 #include <cbmem.h>
 #include "i945.h"
 #include <console/console.h>
-#include <cpu/intel/romstage.h>
 #include <cpu/x86/mtrr.h>
+#include <cpu/x86/smm.h>
 #include <program_loading.h>
-#include <cpu/intel/smm/gen1/smi.h>
+#include <cpu/intel/smm_reloc.h>
 #include <stdint.h>
-#include <stage_cache.h>
 
 /* Decodes TSEG region size to bytes. */
 u32 decode_tseg_size(const u8 esmramc)
@@ -46,7 +45,7 @@ u32 decode_tseg_size(const u8 esmramc)
 	}
 }
 
-u32 northbridge_get_tseg_base(void)
+static uintptr_t northbridge_get_tseg_base(void)
 {
 	uintptr_t tom;
 
@@ -61,7 +60,7 @@ u32 northbridge_get_tseg_base(void)
 	return tom;
 }
 
-u32 northbridge_get_tseg_size(void)
+static size_t northbridge_get_tseg_size(void)
 {
 	const u8 esmramc = pci_read_config8(PCI_DEV(0, 0, 0), ESMRAMC);
 	return decode_tseg_size(esmramc);
@@ -90,43 +89,23 @@ u32 decode_igd_memory_size(const u32 gms)
 	return ggc2uma[gms] << 10;
 }
 
-void stage_cache_external_region(void **base, size_t *size)
+void smm_region(uintptr_t *start, size_t *size)
 {
-	/* The stage cache lives at the end of the TSEG region.
-	 * The top of RAM is defined to be the TSEG base address.
-	 */
-	*size = CONFIG_SMM_RESERVED_SIZE;
-	*base = (void *)((uintptr_t)northbridge_get_tseg_base()
-		+ northbridge_get_tseg_size() - CONFIG_SMM_RESERVED_SIZE);
+	*start = northbridge_get_tseg_base();
+	*size = northbridge_get_tseg_size();
 }
 
-/* platform_enter_postcar() determines the stack to use after
- * cache-as-ram is torn down as well as the MTRR settings to use,
- * and continues execution in postcar stage. */
-void platform_enter_postcar(void)
+void fill_postcar_frame(struct postcar_frame *pcf)
 {
-	struct postcar_frame pcf;
 	uintptr_t top_of_ram;
-
-	if (postcar_frame_init(&pcf, 0))
-		die("Unable to initialize postcar frame.\n");
-
-	/* Cache the ROM as WP just below 4GiB. */
-	postcar_frame_add_romcache(&pcf, MTRR_TYPE_WRPROT);
-
-	/* Cache RAM as WB from 0 -> CACHE_TMP_RAMTOP. */
-	postcar_frame_add_mtrr(&pcf, 0, CACHE_TMP_RAMTOP, MTRR_TYPE_WRBACK);
 
 	/* Cache 8 MiB region below the top of ram and 2 MiB above top of
 	 * ram to cover both cbmem as the TSEG region.
 	 */
 	top_of_ram = (uintptr_t)cbmem_top();
-	postcar_frame_add_mtrr(&pcf, top_of_ram - 8*MiB, 8*MiB,
+	postcar_frame_add_mtrr(pcf, top_of_ram - 8*MiB, 8*MiB,
 			MTRR_TYPE_WRBACK);
-	postcar_frame_add_mtrr(&pcf, northbridge_get_tseg_base(),
+	postcar_frame_add_mtrr(pcf, northbridge_get_tseg_base(),
 			       northbridge_get_tseg_size(), MTRR_TYPE_WRBACK);
 
-	run_postcar_phase(&pcf);
-
-	/* We do not return here. */
 }

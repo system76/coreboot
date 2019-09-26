@@ -16,7 +16,7 @@
  * GNU General Public License for more details.
  */
 
-#include <arch/cpu.h>
+#include <arch/romstage.h>
 #include <device/pci_ops.h>
 #include <arch/symbols.h>
 #include <assert.h>
@@ -24,7 +24,6 @@
 #include <cbmem.h>
 #include <cf9_reset.h>
 #include <console/console.h>
-#include <cpu/x86/mtrr.h>
 #include <cpu/x86/pae.h>
 #include <delay.h>
 #include <cpu/x86/smm.h>
@@ -36,7 +35,6 @@
 #include <intelblocks/lpc_lib.h>
 #include <intelblocks/msr.h>
 #include <intelblocks/pmclib.h>
-#include <intelblocks/smm.h>
 #include <intelblocks/systemagent.h>
 #include <mrc_cache.h>
 #include <soc/cpu.h>
@@ -48,7 +46,6 @@
 #include <soc/systemagent.h>
 #include <spi_flash.h>
 #include <timer.h>
-#include <timestamp.h>
 #include "chip.h"
 
 static const uint8_t hob_variable_guid[16] = {
@@ -92,9 +89,6 @@ static void soc_early_romstage_init(void)
 	/* Enable decoding for HPET. Needed for FSP global pointer storage */
 	pci_write_config8(PCH_DEV_P2SB, P2SB_HPTC, P2SB_HPTC_ADDRESS_SELECT_0 |
 						P2SB_HPTC_ADDRESS_ENABLE);
-
-	if (CONFIG(DRIVERS_UART_8250IO))
-		lpc_io_setup_comm_a_b();
 }
 
 /* Thermal throttle activation offset */
@@ -196,21 +190,14 @@ void set_max_freq(void)
 	cpu_set_p_state_to_turbo_ratio();
 }
 
-asmlinkage void car_stage_entry(void)
+void mainboard_romstage_entry(void)
 {
-	struct postcar_frame pcf;
-	uintptr_t top_of_ram;
 	bool s3wake;
+	size_t var_size;
 	struct chipset_power_state *ps = pmc_get_power_state();
-	uintptr_t smm_base;
-	size_t smm_size, var_size;
 	const void *new_var_data;
 
-	timestamp_add_now(TS_START_ROMSTAGE);
-
 	soc_early_romstage_init();
-
-	console_init();
 
 	s3wake = pmc_fill_power_state(ps) == ACPI_S3;
 	fsp_memory_init(s3wake);
@@ -230,36 +217,7 @@ asmlinkage void car_stage_entry(void)
 	else
 		printk(BIOS_ERR, "Failed to determine variable data\n");
 
-	if (postcar_frame_init(&pcf, 0))
-		die("Unable to initialize postcar frame.\n");
-
 	mainboard_save_dimm_info();
-
-	/*
-	 * We need to make sure ramstage will be run cached. At this point exact
-	 * location of ramstage in cbmem is not known. Instruct postcar to cache
-	 * 16 megs under cbmem top which is a safe bet to cover ramstage.
-	 */
-	top_of_ram = (uintptr_t) cbmem_top();
-	/* cbmem_top() needs to be at least 16 MiB aligned */
-	assert(ALIGN_DOWN(top_of_ram, 16*MiB) == top_of_ram);
-	postcar_frame_add_mtrr(&pcf, top_of_ram - 16*MiB, 16*MiB,
-		MTRR_TYPE_WRBACK);
-
-	/* Cache the memory-mapped boot media. */
-	postcar_frame_add_romcache(&pcf, MTRR_TYPE_WRPROT);
-
-	/*
-	* Cache the TSEG region at the top of ram. This region is
-	* not restricted to SMM mode until SMM has been relocated.
-	* By setting the region to cacheable it provides faster access
-	* when relocating the SMM handler as well as using the TSEG
-	* region for other purposes.
-	*/
-	smm_region(&smm_base, &smm_size);
-	postcar_frame_add_mtrr(&pcf, smm_base, smm_size, MTRR_TYPE_WRBACK);
-
-	run_postcar_phase(&pcf);
 }
 
 static void fill_console_params(FSPM_UPD *mupd)

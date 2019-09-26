@@ -29,6 +29,7 @@ config SOC_INTEL_COFFEELAKE
 config SOC_INTEL_WHISKEYLAKE
 	bool
 	select SOC_INTEL_CANNONLAKE_BASE
+	select FSP_USES_CB_STACK
 	help
 	  Intel Whiskeylake support
 
@@ -76,8 +77,6 @@ config CPU_SPECIFIC_OPTIONS
 	select PARALLEL_MP
 	select PARALLEL_MP_AP_WORK
 	select PLATFORM_USES_FSP2_0
-	select POSTCAR_CONSOLE
-	select POSTCAR_STAGE
 	select REG_SCRIPT
 	select SMP
 	select SOC_AHCI_PORT_IMPLEMENTED_INVERT
@@ -126,6 +125,15 @@ config DCACHE_BSP_STACK_SIZE
 	help
 	  The amount of anticipated stack usage in CAR by bootblock and
 	  other stages.
+
+config FSP_TEMP_RAM_SIZE
+	hex
+	depends on FSP_USES_CB_STACK
+	default 0x10000
+	help
+	  The amount of anticipated heap usage in CAR by FSP.
+	  Refer to Platform FSP integration guide document to know
+	  the exact FSP requirement for Heap setup.
 
 config IFD_CHIPSET
 	string
@@ -319,5 +327,9 @@ config SOC_INTEL_CANNONLAKE_DEBUG_CONSENT
 config PRERAM_CBMEM_CONSOLE_SIZE
 	hex
 	default 0xe00
+
+config INTEL_TXT_BIOSACM_ALIGNMENT
+	hex
+	default 0x40000 # 256KB
 
 endif

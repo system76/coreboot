@@ -14,8 +14,6 @@
  * GNU General Public License for more details.
  */
 
-/* __PRE_RAM__ means: use "unsigned" for device, not a struct. */
-
 #include <stdint.h>
 #include <arch/io.h>
 #include <cf9_reset.h>
@@ -26,8 +24,7 @@
 #include <cpu/x86/lapic.h>
 #include <pc80/mc146818rtc.h>
 #include <console/console.h>
-#include <cpu/x86/bist.h>
-#include <cpu/intel/romstage.h>
+#include <arch/romstage.h>
 #include <northbridge/intel/i945/i945.h>
 #include <northbridge/intel/i945/raminit.h>
 #include <southbridge/intel/i82801gx/i82801gx.h>
@@ -206,12 +203,11 @@ static void init_artec_dongle(void)
 	outb(0xf4, 0x88);
 }
 
-void mainboard_romstage_entry(unsigned long bist)
+void mainboard_romstage_entry(void)
 {
 	int s3resume = 0;
 
-	if (bist == 0)
-		enable_lapic();
+	enable_lapic();
 
 	/* Force PCIRST# */
 	pci_write_config16(PCI_DEV(0, 0x1e, 0), BCTRL, SBR);
@@ -223,9 +219,6 @@ void mainboard_romstage_entry(unsigned long bist)
 
 	/* Set up the console */
 	console_init();
-
-	/* Halt if there was a built in self test failure */
-	report_bist_failure(bist);
 
 	if (MCHBAR16(SSKPD) == 0xCAFE) {
 		printk(BIOS_DEBUG, "soft reset detected, rebooting properly\n");

@@ -16,7 +16,6 @@
 #include <console/console.h>
 #include <security/tpm/tspi.h>
 #include <arch/early_variables.h>
-#include <fmap.h>
 #include <region_file.h>
 #include <string.h>
 #include <security/vboot/symbols.h>
@@ -26,7 +25,7 @@
 
 static struct tcpa_table *tcpa_cbmem_init(void)
 {
-	MAYBE_STATIC struct tcpa_table *tclt = NULL;
+	MAYBE_STATIC_BSS struct tcpa_table *tclt = NULL;
 	if (tclt)
 		return tclt;
 
@@ -47,7 +46,7 @@ static struct tcpa_table *tcpa_cbmem_init(void)
 
 static struct tcpa_table *tcpa_log_init(void)
 {
-	MAYBE_STATIC struct tcpa_table *tclt = NULL;
+	MAYBE_STATIC_BSS struct tcpa_table *tclt = NULL;
 
 	/* We are dealing here with pre CBMEM environment.
 	 * If cbmem isn't available use CAR or SRAM */

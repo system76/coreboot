@@ -1,22 +1,6 @@
 /*
  * This file is part of the coreboot project.
  *
- * It was originally based on the Linux kernel (drivers/pci/pci.c).
- * Copyright 1993 -- 1997 Drew Eckhardt, Frederic Potter,
- * David Mosberger-Tang
- *
- * Copyright 1997 -- 1999 Martin Mares <mj@atrey.karlin.mff.cuni.cz>
- *
- * Copyright (C) 2003-2004 Linux Networx
- * (Written by Eric Biederman <ebiederman@lnxi.com> for Linux Networx)
- * Copyright (C) 2003-2006 Ronald G. Minnich <rminnich@gmail.com>
- * Copyright (C) 2004-2005 Li-Ta Lo <ollie@lanl.gov>
- * Copyright (C) 2005-2006 Tyan
- * (Written by Yinghai Lu <yhlu@tyan.com> for Tyan)
- * Copyright (C) 2005-2009 coresystems GmbH
- * (Written by Stefan Reinauer <stepan@coresystems.de> for coresystems GmbH)
- * Copyright (C) 2014 Sage Electronic Engineering, LLC.
- *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; version 2 of the License.
@@ -28,13 +12,13 @@
  */
 
 /*
+ * Originally based on the Linux kernel (drivers/pci/pci.c).
  * PCI Bus Services, see include/linux/pci.h for further explanation.
  */
 
 #include <arch/acpi.h>
 #include <device/pci_ops.h>
 #include <bootmode.h>
-#include <bootsplash.h>
 #include <console/console.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -642,7 +626,7 @@ void pci_bus_enable_resources(struct device *dev)
 		dev->command |= PCI_COMMAND_IO;
 	ctrl = pci_read_config16(dev, PCI_BRIDGE_CONTROL);
 	ctrl |= dev->link_list->bridge_ctrl;
-	ctrl |= (PCI_BRIDGE_CTL_PARITY + PCI_BRIDGE_CTL_SERR); /* Error check. */
+	ctrl |= (PCI_BRIDGE_CTL_PARITY | PCI_BRIDGE_CTL_SERR); /* Error check. */
 	printk(BIOS_DEBUG, "%s bridge ctrl <- %04x\n", dev_path(dev), ctrl);
 	pci_write_config16(dev, PCI_BRIDGE_CONTROL, ctrl);
 
@@ -766,9 +750,6 @@ void pci_dev_init(struct device *dev)
 	gfx_set_init_done(1);
 	printk(BIOS_DEBUG, "VGA Option ROM was run\n");
 	timestamp_add_now(TS_OPROM_END);
-
-	if (CONFIG(BOOTSPLASH))
-		set_vesa_bootsplash();
 }
 
 /** Default device operation for PCI devices */

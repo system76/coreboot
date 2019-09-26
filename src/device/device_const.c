@@ -1,13 +1,6 @@
 /*
  * This file is part of the coreboot project.
  *
- * Copyright (C) 2003-2004 Linux Networx
- * (Written by Eric Biederman <ebiederman@lnxi.com> for Linux Networx)
- * Copyright (C) 2003 Greg Watson <jarrah@users.sourceforge.net>
- * Copyright (C) 2004 Li-Ta Lo <ollie@lanl.gov>
- * Copyright (C) 2005-2006 Tyan
- * (Written by Yinghai Lu <yhlu@tyan.com> for Tyan)
- *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; version 2 of the License.
@@ -204,7 +197,7 @@ DEVTREE_CONST struct device *pcidev_path_on_bus(unsigned int bus, pci_devfn_t de
 DEVTREE_CONST struct bus *pci_root_bus(void)
 {
 	DEVTREE_CONST struct device *pci_domain;
-	MAYBE_STATIC DEVTREE_CONST struct bus *pci_root = NULL;
+	MAYBE_STATIC_BSS DEVTREE_CONST struct bus *pci_root = NULL;
 
 	if (pci_root)
 		return pci_root;

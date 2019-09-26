@@ -32,6 +32,7 @@
 #include <amdblocks/acpi.h>
 #include <soc/acpi.h>
 #include <soc/pci_devs.h>
+#include <soc/cpu.h>
 #include <soc/southbridge.h>
 #include <soc/northbridge.h>
 #include <soc/nvs.h>
@@ -46,9 +47,6 @@ unsigned long acpi_fill_madt(unsigned long current)
 	/* Write Kern IOAPIC, only one */
 	current += acpi_create_madt_ioapic((acpi_madt_ioapic_t *)current,
 			CONFIG_MAX_CPUS, IO_APIC_ADDR, 0);
-
-	current += acpi_create_madt_ioapic((acpi_madt_ioapic_t *)current,
-			CONFIG_MAX_CPUS+1, IO_APIC2_ADDR, 24);
 
 	/* 0: mean bus 0--->ISA */
 	/* 0: PIC 0 */
@@ -241,10 +239,7 @@ void generate_cpu_entries(struct device *device)
 {
 	int cores, cpu;
 
-	/* Picasso is single node, just report # of cores */
-	cores = pci_read_config32(SOC_NB_DEV, NB_CAPABILITIES2) & CMP_CAP_MASK;
-	cores++; /* number of cores is CmpCap+1 */
-
+	cores = get_cpu_count();
 	printk(BIOS_DEBUG, "ACPI \\_PR report %d core(s)\n", cores);
 
 	/* Generate BSP \_PR.P000 */

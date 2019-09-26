@@ -1,8 +1,6 @@
 /*
  * This file is part of the coreboot project.
  *
- * Copyright 2016 Google Inc.
- *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; version 2 of the License.
@@ -77,6 +75,24 @@ const char *acpi_device_name(const struct device *dev)
 		if (name)
 			return name;
 	}
+
+	return NULL;
+}
+
+/* Locate and return the ACPI _HID (Hardware ID) for this device */
+const char *acpi_device_hid(const struct device *dev)
+{
+	if (!dev)
+		return NULL;
+
+	/* Check for device specific handler */
+	if (dev->ops->acpi_hid)
+		return dev->ops->acpi_hid(dev);
+
+	/*
+	 * Don't walk up the tree to find any parent that can identify this device, as
+	 * PNP devices are hard to identify.
+	 */
 
 	return NULL;
 }

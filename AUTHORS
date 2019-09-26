@@ -2,13 +2,100 @@
 #
 # This does not necessarily list everyone who has contributed code, since in
 # some cases, their employer may be the copyright holder.  To see the full list
-# of contributors, see the revision history in source control.
-# git log --pretty=format:%an | sort | uniq
-#
+# of contributors, and their email addresses, see the revision history in source
+# control.
+# Run the below commands in the coreboot repo for additional information.
+# To see a list of contributors: git log --pretty=format:%an | sort | uniq
+# For patches adding or removing a name: git log -i -S "NAME" --source --all
 
+9elements Agency GmbH
+Advanced Micro Devices, Inc.
+Alex Züpke
 Alexander Couzens
+Alexandru Gagniuc
+Andy Fleming
+ARM Limited and Contributors
+Arthur Heymans
+Carl-Daniel Hailfinger
+coresystems GmbH
+Damien Zammit
+David Hendricks
+David Mosberger-Tang
+Denis Dowling
+DENX Software Engineering
+DMP Electronics Inc.
+Drew Eckhardt
+Egbert Eich
+Eric Biederman
+Eswar Nallusamy
+Facebook, Inc.
+Felix Held
+Frederic Potter
+Free Software Foundation, Inc.
+Freescale Semiconductor, Inc.
+Gary Jennejohn
+Gerd Hoffmann
+Google LLC
+Greg Watson
+Imagination Technologies
+Intel Corporation
+Jason Zhao
+Jordan Crouse
+Joseph Smith
+Keith Hui
+Kshitij
+Kyösti Mälkki
+Lei Wen
+Li-Ta Lo
+Libra Li
+Linus Torvalds
+Linux Networx, Inc.
+Marc Jones
+Marek Vasut
+Marius Gröger
+Martin Mares
+Marvell Semiconductor Inc.
+MediaTek Inc.
+MontaVista Software, Inc.
+Myles Watson
+Nicholas Sielicki
+Nick Barker
+Nico Huber
+Patrick Georgi
+Patrick Rudolph
+PC Engines GmbH
+Per Odlund
+Peter Stuge
+Raptor Engineering, LLC
+Richard Woodruff
+Ronald G. Minnich
+Rudolf Marek
+Russell King
+Sage Electronic Engineering, LLC
+SciTech Software, Inc.
+secunet Security Networks AG
+Siemens AG
+Silicon Integrated System Corporation
+Stefan Reinauer
+Steve Magnani
+SUSE LINUX AG
+Sven Schnelle
+Syed Mohammed Khasim
+Texas Instruments
+The Linux Foundation
+Timothy Pearson
+Tyan Computer Corp.
+Uwe Hermann
+VIA Technologies, Inc
+Wolfgang Denk
+Yinghai Lu
 
 
 
 # Directories transferred
 src/acpi
+src/arch
+src/commonlib
+src/console
+src/cpu
+src/device
