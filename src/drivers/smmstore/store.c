@@ -13,7 +13,6 @@
  * GNU General Public License for more details.
  */
 
-#include <stdlib.h>
 #include <boot_device.h>
 #include <cbfs.h>
 #include <fmap.h>
@@ -44,6 +43,33 @@
  * crash/reboot could clear out all variables.
  */
 
+static int lookup_store_region(struct region *region)
+{
+	if (CONFIG(SMMSTORE_IN_CBFS)) {
+		struct cbfsf file;
+		if (cbfs_locate_file_in_region(&file,
+					       CONFIG_SMMSTORE_REGION,
+					       CONFIG_SMMSTORE_FILENAME, NULL) < 0) {
+			printk(BIOS_WARNING,
+			       "smm store: Unable to find SMM store file in region '%s'\n",
+			       CONFIG_SMMSTORE_REGION);
+			return -1;
+		}
+		struct region_device rdev;
+		cbfs_file_data(&rdev, &file);
+		*region = *region_device_region(&rdev);
+	} else {
+		if (fmap_locate_area(CONFIG_SMMSTORE_REGION, region)) {
+			printk(BIOS_WARNING,
+			       "smm store: Unable to find SMM store FMAP region '%s'\n",
+			       CONFIG_SMMSTORE_REGION);
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
 /*
  * Return a region device that points into the store file.
  *
@@ -58,28 +84,26 @@
  */
 static int lookup_store(struct region_device *rstore)
 {
-	struct cbfsf file;
-	if (CONFIG(SMMSTORE_IN_CBFS)) {
-		if (cbfs_locate_file_in_region(&file,
-			       CONFIG_SMMSTORE_REGION,
-			       CONFIG_SMMSTORE_FILENAME, NULL) < 0) {
-			printk(BIOS_WARNING,
-			       "smm store: Unable to find SMM store file in region '%s'\n",
-			       CONFIG_SMMSTORE_REGION);
-			return -1;
-		}
+	static struct region_device read_rdev, write_rdev;
+	static struct incoherent_rdev store_irdev;
+	struct region region;
+	const struct region_device *rdev;
 
-		cbfs_file_data(rstore, &file);
-	} else {
-		if (fmap_locate_area_as_rdev_rw(CONFIG_SMMSTORE_REGION, rstore)) {
-			printk(BIOS_WARNING,
-			       "smm store: Unable to find SMM store FMAP region '%s'\n",
-			       CONFIG_SMMSTORE_REGION);
-			return -1;
-		}
-	}
+	if (lookup_store_region(&region))
+		return -1;
 
-	return 0;
+	if (boot_device_ro_subregion(&region, &read_rdev) < 0)
+		return -1;
+
+	if (boot_device_rw_subregion(&region, &write_rdev) < 0)
+		return -1;
+
+	rdev = incoherent_rdev_init(&store_irdev, &region, &read_rdev, &write_rdev);
+
+	if (rdev == NULL)
+		return -1;
+
+	return rdev_chain(rstore, rdev, 0, region_device_sz(rdev));
 }
 
 /*
@@ -88,7 +112,7 @@ static int lookup_store(struct region_device *rstore)
  * returns 0 on success, -1 on failure
  * writes up to `*bufsize` bytes into `buf` and updates `*bufsize`
  */
-int smmstore_read_region(void *buf, uint32_t *bufsize)
+int smmstore_read_region(void *buf, ssize_t *bufsize)
 {
 	struct region_device store;
 
@@ -100,33 +124,26 @@ int smmstore_read_region(void *buf, uint32_t *bufsize)
 		return -1;
 	}
 
-	ssize_t tx = min(*bufsize, region_device_sz(&store));
-	ssize_t count = rdev_readat(&store, buf, 0, tx);
-	if (count < 0)
+	ssize_t tx = MIN(*bufsize, region_device_sz(&store));
+	*bufsize = rdev_readat(&store, buf, 0, tx);
+
+	if (*bufsize < 0)
 		return -1;
-	*bufsize = (uint32_t)count;
 
 	return 0;
 }
 
-static enum cb_err scan_end(ssize_t *end)
+static enum cb_err scan_end(struct region_device *store)
 {
-	struct region_device store;
-
-	if (lookup_store(&store) < 0) {
-		printk(BIOS_WARNING, "reading region failed\n");
-		return CB_ERR;
-	}
-	ssize_t data_sz = region_device_sz(&store);
-
 	/* scan for end */
-	*end = 0;
+	ssize_t end = 0;
 	uint32_t k_sz, v_sz;
-	while (*end < data_sz) {
+	const ssize_t data_sz = region_device_sz(store);
+	while (end < data_sz) {
 		/* make odd corner cases identifiable, eg. invalid v_sz */
 		k_sz = 0;
 
-		if (rdev_readat(&store, &k_sz, *end, sizeof(k_sz)) < 0) {
+		if (rdev_readat(store, &k_sz, end, sizeof(k_sz)) < 0) {
 			printk(BIOS_WARNING, "failed reading key size\n");
 			return CB_ERR;
 		}
@@ -144,7 +161,7 @@ static enum cb_err scan_end(ssize_t *end)
 			return CB_ERR;
 		}
 
-		if (rdev_readat(&store, &v_sz, *end + 4, sizeof(v_sz)) < 0) {
+		if (rdev_readat(store, &v_sz, end + sizeof(k_sz), sizeof(v_sz)) < 0) {
 			printk(BIOS_WARNING, "failed reading value size\n");
 			return CB_ERR;
 		}
@@ -154,17 +171,20 @@ static enum cb_err scan_end(ssize_t *end)
 			return CB_ERR;
 		}
 
-		*end += sizeof(k_sz) + sizeof(v_sz) + k_sz + v_sz + 1;
-		*end = ALIGN_UP(*end, sizeof(uint32_t));
+		end += sizeof(k_sz) + sizeof(v_sz) + k_sz + v_sz + 1;
+		end = ALIGN_UP(end, sizeof(uint32_t));
 	}
 
-	printk(BIOS_DEBUG, "used smm store size might be 0x%zx bytes\n", *end);
+	printk(BIOS_DEBUG, "used smm store size might be 0x%zx bytes\n", end);
 
 	if (k_sz != 0xffffffff) {
 		printk(BIOS_WARNING,
 			"eof of data marker looks invalid: 0x%x\n", k_sz);
 		return CB_ERR;
 	}
+
+	if (rdev_chain(store, store, end, data_sz - end))
+		return CB_ERR;
 
 	return CB_SUCCESS;
 
@@ -174,8 +194,8 @@ static enum cb_err scan_end(ssize_t *end)
  *
  * Returns 0 on success, -1 on failure
  */
-int smmstore_append_data(void *key, uint32_t key_sz,
-	void *value, uint32_t value_sz)
+int smmstore_append_data(void *key, uint32_t key_sz, void *value,
+			 uint32_t value_sz)
 {
 	struct region_device store;
 
@@ -184,48 +204,49 @@ int smmstore_append_data(void *key, uint32_t key_sz,
 		return -1;
 	}
 
-	ssize_t end;
-	if (scan_end(&end) == CB_ERR)
+	ssize_t offset = 0;
+	ssize_t size;
+	uint8_t nul = 0;
+	if (scan_end(&store) != CB_SUCCESS)
 		return -1;
 
 	printk(BIOS_DEBUG, "used size looks legit\n");
 
 	printk(BIOS_DEBUG, "open (%zx, %zx) for writing\n",
 		region_device_offset(&store), region_device_sz(&store));
-	if (boot_device_rw_subregion(region_device_region(&store), &store) < 0) {
-		printk(BIOS_WARNING, "couldn't open store for writing\n");
-		return -1;
-	}
 
-	struct region subregion = {
-		.offset = end,
-		.size = sizeof(key_sz) + sizeof(value_sz) + key_sz + value_sz + 1,
-	};
-
-	if (region_is_subregion(region_device_region(&store), &subregion)) {
+	size = sizeof(key_sz) + sizeof(value_sz) + key_sz + value_sz
+		+ sizeof(nul);
+	if (rdev_chain(&store, &store, 0, size)) {
 		printk(BIOS_WARNING, "not enough space for new data\n");
 		return -1;
 	}
 
-	if (rdev_writeat(&store, &key_sz, end, sizeof(key_sz)) != sizeof(key_sz)) {
+	if (rdev_writeat(&store, &key_sz, offset, sizeof(key_sz))
+	    != sizeof(key_sz)) {
 		printk(BIOS_WARNING, "failed writing key size\n");
+		return -1;
 	}
-	end += sizeof(key_sz);
-	if (rdev_writeat(&store, &value_sz, end, sizeof(value_sz)) != sizeof(key_sz)) {
+	offset += sizeof(key_sz);
+	if (rdev_writeat(&store, &value_sz, offset, sizeof(value_sz))
+	    != sizeof(value_sz)) {
 		printk(BIOS_WARNING, "failed writing value size\n");
+		return -1;
 	}
-	end += sizeof(value_sz);
-	if (rdev_writeat(&store, key, end, key_sz) != key_sz) {
+	offset += sizeof(value_sz);
+	if (rdev_writeat(&store, key, offset, key_sz) != key_sz) {
 		printk(BIOS_WARNING, "failed writing key data\n");
+		return -1;
 	}
-	end += key_sz;
-	if (rdev_writeat(&store, value, end, value_sz) != value_sz) {
+	offset += key_sz;
+	if (rdev_writeat(&store, value, offset, value_sz) != value_sz) {
 		printk(BIOS_WARNING, "failed writing value data\n");
+		return -1;
 	}
-	end += value_sz;
-	uint8_t nul = 0;
-	if (rdev_writeat(&store, &nul, end, sizeof(nul)) != sizeof(nul)) {
+	offset += value_sz;
+	if (rdev_writeat(&store, &nul, offset, sizeof(nul)) != sizeof(nul)) {
 		printk(BIOS_WARNING, "failed writing termination\n");
+		return -1;
 	}
 
 	return 0;
