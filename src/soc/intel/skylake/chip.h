@@ -22,7 +22,7 @@
 #include <arch/acpi_device.h>
 #include <device/i2c_simple.h>
 #include <drivers/i2c/designware/dw_i2c.h>
-#include <intelblocks/chip.h>
+#include <intelblocks/cfg.h>
 #include <intelblocks/gspi.h>
 #include <intelblocks/lpc_lib.h>
 #include <stdint.h>
@@ -207,6 +207,12 @@ struct soc_intel_skylake_config {
 	/* Audio related */
 	u8 EnableAzalia;
 	u8 DspEnable;
+
+	/* HDA Virtual Channel Type Select */
+	enum {
+		Vc0,
+		Vc1,
+	} PchHdaVcType;
 
 	/*
 	 * I/O Buffer Ownership:

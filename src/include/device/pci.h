@@ -55,11 +55,12 @@ struct msix_entry {
 	u32 vec_control;
 };
 
-#ifdef __SIMPLE_DEVICE__
-#define __pci_driver __attribute__((unused))
-#else
+#if ENV_RAMSTAGE
 #define __pci_driver __attribute__((used, __section__(".rodata.pci_driver")))
+#else
+#define __pci_driver __attribute__((unused))
 #endif
+
 /** start of compile time generated pci driver array */
 extern struct pci_driver _pci_drivers[];
 /** end of compile time generated pci driver array */
@@ -115,16 +116,16 @@ struct msix_entry *pci_msix_get_table(struct device *dev);
 pci_devfn_t pci_locate_device(unsigned int pci_id, pci_devfn_t dev);
 pci_devfn_t pci_locate_device_on_bus(unsigned int pci_id, unsigned int bus);
 
-void pci_early_mmio_window(pci_devfn_t p2p_bridge, u32 mmio_base,
-			   u32 mmio_size);
+void pci_s_assert_secondary_reset(pci_devfn_t p2p_bridge);
+void pci_s_deassert_secondary_reset(pci_devfn_t p2p_bridge);
+void pci_s_bridge_set_secondary(pci_devfn_t p2p_bridge, u8 secondary);
+
 int pci_early_device_probe(u8 bus, u8 dev, u32 mmio_base);
 
-#ifndef __ROMCC__
 static inline int pci_base_address_is_memory_space(unsigned int attr)
 {
 	return (attr & PCI_BASE_ADDRESS_SPACE) == PCI_BASE_ADDRESS_SPACE_MEMORY;
 }
-#endif
 
 #endif /* CONFIG_PCI */
 

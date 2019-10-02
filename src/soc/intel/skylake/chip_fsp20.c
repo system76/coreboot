@@ -23,7 +23,7 @@
 #include <device/device.h>
 #include <device/pci_ids.h>
 #include <fsp/util.h>
-#include <intelblocks/chip.h>
+#include <intelblocks/cfg.h>
 #include <intelblocks/itss.h>
 #include <intelblocks/lpc_lib.h>
 #include <intelblocks/mp_init.h>
@@ -237,7 +237,7 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 	uintptr_t vbt_data = (uintptr_t)vbt_get();
 	int i;
 
-	config = config_of_path(SA_DEVFN_ROOT);
+	config = config_of_soc();
 
 	mainboard_silicon_init_params(params);
 	/* Set PsysPmax if it is available from DT */
@@ -361,6 +361,7 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 	params->PchIshEnable = dev ? dev->enabled : 0;
 
 	params->PchHdaEnable = config->EnableAzalia;
+	params->PchHdaVcType = config->PchHdaVcType;
 	params->PchHdaIoBufferOwnership = config->IoBufferOwnership;
 	params->PchHdaDspEnable = config->DspEnable;
 	params->Device4Enable = config->Device4Enable;

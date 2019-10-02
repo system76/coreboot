@@ -17,6 +17,7 @@
 #include <console/console.h>
 #include <device/device.h>
 #include <device/pci.h>
+#include <device/pci_def.h>
 #include <device/pci_ops.h>
 #include <device/pci_ids.h>
 #include "pch.h"
@@ -36,10 +37,10 @@ static void pci_init(struct device *dev)
 	pci_write_config8(dev, INTR, 0xff);
 
 	/* disable parity error response and SERR */
-	reg16 = pci_read_config16(dev, BCTRL);
-	reg16 &= ~(1 << 0);
-	reg16 &= ~(1 << 1);
-	pci_write_config16(dev, BCTRL, reg16);
+	reg16 = pci_read_config16(dev, PCI_BRIDGE_CONTROL);
+	reg16 &= ~PCI_BRIDGE_CTL_PARITY;
+	reg16 &= ~PCI_BRIDGE_CTL_SERR;
+	pci_write_config16(dev, PCI_BRIDGE_CONTROL, reg16);
 
 	/* Master Latency Count must be set to 0x04! */
 	reg8 = pci_read_config8(dev, SMLT);
@@ -57,34 +58,6 @@ static void pci_init(struct device *dev)
 	pci_write_config16(dev, SECSTS, reg16);
 }
 
-static void ich_pci_dev_enable_resources(struct device *dev)
-{
-	uint16_t command;
-
-	command = pci_read_config16(dev, PCI_COMMAND);
-	command |= dev->command;
-	printk(BIOS_DEBUG, "%s cmd <- %02x\n", dev_path(dev), command);
-	pci_write_config16(dev, PCI_COMMAND, command);
-}
-
-static void ich_pci_bus_enable_resources(struct device *dev)
-{
-	uint16_t ctrl;
-	/* enable IO in command register if there is VGA card
-	 * connected with (even it does not claim IO resource)
-	 */
-	if (dev->link_list->bridge_ctrl & PCI_BRIDGE_CTL_VGA)
-		dev->command |= PCI_COMMAND_IO;
-	ctrl = pci_read_config16(dev, PCI_BRIDGE_CONTROL);
-	ctrl |= dev->link_list->bridge_ctrl;
-	ctrl |= (PCI_BRIDGE_CTL_PARITY | PCI_BRIDGE_CTL_SERR); /* error check */
-	printk(BIOS_DEBUG, "%s bridge ctrl <- %04x\n", dev_path(dev), ctrl);
-	pci_write_config16(dev, PCI_BRIDGE_CONTROL, ctrl);
-
-	/* This is the reason we need our own pci_bus_enable_resources */
-	ich_pci_dev_enable_resources(dev);
-}
-
 static struct pci_operations pci_ops = {
 	.set_subsystem = pci_dev_set_subsystem,
 };
@@ -92,7 +65,7 @@ static struct pci_operations pci_ops = {
 static struct device_operations device_ops = {
 	.read_resources		= pci_bus_read_resources,
 	.set_resources		= pci_dev_set_resources,
-	.enable_resources	= ich_pci_bus_enable_resources,
+	.enable_resources	= pci_bus_enable_resources,
 	.init			= pci_init,
 	.scan_bus		= pci_scan_bridge,
 	.ops_pci		= &pci_ops,

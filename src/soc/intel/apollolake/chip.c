@@ -28,7 +28,7 @@
 #include <device/pci.h>
 #include <device/pci_ops.h>
 #include <intelblocks/acpi.h>
-#include <intelblocks/chip.h>
+#include <intelblocks/cfg.h>
 #include <intelblocks/fast_spi.h>
 #include <intelblocks/msr.h>
 #include <intelblocks/p2sb.h>
@@ -300,7 +300,7 @@ static void set_power_limits(void)
 	uint32_t tdp, min_power, max_power;
 	uint32_t pl2_val;
 
-	cfg = config_of_path(SA_DEVFN_ROOT);
+	cfg = config_of_soc();
 
 	if (CONFIG(APL_SKIP_SET_POWER_LIMITS)) {
 		printk(BIOS_INFO, "Skip the RAPL settings.\n");
@@ -364,7 +364,7 @@ static void set_sci_irq(void)
 	struct soc_intel_apollolake_config *cfg;
 	uint32_t scis;
 
-	cfg = config_of_path(SA_DEVFN_ROOT);
+	cfg = config_of_soc();
 
 	/* Change only if a device tree entry exists. */
 	if (cfg->sci_irq) {

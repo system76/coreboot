@@ -131,7 +131,7 @@ static const struct pad_config gpio_table[] = {
 				 EDGE_SINGLE, INVERT), /* H1_PCH_INT_ODL */
 /* DMIC_CLK0 */		PAD_NC(GPP_D19, NONE),
 /* DMIC_DATA0 */	PAD_NC(GPP_D20, NONE),
-/* SPI1_IO2 */		PAD_CFG_GPO(GPP_D21, 0, DEEP), /* WWAN_BB_RST# */
+/* SPI1_IO2 */		PAD_CFG_GPO(GPP_D21, 1, DEEP), /* WWAN_BB_RST# */
 /* SPI1_IO3 */		PAD_CFG_GPO(GPP_D22, 0, DEEP), /* WWAN_GPIO_PERST# */
 /* I2S_MCLK */		PAD_CFG_GPI_SCI_LOW(GPP_D23, NONE, DEEP,
 				 EDGE_SINGLE), /* WWAN_GPIO_WAKE# */
@@ -214,7 +214,6 @@ static const struct pad_config gpio_table[] = {
 /* BATLOW# */		PAD_CFG_NF(GPD0, NONE, DEEP, NF1), /* BATLOW# */
 /* ACPRESENT */		PAD_CFG_NF(GPD1, NONE, DEEP, NF1), /* AC_PRESENT */
 /* LAN_WAKE# */		PAD_CFG_NF(GPD2, NONE, DEEP, NF1), /* LAN_WAKE# */
-/* PWRBTN# */		PAD_CFG_NF(GPD3, NONE, DEEP, NF1), /* SIO_PWRBTN# */
 /* SLP_S3# */		PAD_CFG_NF(GPD4, NONE, DEEP, NF1), /* SIO_SLP_S3# */
 /* SLP_S4# */		PAD_CFG_NF(GPD5, NONE, DEEP, NF1), /* SIO_SLP_S4# */
 /* SLP_A# */		PAD_CFG_NF(GPD6, NONE, DEEP, NF1), /* SIO_SLP_A# */
@@ -250,6 +249,7 @@ static const struct pad_config early_gpio_table[] = {
 /* EMMC_DATA3 */	PAD_CFG_GPI(GPP_F15, NONE, DEEP), /* MEM_CONFIGO_1P8 */
 /* EMMC_DATA4 */	PAD_CFG_GPI(GPP_F16, NONE, DEEP), /* MEM_CONFIGO_1P8 */
 /* I2C2_SCL */		PAD_CFG_GPI(GPP_H5, NONE, PLTRST), /* 360_SENSOR_DET# */
+/* PWRBTN# */		PAD_CFG_NF(GPD3, UP_20K, DEEP, NF1), /* SIO_PWRBTN# */
 };
 
 const struct pad_config *variant_gpio_table(size_t *num)
@@ -286,4 +286,11 @@ void variant_mainboard_post_init_params(FSPM_UPD *mupd)
 	FSP_M_CONFIG *fsp_m_cfg = &mupd->FspmConfig;
 	if (fsp_m_cfg->PchIshEnable)
 		fsp_m_cfg->PchIshEnable = is_ish_device_enabled();
+
+	/*
+	 * Disable memory channel by HW strap pin, HW default is enable
+	 * 0: Enable both DIMMs, 3: Disable both DIMMs
+	 */
+	mupd->FspmConfig.DisableDimmChannel0 = gpio_get(DDR_CH0_EN) ? 0 : 3;
+	mupd->FspmConfig.DisableDimmChannel1 = gpio_get(DDR_CH1_EN) ? 0 : 3;
 }
