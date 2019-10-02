@@ -23,6 +23,39 @@ Device (S76D) {
     Name (_HID, "17761776")
     Name (_UID, 0)
 
+    Method (RSET, 0, Serialized) {
+        Debug = "S76D: RSET"
+        SAPL(0)
+        SKBL(0)
+        #if COLOR_KEYBOARD
+            SKBC(0xFFFFFF)
+        #endif
+    }
+
+    Method (INIT, 0, Serialized) {
+        Debug = "S76D: INIT"
+        RSET()
+        If (^^PCI0.LPCB.EC0.ECOK) {
+            // Set flags to use software control
+            ^^PCI0.LPCB.EC0.ECOS = 2
+            Return (0)
+        } Else {
+            Return (1)
+        }
+    }
+
+    Method (FINI, 0, Serialized) {
+        Debug = "S76D: FINI"
+        RSET()
+        If (^^PCI0.LPCB.EC0.ECOK) {
+            // Set flags to use hardware control
+            ^^PCI0.LPCB.EC0.ECOS = 1
+            Return (0)
+        } Else {
+            Return (1)
+        }
+    }
+
     // Get Airplane LED
     Method (GAPL, 0, Serialized) {
         If (^^PCI0.LPCB.EC0.ECOK) {

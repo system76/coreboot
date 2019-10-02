@@ -40,10 +40,10 @@ Device (EC0)
     {
         Debug = Concatenate("EC: _REG", Concatenate(ToHexString(Arg0), Concatenate(" ", ToHexString(Arg1))))
         If (((Arg0 == 0x03) && (Arg1 == One))) {
-            // Enable software touchpad lock and airplane mode keys
-            ECOS = 2
+            // Enable hardware touchpad lock, airplane mode, and keyboard backlight keys
+            ECOS = 1
 
-            // Enable software backlight keys
+            // Enable software display brightness keys
             WINF = 1
 
             // Set current AC state
@@ -56,12 +56,16 @@ Device (EC0)
 
             // EC is now available
             ECOK = Arg1
+
+            // Reset System76 Device
+            ^^^^S76D.RSET()
         }
     }
 
     Method (PTS, 1, Serialized) {
         Debug = Concatenate("EC: PTS: ", ToHexString(Arg0))
         If (ECOK) {
+            // Clear wake cause
             WFNO = Zero
         }
     }
@@ -71,11 +75,19 @@ Device (EC0)
         If (ECOK) {
             // Set current AC state
             ^^^^AC.ACFG = ADP
+
             // Update battery information and status
             ^^^^BAT0.UPBI()
             ^^^^BAT0.UPBS()
+
+            // Notify of changes
             Notify(^^^^AC, Zero)
             Notify(^^^^BAT0, Zero)
+
+            Sleep (1000)
+
+            // Reset System76 Device
+            ^^^^S76D.RSET()
         }
     }
 
@@ -134,7 +146,10 @@ Device (EC0)
     Method (_Q14, 0, NotSerialized) // Airplane Mode
     {
         Debug = "EC: Airplane Mode"
-        ^^^^HIDD.HPEM (8)
+        // Only send HIDD message when hardware airplane mode not in use
+        If (ECOS == 2) {
+            ^^^^HIDD.HPEM (8)
+        }
     }
 
     Method (_Q15, 0, NotSerialized) // Suspend Button
