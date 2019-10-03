@@ -257,4 +257,25 @@ void dump_me_status(void *unused)
 		hfsts6.fields.txt_support ? "YES" : "NO");
 }
 
+#define DISABLE_ME 1
+#if DISABLE_ME
+
+void disable_me(void* unused);
+
+void disable_me(void* unused)
+{
+    u32 msg[] = {0x00000105, 0x00000000, 0x00000000};
+    printk(BIOS_DEBUG, "ME: send disable message\n");
+    if (!heci_send(&msg, sizeof(msg), BIOS_HOST_ADDR,
+            HECI_MKHI_ADDR))
+        printk(BIOS_ERR, "ME: Error sending HMRFPO msg\n");
+    dump_me_status(unused);
+}
+
+BOOT_STATE_INIT_ENTRY(BS_OS_RESUME_CHECK, BS_ON_EXIT, disable_me, NULL);
+
+#else // DISABLE_ME
+
 BOOT_STATE_INIT_ENTRY(BS_OS_RESUME_CHECK, BS_ON_EXIT, dump_me_status, NULL);
+
+#endif // DISABLE_ME
