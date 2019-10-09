@@ -22,47 +22,47 @@
 #include <device/pci_ids.h>
 #include <device/pci_ops.h>
 
-static void slot_dev_read_resources(struct device *dev)
-{
-	struct resource *resource;
-
-	resource = new_resource(dev, 0x10);
-	resource->size = 1 << 28;
-	resource->align = 22;
-	resource->gran = 22;
-	resource->limit = 0xffffffff;
-	resource->flags |= IORESOURCE_MEM;
-
-	resource = new_resource(dev, 0x14);
-	resource->size = 1 << 28;
-	resource->align = 22;
-	resource->gran = 22;
-	resource->limit = 0xffffffff;
-	resource->flags |= IORESOURCE_MEM | IORESOURCE_PREFETCH;
-
-	resource = new_resource(dev, 0x18);
-	resource->size = 1 << 13;
-	resource->align = 12;
-	resource->gran = 12;
-	resource->limit = 0xffff;
-	resource->flags |= IORESOURCE_IO;
-}
-
-static struct device_operations slot_dev_ops = {
-	.read_resources   = slot_dev_read_resources,
-};
+// static void slot_dev_read_resources(struct device *dev)
+// {
+// 	struct resource *resource;
+//
+// 	resource = new_resource(dev, 0x10);
+// 	resource->size = 1 << 28;
+// 	resource->align = 22;
+// 	resource->gran = 22;
+// 	resource->limit = 0xffffffff;
+// 	resource->flags |= IORESOURCE_MEM;
+//
+// 	resource = new_resource(dev, 0x14);
+// 	resource->size = 1 << 28;
+// 	resource->align = 22;
+// 	resource->gran = 22;
+// 	resource->limit = 0xffffffff;
+// 	resource->flags |= IORESOURCE_MEM | IORESOURCE_PREFETCH;
+//
+// 	resource = new_resource(dev, 0x18);
+// 	resource->size = 1 << 13;
+// 	resource->align = 12;
+// 	resource->gran = 12;
+// 	resource->limit = 0xffff;
+// 	resource->flags |= IORESOURCE_IO;
+// }
+//
+// static struct device_operations slot_dev_ops = {
+// 	.read_resources   = slot_dev_read_resources,
+// };
 
 static void tbt_pciexp_scan_bridge(struct device *dev) {
-	printk(BIOS_DEBUG, "tbt_pciexp_scan_bridge\n");
+	printk(BIOS_DEBUG, "tbt_pciexp_scan_bridge %s\n", dev_path(dev));
 
 	/* Normal PCIe Scan */
 	pciexp_scan_bridge(dev);
 
 	/* Add dummy slot to preserve resources */
-	struct device *slot;
-	struct device_path slot_path = { .type = DEVICE_PATH_NONE };
-	slot = alloc_dev(dev->link_list, &slot_path);
-	slot->ops = &slot_dev_ops;
+	// struct device *slot;
+	// struct device_path slot_path = { .type = DEVICE_PATH_NONE };
+	// slot = alloc_dev(dev->link_list, &slot_path);
+	// slot->ops = &slot_dev_ops;
 }
 
 static struct pci_operations pcie_ops = {

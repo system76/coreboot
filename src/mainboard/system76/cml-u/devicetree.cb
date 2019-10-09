@@ -209,13 +209,7 @@ chip soc/intel/cannonlake
 		device pci 19.1 off end # I2C #5
 		device pci 19.2 off end # UART #2
 		device pci 1a.0 off end # eMMC
-		device pci 1c.0 on
-			chip drivers/thunderbolt
-				device pci 00.0 on  end # Thunderbolt 3 NHI
-				device pci 01.0 on  end # Thunderbolt 3 PCI bridge
-				device pci 02.0 on  end # Thunderbolt 3 USB controller
-			end
-		end # PCI Express Port 1
+		device pci 1c.0 on  end # PCI Express Port 1
 		device pci 1c.1 off end # PCI Express Port 2
 		device pci 1c.2 off end # PCI Express Port 3
 		device pci 1c.3 off end # PCI Express Port 4
