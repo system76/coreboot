@@ -1218,6 +1218,7 @@ static void pci_bridge_route(struct bus *link, scan_state state)
 	if (state == PCI_ROUTE_SCAN) {
 		link->secondary = parent->subordinate + 1;
 		link->subordinate = link->secondary;
+		printk(BIOS_DEBUG, "system76: pci_bridge_route: assigning link secondary %d subordinate %d\n", link->secondary, link->subordinate);
 	}
 
 	if (state == PCI_ROUTE_CLOSE) {

@@ -1,0 +1,4 @@
+config DRIVERS_THUNDERBOLT
+	bool
+	help
+	  Thunderbolt support
