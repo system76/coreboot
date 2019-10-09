@@ -1254,6 +1254,7 @@ static void pci_bridge_route(struct bus *link, scan_state state)
 	if (state == PCI_ROUTE_FINAL) {
 		pci_write_config16(dev, PCI_COMMAND, link->bridge_cmd);
 		parent->subordinate = link->subordinate;
+		printk(BIOS_DEBUG, "system76: pci_bridge_route: assigning link subordinate %d\n", link->subordinate);
 	}
 }
 
