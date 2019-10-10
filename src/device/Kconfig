@@ -533,6 +533,13 @@ config PCIEXP_L1_SUB_STATE
 	help
 	  Detect and enable ASPM on PCIe links.
 
+config PCIEXP_HOTPLUG
+	prompt "Enable PCIe Hotplug Support"
+	bool
+	default n
+	help
+	  Allocate resources for PCIe hotplug bridges
+
 endif # PCIEXP_PLUGIN_SUPPORT
 
 config EARLY_PCI_BRIDGE
