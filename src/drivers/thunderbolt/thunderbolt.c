@@ -26,6 +26,7 @@ static void slot_dev_read_resources(struct device *dev)
 {
 	struct resource *resource;
 
+	// Add 256 MiB of memory space
 	resource = new_resource(dev, 0x10);
 	resource->size = 1 << 28;
 	resource->align = 22;
@@ -33,6 +34,7 @@ static void slot_dev_read_resources(struct device *dev)
 	resource->limit = 0xffffffff;
 	resource->flags |= IORESOURCE_MEM;
 
+	// Add 256 MiB of prefetchable memory space
 	resource = new_resource(dev, 0x14);
 	resource->size = 1 << 28;
 	resource->align = 22;
@@ -40,6 +42,7 @@ static void slot_dev_read_resources(struct device *dev)
 	resource->limit = 0xffffffff;
 	resource->flags |= IORESOURCE_MEM | IORESOURCE_PREFETCH;
 
+	// Add 8 KiB of I/O space
 	resource = new_resource(dev, 0x18);
 	resource->size = 1 << 13;
 	resource->align = 12;
@@ -101,7 +104,7 @@ static const unsigned short pcie_device_ids[] = {
 };
 
 static const struct pci_driver tbt_pcie __pci_driver = {
-	.ops	= &device_ops,
-	.vendor	= PCI_VENDOR_ID_INTEL,
-	.devices	= pcie_device_ids,
+	.ops	 = &device_ops,
+	.vendor	 = PCI_VENDOR_ID_INTEL,
+	.devices = pcie_device_ids,
 };
