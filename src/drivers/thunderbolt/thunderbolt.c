@@ -52,15 +52,26 @@ static struct device_operations slot_dev_ops = {
 	.read_resources   = slot_dev_read_resources,
 };
 
+static bool tbt_is_hotplug_bridge(struct device *dev) {
+	return PCI_SLOT(dev->path.pci.devfn) == 1;
+}
+
 static void tbt_pciexp_scan_bridge(struct device *dev) {
-	printk(BIOS_DEBUG, "tbt_pciexp_scan_bridge %s: scan bridge\n", dev_path(dev));
+	printk(BIOS_DEBUG, "%s: %s: scan bridge\n", __func__, dev_path(dev));
+
+	bool is_hotplug = tbt_is_hotplug_bridge(dev);
+	if (is_hotplug) {
+		/* Add hotplug buses, must happen before bus scan */
+		printk(BIOS_DEBUG, "%s: %s: add hotplug buses\n", __func__, dev_path(dev));
+		dev->hotplug_buses = 32;
+	}
 
 	/* Normal PCIe Scan */
 	pciexp_scan_bridge(dev);
 
-	/* Add dummy slot to preserve resources */
-	if (PCI_SLOT(dev->path.pci.devfn) == 1) {
-		printk(BIOS_DEBUG, "tbt_pciexp_scan_bridge %s: add dummy device\n", dev_path(dev));
+	if (is_hotplug) {
+		/* Add dummy slot to preserve resources, must happen after bus scan */
+		printk(BIOS_DEBUG, "%s: %s: add dummy device\n", __func__, dev_path(dev));
 		struct device *slot;
 		struct device_path slot_path = { .type = DEVICE_PATH_NONE };
 		slot = alloc_dev(dev->link_list, &slot_path);

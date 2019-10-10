@@ -1217,13 +1217,15 @@ static void pci_bridge_route(struct bus *link, scan_state state)
 
 	if (state == PCI_ROUTE_SCAN) {
 		link->secondary = parent->subordinate + 1;
-		link->subordinate = link->secondary;
-
-		if (dev->vendor == 0x8086 && dev->device == 0x15e7 && PCI_SLOT(dev->path.pci.devfn) == 1) {
-			printk(BIOS_DEBUG, "system76: HACK: add 32 to subordinate\n");
-			link->subordinate += 32;
-		}
-		printk(BIOS_DEBUG, "system76: pci_bridge_route: assigning link secondary %d subordinate %d\n", link->secondary, link->subordinate);
+		link->subordinate = link->secondary + dev->hotplug_buses;
+		printk(
+			BIOS_DEBUG,
+			"system76: %s: %s: assigning link secondary %d subordinate %d\n",
+			__func__,
+			dev_path(dev),
+			link->secondary,
+			link->subordinate
+		);
 	}
 
 	if (state == PCI_ROUTE_CLOSE) {
@@ -1259,7 +1261,13 @@ static void pci_bridge_route(struct bus *link, scan_state state)
 	if (state == PCI_ROUTE_FINAL) {
 		pci_write_config16(dev, PCI_COMMAND, link->bridge_cmd);
 		parent->subordinate = link->subordinate;
-		printk(BIOS_DEBUG, "system76: pci_bridge_route: assigning link subordinate %d\n", link->subordinate);
+		printk(
+			BIOS_DEBUG,
+			"system76: %s: %s: assigning parent subordinate %d\n",
+			__func__,
+			dev_path(dev),
+			parent->subordinate
+		);
 	}
 }
 
