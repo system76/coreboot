@@ -92,8 +92,6 @@ void scan_generic_bus(struct device *bus)
 
 		link->secondary = ++bus_max;
 
-		printk(BIOS_DEBUG, "system76: scan_generic_bus: assigning link secondary %d\n", link->secondary);
-
 		for (child = link->children; child; child = child->sibling) {
 
 			if (child->chip_ops && child->chip_ops->enable_dev)
