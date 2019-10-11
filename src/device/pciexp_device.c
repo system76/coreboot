@@ -478,7 +478,8 @@ struct device_operations default_pciexp_ops_bus = {
 
 #if CONFIG(PCIEXP_HOTPLUG)
 #define PCIEXP_HOTPLUG_BUSES 32
-#define PCIEXP_HOTPLUG_MEM (256 * 1024 * 1024)
+#define PCIEXP_HOTPLUG_MEM (8 * 1024 * 1024)
+#define PCIEXP_HOTPLUG_PREFETCH_MEM (256 * 1024 * 1024)
 #define PCIEXP_HOTPLUG_IO (8 * 1024)
 
 static void pciexp_hotplug_dummy_read_resources(struct device *dev)
@@ -496,10 +497,10 @@ static void pciexp_hotplug_dummy_read_resources(struct device *dev)
 
 	// Add extra prefetchable memory space
 	resource = new_resource(dev, 0x14);
-	resource->size = PCIEXP_HOTPLUG_MEM;
+	resource->size = PCIEXP_HOTPLUG_PREFETCH_MEM;
 	resource->align = 22;
 	resource->gran = 22;
-	resource->limit = 0xffffffff;
+	resource->limit = 0xffffffffffffffff;
 	resource->flags |= IORESOURCE_MEM | IORESOURCE_PREFETCH;
 	printk(BIOS_DEBUG, "%s: add 0x%llx of prefetch memory space\n", __func__, resource->size);
 
