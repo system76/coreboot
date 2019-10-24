@@ -13,9 +13,9 @@
  * GNU General Public License for more details.
  */
 
-#if CONFIG_MAINBOARD_PCI_SUBSYSTEM_DEVICE_ID == 0x1404
+#if defined(CONFIG_BOARD_SYSTEM76_DARP6)
     #define COLOR_KEYBOARD 1
-#elif CONFIG_MAINBOARD_PCI_SUBSYSTEM_DEVICE_ID == 0x1403
+#elif defined(CONFIG_BOARD_SYSTEM76_GALP4)
     #define COLOR_KEYBOARD 0
 #else
     #error Unknown Mainboard
