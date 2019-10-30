@@ -80,8 +80,8 @@ static void mainboard_init(struct device *dev) {
 
 static bool mainboard_pcie_hotplug(int port_number) {
 	printk(BIOS_DEBUG, "system76: pcie_hotplug(%d)\n", port_number);
-	/* RP01 and RP05 */
-	return port_number == 0 || port_number == 4;
+	/* RP01 */
+	return port_number == 0;
 }
 
 static void pcie_hotplug_generator(int port_number)
