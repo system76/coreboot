@@ -1,3 +1,16 @@
+/*
+ * This file is part of the coreboot project.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; version 2 of the License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
 #include <stdint.h>
 #include <pc80/mc146818rtc.h>
 #include <fallback.h>
@@ -61,10 +74,10 @@ static inline __attribute__((unused)) int do_normal_boot(void)
 	return boot_use_normal(byte);
 }
 
-unsigned read_option_lowlevel(unsigned start, unsigned size, unsigned def)
+unsigned int read_option_lowlevel(unsigned int start, unsigned int size, unsigned int def)
 {
 #if CONFIG(USE_OPTION_TABLE)
-	unsigned byte;
+	unsigned int byte;
 
 	byte = cmos_read(start/8);
 	return (byte >> (start & 7U)) & ((1U << size) - 1U);

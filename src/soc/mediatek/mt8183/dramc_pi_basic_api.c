@@ -20,8 +20,6 @@
 #include <soc/dramc_register.h>
 #include <soc/dramc_pi_api.h>
 
-static u32 impedance[2][4];
-
 u8 get_freq_fsq(u8 freq)
 {
 	if (freq == LP4X_DDR1600 || freq == LP4X_DDR2400)
@@ -53,7 +51,8 @@ static void dramc_sw_imp_cal_vref_sel(u8 term_option, u8 impcal_stage)
 	clrsetbits_le32(&ch[0].phy.shu[0].ca_cmd[11], 0x3f << 8, vref_sel << 8);
 }
 
-void dramc_sw_impedance_cal(const struct sdram_params *params, u8 term)
+void dramc_sw_impedance_cal(const struct sdram_params *params, u8 term,
+			    struct dram_impedance *impedance)
 {
 	u32 broadcast_bak, impcal_bak, imp_cal_result;
 	u32 DRVP_result = 0xff, ODTN_result = 0xff, DRVN_result = 0x9;
@@ -73,7 +72,7 @@ void dramc_sw_impedance_cal(const struct sdram_params *params, u8 term)
 	clrsetbits_le32(&ch[0].phy.misc_imp_ctrl0, 0x7 << 4, 0x3 << 4);
 	udelay(1);
 
-	dramc_show("K DRVP\n");
+	dramc_dbg("impedance: K DRVP\n");
 	setbits_le32(&ch[0].ao.impcal, 0x1 << 23);
 	setbits_le32(&ch[0].ao.impcal, 0x1 << 22);
 	clrbits_le32(&ch[0].ao.impcal, 0x1 << 21);
@@ -88,18 +87,18 @@ void dramc_sw_impedance_cal(const struct sdram_params *params, u8 term)
 		udelay(1);
 		imp_cal_result = (read32(&ch[0].phy_nao.misc_phy_rgs_cmd) >>
 				  24) & 0x1;
-		dramc_show("1. OCD DRVP=%d CALOUT=%d\n",
-			   impx_drv, imp_cal_result);
+		dramc_dbg("1. OCD DRVP=%d CALOUT=%d\n",
+			  impx_drv, imp_cal_result);
 
 		if (imp_cal_result == 1 && DRVP_result == 0xff) {
 			DRVP_result = impx_drv;
-			dramc_show("1. OCD DRVP calibration OK! DRVP=%d\n",
-				   DRVP_result);
+			dramc_dbg("1. OCD DRVP calibration OK! DRVP=%d\n",
+				  DRVP_result);
 			break;
 		}
 	}
 
-	dramc_show("K ODTN\n");
+	dramc_dbg("impedance: K ODTN\n");
 	dramc_sw_imp_cal_vref_sel(term, IMPCAL_STAGE_DRVN);
 	clrbits_le32(&ch[0].ao.impcal, 0x1 << 22);
 	if (term == ODT_ON)
@@ -116,41 +115,40 @@ void dramc_sw_impedance_cal(const struct sdram_params *params, u8 term)
 		udelay(1);
 		imp_cal_result = (read32(&ch[0].phy_nao.misc_phy_rgs_cmd) >>
 				  24) & 0x1;
-		dramc_show("3. OCD ODTN=%d CALOUT=%d\n",
-			   impx_drv, imp_cal_result);
+		dramc_dbg("3. OCD ODTN=%d CALOUT=%d\n",
+			  impx_drv, imp_cal_result);
 
 		if (imp_cal_result == 0 && ODTN_result == 0xff) {
 			ODTN_result = impx_drv;
-			dramc_show("3. OCD ODTN calibration OK! ODTN=%d\n",
-				   ODTN_result);
+			dramc_dbg("3. OCD ODTN calibration OK! ODTN=%d\n",
+				  ODTN_result);
 			break;
 		}
 	}
 
 	write32(&ch[0].ao.impcal, impcal_bak);
 
-	dramc_show("term:%d, DRVP=%d, DRVN=%d, ODTN=%d\n",
-		   term, DRVP_result, DRVN_result, ODTN_result);
+	dramc_dbg("impedance: term=%d, DRVP=%d, DRVN=%d, ODTN=%d\n",
+		  term, DRVP_result, DRVN_result, ODTN_result);
+	u32 *imp = impedance->data[term];
 	if (term == ODT_OFF) {
-		impedance[term][0] = DRVP_result;
-		impedance[term][1] = ODTN_result;
-		impedance[term][2] = 0;
-		impedance[term][3] = 15;
+		imp[0] = DRVP_result;
+		imp[1] = ODTN_result;
+		imp[2] = 0;
+		imp[3] = 15;
 	} else {
-		impedance[term][0] = (DRVP_result <= 3) ?
-			(DRVP_result * 3) : DRVP_result;
-		impedance[term][1] = (DRVN_result <= 3) ?
-			(DRVN_result * 3) : DRVN_result;
-		impedance[term][2] = 0;
-		impedance[term][3] =  (ODTN_result <= 3) ?
-			(ODTN_result * 3) : ODTN_result;
+		imp[0] = (DRVP_result <= 3) ? (DRVP_result * 3) : DRVP_result;
+		imp[1] = (DRVN_result <= 3) ? (DRVN_result * 3) : DRVN_result;
+		imp[2] = 0;
+		imp[3] = (ODTN_result <= 3) ? (ODTN_result * 3) : ODTN_result;
 	}
 	dramc_sw_imp_cal_vref_sel(term, IMPCAL_STAGE_TRACKING);
 
 	dramc_set_broadcast(broadcast_bak);
 }
 
-void dramc_sw_impedance_save_reg(u8 freq_group)
+void dramc_sw_impedance_save_reg(u8 freq_group,
+				 const struct dram_impedance *impedance)
 {
 	u8 ca_term = ODT_OFF, dq_term = ODT_ON;
 	u32 sw_impedance[2][4] = {0};
@@ -160,7 +158,7 @@ void dramc_sw_impedance_save_reg(u8 freq_group)
 
 	for (u8 term = 0; term < 2; term++)
 		for (u8 i = 0; i < 4; i++)
-			sw_impedance[term][i] = impedance[term][i];
+			sw_impedance[term][i] = impedance->data[term][i];
 
 	sw_impedance[ODT_OFF][2] = sw_impedance[ODT_ON][2];
 	sw_impedance[ODT_OFF][3] = sw_impedance[ODT_ON][3];
@@ -212,11 +210,10 @@ void dramc_sw_impedance_save_reg(u8 freq_group)
 	clrsetbits_le32(&ch[0].phy.shu[0].ca_cmd[11], 0x1f << 22,
 		sw_impedance[ca_term][1] << 22);
 
-	clrsetbits_le32(&ch[0].phy.shu[0].ca_cmd[3],
-		SHU1_CA_CMD3_RG_TX_ARCMD_PU_PRE_MASK,
-		1 << SHU1_CA_CMD3_RG_TX_ARCMD_PU_PRE_SHIFT);
-	clrbits_le32(&ch[0].phy.shu[0].ca_cmd[0],
-		SHU1_CA_CMD0_RG_TX_ARCLK_DRVN_PRE_MASK);
+	SET32_BITFIELDS(&ch[0].phy.shu[0].ca_cmd[3],
+			SHU1_CA_CMD3_RG_TX_ARCMD_PU_PRE, 1);
+	SET32_BITFIELDS(&ch[0].phy.shu[0].ca_cmd[0],
+			SHU1_CA_CMD0_RG_TX_ARCLK_DRVN_PRE, 0);
 
 	clrsetbits_le32(&ch[0].phy.shu[0].ca_dll[1], 0x1f << 16, 0x9 << 16);
 }

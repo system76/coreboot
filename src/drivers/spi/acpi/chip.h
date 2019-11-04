@@ -1,8 +1,6 @@
 /*
  * This file is part of the coreboot project.
  *
- * Copyright 2017 Google Inc.
- *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; version 2 of the License.
@@ -23,11 +21,11 @@ struct drivers_spi_acpi_config {
 	const char *cid;		/* ACPI _CID */
 	const char *name;		/* ACPI Device Name */
 	const char *desc;		/* Device Description */
-	unsigned uid;			/* ACPI _UID */
-	unsigned speed;			/* Bus speed in Hz (default 1MHz) */
+	unsigned int uid;			/* ACPI _UID */
+	unsigned int speed;			/* Bus speed in Hz (default 1MHz) */
 	const char *compat_string;	/* Compatible string for _HID=PRP0001 */
 	struct acpi_irq irq;		/* Interrupt */
-	unsigned wake;			/* Wake GPE */
+	unsigned int wake;			/* Wake GPE */
 
 	/* Use GPIO based interrupt instead of PIRQ */
 	struct acpi_gpio irq_gpio;

@@ -14,7 +14,6 @@
 ## GNU General Public License for more details.
 ##
 
-romstage-$(CONFIG_PLATFORM_USES_FSP1_1) += spd.c
 romstage-y += spd_util.c
 
 SPD_BIN = $(obj)/spd.bin
@@ -43,7 +42,7 @@ SPD_DEPS := $(foreach f, $(SPD_SOURCES), src/mainboard/$(MAINBOARDDIR)/spd/$(f).
 $(SPD_BIN): $(SPD_DEPS)
 	for f in $+; \
 	  do for c in $$(cat $$f | grep -v ^#); \
-	    do printf $$(printf '\%o' 0x$$c); \
+	    do printf $$(printf '\\%o' 0x$$c); \
 	  done; \
 	done > $@
 

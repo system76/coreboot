@@ -2,6 +2,9 @@
 
 This section contains documentation about coreboot on specific mainboards.
 
+## AMD
+- [padmelon](amd/padmelon/padmelon.md)
+
 ## ASRock
 
 - [H81M-HDS](asrock/h81m-hds.md)
@@ -62,8 +65,17 @@ The boards in this section are not real mainboards, but emulators.
 
 - [Mainboard codenames](lenovo/codenames.md)
 - [Hardware Maintenance Manual of ThinkPads](lenovo/thinkpad_hmm.md)
+- [R60](lenovo/r60.md)
 - [T4xx common](lenovo/t4xx_series.md)
 - [X2xx common](lenovo/x2xx_series.md)
+
+### Nehalem series
+
+- [T410](lenovo/t410.md)
+
+### GM45 series
+
+- [X301](lenovo/x301.md)
 
 ### Sandy Bridge series
 
@@ -78,6 +90,14 @@ The boards in this section are not real mainboards, but emulators.
 - [W530](lenovo/w530.md)
 - [T430 / T530 / X230 / W530 common](lenovo/xx30_series.md)
 - [T431s](lenovo/t431s.md)
+
+### Haswell series
+
+- [T440p](lenovo/t440p.md)
+
+## Portwell
+
+- [PQ7-M107](portwell/pq7-m107.md)
 
 ## MSI
 
@@ -108,7 +128,7 @@ The boards in this section are not real mainboards, but emulators.
 ## Supermicro
 
 - [X10SLM+-F](supermicro/x10slm-f.md)
-- [X11 LGA1151 series](supermicro/x11-lga1151-series/index.md)
+- [X11 LGA1151 series](supermicro/x11-lga1151-series/x11-lga1151-series.md)
 
 ## UP
 

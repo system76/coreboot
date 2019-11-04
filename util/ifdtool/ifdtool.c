@@ -216,6 +216,7 @@ static int is_platform_ifd_2(void)
 		PLATFORM_GLK,
 		PLATFORM_CNL,
 		PLATFORM_ICL,
+		PLATFORM_TGL,
 	};
 	unsigned int i;
 
@@ -921,6 +922,7 @@ static void set_chipdensity(const char *filename, char *image, int size,
                             unsigned int density)
 {
 	fcba_t *fcba = find_fcba(image, size);
+	uint8_t mask, chip2_offset;
 	if (!fcba)
 		exit(EXIT_FAILURE);
 
@@ -937,12 +939,13 @@ static void set_chipdensity(const char *filename, char *image, int size,
 			printf("error: Selected density not supported in IFD version 1.\n");
 			exit(EXIT_FAILURE);
 		}
+		mask = 0x7;
+		chip2_offset = 3;
 		break;
 	case IFD_VERSION_2:
-		/* I do not have a version 2 IFD nor do i have the docs. */
-		printf("error: Changing the chip density for IFD version 2 has not been"
-		       " implemented yet.\n");
-		exit(EXIT_FAILURE);
+		mask = 0xf;
+		chip2_offset = 4;
+		break;
 	default:
 		printf("error: Unknown IFD version\n");
 		exit(EXIT_FAILURE);
@@ -952,13 +955,13 @@ static void set_chipdensity(const char *filename, char *image, int size,
 	/* clear chip density for corresponding chip */
 	switch (selected_chip) {
 	case 1:
-		fcba->flcomp &= ~(0x7);
+		fcba->flcomp &= ~mask;
 		break;
 	case 2:
-		fcba->flcomp &= ~(0x7 << 3);
+		fcba->flcomp &= ~(mask << chip2_offset);
 		break;
 	default: /*both chips*/
-		fcba->flcomp &= ~(0x3F);
+		fcba->flcomp &= ~(mask | (mask << chip2_offset));
 		break;
 	}
 
@@ -966,7 +969,7 @@ static void set_chipdensity(const char *filename, char *image, int size,
 	if (selected_chip == 1 || selected_chip == 0)
 		fcba->flcomp |= (density); /* first chip */
 	if (selected_chip == 2 || selected_chip == 0)
-		fcba->flcomp |= (density << 3); /* second chip */
+		fcba->flcomp |= (density << chip2_offset); /* second chip */
 
 	write_image(filename, image, size);
 }
@@ -1024,6 +1027,7 @@ static void lock_descriptor(const char *filename, char *image, int size)
 	case PLATFORM_CNL:
 	case PLATFORM_ICL:
 	case PLATFORM_SKLKBL:
+	case PLATFORM_TGL:
 		/* CPU/BIOS can read descriptor and BIOS. */
 		fmba->flmstr1 |= (1 << REGION_DESC) << rd_shift;
 		fmba->flmstr1 |= (1 << REGION_BIOS) << rd_shift;
@@ -1403,30 +1407,30 @@ static void print_usage(const char *name)
 {
 	printf("usage: %s [-vhdix?] <filename>\n", name);
 	printf("\n"
-	       "   -d | --dump:                       dump intel firmware descriptor\n"
-	       "   -f | --layout <filename>           dump regions into a flashrom layout file\n"
-	       "   -t | --validate                    Validate that the firmware descriptor layout matches the fmap layout\n"
-	       "   -x | --extract:                    extract intel fd modules\n"
-	       "   -i | --inject <region>:<module>    inject file <module> into region <region>\n"
-	       "   -n | --newlayout <filename>        update regions using a flashrom layout file\n"
-	       "   -s | --spifreq <17|20|30|33|48|50> set the SPI frequency\n"
-	       "   -D | --density <512|1|2|4|8|16>    set chip density (512 in KByte, others in MByte)\n"
-	       "   -C | --chip <0|1|2>                select spi chip on which to operate\n"
-	       "                                      can only be used once per run:\n"
-	       "                                      0 - both chips (default), 1 - first chip, 2 - second chip\n"
-	       "   -e | --em100                       set SPI frequency to 20MHz and disable\n"
-	       "                                      Dual Output Fast Read Support\n"
-	       "   -l | --lock                        Lock firmware descriptor and ME region\n"
-	       "   -u | --unlock                      Unlock firmware descriptor and ME region\n"
-	       "   -M | --altmedisable <0|1>          Set the AltMeDisable (or HAP for skylake or newer platform)\n"
-	       "                                      bit to disable ME\n"
-	       "   -p | --platform                    Add platform-specific quirks\n"
-	       "                                      aplk - Apollo Lake\n"
-	       "                                      cnl - Cannon Lake\n"
-	       "                                      glk - Gemini Lake\n"
-	       "                                      sklkbl - Skylake/Kaby Lake\n"
-	       "   -v | --version:                    print the version\n"
-	       "   -h | --help:                       print this help\n\n"
+	       "   -d | --dump:                          dump intel firmware descriptor\n"
+	       "   -f | --layout <filename>              dump regions into a flashrom layout file\n"
+	       "   -t | --validate                       Validate that the firmware descriptor layout matches the fmap layout\n"
+	       "   -x | --extract:                       extract intel fd modules\n"
+	       "   -i | --inject <region>:<module>       inject file <module> into region <region>\n"
+	       "   -n | --newlayout <filename>           update regions using a flashrom layout file\n"
+	       "   -s | --spifreq <17|20|30|33|48|50>    set the SPI frequency\n"
+	       "   -D | --density <512|1|2|4|8|16|32|64> set chip density (512 in KByte, others in MByte)\n"
+	       "   -C | --chip <0|1|2>                   select spi chip on which to operate\n"
+	       "                                         can only be used once per run:\n"
+	       "                                         0 - both chips (default), 1 - first chip, 2 - second chip\n"
+	       "   -e | --em100                          set SPI frequency to 20MHz and disable\n"
+	       "                                         Dual Output Fast Read Support\n"
+	       "   -l | --lock                           Lock firmware descriptor and ME region\n"
+	       "   -u | --unlock                         Unlock firmware descriptor and ME region\n"
+	       "   -M | --altmedisable <0|1>             Set the AltMeDisable (or HAP for skylake or newer platform)\n"
+	       "                                         bit to disable ME\n"
+	       "   -p | --platform                       Add platform-specific quirks\n"
+	       "                                         aplk - Apollo Lake\n"
+	       "                                         cnl - Cannon Lake\n"
+	       "                                         glk - Gemini Lake\n"
+	       "                                         sklkbl - Skylake/Kaby Lake\n"
+	       "   -v | --version:                       print the version\n"
+	       "   -h | --help:                          print this help\n\n"
 	       "<region> is one of Descriptor, BIOS, ME, GbE, Platform\n"
 	       "\n");
 }
@@ -1635,6 +1639,8 @@ int main(int argc, char *argv[])
 				platform = PLATFORM_ICL;
 			} else if (!strcmp(optarg, "sklkbl")) {
 				platform = PLATFORM_SKLKBL;
+			} else if (!strcmp(optarg, "tgl")) {
+				platform = PLATFORM_TGL;
 			} else {
 				fprintf(stderr, "Unknown platform: %s\n", optarg);
 				exit(EXIT_FAILURE);
@@ -1659,7 +1665,7 @@ int main(int argc, char *argv[])
 
 	if ((mode_dump + mode_layout + mode_extract + mode_inject +
 		mode_newlayout + (mode_spifreq | mode_em100 | mode_unlocked |
-		 mode_locked) + mode_altmedisable + mode_layout) > 1) {
+		 mode_locked) + mode_altmedisable + mode_validate) > 1) {
 		fprintf(stderr, "You may not specify more than one mode.\n\n");
 		print_usage(argv[0]);
 		exit(EXIT_FAILURE);

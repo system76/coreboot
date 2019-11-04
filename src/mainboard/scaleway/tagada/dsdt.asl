@@ -27,6 +27,7 @@ DefinitionBlock(
 )
 {
 	// Some generic macros
+	#include <southbridge/intel/common/acpi/platform.asl>
 	#include "acpi/platform.asl"
 	#include "acpi/mainboard.asl"
 
@@ -50,5 +51,5 @@ DefinitionBlock(
 	}
 
 	/* Chipset specific sleep states */
-	#include <soc/intel/denverton_ns/acpi/sleepstates.asl>
+	#include <southbridge/intel/common/acpi/sleepstates.asl>
 }

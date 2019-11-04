@@ -36,6 +36,7 @@
 #include <cpu/intel/turbo.h>
 #include <mrc_cache.h>
 #include <southbridge/intel/ibexpeak/me.h>
+#include <southbridge/intel/common/pmbase.h>
 #include <delay.h>
 #include <types.h>
 
@@ -206,13 +207,13 @@ struct raminfo {
 	u8 mode4030[2];
 	u16 avg4044[2];
 	u16 max4048[2];
-	unsigned total_memory_mb;
-	unsigned interleaved_part_mb;
-	unsigned non_interleaved_part_mb;
+	unsigned int total_memory_mb;
+	unsigned int interleaved_part_mb;
+	unsigned int non_interleaved_part_mb;
 
 	u32 heci_bar;
 	u64 heci_uma_addr;
-	unsigned memory_reserved_for_heci_mb;
+	unsigned int memory_reserved_for_heci_mb;
 
 	struct ram_training training;
 	u32 last_500_command[2];
@@ -548,14 +549,14 @@ enum {
 
 static void calculate_timings(struct raminfo *info)
 {
-	unsigned cycletime;
-	unsigned cas_latency_time;
-	unsigned supported_cas_latencies;
-	unsigned channel, slot;
-	unsigned clock_speed_index;
-	unsigned min_cas_latency;
-	unsigned cas_latency;
-	unsigned max_clock_index;
+	unsigned int cycletime;
+	unsigned int cas_latency_time;
+	unsigned int supported_cas_latencies;
+	unsigned int channel, slot;
+	unsigned int clock_speed_index;
+	unsigned int min_cas_latency;
+	unsigned int cas_latency;
+	unsigned int max_clock_index;
 
 	/* Find common CAS latency  */
 	supported_cas_latencies = 0x3fe;
@@ -578,7 +579,7 @@ static void calculate_timings(struct raminfo *info)
 	for (channel = 0; channel < NUM_CHANNELS; channel++)
 		for (slot = 0; slot < NUM_SLOTS; slot++)
 			if (info->populated_ranks[channel][slot][0]) {
-				unsigned timebase;
+				unsigned int timebase;
 				timebase =
 				    1000 *
 				    info->
@@ -626,9 +627,9 @@ static void calculate_timings(struct raminfo *info)
 
 static void program_base_timings(struct raminfo *info)
 {
-	unsigned channel;
-	unsigned slot, rank, lane;
-	unsigned extended_silicon_revision;
+	unsigned int channel;
+	unsigned int slot, rank, lane;
+	unsigned int extended_silicon_revision;
 	int i;
 
 	extended_silicon_revision = info->silicon_revision;
@@ -789,42 +790,40 @@ static unsigned int cycle_ps(struct raminfo *info)
 }
 
 /* Frequency in 1.(1)=10/9 MHz units. */
-static unsigned frequency_11(struct raminfo *info)
+static unsigned int frequency_11(struct raminfo *info)
 {
 	return (info->clock_speed_index + 3) * 120;
 }
 
 /* Frequency in 0.1 MHz units. */
-static unsigned frequency_01(struct raminfo *info)
+static unsigned int frequency_01(struct raminfo *info)
 {
 	return 100 * frequency_11(info) / 9;
 }
 
-static unsigned ps_to_halfcycles(struct raminfo *info, unsigned int ps)
+static unsigned int ps_to_halfcycles(struct raminfo *info, unsigned int ps)
 {
 	return (frequency_11(info) * 2) * ps / 900000;
 }
 
-static unsigned ns_to_cycles(struct raminfo *info, unsigned int ns)
+static unsigned int ns_to_cycles(struct raminfo *info, unsigned int ns)
 {
 	return (frequency_11(info)) * ns / 900;
 }
 
 static void compute_derived_timings(struct raminfo *info)
 {
-	unsigned channel, slot, rank;
+	unsigned int channel, slot, rank;
 	int extended_silicon_revision;
 	int some_delay_1_ps;
 	int some_delay_2_ps;
 	int some_delay_2_halfcycles_ceil;
 	int some_delay_2_halfcycles_floor;
 	int some_delay_3_ps;
-	int some_delay_3_halfcycles;
 	int some_delay_3_ps_rounded;
 	int some_delay_1_cycle_ceil;
 	int some_delay_1_cycle_floor;
 
-	some_delay_3_halfcycles = 0;
 	some_delay_3_ps_rounded = 0;
 	extended_silicon_revision = info->silicon_revision;
 	if (!info->silicon_revision)
@@ -872,13 +871,12 @@ static void compute_derived_timings(struct raminfo *info)
 	some_delay_3_ps =
 	    halfcycle_ps(info) - some_delay_2_ps % halfcycle_ps(info);
 	if (info->revision_flag_1) {
-		if (some_delay_3_ps < 150)
-			some_delay_3_halfcycles = 0;
-		else
-			some_delay_3_halfcycles =
+		if (some_delay_3_ps >= 150) {
+			const int some_delay_3_halfcycles =
 			    (some_delay_3_ps << 6) / halfcycle_ps(info);
-		some_delay_3_ps_rounded =
-		    halfcycle_ps(info) * some_delay_3_halfcycles >> 6;
+			some_delay_3_ps_rounded =
+			    halfcycle_ps(info) * some_delay_3_halfcycles >> 6;
+		}
 	}
 	some_delay_2_halfcycles_ceil =
 	    (some_delay_2_ps + halfcycle_ps(info) - 1) / halfcycle_ps(info) -
@@ -1156,7 +1154,7 @@ static void jedec_init(struct raminfo *info)
 
 static void program_modules_memory_map(struct raminfo *info, int pre_jedec)
 {
-	unsigned channel, slot, rank;
+	unsigned int channel, slot, rank;
 	unsigned int total_mb[2] = { 0, 0 };	/* total memory per channel in MB */
 	unsigned int channel_0_non_interleaved;
 
@@ -1195,7 +1193,7 @@ static void program_board_delay(struct raminfo *info)
 	int some_delay_ns;
 	int some_delay_3_half_cycles;
 
-	unsigned channel, i;
+	unsigned int channel, i;
 	int high_multiplier;
 	int lane_3_delay;
 	int cas_latency_derived;
@@ -1233,7 +1231,7 @@ static void program_board_delay(struct raminfo *info)
 	MCHBAR16(0x125) = 0x1360;
 	MCHBAR8(0x127) = 0x40;
 	if (info->fsb_frequency < frequency_11(info) / 2) {
-		unsigned some_delay_2_half_cycles;
+		unsigned int some_delay_2_half_cycles;
 		high_multiplier = 1;
 		some_delay_2_half_cycles = ps_to_halfcycles(info,
 							    ((3 *
@@ -1486,7 +1484,7 @@ static void collect_system_info(struct raminfo *info)
 {
 	u32 capid0[3];
 	int i;
-	unsigned channel;
+	unsigned int channel;
 
 	/* Wait for some bit, maybe TXT clear. */
 	while (!(read8((u8 *)0xfed40000) & (1 << 7)))
@@ -1576,14 +1574,14 @@ static void write_training_data(struct raminfo *info)
 static void dump_timings(struct raminfo *info)
 {
 	int channel, slot, rank, lane, i;
-	printk(RAM_DEBUG, "Timings:\n");
+	printk(RAM_SPEW, "Timings:\n");
 	FOR_POPULATED_RANKS {
-		printk(RAM_DEBUG, "channel %d, slot %d, rank %d\n", channel,
+		printk(RAM_SPEW, "channel %d, slot %d, rank %d\n", channel,
 		       slot, rank);
 		for (lane = 0; lane < 9; lane++) {
-			printk(RAM_DEBUG, "lane %d: ", lane);
+			printk(RAM_SPEW, "lane %d: ", lane);
 			for (i = 0; i < 4; i++) {
-				printk(RAM_DEBUG, "%x (%x) ",
+				printk(RAM_SPEW, "%x (%x) ",
 				       read_500(info, channel,
 						get_timing_register_addr
 						(lane, i, slot, rank),
@@ -1592,12 +1590,12 @@ static void dump_timings(struct raminfo *info)
 				       lane_timings[i][channel][slot][rank]
 				       [lane]);
 			}
-			printk(RAM_DEBUG, "\n");
+			printk(RAM_SPEW, "\n");
 		}
 	}
-	printk(RAM_DEBUG, "[178] = %x (%x)\n", read_1d0(0x178, 7),
+	printk(RAM_SPEW, "[178] = %x (%x)\n", read_1d0(0x178, 7),
 	       info->training.reg_178);
-	printk(RAM_DEBUG, "[10b] = %x (%x)\n", read_1d0(0x10b, 6),
+	printk(RAM_SPEW, "[10b] = %x (%x)\n", read_1d0(0x10b, 6),
 	       info->training.reg_10b);
 }
 
@@ -3203,9 +3201,9 @@ static void ram_training(struct raminfo *info)
 	MCHBAR16(0xfc4) = saved_fc4;
 }
 
-static unsigned gcd(unsigned a, unsigned b)
+static unsigned int gcd(unsigned int a, unsigned int b)
 {
-	unsigned t;
+	unsigned int t;
 	if (a > b) {
 		t = a;
 		a = b;
@@ -3225,7 +3223,7 @@ static inline int div_roundup(int a, int b)
 	return DIV_ROUND_UP(a, b);
 }
 
-static unsigned lcm(unsigned a, unsigned b)
+static unsigned int lcm(unsigned int a, unsigned int b)
 {
 	return (a * b) / gcd(a, b);
 }
@@ -3722,7 +3720,7 @@ void chipset_init(const int s3resume)
 
 void raminit(const int s3resume, const u8 *spd_addrmap)
 {
-	unsigned channel, slot, lane, rank;
+	unsigned int channel, slot, lane, rank;
 	int i;
 	struct raminfo info;
 	u8 x2ca8;
@@ -3730,6 +3728,9 @@ void raminit(const int s3resume, const u8 *spd_addrmap)
 	int cbmem_wasnot_inited;
 
 	x2ca8 = MCHBAR8(0x2ca8);
+
+	printk(RAM_DEBUG, "Scratchpad MCHBAR8(0x2ca8): 0x%04x\n", x2ca8);
+
 	deven = pci_read_config16(NORTHBRIDGE, D0F0_DEVEN);
 
 	memset(&info, 0x5a, sizeof(info));
@@ -3761,9 +3762,6 @@ void raminit(const int s3resume, const u8 *spd_addrmap)
 		pci_read_config8(SOUTHBRIDGE, GEN_PMCON_2);	// = 0x80
 
 		collect_system_info(&info);
-
-		/* Enable SMBUS. */
-		enable_smbus();
 
 		memset(&info.populated_ranks, 0, sizeof(info.populated_ranks));
 
@@ -4011,19 +4009,19 @@ void raminit(const int s3resume, const u8 *spd_addrmap)
 		int j;
 		if (s3resume && info.cached_training) {
 			restore_274265(&info);
-			printk(RAM_DEBUG, "reg2ca9_bit0 = %x\n",
+			printk(RAM_SPEW, "reg2ca9_bit0 = %x\n",
 			       info.cached_training->reg2ca9_bit0);
 			for (i = 0; i < 2; i++)
 				for (j = 0; j < 3; j++)
-					printk(RAM_DEBUG, "reg274265[%d][%d] = %x\n",
+					printk(RAM_SPEW, "reg274265[%d][%d] = %x\n",
 					       i, j, info.cached_training->reg274265[i][j]);
 		} else {
 			set_274265(&info);
-			printk(RAM_DEBUG, "reg2ca9_bit0 = %x\n",
+			printk(RAM_SPEW, "reg2ca9_bit0 = %x\n",
 			       info.training.reg2ca9_bit0);
 			for (i = 0; i < 2; i++)
 				for (j = 0; j < 3; j++)
-					printk(RAM_DEBUG, "reg274265[%d][%d] = %x\n",
+					printk(RAM_SPEW, "reg274265[%d][%d] = %x\n",
 					       i, j, info.training.reg274265[i][j]);
 		}
 
@@ -4241,6 +4239,13 @@ void raminit(const int s3resume, const u8 *spd_addrmap)
 	if (x2ca8 == 0) {
 		MCHBAR8_AND(0x2ca8, ~3);
 		MCHBAR8(0x2ca8) = MCHBAR8(0x2ca8) + 4;	// "+" or  "|"?
+		/* This issues a CPU reset without resetting the platform */
+		printk(BIOS_DEBUG, "Issuing a CPU reset\n");
+		/* Write back the S3 state to PM1_CNT to let the reset CPU
+		   know it also needs to take the s3 path. */
+		if (s3resume)
+			write_pmbase32(PM1_CNT, read_pmbase32(PM1_CNT)
+				       | (SLP_TYP_S3 << 10));
 		MCHBAR32_OR(0x1af0, 0x10);
 		halt();
 	}

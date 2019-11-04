@@ -20,6 +20,7 @@
 #include <soc/emi.h>
 #include <console/console.h>
 
+#define dramc_err(_x_...) printk(BIOS_ERR, _x_)
 #define dramc_show(_x_...) printk(BIOS_INFO, _x_)
 #if CONFIG(DEBUG_DRAM)
 #define dramc_dbg(_x_...) printk(BIOS_DEBUG, _x_)
@@ -41,12 +42,6 @@
 enum dram_te_op {
 	TE_OP_WRITE_READ_CHECK = 0,
 	TE_OP_READ_CHECK
-};
-
-enum {
-	FSP_0 = 0,
-	FSP_1,
-	FSP_MAX
 };
 
 enum {
@@ -105,13 +100,16 @@ void dramc_runtime_config(void);
 void dramc_set_broadcast(u32 onoff);
 u32 dramc_get_broadcast(void);
 u8 get_freq_fsq(u8 freq_group);
-void dramc_init(const struct sdram_params *params, u8 freq_group);
-void dramc_sw_impedance_save_reg(u8 freq_group);
-void dramc_sw_impedance_cal(const struct sdram_params *params, u8 term_option);
+void dramc_init(const struct sdram_params *params, u8 freq_group,
+		struct dram_shared_data *shared);
+void dramc_sw_impedance_save_reg(u8 freq_group,
+				 const struct dram_impedance *impedance);
+void dramc_sw_impedance_cal(const struct sdram_params *params, u8 term_option,
+			    struct dram_impedance *impedance);
 void dramc_apply_config_before_calibration(u8 freq_group);
-void dramc_apply_config_after_calibration(void);
-void dramc_calibrate_all_channels(const struct sdram_params *pams,
-	u8 freq_group);
+void dramc_apply_config_after_calibration(const struct mr_value *mr);
+int dramc_calibrate_all_channels(const struct sdram_params *pams,
+				 u8 freq_group, const struct mr_value *mr);
 void dramc_hw_gating_onoff(u8 chn, bool onoff);
 void dramc_enable_phy_dcm(bool bEn);
 void dramc_mode_reg_write(u8 chn, u8 mr_idx, u8 value);

@@ -24,51 +24,9 @@
 #include <ec/lenovo/h8/h8.h>
 #include <delay.h>
 #include "dock.h"
-#include "smi.h"
 
 #define GPE_EC_SCI	1
 #define GPE_EC_WAKE	13
-
-static void mainboard_smm_init(void)
-{
-	printk(BIOS_DEBUG, "initializing SMI\n");
-	/* Enable 0x1600/0x1600 register pair */
-	ec_set_bit(0x00, 0x05);
-}
-
-int mainboard_io_trap_handler(int smif)
-{
-	static int smm_initialized;
-
-	if (!smm_initialized) {
-		mainboard_smm_init();
-		smm_initialized = 1;
-	}
-
-	switch (smif) {
-	case SMI_DOCK_CONNECT:
-		ec_clr_bit(0x03, 2);
-		udelay(250000);
-		dock_connect();
-		ec_set_bit(0x03, 2);
-		/* set dock LED to indicate status */
-		ec_write(0x0c, 0x09);
-		ec_write(0x0c, 0x88);
-		break;
-
-	case SMI_DOCK_DISCONNECT:
-		ec_clr_bit(0x03, 2);
-		dock_disconnect();
-		break;
-
-	default:
-		return 0;
-	}
-
-	/* On success, the IO Trap Handler returns 1
-	 * On failure, the IO Trap Handler returns a value != 1 */
-	return 1;
-}
 
 static void mainboard_smi_handle_ec_sci(void)
 {
@@ -88,12 +46,19 @@ static void mainboard_smi_handle_ec_sci(void)
 		/* Power loss */
 	case 0x50:
 		/* Undock Key */
-		mainboard_io_trap_handler(SMI_DOCK_DISCONNECT);
+		ec_clr_bit(0x03, 2);
+		dock_disconnect();
 		break;
 	case 0x37:
 	case 0x58:
 		/* Dock Event */
-		mainboard_io_trap_handler(SMI_DOCK_CONNECT);
+		ec_clr_bit(0x03, 2);
+		udelay(250000);
+		dock_connect();
+		ec_set_bit(0x03, 2);
+		/* set dock LED to indicate status */
+		ec_write(0x0c, 0x09);
+		ec_write(0x0c, 0x88);
 		break;
 	default:
 		break;

@@ -53,6 +53,9 @@ const char *smbios_system_version(void);
 void smbios_system_set_uuid(u8 *uuid);
 const char *smbios_system_sku(void);
 
+unsigned int smbios_cpu_get_max_speed_mhz(void);
+unsigned int smbios_cpu_get_current_speed_mhz(void);
+
 const char *smbios_mainboard_manufacturer(void);
 const char *smbios_mainboard_product_name(void);
 const char *smbios_mainboard_serial_number(void);
@@ -62,7 +65,6 @@ const char *smbios_mainboard_bios_version(void);
 const char *smbios_mainboard_asset_tag(void);
 u8 smbios_mainboard_feature_flags(void);
 const char *smbios_mainboard_location_in_chassis(void);
-u8 smbios_mainboard_enclosure_type(void);
 
 #define BIOS_CHARACTERISTICS_PCI_SUPPORTED	(1 << 7)
 #define BIOS_CHARACTERISTICS_PC_CARD		(1 << 8)
@@ -139,6 +141,7 @@ typedef enum {
 	MEMORY_FORMFACTOR_SODIMM = 0x0d,
 	MEMORY_FORMFACTOR_SRIMM = 0x0e,
 	MEMORY_FORMFACTOR_FBDIMM = 0x0f,
+	MEMORY_FORMFACTOR_DIE = 0x10,
 } smbios_memory_form_factor;
 
 typedef enum {
@@ -170,6 +173,8 @@ typedef enum {
 	MEMORY_TYPE_LPDDR3 = 0x1d,
 	MEMORY_TYPE_LPDDR4 = 0x1e,
 	MEMORY_TYPE_LOGICAL_NON_VOLATILE_DEVICE = 0x1f,
+	MEMORY_TYPE_HBM = 0x20,
+	MEMORY_TYPE_HBM2 = 0x21,
 } smbios_memory_type;
 
 typedef enum {
@@ -313,7 +318,7 @@ struct smbios_type2 {
 	u8 eos[2];
 } __packed;
 
-enum {
+typedef enum {
 	SMBIOS_ENCLOSURE_OTHER = 0x01,
 	SMBIOS_ENCLOSURE_UNKNOWN = 0x02,
 	SMBIOS_ENCLOSURE_DESKTOP = 0x03,
@@ -350,7 +355,7 @@ enum {
 	SMBIOS_ENCLOSURE_EMBEDDED_PC = 0x22,
 	SMBIOS_ENCLOSURE_MINI_PC = 0x23,
 	SMBIOS_ENCLOSURE_STICK_PC = 0x24,
-};
+} smbios_enclosure_type;
 
 struct smbios_type3 {
 	u8 type;
@@ -550,7 +555,13 @@ enum misc_slot_type {
 	SlotTypePciExpressGen3X2 = 0xB3,
 	SlotTypePciExpressGen3X4 = 0xB4,
 	SlotTypePciExpressGen3X8 = 0xB5,
-	SlotTypePciExpressGen3X16 = 0xB6
+	SlotTypePciExpressGen3X16 = 0xB6,
+	SlotTypePciExpressGen4 = 0xB8,
+	SlotTypePciExpressGen4x1 = 0xB9,
+	SlotTypePciExpressGen4x2 = 0xBA,
+	SlotTypePciExpressGen4x4 = 0xBB,
+	SlotTypePciExpressGen4x8 = 0xBC,
+	SlotTypePciExpressGen4x16 = 0xBD
 };
 
 /* System Slots - Slot Data Bus Width. */
@@ -786,5 +797,6 @@ void smbios_fill_dimm_locator(const struct dimm_info *dimm,
 	struct smbios_type17 *t);
 
 smbios_board_type smbios_mainboard_board_type(void);
+smbios_enclosure_type smbios_mainboard_enclosure_type(void);
 
 #endif

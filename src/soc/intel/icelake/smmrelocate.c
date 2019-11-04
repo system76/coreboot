@@ -18,7 +18,6 @@
 #include <device/device.h>
 #include <device/pci.h>
 #include <device/pci_ops.h>
-#include <cpu/cpu.h>
 #include <cpu/x86/cache.h>
 #include <cpu/x86/lapic.h>
 #include <cpu/x86/mp.h>
@@ -179,6 +178,13 @@ static void fill_in_relocation_params(struct smm_relocation_params *params)
 	const u32 rmask = ~(4 * KiB - 1);
 
 	smm_region(&tseg_base, &tseg_size);
+
+	if (!IS_ALIGNED(tseg_base, tseg_size)) {
+		printk(BIOS_WARNING,
+		     "TSEG base not aligned with TSEG SIZE! Not setting SMRR\n");
+		return;
+	}
+
 	smm_subregion(SMM_SUBREGION_CHIPSET, &params->ied_base, &params->ied_size);
 
 	/* SMRR has 32-bits of valid address aligned to 4KiB. */

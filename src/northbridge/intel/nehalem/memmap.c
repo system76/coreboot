@@ -19,7 +19,6 @@
 #include <arch/romstage.h>
 #include <device/pci_ops.h>
 #include <cbmem.h>
-#include <console/console.h>
 #include <cpu/x86/mtrr.h>
 #include <cpu/x86/smm.h>
 #include <program_loading.h>
@@ -43,7 +42,7 @@ static size_t northbridge_get_tseg_size(void)
 	return CONFIG_SMM_TSEG_SIZE;
 }
 
-void *cbmem_top(void)
+void *cbmem_top_chipset(void)
 {
 	return (void *) smm_region_start();
 }

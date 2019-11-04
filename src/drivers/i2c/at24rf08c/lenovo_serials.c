@@ -1,8 +1,6 @@
 /*
  * This file is part of the coreboot project.
  *
- * Copyright (C) 2013 Vladimir Serbinenko
- *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; version 2 of the License.
@@ -118,7 +116,7 @@ const char *smbios_mainboard_product_name(void)
 void smbios_system_set_uuid(u8 *uuid)
 {
 	static char result[16];
-	unsigned i;
+	unsigned int i;
 	static int already_read;
 	struct device *dev;
 	const int remap[16] = {

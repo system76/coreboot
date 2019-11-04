@@ -29,7 +29,3 @@ ramstage-y += mainboard.c
 ramstage-y += ramstage.c
 
 smm-y += smihandler.c
-
-ifeq ($(CONFIG_PLATFORM_USES_FSP2_0),y)
-romstage-srcs := $(subst $(MAINBOARDDIR)/romstage.c,$(MAINBOARDDIR)/romstage_fsp20.c,$(romstage-srcs))
-endif

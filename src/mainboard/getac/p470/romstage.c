@@ -90,13 +90,6 @@ static void pnp_exit_ext_func_mode(pnp_devfn_t dev)
 	outb(0xaa, port);
 }
 
-static void pnp_write_register(pnp_devfn_t dev, int reg, int val)
-{
-	unsigned int port = dev >> 8;
-	outb(reg, port);
-	outb(val, port+1);
-}
-
 static void early_superio_config(void)
 {
 	pnp_devfn_t dev;
@@ -104,40 +97,40 @@ static void early_superio_config(void)
 	dev = PNP_DEV(0x4e, 0x00);
 
 	pnp_enter_ext_func_mode(dev);
-	pnp_write_register(dev, 0x02, 0x0e); // UART power
-	pnp_write_register(dev, 0x1b, (0x3e8 >> 2)); // UART3 base
-	pnp_write_register(dev, 0x1c, (0x2e8 >> 2)); // UART4 base
-	pnp_write_register(dev, 0x1d, (5 << 4) | 11); // UART3,4 IRQ
-	pnp_write_register(dev, 0x1e, 1); // no 32khz clock
-	pnp_write_register(dev, 0x24, (0x3f8 >> 2)); // UART1 base
-	pnp_write_register(dev, 0x28, (4 << 4) | 0); // UART1,2 IRQ
-	pnp_write_register(dev, 0x2c, 0); // DMA0 FIR
-	pnp_write_register(dev, 0x30, (0x600 >> 4)); // Runtime Register Block Base
+	pnp_write_config(dev, 0x02, 0x0e); // UART power
+	pnp_write_config(dev, 0x1b, (0x3e8 >> 2)); // UART3 base
+	pnp_write_config(dev, 0x1c, (0x2e8 >> 2)); // UART4 base
+	pnp_write_config(dev, 0x1d, (5 << 4) | 11); // UART3,4 IRQ
+	pnp_write_config(dev, 0x1e, 1); // no 32khz clock
+	pnp_write_config(dev, 0x24, (0x3f8 >> 2)); // UART1 base
+	pnp_write_config(dev, 0x28, (4 << 4) | 0); // UART1,2 IRQ
+	pnp_write_config(dev, 0x2c, 0); // DMA0 FIR
+	pnp_write_config(dev, 0x30, (0x600 >> 4)); // Runtime Register Block Base
 
-	pnp_write_register(dev, 0x31, 0xce); // GPIO1 DIR
-	pnp_write_register(dev, 0x32, 0x00); // GPIO1 POL
-	pnp_write_register(dev, 0x33, 0x0f); // GPIO2 DIR
-	pnp_write_register(dev, 0x34, 0x00); // GPIO2 POL
-	pnp_write_register(dev, 0x35, 0xa8); // GPIO3 DIR
-	pnp_write_register(dev, 0x36, 0x00); // GPIO3 POL
-	pnp_write_register(dev, 0x37, 0xa8); // GPIO4 DIR
-	pnp_write_register(dev, 0x38, 0x00); // GPIO4 POL
+	pnp_write_config(dev, 0x31, 0xce); // GPIO1 DIR
+	pnp_write_config(dev, 0x32, 0x00); // GPIO1 POL
+	pnp_write_config(dev, 0x33, 0x0f); // GPIO2 DIR
+	pnp_write_config(dev, 0x34, 0x00); // GPIO2 POL
+	pnp_write_config(dev, 0x35, 0xa8); // GPIO3 DIR
+	pnp_write_config(dev, 0x36, 0x00); // GPIO3 POL
+	pnp_write_config(dev, 0x37, 0xa8); // GPIO4 DIR
+	pnp_write_config(dev, 0x38, 0x00); // GPIO4 POL
 
-	pnp_write_register(dev, 0x39, 0x00); // GPIO1 OUT
-	pnp_write_register(dev, 0x40, 0x80); // GPIO2/MISC OUT
-	pnp_write_register(dev, 0x41, 0x00); // GPIO5 OUT
-	pnp_write_register(dev, 0x42, 0xa8); // GPIO5 DIR
-	pnp_write_register(dev, 0x43, 0x00); // GPIO5 POL
-	pnp_write_register(dev, 0x44, 0x00); // GPIO ALT1
-	pnp_write_register(dev, 0x45, 0x50); // GPIO ALT2
-	pnp_write_register(dev, 0x46, 0x00); // GPIO ALT3
+	pnp_write_config(dev, 0x39, 0x00); // GPIO1 OUT
+	pnp_write_config(dev, 0x40, 0x80); // GPIO2/MISC OUT
+	pnp_write_config(dev, 0x41, 0x00); // GPIO5 OUT
+	pnp_write_config(dev, 0x42, 0xa8); // GPIO5 DIR
+	pnp_write_config(dev, 0x43, 0x00); // GPIO5 POL
+	pnp_write_config(dev, 0x44, 0x00); // GPIO ALT1
+	pnp_write_config(dev, 0x45, 0x50); // GPIO ALT2
+	pnp_write_config(dev, 0x46, 0x00); // GPIO ALT3
 
-	pnp_write_register(dev, 0x48, 0x55); // GPIO ALT5
-	pnp_write_register(dev, 0x49, 0x55); // GPIO ALT6
-	pnp_write_register(dev, 0x4a, 0x55); // GPIO ALT7
-	pnp_write_register(dev, 0x4b, 0x55); // GPIO ALT8
-	pnp_write_register(dev, 0x4c, 0x55); // GPIO ALT9
-	pnp_write_register(dev, 0x4d, 0x55); // GPIO ALT10
+	pnp_write_config(dev, 0x48, 0x55); // GPIO ALT5
+	pnp_write_config(dev, 0x49, 0x55); // GPIO ALT6
+	pnp_write_config(dev, 0x4a, 0x55); // GPIO ALT7
+	pnp_write_config(dev, 0x4b, 0x55); // GPIO ALT8
+	pnp_write_config(dev, 0x4c, 0x55); // GPIO ALT9
+	pnp_write_config(dev, 0x4d, 0x55); // GPIO ALT10
 
 	pnp_exit_ext_func_mode(dev);
 }
@@ -184,12 +177,12 @@ static void early_ich7_init(void)
 	uint32_t reg32;
 
 	// program secondary mlt XXX byte?
-	pci_write_config8(PCI_DEV(0, 0x1e, 0), 0x1b, 0x20);
+	pci_write_config8(PCI_DEV(0, 0x1e, 0), SMLT, 0x20);
 
 	// reset rtc power status
-	reg8 = pci_read_config8(PCI_DEV(0, 0x1f, 0), 0xa4);
-	reg8 &= ~(1 << 2);
-	pci_write_config8(PCI_DEV(0, 0x1f, 0), 0xa4, reg8);
+	reg8 = pci_read_config8(PCI_DEV(0, 0x1f, 0), GEN_PMCON_3);
+	reg8 &= ~RTC_BATTERY_DEAD;
+	pci_write_config8(PCI_DEV(0, 0x1f, 0), GEN_PMCON_3, reg8);
 
 	// usb transient disconnect
 	reg8 = pci_read_config8(PCI_DEV(0, 0x1f, 0), 0xad);
@@ -204,31 +197,7 @@ static void early_ich7_init(void)
 	reg32 |= (1 << 31) | (1 << 27);
 	pci_write_config32(PCI_DEV(0, 0x1d, 7), 0xdc, reg32);
 
-	RCBA32(0x0088) = 0x0011d000;
-	RCBA16(0x01fc) = 0x060f;
-	RCBA32(0x01f4) = 0x86000040;
-	RCBA32(0x0214) = 0x10030549;
-	RCBA32(0x0218) = 0x00020504;
-	RCBA8(0x0220) = 0xc5;
-	reg32 = RCBA32(0x3410);
-	reg32 |= (1 << 6);
-	RCBA32(0x3410) = reg32;
-	reg32 = RCBA32(0x3430);
-	reg32 &= ~(3 << 0);
-	reg32 |= (1 << 0);
-	RCBA32(0x3430) = reg32;
-	RCBA16(0x0200) = 0x2008;
-	RCBA8(0x2027) = 0x0d;
-	RCBA16(0x3e08) |= (1 << 7);
-	RCBA16(0x3e48) |= (1 << 7);
-	RCBA32(0x3e0e) |= (1 << 7);
-	RCBA32(0x3e4e) |= (1 << 7);
-
-	// next step only on ich7m b0 and later:
-	reg32 = RCBA32(0x2034);
-	reg32 &= ~(0x0f << 16);
-	reg32 |= (5 << 16);
-	RCBA32(0x2034) = reg32;
+	ich7_setup_cir();
 }
 
 void mainboard_romstage_entry(void)

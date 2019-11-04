@@ -31,10 +31,20 @@
 
 #include "chip.h"
 
-void smm_region(uintptr_t *start, size_t *size)
+static bool is_ptt_enable(void)
 {
-	*start = sa_get_tseg_base();
-	*size = sa_get_tseg_size();
+	if ((read32((void *)PTT_TXT_BASE_ADDRESS) & PTT_PRESENT) ==
+			PTT_PRESENT)
+		return true;
+
+	return false;
+}
+
+/* Calculate PTT size */
+static size_t get_ptt_size(void)
+{
+	/* Allocate 4KB for PTT if enabled */
+	return is_ptt_enable() ? 4*KiB : 0;
 }
 
 static bool is_ptt_enable(void)
@@ -211,21 +221,6 @@ static uintptr_t calculate_dram_base(size_t *reserved_mem_size)
 	return dram_base;
 }
 
-/*
- * SoC implementation
- *
- * SoC call to summarize all Intel Reserve MMIO size and report to SA
- */
-size_t soc_reserved_mmio_size(void)
-{
-	struct ebda_config cfg;
-
-	retrieve_ebda_object(&cfg);
-
-	/* Get Intel Reserved Memory Range Size */
-	return cfg.reserved_mem_size;
-}
-
 /* Fill up memory layout information */
 void fill_soc_memmap_ebda(struct ebda_config *cfg)
 {
@@ -268,38 +263,11 @@ void cbmem_top_init(void)
  *     |                         |
  *     +-------------------------+
  */
-void *cbmem_top(void)
+void *cbmem_top_chipset(void)
 {
 	struct ebda_config ebda_cfg;
-
-	/*
-	 * Check if Tseg has been initialized, we will use this as a flag
-	 * to check if the MRC is done, and only then continue to read the
-	 * PRMMR_BASE MSR. The system hangs if PRMRR_BASE MSR is read before
-	 * PRMRR_MASK MSR lock bit is set.
-	 */
-	if (sa_get_tseg_base() == 0)
-		return NULL;
 
 	retrieve_ebda_object(&ebda_cfg);
 
 	return (void *)(uintptr_t)ebda_cfg.tolum_base;
-}
-
-void fill_postcar_frame(struct postcar_frame *pcf)
-{
-	uintptr_t top_of_ram;
-	/*
-	 * We need to make sure ramstage will be run cached. At this
-	 * point exact location of ramstage in cbmem is not known.
-	 * Instruct postcar to cache 16 megs under cbmem top which is
-	 * a safe bet to cover ramstage.
-	 */
-	top_of_ram = (uintptr_t) cbmem_top();
-	printk(BIOS_DEBUG, "top_of_ram = 0x%lx\n", top_of_ram);
-	top_of_ram -= 16*MiB;
-	postcar_frame_add_mtrr(pcf, top_of_ram, 16*MiB, MTRR_TYPE_WRBACK);
-
-	/* Cache the TSEG region */
-	postcar_enable_tseg_cache(pcf);
 }

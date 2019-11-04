@@ -21,12 +21,16 @@ config NORTHBRIDGE_INTEL_NEHALEM
 	select INTEL_GMA_ACPI
 	select CACHE_MRC_SETTINGS
 	select HAVE_DEBUG_RAM_SETUP
+	select C_ENVIRONMENT_BOOTBLOCK
 
 if NORTHBRIDGE_INTEL_NEHALEM
 
 config VBOOT
 	select VBOOT_MUST_REQUEST_DISPLAY
-	select VBOOT_STARTS_IN_ROMSTAGE
+	select VBOOT_STARTS_IN_BOOTBLOCK
+	select VBOOT_SEPARATE_VERSTAGE
+	# CPU is reset without platform/TPM during romstage
+	select TPM_STARTUP_IGNORE_POSTINIT
 
 config MMCONF_BUS_NUMBER
 	int
@@ -48,9 +52,12 @@ config DCACHE_RAM_SIZE
 	hex
 	default 0x10000
 
-config BOOTBLOCK_NORTHBRIDGE_INIT
-	string
-	default "northbridge/intel/nehalem/bootblock.c"
+config DCACHE_BSP_STACK_SIZE
+	hex
+	default 0x2000
+	help
+	  The amount of anticipated stack usage in CAR by bootblock and
+	  other stages.
 
 config MRC_CACHE_SIZE
 	hex

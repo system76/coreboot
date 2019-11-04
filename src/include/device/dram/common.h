@@ -18,6 +18,9 @@
 #ifndef DEVICE_DRAM_COMMON_H
 #define DEVICE_DRAM_COMMON_H
 
+#include <console/console.h>
+#include <stdint.h>
+
 /**
  * \brief Convenience definitions for TCK values
  *

@@ -18,16 +18,10 @@
 #include <device/pci_ops.h>
 #include <northbridge/intel/sandybridge/raminit_native.h>
 #include <southbridge/intel/common/pmbase.h>
-#include <console/console.h>
 #include <southbridge/intel/bd82x6x/pch.h>
 
 void pch_enable_lpc(void)
 {
-	/* IO Decode Ranges Register */
-	pci_write_config16(PCI_DEV(0, 0x1f, 0), 0x80, 0x0000);
-	/* LPC IF Enables Register (CNF2_LPC_EN|KBC_LPC_EN) */
-	pci_write_config16(PCI_DEV(0, 0x1f, 0), 0x82, 0x2400);
-
 	u16 reg16;
 	reg16 = pci_read_config16(PCI_DEV(0, 0x1f, 0), 0xa4);
 	reg16 |= (1 << 13); // WOL Enable Override (WOL_EN_OVRD)

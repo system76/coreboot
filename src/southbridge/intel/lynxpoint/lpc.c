@@ -403,7 +403,7 @@ static void enable_hpet(struct device *const dev)
 	reg32 &= ~(3 << 0);
 	RCBA32(HPTC) = reg32;
 	/* Read it back to stick. It's affected by posted write syndrome. */
-	reg32 = RCBA32(HPTC);
+	RCBA32(HPTC);
 }
 
 static void enable_clock_gating(struct device *dev)
@@ -981,7 +981,7 @@ static struct device_operations device_ops = {
 	.init			= lpc_init,
 	.final			= lpc_final,
 	.enable			= pch_lpc_enable,
-	.scan_bus		= scan_lpc_bus,
+	.scan_bus		= scan_static_bus,
 	.ops_pci		= &pci_ops,
 };
 

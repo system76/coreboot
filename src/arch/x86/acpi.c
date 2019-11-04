@@ -37,6 +37,8 @@
 #include <version.h>
 #include <commonlib/sort.h>
 
+static acpi_rsdp_t *valid_rsdp(acpi_rsdp_t *rsdp);
+
 u8 acpi_checksum(u8 *table, u32 length)
 {
 	u8 ret = 0;
@@ -125,7 +127,7 @@ int acpi_create_mcfg_mmconfig(acpi_mcfg_mmconfig_t *mmconfig, u32 base,
 
 int acpi_create_madt_lapic(acpi_madt_lapic_t *lapic, u8 cpu, u8 apic)
 {
-	lapic->type = 0; /* Local APIC structure */
+	lapic->type = LOCAL_APIC; /* Local APIC structure */
 	lapic->length = sizeof(acpi_madt_lapic_t);
 	lapic->flags = (1 << 0); /* Processor/LAPIC enabled */
 	lapic->processor_id = cpu;
@@ -163,7 +165,7 @@ unsigned long acpi_create_madt_lapics(unsigned long current)
 int acpi_create_madt_ioapic(acpi_madt_ioapic_t *ioapic, u8 id, u32 addr,
 				u32 gsi_base)
 {
-	ioapic->type = 1; /* I/O APIC structure */
+	ioapic->type = IO_APIC; /* I/O APIC structure */
 	ioapic->length = sizeof(acpi_madt_ioapic_t);
 	ioapic->reserved = 0x00;
 	ioapic->gsi_base = gsi_base;
@@ -176,7 +178,7 @@ int acpi_create_madt_ioapic(acpi_madt_ioapic_t *ioapic, u8 id, u32 addr,
 int acpi_create_madt_irqoverride(acpi_madt_irqoverride_t *irqoverride,
 		u8 bus, u8 source, u32 gsirq, u16 flags)
 {
-	irqoverride->type = 2; /* Interrupt source override */
+	irqoverride->type = IRQ_SOURCE_OVERRIDE; /* Interrupt source override */
 	irqoverride->length = sizeof(acpi_madt_irqoverride_t);
 	irqoverride->bus = bus;
 	irqoverride->source = source;
@@ -189,7 +191,7 @@ int acpi_create_madt_irqoverride(acpi_madt_irqoverride_t *irqoverride,
 int acpi_create_madt_lapic_nmi(acpi_madt_lapic_nmi_t *lapic_nmi, u8 cpu,
 				u16 flags, u8 lint)
 {
-	lapic_nmi->type = 4; /* Local APIC NMI structure */
+	lapic_nmi->type = LOCAL_APIC_NMI; /* Local APIC NMI structure */
 	lapic_nmi->length = sizeof(acpi_madt_lapic_nmi_t);
 	lapic_nmi->flags = flags;
 	lapic_nmi->processor_id = cpu;
@@ -735,14 +737,14 @@ void acpi_create_hpet(acpi_hpet_t *hpet)
 }
 
 void acpi_create_vfct(struct device *device,
-		      struct acpi_vfct *vfct,
+		      acpi_vfct_t *vfct,
 		      unsigned long (*acpi_fill_vfct)(struct device *device,
-		      struct acpi_vfct *vfct_struct, unsigned long current))
+		      acpi_vfct_t *vfct_struct, unsigned long current))
 {
 	acpi_header_t *header = &(vfct->header);
-	unsigned long current = (unsigned long)vfct + sizeof(struct acpi_vfct);
+	unsigned long current = (unsigned long)vfct + sizeof(acpi_vfct_t);
 
-	memset((void *)vfct, 0, sizeof(struct acpi_vfct));
+	memset((void *)vfct, 0, sizeof(acpi_vfct_t));
 
 	if (!header)
 		return;
@@ -1260,9 +1262,51 @@ unsigned long write_acpi_tables(unsigned long start)
 	/* Align ACPI tables to 16byte */
 	current = acpi_align_current(current);
 
+	/* Special case for qemu */
 	fw = fw_cfg_acpi_tables(current);
-	if (fw)
+	if (fw) {
+		rsdp = NULL;
+		/* Find RSDP. */
+		for (void *p = (void *)current; p < (void *)fw; p += 16) {
+			if (valid_rsdp((acpi_rsdp_t *)p)) {
+				rsdp = p;
+				break;
+			}
+		}
+		if (!rsdp)
+			return fw;
+
+		/* Add BOOT0000 for Linux google firmware driver */
+		printk(BIOS_DEBUG, "ACPI:     * SSDT\n");
+		ssdt = (acpi_header_t *)fw;
+		current = (unsigned long)ssdt + sizeof(acpi_header_t);
+
+		memset((void *)ssdt, 0, sizeof(acpi_header_t));
+
+		memcpy(&ssdt->signature, "SSDT", 4);
+		ssdt->revision = get_acpi_table_revision(SSDT);
+		memcpy(&ssdt->oem_id, OEM_ID, 6);
+		memcpy(&ssdt->oem_table_id, oem_table_id, 8);
+		ssdt->oem_revision = 42;
+		memcpy(&ssdt->asl_compiler_id, ASLC, 4);
+		ssdt->asl_compiler_revision = asl_revision;
+		ssdt->length = sizeof(acpi_header_t);
+
+		acpigen_set_current((char *) current);
+
+		/* Write object to declare coreboot tables */
+		acpi_ssdt_write_cbtable();
+
+		/* (Re)calculate length and checksum. */
+		ssdt->length = current - (unsigned long)ssdt;
+		ssdt->checksum = acpi_checksum((void *)ssdt, ssdt->length);
+
+		acpi_create_ssdt_generator(ssdt, ACPI_TABLE_CREATOR);
+
+		acpi_add_table(rsdp, ssdt);
+
 		return fw;
+	}
 
 	dsdt_file = cbfs_boot_map_with_leak(
 				     CONFIG_CBFS_PREFIX "/dsdt.aml",

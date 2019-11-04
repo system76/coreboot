@@ -256,7 +256,7 @@ int cbfs_prog_stage_load(struct prog *pstage)
 
 	/* Hacky way to not load programs over read only media. The stages
 	 * that would hit this path initialize themselves. */
-	if (ENV_VERSTAGE && !CONFIG(NO_XIP_EARLY_STAGES) &&
+	if ((ENV_BOOTBLOCK || ENV_VERSTAGE) && !CONFIG(NO_XIP_EARLY_STAGES) &&
 		CONFIG(BOOT_DEVICE_MEMORY_MAPPED)) {
 		void *mapping = rdev_mmap(fh, foffset, fsize);
 		rdev_munmap(fh, mapping);
@@ -302,7 +302,7 @@ static int cbfs_master_header_props(struct cbfs_props *props)
 	if (rdev_readat(bdev, &rel_offset, offset, sizeof(int32_t)) < 0)
 		return -1;
 
-	offset = fmap_top + rel_offset;
+	offset = fmap_top + (int32_t)le32_to_cpu(rel_offset);
 	if (rdev_readat(bdev, &header, offset, sizeof(header)) < 0)
 		return -1;
 

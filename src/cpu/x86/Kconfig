@@ -34,12 +34,9 @@ config UDELAY_TSC
 	bool
 	default n
 
-config TSC_CONSTANT_RATE
-	def_bool n
-	depends on UDELAY_TSC
-	help
-	  This option asserts that the TSC ticks at a known constant rate.
-	  Therefore, no TSC calibration is required.
+config UNKNOWN_TSC_RATE
+	bool
+	default y if LAPIC_MONOTONIC_TIMER
 
 config TSC_MONOTONIC_TIMER
 	def_bool n
@@ -77,6 +74,16 @@ config XIP_ROM_SIZE
 	hex
 	depends on !NO_FIXED_XIP_ROM_SIZE
 	default 0x10000
+
+config SETUP_XIP_CACHE
+	bool
+	depends on C_ENVIRONMENT_BOOTBLOCK
+	depends on !NO_XIP_EARLY_STAGES
+	help
+	  Select this option to set up an MTRR to cache XIP stages loaded
+	  from the bootblock. This is useful on platforms lacking a
+	  non-eviction mode and therefore need to be careful to avoid
+	  eviction.
 
 config CPU_ADDR_BITS
 	int

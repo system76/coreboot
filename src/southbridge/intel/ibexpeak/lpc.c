@@ -394,6 +394,7 @@ static void enable_hpet(void)
 	reg32 |= (1 << 7); // HPET Address Enable
 	reg32 &= ~(3 << 0);
 	RCBA32(HPTC) = reg32;
+	RCBA32(HPTC); /* Read back for it to work */
 
 	write32((u32 *)0xfed00010, read32((u32 *)0xfed00010) | 1);
 }
@@ -408,11 +409,6 @@ static void enable_clock_gating(struct device *dev)
 	reg16 = pci_read_config16(dev, GEN_PMCON_1);
 	reg16 |= (1 << 2) | (1 << 11);
 	pci_write_config16(dev, GEN_PMCON_1, reg16);
-
-	pch_iobp_update(0xEB007F07, ~0UL, (1 << 31));
-	pch_iobp_update(0xEB004000, ~0UL, (1 << 7));
-	pch_iobp_update(0xEC007F07, ~0UL, (1 << 31));
-	pch_iobp_update(0xEC004000, ~0UL, (1 << 7));
 
 	reg32 = RCBA32(CG);
 	reg32 |= (1 << 31);
@@ -469,18 +465,6 @@ static void pch_fixups(struct device *dev)
 	RCBA32_OR(0x21a8, 0x3);
 }
 
-static void pch_decode_init(struct device *dev)
-{
-	config_t *config = dev->chip_info;
-
-	printk(BIOS_DEBUG, "pch_decode_init\n");
-
-	pci_write_config32(dev, LPC_GEN1_DEC, config->gen1_dec);
-	pci_write_config32(dev, LPC_GEN2_DEC, config->gen2_dec);
-	pci_write_config32(dev, LPC_GEN3_DEC, config->gen3_dec);
-	pci_write_config32(dev, LPC_GEN4_DEC, config->gen4_dec);
-}
-
 static void lpc_init(struct device *dev)
 {
 	printk(BIOS_DEBUG, "pch: lpc_init\n");
@@ -500,13 +484,7 @@ static void lpc_init(struct device *dev)
 	pch_power_options(dev);
 
 	/* Initialize power management */
-	switch (pch_silicon_type()) {
-	case PCH_TYPE_MOBILE5:
-		mobile5_pm_init (dev);
-		break;
-	default:
-		printk(BIOS_ERR, "Unknown Chipset: 0x%04x\n", dev->device);
-	}
+	mobile5_pm_init(dev);
 
 	/* Set the state of the GPIO lines. */
 	//gpio_init(dev);
@@ -595,12 +573,6 @@ static void pch_lpc_read_resources(struct device *dev)
 		res->flags = IORESOURCE_IO| IORESOURCE_SUBTRACTIVE |
 				 IORESOURCE_ASSIGNED | IORESOURCE_FIXED;
 	}
-}
-
-static void pch_lpc_enable_resources(struct device *dev)
-{
-	pch_decode_init(dev);
-	return pci_dev_enable_resources(dev);
 }
 
 static void pch_lpc_enable(struct device *dev)
@@ -804,7 +776,7 @@ static struct pci_operations pci_ops = {
 static struct device_operations device_ops = {
 	.read_resources		= pch_lpc_read_resources,
 	.set_resources		= pci_dev_set_resources,
-	.enable_resources	= pch_lpc_enable_resources,
+	.enable_resources	= pci_dev_enable_resources,
 	.acpi_inject_dsdt_generator = southbridge_inject_dsdt,
 	.acpi_fill_ssdt_generator = southbridge_fill_ssdt,
 	.acpi_name		= lpc_acpi_name,
@@ -812,7 +784,7 @@ static struct device_operations device_ops = {
 	.init			= lpc_init,
 	.final			= lpc_final,
 	.enable			= pch_lpc_enable,
-	.scan_bus		= scan_lpc_bus,
+	.scan_bus		= scan_static_bus,
 	.ops_pci		= &pci_ops,
 };
 

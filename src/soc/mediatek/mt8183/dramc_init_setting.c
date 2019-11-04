@@ -43,6 +43,40 @@ static void cke_fix_onoff(int option, u8 chn)
 		(0x1 << 6) | (0x1 << 7), (on << 6) | (off << 7));
 }
 
+static void dvfs_settings(u8 freq_group)
+{
+	u8 dll_idle;
+
+	switch (freq_group) {
+	case LP4X_DDR1600:
+		dll_idle = 0x18;
+		break;
+	case LP4X_DDR2400:
+		dll_idle = 0x10;
+		break;
+	case LP4X_DDR3200:
+		dll_idle = 0xc;
+		break;
+	case LP4X_DDR3600:
+		dll_idle = 0xa;
+		break;
+	default:
+		die("Invalid DDR frequency group %u\n", freq_group);
+		return;
+	}
+
+	dll_idle = dll_idle << 1;
+	for (u8 chn = 0; chn < CHANNEL_MAX; chn++) {
+		setbits_le32(&ch[chn].ao.dvfsdll, 0x1 << 5);
+		setbits_le32(&ch[chn].phy.dvfs_emi_clk, 0x1 << 29);
+		clrsetbits_le32(&ch[0].ao.shuctrl2, 0x7f, dll_idle);
+
+		setbits_le32(&ch[0].phy.misc_ctrl0, 0x3 << 19);
+		setbits_le32(&ch[chn].phy.dvfs_emi_clk, 0x1 << 24);
+		setbits_le32(&ch[chn].ao.dvfsdll, 0x1 << 7);
+	}
+}
+
 static void ddr_phy_pll_setting(u8 chn, u8 freq_group)
 {
 	u8 cap_sel, mid_cap_sel;
@@ -67,13 +101,13 @@ static void ddr_phy_pll_setting(u8 chn, u8 freq_group)
 		mid_cap_sel = 0x2;
 		cap_sel = 0x0;
 		sdm_pcw = 0x7b00;
-		delta = 0xC03;
+		delta = 0xc03;
 		break;
 	case LP4X_DDR3600:
 		mid_cap_sel = 0x1;
 		cap_sel = 0x0;
 		sdm_pcw = 0x8a00;
-		delta = 0xD96;
+		delta = 0xd96;
 		break;
 	default:
 		die("Invalid DDR frequency group %u\n", freq_group);
@@ -86,16 +120,14 @@ static void ddr_phy_pll_setting(u8 chn, u8 freq_group)
 		ca_dll_mode[CHANNEL_A] = DLL_MASTER;
 	ca_dll_mode[CHANNEL_B] = DLL_SLAVE;
 
-	clrbits_le32(&ch[chn].phy.shu[0].pll[4], 0xFFFF);
-	clrbits_le32(&ch[chn].phy.shu[0].pll[6], 0xFFFF);
+	clrbits_le32(&ch[chn].phy.shu[0].pll[4], 0xffff);
+	clrbits_le32(&ch[chn].phy.shu[0].pll[6], 0xffff);
 	setbits_le32(&ch[chn].phy.misc_shu_opt, (chn + 1) << 18);
 	clrsetbits_le32(&ch[chn].phy.ckmux_sel, 0x3 << 18 | 0x3 << 16, 0x0);
 	clrsetbits_le32(&ch[chn].phy.shu[0].ca_cmd[0], 0x3 << 18, 0x1 << 18);
 
-	if (ca_dll_mode[chn] == DLL_SLAVE)
-		clrsetbits_le32(&ch[chn].ao.dvfsdll, 0x1 << 1, 0x1 << 1);
-	else
-		clrsetbits_le32(&ch[chn].ao.dvfsdll, 0x1 << 1, 0x0 << 1);
+	SET32_BITFIELDS(&ch[chn].ao.dvfsdll, DVFSDLL_R_BYPASS_1ST_DLL_SHU1,
+			ca_dll_mode[chn] == DLL_SLAVE);
 
 	bool is_master = (ca_dll_mode[chn] == DLL_MASTER);
 	u8 phdet_out = is_master ? 0x0 : 0x1;
@@ -120,8 +152,7 @@ static void ddr_phy_pll_setting(u8 chn, u8 freq_group)
 		(pd_ck_sel << 2) | (fastpj_ck_sel << 0));
 
 	clrsetbits_le32(&ch[chn].phy.shu[0].ca_cmd[6],
-		0x1 << 7,
-		(is_master ? 0x1 : 0x0) << 7);
+		0x1 << 7, (is_master ? 0x1 : 0x0) << 7);
 
 	struct reg_value regs_bak[] = {
 		{&ch[chn].phy.b[0].dq[7]},
@@ -132,15 +163,14 @@ static void ddr_phy_pll_setting(u8 chn, u8 freq_group)
 	for (size_t i = 0; i < ARRAY_SIZE(regs_bak); i++)
 		regs_bak[i].value = read32(regs_bak[i].addr);
 
-	for (size_t b = 0; b < 2; b++) {
+	for (size_t b = 0; b < 2; b++)
 		setbits_le32(&ch[chn].phy.b[b].dq[7],
 			0x1 << 6 | 0x1 << 4 | 0x1 << 2 | 0x1 << 0);
-	}
 	setbits_le32(&ch[chn].phy.ca_cmd[7], 0x1 << 6 | 0x1 << 4 | 0x1 << 2 | 0x1 << 0);
 	setbits_le32(&ch[chn].phy.ca_cmd[2], 0x1 << 21);
 
 	/* 26M */
-	clrsetbits_le32(&ch[chn].phy.misc_cg_ctrl0, 0x3 << 4, 0x0 << 4);
+	SET32_BITFIELDS(&ch[chn].phy.misc_cg_ctrl0, MISC_CG_CTRL0_CLK_MEM_SEL, 0);
 
 	/* MID FINE_TUNE */
 	clrbits_le32(&ch[chn].phy.shu[0].b[0].dq[6], (0x1 << 26) | (0x1 << 27));
@@ -245,11 +275,11 @@ static void ddr_phy_pll_setting(u8 chn, u8 freq_group)
 	setbits_le32(&ch[chn].phy.b[1].dll_fine_tune[3],
 		(0x1 << 11) | (0x1 << 13) | (0x1 << 14) | (0x1 << 15) |
 		(0x1 << 17));
+
 	clrbits_le32(&ch[chn].phy.ca_dll_fine_tune[2],
 		(0x1 << 10) | (0x1 << 13) |
 		(0x1 << 15) | (0x1 << 16) | (0x1 << 17) |
 		(0x1 << 19) | (0x1 << 27) | (0x1 << 31));
-
 	clrbits_le32(&ch[chn].phy.b[0].dll_fine_tune[2],
 		(0x1 << 10) | (0x1 << 13) | (0x1 << 14) |
 		(0x1 << 15)  | (0x1 << 17) |
@@ -323,7 +353,7 @@ static void dramc_gating_mode(u8 mode)
 
 static void update_initial_settings(u8 freq_group)
 {
-	u8 chn = 0, operate_fsp = get_freq_fsq(freq_group);
+	u8 operate_fsp = get_freq_fsq(freq_group);
 	u16 rx_vref = 0x16;
 
 	if (operate_fsp == FSP_1)
@@ -380,11 +410,9 @@ static void update_initial_settings(u8 freq_group)
 		clrsetbits_le32(&ch[0].phy.b[b].dq[5], 0x3f << 8, rx_vref << 8);
 	}
 
-	for (chn = 0; chn < CHANNEL_MAX; chn++) {
-		setbits_le32(&ch[chn].phy.b[0].dq[8], (0x1 << 0) | (0x1 << 1) | (0x1 << 2));
-		setbits_le32(&ch[chn].phy.b[1].dq[8], (0x1 << 0) | (0x1 << 1) | (0x1 << 2));
-		setbits_le32(&ch[chn].phy.ca_cmd[9], (0x1 << 0) | (0x1 << 1) | (0x1 << 2));
-	}
+	setbits_le32(&ch[0].phy.b[0].dq[8], (0x1 << 0) | (0x1 << 1) | (0x1 << 2));
+	setbits_le32(&ch[0].phy.b[1].dq[8], (0x1 << 0) | (0x1 << 1) | (0x1 << 2));
+	setbits_le32(&ch[0].phy.ca_cmd[9], (0x1 << 0) | (0x1 << 1) | (0x1 << 2));
 	dramc_gating_mode(1);
 
 	setbits_le32(&ch[0].phy.ca_cmd[8], 0x1 << 19);
@@ -398,7 +426,7 @@ static void update_initial_settings(u8 freq_group)
 	clrbits_le32(&ch[0].phy.shu[0].ca_cmd[5], 0x3f << 8);
 
 	dramc_set_broadcast(DRAMC_BROADCAST_OFF);
-	for (chn = 0; chn < CHANNEL_MAX; chn++) {
+	for (u8 chn = 0; chn < CHANNEL_MAX; chn++) {
 		clrbits_le32(&ch[chn].phy.shu[0].b[0].dq[6], 0x3f << 0);
 		clrbits_le32(&ch[chn].phy.shu[0].b[1].dq[6], 0x3f << 0);
 		clrbits_le32(&ch[chn].phy.shu[0].ca_cmd[6], 0x3f << 0);
@@ -504,13 +532,8 @@ static void update_initial_settings(u8 freq_group)
 	setbits_le32(&ch[0].ao.ckectrl, 0x1 << 22);
 	clrsetbits_le32(&ch[0].phy.ca_tx_mck, (0x1 << 31) | (0x1f << 21) | (0x1f << 26),
 		(0x1 << 31) | (0xa << 21) | (0xa << 26));
-
 	setbits_le32(&ch[0].ao.ckectrl, 0x1 << 23);
-
-	/* Gating error problem happened in M17
-	 * has been solved by setting this RG as 0 */
 	clrbits_le32(&ch[0].ao.shu[0].rodtenstb, 0x1 << 31);
-
 }
 
 static void dramc_power_on_sequence(void)
@@ -548,7 +571,7 @@ static void ddr_phy_reserved_rg_setting(u8 freq_group)
 
 	/* fine tune */
 	for (u8 chn = 0; chn < CHANNEL_MAX; chn++)
-		clrsetbits_le32(&ch[chn].phy.shu[0].ca_cmd[6], 0xFFFF << 6,
+		clrsetbits_le32(&ch[chn].phy.shu[0].ca_cmd[6], 0xffff << 6,
 			(0x1 << 6) | ((!chn) << 7) | (hyst_sel << 8) |
 			(midpi_cap_sel << 9) | (0x1 << 10) | (0x3 << 17) | (lp3_sel << 20));
 
@@ -612,6 +635,22 @@ static void dramc_duty_set_dqs_delay(u8 chn, const s8 *s_dqsDelay)
 
 static void dramc_duty_calibration(const struct sdram_params *params, u8 freq_group)
 {
+	switch (params->source) {
+	case DRAMC_PARAM_SOURCE_SDRAM_CONFIG:
+		break;
+	case DRAMC_PARAM_SOURCE_FLASH:
+		dramc_dbg("bypass duty calibration\n");
+
+		for (u8 chn = 0; chn < CHANNEL_MAX; chn++) {
+			dramc_duty_set_clk_delay(chn, params->duty_clk_delay[chn]);
+			dramc_duty_set_dqs_delay(chn, params->duty_dqs_delay[chn]);
+		}
+		return;
+	default:
+		die("Invalid DRAM param source %u\n", params->source);
+		return;
+	}
+
 	s8 clkDelay[CHANNEL_MAX] = {0x0};
 	s8 dqsDelay[CHANNEL_MAX][DQS_NUMBER] = {0x0};
 
@@ -662,9 +701,9 @@ static u8 dramc_zq_calibration(u8 chn, u8 rank)
 	const u32 TIMEOUT_US = 100;
 
 	struct reg_value regs_bak[] = {
-		{&ch[chn].ao.mrs, 0x0},
-		{&ch[chn].ao.dramc_pd_ctrl, 0x0},
-		{&ch[chn].ao.ckectrl, 0x0},
+		{&ch[chn].ao.mrs},
+		{&ch[chn].ao.dramc_pd_ctrl},
+		{&ch[chn].ao.ckectrl},
 	};
 
 	for (size_t i = 0; i < ARRAY_SIZE(regs_bak); i++)
@@ -673,26 +712,26 @@ static u8 dramc_zq_calibration(u8 chn, u8 rank)
 	setbits_le32(&ch[chn].ao.dramc_pd_ctrl, 0x1 << 26);
 	dramc_cke_fix_onoff(chn, true, false);
 
-	clrsetbits_le32(&ch[chn].ao.mrs, MRS_MRSRK_MASK, rank << MRS_MRSRK_SHIFT);
-	setbits_le32(&ch[chn].ao.mpc_option, 0x1 << MPC_OPTION_MPCRKEN_SHIFT);
-	setbits_le32(&ch[chn].ao.spcmd, 0x1 << SPCMD_ZQCEN_SHIFT);
+	SET32_BITFIELDS(&ch[chn].ao.mrs, MRS_MRSRK, rank);
+	SET32_BITFIELDS(&ch[chn].ao.mpc_option, MPC_OPTION_MPCRKEN, 1);
+	SET32_BITFIELDS(&ch[chn].ao.spcmd, SPCMD_ZQCEN, 1);
 
 	if (!wait_us(TIMEOUT_US, read32(&ch[chn].nao.spcmdresp) & 0x1 << 4)) {
 		dramc_dbg("ZQCAL Start fail (time out)\n");
 		return 1;
 	}
 
-	clrbits_le32(&ch[chn].ao.spcmd, 0x1 << SPCMD_ZQCEN_SHIFT);
+	SET32_BITFIELDS(&ch[chn].ao.spcmd, SPCMD_ZQCEN, 0);
 
 	udelay(1);
-	setbits_le32(&ch[chn].ao.spcmd, 0x1 << SPCMD_ZQLATEN_SHIFT);
+	SET32_BITFIELDS(&ch[chn].ao.spcmd, SPCMD_ZQLATEN, 1);
 
 	if (!wait_us(TIMEOUT_US, read32(&ch[chn].nao.spcmdresp) & 0x1 << 6)) {
 		dramc_dbg("ZQCAL Latch fail (time out)\n");
 		return 1;
 	}
 
-	clrbits_le32(&ch[chn].ao.spcmd, 0x1 << SPCMD_ZQLATEN_SHIFT);
+	SET32_BITFIELDS(&ch[chn].ao.spcmd, SPCMD_ZQLATEN, 0);
 	udelay(1);
 	for (size_t i = 0; i < ARRAY_SIZE(regs_bak); i++)
 		write32(regs_bak[i].addr, regs_bak[i].value);
@@ -700,24 +739,24 @@ static u8 dramc_zq_calibration(u8 chn, u8 rank)
 	return 0;
 }
 
-u8 MR01Value[FSP_MAX] = {0x26, 0x56};
-u8 MR13Value = (1 << 4) | (1 << 3);
-static void dramc_mode_reg_init(u8 freq_group)
+static void dramc_mode_reg_init(u8 freq_group, struct mr_value *mr)
 {
+	u8 *MR01Value = mr->MR01Value;
 	u8 MR02Value[FSP_MAX] = {0x12, 0x12};
 	u8 MR03Value = 0x30;
 	u8 MR11Value[FSP_MAX] = {0x0, 0x23};
 	u8 MR12Value[CHANNEL_MAX][RANK_MAX][FSP_MAX] = {
 		{{0x5d, 0x5d}, {0x5d, 0x5d} }, {{0x5d, 0x5d}, {0x5d, 0x5d} },
 	};
+	u8 MR13Value;
 	u8 MR14Value[CHANNEL_MAX][RANK_MAX][FSP_MAX] = {
 		{{0x5d, 0x10}, {0x5d, 0x10} }, {{0x5d, 0x10}, {0x5d, 0x10} },
 	};
 
 	u8 MR22Value[FSP_MAX] = {0x38, 0x34};
 
-	MR01Value[FSP_0] &= 0x8F;
-	MR01Value[FSP_1] &= 0x8F;
+	MR01Value[FSP_0] = 0x6;
+	MR01Value[FSP_1] = 0x6;
 
 	if (freq_group == LP4X_DDR1600) {
 		MR02Value[0] = 0x12;
@@ -738,7 +777,7 @@ static void dramc_mode_reg_init(u8 freq_group)
 		MR01Value[FSP_0] |= (0x5 << 4);
 		MR01Value[FSP_1] |= (0x5 << 4);
 	} else if (freq_group == LP4X_DDR3600) {
-		MR02Value[0] = 0x1A;
+		MR02Value[0] = 0x1a;
 		MR02Value[1] = 0x36;
 
 		MR01Value[FSP_0] |= (0x6 << 4);
@@ -799,6 +838,8 @@ static void dramc_mode_reg_init(u8 freq_group)
 			(2 << 0) | (MR02Value[operate_fsp] << 16));
 	}
 
+	mr->MR13Value = MR13Value;
+
 	clrsetbits_le32(&ch[0].ao.mrs, 0x3 << 24, RANK_0 << 24);
 	clrsetbits_le32(&ch[1].ao.mrs, 0x3 << 24, RANK_0 << 24);
 	dramc_set_broadcast(broadcast_bak);
@@ -854,13 +895,9 @@ static void dramc_setting_DDR1600(void)
 			(0x2 << 8) | (0x2 << 12) |
 			(0x1 << 16) | (0x1 << 20) | (0x1 << 24) | (0x1 << 28));
 		clrsetbits_le32(&ch[0].ao.shu[0].rk[rank].selph_dq[2],
-			0x77777777,
-			(0x1 << 0) | (0x1 << 4) | (0x1 << 8) | (0x1 << 12) |
-			(0x7 << 16) | (0x7 << 20) | (0x7 << 24) | (0x7 << 28));
+			0x77777777, _SELPH_DQS_BITS(0x1, 0x7));
 		clrsetbits_le32(&ch[0].ao.shu[0].rk[rank].selph_dq[3],
-			0x77777777,
-			(0x1 << 0) | (0x1 << 4) | (0x1 << 8) | (0x1 << 12) |
-			(0x7 << 16) | (0x7 << 20) | (0x7 << 24) | (0x7 << 28));
+			0x77777777, _SELPH_DQS_BITS(0x1, 0x7));
 	}
 
 	clrsetbits_le32(&ch[0].ao.shu[0].dqsg_retry, (0x1 << 2) | (0xf << 8),
@@ -870,7 +907,7 @@ static void dramc_setting_DDR1600(void)
 	clrsetbits_le32(&ch[0].phy.b[0].dq[7], (0x3 << 4) | (0x1 << 7) | (0x1 << 13),
 			(0x2 << 4) | (0x0 << 7) | (0x0 << 13));
 	clrsetbits_le32(&ch[0].phy.b[1].dq[5], 0x7 << 20, 0x4 << 20);
-	clrbits_le32(&ch[0].phy.b[0].dq[7], (0x1 << 7) | (0x1 << 13));
+	clrbits_le32(&ch[0].phy.b[1].dq[7], (0x1 << 7) | (0x1 << 13));
 
 	for (size_t r = 0; r < 2; r++) {
 		int value = ((r == 0) ? 0x1a : 0x26);
@@ -917,13 +954,9 @@ static void dramc_setting_DDR2400(void)
 			(0x3 << 8) | (0x3 << 12) |
 			(0x3 << 16) | (0x3 << 20) | (0x3 << 24) | (0x3 << 28));
 		clrsetbits_le32(&ch[0].ao.shu[0].rk[rank].selph_dq[2],
-			0x77777777,
-			(0x2 << 0) | (0x2 << 4) | (0x2 << 8) | (0x2 << 12) |
-			(0x0 << 16) | (0x0 << 20) | (0x0 << 24) | (0x0 << 28));
+			0x77777777, _SELPH_DQS_BITS(0x2, 0x0));
 		clrsetbits_le32(&ch[0].ao.shu[0].rk[rank].selph_dq[3],
-			0x77777777,
-			(0x2 << 0) | (0x2 << 4) | (0x2 << 8) | (0x2 << 12) |
-			(0x0 << 16) | (0x0 << 20) | (0x0 << 24) | (0x0 << 28));
+			0x77777777, _SELPH_DQS_BITS(0x2, 0x0));
 	}
 
 	clrsetbits_le32(&ch[0].ao.shu[0].dqsg_retry,
@@ -932,7 +965,7 @@ static void dramc_setting_DDR2400(void)
 	clrsetbits_le32(&ch[0].phy.b[0].dq[7], (0x3 << 4) | (0x1 << 7) | (0x1 << 13),
 		(0x1 << 4) | (0x1 << 7) | (0x1 << 13));
 	clrsetbits_le32(&ch[0].phy.b[1].dq[5], 0x7 << 20, 0x3 << 20);
-	clrsetbits_le32(&ch[0].phy.b[0].dq[7],
+	clrsetbits_le32(&ch[0].phy.b[1].dq[7],
 		(0x1 << 7) | (0x1 << 13), (0x1 << 7) | (0x1 << 13));
 
 	for (size_t r = 0; r < 2; r++) {
@@ -948,7 +981,8 @@ static void dramc_setting_DDR3600(void)
 	clrsetbits_le32(&ch[0].ao.shu[0].selph_dqs1, 0x77777777, SELPH_DQS1_3600);
 }
 
-static void dramc_setting(const struct sdram_params *params, u8 freq_group)
+static void dramc_setting(const struct sdram_params *params, u8 freq_group,
+			  const struct dram_impedance *impedance)
 {
 	u8 chn;
 
@@ -1066,11 +1100,7 @@ static void dramc_setting(const struct sdram_params *params, u8 freq_group)
 
 	for (size_t b = 0; b < 2; b++)
 		setbits_le32(&ch[0].phy.b[b].dq[3], (0x3 << 1) | (0x1 << 10));
-
-	dramc_set_broadcast(DRAMC_BROADCAST_OFF);
 	setbits_le32(&ch[0].phy.shu[0].ca_dll[0], 0x1 << 0);
-	setbits_le32(&ch[1].phy.shu[0].ca_dll[0], 0x1 << 0);
-	dramc_set_broadcast(DRAMC_BROADCAST_ON);
 
 	for (size_t b = 0; b < 2; b++)
 		clrsetbits_le32(&ch[0].phy.shu[0].b[b].dll[0],
@@ -1093,26 +1123,25 @@ static void dramc_setting(const struct sdram_params *params, u8 freq_group)
 		clrsetbits_le32(&ch[0].phy.shu[0].b[b].dq[6], 0xffff << 6, 0x1 << 6);
 
 	dramc_set_broadcast(DRAMC_BROADCAST_OFF);
-	for (size_t chan = 0; chan < 2; chan++)
-		clrsetbits_le32(&ch[chan].phy.misc_shu_opt,
+	for (chn = 0; chn < CHANNEL_MAX; chn++)
+		clrsetbits_le32(&ch[chn].phy.misc_shu_opt,
 			(0x1 << 0) | (0x3 << 2) | (0x1 << 8) |
 			(0x3 << 10) | (0x1 << 16) | (0x3 << 18),
 			(0x1 << 0) | (0x2 << 2) | (0x1 << 8) |
-			(0x2 << 10) | (0x1 << 16) | ((0x1+chan) << 18));
+			(0x2 << 10) | (0x1 << 16) | ((0x1 + chn) << 18));
 
 	udelay(9);
 	clrsetbits_le32(&ch[0].phy.shu[0].ca_dll[1], (0x1 << 0) | (0x1 << 2), 0x1 << 2);
 	clrsetbits_le32(&ch[1].phy.shu[0].ca_dll[1], (0x1 << 0) | (0x1 << 2), 0x1 << 0);
 	dramc_set_broadcast(DRAMC_BROADCAST_ON);
 
-	for (size_t b = 0; b < 2; b++) {
+	for (size_t b = 0; b < 2; b++)
 		clrsetbits_le32(&ch[0].phy.shu[0].b[b].dll[1],
 			(0x1 << 0) | (0x1 << 2), (0x1 << 0) | (0x0 << 2));
-	}
 	udelay(1);
 
 	clrbits_le32(&ch[0].phy.pll2, 0x1 << 31);
-	clrsetbits_le32(&ch[0].phy.misc_cg_ctrl0, 0xffffffff, 0xF);
+	clrsetbits_le32(&ch[0].phy.misc_cg_ctrl0, 0xffffffff, 0xf);
 	udelay(1);
 
 	dramc_set_broadcast(DRAMC_BROADCAST_OFF);
@@ -1168,9 +1197,8 @@ static void dramc_setting(const struct sdram_params *params, u8 freq_group)
 	setbits_le32(&ch[0].phy.misc_ctrl0,
 		(0xf << 0) | (0x1 << 9) | (0x1 << 24) | (0x1 << 31));
 
-	for (chn = 0; chn < CHANNEL_MAX; chn++)
-		setbits_le32(&ch[chn].phy.misc_ctrl1,
-			 (0x1 << 2) | (0x1 << 3) | (0x1 << 15) | (0x1 << 24));
+	setbits_le32(&ch[0].phy.misc_ctrl1,
+		 (0x1 << 2) | (0x1 << 3) | (0x1 << 15) | (0x1 << 24));
 	clrsetbits_le32(&ch[0].phy.b0_rxdvs[0], 0x1 << 24, 0x1 << 24);
 	clrsetbits_le32(&ch[0].phy.b1_rxdvs[0], 0x1 << 24, 0x1 << 24);
 	clrsetbits_le32(&ch[0].phy.ca_rxdvs0, 0x1 << 24, 0x0 << 24);
@@ -1208,21 +1236,13 @@ static void dramc_setting(const struct sdram_params *params, u8 freq_group)
 
 	for (size_t rank = 0; rank < 2; rank++) {
 		clrsetbits_le32(&ch[0].ao.shu[0].rk[rank].selph_dq[0],
-			0x77777777,
-			(0x3 << 0) | (0x3 << 4) | (0x3 << 8) | (0x3 << 12) |
-			(0x3 << 16) | (0x3 << 20) | (0x3 << 24) | (0x3 << 28));
+			0x77777777, _SELPH_DQS_BITS(0x3, 0x3));
 		clrsetbits_le32(&ch[0].ao.shu[0].rk[rank].selph_dq[1],
-			0x77777777,
-			(0x3 << 0) | (0x3 << 4) | (0x3 << 8) | (0x3 << 12) |
-			(0x3 << 16) | (0x3 << 20) | (0x3 << 24) | (0x3 << 28));
+			0x77777777, _SELPH_DQS_BITS(0x3, 0x3));
 		clrsetbits_le32(&ch[0].ao.shu[0].rk[rank].selph_dq[2],
-			0x77777777,
-			(0x6 << 0) | (0x6 << 4) | (0x6 << 8) | (0x6 << 12) |
-			(0x2 << 16) | (0x2 << 20) | (0x2 << 24) | (0x2 << 28));
+			0x77777777, _SELPH_DQS_BITS(0x6, 0x2));
 		clrsetbits_le32(&ch[0].ao.shu[0].rk[rank].selph_dq[3],
-			0x77777777,
-			(0x6 << 0) | (0x6 << 4) | (0x6 << 8) | (0x6 << 12) |
-			(0x2 << 16) | (0x2 << 20) | (0x2 << 24) | (0x2 << 28));
+			0x77777777, _SELPH_DQS_BITS(0x6, 0x2));
 	}
 
 	for (int b = 0; b < 2; b++) {
@@ -1285,6 +1305,8 @@ static void dramc_setting(const struct sdram_params *params, u8 freq_group)
 	setbits_le32(&ch[0].ao.dramc_pd_ctrl, 0x1 << 0);
 	clrsetbits_le32(&ch[0].ao.eyescan, (0x1 << 1) | (0xf << 16), (0x0 << 1) | (0x1 << 16));
 	setbits_le32(&ch[0].ao.stbcal1, (0x1 << 10) | (0x1 << 11));
+	clrsetbits_le32(&ch[0].ao.test2_1, 0xfffffff << 4, 0x10000 << 4);
+	clrsetbits_le32(&ch[0].ao.test2_2, 0xfffffff << 4, 0x400 << 4);
 	clrsetbits_le32(&ch[0].ao.test2_3,
 		(0x1 << 7) | (0x7 << 8) | (0x1 << 28),
 		(0x1 << 7) | (0x4 << 8) | (0x1 << 28));
@@ -1294,15 +1316,14 @@ static void dramc_setting(const struct sdram_params *params, u8 freq_group)
 	udelay(1);
 	clrsetbits_le32(&ch[0].ao.hw_mrr_fun, (0xf << 0) | (0xf << 4), (0x8 << 0) | (0x6 << 4));
 
+	clrbits_le32(&ch[0].ao.dramctrl, 0x1 << 0);
 	clrsetbits_le32(&ch[0].ao.perfctl0,
 		(0x1 << 18) | (0x1 << 19), (0x0 << 18) | (0x1 << 19));
+	setbits_le32(&ch[0].ao.spcmdctrl, 0x1 << 28);
 	clrbits_le32(&ch[0].ao.rstmask, 0x1 << 28);
 	setbits_le32(&ch[0].ao.rkcfg, 0x1 << 11);
-	setbits_le32(&ch[0].ao.spcmdctrl, 0x1 << 28);
-	setbits_le32(&ch[0].ao.eyescan, 0x1 << 2);
-
-	clrbits_le32(&ch[0].ao.dramctrl, 0x1 << 0);
 	setbits_le32(&ch[0].ao.mpc_option, 0x1 << 17);
+	setbits_le32(&ch[0].ao.eyescan, 0x1 << 2);
 	setbits_le32(&ch[0].ao.shu[0].wodt, 0x1 << 29);
 	setbits_le32(&ch[0].phy.shu[0].b[0].dq[7], 0x1 << 7);
 	setbits_le32(&ch[0].phy.shu[0].b[1].dq[7], 0x1 << 7);
@@ -1332,7 +1353,7 @@ static void dramc_setting(const struct sdram_params *params, u8 freq_group)
 	clrsetbits_le32(&ch[0].ao.shu[0].stbcal, 0x7 << 4, 0x1 << 4);
 
 	if (freq_group == LP4X_DDR1600)
-		clrsetbits_le32(&ch[0].ao.shu[0].stbcal, 0x3 << 0,  (0x0 << 0));
+		clrsetbits_le32(&ch[0].ao.shu[0].stbcal, 0x3 << 0, 0x0 << 0);
 	else
 		clrsetbits_le32(&ch[0].ao.shu[0].stbcal, 0x3 << 0, 0x2 << 0);
 	setbits_le32(&ch[0].ao.refctrl1, (0x1 << 0) | (0x1 << 5));
@@ -1381,11 +1402,10 @@ static void dramc_setting(const struct sdram_params *params, u8 freq_group)
 	default:
 		die("Invalid DDR frequency group %u\n", freq_group);
 		return;
-	break;
 	}
 
 	update_initial_settings(freq_group);
-	dramc_sw_impedance_save_reg(freq_group);
+	dramc_sw_impedance_save_reg(freq_group, impedance);
 
 	clrbits_le32(&ch[0].ao.test2_4, 0x1 << 17);
 	clrsetbits_le32(&ch[0].ao.shu[0].conf[3], 0x1ff << 0, 0x5 << 0);
@@ -1711,12 +1731,14 @@ static void ddr_update_ac_timing(u8 freq_group)
 	clrsetbits_le32(&ch[0].ao.arbctl, 0x1 << 13, dram_cbt_mode);
 }
 
-void dramc_init(const struct sdram_params *params, u8 freq_group)
+void dramc_init(const struct sdram_params *params, u8 freq_group,
+		struct dram_shared_data *shared)
 {
-	dramc_setting(params, freq_group);
+	dramc_setting(params, freq_group, &shared->impedance);
 
 	dramc_duty_calibration(params, freq_group);
+	dvfs_settings(freq_group);
 
-	dramc_mode_reg_init(freq_group);
+	dramc_mode_reg_init(freq_group, &shared->mr);
 	ddr_update_ac_timing(freq_group);
 }

@@ -18,10 +18,22 @@ DefinitionBlock ("DSDT.aml", "DSDT", 1, OEM_ID, ACPI_TABLE_CREATOR, 100925440)
 
 //	Scope (_PR)
 //	{
-//		Processor (CPU0, 0x00, 0x0000C010, 0x06) {}
-//		Processor (CPU1, 0x01, 0x00000000, 0x00) {}
-//		Processor (CPU2, 0x02, 0x00000000, 0x00) {}
-//		Processor (CPU3, 0x03, 0x00000000, 0x00) {}
+//		Device (CPU0) {
+//		Name (_HID, "ACPI0007")
+//		Name (_UID, 0)
+//		}
+//		Device (CPU1) {
+//		Name (_HID, "ACPI0007")
+//		Name (_UID, 1)
+//		}
+//		Device (CPU2) {
+//		Name (_HID, "ACPI0007")
+//		Name (_UID, 2)
+//		}
+//		Device (CPU3) {
+//		Name (_HID, "ACPI0007")
+//		Name (_UID, 3)
+//		}
 //	}
 
 	Method (FWSO, 0, NotSerialized) { }
@@ -46,7 +58,6 @@ DefinitionBlock ("DSDT.aml", "DSDT", 1, OEM_ID, ACPI_TABLE_CREATOR, 100925440)
 			External (CBB2)
 
 			Name (_HID, EisaId ("PNP0A03"))
-			Name (_ADR, 0x00000000)
 			Name (_UID, 0x01)
 
 			Name (HCIN, 0x00)  // HC1
@@ -118,7 +129,6 @@ DefinitionBlock ("DSDT.aml", "DSDT", 1, OEM_ID, ACPI_TABLE_CREATOR, 100925440)
 		Device (PCI1)
 		{
 			Name (_HID, "PNP0A03")
-			Name (_ADR, 0x00000000)
 			Name (_UID, 0x02)
 			Method (_STA, 0, NotSerialized)
 			{
@@ -133,7 +143,6 @@ DefinitionBlock ("DSDT.aml", "DSDT", 1, OEM_ID, ACPI_TABLE_CREATOR, 100925440)
 		Device (PCI2)
 		{
 			Name (_HID, "PNP0A03")
-			Name (_ADR, 0x00000000)
 			Name (_UID, 0x02)
 			Method (_STA, 0, NotSerialized)
 			{

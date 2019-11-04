@@ -1,9 +1,6 @@
 /*
  * This file is part of the coreboot project.
  *
- * Copyright (C) 2003 Eric Biederman
- * Copyright (C) 2006-2010 coresystems GmbH
- *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; version 2 of the License.
@@ -91,7 +88,7 @@ static unsigned char uart8250_mem_rx_byte(void *base)
 		return 0x0;
 }
 
-static void uart8250_mem_init(void *base, unsigned divisor)
+static void uart8250_mem_init(void *base, unsigned int divisor)
 {
 	/* Disable interrupts */
 	uart8250_write(base, UART8250_IER, 0x0);

@@ -17,12 +17,11 @@
 #include <device/pci_ops.h>
 #include <arch/romstage.h>
 #include <cbmem.h>
-#include <console/console.h>
 #include <cpu/x86/mtrr.h>
 #include <program_loading.h>
 #include "e7505.h"
 
-void *cbmem_top(void)
+void *cbmem_top_chipset(void)
 {
 	pci_devfn_t mch = PCI_DEV(0, 0, 0);
 	uintptr_t tolm;

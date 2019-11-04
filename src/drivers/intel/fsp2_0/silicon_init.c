@@ -1,13 +1,15 @@
 /*
  * This file is part of the coreboot project.
  *
- * Copyright (C) 2015-2016 Intel Corp.
- * (Written by Andrey Petrov <andrey.petrov@intel.com> for Intel Corp.)
- *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  */
 
 #include <cbfs.h>
@@ -70,15 +72,12 @@ static void do_silicon_init(struct fsp_header *hdr)
 	/* Handle any errors returned by FspSiliconInit */
 	fsp_handle_reset(status);
 	if (status != FSP_SUCCESS) {
-		if (vbt_get()) {
-			/* Attempted to initialize graphics. Assume failure
-			 * is related to a video failure.
-			 */
+		/* Assume video failure if attempted to initialize graphics */
+		if (CONFIG(RUN_FSP_GOP) && vbt_get())
 			postcode = POST_VIDEO_FAILURE;
-		} else {
-			/* Other silicon initialization failed */
-			postcode = POST_HW_INIT_FAILURE;
-		}
+		else
+			postcode = POST_HW_INIT_FAILURE; /* else generic */
+
 		printk(BIOS_SPEW, "FspSiliconInit returned 0x%08x\n", status);
 		die_with_post_code(postcode,
 			"FspSiliconInit returned an error!\n");

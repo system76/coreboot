@@ -26,7 +26,6 @@
 #include <device/pci_ops.h>
 #include <arch/ioapic.h>
 #include <arch/acpi.h>
-#include <cpu/cpu.h>
 #include <cpu/x86/smm.h>
 #include <cbmem.h>
 #include <reg_script.h>
@@ -634,7 +633,7 @@ static struct device_operations device_ops = {
 	.acpi_inject_dsdt_generator = southcluster_inject_dsdt,
 	.write_acpi_tables      = broadwell_write_acpi_tables,
 	.init			= &lpc_init,
-	.scan_bus		= &scan_lpc_bus,
+	.scan_bus		= &scan_static_bus,
 	.ops_pci		= &broadwell_pci_ops,
 };
 

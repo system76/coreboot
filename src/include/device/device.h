@@ -94,6 +94,7 @@ struct bus {
 	unsigned int	reset_needed : 1;
 	unsigned int	disable_relaxed_ordering : 1;
 	unsigned int	ht_link_up : 1;
+	unsigned int	no_vga16 : 1;	/* No support for 16-bit VGA decoding */
 };
 
 /*
@@ -327,11 +328,10 @@ static inline DEVTREE_CONST void *config_of_soc(void)
 	return config_of(pcidev_on_root(0, 0));
 }
 
+void enable_static_devices(struct device *bus);
 void scan_smbus(struct device *bus);
 void scan_generic_bus(struct device *bus);
 void scan_static_bus(struct device *bus);
-void scan_lpc_bus(struct device *bus);
-void scan_usb_bus(struct device *bus);
 
 #endif /* !defined(__ROMCC__) */
 

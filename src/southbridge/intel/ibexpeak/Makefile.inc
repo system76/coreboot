@@ -15,7 +15,9 @@
 
 ifeq ($(CONFIG_SOUTHBRIDGE_INTEL_IBEXPEAK),y)
 
-ramstage-y += ../bd82x6x/pch.c
+bootblock-y += bootblock.c
+
+ramstage-y += pch.c
 ramstage-y += azalia.c
 ramstage-y += lpc.c
 ramstage-y += ../bd82x6x/pci.c
@@ -35,12 +37,15 @@ ramstage-y += ../bd82x6x/me_status.c
 ramstage-$(CONFIG_ELOG) += ../bd82x6x/elog.c
 ramstage-y += madt.c
 
-smm-y += smihandler.c me.c ../bd82x6x/me_8.x.c ../bd82x6x/pch.c
+smm-y += smihandler.c me.c ../bd82x6x/me_8.x.c
 
+romstage-y += early_pch.c
 romstage-y += early_smbus.c
 romstage-y +=../bd82x6x/early_me.c
 romstage-y +=../bd82x6x/me_status.c
 romstage-y += early_thermal.c
 romstage-y += ../bd82x6x/early_rcba.c
+romstage-y += early_cir.c
+romstage-y += early_usb.c
 
 endif

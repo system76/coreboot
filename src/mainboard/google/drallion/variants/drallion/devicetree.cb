@@ -322,13 +322,15 @@ chip soc/intel/cannonlake
 				register "generic.desc" = ""Wacom Touchscreen""
 				register "generic.irq" = "ACPI_IRQ_LEVEL_LOW(GPP_C23_IRQ)"
 				register "generic.probed" = "1"
-				register "generic.reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_E7)"
-				register "generic.reset_delay_ms" = "20"
+				register "generic.stop_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_E7)"
+				register "generic.stop_delay_ms" = "20"
 				register "generic.enable_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_B21)"
 				register "generic.enable_delay_ms" = "55"
 				register "generic.has_power_resource" = "1"
 				register "generic.disable_gpio_export_in_crs" = "1"
 				register "hid_desc_reg_offset" = "0x1"
+				register "generic.device_present_gpio" = "GPP_B4"
+				register "generic.device_present_gpio_invert" = "1"
 				device i2c 0A on end
 			end
 			chip drivers/i2c/hid
@@ -336,9 +338,9 @@ chip soc/intel/cannonlake
 				register "generic.desc" = ""ELAN Touchscreen""
 				register "generic.irq" = "ACPI_IRQ_EDGE_LOW(GPP_C23_IRQ)"
 				register "generic.probed" = "1"
-				register "generic.reset_gpio" =
+				register "generic.stop_gpio" =
 							"ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_E7)"
-				register "generic.reset_delay_ms" = "10"
+				register "generic.stop_delay_ms" = "10"
 				register "generic.enable_gpio" =
 							"ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_B21)"
 				register "generic.enable_delay_ms" = "55"
@@ -353,8 +355,8 @@ chip soc/intel/cannonlake
 				register "desc" = ""Melfas Touchscreen""
 				register "irq" = "ACPI_IRQ_EDGE_LOW(GPP_C23_IRQ)"
 				register "probed" = "1"
-				register "reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_E7)"
-				register "reset_delay_ms" = "10"
+				register "stop_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_E7)"
+				register "stop_delay_ms" = "10"
 				register "enable_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_B21)"
 				register "enable_delay_ms" = "55"
 				register "has_power_resource" = "1"
@@ -370,6 +372,13 @@ chip soc/intel/cannonlake
 				register "irq" = "ACPI_IRQ_EDGE_LOW(GPP_B3_IRQ)"
 				register "probed" = "1"
 				device i2c 2c on end
+			end
+			chip drivers/i2c/generic
+				register "hid" = ""ELAN0000""
+				register "desc" = ""ELAN Touchpad""
+				register "irq" = "ACPI_IRQ_EDGE_LOW(GPP_B3_IRQ)"
+				register "probed" = "1"
+				device i2c 15 on end
 			end
 		end # I2C #1
 		device pci 15.2 off end # I2C #2

@@ -1,8 +1,6 @@
 /*
  * This file is part of the coreboot project.
  *
- * Copyright (C) 2014 Vladimir Serbinenko
- *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
  * published by the Free Software Foundation; version 2 of
@@ -70,4 +68,8 @@ static const struct pci_driver rce822 __pci_driver = {
 	.ops	 = &rce822_ops,
 	.vendor	 = PCI_VENDOR_ID_RICOH,
 	.devices = pci_device_ids,
+};
+
+struct chip_operations drivers_ricoh_rce822_ops = {
+	CHIP_NAME("RICOH RCE822")
 };

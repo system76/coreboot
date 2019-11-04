@@ -1,14 +1,15 @@
 /*
  * This file is part of the coreboot project.
  *
- * Copyright (C) 2015-2016 Intel Corp.
- * (Written by Andrey Petrov <andrey.petrov@intel.com> for Intel Corp.)
- * (Written by Alexandru Gagniuc <alexandrux.gagniuc@intel.com> for Intel Corp.)
- *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  */
 
 #include <security/vboot/antirollback.h>
@@ -73,8 +74,7 @@ static void do_fsp_post_memory_init(bool s3wake, uint32_t fsp_version)
 {
 	struct range_entry fsp_mem;
 
-	if (fsp_find_reserved_memory(&fsp_mem))
-		die("Failed to find FSP_RESERVED_MEMORY_RESOURCE_HOB!\n");
+	fsp_find_reserved_memory(&fsp_mem);
 
 	/* initialize cbmem by adding FSP reserved memory first thing */
 	if (!s3wake) {
@@ -390,7 +390,7 @@ void fsp_memory_init(bool s3wake)
 	struct region_device file_data;
 	const char *name = CONFIG_FSP_M_CBFS;
 	struct memranges memmap;
-	struct range_entry freeranges[2];
+	struct range_entry prog_ranges[2];
 
 	elog_boot_notify(s3wake);
 
@@ -402,9 +402,10 @@ void fsp_memory_init(bool s3wake)
 	cbfs_file_data(&file_data, &file_desc);
 
 	/* Build up memory map of romstage address space including CAR. */
-	memranges_init_empty(&memmap, &freeranges[0], ARRAY_SIZE(freeranges));
-	memranges_insert(&memmap, (uintptr_t)_car_region_start,
-		_car_unallocated_start - _car_region_start, 0);
+	memranges_init_empty(&memmap, &prog_ranges[0], ARRAY_SIZE(prog_ranges));
+	if (ENV_CACHE_AS_RAM)
+		memranges_insert(&memmap, (uintptr_t)_car_region_start,
+			_car_unallocated_start - _car_region_start, 0);
 	memranges_insert(&memmap, (uintptr_t)_program, REGION_SIZE(program), 0);
 
 	if (!CONFIG(FSP_M_XIP))

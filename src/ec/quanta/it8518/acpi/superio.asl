@@ -19,13 +19,11 @@ Device (SIO)
 {
 	Name (_HID, EisaId("PNP0A05"))
 	Name (_UID, 0)
-	Name (_ADR, 0)
 
 #ifdef SIO_EC_ENABLE_PS2K
 	Device (PS2K)		// Keyboard
 	{
 		Name (_UID, 0)
-		Name (_ADR, 0)
 		Name (_HID, EISAID("PNP0303"))
 		Name (_CID, EISAID("PNP030B"))
 

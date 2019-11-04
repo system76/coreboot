@@ -1,12 +1,15 @@
 /*
  * This file is part of the coreboot project.
  *
- * Copyright (C) 2016 Intel Corp.
- *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  */
 
 #ifndef _FSP2_0_DEBUG_H_
@@ -56,7 +59,6 @@ void fsp_print_resource_descriptor(const void *base);
 const char *fsp_get_hob_type_name(const struct hob_header *hob);
 const char *fsp_get_guid_name(const uint8_t *guid);
 void fsp_print_guid_extension_hob(const struct hob_header *hob);
-int fsp_find_bootloader_tolum(struct range_entry *re);
 
 /*
  * Writes number_of_bytes data bytes from buffer to the console.

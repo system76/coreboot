@@ -1,8 +1,6 @@
 #
 # This file is part of the coreboot project.
 #
-# Copyright (C) 2014 Sage Electronic Engineering, LLC.
-#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; version 2 of the License.
@@ -30,7 +28,7 @@ cbfs-files-y += fsp.bin
 fsp.bin-file := $(call strip_quotes,$(CONFIG_FSP_FILE))
 fsp.bin-position := $(CONFIG_FSP_LOC)
 fsp.bin-type := fsp
-fsp.bin-options := --xip
+fsp.bin-options := --xip $(TXTIBB)
 endif
 
 ifeq ($(CONFIG_ENABLE_MRC_CACHE),y)

@@ -12,6 +12,7 @@
  */
 
 #include <cpu/x86/post_code.h>
+#include <arch/ram_segs.h>
 
 /* Place the stack in the bss section. It's not necessary to define it in the
  * the linker script. */
@@ -42,22 +43,30 @@ _start:
 	cli
 	lgdt	%cs:gdtaddr
 #ifndef __x86_64__
-	ljmp	$0x10, $1f
+	ljmp	$RAM_CODE_SEG, $1f
 #endif
-1:	movl	$0x18, %eax
+1:	movl	$RAM_DATA_SEG, %eax
 	movl	%eax, %ds
 	movl	%eax, %es
 	movl	%eax, %ss
 	movl	%eax, %fs
 	movl	%eax, %gs
 #ifdef __x86_64__
-	mov	$0x48, %ecx
+	mov	$RAM_CODE_SEG64, %ecx
 	call	SetCodeSelector
 #endif
 
 	post_code(POST_ENTRY_C_START)		/* post 13 */
 
 	cld
+
+#ifdef	__x86_64__
+	mov	%rdi, _cbmem_top_ptr
+#else
+	/* The return argument is at 0(%esp), the calling argument at 4(%esp) */
+	movl	4(%esp), %eax
+	movl	%eax, _cbmem_top_ptr
+#endif
 
 	/** poison the stack. Code should not count on the
 	 * stack being full of zeros. This stack poisoning

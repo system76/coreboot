@@ -24,7 +24,7 @@ DefinitionBlock(
 	0x20110725	// OEM revision
 )
 {
-	#include <southbridge/intel/bd82x6x/acpi/platform.asl>
+	#include <southbridge/intel/common/acpi/platform.asl>
 
 	// Some generic macros
 	#include "acpi/platform.asl"
@@ -52,5 +52,5 @@ DefinitionBlock(
 	}
 
 	/* Chipset specific sleep states */
-	#include <southbridge/intel/bd82x6x/acpi/sleepstates.asl>
+	#include <southbridge/intel/common/acpi/sleepstates.asl>
 }

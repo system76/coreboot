@@ -59,7 +59,7 @@ static const struct pad_config gpio_table[] = {
 	/* A22 : FPMCU_PCH_BOOT0 */
 	PAD_CFG_GPO(GPP_A22, 0, DEEP),
 	/* A23 : FPMCU_PCH_INT_ODL */
-	PAD_CFG_GPI_APIC(GPP_A23, NONE, PLTRST, LEVEL, INVERT),
+	PAD_CFG_GPI_IRQ_WAKE(GPP_A23, NONE, PLTRST, LEVEL, INVERT),
 
 	/* B0  : CORE_VID0 */
 	PAD_CFG_NF(GPP_B0, NONE, DEEP, NF1),
@@ -439,6 +439,13 @@ const struct cros_gpio *__weak variant_cros_gpios(size_t *num)
 
 /* Weak implementation of overrides */
 const struct pad_config *__weak override_gpio_table(size_t *num)
+{
+	*num = 0;
+	return NULL;
+}
+
+/* Weak implementation of early gpio */
+const struct pad_config *__weak variant_early_gpio_table(size_t *num)
 {
 	*num = 0;
 	return NULL;

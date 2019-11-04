@@ -15,6 +15,8 @@
 
 ifeq ($(CONFIG_NORTHBRIDGE_INTEL_NEHALEM),y)
 
+bootblock-y += bootblock.c
+
 ramstage-y += memmap.c
 ramstage-y += northbridge.c
 ramstage-y += smi.c
@@ -26,7 +28,7 @@ romstage-y += memmap.c
 romstage-y += raminit.c
 romstage-y += raminit_tables.c
 romstage-y += early_init.c
-romstage-y += ../../../arch/x86/walkcbfs.S
+romstage-y += romstage.c
 
 smm-y += finalize.c
 

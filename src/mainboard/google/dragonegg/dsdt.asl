@@ -30,7 +30,7 @@ DefinitionBlock(
 	#include <soc/intel/icelake/acpi/platform.asl>
 
 	// global NVS and variables
-	#include <soc/intel/icelake/acpi/globalnvs.asl>
+	#include <soc/intel/common/block/acpi/acpi/globalnvs.asl>
 
 	// CPU
 	#include <cpu/intel/common/acpi/cpu.asl>
@@ -49,7 +49,7 @@ DefinitionBlock(
 #endif
 
 	// Chipset specific sleep states
-	#include <soc/intel/icelake/acpi/sleepstates.asl>
+	#include <southbridge/intel/common/acpi/sleepstates.asl>
 
 	/* Chrome OS Embedded Controller */
 	Scope (\_SB.PCI0.LPCB)

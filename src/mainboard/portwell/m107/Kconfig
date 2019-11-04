@@ -41,6 +41,12 @@ config ONBOARD_MEM_MICRON
 	bool "Micron"
 	help
 	  Micron MT41K512M16HA memory
+
+config ONBOARD_MEM_KINGSTON
+	bool "Kingston"
+	help
+	  Kingston B5116ECMDXGGB memory
+
 endchoice
 
 config MAINBOARD_DIR
@@ -73,14 +79,6 @@ config FSP_LOC
 	hex
 	default 0xfff9c000
 
-config BOOTBLOCK_LOC
-	hex
-	default 0xFFFF0000
-
-config BOOTBLOCK_SIZE
-	hex
-	default 0x10000
-
 config SPI_FLASH_INCLUDE_ALL_DRIVERS
 	bool
 	default n
@@ -92,9 +90,5 @@ config SPI_FLASH_WINBOND
 config C_ENV_BOOTBLOCK_SIZE
 	hex "C Bootblock Size"
 	default 0x4000
-
-config DRIVERS_INTEL_WIFI
-	bool
-	default n
 
 endif # BOARD_PORTWELL_M107

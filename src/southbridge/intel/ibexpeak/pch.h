@@ -51,24 +51,46 @@
 #ifndef __ACPI__
 #define DEBUG_PERIODIC_SMIS 0
 
-int pch_silicon_revision(void);
-int pch_silicon_type(void);
-int pch_silicon_supported(int type, int rev);
 void pch_iobp_update(u32 address, u32 andvalue, u32 orvalue);
 void enable_smbus(void);
 void enable_usb_bar(void);
 
 #if ENV_ROMSTAGE
-int smbus_read_byte(unsigned device, unsigned address);
-int smbus_write_byte(unsigned device, unsigned address, u8 data);
-int smbus_block_read(unsigned device, unsigned cmd, u8 bytes, u8 *buf);
-int smbus_block_write(unsigned device, unsigned cmd, u8 bytes, const u8 *buf);
+int smbus_read_byte(unsigned int device, unsigned int address);
+int smbus_write_byte(unsigned int device, unsigned int address, u8 data);
+int smbus_block_read(unsigned int device, unsigned int cmd, u8 bytes, u8 *buf);
+int smbus_block_write(unsigned int device, unsigned int cmd, u8 bytes, const u8 *buf);
 #endif
+
+void early_pch_init(void);
 
 void early_thermal_init(void);
 void southbridge_configure_default_intmap(void);
+void pch_setup_cir(int chipset_type);
+
+enum current_lookup_idx {
+	IF1_F57 = 0,
+	IF1_F5F,
+	IF1_753,
+	IF1_75F,
+	IF1_14B,
+	IF1_74B,
+	IF1_557,
+	IF1_757,
+	IF1_55F,
+	IF1_54B,
+};
+
+struct southbridge_usb_port {
+	int enabled;
+	enum current_lookup_idx current;
+	int oc_pin;
+};
+
+void early_usb_init(const struct southbridge_usb_port *portmap);
 
 #ifndef __ROMCC__
+extern const struct southbridge_usb_port mainboard_usb_ports[14];
 #include <device/device.h>
 void pch_enable(struct device *dev);
 #endif
@@ -76,6 +98,10 @@ void pch_enable(struct device *dev);
 #define MAINBOARD_POWER_OFF	0
 #define MAINBOARD_POWER_ON	1
 #define MAINBOARD_POWER_KEEP	2
+
+/* PM I/O Space */
+#define UPRWC			0x3c
+#define  UPRWC_WR_EN		(1 << 1) /* USB Per-Port Registers Write Enable */
 
 /* PCI Configuration Space (D30:F0): PCI2PCI */
 #define PSTS	0x06
@@ -99,6 +125,9 @@ void pch_enable(struct device *dev);
 #define ETR3			0xac
 #define  ETR3_CWORWRE		(1 << 18)
 #define  ETR3_CF9GR		(1 << 20)
+
+#define CIR4			0xa9
+#define PMIR			0xac
 
 /* GEN_PMCON_3 bits */
 #define RTC_BATTERY_DEAD	(1 << 2)
@@ -349,6 +378,21 @@ void pch_enable(struct device *dev);
 #define SOFT_RESET_DATA 0x38f8
 
 #define PRSTS		0x3310
+#define CIR6		0x2024
+#define CIR7		0x3314
+#define CIR8		0x3324
+#define CIR9		0x3330
+#define CIR10		0x3340
+#define CIR13		0x3350
+#define CIR14		0x3368
+#define CIR15		0x3378
+#define CIR16		0x3388
+#define CIR17		0x33a0
+#define CIR18		0x33a8
+#define CIR19		0x33c0
+#define CIR20		0x33cc
+#define CIR21		0x33d0
+#define CIR22		0x33d4
 
 #define DIR_ROUTE(x,a,b,c,d) \
   RCBA32(x) = (((d) << DIR_IDR) | ((c) << DIR_ICR) | \
@@ -384,6 +428,36 @@ void pch_enable(struct device *dev);
 #define PCH_DISABLE_MEI2	(1 << 2)
 #define PCH_DISABLE_MEI1	(1 << 1)
 #define PCH_ENABLE_DBDF		(1 << 0)
+
+/* USB Initialization Registers[13:0] */
+#define USBIR0		0x3500	/* 32bit */
+#define USBIR1		0x3504	/* 32bit */
+#define USBIR2		0x3508	/* 32bit */
+#define USBIR3		0x350c	/* 32bit */
+#define USBIR4		0x3510	/* 32bit */
+#define USBIR5		0x3514	/* 32bit */
+#define USBIR6		0x3518	/* 32bit */
+#define USBIR7		0x351c	/* 32bit */
+#define USBIR8		0x3520	/* 32bit */
+#define USBIR9		0x3524	/* 32bit */
+#define USBIR10		0x3528	/* 32bit */
+#define USBIR11		0x352c	/* 32bit */
+#define USBIR12		0x3530	/* 32bit */
+#define USBIR13		0x3534	/* 32bit */
+
+#define USBIRC		0x3564	/* 32bit */
+#define USBIRA		0x3570	/* 32bit */
+#define USBIRB		0x357c	/* 32bit */
+
+/* Miscellaneous Control Register */
+#define MISCCTL		0x3590	/* 32bit */
+/* USB Port Disable Override */
+#define USBPDO		0x359c	/* 32bit */
+/* USB Overcurrent MAP Register */
+#define USBOCM1		0x35a0	/* 32bit */
+#define USBOCM2		0x35a4	/* 32bit */
+/* Rate Matching Hub Wake Control Register */
+#define RMHWKCTL	0x35b0	/* 32bit */
 
 /* ICH7 PMBASE */
 #define PM1_STS		0x00

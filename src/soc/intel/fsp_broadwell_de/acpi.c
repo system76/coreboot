@@ -114,36 +114,6 @@ static int acpi_sci_irq(void)
 	return sci_irq;
 }
 
-void acpi_create_intel_hpet(acpi_hpet_t *hpet)
-{
-	acpi_header_t *header = &(hpet->header);
-	acpi_addr_t *addr = &(hpet->addr);
-
-	memset((void *) hpet, 0, sizeof(acpi_hpet_t));
-
-	/* fill out header fields */
-	memcpy(header->signature, "HPET", 4);
-	memcpy(header->oem_id, OEM_ID, 6);
-	memcpy(header->oem_table_id, ACPI_TABLE_CREATOR, 8);
-	memcpy(header->asl_compiler_id, ASLC, 4);
-
-	header->length = sizeof(acpi_hpet_t);
-	header->revision = get_acpi_table_revision(HPET);
-
-	/* fill out HPET address */
-	addr->space_id   = 0;	/* Memory */
-	addr->bit_width  = 64;
-	addr->bit_offset = 0;
-	addr->addrl      = (unsigned long long)HPET_BASE_ADDRESS & 0xffffffff;
-	addr->addrh      = (unsigned long long)HPET_BASE_ADDRESS >> 32;
-
-	hpet->id         = 0x8086a201;	/* Intel */
-	hpet->number     = 0x00;
-	hpet->min_tick   = 0x0080;
-
-	header->checksum = acpi_checksum((void *) hpet, sizeof(acpi_hpet_t));
-}
-
 unsigned long acpi_fill_mcfg(unsigned long current)
 {
 	current += acpi_create_mcfg_mmconfig((acpi_mcfg_mmconfig_t *)current,
@@ -316,7 +286,7 @@ void acpi_fill_in_fadt(acpi_fadt_t *fadt, acpi_facs_t *facs, void *dsdt)
 static unsigned long acpi_fill_dmar(unsigned long current)
 {
 	uint32_t vtbar, tmp = current;
-	struct device *dev = pcidev_path_on_root(VTD_DEV_FUNC);
+	struct device *dev = pcidev_path_on_root(IIO_DEVFN_VTD);
 	uint16_t bdf, hpet_bdf[8];
 	uint8_t i, j;
 
@@ -333,7 +303,7 @@ static unsigned long acpi_fill_dmar(unsigned long current)
 	current += acpi_create_dmar_ds_ioapic(current,
 			9, 0, 5, 4);
 	/* Get the PCI BDF for the PCH I/O APIC */
-	dev = pcidev_path_on_root(LPC_DEV_FUNC);
+	dev = pcidev_path_on_root(PCH_DEVFN_LPC);
 	bdf = pci_read_config16(dev, 0x6c);
 	current += acpi_create_dmar_ds_ioapic(current,
 			8, (bdf >> 8), PCI_SLOT(bdf), PCI_FUNC(bdf));

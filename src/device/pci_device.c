@@ -345,7 +345,7 @@ static void pci_read_bases(struct device *dev, unsigned int howmany)
 }
 
 static void pci_record_bridge_resource(struct device *dev, resource_t moving,
-				       unsigned index, unsigned long type)
+				       unsigned int index, unsigned long type)
 {
 	struct resource *resource;
 	unsigned long gran;
@@ -679,9 +679,14 @@ void pci_dev_set_subsystem(struct device *dev, unsigned int vendor,
 	}
 }
 
-static int should_run_oprom(struct device *dev)
+static int should_run_oprom(struct device *dev, struct rom_header *rom)
 {
 	static int should_run = -1;
+
+	if (CONFIG(VENDORCODE_ELTAN_VBOOT))
+		if (rom != NULL)
+			if (!verified_boot_should_run_oprom(rom))
+				return 0;
 
 	if (should_run >= 0)
 		return should_run;
@@ -711,7 +716,7 @@ static int should_load_oprom(struct device *dev)
 		return 0;
 	if (CONFIG(ALWAYS_LOAD_OPROM))
 		return 1;
-	if (should_run_oprom(dev))
+	if (should_run_oprom(dev, NULL))
 		return 1;
 
 	return 0;
@@ -742,7 +747,7 @@ void pci_dev_init(struct device *dev)
 		return;
 	timestamp_add_now(TS_OPROM_COPY_END);
 
-	if (!should_run_oprom(dev))
+	if (!should_run_oprom(dev, rom))
 		return;
 
 	run_bios(dev, (unsigned long)ram);
@@ -786,6 +791,43 @@ struct device_operations default_pci_ops_bus = {
 	.reset_bus        = pci_bus_reset,
 	.ops_pci          = &pci_bus_ops_pci,
 };
+
+/**
+ * Check for compatibility to route legacy VGA cycles through a bridge.
+ *
+ * Originally, when decoding i/o ports for legacy VGA cycles, bridges
+ * should only consider the 10 least significant bits of the port address.
+ * This means all VGA registers were aliased every 1024 ports!
+ *     e.g. 0x3b0 was also decoded as 0x7b0, 0xbb0 etc.
+ *
+ * To avoid this mess, a bridge control bit (VGA16) was introduced in
+ * 2003 to enable decoding of 16-bit port addresses. As we don't want
+ * to make this any more complex for now, we use this bit if possible
+ * and only warn if it's not supported (in set_vga_bridge_bits()).
+ */
+static void pci_bridge_vga_compat(struct bus *const bus)
+{
+	uint16_t bridge_ctrl;
+
+	bridge_ctrl = pci_read_config16(bus->dev, PCI_BRIDGE_CONTROL);
+
+	/* Ensure VGA decoding is disabled during probing (it should
+	   be by default, but we run blobs nowadays) */
+	bridge_ctrl &= ~PCI_BRIDGE_CTL_VGA;
+	pci_write_config16(bus->dev, PCI_BRIDGE_CONTROL, bridge_ctrl);
+
+	/* If the upstream bridge doesn't support VGA16, we don't have to check */
+	bus->no_vga16 |= bus->dev->bus->no_vga16;
+	if (bus->no_vga16)
+		return;
+
+	/* Test if we can enable 16-bit decoding */
+	bridge_ctrl |= PCI_BRIDGE_CTL_VGA16;
+	pci_write_config16(bus->dev, PCI_BRIDGE_CONTROL, bridge_ctrl);
+	bridge_ctrl = pci_read_config16(bus->dev, PCI_BRIDGE_CONTROL);
+
+	bus->no_vga16 = !(bridge_ctrl & PCI_BRIDGE_CTL_VGA16);
+}
 
 /**
  * Detect the type of downstream bridge.
@@ -1128,8 +1170,8 @@ unsigned int pci_match_simple_dev(struct device *dev, pci_devfn_t sdev)
  * @param min_devfn Minimum devfn to look at in the scan, usually 0x00.
  * @param max_devfn Maximum devfn to look at in the scan, usually 0xff.
  */
-void pci_scan_bus(struct bus *bus, unsigned min_devfn,
-			  unsigned max_devfn)
+void pci_scan_bus(struct bus *bus, unsigned int min_devfn,
+			  unsigned int max_devfn)
 {
 	unsigned int devfn;
 	struct device *dev, **prev;
@@ -1277,8 +1319,8 @@ static void pci_bridge_route(struct bus *link, scan_state state)
  */
 void do_pci_scan_bridge(struct device *dev,
 				void (*do_scan_bus) (struct bus * bus,
-							     unsigned min_devfn,
-							     unsigned max_devfn))
+							     unsigned int min_devfn,
+							     unsigned int max_devfn))
 {
 	struct bus *bus;
 
@@ -1295,6 +1337,8 @@ void do_pci_scan_bridge(struct device *dev,
 	}
 
 	bus = dev->link_list;
+
+	pci_bridge_vga_compat(bus);
 
 	pci_bridge_route(bus, PCI_ROUTE_SCAN);
 

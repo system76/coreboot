@@ -12,7 +12,6 @@ config CPU_SPECIFIC_OPTIONS
 	select SMP
 	select SSE2
 	select UDELAY_TSC
-	select TSC_CONSTANT_RATE
 	select TSC_MONOTONIC_TIMER
 	select SUPPORT_CPU_UCODE_IN_CBFS
 	select PARALLEL_CPU_INIT
@@ -22,10 +21,6 @@ config CPU_SPECIFIC_OPTIONS
 	select CPU_INTEL_COMMON_TIMEBASE
 	select NO_FIXED_XIP_ROM_SIZE
 	select PARALLEL_MP
-
-config BOOTBLOCK_CPU_INIT
-	string
-	default "cpu/intel/model_2065x/bootblock.c"
 
 config SMM_TSEG_SIZE
 	hex

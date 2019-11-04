@@ -29,7 +29,7 @@ DefinitionBlock(
 	#include <soc/intel/cannonlake/acpi/platform.asl>
 
 	// global NVS and variables
-	#include <soc/intel/cannonlake/acpi/globalnvs.asl>
+	#include <soc/intel/common/block/acpi/acpi/globalnvs.asl>
 
 	Scope (\_SB) {
 		Device (PCI0)
@@ -45,6 +45,6 @@ DefinitionBlock(
 #endif
 
 	// Chipset specific sleep states
-	#include <soc/intel/cannonlake/acpi/sleepstates.asl>
+	#include <southbridge/intel/common/acpi/sleepstates.asl>
 
 }

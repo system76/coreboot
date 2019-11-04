@@ -1,9 +1,6 @@
 /*
  * This file is part of the coreboot project.
  *
- * Copyright (C) 2014 Vladimir Serbinenko <phcoder@gmail.com>
- * Copyright (C) 2016 Sebastian Grzywna <swiftgeek@gmail.com>
- *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
  * published by the Free Software Foundation; version 2, or (at your option)
@@ -30,7 +27,7 @@
 
 static void wait_rdy(u8 *mmio)
 {
-	unsigned try = 100;
+	unsigned int try = 100;
 
 	while (try--) {
 		if (read32(GMBUS2_ADDR) & GMBUS_HW_RDY)

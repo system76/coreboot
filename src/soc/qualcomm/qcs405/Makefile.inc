@@ -39,7 +39,6 @@ romstage-y += blsp.c
 ramstage-y += soc.c
 ramstage-y += timer.c
 ramstage-y += spi.c
-ramstage-y += cbmem.c
 ramstage-y += gpio.c
 ramstage-y += clock.c
 ramstage-y += i2c.c
@@ -51,9 +50,5 @@ ramstage-$(CONFIG_DRIVERS_UART) += uart.c
 ################################################################################
 
 CPPFLAGS_common += -Isrc/soc/qualcomm/qcs405/include
-
-$(objcbfs)/bootblock.bin: $(objcbfs)/bootblock.raw.bin
-	@printf "Generating: $(subst $(obj)/,,$(@))\n"
-	cp $(objcbfs)/bootblock.raw.bin $(objcbfs)/bootblock.bin
 
 endif

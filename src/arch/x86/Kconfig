@@ -16,6 +16,7 @@ config ARCH_X86
 	default n
 	select PCI
 	select RELOCATABLE_MODULES
+	select RAMSTAGE_CBMEM_TOP_ARG
 
 # stage selectors for x86
 
@@ -64,6 +65,14 @@ config ARCH_POSTCAR_X86_64
 config ARCH_RAMSTAGE_X86_64
 	bool
 	default n
+
+config ARCH_X86_64_PGTBL_LOC
+	hex "x86_64 page table location in CBFS"
+	depends on ARCH_BOOTBLOCK_X86_64
+	default 0xfffea000
+	help
+	  The position where to place pagetables. Needs to be known at
+	  compile time. Must not overlap other files in CBFS.
 
 config USE_MARCH_586
 	def_bool n
@@ -168,15 +177,6 @@ config BOOTBLOCK_NORTHBRIDGE_INIT
 
 config BOOTBLOCK_RESETS
 	string
-
-config BOOTBLOCK_SAVE_BIST_AND_TIMESTAMP
-	bool
-	default n
-	help
-	  Select this value to provide a routine to save the BIST and timestamp
-	  values.  The default code places the BIST value in MM0 and the
-	  timestamp value in MM2:MM1.  Another file is necessary when the CPU
-	  does not support the MMx register set.
 
 config HAVE_CMOS_DEFAULT
 	def_bool n

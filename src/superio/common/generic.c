@@ -15,7 +15,6 @@
 #include <device/device.h>
 #include <device/pnp.h>
 #include <arch/acpigen.h>
-#include <device/pnp_def.h>
 #include <console/console.h>
 
 static void generic_set_resources(struct device *dev)
@@ -187,7 +186,7 @@ static void enable_dev(struct device *dev)
 	 * Need to call enable_dev() on the devices "behind" the Generic Super I/O.
 	 * coreboot's generic allocator doesn't expect them behind PnP devices.
 	 */
-	scan_static_bus(dev);
+	enable_static_devices(dev);
 }
 
 struct chip_operations superio_common_ops = {

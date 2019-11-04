@@ -91,6 +91,7 @@ b.-  prep_fid_change(...)
 #include <device/pci_ops.h>
 #include <stdint.h>
 #include <northbridge/amd/amdht/AsPsDefs.h>
+#include <stdlib.h>
 
 static inline void print_debug_fv(const char *str, u32 val)
 {
@@ -1042,7 +1043,7 @@ struct ap_apicid_st {
 	u8 apicid[NODE_NUMS * 4];
 };
 
-static void store_ap_apicid(unsigned ap_apicid, void *gp)
+static void store_ap_apicid(unsigned int ap_apicid, void *gp)
 {
 	struct ap_apicid_st *p = gp;
 

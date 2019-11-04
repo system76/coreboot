@@ -97,7 +97,7 @@ static void rom_dummy_write(struct device *dev)
 		pci_write_config8(dev, 0x6d, new);
 }
 
-unsigned pm_base = 0;
+unsigned int pm_base = 0;
 
 static void lpc_init(struct device *dev)
 {
@@ -314,7 +314,7 @@ static struct device_operations lpc_ops = {
 	.write_acpi_tables      = acpi_write_hpet,
 #endif
 	.init             = lpc_init,
-	.scan_bus         = scan_lpc_bus,
+	.scan_bus         = scan_static_bus,
 	.ops_pci          = &ck804_pci_ops,
 };
 

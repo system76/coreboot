@@ -1,9 +1,5 @@
 /*
- * Driver for BayHub Technology BH720 PCI to eMMC 5.0 HS200 bridge
- *
  * This file is part of the coreboot project.
- *
- * Copyright 2018 Google LLC
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,6 +10,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  */
+
+/* Driver for BayHub Technology BH720 PCI to eMMC 5.0 HS200 bridge */
 
 #include <console/console.h>
 #include <device/device.h>
@@ -82,12 +80,6 @@ static const struct pci_driver bayhub_bh720 __pci_driver = {
 	.devices	= pci_device_ids,
 };
 
-static void bh720_enable(struct device *dev)
-{
-	dev->ops = &bh720_ops;
-}
-
-struct chip_operations bayhub_bh720_ops = {
+struct chip_operations drivers_generic_bayhub_ops = {
 	CHIP_NAME("BayHub Technology BH720 PCI to eMMC 5.0 HS200 bridge")
-	.enable_dev = bh720_enable,
 };

@@ -87,6 +87,7 @@ config CPU_SPECIFIC_OPTIONS
 	select SOC_INTEL_COMMON_BLOCK_CHIP_CONFIG
 	select SOC_INTEL_COMMON_BLOCK_CPU
 	select SOC_INTEL_COMMON_BLOCK_CPU_MPINIT
+	select SOC_INTEL_COMMON_BLOCK_EBDA
 	select SOC_INTEL_COMMON_BLOCK_GPIO_DUAL_ROUTE_SUPPORT
 	select SOC_INTEL_COMMON_BLOCK_GSPI_VERSION_2
 	select SOC_INTEL_COMMON_BLOCK_HDA
@@ -100,7 +101,6 @@ config CPU_SPECIFIC_OPTIONS
 	select SOC_INTEL_COMMON_RESET
 	select SSE2
 	select SUPPORT_CPU_UCODE_IN_CBFS
-	select TSC_CONSTANT_RATE
 	select TSC_MONOTONIC_TIMER
 	select UDELAY_TSC
 	select UDK_2017_BINDING
@@ -119,11 +119,12 @@ config DCACHE_RAM_SIZE
 
 config DCACHE_BSP_STACK_SIZE
 	hex
-	default 0x20000 if FSP_USES_CB_STACK
+	default 0x20400 if FSP_USES_CB_STACK
 	default 0x4000
 	help
 	  The amount of anticipated stack usage in CAR by bootblock and
-	  other stages.
+	  other stages. In the case of FSP_USES_CB_STACK default value will be
+	  sum of FSP-M stack requirement (128KiB) and CB romstage stack requirement (~1KiB).
 
 config FSP_TEMP_RAM_SIZE
 	hex

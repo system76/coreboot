@@ -18,9 +18,8 @@
 #include <device/device.h>
 #include <device/pnp.h>
 #include <superio/conf_mode.h>
-#include <device/smbus.h>
 #include <pc80/keyboard.h>
-#include <stdlib.h>
+
 #include "mec1308.h"
 
 static void mec1308_init(struct device *dev)

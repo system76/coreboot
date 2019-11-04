@@ -1,9 +1,6 @@
 #
 # This file is part of the coreboot project.
 #
-# Copyright (C) 2014 Sage Electronic Engineering, LLC.
-# Copyright (C) 2015 Intel Corp.
-#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; version 2 of the License.
@@ -20,7 +17,6 @@ verstage-y += car.c
 verstage-y += fsp_util.c
 verstage-$(CONFIG_SEPARATE_VERSTAGE) += verstage.c
 
-bootblock-y += bootblock.c
 bootblock-$(CONFIG_USE_GENERIC_FSP_CAR_INC) += cache_as_ram.S
 bootblock-y += fsp_util.c
 
@@ -52,7 +48,7 @@ ifeq ($(CONFIG_HAVE_FSP_BIN),y)
 cbfs-files-y += fsp.bin
 fsp.bin-file := $(call strip_quotes,$(CONFIG_FSP_FILE))
 fsp.bin-type := fsp
-fsp.bin-options := --xip
+fsp.bin-options := --xip $(TXTIBB)
 fsp.bin-COREBOOT-position := $(CONFIG_FSP_LOC)
 endif
 

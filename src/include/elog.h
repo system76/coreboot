@@ -61,37 +61,6 @@
 
 /* Embedded controller event */
 #define ELOG_TYPE_EC_EVENT                0x91
-#define EC_EVENT_LID_CLOSED                  0x01
-#define EC_EVENT_LID_OPEN                    0x02
-#define EC_EVENT_POWER_BUTTON                0x03
-#define EC_EVENT_AC_CONNECTED                0x04
-#define EC_EVENT_AC_DISCONNECTED             0x05
-#define EC_EVENT_BATTERY_LOW                 0x06
-#define EC_EVENT_BATTERY_CRITICAL            0x07
-#define EC_EVENT_BATTERY                     0x08
-#define EC_EVENT_THERMAL_THRESHOLD           0x09
-#define EC_EVENT_DEVICE_EVENT                0x0a
-#define EC_EVENT_THERMAL                     0x0b
-#define EC_EVENT_USB_CHARGER                 0x0c
-#define EC_EVENT_KEY_PRESSED                 0x0d
-#define EC_EVENT_INTERFACE_READY             0x0e
-#define EC_EVENT_KEYBOARD_RECOVERY           0x0f
-#define EC_EVENT_THERMAL_SHUTDOWN            0x10
-#define EC_EVENT_BATTERY_SHUTDOWN            0x11
-#define EC_EVENT_FAN_ERROR                   0x12
-#define EC_EVENT_THROTTLE_STOP               0x13
-#define EC_EVENT_HANG_DETECT                 0x14
-#define EC_EVENT_HANG_REBOOT                 0x15
-#define EC_EVENT_PD_MCU                      0x16
-#define EC_EVENT_BATTERY_STATUS              0x17
-#define EC_EVENT_PANIC                       0x18
-#define EC_EVENT_KEYBOARD_FASTBOOT           0x19
-#define EC_EVENT_RTC                         0x1a
-#define EC_EVENT_MKBP                        0x1b
-#define EC_EVENT_USB_MUX                     0x1c
-#define EC_EVENT_MODE_CHANGE                 0x1d
-#define EC_EVENT_KEYBOARD_RECOVERY_HWREINIT  0x1e
-#define EC_EVENT_EXTENDED                    0x1f
 
 /* Power */
 #define ELOG_TYPE_POWER_FAIL              0x92
@@ -149,6 +118,18 @@
 #define  ELOG_WAKE_SOURCE_PME_XHCI_USB_2   0x1d
 #define  ELOG_WAKE_SOURCE_PME_XHCI_USB_3   0x1e
 #define  ELOG_WAKE_SOURCE_PME_WIFI         0x1f
+#define  ELOG_WAKE_SOURCE_PME_PCIE13       0x20
+#define  ELOG_WAKE_SOURCE_PME_PCIE14       0x21
+#define  ELOG_WAKE_SOURCE_PME_PCIE15       0x22
+#define  ELOG_WAKE_SOURCE_PME_PCIE16       0x23
+#define  ELOG_WAKE_SOURCE_PME_PCIE17       0x24
+#define  ELOG_WAKE_SOURCE_PME_PCIE18       0x25
+#define  ELOG_WAKE_SOURCE_PME_PCIE19       0x26
+#define  ELOG_WAKE_SOURCE_PME_PCIE20       0x27
+#define  ELOG_WAKE_SOURCE_PME_PCIE21       0x28
+#define  ELOG_WAKE_SOURCE_PME_PCIE22       0x29
+#define  ELOG_WAKE_SOURCE_PME_PCIE23       0x2a
+#define  ELOG_WAKE_SOURCE_PME_PCIE24       0x2b
 
 struct elog_event_data_wake {
 	u8 source;

@@ -22,31 +22,6 @@
 #include <northbridge/intel/nehalem/nehalem.h>
 #include <ec/acpi/ec.h>
 
-static void mainboard_smm_init(void)
-{
-	printk(BIOS_DEBUG, "initializing SMI\n");
-}
-
-int mainboard_io_trap_handler(int smif)
-{
-	static int smm_initialized;
-
-	if (!smm_initialized) {
-		mainboard_smm_init();
-		smm_initialized = 1;
-	}
-
-	switch (smif) {
-
-	default:
-		return 0;
-	}
-
-	/* On success, the IO Trap Handler returns 1
-	 * On failure, the IO Trap Handler returns a value != 1 */
-	return 1;
-}
-
 void mainboard_smi_gpi(u32 gpi_sts)
 {
 }

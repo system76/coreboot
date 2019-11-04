@@ -1,2 +1,8 @@
 config BOARD_LENOVO_T60
 	bool "ThinkPad T60 / T60p"
+
+config BOARD_LENOVO_Z61T
+	bool "ThinkPad Z61t"
+
+config BOARD_LENOVO_R60
+	bool "ThinkPad R60"

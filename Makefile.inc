@@ -93,7 +93,7 @@ subdirs-y += $(wildcard src/soc/*/*) $(wildcard src/northbridge/*/*)
 subdirs-y += src/superio
 subdirs-y += $(wildcard src/drivers/*) $(wildcard src/drivers/*/*)
 subdirs-y += src/cpu src/vendorcode
-subdirs-y += util/cbfstool util/sconfig util/nvramtool
+subdirs-y += util/cbfstool util/sconfig util/nvramtool util/pgtblgen
 subdirs-y += util/futility util/marvell util/bincfg
 subdirs-y += $(wildcard src/arch/*)
 subdirs-y += src/mainboard/$(MAINBOARDDIR)
@@ -106,6 +106,10 @@ subdirs-y += util/checklist util/testing
 #######################################################################
 # Add source classes and their build options
 classes-y := ramstage romstage bootblock decompressor postcar smm smmstub cpu_microcode verstage
+
+# Add a special 'all' class to add sources to all stages
+$(call add-special-class,all)
+all-handler = $(foreach class,bootblock verstage romstage postcar ramstage,$(eval $(class)-y += $(2)))
 
 # Add dynamic classes for rmodules
 $(foreach supported_arch,$(ARCH_SUPPORTED), \
@@ -193,14 +197,15 @@ ifneq ($(UPDATED_SUBMODULES),1)
 # try to fetch non-optional submodules if the source is under git
 forgetthis:=$(if $(GIT),$(shell git submodule update --init))
 ifeq ($(CONFIG_USE_BLOBS),y)
-# this is necessary because 3rdparty/{blobs,intel-microcode} is update=none, and so is ignored
-# unless explicitly requested and enabled through --checkout
+# These items are necessary because each has update=none in .gitmodules.  They are ignored
+# until expressly requested and enabled with --checkout
 forgetthis:=$(if $(GIT),$(shell git submodule update --init --checkout 3rdparty/blobs))
 forgetthis:=$(if $(GIT),$(shell git submodule update --init --checkout 3rdparty/intel-microcode))
 ifeq ($(CONFIG_PLATFORM_USES_FSP1_0)$(CONFIG_PLATFORM_USES_FSP1_1)$(CONFIG_PLATFORM_USES_FSP2_0),y)
-# this is necessary because 3rdparty/fsp is update=none, and so is ignored
-# unless explicitly requested and enabled through --checkout
 forgetthis:=$(if $(GIT),$(shell git submodule update --init --checkout 3rdparty/fsp))
+endif
+ifeq ($(CONFIG_USE_AMD_BLOBS),y)
+forgetthis:=$(if $(GIT),$(shell git submodule update --init --checkout 3rdparty/amd_blobs))
 endif
 endif
 UPDATED_SUBMODULES:=1
@@ -591,11 +596,12 @@ OVERRIDE_DEVICETREE_FILE := $(src)/mainboard/$(MAINBOARDDIR)/$(CONFIG_OVERRIDE_D
 endif
 
 DEVICETREE_STATIC_C := $(obj)/mainboard/$(MAINBOARDDIR)/static.c
+DEVICETREE_STATIC_H := $(obj)/static.h
 
 $(DEVICETREE_STATIC_C): $(DEVICETREE_FILE) $(OVERRIDE_DEVICETREE_FILE) $(objutil)/sconfig/sconfig
 	@printf "    SCONFIG    $(subst $(src)/,,$(<))\n"
 	mkdir -p $(dir $(DEVICETREE_STATIC_C))
-	$(objutil)/sconfig/sconfig $(DEVICETREE_FILE) $(DEVICETREE_STATIC_C) $(OVERRIDE_DEVICETREE_FILE)
+	$(objutil)/sconfig/sconfig $(DEVICETREE_FILE) $(DEVICETREE_STATIC_C) $(DEVICETREE_STATIC_H) $(OVERRIDE_DEVICETREE_FILE)
 
 ramstage-y+=$(DEVICETREE_STATIC_C)
 romstage-y+=$(DEVICETREE_STATIC_C)
@@ -676,6 +682,18 @@ find-class = $(if $(filter $(1),$(basename $(1))),$(if $(CC_$(1)), $(1), $(call 
 # loadable,allocatable, and data. Do the same for the .data section in case
 # the linker marked it NOBITS automatically because there are only zeroes in it.
 preserve-bss-flags := --set-section-flags .bss=load,alloc,data --set-section-flags .data=load,alloc,data
+
+# For Intel TXT files in the CBFS needs to be marked as 'Initial Boot Block'.
+# As CBFS attributes aren't cheap, only mark them if TXT is enabled.
+ifeq ($(CONFIG_INTEL_TXT),y)
+
+TXTIBB := --ibb
+
+else
+
+TXTIBB :=
+
+endif
 
 ifeq ($(CONFIG_COMPRESS_BOOTBLOCK),y)
 
@@ -1030,6 +1048,7 @@ ifeq ($(CONFIG_ARCH_X86),y)
 		-f $(objcbfs)/bootblock.bin \
 		-n bootblock \
 		-t bootblock \
+		$(TXTIBB) \
 		-b -$(call file-size,$(objcbfs)/bootblock.bin) $(cbfs-autogen-attributes) \
 		$(TS_OPTIONS)
 else # ifeq ($(CONFIG_ARCH_X86),y)
@@ -1167,6 +1186,9 @@ endif    # CONFIG_NO_FIXED_XIP_ROM_SIZE
 
 endif   # CONFIG_NO_XIP_EARLY_STAGES
 endif   # CONFIG_ARCH_ROMSTAGE_X86_32 / CONFIG_ARCH_ROMSTAGE_X86_64
+ifeq ($(CONFIG_VBOOT_STARTS_IN_ROMSTAGE),y)
+$(CONFIG_CBFS_PREFIX)/romstage-options += $(TXTIBB)
+endif
 
 cbfs-files-$(CONFIG_HAVE_RAMSTAGE) += $(CONFIG_CBFS_PREFIX)/ramstage
 $(CONFIG_CBFS_PREFIX)/ramstage-file := $(RAMSTAGE)

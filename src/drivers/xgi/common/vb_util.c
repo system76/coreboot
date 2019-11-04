@@ -1,9 +1,6 @@
 /*
  * This file is part of the coreboot project.
  *
- * File taken from the Linux xgifb driver (v3.18.5)
- * coreboot-specific includes added at top
- *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; version 2 of the License.
@@ -14,7 +11,7 @@
  * GNU General Public License for more details.
  */
 
-/* coreboot related includes come indirectly from xgi_coreboot.h */
+/* File taken from the Linux xgifb driver (v3.18.5) */
 
 #include "xgi_coreboot.h"
 #include "vgatypes.h"
@@ -36,7 +33,7 @@ u8 xgifb_reg_get(unsigned long port, u8 index)
 }
 
 void xgifb_reg_and_or(unsigned long port, u8 index,
-		unsigned data_and, unsigned data_or)
+		unsigned int data_and, unsigned int data_or)
 {
 	u8 temp;
 
@@ -45,7 +42,7 @@ void xgifb_reg_and_or(unsigned long port, u8 index,
 	xgifb_reg_set(port, index, temp);
 }
 
-void xgifb_reg_and(unsigned long port, u8 index, unsigned data_and)
+void xgifb_reg_and(unsigned long port, u8 index, unsigned int data_and)
 {
 	u8 temp;
 
@@ -54,7 +51,7 @@ void xgifb_reg_and(unsigned long port, u8 index, unsigned data_and)
 	xgifb_reg_set(port, index, temp);
 }
 
-void xgifb_reg_or(unsigned long port, u8 index, unsigned data_or)
+void xgifb_reg_or(unsigned long port, u8 index, unsigned int data_or)
 {
 	u8 temp;
 

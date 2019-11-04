@@ -27,6 +27,7 @@ verstage-y += ../common/wdt.c
 romstage-y += auxadc.c
 romstage-y += ../common/cbmem.c emi.c
 romstage-y += dramc_init_setting.c
+romstage-y += dramc_param.c
 romstage-y += dramc_pi_basic_api.c
 romstage-y += dramc_pi_calibration_api.c
 romstage-y += memory.c
@@ -44,7 +45,7 @@ romstage-y += ../common/uart.c
 romstage-y += ../common/wdt.c
 
 ramstage-y += auxadc.c
-ramstage-y += ../common/cbmem.c emi.c
+ramstage-y += emi.c
 ramstage-y += ../common/ddp.c ddp.c
 ramstage-y += ../common/dsi.c dsi.c
 ramstage-y += ../common/gpio.c gpio.c
@@ -79,6 +80,14 @@ cbfs-files-y += sspm.bin
 sspm.bin-file := $(MT8183_BLOB_DIR)/sspm.bin
 sspm.bin-type := raw
 sspm.bin-compression := $(CBFS_COMPRESS_FLAG)
+
+DRAM_CBFS := $(CONFIG_CBFS_PREFIX)/dram
+$(DRAM_CBFS)-file := $(MT8183_BLOB_DIR)/dram.elf
+$(DRAM_CBFS)-type := stage
+$(DRAM_CBFS)-compression := $(CBFS_PRERAM_COMPRESS_FLAG)
+ifneq ($(wildcard $($(DRAM_CBFS)-file)),)
+	cbfs-files-y += $(DRAM_CBFS)
+endif
 
 BL31_MAKEARGS += PLAT=mt8183
 

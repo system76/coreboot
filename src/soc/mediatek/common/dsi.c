@@ -81,9 +81,9 @@ static void mtk_dsi_phy_timing(int data_rate, struct mtk_phy_timing *phy_timing)
 	memset(phy_timing, 0, sizeof(*phy_timing));
 
 	phy_timing->lpx = DIV_ROUND_UP(60, cycle_time);
-	phy_timing->da_hs_prepare = DIV_ROUND_UP((40 + 5 * ui), cycle_time);
+	phy_timing->da_hs_prepare = DIV_ROUND_UP((50 + 5 * ui), cycle_time);
 	phy_timing->da_hs_zero = DIV_ROUND_UP((110 + 6 * ui), cycle_time);
-	phy_timing->da_hs_trail = DIV_ROUND_UP(((4 * ui) + 80), cycle_time);
+	phy_timing->da_hs_trail = DIV_ROUND_UP(((4 * ui) + 77), cycle_time);
 
 	phy_timing->ta_go = 4U * phy_timing->lpx;
 	phy_timing->ta_sure = 3U * phy_timing->lpx / 2U;
@@ -392,6 +392,12 @@ static void mtk_dsi_send_init_commands(const u8 *buf)
 	}
 }
 
+static void mtk_dsi_reset_dphy(void)
+{
+	setbits_le32(&dsi0->dsi_con_ctrl, DPHY_RESET);
+	clrbits_le32(&dsi0->dsi_con_ctrl, DPHY_RESET);
+}
+
 int mtk_dsi_init(u32 mode_flags, u32 format, u32 lanes, const struct edid *edid,
 		 const u8 *init_commands)
 {
@@ -407,6 +413,8 @@ int mtk_dsi_init(u32 mode_flags, u32 format, u32 lanes, const struct edid *edid,
 	struct mtk_phy_timing phy_timing;
 	mtk_dsi_phy_timing(data_rate, &phy_timing);
 	mtk_dsi_rxtx_control(mode_flags, lanes);
+	mdelay(1);
+	mtk_dsi_reset_dphy();
 	mtk_dsi_clk_hs_mode_disable();
 	mtk_dsi_config_vdo_timing(mode_flags, format, lanes, edid, &phy_timing);
 	mtk_dsi_clk_hs_mode_enable();

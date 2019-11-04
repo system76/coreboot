@@ -1,22 +1,28 @@
 /*
- * SPI flash interface
+ * This file is part of the coreboot project.
  *
- * Copyright (C) 2008 Atmel Corporation
- * Copyright (C) 2010 Reinhard Meyer, EMK Elektronik
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
  *
- * Licensed under the GPL-2 or later.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  */
 
 #include <arch/early_variables.h>
 #include <assert.h>
 #include <boot_device.h>
+#include <boot/coreboot_tables.h>
 #include <console/console.h>
 #include <cpu/x86/smm.h>
-#include <stdlib.h>
 #include <string.h>
 #include <spi-generic.h>
 #include <spi_flash.h>
 #include <timer.h>
+#include <types.h>
 
 #include "spi_flash_internal.h"
 
@@ -100,8 +106,8 @@ int spi_flash_cmd(const struct spi_slave *spi, u8 cmd, void *response, size_t le
 #pragma GCC diagnostic push
 #if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic ignored "-Wstack-usage="
-#pragma GCC diagnostic ignored "-Wvla"
 #endif
+#pragma GCC diagnostic ignored "-Wvla"
 int spi_flash_cmd_write(const struct spi_slave *spi, const u8 *cmd,
 			size_t cmd_len, const void *data, size_t data_len)
 {

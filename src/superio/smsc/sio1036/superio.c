@@ -18,15 +18,13 @@
 #include <device/device.h>
 #include <device/pnp.h>
 #include <superio/conf_mode.h>
-#include <stdlib.h>
 
 #include "sio1036.h"
 
 static void sio1036_init(struct device *dev)
 {
-	if (!dev->enabled) {
+	if (!dev->enabled)
 		return;
-	}
 }
 
 static struct device_operations ops = {

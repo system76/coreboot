@@ -1,5 +1,5 @@
 chip soc/intel/cannonlake
-	register "tdp_pl1_override" = "13"
+	register "tdp_pl1_override" = "15"
 	register "tdp_pl2_override" = "64"
 
 	register "SerialIoDevMode" = "{
@@ -145,32 +145,36 @@ chip soc/intel/cannonlake
 				register "property_list[0].integer" = "1"
 				device i2c 1a on end
 			end
-			chip drivers/i2c/generic
-				register "hid" = ""10EC1011""
-				register "desc" = ""RT1011 Tweeter Left Speaker Amp""
+			chip drivers/i2c/rt1011
+				register "desc" = ""RT1011 Woofer Left Speaker Amp""
 				register "uid" = "0"
-				register "name" = ""TL""
+				register "name" = ""RTWL""
+				register "r0_calib_key" = ""dsm_calib_r0_0""
+				register "temperature_calib_key" = ""dsm_calib_temp_0""
 				device i2c 38 on end
 			end
-			chip drivers/i2c/generic
-				register "hid" = ""10EC1011""
-				register "desc" = ""RT1011 Tweeter Right Speaker Amp""
+			chip drivers/i2c/rt1011
+				register "desc" = ""RT1011 Woofer Right Speaker Amp""
 				register "uid" = "1"
-				register "name" = ""TR""
+				register "name" = ""RTWR""
+				register "r0_calib_key" = ""dsm_calib_r0_1""
+				register "temperature_calib_key" = ""dsm_calib_temp_0""
 				device i2c 39 on end
 			end
-			chip drivers/i2c/generic
-				register "hid" = ""10EC1011""
-				register "desc" = ""RT1011 Woofer Left Speaker Amp""
+			chip drivers/i2c/rt1011
+				register "desc" = ""RT1011 Tweeter Left Speaker Amp""
 				register "uid" = "2"
-				register "name" = ""WL""
+				register "name" = ""RTTL""
+				register "r0_calib_key" = ""dsm_calib_r0_2""
+				register "temperature_calib_key" = ""dsm_calib_temp_0""
 				device i2c 3a on end
 			end
-			chip drivers/i2c/generic
-				register "hid" = ""10EC1011""
-				register "desc" = ""RT1011 Woofer Right Speaker Amp""
+			chip drivers/i2c/rt1011
+				register "desc" = ""RT1011 Tweeter Right Speaker Amp""
 				register "uid" = "3"
-				register "name" = ""WR""
+				register "name" = ""RTTR""
+				register "r0_calib_key" = ""dsm_calib_r0_3""
+				register "temperature_calib_key" = ""dsm_calib_temp_0""
 				device i2c 3b on end
 			end
 		end #I2C #4
@@ -180,7 +184,8 @@ chip soc/intel/cannonlake
 				register "hid" = "ACPI_DT_NAMESPACE_HID"
 				register "uid" = "1"
 				register "compat_string" = ""google,cros-ec-spi""
-				register "irq" = "ACPI_IRQ_LEVEL_LOW(GPP_A23_IRQ)"
+				register "irq" = "ACPI_IRQ_WAKE_LEVEL_LOW(GPP_A23_IRQ)"
+				register "wake" = "GPE0_DW0_23"
 				device spi 1 on end
 			end # FPMCU
 		end # GSPI #1

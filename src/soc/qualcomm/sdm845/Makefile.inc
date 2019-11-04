@@ -33,7 +33,6 @@ romstage-y += mmu.c
 ################################################################################
 ramstage-y += soc.c
 ramstage-y += spi.c
-ramstage-y += cbmem.c
 ramstage-y += timer.c
 ramstage-y += gpio.c
 ramstage-y += clock.c
@@ -47,9 +46,5 @@ ramstage-y += aop_load_reset.c
 
 CPPFLAGS_common += -Isrc/soc/qualcomm/sdm845/include
 CPPFLAGS_common += -Isrc/soc/qualcomm/common/include
-
-$(objcbfs)/bootblock.bin: $(objcbfs)/bootblock.raw.bin
-	@printf "Generating: $(subst $(obj)/,,$(@))\n"
-	cp $(objcbfs)/bootblock.raw.bin $(objcbfs)/bootblock.bin
 
 endif

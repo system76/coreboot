@@ -357,7 +357,11 @@ static amd_fw_entry amd_fw_table[] = {
 };
 
 static amd_bios_entry amd_bios_table[] = {
-	{ .type = AMD_BIOS_APCB, .level = BDT_BOTH },
+	{ .type = AMD_BIOS_APCB, .inst = 0, .level = BDT_BOTH },
+	{ .type = AMD_BIOS_APCB, .inst = 1, .level = BDT_BOTH },
+	{ .type = AMD_BIOS_APCB, .inst = 2, .level = BDT_BOTH },
+	{ .type = AMD_BIOS_APCB, .inst = 3, .level = BDT_BOTH },
+	{ .type = AMD_BIOS_APCB, .inst = 4, .level = BDT_BOTH },
 	{ .type = AMD_BIOS_APCB_BK, .level = BDT_BOTH },
 	{ .type = AMD_BIOS_APOB, .level = BDT_BOTH },
 	{ .type = AMD_BIOS_BIN,
@@ -387,6 +391,8 @@ typedef struct _embedded_firmware {
 	uint32_t comboable;
 	uint32_t bios0_entry; /* todo: add way to select correct entry */
 	uint32_t bios1_entry;
+	uint32_t bios2_entry;
+	uint32_t reserved[0x2c]; /* 0x24 - 0x4f */
 } __attribute__((packed, aligned(16))) embedded_firmware;
 
 typedef struct _psp_directory_header {

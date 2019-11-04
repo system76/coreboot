@@ -1,8 +1,6 @@
 /*
  * This file is part of the coreboot project.
  *
- * Copyright 2016 Google Inc.
- *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -16,6 +14,8 @@
 
 #include <assert.h>
 #include <spi-generic.h>
+#include <stddef.h>
+#include <stdlib.h>
 #include <string.h>
 
 int spi_claim_bus(const struct spi_slave *slave)

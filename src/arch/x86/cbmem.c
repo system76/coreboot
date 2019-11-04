@@ -16,21 +16,10 @@
 
 #if CONFIG(CBMEM_TOP_BACKUP)
 
-void *cbmem_top(void)
+void *cbmem_top_chipset(void)
 {
-	static void *cbmem_top_backup;
-	void *top_backup;
-
-	if (ENV_RAMSTAGE && cbmem_top_backup != NULL)
-		return cbmem_top_backup;
-
 	/* Top of CBMEM is at highest usable DRAM address below 4GiB. */
-	top_backup = (void *)restore_top_of_low_cacheable();
-
-	if (ENV_RAMSTAGE)
-		cbmem_top_backup = top_backup;
-
-	return top_backup;
+	return (void *)restore_top_of_low_cacheable();
 }
 
 #endif /* CBMEM_TOP_BACKUP */

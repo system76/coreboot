@@ -147,21 +147,21 @@ typedef struct acpi_table_header {
 
 /* RSDT (Root System Description Table) */
 typedef struct acpi_rsdt {
-	struct acpi_table_header header;
+	acpi_header_t header;
 	u32 entry[MAX_ACPI_TABLES];
 } __packed acpi_rsdt_t;
 
 /* XSDT (Extended System Description Table) */
 typedef struct acpi_xsdt {
-	struct acpi_table_header header;
+	acpi_header_t header;
 	u64 entry[MAX_ACPI_TABLES];
 } __packed acpi_xsdt_t;
 
 /* HPET timers */
 typedef struct acpi_hpet {
-	struct acpi_table_header header;
+	acpi_header_t header;
 	u32 id;
-	struct acpi_gen_regaddr addr;
+	acpi_addr_t addr;
 	u8 number;
 	u16 min_tick;
 	u8 attributes;
@@ -169,19 +169,19 @@ typedef struct acpi_hpet {
 
 /* MCFG (PCI Express MMIO config space BAR description table) */
 typedef struct acpi_mcfg {
-	struct acpi_table_header header;
+	acpi_header_t header;
 	u8 reserved[8];
 } __packed acpi_mcfg_t;
 
 typedef struct acpi_tcpa {
-	struct acpi_table_header header;
+	acpi_header_t header;
 	u16 platform_class;
 	u32 laml;
 	u64 lasa;
 } __packed acpi_tcpa_t;
 
 typedef struct acpi_tpm2 {
-	struct acpi_table_header header;
+	acpi_header_t header;
 	u16 platform_class;
 	u8  reserved[2];
 	u64 control_area;
@@ -202,7 +202,7 @@ typedef struct acpi_mcfg_mmconfig {
 
 /* SRAT (System Resource Affinity Table) */
 typedef struct acpi_srat {
-	struct acpi_table_header header;
+	acpi_header_t header;
 	u32 resv;
 	u64 resv1;
 	/* Followed by static resource allocation structure[n] */
@@ -239,19 +239,19 @@ typedef struct acpi_srat_mem {
 
 /* SLIT (System Locality Distance Information Table) */
 typedef struct acpi_slit {
-	struct acpi_table_header header;
+	acpi_header_t header;
 	/* Followed by static resource allocation 8+byte[num*num] */
 } __packed acpi_slit_t;
 
 /* MADT (Multiple APIC Description Table) */
 typedef struct acpi_madt {
-	struct acpi_table_header header;
+	acpi_header_t header;
 	u32 lapic_addr;			/* Local APIC address */
 	u32 flags;			/* Multiple APIC flags */
 } __packed acpi_madt_t;
 
 /* VFCT image header */
-struct acpi_vfct_image_hdr {
+typedef struct acpi_vfct_image_hdr {
 	u32 PCIBus;
 	u32 PCIDevice;
 	u32 PCIFunction;
@@ -262,17 +262,17 @@ struct acpi_vfct_image_hdr {
 	u32 Revision;
 	u32 ImageLength;
 	u8  VbiosContent;	// dummy - copy VBIOS here
-} __packed;
+} __packed acpi_vfct_image_hdr_t;
 
 /* VFCT (VBIOS Fetch Table) */
-struct acpi_vfct {
-	struct acpi_table_header header;
+typedef struct acpi_vfct {
+	acpi_header_t header;
 	u8  TableUUID[16];
 	u32 VBIOSImageOffset;
 	u32 Lib1ImageOffset;
 	u32 Reserved[4];
-	struct acpi_vfct_image_hdr image_hdr;
-} __packed;
+	acpi_vfct_image_hdr_t image_hdr;
+} __packed acpi_vfct_t;
 
 typedef struct acpi_ivrs_info {
 } __packed acpi_ivrs_info_t;
@@ -294,7 +294,7 @@ typedef struct acpi_ivrs_ivhd {
 
 /* IVRS (I/O Virtualization Reporting Structure) Type 10h */
 typedef struct acpi_ivrs {
-	struct acpi_table_header header;
+	acpi_header_t header;
 	uint32_t iv_info;
 	uint32_t reserved[2];
 	struct acpi_ivrs_ivhd ivhd;
@@ -382,7 +382,7 @@ typedef struct dmar_andd_entry {
 
 /* DMAR (DMA Remapping Reporting Structure) */
 typedef struct acpi_dmar {
-	struct acpi_table_header header;
+	acpi_header_t header;
 	u8 host_address_width;
 	u8 flags;
 	u8 reserved[10];
@@ -390,24 +390,23 @@ typedef struct acpi_dmar {
 } __packed acpi_dmar_t;
 
 /* MADT: APIC Structure Types */
-/* TODO: Convert to ALLCAPS. */
 enum acpi_apic_types {
-	LocalApic		= 0,	/* Processor local APIC */
-	IOApic			= 1,	/* I/O APIC */
-	IRQSourceOverride	= 2,	/* Interrupt source override */
-	NMIType			= 3,	/* NMI source */
-	LocalApicNMI		= 4,	/* Local APIC NMI */
-	LApicAddressOverride	= 5,	/* Local APIC address override */
-	IOSApic			= 6,	/* I/O SAPIC */
-	LocalSApic		= 7,	/* Local SAPIC */
-	PlatformIRQSources	= 8,	/* Platform interrupt sources */
-	Localx2Apic		= 9,	/* Processor local x2APIC */
-	Localx2ApicNMI		= 10,	/* Local x2APIC NMI */
-	GICC			= 11,	/* GIC CPU Interface */
-	GICD			= 12,	/* GIC Distributor */
-	GIC_MSI_FRAME		= 13,	/* GIC MSI Frame */
-	GICR			= 14,	/* GIC Redistributor */
-	GIC_ITS			= 15,	/* Interrupt Translation Service */
+	LOCAL_APIC,			/* Processor local APIC */
+	IO_APIC,			/* I/O APIC */
+	IRQ_SOURCE_OVERRIDE,		/* Interrupt source override */
+	NMI_TYPE,			/* NMI source */
+	LOCAL_APIC_NMI,			/* Local APIC NMI */
+	LAPIC_ADDRESS_OVERRIDE,		/* Local APIC address override */
+	IO_SAPIC,			/* I/O SAPIC */
+	LOCAL_SAPIC,			/* Local SAPIC */
+	PLATFORM_IRQ_SOURCES,		/* Platform interrupt sources */
+	LOCAL_X2APIC,			/* Processor local x2APIC */
+	LOCAL_X2APIC_NMI,		/* Local x2APIC NMI */
+	GICC,				/* GIC CPU Interface */
+	GICD,				/* GIC Distributor */
+	GIC_MSI_FRAME,			/* GIC MSI Frame */
+	GICR,				/* GIC Redistributor */
+	GIC_ITS,			/* Interrupt Translation Service */
 	/* 0x10-0x7f: Reserved */
 	/* 0x80-0xff: Reserved for OEM use */
 };
@@ -466,7 +465,7 @@ typedef struct acpi_madt_irqoverride {
 
 /* DBG2: Microsoft Debug Port Table 2 header */
 typedef struct acpi_dbg2_header {
-	struct acpi_table_header header;
+	acpi_header_t header;
 	uint32_t devices_offset;
 	uint32_t devices_count;
 } __attribute__((packed)) acpi_dbg2_header_t;
@@ -489,7 +488,7 @@ typedef struct acpi_dbg2_device {
 
 /* FADT (Fixed ACPI Description Table) */
 typedef struct acpi_fadt {
-	struct acpi_table_header header;
+	acpi_header_t header;
 	u32 firmware_ctrl;
 	u32 dsdt;
 	u8 reserved;	/* Should be 0 */
@@ -528,7 +527,7 @@ typedef struct acpi_fadt {
 	u16 iapc_boot_arch;
 	u8 res2;
 	u32 flags;
-	struct acpi_gen_regaddr reset_reg;
+	acpi_addr_t reset_reg;
 	u8 reset_value;
 	u16 ARM_boot_arch;
 	u8 FADT_MinorVersion;
@@ -536,14 +535,14 @@ typedef struct acpi_fadt {
 	u32 x_firmware_ctl_h;
 	u32 x_dsdt_l;
 	u32 x_dsdt_h;
-	struct acpi_gen_regaddr x_pm1a_evt_blk;
-	struct acpi_gen_regaddr x_pm1b_evt_blk;
-	struct acpi_gen_regaddr x_pm1a_cnt_blk;
-	struct acpi_gen_regaddr x_pm1b_cnt_blk;
-	struct acpi_gen_regaddr x_pm2_cnt_blk;
-	struct acpi_gen_regaddr x_pm_tmr_blk;
-	struct acpi_gen_regaddr x_gpe0_blk;
-	struct acpi_gen_regaddr x_gpe1_blk;
+	acpi_addr_t x_pm1a_evt_blk;
+	acpi_addr_t x_pm1b_evt_blk;
+	acpi_addr_t x_pm1a_cnt_blk;
+	acpi_addr_t x_pm1b_cnt_blk;
+	acpi_addr_t x_pm2_cnt_blk;
+	acpi_addr_t x_pm_tmr_blk;
+	acpi_addr_t x_gpe0_blk;
+	acpi_addr_t x_gpe1_blk;
 } __packed acpi_fadt_t;
 
 /* FADT TABLE Revision values */
@@ -634,9 +633,9 @@ typedef struct acpi_facs {
 
 /* ECDT (Embedded Controller Boot Resources Table) */
 typedef struct acpi_ecdt {
-	struct acpi_table_header header;
-	struct acpi_gen_regaddr ec_control;	/* EC control register */
-	struct acpi_gen_regaddr ec_data;	/* EC data register */
+	acpi_header_t header;
+	acpi_addr_t ec_control;	/* EC control register */
+	acpi_addr_t ec_data;	/* EC data register */
 	u32 uid;				/* UID */
 	u8 gpe_bit;				/* GPE bit */
 	u8 ec_id[];				/* EC ID  */
@@ -644,7 +643,7 @@ typedef struct acpi_ecdt {
 
 /* HEST (Hardware Error Source Table) */
 typedef struct acpi_hest {
-	struct acpi_table_header header;
+	acpi_header_t header;
 	u32 error_source_count;
 	/* error_source_struct(s) */
 } __packed acpi_hest_t;
@@ -677,7 +676,7 @@ typedef struct acpi_hest_hen {
 
 /* BERT (Boot Error Record Table) */
 typedef struct acpi_bert {
-	struct acpi_table_header header;
+	acpi_header_t header;
 	u32 region_length;
 	u64 error_region;
 } __packed acpi_bert_t;
@@ -794,7 +793,7 @@ enum acpi_ipmi_interface_type {
 
 /* ACPI IPMI 2.0 */
 struct acpi_spmi {
-	struct acpi_table_header header;
+	acpi_header_t header;
 	u8 interface_type;
 	u8 reserved;
 	u16 specification_revision;
@@ -864,9 +863,9 @@ void acpi_create_slit(acpi_slit_t *slit,
 		      unsigned long (*acpi_fill_slit)(unsigned long current));
 
 void acpi_create_vfct(struct device *device,
-		      struct acpi_vfct *vfct,
+		      acpi_vfct_t *vfct,
 		      unsigned long (*acpi_fill_vfct)(struct device *device,
-				struct acpi_vfct *vfct_struct,
+				acpi_vfct_t *vfct_struct,
 				unsigned long current));
 
 void acpi_create_ipmi(struct device *device,

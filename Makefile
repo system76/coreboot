@@ -144,12 +144,11 @@ endif
 	\mv -f $@.tmp $@ 2> /dev/null
 	rm -f $@.tmp
 
--include $(TOPLEVEL)/site-local/Makefile.inc
-
 ifeq ($(NOCOMPILE),1)
 include $(TOPLEVEL)/Makefile.inc
 include $(TOPLEVEL)/payloads/Makefile.inc
 include $(TOPLEVEL)/util/testing/Makefile.inc
+-include $(TOPLEVEL)/site-local/Makefile.inc
 real-all:
 	@echo "Error: Expected config file ($(DOTCONFIG)) not present." >&2
 	@echo "Please specify a config file or run 'make menuconfig' to" >&2
@@ -195,7 +194,7 @@ $(KCONFIG_AUTOHEADER): $(KCONFIG_CONFIG) $(objutil)/kconfig/conf
 $(KCONFIG_AUTOCONFIG): $(KCONFIG_AUTOHEADER)
 	true
 
-$(KCONFIG_AUTOADS): $(KCONFIG_AUTOCONFIG) $(objutil)/kconfig/toada
+$(KCONFIG_AUTOADS): $(KCONFIG_CONFIG) $(KCONFIG_AUTOHEADER) $(objutil)/kconfig/toada
 	$(objutil)/kconfig/toada CB.Config <$< >$@
 
 $(obj)/%/$(notdir $(KCONFIG_AUTOADS)): $(KCONFIG_AUTOADS)
@@ -253,13 +252,13 @@ includemakefiles= \
 	$(foreach class,classes subdirs $(classes) $(special-classes), $(eval $(class)-y:=)) \
 	$(eval -include $(1)) \
 	$(foreach class,$(classes-y), $(call add-class,$(class))) \
+	$(foreach special,$(special-classes), \
+		$(foreach item,$($(special)-y), $(call $(special)-handler,$(dir $(1)),$(item)))) \
 	$(foreach class,$(classes), \
 		$(eval $(class)-srcs+= \
 			$$(subst $(absobj)/,$(obj)/, \
 			$$(subst $(top)/,, \
 			$$(abspath $$(subst $(dir $(1))/,/,$$(addprefix $(dir $(1)),$$($(class)-y)))))))) \
-	$(foreach special,$(special-classes), \
-		$(foreach item,$($(special)-y), $(call $(special)-handler,$(dir $(1)),$(item)))) \
 	$(eval subdirs+=$$(subst $(CURDIR)/,,$$(wildcard $$(abspath $$(addprefix $(dir $(1)),$$(subdirs-y))))))
 
 # For each path in $(subdirs) call includemakefiles

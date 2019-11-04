@@ -37,7 +37,8 @@ enum {
 
 enum dram_odt_type {
 	ODT_OFF = 0,
-	ODT_ON
+	ODT_ON,
+	ODT_MAX
 };
 
 enum {
@@ -56,6 +57,12 @@ enum {
 enum {
 	CBT_NORMAL_MODE = 0,
 	CBT_BYTE_MODE1
+};
+
+enum {
+	FSP_0 = 0,
+	FSP_1,
+	FSP_MAX
 };
 
 #endif   /* _DRAMC_COMMON_MT8183_H_ */

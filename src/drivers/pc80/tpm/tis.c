@@ -1,9 +1,6 @@
 /*
  * This file is part of the coreboot project.
  *
- * Copyright (C) 2011 The Chromium OS Authors. All rights reserved.
- * Copyright (C) 2018 Eltan B.V.
- *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; version 2 of the License.
@@ -468,7 +465,7 @@ static u32 tis_senddata(const u8 *const data, u32 len)
 	burst = tpm_read_burst_count(locality);
 
 	while (1) {
-		unsigned count;
+		unsigned int count;
 
 		/* Wait till the device is ready to accept more data. */
 		while (!burst) {

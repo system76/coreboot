@@ -23,21 +23,21 @@
 
 static inline void sio1036_enter_conf_state(pnp_devfn_t dev)
 {
-	unsigned port = dev >> 8;
+	u8 port = dev >> 8;
 	outb(0x55, port);
 }
 
 static inline void sio1036_exit_conf_state(pnp_devfn_t dev)
 {
-	unsigned port = dev >> 8;
+	u8 port = dev >> 8;
 	outb(0xaa, port);
 }
 
 /* Detect SMSC SIO1036 LPC Debug Card status */
-static u8 detect_sio1036_chip(unsigned port)
+static u8 detect_sio1036_chip(unsigned int port)
 {
 	pnp_devfn_t dev = PNP_DEV(port, SIO1036_SP1);
-	unsigned data;
+	u8 data;
 
 	sio1036_enter_conf_state(dev);
 	data = pnp_read_config(dev, 0x0D);
@@ -47,15 +47,14 @@ static u8 detect_sio1036_chip(unsigned port)
 	if (data == 0x82) {
 		/* Found SMSC SIO1036 chip */
 		return 0;
-	}
-	else {
+	} else {
 		return 1;
 	};
 }
 
 void sio1036_enable_serial(pnp_devfn_t dev, u16 iobase)
 {
-	unsigned port = dev >> 8;
+	unsigned int port = dev >> 8;
 
 	if (detect_sio1036_chip(port) != 0)
 		return;

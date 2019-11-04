@@ -351,7 +351,7 @@ static void hda_work_around(struct device *dev)
 
 static int place_device_in_d3hot(struct device *dev)
 {
-	unsigned offset;
+	unsigned int offset;
 
 	/* Parts of the HDA block are used for LPE audio as well.
 	 * Therefore assume the HDA will never be put into D3Hot. */
@@ -530,7 +530,7 @@ static struct device_operations device_ops = {
 	.enable_resources	= NULL,
 	.init			= sc_init,
 	.enable			= southcluster_enable_dev,
-	.scan_bus		= scan_lpc_bus,
+	.scan_bus		= scan_static_bus,
 	.ops_pci		= &soc_pci_ops,
 };
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 Google, Inc.
+ * This file is part of the coreboot project.
  *
  * This software is licensed under the terms of the GNU General Public
  * License version 2, as published by the Free Software Foundation, and
@@ -30,6 +30,6 @@ enum display_pattern {
  *
  * Display pattern on the ring LEDs.
  */
-int ww_ring_display_pattern(unsigned i2c_bus, enum display_pattern pattern);
+int ww_ring_display_pattern(unsigned int i2c_bus, enum display_pattern pattern);
 
 #endif

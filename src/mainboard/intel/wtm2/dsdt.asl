@@ -26,6 +26,7 @@ DefinitionBlock(
 	0x20110725	// OEM revision
 )
 {
+	#include <southbridge/intel/common/acpi/platform.asl>
 	// Some generic macros
 	#include "acpi/platform.asl"
 
@@ -53,7 +54,7 @@ DefinitionBlock(
 	#include <vendorcode/google/chromeos/acpi/chromeos.asl>
 
 	// Chipset specific sleep states
-	#include <soc/intel/broadwell/acpi/sleepstates.asl>
+	#include <southbridge/intel/common/acpi/sleepstates.asl>
 
 	// Mainboard specific
 	#include "acpi/mainboard.asl"
