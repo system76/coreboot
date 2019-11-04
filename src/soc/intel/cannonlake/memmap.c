@@ -47,22 +47,6 @@ static size_t get_ptt_size(void)
 	return is_ptt_enable() ? 4*KiB : 0;
 }
 
-static bool is_ptt_enable(void)
-{
-	if ((read32((void *)PTT_TXT_BASE_ADDRESS) & PTT_PRESENT) ==
-			PTT_PRESENT)
-		return true;
-
-	return false;
-}
-
-/* Calculate PTT size */
-static size_t get_ptt_size(void)
-{
-	/* Allocate 4KB for PTT if enabled */
-	return is_ptt_enable() ? 4*KiB : 0;
-}
-
 /* Calculate ME Stolen size */
 static size_t get_imr_size(void)
 {
