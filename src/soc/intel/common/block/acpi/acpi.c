@@ -147,7 +147,7 @@ void acpi_fill_fadt(acpi_fadt_t *fadt)
 	fadt->reset_reg.space_id = 1;
 	fadt->reset_reg.bit_width = 8;
 	fadt->reset_reg.addrl = RST_CNT;
-	fadt->reset_value = FULL_RST | RST_CPU | SYS_RST;
+	fadt->reset_value = RST_CPU | SYS_RST;
 
 	fadt->x_pm1a_evt_blk.space_id = 1;
 	fadt->x_pm1a_evt_blk.bit_width = fadt->pm1_evt_len * 8;
