@@ -29,6 +29,32 @@ void mainboard_silicon_init_params(FSP_S_CONFIG *params) {
 	cnl_configure_pads(gpio_table, ARRAY_SIZE(gpio_table));
 }
 
+static int ec_cmd(u8 value) {
+	int i = 1000000;
+	while ((inb(0x66) & 2) == 2 && i > 0) {
+		i -= 1;
+	}
+	if (i == 0) {
+		return 1;
+	} else {
+		outb(value, 0x66);
+		return 0;
+	}
+}
+
+static int ec_write(u8 value) {
+	int i = 1000000;
+	while ((inb(0x66) & 2) == 2 && i > 0) {
+		i -= 1;
+	}
+	if (i == 0) {
+		return 1;
+	} else {
+		outb(value, 0x62);
+		return 0;
+	}
+}
+
 static u8 superio_read(u8 reg) {
 	outb(reg, 0x2E);
 	return inb(0x2F);
@@ -66,6 +92,17 @@ static void mainboard_init(struct device *dev) {
 	pc_keyboard_init(NO_AUX_DEVICE);
 
 	printk(BIOS_INFO, "system76: EC init\n");
+
+	// Set USB power plane to off during restart
+	if (!ec_cmd(0x96)) {
+		if (!ec_write(0x00)) {
+			printk(BIOS_INFO, "system76: set USB power plane to off during restart\n");
+		} else {
+			printk(BIOS_INFO, "system76: failed to send USB power plane data\n");
+		}
+	} else {
+		printk(BIOS_INFO, "system76: failed to send USB power plane command\n");
+	}
 
 	// Black magic - force enable camera toggle
 	u16 addr = 0x01CA;
