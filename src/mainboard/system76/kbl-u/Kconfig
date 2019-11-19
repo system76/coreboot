@@ -46,11 +46,11 @@ config CBFS_SIZE
 	hex
 	default 0x600000
 
-config MAINBOARD_PCI_SUBSYSTEM_VENDOR_ID
+config SUBSYSTEM_VENDOR_ID
 	hex
 	default 0x1558
 
-config MAINBOARD_PCI_SUBSYSTEM_DEVICE_ID
+config SUBSYSTEM_DEVICE_ID
 	hex
 	default 0x1303 if BOARD_SYSTEM76_GALP2
 	default 0x1313 if BOARD_SYSTEM76_GALP3
@@ -64,10 +64,9 @@ config ONBOARD_VGA_IS_PRIMARY
 	bool
 	default y
 
-# This causes UEFI to hang
-#config UART_FOR_CONSOLE
-#	int
-#	default 2
+config UART_FOR_CONSOLE
+	int
+	default 2
 
 config MAX_CPUS
 	int
