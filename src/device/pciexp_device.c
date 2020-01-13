@@ -476,10 +476,6 @@ struct device_operations default_pciexp_ops_bus = {
 };
 
 #if CONFIG(PCIEXP_HOTPLUG)
-#define PCIEXP_HOTPLUG_BUSES 32
-#define PCIEXP_HOTPLUG_MEM (8 * 1024 * 1024)
-#define PCIEXP_HOTPLUG_PREFETCH_MEM (256 * 1024 * 1024)
-#define PCIEXP_HOTPLUG_IO (8 * 1024)
 
 static void pciexp_hotplug_dummy_read_resources(struct device *dev)
 {
@@ -487,30 +483,27 @@ static void pciexp_hotplug_dummy_read_resources(struct device *dev)
 
 	// Add extra memory space
 	resource = new_resource(dev, 0x10);
-	resource->size = PCIEXP_HOTPLUG_MEM;
-	resource->align = 22;
-	resource->gran = 22;
+	resource->size = CONFIG_PCIEXP_HOTPLUG_MEM;
+	resource->align = 12;
+	resource->gran = 12;
 	resource->limit = 0xffffffff;
 	resource->flags |= IORESOURCE_MEM;
-	printk(BIOS_DEBUG, "%s: add 0x%llx of memory space\n", __func__, resource->size);
 
 	// Add extra prefetchable memory space
 	resource = new_resource(dev, 0x14);
-	resource->size = PCIEXP_HOTPLUG_PREFETCH_MEM;
-	resource->align = 22;
-	resource->gran = 22;
+	resource->size = CONFIG_PCIEXP_HOTPLUG_PREFETCH_MEM;
+	resource->align = 12;
+	resource->gran = 12;
 	resource->limit = 0xffffffffffffffff;
 	resource->flags |= IORESOURCE_MEM | IORESOURCE_PREFETCH;
-	printk(BIOS_DEBUG, "%s: add 0x%llx of prefetch memory space\n", __func__, resource->size);
 
 	// Add extra I/O space
 	resource = new_resource(dev, 0x18);
-	resource->size = PCIEXP_HOTPLUG_IO;
+	resource->size = CONFIG_PCIEXP_HOTPLUG_IO;
 	resource->align = 12;
 	resource->gran = 12;
 	resource->limit = 0xffff;
 	resource->flags |= IORESOURCE_IO;
-	printk(BIOS_DEBUG, "%s: add 0x%llx of I/O space\n", __func__, resource->size);
 }
 
 static struct device_operations pciexp_hotplug_dummy_ops = {
@@ -519,23 +512,12 @@ static struct device_operations pciexp_hotplug_dummy_ops = {
 
 void pciexp_hotplug_scan_bridge(struct device *dev)
 {
-	dev->hotplug_buses = PCIEXP_HOTPLUG_BUSES;
-	printk(
-		BIOS_DEBUG,
-		"%s set hotplug_buses to %d\n",
-		dev_path(dev),
-		dev->hotplug_buses
-	);
+	dev->hotplug_buses = CONFIG_PCIEXP_HOTPLUG_BUSES;
 
 	/* Normal PCIe Scan */
 	pciexp_scan_bridge(dev);
 
 	/* Add dummy slot to preserve resources, must happen after bus scan */
-	printk(
-		BIOS_DEBUG,
-		"%s: add hotplug dummy device\n",
-		dev_path(dev)
-	);
 	struct device *dummy;
 	struct device_path dummy_path = { .type = DEVICE_PATH_NONE };
 	dummy = alloc_dev(dev->link_list, &dummy_path);
