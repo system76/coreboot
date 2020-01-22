@@ -5,7 +5,7 @@ config NO_BOOTBLOCK_CONSOLE
 
 config BOOTBLOCK_CONSOLE
 	bool "Enable early (bootblock) console output."
-	depends on C_ENVIRONMENT_BOOTBLOCK && !NO_BOOTBLOCK_CONSOLE
+	depends on !NO_BOOTBLOCK_CONSOLE
 	default y
 	help
 	  Use console during the bootblock if supported
@@ -88,7 +88,7 @@ comment "Serial port base address = 0x2e8"
 depends on DRIVERS_UART_8250IO && UART_FOR_CONSOLE = 3
 
 config UART_OVERRIDE_BAUDRATE
-	boolean
+	bool
 	help
 	  Set to "y" when the platform overrides the baudrate by providing
 	  a get_uart_baudrate routine.
@@ -303,7 +303,7 @@ config SPI_CONSOLE
 	  drivers are written.
 
 config CONSOLE_OVERRIDE_LOGLEVEL
-	boolean
+	bool
 	help
 	  Set to "y" when the platform overrides the loglevel by providing
 	  a get_console_loglevel routine.
@@ -417,6 +417,7 @@ config POST_DEVICE
 choice
 	prompt "Device to send POST codes to"
 	depends on POST_DEVICE
+	default POST_DEVICE_LPC if DEFAULT_POST_ON_LPC
 	default POST_DEVICE_NONE
 
 config POST_DEVICE_NONE
@@ -428,6 +429,10 @@ config POST_DEVICE_PCI_PCIE
 	bool "PCI/PCIe"
 	depends on PCI
 endchoice
+
+config DEFAULT_POST_ON_LPC
+	bool
+	default n
 
 config POST_IO
 	bool "Send POST codes to an IO port"

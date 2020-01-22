@@ -11,12 +11,11 @@
  * GNU General Public License for more details.
  */
 
+#include <arch/bootblock.h>
 #include <device/pci_ops.h>
+#include "i945.h"
 
-/* Just re-define this instead of including i945.h. It blows up romcc. */
-#define PCIEXBAR	0x48
-
-static void bootblock_northbridge_init(void)
+void bootblock_early_northbridge_init(void)
 {
 	uint32_t reg;
 
@@ -27,7 +26,7 @@ static void bootblock_northbridge_init(void)
 	 * MCFG. This code also assumes that bootblock_northbridge_init() is
 	 * the first thing called in the non-asm boot block code. The final
 	 * assumption is that no assembly code is using the
-	 * CONFIG_MMCONF_SUPPORT option to do PCI config acceses.
+	 * CONFIG_MMCONF_SUPPORT option to do PCI config accesses.
 	 *
 	 * The PCIEXBAR is assumed to live in the memory mapped IO space under
 	 * 4GiB.

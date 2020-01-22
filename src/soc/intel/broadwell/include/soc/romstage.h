@@ -17,7 +17,6 @@
 #define _BROADWELL_ROMSTAGE_H_
 
 #include <stdint.h>
-#include <arch/cpu.h>
 #include <soc/pei_data.h>
 
 struct chipset_power_state;
@@ -42,8 +41,5 @@ void systemagent_early_init(void);
 void pch_early_init(void);
 void pch_uart_init(void);
 void intel_early_me_status(void);
-
-void enable_smbus(void);
-int smbus_read_byte(unsigned int device, unsigned int address);
 
 #endif

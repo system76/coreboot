@@ -62,7 +62,6 @@ int pch_silicon_type(void);
 int pch_silicon_supported(int type, int rev);
 void pch_iobp_update(u32 address, u32 andvalue, u32 orvalue);
 
-void enable_smbus(void);
 void enable_usb_bar(void);
 
 #if ENV_ROMSTAGE
@@ -72,7 +71,12 @@ int smbus_read_byte(unsigned int device, unsigned int address);
 void early_thermal_init(void);
 void southbridge_configure_default_intmap(void);
 void southbridge_rcba_config(void);
-void mainboard_rcba_config(void);
+/* Optional mainboard hook to do additional configuration
+   on the RCBA config space. It is called after the raminit. */
+void mainboard_late_rcba_config(void);
+/* Optional mainboard hook to do additional LPC configuration
+   or to override what is set up by default. */
+void mainboard_pch_lpc_setup(void);
 void early_pch_init_native(void);
 void early_pch_init(void);
 void early_pch_init_native_dmi_pre(void);
@@ -85,10 +89,8 @@ struct southbridge_usb_port
 	int oc_pin;
 };
 
-#ifndef __ROMCC__
 void pch_enable(struct device *dev);
 extern const struct southbridge_usb_port mainboard_usb_ports[14];
-#endif
 
 void early_usb_init(const struct southbridge_usb_port *portmap);
 
@@ -235,7 +237,6 @@ void early_usb_init(const struct southbridge_usb_port *portmap);
 #define PCH_SMBUS_DEV		PCI_DEV(0, 0x1f, 3)
 #define SMB_BASE		0x20
 #define HOSTC			0x40
-#define SMB_RCV_SLVA		0x09
 
 /* HOSTC bits */
 #define I2C_EN			(1 << 2)

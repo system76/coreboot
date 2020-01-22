@@ -23,7 +23,6 @@ DefinitionBlock(
 	0x20160115	/* OEM revision */
 )
 {
-	/* Some generic macros */
 	#include <soc/intel/broadwell/acpi/platform.asl>
 
 	/* Global NVS and variables */
@@ -40,7 +39,6 @@ DefinitionBlock(
 		}
 	}
 
-	/* Chipset specific sleep states */
 	#include <southbridge/intel/common/acpi/sleepstates.asl>
 
 	/* Mainboard specific */

@@ -19,7 +19,6 @@
 #include <console/console.h>
 #include <cpu/x86/smm.h>
 #include <soc/pm.h>
-#include <soc/smm.h>
 #include <elog.h>
 #include <ec/google/chromeec/ec.h>
 #include <soc/gpio.h>
@@ -33,11 +32,9 @@ static u8 mainboard_smi_ec(void)
 	u8 cmd = google_chromeec_get_event();
 	u32 pm1_cnt;
 
-#if CONFIG(ELOG_GSMI)
 	/* Log this event */
 	if (cmd)
-		elog_add_event_byte(ELOG_TYPE_EC_EVENT, cmd);
-#endif
+		elog_gsmi_add_event_byte(ELOG_TYPE_EC_EVENT, cmd);
 
 	switch (cmd) {
 	case EC_HOST_EVENT_LID_CLOSED:

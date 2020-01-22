@@ -14,6 +14,7 @@
  */
 
 #include <assert.h>
+#include <commonlib/helpers.h>
 #include <console/console.h>
 #include <delay.h>
 #include <device/device.h>
@@ -133,7 +134,7 @@ static int platform_i2c_read(uint32_t restart, uint8_t *rx_buffer, int length,
 	}
 
 	/* Fill the FIFO with read commands */
-	fifo_bytes = min(length, 16);
+	fifo_bytes = MIN(length, 16);
 	bytes_transferred = 0;
 	while (length > 0) {
 		status = regs->ic_raw_intr_stat;
@@ -209,7 +210,7 @@ int platform_i2c_transfer(unsigned int bus, struct i2c_msg *segment,
 			if (index == 0)
 				printk(BIOS_ERR, "I2C Start\n");
 			printk(BIOS_ERR,
-				"I2C segment[%d]: %s 0x%02x %s 0x%p, 0x%08x bytes\n",
+				"I2C segment[%d]: %s 0x%02x %s %p, 0x%08x bytes\n",
 				index,
 				(segment[index].flags & I2C_M_RD) ? "Read from" : "Write to",
 				segment[index].slave,

@@ -29,6 +29,7 @@
 #include <soc/pci_devs.h>
 #include <soc/pm.h>
 #include <soc/pmc.h>
+#include <soc/sata.h>
 #include <soc/serialio.h>
 #include <soc/usb.h>
 #include <soc/vr_config.h>
@@ -39,17 +40,12 @@
 #endif
 
 #define SOC_INTEL_CML_UART_DEV_MAX 3
+#define SOC_INTEL_CML_SATA_DEV_MAX 8
 
 struct soc_intel_cannonlake_config {
 
 	/* Common struct containing soc config data required by common code */
 	struct soc_intel_common_config common_soc_config;
-
-	/* GPE configuration */
-	uint32_t gpe0_en_1; /* GPE0_EN_31_0 */
-	uint32_t gpe0_en_2; /* GPE0_EN_63_32 */
-	uint32_t gpe0_en_3; /* GPE0_EN_95_64 */
-	uint32_t gpe0_en_4; /* GPE0_EN_127_96 / GPE_STD */
 
 	/* Gpio group routed to each dword of the GPE0 block. Values are
 	 * of the form GPP_[A:G] or GPD. */
@@ -130,6 +126,8 @@ struct soc_intel_cannonlake_config {
 	uint16_t usb2_wake_enable_bitmap;
 	/* Wake Enable Bitmap for USB3 ports */
 	uint16_t usb3_wake_enable_bitmap;
+	/* USB2 PHY power gating */
+	uint8_t PchUsb2PhySusPgDisable;
 
 	/* SATA related */
 	enum {
@@ -222,6 +220,15 @@ struct soc_intel_cannonlake_config {
 	uint8_t TcoIrqSelect;
 	uint8_t TcoIrqEnable;
 
+	/* CPU PL2/4 Config
+	 * Performance: Maximum PLs for maximum performance.
+	 * Baseline: Baseline PLs for balanced performance at lower power.
+	 */
+	enum {
+		baseline,
+		performance
+	} cpu_pl2_4_cfg;
+
 	/* VrConfig Settings for 5 domains
 	 * 0 = System Agent, 1 = IA Core, 2 = Ring,
 	 * 3 = GT unsliced,  4 = GT sliced */
@@ -261,12 +268,7 @@ struct soc_intel_cannonlake_config {
 
 	/* Enable C6 DRAM */
 	uint8_t enable_c6dram;
-	/*
-	 * PRMRR size setting with below options
-	 * 0x00100000 - 1MiB
-	 * 0x02000000 - 32MiB and beyond
-	 */
-	uint32_t PrmrrSize;
+
 	uint8_t PmTimerDisabled;
 
 	/*
@@ -395,6 +397,9 @@ struct soc_intel_cannonlake_config {
 	/* SATA Power Optimizer */
 	uint8_t satapwroptimize;
 
+	/* SATA Gen3 Strength */
+	struct sata_port_config sata_port[SOC_INTEL_CML_SATA_DEV_MAX];
+
 	/* Enable or disable eDP device */
 	uint8_t DdiPortEdp;
 
@@ -434,6 +439,19 @@ struct soc_intel_cannonlake_config {
 	 * Bit 0: MISCCFG_GPDLCGEN
 	 */
 	uint8_t gpio_pm[TOTAL_GPIO_COMM];
+
+	/*
+	 * Override CPU flex ratio value:
+	 * CPU ratio value controls the maximum processor non-turbo ratio.
+	 * Valid Range 0 to 63.
+	 *
+	 * In general descriptor provides option to set default cpu flex ratio.
+	 * Default cpu flex ratio is 0 ensures booting with non-turbo max frequency.
+	 * Thats the reason FSP skips cpu_ratio override if cpu_ratio is 0.
+	 *
+	 * Only override CPU flex ratio if don't want to boot with non-turbo max.
+	 */
+	uint8_t cpu_ratio_override;
 };
 
 typedef struct soc_intel_cannonlake_config config_t;

@@ -19,14 +19,13 @@ config BOARD_SPECIFIC_OPTIONS
 	select BOARD_ROMSIZE_KB_2048
 	select HAVE_ACPI_TABLES
 	select HAVE_ACPI_RESUME
-	select H8_DOCK_EARLY_INIT
 	select HAVE_CMOS_DEFAULT
 	select I945_LVDS
 	select INTEL_GMA_HAVE_VBT
 
 config MAINBOARD_DIR
 	string
-	default lenovo/t60
+	default "lenovo/t60"
 
 config VARIANT_DIR
 	string

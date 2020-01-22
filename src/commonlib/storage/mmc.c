@@ -186,6 +186,7 @@ static int mmc_select_hs(struct storage_media *media)
 
 	/* Increase the controller clock speed */
 	SET_TIMING(media->ctrlr, BUS_TIMING_MMC_HS);
+	media->caps &= ~(DRVR_CAP_HS200 | DRVR_CAP_HS400);
 	media->caps |= DRVR_CAP_HS52 | DRVR_CAP_HS;
 	mmc_recalculate_clock(media);
 	ret = sd_mmc_send_status(media, SD_MMC_IO_RETRIES);
@@ -435,7 +436,7 @@ int mmc_update_capacity(struct storage_media *media)
 	if ((capacity >> 20) > 2 * 1024)
 		media->capacity[MMC_PARTITION_USER] = capacity;
 
-	/* Determine the boot parition sizes */
+	/* Determine the boot partition sizes */
 	hc_erase_size = ext_csd[224] * 512 * KiB;
 	capacity = ext_csd[EXT_CSD_BOOT_SIZE_MULT] * 128 * KiB;
 	media->capacity[MMC_PARTITION_BOOT_1] = capacity;

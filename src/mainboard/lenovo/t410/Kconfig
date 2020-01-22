@@ -22,6 +22,7 @@ config BOARD_SPECIFIC_OPTIONS
 	select MAINBOARD_USES_IFD_GBE_REGION
 	select H8_HAS_BAT_TRESHOLDS_IMPL
 	select MAINBOARD_HAS_LIBGFXINIT
+	select DRIVERS_RICOH_RCE822
 
 config VBOOT
 	select VBOOT_VBNV_CMOS
@@ -44,7 +45,7 @@ config FMDFILE
 
 config MAINBOARD_DIR
 	string
-	default lenovo/t410
+	default "lenovo/t410"
 
 config MAINBOARD_PART_NUMBER
 	string
@@ -57,10 +58,6 @@ config USBDEBUG_HCD_INDEX
 config MAX_CPUS
 	int
 	default 8
-
-config ONBOARD_VGA_IS_PRIMARY
-	bool
-	default y
 
 config DRAM_RESET_GATE_GPIO
 	int

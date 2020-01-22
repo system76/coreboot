@@ -26,8 +26,8 @@
 #include <symbols.h>
 #include <timestamp.h>
 #include <fmap.h>
-#include "fmap_config.h"
 #include <security/vboot/vboot_crtm.h>
+#include <security/vboot/vboot_common.h>
 
 #define ERROR(x...) printk(BIOS_ERR, "CBFS: " x)
 #define LOG(x...) printk(BIOS_INFO, "CBFS: " x)
@@ -40,28 +40,27 @@
 int cbfs_boot_locate(struct cbfsf *fh, const char *name, uint32_t *type)
 {
 	struct region_device rdev;
-	const struct region_device *boot_dev;
-	struct cbfs_props props;
 
-	if (cbfs_boot_region_properties(&props)) {
-		printk(BIOS_ALERT, "ERROR: Failed to locate boot region\n");
+	if (cbfs_boot_region_device(&rdev))
 		return -1;
-	}
-
-	/* All boot CBFS operations are performed using the RO device. */
-	boot_dev = boot_device_ro();
-
-	if (boot_dev == NULL) {
-		printk(BIOS_ALERT, "ERROR: Failed to find boot device\n");
-		return -1;
-	}
-
-	if (rdev_chain(&rdev, boot_dev, props.offset, props.size)) {
-		printk(BIOS_ALERT, "ERROR: Failed to access boot region inside boot device\n");
-		return -1;
-	}
 
 	int ret = cbfs_locate(fh, &rdev, name, type);
+
+	if (CONFIG(VBOOT_ENABLE_CBFS_FALLBACK) && ret) {
+
+		/*
+		 * When VBOOT_ENABLE_CBFS_FALLBACK is enabled and a file is not available in the
+		 * active RW region, the RO (COREBOOT) region will be used to locate the file.
+		 *
+		 * This functionality makes it possible to avoid duplicate files in the RO
+		 * and RW partitions while maintaining updateability.
+		 *
+		 * Files can be added to the RO_REGION_ONLY config option to use this feature.
+		 */
+		printk(BIOS_DEBUG, "Fall back to RO region for %s\n", name);
+		ret = cbfs_locate_file_in_region(fh, "COREBOOT", name, type);
+	}
+
 	if (!ret)
 		if (vboot_measure_cbfs_hook(fh, name))
 			return -1;
@@ -281,104 +280,9 @@ out:
 	return 0;
 }
 
-/* This only supports the "COREBOOT" fmap region. */
-static int cbfs_master_header_props(struct cbfs_props *props)
+int cbfs_boot_region_device(struct region_device *rdev)
 {
-	struct cbfs_header header;
-	const struct region_device *bdev;
-	int32_t rel_offset;
-	size_t offset;
-
-	bdev = boot_device_ro();
-
-	if (bdev == NULL)
-		return -1;
-
-	size_t fmap_top = ___FMAP__COREBOOT_BASE + ___FMAP__COREBOOT_SIZE;
-
-	/* Find location of header using signed 32-bit offset from
-	 * end of CBFS region. */
-	offset = fmap_top - sizeof(int32_t);
-	if (rdev_readat(bdev, &rel_offset, offset, sizeof(int32_t)) < 0)
-		return -1;
-
-	offset = fmap_top + (int32_t)le32_to_cpu(rel_offset);
-	if (rdev_readat(bdev, &header, offset, sizeof(header)) < 0)
-		return -1;
-
-	header.magic = ntohl(header.magic);
-	header.romsize = ntohl(header.romsize);
-	header.offset = ntohl(header.offset);
-
-	if (header.magic != CBFS_HEADER_MAGIC)
-		return -1;
-
-	props->offset = header.offset;
-	props->size = header.romsize;
-	props->size -= props->offset;
-
-	printk(BIOS_SPEW, "CBFS @ %zx size %zx\n", props->offset, props->size);
-
-	return 0;
-}
-
-/* This struct is marked as weak to allow a particular platform to
- * override the master header logic. This implementation should work for most
- * devices. */
-const struct cbfs_locator __weak cbfs_master_header_locator = {
-	.name = "Master Header Locator",
-	.locate = cbfs_master_header_props,
-};
-
-extern const struct cbfs_locator vboot_locator;
-
-static const struct cbfs_locator *locators[] = {
-#if CONFIG(VBOOT)
-	/*
-	 * NOTE: Does not link in SMM, as the vboot_locator isn't compiled.
-	 * ATM there's no need for VBOOT functionality in SMM and it's not
-	 * a problem.
-	 */
-	&vboot_locator,
-#endif
-	&cbfs_master_header_locator,
-};
-
-int cbfs_boot_region_properties(struct cbfs_props *props)
-{
-	int i;
-
 	boot_device_init();
-
-	for (i = 0; i < ARRAY_SIZE(locators); i++) {
-		const struct cbfs_locator *ops;
-
-		ops = locators[i];
-
-		if (ops->locate == NULL)
-			continue;
-
-		if (ops->locate(props))
-			continue;
-
-		LOG("'%s' located CBFS at [%zx:%zx)\n",
-		    ops->name, props->offset, props->offset + props->size);
-
-		return 0;
-	}
-
-	return -1;
-}
-
-void cbfs_prepare_program_locate(void)
-{
-	int i;
-
-	boot_device_init();
-
-	for (i = 0; i < ARRAY_SIZE(locators); i++) {
-		if (locators[i]->prepare == NULL)
-			continue;
-		locators[i]->prepare();
-	}
+	return vboot_locate_cbfs(rdev) &&
+	       fmap_locate_area_as_rdev("COREBOOT", rdev);
 }

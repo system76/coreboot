@@ -68,7 +68,7 @@ AGESA_INC += -I$(src)/include
 AGESA_INC += -I$(src)/commonlib/include
 AGESA_INC += -I$(VBOOT_SOURCE)/firmware/include
 
-AGESA_CFLAGS += -march=amdfam10 -mno-3dnow -fno-zero-initialized-in-bss
+AGESA_CFLAGS += -march=amdfam10 -mno-3dnow
 AGESA_CFLAGS += -fno-strict-aliasing -D__LIBAGESA__
 CFLAGS_x86_32 += $(AGESA_CFLAGS)
 CFLAGS_x86_64 += $(AGESA_CFLAGS)
@@ -109,10 +109,6 @@ $(call src-to-obj,libagesa,$1): $(agesa_src_path)/$(notdir $1) $(obj)/config.h $
 endef
 
 agesa_raw_files += $(wildcard $(src)/vendorcode/amd/pi/Lib/*.[cS])
-
-ifeq ($(CONFIG_BINARYPI_LEGACY_WRAPPER),y)
-agesa_raw_files += $(wildcard $(AGESA_ROOT)/binaryPI/*.[cS])
-endif
 
 ifeq ($(CONFIG_CPU_AMD_PI_00660F01),y)
 agesa_raw_files += $(wildcard $(AGESA_ROOT)/Proc/Fch/Kern/KernImc/*.[cS])

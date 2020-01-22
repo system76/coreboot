@@ -23,7 +23,6 @@ DefinitionBlock(
 	0x20110725	// OEM revision
 )
 {
-	/* generic macros */
 	#include <soc/intel/apollolake/acpi/platform.asl>
 
 	/* global NVS and variables */
@@ -41,6 +40,5 @@ DefinitionBlock(
 		}
 	}
 
-	/* Chipset specific sleep states */
 	#include <southbridge/intel/common/acpi/sleepstates.asl>
 }

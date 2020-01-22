@@ -13,10 +13,9 @@
  * GNU General Public License for more details.
  */
 
+#include <amdblocks/acpimmio.h>
 #include <console/console.h>
 #include <device/device.h>
-#include <southbridge/amd/sb800/sb800.h>
-#include <southbridge/amd/cimx/sb800/SBPLATFORM.h>	/* Platform Specific Definitions */
 
 static void init_gpios(void)
 {
@@ -34,16 +33,15 @@ static void init_gpios(void)
 	/* Multi-function pins switch to GPIO0-35, these pins are shared with
 	 * PCI pins, make sure Hudson PCI device is disabled.
 	 */
-	RWMEM(ACPI_MMIO_BASE + PMIO_BASE + SB_PMIOA_REGEA, AccWidthUint8, ~BIT0, 1);
+	pm_write8(0xea, (pm_read8(0xea) & 0xfe) | 1);
 
 	/* select IOMux to function1/2, corresponds to GPIO */
-	RWMEM(ACPI_MMIO_BASE + IOMUX_BASE + SB_GPIO_REG32, AccWidthUint8, ~(BIT0 | BIT1), 1);
-	RWMEM(ACPI_MMIO_BASE + IOMUX_BASE + SB_GPIO_REG50, AccWidthUint8, ~(BIT0 | BIT1), 2);
-
+	iomux_write8(0x32, (iomux_read8(0x32) & 0xfc) | 1);
+	iomux_write8(0x50, (iomux_read8(0x50) & 0xfc) | 2);
 
 	/* output low */
-	RWMEM(ACPI_MMIO_BASE + GPIO_BASE + SB_GPIO_REG32, AccWidthUint8, ~(0xFF), 0x48);
-	RWMEM(ACPI_MMIO_BASE + GPIO_BASE + SB_GPIO_REG50, AccWidthUint8, ~(0xFF), 0x48);
+	gpio_100_write8(0x20, 0x48);
+	gpio_100_write8(0x32, 0x48);
 }
 
 
@@ -63,8 +61,8 @@ static void mainboard_enable(struct device *dev)
 	 * SPD read code has been made generic and moved out of the board
 	 * directory, so the ASF init is being done here.
 	 */
-	pm_iowrite(0x29, 0x80);
-	pm_iowrite(0x28, 0x61);
+	pm_write8(0x29, 0x80);
+	pm_write8(0x28, 0x61);
 }
 
 struct chip_operations mainboard_ops = {

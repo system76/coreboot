@@ -73,11 +73,6 @@ struct soc_intel_skylake_config {
 	uint8_t pirqg_routing;
 	uint8_t pirqh_routing;
 
-	/* GPE configuration */
-	uint32_t gpe0_en_1; /* GPE0_EN_31_0 */
-	uint32_t gpe0_en_2; /* GPE0_EN_63_32 */
-	uint32_t gpe0_en_3; /* GPE0_EN_95_64 */
-	uint32_t gpe0_en_4; /* GPE0_EN_127_96 / GPE_STD */
 	/* Gpio group routed to each dword of the GPE0 block. Values are
 	 * of the form GPP_[A:G] or GPD. */
 	uint8_t gpe0_dw0; /* GPE0_31_0 STS/EN */
@@ -510,14 +505,6 @@ struct soc_intel_skylake_config {
 	*/
 	u8 SendVrMbxCmd;
 
-	/*
-	 * PRMRR size setting with three options
-	 * 0x02000000 - 32MiB
-	 * 0x04000000 - 64MiB
-	 * 0x08000000 - 128MiB
-	 */
-	u32 PrmrrSize;
-
 	/* Enable/Disable host reads to PMC XRAM registers */
 	u8 PchPmPmcReadDisable;
 
@@ -575,9 +562,6 @@ struct soc_intel_skylake_config {
 	u8 SlowSlewRateForIa;
 	u8 SlowSlewRateForGt;
 	u8 SlowSlewRateForSa;
-
-	/* Enable SGX feature */
-	u8 sgx_enable;
 
 	/* Enable/Disable EIST
 	 * 1b - Enabled

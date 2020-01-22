@@ -17,7 +17,6 @@
 #include <arch/acpi.h>
 #include <arch/smp/mpspec.h>
 #include <device/device.h>
-#include <device/pci.h>
 #include <ec/acpi/ec.h>
 #if CONFIG(CHROMEOS)
 #include <vendorcode/google/chromeos/gnvs.h>
@@ -27,29 +26,6 @@
 #include "thermal.h"
 
 static global_nvs_t *gnvs_;
-
-static void acpi_update_thermal_table(global_nvs_t *gnvs)
-{
-	gnvs->f4of = FAN4_THRESHOLD_OFF;
-	gnvs->f4on = FAN4_THRESHOLD_ON;
-
-	gnvs->f3of = FAN3_THRESHOLD_OFF;
-	gnvs->f3on = FAN3_THRESHOLD_ON;
-
-	gnvs->f2of = FAN2_THRESHOLD_OFF;
-	gnvs->f2on = FAN2_THRESHOLD_ON;
-
-	gnvs->f1of = FAN1_THRESHOLD_OFF;
-	gnvs->f1on = FAN1_THRESHOLD_ON;
-
-	gnvs->f0of = FAN0_THRESHOLD_OFF;
-	gnvs->f0on = FAN0_THRESHOLD_ON;
-
-	gnvs->tcrt = CRITICAL_TEMPERATURE;
-	gnvs->tpsv = PASSIVE_TEMPERATURE;
-	gnvs->tmax = MAX_TEMPERATURE;
-	gnvs->flvl = 5;
-}
 
 void acpi_create_gnvs(global_nvs_t *gnvs)
 {
@@ -69,8 +45,25 @@ void acpi_create_gnvs(global_nvs_t *gnvs)
 	gnvs->s5u0 = 0;
 	gnvs->s5u1 = 0;
 
+	gnvs->f4of = FAN4_THRESHOLD_OFF;
+	gnvs->f4on = FAN4_THRESHOLD_ON;
 
-	acpi_update_thermal_table(gnvs);
+	gnvs->f3of = FAN3_THRESHOLD_OFF;
+	gnvs->f3on = FAN3_THRESHOLD_ON;
+
+	gnvs->f2of = FAN2_THRESHOLD_OFF;
+	gnvs->f2on = FAN2_THRESHOLD_ON;
+
+	gnvs->f1of = FAN1_THRESHOLD_OFF;
+	gnvs->f1on = FAN1_THRESHOLD_ON;
+
+	gnvs->f0of = FAN0_THRESHOLD_OFF;
+	gnvs->f0on = FAN0_THRESHOLD_ON;
+
+	gnvs->tcrt = CRITICAL_TEMPERATURE;
+	gnvs->tpsv = PASSIVE_TEMPERATURE;
+	gnvs->tmax = MAX_TEMPERATURE;
+	gnvs->flvl = 5;
 
 	gnvs->chromeos.vbt2 = ec_read(0xcb) ? ACTIVE_ECFW_RW : ACTIVE_ECFW_RO;
 }

@@ -23,7 +23,7 @@ config BOARD_SPECIFIC_OPTIONS
 
 config MAINBOARD_DIR
 	string
-	default ti/beaglebone
+	default "ti/beaglebone"
 
 config MAINBOARD_PART_NUMBER
 	string
@@ -32,10 +32,6 @@ config MAINBOARD_PART_NUMBER
 config MAX_CPUS
 	int
 	default 1
-
-config MAINBOARD_VENDOR
-	string
-	default "TI"
 
 config DRAM_SIZE_MB
 	int

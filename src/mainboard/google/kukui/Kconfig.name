@@ -12,6 +12,10 @@ config BOARD_GOOGLE_KODAMA
 	bool "->  Kodama"
 	select BOARD_GOOGLE_KUKUI_COMMON
 
+config BOARD_GOOGLE_KAKADU
+	bool "->  Kakadu"
+	select BOARD_GOOGLE_KUKUI_COMMON
+
 config BOARD_GOOGLE_FLAPJACK
 	bool "->  Flapjack"
 	select BOARD_GOOGLE_KUKUI_COMMON
@@ -22,4 +26,12 @@ config BOARD_GOOGLE_JACUZZI
 
 config BOARD_GOOGLE_JUNIPER
 	bool "->  Juniper"
+	select BOARD_GOOGLE_KUKUI_COMMON
+
+config BOARD_GOOGLE_KAPPA
+	bool "->  Kappa"
+	select BOARD_GOOGLE_KUKUI_COMMON
+
+config BOARD_GOOGLE_DAMU
+	bool "->  Damu"
 	select BOARD_GOOGLE_KUKUI_COMMON

@@ -18,6 +18,7 @@
 #include <bootblock_common.h>
 #include <console/console.h>
 #include <delay.h>
+#include <option.h>
 #include <pc80/mc146818rtc.h>
 #include <program_loading.h>
 #include <symbols.h>
@@ -51,11 +52,16 @@ static void bootblock_main_with_timestamp(uint64_t base_timestamp,
 				      timestamps[i].entry_stamp);
 	}
 
+	timestamp_add_now(TS_START_BOOTBLOCK);
+
 	bootblock_soc_early_init();
 	bootblock_mainboard_early_init();
 
-	sanitize_cmos();
-	cmos_post_init();
+	if (CONFIG(USE_OPTION_TABLE))
+		sanitize_cmos();
+
+	if (CONFIG(CMOS_POST))
+		cmos_post_init();
 
 	if (CONFIG(BOOTBLOCK_CONSOLE)) {
 		console_init();
@@ -64,6 +70,8 @@ static void bootblock_main_with_timestamp(uint64_t base_timestamp,
 
 	bootblock_soc_init();
 	bootblock_mainboard_init();
+
+	timestamp_add_now(TS_END_BOOTBLOCK);
 
 	run_romstage();
 }

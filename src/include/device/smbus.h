@@ -4,7 +4,6 @@
 #include <stdint.h>
 #include <device/device.h>
 #include <device/i2c_bus.h>
-#include <device/smbus_def.h>
 
 /* Common SMBus bus operations */
 struct smbus_bus_operations {
@@ -29,7 +28,6 @@ static inline const struct smbus_bus_operations *ops_smbus_bus(struct bus *bus)
 }
 
 struct bus *get_pbus_smbus(struct device *dev);
-int smbus_set_link(struct device *dev);
 
 static inline int smbus_recv_byte(struct device *const dev)
 {
@@ -53,10 +51,5 @@ static inline int smbus_write_byte(struct device *const dev, u8 addr, u8 val)
 
 int smbus_block_read(struct device *dev, u8 cmd, u8 bytes, u8 *buffer);
 int smbus_block_write(struct device *dev, u8 cmd, u8 bytes, const u8 *buffer);
-
-#if CONFIG(SMBUS_HAS_AUX_CHANNELS)
-void smbus_switch_to_channel(uint8_t channel_number);
-uint8_t smbus_get_current_channel(void);
-#endif
 
 #endif /* DEVICE_SMBUS_H */

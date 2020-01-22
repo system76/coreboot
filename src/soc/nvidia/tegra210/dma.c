@@ -21,7 +21,6 @@
 #include <soc/addressmap.h>
 #include <soc/dma.h>
 #include <stddef.h>
-#include <stdlib.h>
 
 struct apb_dma * const apb_dma = (struct apb_dma *)TEGRA_APB_DMA_BASE;
 
@@ -94,7 +93,7 @@ struct apb_dma_channel * const dma_claim(void)
 	 * Set global enable bit, otherwise register access to channel
 	 * DMA registers will not be possible.
 	 */
-	setbits_le32(&apb_dma->command, APB_COMMAND_GEN);
+	setbits32(&apb_dma->command, APB_COMMAND_GEN);
 
 	for (i = 0; i < ARRAY_SIZE(apb_dma_channels); i++) {
 		regs = apb_dma_channels[i].regs;
@@ -134,7 +133,7 @@ void dma_release(struct apb_dma_channel * const channel)
 			return;
 	}
 
-	clrbits_le32(&apb_dma->command, APB_COMMAND_GEN);
+	clrbits32(&apb_dma->command, APB_COMMAND_GEN);
 }
 
 int dma_start(struct apb_dma_channel * const channel)
@@ -142,7 +141,7 @@ int dma_start(struct apb_dma_channel * const channel)
 	struct apb_dma_channel_regs *regs = channel->regs;
 
 	/* Set ENB bit for this channel */
-	setbits_le32(&regs->csr, APB_CSR_ENB);
+	setbits32(&regs->csr, APB_CSR_ENB);
 
 	return 0;
 }
@@ -152,7 +151,7 @@ int dma_stop(struct apb_dma_channel * const channel)
 	struct apb_dma_channel_regs *regs = channel->regs;
 
 	/* Clear ENB bit for this channel */
-	clrbits_le32(&regs->csr, APB_CSR_ENB);
+	clrbits32(&regs->csr, APB_CSR_ENB);
 
 	return 0;
 }

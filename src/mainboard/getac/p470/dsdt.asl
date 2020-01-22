@@ -29,7 +29,6 @@ DefinitionBlock(
 {
 	#include <southbridge/intel/common/acpi/platform.asl>
 
-	// Some generic macros
 	#include "acpi/platform.asl"
 
 	// global NVS and variables
@@ -54,6 +53,5 @@ DefinitionBlock(
 		}
 	}
 
-	/* Chipset specific sleep states */
 	#include <southbridge/intel/common/acpi/sleepstates.asl>
 }

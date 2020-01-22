@@ -22,10 +22,6 @@ config CPU_SPECIFIC_OPTIONS
 	select PARALLEL_MP
 	select NO_FIXED_XIP_ROM_SIZE
 
-config BOOTBLOCK_CPU_INIT
-	string
-	default "cpu/intel/model_206ax/bootblock.c"
-
 config SMM_TSEG_SIZE
 	hex
 	default 0x800000

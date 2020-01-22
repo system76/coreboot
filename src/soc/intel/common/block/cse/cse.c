@@ -67,28 +67,9 @@
 #define MEI_HDR_CSE_ADDR_START	0
 #define MEI_HDR_CSE_ADDR	(((1 << 8) - 1) << MEI_HDR_CSE_ADDR_START)
 
-#define HECI_OP_MODE_SEC_OVERRIDE 5
-
-/* Global Reset Command ID */
-#define MKHI_GLOBAL_RESET_REQ	0xb
-#define MKHI_GROUP_ID_CBM	0
-
-/* RST Origin */
-#define GR_ORIGIN_BIOS_POST	2
-
-#define MKHI_HMRFPO_GROUP_ID	5
-
-/* HMRFPO Command Ids */
-#define MKHI_HMRFPO_ENABLE	1
-#define MKHI_HMRFPO_GET_STATUS	3
-
-#define ME_HFS_CWS_NORMAL	5
-#define ME_HFS_MODE_NORMAL	0
-#define ME_HFS_TEMP_DISABLE	3
-
 static struct cse_device {
 	uintptr_t sec_bar;
-} g_cse;
+} cse;
 
 /*
  * Initialize the device with provided temporary BAR. If BAR is 0 use a
@@ -105,7 +86,7 @@ void heci_init(uintptr_t tempbar)
 	u8 pcireg;
 
 	/* Assume it is already initialized, nothing else to do */
-	if (g_cse.sec_bar)
+	if (cse.sec_bar)
 		return;
 
 	/* Use default pre-ram bar */
@@ -127,7 +108,7 @@ void heci_init(uintptr_t tempbar)
 	pcireg |= PCI_COMMAND_MASTER | PCI_COMMAND_MEMORY;
 	pci_write_config8(dev, PCI_COMMAND, pcireg);
 
-	g_cse.sec_bar = tempbar;
+	cse.sec_bar = tempbar;
 }
 
 /* Get HECI BAR 0 from PCI configuration space */
@@ -146,18 +127,18 @@ static uint32_t get_cse_bar(void)
 
 static uint32_t read_bar(uint32_t offset)
 {
-	/* Reach PCI config space to get BAR in case CAR global not available */
-	if (!g_cse.sec_bar)
-		g_cse.sec_bar = get_cse_bar();
-	return read32((void *)(g_cse.sec_bar + offset));
+	/* Load and cache BAR */
+	if (!cse.sec_bar)
+		cse.sec_bar = get_cse_bar();
+	return read32((void *)(cse.sec_bar + offset));
 }
 
 static void write_bar(uint32_t offset, uint32_t val)
 {
-	/* Reach PCI config space to get BAR in case CAR global not available */
-	if (!g_cse.sec_bar)
-		g_cse.sec_bar = get_cse_bar();
-	return write32((void *)(g_cse.sec_bar + offset), val);
+	/* Load and cache BAR */
+	if (!cse.sec_bar)
+		cse.sec_bar = get_cse_bar();
+	return write32((void *)(cse.sec_bar + offset), val);
 }
 
 static uint32_t read_cse_csr(void)
@@ -258,14 +239,14 @@ static int cse_ready(void)
 }
 
 /*
- * Checks if CSE is in SEC_OVERRIDE operation mode. This is the mode where
+ * Checks if CSE is in ME_HFS1_COM_SECOVER_MEI_MSG operation mode. This is the mode where
  * CSE will allow reflashing of CSE region.
  */
 static uint8_t check_cse_sec_override_mode(void)
 {
 	union me_hfsts1 hfs1;
 	hfs1.data = me_read_config32(PCI_ME_HFSTS1);
-	if (hfs1.fields.operation_mode == HECI_OP_MODE_SEC_OVERRIDE)
+	if (hfs1.fields.operation_mode == ME_HFS1_COM_SECOVER_MEI_MSG)
 		return 1;
 	return 0;
 }
@@ -591,7 +572,7 @@ int send_heci_reset_req_message(uint8_t rst_type)
 	struct reset_message msg = {
 		.hdr = {
 			.group_id = MKHI_GROUP_ID_CBM,
-			.command = MKHI_GLOBAL_RESET_REQ,
+			.command = MKHI_CBM_GLOBAL_RESET_REQ,
 		},
 		.req_origin = GR_ORIGIN_BIOS_POST,
 		.reset_type = rst_type
@@ -632,7 +613,7 @@ int send_hmrfpo_enable_msg(void)
 	/* HMRFPO Enable message */
 	struct hmrfpo_enable_msg msg = {
 		.hdr = {
-			.group_id = MKHI_HMRFPO_GROUP_ID,
+			.group_id = MKHI_GROUP_ID_HMRFPO,
 			.command = MKHI_HMRFPO_ENABLE,
 		},
 		.nonce = {0},
@@ -641,7 +622,9 @@ int send_hmrfpo_enable_msg(void)
 	/* HMRFPO Enable response */
 	struct hmrfpo_enable_resp {
 		struct mkhi_hdr hdr;
+		/* Base addr for factory data area, not relevant for client SKUs */
 		uint32_t fct_base;
+		/* Length of factory data area, not relevant for client SKUs */
 		uint32_t fct_limit;
 		uint8_t status;
 		uint8_t padding[3];
@@ -658,9 +641,9 @@ int send_hmrfpo_enable_msg(void)
 	 * - Working state is normal and
 	 * - Operation mode is normal or temporary disable mode.
 	 */
-	if (hfs1.fields.working_state != ME_HFS_CWS_NORMAL ||
-		(hfs1.fields.operation_mode != ME_HFS_MODE_NORMAL &&
-		hfs1.fields.operation_mode != ME_HFS_TEMP_DISABLE)) {
+	if (hfs1.fields.working_state != ME_HFS1_CWS_NORMAL ||
+		(hfs1.fields.operation_mode != ME_HFS1_COM_NORMAL &&
+		hfs1.fields.operation_mode != ME_HFS1_COM_SOFT_TEMP_DISABLE)) {
 		printk(BIOS_ERR, "HECI: ME not in required Mode\n");
 		goto failed;
 	}
@@ -697,7 +680,7 @@ int send_hmrfpo_get_status_msg(void)
 
 	struct hmrfpo_get_status_msg msg = {
 		.hdr = {
-			.group_id = MKHI_HMRFPO_GROUP_ID,
+			.group_id = MKHI_GROUP_ID_HMRFPO,
 			.command = MKHI_HMRFPO_GET_STATUS,
 		},
 	};
@@ -725,7 +708,7 @@ int send_hmrfpo_get_status_msg(void)
 
 static void update_sec_bar(struct device *dev)
 {
-	g_cse.sec_bar = find_resource(dev, PCI_BASE_ADDRESS_0)->base;
+	cse.sec_bar = find_resource(dev, PCI_BASE_ADDRESS_0)->base;
 }
 
 static void cse_set_resources(struct device *dev)
@@ -754,6 +737,13 @@ static const unsigned short pci_device_ids[] = {
 	PCI_DEVICE_ID_INTEL_CNP_H_CSE0,
 	PCI_DEVICE_ID_INTEL_ICL_CSE0,
 	PCI_DEVICE_ID_INTEL_CMP_CSE0,
+	PCI_DEVICE_ID_INTEL_CMP_H_CSE0,
+	PCI_DEVICE_ID_INTEL_TGL_CSE0,
+	PCI_DEVICE_ID_INTEL_JSP_PRE_PROD_CSE0,
+	PCI_DEVICE_ID_INTEL_MCC_CSE0,
+	PCI_DEVICE_ID_INTEL_MCC_CSE1,
+	PCI_DEVICE_ID_INTEL_MCC_CSE2,
+	PCI_DEVICE_ID_INTEL_MCC_CSE3,
 	0,
 };
 

@@ -12,7 +12,6 @@
  * GNU General Public License for more details.
  */
 
-#include <arch/early_variables.h>
 #include <assert.h>
 #include <boot_device.h>
 #include <boot/coreboot_tables.h>
@@ -128,7 +127,7 @@ int spi_flash_cmd_write(const struct spi_slave *spi, const u8 *cmd,
 
 /* Perform the read operation honoring spi controller fifo size, reissuing
  * the read command until the full request completed. */
-static int spi_flash_read_chunked(const struct spi_flash *flash, u32 offset,
+int spi_flash_cmd_read(const struct spi_flash *flash, u32 offset,
 				  size_t len, void *buf)
 {
 	u8 cmd[5];
@@ -256,79 +255,176 @@ int spi_flash_cmd_status(const struct spi_flash *flash, u8 *reg)
 	return spi_flash_cmd(&flash->spi, flash->status_cmd, reg, sizeof(*reg));
 }
 
-/*
- * The following table holds all device probe functions
- *
- * shift:  number of continuation bytes before the ID
- * idcode: the expected IDCODE or 0xff for non JEDEC devices
- * probe:  the function to call
- *
- * Non JEDEC devices should be ordered in the table such that
- * the probe functions with best detection algorithms come first.
- *
- * Several matching entries are permitted, they will be tried
- * in sequence until a probe function returns non NULL.
- *
- * IDCODE_CONT_LEN may be redefined if a device needs to declare a
- * larger "shift" value.  IDCODE_PART_LEN generally shouldn't be
- * changed.  This is the max number of bytes probe functions may
- * examine when looking up part-specific identification info.
- *
- * Probe functions will be given the idcode buffer starting at their
- * manu id byte (the "idcode" in the table below).  In other words,
- * all of the continuation bytes will be skipped (the "shift" below).
- */
-#define IDCODE_CONT_LEN 0
-#define IDCODE_PART_LEN 5
-static struct {
-	const u8 shift;
-	const u8 idcode;
-	int (*probe) (const struct spi_slave *spi, u8 *idcode,
-		      struct spi_flash *flash);
-} flashes[] = {
-	/* Keep it sorted by define name */
+int spi_flash_cmd_write_page_program(const struct spi_flash *flash, u32 offset,
+				size_t len, const void *buf)
+{
+	unsigned long byte_addr;
+	unsigned long page_size;
+	size_t chunk_len;
+	size_t actual;
+	int ret = 0;
+	u8 cmd[4];
+
+	page_size = flash->page_size;
+	cmd[0] = flash->pp_cmd;
+
+	for (actual = 0; actual < len; actual += chunk_len) {
+		byte_addr = offset % page_size;
+		chunk_len = MIN(len - actual, page_size - byte_addr);
+		chunk_len = spi_crop_chunk(&flash->spi, sizeof(cmd), chunk_len);
+
+		spi_flash_addr(offset, cmd);
+		if (CONFIG(DEBUG_SPI_FLASH)) {
+			printk(BIOS_SPEW, "PP: %p => cmd = { 0x%02x 0x%02x%02x%02x } chunk_len = %zu\n",
+				buf + actual, cmd[0], cmd[1], cmd[2], cmd[3],
+				chunk_len);
+		}
+
+		ret = spi_flash_cmd(&flash->spi, flash->wren_cmd, NULL, 0);
+		if (ret < 0) {
+			printk(BIOS_WARNING, "SF: Enabling Write failed\n");
+			goto out;
+		}
+
+		ret = spi_flash_cmd_write(&flash->spi, cmd, sizeof(cmd),
+				buf + actual, chunk_len);
+		if (ret < 0) {
+			printk(BIOS_WARNING, "SF: Page Program failed\n");
+			goto out;
+		}
+
+		ret = spi_flash_cmd_wait_ready(flash, SPI_FLASH_PROG_TIMEOUT_MS);
+		if (ret)
+			goto out;
+
+		offset += chunk_len;
+	}
+
+	if (CONFIG(DEBUG_SPI_FLASH))
+		printk(BIOS_SPEW, "SF: : Successfully programmed %zu bytes @ 0x%lx\n",
+			len, (unsigned long)(offset - len));
+	ret = 0;
+
+out:
+	return ret;
+}
+
+static const struct spi_flash_vendor_info *spi_flash_vendors[] = {
+#if CONFIG(SPI_FLASH_ADESTO)
+	&spi_flash_adesto_vi,
+#endif
 #if CONFIG(SPI_FLASH_AMIC)
-	{ 0, VENDOR_ID_AMIC, spi_flash_probe_amic, },
+	&spi_flash_amic_vi,
 #endif
 #if CONFIG(SPI_FLASH_ATMEL)
-	{ 0, VENDOR_ID_ATMEL, spi_flash_probe_atmel, },
+	&spi_flash_atmel_vi,
 #endif
 #if CONFIG(SPI_FLASH_EON)
-	{ 0, VENDOR_ID_EON, spi_flash_probe_eon, },
+	&spi_flash_eon_vi,
 #endif
 #if CONFIG(SPI_FLASH_GIGADEVICE)
-	{ 0, VENDOR_ID_GIGADEVICE, spi_flash_probe_gigadevice, },
+	&spi_flash_gigadevice_vi,
 #endif
 #if CONFIG(SPI_FLASH_MACRONIX)
-	{ 0, VENDOR_ID_MACRONIX, spi_flash_probe_macronix, },
+	&spi_flash_macronix_vi,
 #endif
 #if CONFIG(SPI_FLASH_SPANSION)
-	{ 0, VENDOR_ID_SPANSION, spi_flash_probe_spansion, },
+	&spi_flash_spansion_ext1_vi,
+	&spi_flash_spansion_ext2_vi,
+	&spi_flash_spansion_vi,
 #endif
 #if CONFIG(SPI_FLASH_SST)
-	{ 0, VENDOR_ID_SST, spi_flash_probe_sst, },
+	&spi_flash_sst_ai_vi,
+	&spi_flash_sst_vi,
 #endif
 #if CONFIG(SPI_FLASH_STMICRO)
-	{ 0, VENDOR_ID_STMICRO, spi_flash_probe_stmicro, },
+	&spi_flash_stmicro1_vi,
+	&spi_flash_stmicro2_vi,
+	&spi_flash_stmicro3_vi,
+	&spi_flash_stmicro4_vi,
 #endif
 #if CONFIG(SPI_FLASH_WINBOND)
-	{ 0, VENDOR_ID_WINBOND, spi_flash_probe_winbond, },
-#endif
-	/* Keep it sorted by best detection */
-#if CONFIG(SPI_FLASH_STMICRO)
-	{ 0, VENDOR_ID_STMICRO_FF, spi_flash_probe_stmicro, },
-#endif
-#if CONFIG(SPI_FLASH_ADESTO)
-	{ 0, VENDOR_ID_ADESTO, spi_flash_probe_adesto, },
+	&spi_flash_winbond_vi,
 #endif
 };
-#define IDCODE_LEN (IDCODE_CONT_LEN + IDCODE_PART_LEN)
+#define IDCODE_LEN 5
+
+static int fill_spi_flash(const struct spi_slave *spi, struct spi_flash *flash,
+	const struct spi_flash_vendor_info *vi,
+	const struct spi_flash_part_id *part)
+{
+	memcpy(&flash->spi, spi, sizeof(*spi));
+	flash->vendor = vi->id;
+	flash->model = part->id;
+	flash->name = part->name;
+
+	flash->page_size = 1U << vi->page_size_shift;
+	flash->sector_size = (1U << vi->sector_size_kib_shift) * KiB;
+	flash->size = flash->sector_size * (1U << part->nr_sectors_shift);
+	flash->erase_cmd = vi->desc->erase_cmd;
+	flash->status_cmd = vi->desc->status_cmd;
+	flash->pp_cmd = vi->desc->pp_cmd;
+	flash->wren_cmd = vi->desc->wren_cmd;
+
+	flash->flags.dual_spi = part->fast_read_dual_output_support;
+
+	flash->ops = &vi->desc->ops;
+	flash->prot_ops = vi->prot_ops;
+	flash->part = part;
+
+	if (vi->after_probe)
+		return vi->after_probe(flash);
+
+	return 0;
+}
+
+static const struct spi_flash_part_id *find_part(const struct spi_flash_vendor_info *vi,
+						uint32_t id)
+{
+	size_t i;
+
+	for (i = 0; i < vi->nr_part_ids; i++) {
+		const struct spi_flash_part_id *part = &vi->ids[i];
+
+		if (part->id == id)
+			return part;
+	}
+
+	return NULL;
+}
+
+static int find_match(const struct spi_slave *spi, struct spi_flash *flash,
+			uint8_t manuf_id, uint32_t id)
+{
+	int i;
+
+	for (i = 0; i < (int)ARRAY_SIZE(spi_flash_vendors); i++) {
+		const struct spi_flash_vendor_info *vi;
+		const struct spi_flash_part_id *part;
+
+		vi = spi_flash_vendors[i];
+
+		if (manuf_id != vi->id)
+			continue;
+
+		part = find_part(vi, id & vi->match_id_mask);
+
+		if (part == NULL)
+			continue;
+
+		return fill_spi_flash(spi, flash, vi, part);
+	}
+
+	return -1;
+}
 
 int spi_flash_generic_probe(const struct spi_slave *spi,
 				struct spi_flash *flash)
 {
-	int ret, i, shift;
-	u8 idcode[IDCODE_LEN], *idp;
+	int ret, i;
+	u8 idcode[IDCODE_LEN];
+	u8 manuf_id;
+	u32 id;
 
 	/* Read the ID codes */
 	ret = spi_flash_cmd(spi, CMD_READ_ID, idcode, sizeof(idcode));
@@ -342,26 +438,21 @@ int spi_flash_generic_probe(const struct spi_slave *spi,
 		printk(BIOS_SPEW, "\n");
 	}
 
-	/* count the number of continuation bytes */
-	for (shift = 0, idp = idcode; shift < IDCODE_CONT_LEN && *idp == 0x7f;
-	     ++shift, ++idp)
-		continue;
+	manuf_id = idcode[0];
 
-	printk(BIOS_INFO, "Manufacturer: %02x\n", *idp);
+	printk(BIOS_INFO, "Manufacturer: %02x\n", manuf_id);
 
-	/* search the table for matches in shift and id */
-	for (i = 0; i < (int)ARRAY_SIZE(flashes); ++i)
-		if (flashes[i].shift == shift && flashes[i].idcode == *idp) {
-			/* we have a match, call probe */
-			if (flashes[i].probe(spi, idp, flash) == 0) {
-				flash->vendor = idp[0];
-				flash->model = (idp[1] << 8) | idp[2];
-				return 0;
-			}
-		}
+	/* If no result from RDID command and STMicro parts are enabled attempt
+	   to wake the part from deep sleep and obtain alternative id info. */
+	if (CONFIG(SPI_FLASH_STMICRO) && manuf_id == 0xff) {
+		if (stmicro_release_deep_sleep_identify(spi, idcode))
+			return -1;
+		manuf_id = idcode[0];
+	}
 
-	/* No match, return error. */
-	return -1;
+	id = (idcode[3] << 24) | (idcode[4] << 16) | (idcode[1] << 8) | idcode[2];
+
+	return find_match(spi, flash, manuf_id, id);
 }
 
 int spi_flash_probe(unsigned int bus, unsigned int cs, struct spi_flash *flash)
@@ -406,10 +497,7 @@ int spi_flash_probe(unsigned int bus, unsigned int cs, struct spi_flash *flash)
 int spi_flash_read(const struct spi_flash *flash, u32 offset, size_t len,
 		void *buf)
 {
-	if (flash->ops->read)
-		return flash->ops->read(flash, offset, len, buf);
-
-	return spi_flash_read_chunked(flash, offset, len, buf);
+	return flash->ops->read(flash, offset, len, buf);
 }
 
 int spi_flash_write(const struct spi_flash *flash, u32 offset, size_t len,
@@ -464,13 +552,13 @@ int spi_flash_is_write_protected(const struct spi_flash *flash,
 	if (!region_is_subregion(&flash_region, region))
 		return -1;
 
-	if (!flash->ops->get_write_protection) {
+	if (!flash->prot_ops) {
 		printk(BIOS_WARNING, "SPI: Write-protection gathering not "
 		       "implemented for this vendor.\n");
 		return -1;
 	}
 
-	return flash->ops->get_write_protection(flash, region);
+	return flash->prot_ops->get_write(flash, region);
 }
 
 int spi_flash_set_write_protected(const struct spi_flash *flash,
@@ -489,14 +577,13 @@ int spi_flash_set_write_protected(const struct spi_flash *flash,
 	if (!region_is_subregion(&flash_region, region))
 		return -1;
 
-	if (!flash->ops->set_write_protection) {
+	if (!flash->prot_ops) {
 		printk(BIOS_WARNING, "SPI: Setting write-protection is not "
 		       "implemented for this vendor.\n");
 		return -1;
 	}
 
-	ret = flash->ops->set_write_protection(flash, region, non_volatile,
-					       mode);
+	ret = flash->prot_ops->set_write(flash, region, non_volatile, mode);
 
 	if (ret == 0 && mode != SPI_WRITE_PROTECTION_PRESERVE) {
 		printk(BIOS_INFO, "SPI: SREG lock-down was set to ");
@@ -522,7 +609,7 @@ int spi_flash_set_write_protected(const struct spi_flash *flash,
 	return ret;
 }
 
-static uint32_t volatile_group_count CAR_GLOBAL;
+static uint32_t volatile_group_count;
 
 int spi_flash_volatile_group_begin(const struct spi_flash *flash)
 {
@@ -532,12 +619,12 @@ int spi_flash_volatile_group_begin(const struct spi_flash *flash)
 	if (!CONFIG(SPI_FLASH_HAS_VOLATILE_GROUP))
 		return ret;
 
-	count = car_get_var(volatile_group_count);
+	count = volatile_group_count;
 	if (count == 0)
 		ret = chipset_volatile_group_begin(flash);
 
 	count++;
-	car_set_var(volatile_group_count, count);
+	volatile_group_count = count;
 	return ret;
 }
 
@@ -549,10 +636,10 @@ int spi_flash_volatile_group_end(const struct spi_flash *flash)
 	if (!CONFIG(SPI_FLASH_HAS_VOLATILE_GROUP))
 		return ret;
 
-	count = car_get_var(volatile_group_count);
+	count = volatile_group_count;
 	assert(count == 0);
 	count--;
-	car_set_var(volatile_group_count, count);
+	volatile_group_count = count;
 
 	if (count == 0)
 		ret = chipset_volatile_group_end(flash);
@@ -662,3 +749,29 @@ int spi_flash_vector_helper(const struct spi_slave *slave,
 
 	return ret;
 }
+
+const struct spi_flash_ops_descriptor spi_flash_pp_0x20_sector_desc = {
+	.erase_cmd = 0x20, /* Sector Erase */
+	.status_cmd = 0x05, /* Read Status */
+	.pp_cmd = 0x02, /* Page Program */
+	.wren_cmd = 0x06, /* Write Enable */
+	.ops = {
+		.read = spi_flash_cmd_read,
+		.write = spi_flash_cmd_write_page_program,
+		.erase = spi_flash_cmd_erase,
+		.status = spi_flash_cmd_status,
+	},
+};
+
+const struct spi_flash_ops_descriptor spi_flash_pp_0xd8_sector_desc = {
+	.erase_cmd = 0xd8, /* Sector Erase */
+	.status_cmd = 0x05, /* Read Status */
+	.pp_cmd = 0x02, /* Page Program */
+	.wren_cmd = 0x06, /* Write Enable */
+	.ops = {
+		.read = spi_flash_cmd_read,
+		.write = spi_flash_cmd_write_page_program,
+		.erase = spi_flash_cmd_erase,
+		.status = spi_flash_cmd_status,
+	},
+};

@@ -12,7 +12,6 @@
  * GNU General Public License for more details.
  */
 
-#include <stdlib.h>
 #include <string.h>
 #include <smbios.h>
 #include <console/console.h>
@@ -545,16 +544,6 @@ static int get_socket_type(void)
 		return 0x13;
 	if (CONFIG(CPU_INTEL_SOCKET_LGA775))
 		return 0x15;
-	if (CONFIG(CPU_AMD_SOCKET_AM2R2))
-		return 0x17;
-	if (CONFIG(CPU_AMD_SOCKET_F_1207))
-		return 0x18;
-	if (CONFIG(CPU_AMD_SOCKET_G34_NON_AGESA))
-		return 0x1a;
-	if (CONFIG(CPU_AMD_SOCKET_AM3))
-		return 0x1b;
-	if (CONFIG(CPU_AMD_SOCKET_C32_NON_AGESA))
-		return 0x1c;
 
 	return 0x02; /* Unknown */
 }
@@ -657,9 +646,28 @@ static int smbios_write_type4(unsigned long *current, int handle)
 	t->processor_version = smbios_processor_name(t->eos);
 	t->processor_family = (res.eax > 0) ? 0x0c : 0x6;
 	t->processor_type = 3; /* System Processor */
-	t->core_count = (res.ebx >> 16) & 0xff;
+	/*
+	 * If CPUID leaf 11 is available, calculate "core count" by dividing
+	 * SMT_ID (logical processors in a core) by Core_ID (number of cores).
+	 * This seems to be the way to arrive to a number of cores mentioned on
+	 * ark.intel.com.
+	 */
+	if (cpu_have_cpuid() && cpuid_get_max_func() >= 0xb) {
+		uint32_t leaf_b_cores = 0, leaf_b_threads = 0;
+		res = cpuid_ext(0xb, 1);
+		leaf_b_cores = res.ebx;
+		res = cpuid_ext(0xb, 0);
+		leaf_b_threads = res.ebx;
+		/* if hyperthreading is not available, pretend this is 1 */
+		if (leaf_b_threads == 0) {
+			leaf_b_threads = 1;
+		}
+		t->core_count = leaf_b_cores / leaf_b_threads;
+	} else {
+		t->core_count = (res.ebx >> 16) & 0xff;
+	}
 	/* Assume we enable all the cores always, capped only by MAX_CPUS */
-	t->core_enabled = MAX(t->core_count, CONFIG_MAX_CPUS);
+	t->core_enabled = MIN(t->core_count, CONFIG_MAX_CPUS);
 	t->l1_cache_handle = 0xffff;
 	t->l2_cache_handle = 0xffff;
 	t->l3_cache_handle = 0xffff;

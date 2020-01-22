@@ -14,9 +14,9 @@
  */
 
 #include <console/console.h>
-#include <device/pci.h>
 #include <string.h>
 #include <stdint.h>
+#include <device/pci_def.h>
 #include <arch/pirq_routing.h>
 
 static void write_pirq_info(struct irq_info *pirq_info, u8 bus, u8 devfn,

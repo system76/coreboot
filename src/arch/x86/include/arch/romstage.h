@@ -14,7 +14,6 @@
 #ifndef __ARCH_ROMSTAGE_H__
 #define __ARCH_ROMSTAGE_H__
 
-#include <arch/cpu.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -76,7 +75,7 @@ void prepare_and_run_postcar(struct postcar_frame *pcf);
  * tears down CAR and loads ramstage. The postcar_frame object
  * indicates how to set up the frame. If caching is enabled at
  * the time of the call it is up to the platform code to handle
- * coherency with dirty lines in the cache using some mechansim
+ * coherency with dirty lines in the cache using some mechanism
  * such as platform_prog_run() because run_postcar_phase()
  * utilizes prog_run() internally.
  */

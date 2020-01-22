@@ -34,23 +34,6 @@
 #include <arch/types.h>
 #include <libpayload-config.h>
 
-static inline uint16_t swap_bytes16(uint16_t in)
-{
-	return ((in & 0xFF) << 8) | ((in & 0xFF00) >> 8);
-}
-
-static inline uint32_t swap_bytes32(uint32_t in)
-{
-	return ((in & 0xFF) << 24) | ((in & 0xFF00) << 8) |
-		((in & 0xFF0000) >> 8) | ((in & 0xFF000000) >> 24);
-}
-
-static inline uint64_t swap_bytes64(uint64_t in)
-{
-	return ((uint64_t)swap_bytes32((uint32_t)in) << 32) |
-		((uint64_t)swap_bytes32((uint32_t)(in >> 32)));
-}
-
 /* Endian functions from glibc 2.9 / BSD "endian.h" */
 
 #if CONFIG(LP_BIG_ENDIAN)
@@ -59,15 +42,15 @@ static inline uint64_t swap_bytes64(uint64_t in)
 #define htobe32(in) (in)
 #define htobe64(in) (in)
 
-#define htole16(in) swap_bytes16(in)
-#define htole32(in) swap_bytes32(in)
-#define htole64(in) swap_bytes64(in)
+#define htole16(in) ((uint16_t)__builtin_bswap16(in))
+#define htole32(in) ((uint32_t)__builtin_bswap32(in))
+#define htole64(in) ((uint64_t)__builtin_bswap64(in))
 
 #elif CONFIG(LP_LITTLE_ENDIAN)
 
-#define htobe16(in) swap_bytes16(in)
-#define htobe32(in) swap_bytes32(in)
-#define htobe64(in) swap_bytes64(in)
+#define htobe16(in) ((uint16_t)__builtin_bswap16(in))
+#define htobe32(in) ((uint32_t)__builtin_bswap32(in))
+#define htobe64(in) ((uint64_t)__builtin_bswap64(in))
 
 #define htole16(in) (in)
 #define htole32(in) (in)
@@ -181,18 +164,47 @@ static inline void le32enc(void *pp, uint32_t u)
 
 /* Handy bit manipulation macros */
 
-#define clrsetbits_le32(addr, clear, set) writel(htole32((le32toh(readl(addr)) \
-	& ~(clear)) | (set)), (addr))
-#define setbits_le32(addr, set) writel(htole32(le32toh(readl(addr)) \
-	| (set)), (addr))
-#define clrbits_le32(addr, clear) writel(htole32(le32toh(readl(addr)) \
-	& ~(clear)), (addr))
+#define __clrsetbits(endian, bits, addr, clear, set) \
+	write##bits(addr, hto##endian##bits((endian##bits##toh( \
+		read##bits(addr)) & ~((uint##bits##_t)(clear))) | (set)))
 
-#define clrsetbits_be32(addr, clear, set) writel(htobe32((be32toh(readl(addr)) \
-	& ~(clear)) | (set)), (addr))
-#define setbits_be32(addr, set) writel(htobe32(be32toh(readl(addr)) \
-	| (set)), (addr))
-#define clrbits_be32(addr, clear) writel(htobe32(be32toh(readl(addr)) \
-	& ~(clear)), (addr))
+#define clrbits_le64(addr, clear)	__clrsetbits(le, 64, addr, clear, 0)
+#define clrbits_be64(addr, clear)	__clrsetbits(be, 64, addr, clear, 0)
+#define clrbits_le32(addr, clear)	__clrsetbits(le, 32, addr, clear, 0)
+#define clrbits_be32(addr, clear)	__clrsetbits(be, 32, addr, clear, 0)
+#define clrbits_le16(addr, clear)	__clrsetbits(le, 16, addr, clear, 0)
+#define clrbits_be16(addr, clear)	__clrsetbits(be, 16, addr, clear, 0)
+
+#define setbits_le64(addr, set)		__clrsetbits(le, 64, addr, 0, set)
+#define setbits_be64(addr, set)		__clrsetbits(be, 64, addr, 0, set)
+#define setbits_le32(addr, set)		__clrsetbits(le, 32, addr, 0, set)
+#define setbits_be32(addr, set)		__clrsetbits(be, 32, addr, 0, set)
+#define setbits_le16(addr, set)		__clrsetbits(le, 16, addr, 0, set)
+#define setbits_be16(addr, set)		__clrsetbits(be, 16, addr, 0, set)
+
+#define clrsetbits_le64(addr, clear, set) __clrsetbits(le, 64, addr, clear, set)
+#define clrsetbits_be64(addr, clear, set) __clrsetbits(be, 64, addr, clear, set)
+#define clrsetbits_le32(addr, clear, set) __clrsetbits(le, 32, addr, clear, set)
+#define clrsetbits_be32(addr, clear, set) __clrsetbits(be, 32, addr, clear, set)
+#define clrsetbits_le16(addr, clear, set) __clrsetbits(le, 16, addr, clear, set)
+#define clrsetbits_be16(addr, clear, set) __clrsetbits(be, 16, addr, clear, set)
+
+#define __clrsetbits_impl(bits, addr, clear, set) write##bits(addr, \
+	(read##bits(addr) & ~((uint##bits##_t)(clear))) | (set))
+
+#define clrsetbits8(addr, clear, set)	__clrsetbits_impl(8, addr, clear, set)
+#define clrsetbits16(addr, clear, set)	__clrsetbits_impl(16, addr, clear, set)
+#define clrsetbits32(addr, clear, set)	__clrsetbits_impl(32, addr, clear, set)
+#define clrsetbits64(addr, clear, set)	__clrsetbits_impl(64, addr, clear, set)
+
+#define setbits8(addr, set)		clrsetbits8(addr, 0, set)
+#define setbits16(addr, set)		clrsetbits16(addr, 0, set)
+#define setbits32(addr, set)		clrsetbits32(addr, 0, set)
+#define setbits64(addr, set)		clrsetbits64(addr, 0, set)
+
+#define clrbits8(addr, clear)		clrsetbits8(addr, clear, 0)
+#define clrbits16(addr, clear)		clrsetbits16(addr, clear, 0)
+#define clrbits32(addr, clear)		clrsetbits32(addr, clear, 0)
+#define clrbits64(addr, clear)		clrsetbits64(addr, clear, 0)
 
 #endif /* _ENDIAN_H_ */

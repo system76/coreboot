@@ -1,5 +1,6 @@
 ifeq ($(CONFIG_SOC_INTEL_APOLLOLAKE),y)
 
+subdirs-y += ../../../cpu/intel/common
 subdirs-y += ../../../cpu/intel/microcode
 subdirs-y += ../../../cpu/intel/turbo
 subdirs-y += ../../../cpu/x86/lapic
@@ -27,7 +28,6 @@ romstage-y += gspi.c
 romstage-y += heci.c
 romstage-y += i2c.c
 romstage-y += uart.c
-romstage-y += memmap.c
 romstage-y += meminit.c
 ifeq ($(CONFIG_SOC_INTEL_GLK),y)
 romstage-y += meminit_util_glk.c
@@ -58,7 +58,6 @@ ramstage-y += gspi.c
 ramstage-y += heci.c
 ramstage-y += i2c.c
 ramstage-y += lpc.c
-ramstage-y += memmap.c
 ramstage-y += mmap_boot.c
 ramstage-y += uart.c
 ramstage-y += nhlt.c
@@ -72,12 +71,11 @@ ramstage-y += xdci.c
 ramstage-y += sd.c
 ramstage-y += xhci.c
 
-postcar-y += memmap.c
 postcar-y += mmap_boot.c
 postcar-y += spi.c
 postcar-y += i2c.c
-postcar-$(CONFIG_RESET_ON_INVALID_RAMSTAGE_CACHE) += heci.c
-postcar-$(CONFIG_RESET_ON_INVALID_RAMSTAGE_CACHE) += reset.c
+postcar-y += heci.c
+postcar-y += reset.c
 postcar-y += uart.c
 postcar-$(CONFIG_VBOOT_MEASURED_BOOT) += gspi.c
 
@@ -85,7 +83,6 @@ verstage-y += car.c
 verstage-y += i2c.c
 verstage-y += gspi.c
 verstage-y += heci.c
-verstage-y += memmap.c
 verstage-y += mmap_boot.c
 verstage-y += uart.c
 verstage-y += pmutil.c
@@ -107,7 +104,7 @@ endif
 CPPFLAGS_common += -I$(src)/soc/intel/apollolake/include
 
 # Since FSP-M runs in CAR we need to relocate it to a specific address
-$(CONFIG_FSP_M_CBFS)-options := -b $(CONFIG_FSP_M_ADDR)
+$(call strip_quotes,$(CONFIG_FSP_M_CBFS))-options := -b $(CONFIG_FSP_M_ADDR)
 
 # Handle GLK paging requirements
 ifeq ($(CONFIG_PAGING_IN_CACHE_AS_RAM),y)
@@ -120,8 +117,16 @@ pdpt-type := raw
 endif
 
 ifeq ($(CONFIG_NEED_LBP2),y)
-files_added::
-	$(CBFSTOOL) $(obj)/coreboot.rom write -r $(CONFIG_LBP2_FMAP_NAME) -f $(CONFIG_LBP2_FILE_NAME) --fill-upward
+$(objcbfs)/lbp2.bin: $(IFWITOOL)
+ifeq ($(CONFIG_LBP2_FROM_IFWI),y)
+	$(IFWITOOL) $(CONFIG_IFWI_FILE_NAME) create -f $@ -s
+	$(IFWITOOL) $@ delete -n OBBP
+else
+	cp $(CONFIG_LBP2_FILE_NAME) $@
+endif
+
+files_added:: $(objcbfs)/lbp2.bin
+	$(CBFSTOOL) $(obj)/coreboot.rom write -r $(CONFIG_LBP2_FMAP_NAME) -f $< --fill-upward
 endif
 
 # Bootblock on Apollolake platform lies in the IFWI region. In order to place

@@ -20,7 +20,6 @@
 #include <soc/clock.h>
 #include <soc/saradc.h>
 #include <stdint.h>
-#include <stdlib.h>
 #include <timer.h>
 
 struct rk3399_saradc_regs {
@@ -60,15 +59,15 @@ u32 get_saradc_value(u32 chn)
 	rkclk_configure_saradc(SARADC_HZ);
 
 	/* power down adc converter */
-	clrbits_le32(&rk3399_saradc->ctrl, ADC_PWR_CTRL);
+	clrbits32(&rk3399_saradc->ctrl, ADC_PWR_CTRL);
 
 	/* select channel */
-	clrsetbits_le32(&rk3399_saradc->ctrl,
-			ADC_CHN_SEL_MASK << ADC_CHN_SEL_SHIFT,
-			chn << ADC_CHN_SEL_SHIFT);
+	clrsetbits32(&rk3399_saradc->ctrl,
+		     ADC_CHN_SEL_MASK << ADC_CHN_SEL_SHIFT,
+		     chn << ADC_CHN_SEL_SHIFT);
 
 	/* power up */
-	setbits_le32(&rk3399_saradc->ctrl, ADC_PWR_CTRL);
+	setbits32(&rk3399_saradc->ctrl, ADC_PWR_CTRL);
 
 	udelay(SARADC_DELAY_PU);
 

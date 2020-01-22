@@ -16,7 +16,6 @@
 ifeq ($(CONFIG_SOC_QC_IPQ40XX),y)
 
 bootblock-y += clock.c
-bootblock-y += cbmem.c
 bootblock-y += gpio.c
 bootblock-$(CONFIG_SPI_FLASH) += spi.c
 bootblock-y += timer.c
@@ -43,7 +42,6 @@ romstage-y += blsp.c
 romstage-y += qup.c
 
 ramstage-y += blobs_init.c
-ramstage-y += cbmem.c
 ramstage-y += clock.c
 ramstage-y += gpio.c
 ramstage-y += lcc.c
@@ -64,7 +62,7 @@ ifeq ($(CONFIG_USE_BLOBS),y)
 $(objcbfs)/bootblock.bin: $(call strip_quotes,$(CONFIG_SBL_ELF)) \
 			   $(objcbfs)/bootblock.elf
 	@printf "    CRXBL      $(subst $(obj)/,,$(^)) $(subst $(obj)/,,$(@))\n"
-	@python $(CONFIG_SBL_UTIL_PATH)/createxbl.py -f $(CONFIG_SBL_ELF) \
+	@$(CONFIG_SBL_UTIL_PATH)/createxbl.py -f $(CONFIG_SBL_ELF) \
 		-s $(objcbfs)/bootblock.elf -o $@ -a 32 -b 32
 
 endif

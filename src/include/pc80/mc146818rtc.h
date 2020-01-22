@@ -25,8 +25,6 @@
  **********************************************************************/
 #define RTC_FREQ_SELECT	RTC_REG_A
 
-#define RTC_BOOT_NORMAL		0x1
-
 /* update-in-progress  - set to "1" 244 microsecs before RTC goes off the bus,
  * reset after update (may take 1.984ms @ 32768Hz RefClock) is complete,
  * totaling to a max high interval of 2.228 ms.
@@ -103,6 +101,10 @@
 #define PC_CKS_RANGE_END	45
 #define PC_CKS_LOC		46
 
+/* Tracking of fallback/normal boot. */
+#define RTC_BOOT_BYTE		48
+#define RTC_BOOT_NORMAL		0x1
+
 static inline unsigned char cmos_read(unsigned char addr)
 {
 	int offs = 0;
@@ -112,16 +114,6 @@ static inline unsigned char cmos_read(unsigned char addr)
 	}
 	outb(addr, RTC_BASE_PORT + offs + 0);
 	return inb(RTC_BASE_PORT + offs + 1);
-}
-
-/* Upon return the caller is guaranteed 244 microseconds to complete any
- * RTC operations.  wait_uip may be called a single time prior to multiple
- * accesses, but sequences requiring more time should call wait_uip again.
- */
-static inline void wait_uip(void)
-{
-	while (cmos_read(RTC_REG_A) & RTC_UIP)
-		;
 }
 
 static inline void cmos_write_inner(unsigned char val, unsigned char addr)
@@ -135,31 +127,34 @@ static inline void cmos_write_inner(unsigned char val, unsigned char addr)
 	outb(val, RTC_BASE_PORT + offs + 1);
 }
 
-static inline void cmos_write(unsigned char val, unsigned char addr)
+static inline u8 cmos_disable_rtc(void)
 {
 	u8 control_state = cmos_read(RTC_CONTROL);
-	/* There are various places where RTC bits might be hiding,
-	 * eg. the Century / AltCentury byte. So to be safe, disable
-	 * RTC before changing any value.
-	 */
-	if ((addr != RTC_CONTROL) && !(control_state & RTC_SET))
+	if (!(control_state & RTC_SET))
 		cmos_write_inner(control_state | RTC_SET, RTC_CONTROL);
-	cmos_write_inner(val, addr);
-	/* reset to prior configuration */
-	if ((addr != RTC_CONTROL) && !(control_state & RTC_SET))
+	return control_state;
+}
+
+static inline void cmos_restore_rtc(u8 control_state)
+{
+	if (!(control_state & RTC_SET))
 		cmos_write_inner(control_state, RTC_CONTROL);
 }
 
-static inline void cmos_disable_rtc(void)
+static inline void cmos_write(unsigned char val, unsigned char addr)
 {
-	u8 control_state = cmos_read(RTC_CONTROL);
-	cmos_write(control_state | RTC_SET, RTC_CONTROL);
-}
+	u8 control_state;
 
-static inline void cmos_enable_rtc(void)
-{
-	u8 control_state = cmos_read(RTC_CONTROL);
-	cmos_write(control_state & ~RTC_SET, RTC_CONTROL);
+	/*
+	 * There are various places where RTC bits might be hiding,
+	 * eg. the Century / AltCentury byte. So to be safe, disable
+	 * RTC before changing any value.
+	 */
+	if (addr != RTC_CONTROL)
+		control_state = cmos_disable_rtc();
+	cmos_write_inner(val, addr);
+	if (addr != RTC_CONTROL)
+		cmos_restore_rtc(control_state);
 }
 
 static inline u32 cmos_read32(u8 offset)
@@ -171,27 +166,20 @@ static inline u32 cmos_read32(u8 offset)
 	return value;
 }
 
-static inline void cmos_write32(u8 offset, u32 value)
+static inline void cmos_write32(u32 value, u8 offset)
 {
 	u8 i;
 	for (i = 0; i < sizeof(value); ++i)
 		cmos_write((value >> (i << 3)) & 0xff, offset + i);
 }
 
-#if !defined(__ROMCC__)
 void cmos_init(bool invalid);
 void cmos_check_update_date(void);
+int cmos_error(void);
+int cmos_lb_cks_valid(void);
 
-enum cb_err set_option(const char *name, void *val);
-enum cb_err get_option(void *dest, const char *name);
-unsigned int read_option_lowlevel(unsigned int start, unsigned int size,
-	unsigned int def);
-
-#else /* defined(__ROMCC__) */
-#include <drivers/pc80/rtc/mc146818rtc_romcc.c>
-#endif /* !defined(__ROMCC__) */
-#define read_option(name, default) read_option_lowlevel(CMOS_VSTART_ ##name, \
-	CMOS_VLEN_ ##name, (default))
+int cmos_checksum_valid(int range_start, int range_end, int cks_loc);
+void cmos_set_checksum(int range_start, int range_end, int cks_loc);
 
 #if CONFIG(CMOS_POST)
 #if CONFIG(USE_OPTION_TABLE)
@@ -223,46 +211,12 @@ unsigned int read_option_lowlevel(unsigned int start, unsigned int size,
 #define CMOS_POST_EXTRA_DEV_PATH  0x01
 
 void cmos_post_log(void);
-
-/* cmos_post_init() is exposed in this manner because it also needs to be called
- * by bootblock code compiled by romcc. */
-static inline void cmos_post_init(void)
-{
-	u8 magic = CMOS_POST_BANK_0_MAGIC;
-
-	/* Switch to the other bank */
-	switch (cmos_read(CMOS_POST_BANK_OFFSET)) {
-	case CMOS_POST_BANK_1_MAGIC:
-		break;
-	case CMOS_POST_BANK_0_MAGIC:
-		magic = CMOS_POST_BANK_1_MAGIC;
-		break;
-	default:
-		/* Initialize to zero */
-		cmos_write(0, CMOS_POST_BANK_0_OFFSET);
-		cmos_write(0, CMOS_POST_BANK_1_OFFSET);
-#if CONFIG(CMOS_POST_EXTRA)
-		cmos_write32(CMOS_POST_BANK_0_EXTRA, 0);
-		cmos_write32(CMOS_POST_BANK_1_EXTRA, 0);
-#endif
-	}
-
-	cmos_write(magic, CMOS_POST_BANK_OFFSET);
-}
 #else
 static inline void cmos_post_log(void) {}
-static inline void cmos_post_init(void) {}
 #endif /* CONFIG_CMOS_POST */
 
-#if CONFIG(USE_OPTION_TABLE)
-void sanitize_cmos(void);
-#else
-static inline void sanitize_cmos(void) {}
-#endif /* CONFIG_USE_OPTION_TABLE */
-
-#else /* !CONFIG_ARCH_X86 */
-static inline void cmos_post_init(void) {}
-static inline void sanitize_cmos(void) {}
 #endif /* CONFIG_ARCH_X86 */
+
+void cmos_post_init(void);
 
 #endif /*  PC80_MC146818RTC_H */

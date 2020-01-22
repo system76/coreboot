@@ -2,18 +2,10 @@
 
 #define DEVICE_H
 
-/*
- * NOTICE: Header is ROMCC tentative.
- * This header is incompatible with ROMCC and its inclusion leads to 'odd'
- * build failures.
- */
-#if !defined(__ROMCC__)
-
-#include <stdint.h>
-#include <stddef.h>
 #include <device/resource.h>
 #include <device/path.h>
 #include <device/pci_type.h>
+#include <types.h>
 
 struct device;
 struct pci_operations;
@@ -49,7 +41,6 @@ struct device_operations {
 	void (*scan_bus)(struct device *bus);
 	void (*enable)(struct device *dev);
 	void (*disable)(struct device *dev);
-	void (*set_link)(struct device *dev, unsigned int link);
 	void (*reset_bus)(struct bus *bus);
 #if CONFIG(GENERATE_SMBIOS_TABLES)
 	int (*get_smbios_data)(struct device *dev, int *handle,
@@ -308,7 +299,6 @@ DEVTREE_CONST struct bus *pci_root_bus(void);
  * devices in all_devices singly-linked list as well as the time
  * when this function is called (secondary reflecting topology).
  */
-DEVTREE_CONST struct device *dev_find_slot(unsigned int bus, unsigned int devfn);
 DEVTREE_CONST struct device *pcidev_path_on_root_debug(pci_devfn_t devfn, const char *func);
 
 /* Robust discovery of chip_info. */
@@ -332,7 +322,5 @@ void enable_static_devices(struct device *bus);
 void scan_smbus(struct device *bus);
 void scan_generic_bus(struct device *bus);
 void scan_static_bus(struct device *bus);
-
-#endif /* !defined(__ROMCC__) */
 
 #endif /* DEVICE_H */

@@ -18,10 +18,11 @@
 
 #include <assert.h>
 #include <stdint.h>
-#include <arch/io.h>
+#include <amdblocks/acpimmio.h>
 #include <device/mmio.h>
 #include <device/pci_ops.h>
 #include <console/console.h>
+#include <amdblocks/acpimmio.h>
 
 #include "hudson.h"
 #include "pci_devs.h"
@@ -36,18 +37,17 @@ void configure_hudson_uart(void)
 {
 	u8 byte;
 
-	byte = read8((void *)(ACPI_MMIO_BASE + AOAC_BASE + FCH_AOAC_REG56 +
-				CONFIG_UART_FOR_CONSOLE * sizeof(u16)));
+	byte = aoac_read8(FCH_AOAC_REG56 +
+			  CONFIG_UART_FOR_CONSOLE * sizeof(u16)));
 	byte |= 1 << 3;
-	write8((void *)(ACPI_MMIO_BASE + AOAC_BASE + FCH_AOAC_REG56 +
-			CONFIG_UART_FOR_CONSOLE * sizeof(u16)), byte);
-	byte = read8((void *)(ACPI_MMIO_BASE + AOAC_BASE + FCH_AOAC_REG62));
-	byte |= 1 << 3;
-	write8((void *)(ACPI_MMIO_BASE + AOAC_BASE + FCH_AOAC_REG62), byte);
-	write8((void *)FCH_IOMUXx89_UART0_RTS_L_EGPIO137, 0);
-	write8((void *)FCH_IOMUXx8A_UART0_TXD_EGPIO138, 0);
-	write8((void *)FCH_IOMUXx8E_UART1_RTS_L_EGPIO142, 0);
-	write8((void *)FCH_IOMUXx8F_UART1_TXD_EGPIO143, 0);
+	aoac_write8(FCH_AOAC_REG56 + CONFIG_UART_FOR_CONSOLE * sizeof(u16)),
+		    byte);
+
+	aoac_write8(FCH_AOAC_REG62, aoac_read8(FCH_AOAC_REG62) | (1 << 3));
+	iomux_write8(0x89, 0); /* UART0_RTS_L_EGPIO137 */
+	iomux_write8(0x8a, 0); /* UART0_TXD_EGPIO138 */
+	iomux_write8(0x8e, 0); /* UART1_RTS_L_EGPIO142 */
+	iomux_write8(0x8f, 0); /* UART1_TXD_EGPIO143 */
 
 	udelay(2000);
 	write8((void *)(0xFEDC6000 + 0x2000 * CONFIG_UART_FOR_CONSOLE + 0x88),
@@ -106,13 +106,6 @@ void hudson_lpc_port80(void)
 	u8 byte;
 	pci_devfn_t dev;
 
-	/* Enable LPC controller */
-	outb(0xEC, 0xCD6);
-	byte = inb(0xCD7);
-	byte |= 1;
-	outb(0xEC, 0xCD6);
-	outb(byte, 0xCD7);
-
 	/* Enable port 80 LPC decode in pci function 3 configuration space. */
 	dev = PCI_DEV(0, 0x14, 3);
 	byte = pci_read_config8(dev, 0x4a);
@@ -123,22 +116,20 @@ void hudson_lpc_port80(void)
 void hudson_lpc_decode(void)
 {
 	pci_devfn_t dev;
-	u32 tmp = 0;
+	u32 tmp;
 
-	/* Enable I/O decode to LPC bus */
-	dev = PCI_DEV(0, PCU_DEV, LPC_FUNC);
-	tmp = DECODE_ENABLE_PARALLEL_PORT0 | DECODE_ENABLE_PARALLEL_PORT2
-		| DECODE_ENABLE_PARALLEL_PORT4 | DECODE_ENABLE_SERIAL_PORT0
-		| DECODE_ENABLE_SERIAL_PORT1 | DECODE_ENABLE_SERIAL_PORT2
-		| DECODE_ENABLE_SERIAL_PORT3 | DECODE_ENABLE_SERIAL_PORT4
-		| DECODE_ENABLE_SERIAL_PORT5 | DECODE_ENABLE_SERIAL_PORT6
-		| DECODE_ENABLE_SERIAL_PORT7 | DECODE_ENABLE_AUDIO_PORT0
-		| DECODE_ENABLE_AUDIO_PORT1 | DECODE_ENABLE_AUDIO_PORT2
-		| DECODE_ENABLE_AUDIO_PORT3 | DECODE_ENABLE_MSS_PORT2
-		| DECODE_ENABLE_MSS_PORT3 | DECODE_ENABLE_FDC_PORT0
-		| DECODE_ENABLE_FDC_PORT1 | DECODE_ENABLE_GAME_PORT
-		| DECODE_ENABLE_KBC_PORT | DECODE_ENABLE_ACPIUC_PORT
-		| DECODE_ENABLE_ADLIB_PORT;
+	/* Enable LPC controller */
+	pm_write8(0xec, pm_read8(0xec) | 0x01);
+
+	dev = PCI_DEV(0, 0x14, 3);
+	/* Serial port numeration on Hudson:
+	 * PORT0 - 0x3f8
+	 * PORT1 - 0x2f8
+	 * PORT5 - 0x2e8
+	 * PORT7 - 0x3e8
+	 */
+	tmp =  DECODE_ENABLE_SERIAL_PORT0 | DECODE_ENABLE_SERIAL_PORT1
+	     | DECODE_ENABLE_SERIAL_PORT5 | DECODE_ENABLE_SERIAL_PORT7;
 
 	pci_write_config32(dev, LPC_IO_PORT_DECODE_ENABLE, tmp);
 }
@@ -230,36 +221,6 @@ void lpc_wideio_16_window(uint16_t base)
 	lpc_wideio_window(base, 16);
 }
 
-int s3_save_nvram_early(u32 dword, int size, int  nvram_pos)
-{
-	int i;
-	printk(BIOS_DEBUG, "Writing %x of size %d to nvram pos: %d\n", dword, size, nvram_pos);
-
-	for (i = 0; i < size; i++) {
-		outb(nvram_pos, BIOSRAM_INDEX);
-		outb((dword >> (8 * i)) & 0xff, BIOSRAM_DATA);
-		nvram_pos++;
-	}
-
-	return nvram_pos;
-}
-
-int s3_load_nvram_early(int size, u32 *old_dword, int nvram_pos)
-{
-	u32 data = *old_dword;
-	int i;
-	for (i = 0; i < size; i++) {
-		outb(nvram_pos, BIOSRAM_INDEX);
-		data &= ~(0xff << (i * 8));
-		data |= inb(BIOSRAM_DATA) << (i *8);
-		nvram_pos++;
-	}
-	*old_dword = data;
-	printk(BIOS_DEBUG, "Loading %x of size %d to nvram pos:%d\n", *old_dword, size,
-		nvram_pos-size);
-	return nvram_pos;
-}
-
 void hudson_clk_output_48Mhz(void)
 {
 	u32 ctrl;
@@ -268,11 +229,11 @@ void hudson_clk_output_48Mhz(void)
 	 * Enable the X14M_25M_48M_OSC pin and leaving it at it's default so
 	 * 48Mhz will be on ball AP13 (FT3b package)
 	 */
-	ctrl = read32((void *)(ACPI_MMIO_BASE + MISC_BASE + FCH_MISC_REG40));
+	ctrl = misc_read32(FCH_MISC_REG40);
 
 	/* clear the OSCOUT1_ClkOutputEnb to enable the 48 Mhz clock */
 	ctrl &= (u32)~(1<<2);
-	write32((void *)(ACPI_MMIO_BASE + MISC_BASE + FCH_MISC_REG40), ctrl);
+	misc_write32(FCH_MISC_REG40, ctrl);
 }
 
 static uintptr_t hudson_spibase(void)

@@ -28,15 +28,11 @@ config BOARD_SPECIFIC_OPTIONS
 
 config MAINBOARD_DIR
 	string
-	default intel/galileo
+	default "intel/galileo"
 
 config MAINBOARD_PART_NUMBER
 	string
 	default "Galileo"
-
-config MAINBOARD_VENDOR
-	string
-	default "Intel"
 
 config GALILEO_GEN2
 	bool "Board generation: GEN1 (n) or GEN2 (y)"
@@ -110,7 +106,6 @@ config VBOOT_WITH_CRYPTO_SHIELD
 	select VBOOT_SEPARATE_VERSTAGE
 	select VBOOT
 	select VBOOT_STARTS_IN_BOOTBLOCK
-	select VBOOT_SOFT_REBOOT_WORKAROUND
 	select VBOOT_VBNV_CMOS
 	help
 	  Perform a verified boot using the TPM on the Crypto Shield board.

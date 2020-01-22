@@ -17,7 +17,6 @@
 #include <string.h>
 #include <cbmem.h>
 #include <console/console.h>
-#include <arch/early_variables.h>
 #include <assert.h>
 #include <bootmode.h>
 #include <bootstate.h>
@@ -231,7 +230,7 @@ bool google_chromeec_is_uhepi_supported(void)
 #define UHEPI_SUPPORTED 1
 #define UHEPI_NOT_SUPPORTED 2
 
-	static int uhepi_support CAR_GLOBAL;
+	static int uhepi_support;
 
 	if (!uhepi_support) {
 		uhepi_support = google_chromeec_check_feature
@@ -758,11 +757,21 @@ int google_chromeec_read_limit_power_request(int *limit_power)
 		.cmd_data_out = &resp,
 		.cmd_dev_index = 0,
 	};
+	int rv;
 
-	if (google_chromeec_command(&cmd))
+	rv = google_chromeec_command(&cmd);
+
+	if (rv != 0 && (cmd.cmd_code == EC_RES_INVALID_COMMAND ||
+				cmd.cmd_code == EC_RES_INVALID_PARAM)) {
+		printk(BIOS_INFO, "PARAM_LIMIT_POWER not supported by EC.\n");
+		*limit_power = 0;
+		return 0;
+	} else if (rv != 0) {
 		return -1;
+	}
 
 	*limit_power = resp.get_param.value;
+
 	return 0;
 }
 
@@ -874,6 +883,11 @@ static int cbi_get_uint32(uint32_t *id, uint32_t tag)
 int google_chromeec_cbi_get_sku_id(uint32_t *id)
 {
 	return cbi_get_uint32(id, CBI_TAG_SKU_ID);
+}
+
+int google_chromeec_cbi_get_fw_config(uint32_t *fw_config)
+{
+	return cbi_get_uint32(fw_config, CBI_TAG_FW_CONFIG);
 }
 
 int google_chromeec_cbi_get_oem_id(uint32_t *id)

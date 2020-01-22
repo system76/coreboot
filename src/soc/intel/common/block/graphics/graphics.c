@@ -117,7 +117,10 @@ static const struct device_operations graphics_ops = {
 	.enable_resources	= pci_dev_enable_resources,
 	.init			= graphics_soc_init,
 	.ops_pci		= &pci_dev_ops_pci,
+#if CONFIG(HAVE_ACPI_TABLES)
 	.write_acpi_tables	= graphics_soc_write_acpi_opregion,
+#endif
+	.scan_bus		= scan_generic_bus,
 };
 
 static const unsigned short pci_device_ids[] = {
@@ -171,6 +174,7 @@ static const unsigned short pci_device_ids[] = {
 	PCI_DEVICE_ID_INTEL_CFL_S_GT2_2,
 	PCI_DEVICE_ID_INTEL_CFL_S_GT2_3,
 	PCI_DEVICE_ID_INTEL_CFL_S_GT2_4,
+	PCI_DEVICE_ID_INTEL_CFL_U_GT2,
 	PCI_DEVICE_ID_INTEL_ICL_GT0_ULT,
 	PCI_DEVICE_ID_INTEL_ICL_GT0_5_ULT,
 	PCI_DEVICE_ID_INTEL_ICL_GT1_ULT,
@@ -207,6 +211,21 @@ static const unsigned short pci_device_ids[] = {
 	PCI_DEVICE_ID_INTEL_CML_GT1_H_2,
 	PCI_DEVICE_ID_INTEL_CML_GT2_H_1,
 	PCI_DEVICE_ID_INTEL_CML_GT2_H_2,
+	PCI_DEVICE_ID_INTEL_CML_GT2_S_G0,
+	PCI_DEVICE_ID_INTEL_CML_GT2_S_P0,
+	PCI_DEVICE_ID_INTEL_CML_GT2_H_R0,
+	PCI_DEVICE_ID_INTEL_CML_GT2_H_R1,
+	PCI_DEVICE_ID_INTEL_TGL_GT0,
+	PCI_DEVICE_ID_INTEL_TGL_GT2_ULT,
+	PCI_DEVICE_ID_INTEL_TGL_GT2_ULX,
+	PCI_DEVICE_ID_INTEL_TGL_GT3_ULT,
+	PCI_DEVICE_ID_INTEL_JSL_PRE_PROD_GT0,
+	PCI_DEVICE_ID_INTEL_EHL_GT1_1,
+	PCI_DEVICE_ID_INTEL_EHL_GT2_1,
+	PCI_DEVICE_ID_INTEL_EHL_GT1_2,
+	PCI_DEVICE_ID_INTEL_EHL_GT2_2,
+	PCI_DEVICE_ID_INTEL_EHL_GT1_3,
+	PCI_DEVICE_ID_INTEL_EHL_GT2_3,
 	0,
 };
 

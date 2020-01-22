@@ -20,10 +20,6 @@
 
 #define call_tx(x) tx_byte(x, data)
 
-#if !CONFIG(ARCH_MIPS)
-#define SUPPORT_64BIT_INTS
-#endif
-
 #define ZEROPAD	1		/* pad with zero */
 #define SIGN	2		/* unsigned/signed long */
 #define PLUS	4		/* show plus */
@@ -40,20 +36,8 @@ static int number(void (*tx_byte)(unsigned char byte, void *data),
 	const char *digits = "0123456789abcdef";
 	int i;
 	int count = 0;
-#ifdef SUPPORT_64BIT_INTS
 	unsigned long long num = inum;
 	long long snum = num;
-#else
-	unsigned long num = (unsigned long)inum;
-	long snum = (long)num;
-
-	if (num != inum) {
-		/* Alert user to an incorrect result by printing #^!. */
-		call_tx('#');
-		call_tx('^');
-		call_tx('!');
-	}
-#endif
 
 	if (type & LARGE)
 		digits = "0123456789ABCDEF";
@@ -236,10 +220,11 @@ repeat:
 			continue;
 
 		case 'p':
-			if (field_width == -1) {
-				field_width = 2*sizeof(void *);
-				flags |= ZEROPAD;
-			}
+			/* even on 64-bit systems, coreboot only resides in the
+			   low 4GB so pad pointers to 32-bit for readability. */
+			if (field_width == -1 && precision == -1)
+				precision = 2*sizeof(uint32_t);
+			flags |= SPECIAL;
 			count += number(tx_byte,
 				(unsigned long) va_arg(args, void *), 16,
 				field_width, precision, flags, data);

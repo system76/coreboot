@@ -28,11 +28,8 @@
 _cache_as_ram_setup:
 
 bootblock_pre_c_entry:
-
-#if CONFIG(C_ENVIRONMENT_BOOTBLOCK)
 	movl	$cache_as_ram, %esp /* return address */
 	jmp	check_mtrr /* Check if CPU properly reset */
-#endif
 
 cache_as_ram:
 	post_code(0x20)
@@ -215,7 +212,7 @@ end_microcode_update:
 	movl	%eax, %cr0
 
 	/* Setup the stack. */
-	mov	$_car_stack_end, %esp
+	mov	$_ecar_stack, %esp
 
 	/* Need to align stack to 16 bytes at call instruction. Account for
 	the pushes below. */

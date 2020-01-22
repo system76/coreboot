@@ -1,0 +1,99 @@
+##
+## This file is part of the coreboot project.
+##
+## Copyright (C) 2017 Iru Cai <mytbk920423@gmail.com>
+##
+## This program is free software; you can redistribute it and/or modify
+## it under the terms of the GNU General Public License as published by
+## the Free Software Foundation; version 2 of the License.
+##
+## This program is distributed in the hope that it will be useful,
+## but WITHOUT ANY WARRANTY; without even the implied warranty of
+## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+## GNU General Public License for more details.
+##
+
+config BOARD_HP_2570P
+	bool "EliteBook 2570p"
+
+	select BOARD_HP_SNB_IVB_LAPTOPS
+	select BOARD_ROMSIZE_KB_16384
+	select GFX_GMA_INTERNAL_IS_LVDS
+	select INTEL_INT15
+	select MAINBOARD_HAS_LIBGFXINIT
+	select MAINBOARD_USES_IFD_GBE_REGION
+	select SOUTHBRIDGE_INTEL_C216
+
+config BOARD_HP_2760P
+	bool "EliteBook 2760p"
+
+	select BOARD_HP_SNB_IVB_LAPTOPS
+	select BOARD_ROMSIZE_KB_8192
+	select GFX_GMA_INTERNAL_IS_LVDS
+	select INTEL_INT15
+	select MAINBOARD_HAS_LIBGFXINIT
+	select MAINBOARD_USES_IFD_GBE_REGION
+	select SOUTHBRIDGE_INTEL_BD82X6X
+
+config BOARD_HP_8460P
+	bool "EliteBook 8460p"
+
+	select BOARD_HP_SNB_IVB_LAPTOPS
+	select BOARD_ROMSIZE_KB_8192
+	select GFX_GMA_INTERNAL_IS_LVDS
+	select INTEL_INT15
+	select MAINBOARD_HAS_LIBGFXINIT
+	select MAINBOARD_HAS_LPC_TPM
+	select MAINBOARD_HAS_TPM1
+	select MAINBOARD_USES_IFD_GBE_REGION
+	select SOUTHBRIDGE_INTEL_BD82X6X
+	select SUPERIO_SMSC_LPC47N217
+
+config BOARD_HP_8470P
+	bool "EliteBook 8470p"
+
+	select BOARD_HP_SNB_IVB_LAPTOPS
+	select BOARD_ROMSIZE_KB_16384
+	select GFX_GMA_INTERNAL_IS_LVDS
+	select INTEL_INT15
+	select MAINBOARD_HAS_LIBGFXINIT
+	select MAINBOARD_USES_IFD_GBE_REGION
+	select SOUTHBRIDGE_INTEL_C216
+	select SUPERIO_SMSC_LPC47N217
+
+config BOARD_HP_8770W
+	bool "EliteBook 8770w"
+
+	select BOARD_HP_SNB_IVB_LAPTOPS
+	select BOARD_ROMSIZE_KB_16384
+	select MAINBOARD_USES_IFD_GBE_REGION
+	select SOUTHBRIDGE_INTEL_C216
+	select SUPERIO_SMSC_LPC47N217
+
+config BOARD_HP_FOLIO_9470M
+	bool "EliteBook Folio 9470m"
+
+	select BOARD_HP_SNB_IVB_LAPTOPS
+	select BOARD_ROMSIZE_KB_16384
+	select GFX_GMA_INTERNAL_IS_LVDS
+	select INTEL_GMA_HAVE_VBT
+	select INTEL_INT15
+	select MAINBOARD_HAS_LIBGFXINIT
+	select MAINBOARD_HAS_LPC_TPM
+	select MAINBOARD_USES_IFD_GBE_REGION
+	select SOUTHBRIDGE_INTEL_C216
+
+config BOARD_HP_REVOLVE_810_G1
+	bool "EliteBook Revolve 810 G1"
+
+	select BOARD_HP_SNB_IVB_LAPTOPS
+	select BOARD_ROMSIZE_KB_16384
+	select GENERIC_SPD_BIN
+	select GFX_GMA_INTERNAL_IS_LVDS
+	select INTEL_INT15
+	select INTEL_GMA_HAVE_VBT
+	select MAINBOARD_USES_IFD_GBE_REGION
+	select MAINBOARD_HAS_LIBGFXINIT
+	select MAINBOARD_HAS_LPC_TPM
+	select MAINBOARD_HAS_TPM1
+	select SOUTHBRIDGE_INTEL_C216

@@ -7,7 +7,7 @@
 #ifndef __VPD_H__
 #define __VPD_H__
 
-#include <stdint.h>
+#include <types.h>
 
 #define GOOGLE_VPD_2_0_OFFSET 0x600
 
@@ -28,7 +28,7 @@ struct vpd_blob {
 extern struct vpd_blob g_vpd_blob;
 
 /*
- * This function loads g_vpd_blob CAR_GLOBAL variable.
+ * This function loads g_vpd_blob global variable.
  * The variable is initialized if it was not.
  */
 const struct vpd_blob *vpd_load_blob(void);

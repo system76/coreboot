@@ -18,15 +18,12 @@
 
 #include <device/device.h>
 #include <arch/io.h>
-#include <device/pci_def.h>
-#include <device/pci_ops.h>
 #include <northbridge/intel/nehalem/nehalem.h>
 #include <southbridge/intel/bd82x6x/pch.h>
 #include <ec/acpi/ec.h>
 #include <drivers/intel/gma/int15.h>
 #include <pc80/keyboard.h>
 #include <cpu/x86/lapic.h>
-#include <device/pci.h>
 #include <smbios.h>
 
 static void mainboard_enable(struct device *dev)

@@ -238,7 +238,7 @@ void *bootmem_allocate_buffer(size_t size)
 	resource_t end;
 
 	if (!bootmem_is_initialized()) {
-		printk(BIOS_ERR, "%s: lib unitialized!\n", __func__);
+		printk(BIOS_ERR, "%s: lib uninitialized!\n", __func__);
 		return NULL;
 	}
 
@@ -274,7 +274,7 @@ void *bootmem_allocate_buffer(size_t size)
 		end = max_addr;
 	begin = end - size;
 
-	/* Mark buffer as unusuable for future buffer use. */
+	/* Mark buffer as unusable for future buffer use. */
 	bootmem_add_range(begin, size, BM_MEM_PAYLOAD);
 
 	return (void *)(uintptr_t)begin;

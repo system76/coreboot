@@ -45,9 +45,8 @@
 #include <vendorcode/google/chromeos/gnvs.h>
 #endif
 
-#ifndef __SMM__
 /* Path that the BIOS should take based on ME state */
-static const char *me_bios_path_values[] = {
+static const char *me_bios_path_values[] __unused = {
 	[ME_NORMAL_BIOS_PATH]		= "Normal",
 	[ME_S3WAKE_BIOS_PATH]		= "S3 Wake",
 	[ME_ERROR_BIOS_PATH]		= "Error",
@@ -56,7 +55,6 @@ static const char *me_bios_path_values[] = {
 	[ME_FIRMWARE_UPDATE_BIOS_PATH]	= "Firmware Update",
 };
 static int intel_me_read_mbp(me_bios_payload *mbp_data, struct device *dev);
-#endif
 
 /* MMIO base address for MEI interface */
 static u32 *mei_base_address;
@@ -66,10 +64,12 @@ void intel_me_mbp_clear(pci_devfn_t dev);
 void intel_me_mbp_clear(struct device *dev);
 #endif
 
-#if CONFIG(DEBUG_INTEL_ME)
 static void mei_dump(void *ptr, int dword, int offset, const char *type)
 {
 	struct mei_csr *csr;
+
+	if (!CONFIG(DEBUG_INTEL_ME))
+		return;
 
 	printk(BIOS_SPEW, "%-9s[%02x] : ", type, offset);
 
@@ -96,9 +96,6 @@ static void mei_dump(void *ptr, int dword, int offset, const char *type)
 		break;
 	}
 }
-#else
-# define mei_dump(ptr,dword,offset,type) do {} while (0)
-#endif
 
 /*
  * ME/MEI access helpers using memcpy to avoid aliasing.
@@ -380,7 +377,6 @@ static int mei_recv_msg(void *header, int header_bytes,
 	return mei_wait_for_me_ready();
 }
 
-#if CONFIG(DEBUG_INTEL_ME) || defined(__SMM__)
 static inline int mei_sendrecv_mkhi(struct mkhi_header *mkhi,
 				    void *req_data, int req_bytes,
 				    void *rsp_data, int rsp_bytes)
@@ -418,7 +414,6 @@ static inline int mei_sendrecv_mkhi(struct mkhi_header *mkhi,
 
 	return 0;
 }
-#endif /* CONFIG_DEBUG_INTEL_ME || __SMM__ */
 
 /*
  * mbp give up routine. This path is taken if hfs.mpb_rdy is 0 or the read
@@ -469,8 +464,7 @@ void intel_me_mbp_clear(struct device *dev)
 	}
 }
 
-#if (CONFIG_DEFAULT_CONSOLE_LOGLEVEL >= BIOS_DEBUG) && !defined(__SMM__)
-static void me_print_fw_version(mbp_fw_version_name *vers_name)
+static void __unused me_print_fw_version(mbp_fw_version_name *vers_name)
 {
 	if (!vers_name) {
 		printk(BIOS_ERR, "ME: mbp missing version report\n");
@@ -482,7 +476,6 @@ static void me_print_fw_version(mbp_fw_version_name *vers_name)
 	       vers_name->hotfix_version, vers_name->build_version);
 }
 
-#if CONFIG(DEBUG_INTEL_ME)
 static inline void print_cap(const char *name, int state)
 {
 	printk(BIOS_DEBUG, "ME Capability: %-41s : %sabled\n",
@@ -510,7 +503,7 @@ static int mkhi_get_fwcaps(mbp_mefwcaps *cap)
 }
 
 /* Get ME Firmware Capabilities */
-static void me_print_fwcaps(mbp_mefwcaps *cap)
+static void __unused me_print_fwcaps(mbp_mefwcaps *cap)
 {
 	mbp_mefwcaps local_caps;
 	if (!cap) {
@@ -535,8 +528,6 @@ static void me_print_fwcaps(mbp_mefwcaps *cap)
 	print_cap("TLS", cap->tls);
 	print_cap("Wireless LAN (WLAN)", cap->wlan);
 }
-#endif /* CONFIG_DEBUG_INTEL_ME */
-#endif
 
 #if CONFIG(CHROMEOS) && 0 /* DISABLED */
 /* Tell ME to issue a global reset */
@@ -564,10 +555,8 @@ static int mkhi_global_reset(void)
 }
 #endif
 
-#ifdef __SMM__
-
 /* Send END OF POST message to the ME */
-static int mkhi_end_of_post(void)
+static int __unused mkhi_end_of_post(void)
 {
 	struct mkhi_header mkhi = {
 		.group_id	= MKHI_GROUP_ID_GEN,
@@ -585,6 +574,8 @@ static int mkhi_end_of_post(void)
 	printk(BIOS_INFO, "ME: END OF POST message successful (%d)\n", eop_ack);
 	return 0;
 }
+
+#ifdef __SIMPLE_DEVICE__
 
 void intel_me_finalize_smm(void)
 {
@@ -626,7 +617,7 @@ void intel_me_finalize_smm(void)
 	RCBA32_OR(FD2, PCH_DISABLE_MEI1);
 }
 
-#else /* !__SMM__ */
+#else /* !__SIMPLE_DEVICE__ */
 
 static inline int mei_sendrecv_icc(struct icc_header *icc,
 				   void *req_data, int req_bytes,
@@ -725,8 +716,7 @@ static me_bios_path intel_me_path(struct device *dev)
 		path = ME_ERROR_BIOS_PATH;
 	}
 
-#if CONFIG(ELOG)
-	if (path != ME_NORMAL_BIOS_PATH) {
+	if (CONFIG(ELOG) && path != ME_NORMAL_BIOS_PATH) {
 		struct elog_event_data_me_extended data = {
 			.current_working_state = hfs.working_state,
 			.operation_state       = hfs.operation_state,
@@ -740,7 +730,6 @@ static me_bios_path intel_me_path(struct device *dev)
 		elog_add_event_raw(ELOG_TYPE_MANAGEMENT_ENGINE_EXT,
 				   &data, sizeof(data));
 	}
-#endif
 
 	return path;
 }
@@ -851,21 +840,21 @@ static void intel_me_init(struct device *dev)
 	if (intel_me_read_mbp(&mbp_data, dev))
 		return;
 
-#if (CONFIG_DEFAULT_CONSOLE_LOGLEVEL >= BIOS_DEBUG)
-	me_print_fw_version(mbp_data.fw_version_name);
-#if CONFIG(DEBUG_INTEL_ME)
-	me_print_fwcaps(mbp_data.fw_capabilities);
-#endif
+	if (CONFIG_DEFAULT_CONSOLE_LOGLEVEL >= BIOS_DEBUG) {
+		me_print_fw_version(mbp_data.fw_version_name);
 
-	if (mbp_data.plat_time) {
-		printk(BIOS_DEBUG, "ME: Wake Event to ME Reset:      %u ms\n",
-		       mbp_data.plat_time->wake_event_mrst_time_ms);
-		printk(BIOS_DEBUG, "ME: ME Reset to Platform Reset:  %u ms\n",
-		       mbp_data.plat_time->mrst_pltrst_time_ms);
-		printk(BIOS_DEBUG, "ME: Platform Reset to CPU Reset: %u ms\n",
-		       mbp_data.plat_time->pltrst_cpurst_time_ms);
+		if (CONFIG(DEBUG_INTEL_ME))
+			me_print_fwcaps(mbp_data.fw_capabilities);
+
+		if (mbp_data.plat_time) {
+			printk(BIOS_DEBUG, "ME: Wake Event to ME Reset:      %u ms\n",
+			       mbp_data.plat_time->wake_event_mrst_time_ms);
+			printk(BIOS_DEBUG, "ME: ME Reset to Platform Reset:  %u ms\n",
+			       mbp_data.plat_time->mrst_pltrst_time_ms);
+			printk(BIOS_DEBUG, "ME: Platform Reset to CPU Reset: %u ms\n",
+			       mbp_data.plat_time->pltrst_cpurst_time_ms);
+		}
 	}
-#endif
 
 	/* Set clock enables according to devicetree */
 	if (config && config->icc_clock_disable)
@@ -910,6 +899,8 @@ static const struct pci_driver intel_me __pci_driver = {
 	.devices= pci_device_ids,
 };
 
+#endif /* !__SIMPLE_DEVICE__ */
+
 /******************************************************************************
  *									     */
 static u32 me_to_host_words_pending(void)
@@ -947,7 +938,7 @@ struct mbp_payload {
  * mbp seems to be following its own flow, let's retrieve it in a dedicated
  * function.
  */
-static int intel_me_read_mbp(me_bios_payload *mbp_data, struct device *dev)
+static int __unused intel_me_read_mbp(me_bios_payload *mbp_data, struct device *dev)
 {
 	mbp_header mbp_hdr;
 	u32 me2host_pending;
@@ -956,7 +947,11 @@ static int intel_me_read_mbp(me_bios_payload *mbp_data, struct device *dev)
 	struct mbp_payload *mbp;
 	int i;
 
+#ifdef __SIMPLE_DEVICE__
+	pci_read_dword_ptr(PCI_BDF(dev), &hfs2, PCI_ME_HFS2);
+#else
 	pci_read_dword_ptr(dev, &hfs2, PCI_ME_HFS2);
+#endif
 
 	if (!hfs2.mbp_rdy) {
 		printk(BIOS_ERR, "ME: MBP not ready\n");
@@ -1004,15 +999,15 @@ static int intel_me_read_mbp(me_bios_payload *mbp_data, struct device *dev)
 #endif
 
 	/* Dump out the MBP contents. */
-#if (CONFIG_DEFAULT_CONSOLE_LOGLEVEL >= BIOS_DEBUG)
-	printk(BIOS_INFO, "ME MBP: Header: items: %d, size dw: %d\n",
-	       mbp->header.num_entries, mbp->header.mbp_size);
-#if CONFIG(DEBUG_INTEL_ME)
-	for (i = 0; i < mbp->header.mbp_size - 1; i++) {
-		printk(BIOS_INFO, "ME MBP: %04x: 0x%08x\n", i, mbp->data[i]);
+	if (CONFIG_DEFAULT_CONSOLE_LOGLEVEL >= BIOS_DEBUG) {
+		printk(BIOS_INFO, "ME MBP: Header: items: %d, size dw: %d\n",
+		       mbp->header.num_entries, mbp->header.mbp_size);
+		if (CONFIG(DEBUG_INTEL_ME)) {
+			for (i = 0; i < mbp->header.mbp_size - 1; i++) {
+				printk(BIOS_INFO, "ME MBP: %04x: 0x%08x\n", i, mbp->data[i]);
+			}
+		}
 	}
-#endif
-#endif
 
 	#define ASSIGN_FIELD_PTR(field_,val_) \
 		{ \
@@ -1066,8 +1061,10 @@ static int intel_me_read_mbp(me_bios_payload *mbp_data, struct device *dev)
 	return 0;
 
 mbp_failure:
+#ifdef __SIMPLE_DEVICE__
+	intel_me_mbp_give_up(PCI_BDF(dev));
+#else
 	intel_me_mbp_give_up(dev);
+#endif
 	return -1;
 }
-
-#endif /* !__SMM__ */

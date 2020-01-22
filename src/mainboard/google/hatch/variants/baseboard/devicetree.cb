@@ -58,7 +58,8 @@ chip soc/intel/cannonlake
 
 	register "PmTimerDisabled" = "1"
 
-	register "PchPmSlpS0Vm075VSupport" = "1"
+	# Select CPU PL2/PL4 config
+	register "cpu_pl2_4_cfg" = "baseline"
 
 	# VR Settings Configuration for 4 Domains
 	#+----------------+-------+-------+-------+-------+
@@ -85,7 +86,7 @@ chip soc/intel/cannonlake
 		.psi4enable = 1,
 		.imon_slope = 0x0,
 		.imon_offset = 0x0,
-		.icc_max = VR_CFG_AMP(6),
+		.icc_max = 0,
 		.voltage_limit = 1520,
 		.ac_loadline = 1030,
 		.dc_loadline = 1030,
@@ -100,7 +101,7 @@ chip soc/intel/cannonlake
 		.psi4enable = 1,
 		.imon_slope = 0x0,
 		.imon_offset = 0x0,
-		.icc_max = VR_CFG_AMP(70),
+		.icc_max = 0,
 		.voltage_limit = 1520,
 		.ac_loadline = 180,
 		.dc_loadline = 180,
@@ -115,7 +116,7 @@ chip soc/intel/cannonlake
 		.psi4enable = 1,
 		.imon_slope = 0x0,
 		.imon_offset = 0x0,
-		.icc_max = VR_CFG_AMP(31),
+		.icc_max = 0,
 		.voltage_limit = 1520,
 		.ac_loadline = 310,
 		.dc_loadline = 310,
@@ -130,7 +131,7 @@ chip soc/intel/cannonlake
 		.psi4enable = 1,
 		.imon_slope = 0x0,
 		.imon_offset = 0x0,
-		.icc_max = VR_CFG_AMP(31),
+		.icc_max = 0,
 		.voltage_limit = 1520,
 		.ac_loadline = 310,
 		.dc_loadline = 310,
@@ -346,13 +347,7 @@ chip soc/intel/cannonlake
 		end # eSPI Interface
 		device pci 1f.1 on  end # P2SB
 		device pci 1f.2 on  end # Power Management Controller
-		device pci 1f.3 on
-			chip drivers/generic/max98357a
-				register "sdmode_gpio" =  "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_H3)"
-				register "sdmode_delay" = "5"
-				device generic 0 on end
-			end
-		end # Intel HDA
+		device pci 1f.3 on  end # Intel HDA
 		device pci 1f.4 on  end # SMBus
 		device pci 1f.5 on  end # PCH SPI
 		device pci 1f.6 off end # GbE

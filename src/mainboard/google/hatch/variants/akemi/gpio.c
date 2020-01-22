@@ -19,18 +19,6 @@
 #include <commonlib/helpers.h>
 
 static const struct pad_config ssd_sku_gpio_table[] = {
-	/* A0  : NC */
-	PAD_NC(GPP_A0, NONE),
-	/* A6  : NC */
-	PAD_NC(GPP_A6, NONE),
-	/* A8  : NC */
-	PAD_NC(GPP_A8, NONE),
-	/* A10 : NC */
-	PAD_NC(GPP_A10, NONE),
-	/* A11 : NC */
-	PAD_NC(GPP_A11, NONE),
-	/* A12 : NC */
-	PAD_NC(GPP_A12, NONE),
 	/* A18 : NC */
 	PAD_NC(GPP_A18, NONE),
 	/* A19 : NC */
@@ -47,8 +35,6 @@ static const struct pad_config ssd_sku_gpio_table[] = {
 	PAD_NC(GPP_B22, NONE),
 	/* C11 : NC */
 	PAD_NC(GPP_C11, NONE),
-	/* C15 : NC */
-	PAD_NC(GPP_C15, NONE),
 	/* F1  : NC */
 	PAD_NC(GPP_F1, NONE),
 	/* F3  : MEM_STRAP_3 */
@@ -90,18 +76,6 @@ static const struct pad_config ssd_sku_gpio_table[] = {
 };
 
 static const struct pad_config gpio_table[] = {
-	/* A0  : NC */
-	PAD_NC(GPP_A0, NONE),
-	/* A6  : NC */
-	PAD_NC(GPP_A6, NONE),
-	/* A8  : NC */
-	PAD_NC(GPP_A8, NONE),
-	/* A10 : NC */
-	PAD_NC(GPP_A10, NONE),
-	/* A11 : NC */
-	PAD_NC(GPP_A11, NONE),
-	/* A12 : NC */
-	PAD_NC(GPP_A12, NONE),
 	/* A18 : NC */
 	PAD_NC(GPP_A18, NONE),
 	/* A19 : NC */
@@ -118,8 +92,6 @@ static const struct pad_config gpio_table[] = {
 	PAD_NC(GPP_B22, NONE),
 	/* C11 : NC */
 	PAD_NC(GPP_C11, NONE),
-	/* C15 : NC */
-	PAD_NC(GPP_C15, NONE),
 	/* F1  : NC */
 	PAD_NC(GPP_F1, NONE),
 	/* F3  : MEM_STRAP_3 */
@@ -150,6 +122,8 @@ static const struct pad_config gpio_table[] = {
 	PAD_CFG_NF(GPP_F21, NONE, DEEP, NF1),
 	/* F22 : EMMC_RESET# ==> EMMC_RST_L */
 	PAD_CFG_NF(GPP_F22, NONE, DEEP, NF1),
+	/* H3  : SPKR_PA_EN */
+	PAD_CFG_GPO(GPP_H3, 0, DEEP),
 	/* H6  : NC */
 	PAD_NC(GPP_H6, NONE),
 	/* H7  : NC */
@@ -164,7 +138,7 @@ const struct pad_config *override_gpio_table(size_t *num)
 {
 	uint32_t sku_id = get_board_sku();
 	/* For SSD SKU */
-	if (sku_id == 2) {
+	if ((sku_id == 2) || (sku_id == 4)) {
 		*num = ARRAY_SIZE(ssd_sku_gpio_table);
 		return ssd_sku_gpio_table;
 	}

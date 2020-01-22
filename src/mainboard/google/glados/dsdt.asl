@@ -25,7 +25,6 @@ DefinitionBlock(
 	0x20110725	// OEM revision
 )
 {
-	// Some generic macros
 	#include <soc/intel/skylake/acpi/platform.asl>
 
 	// global NVS and variables
@@ -48,7 +47,6 @@ DefinitionBlock(
 	// Chrome OS specific
 	#include <vendorcode/google/chromeos/acpi/chromeos.asl>
 
-	// Chipset specific sleep states
 	#include <southbridge/intel/common/acpi/sleepstates.asl>
 
 	// Mainboard specific

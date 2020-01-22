@@ -31,7 +31,7 @@
 struct region_device;
 
 /*
- * Returns NULL on error otherwise a buffer is returned with the conents of
+ * Returns NULL on error otherwise a buffer is returned with the contents of
  * the requested data at offset of size.
  */
 void *rdev_mmap(const struct region_device *rd, size_t offset, size_t size);
@@ -72,7 +72,6 @@ ssize_t rdev_eraseat(const struct region_device *rd, size_t offset,
  */
 int rdev_chain(struct region_device *child, const struct region_device *parent,
 		size_t offset, size_t size);
-
 
 /* A region_device operations. */
 struct region_device_ops {
@@ -123,6 +122,11 @@ static inline size_t region_sz(const struct region *r)
 	return r->size;
 }
 
+static inline size_t region_end(const struct region *r)
+{
+	return region_offset(r) + region_sz(r);
+}
+
 static inline const struct region *region_device_region(
 					const struct region_device *rdev)
 {
@@ -139,10 +143,22 @@ static inline size_t region_device_offset(const struct region_device *rdev)
 	return region_offset(region_device_region(rdev));
 }
 
+static inline size_t region_device_end(const struct region_device *rdev)
+{
+	return region_end(region_device_region(rdev));
+}
+
 /* Memory map entire region device. Same semantics as rdev_mmap() above. */
 static inline void *rdev_mmap_full(const struct region_device *rd)
 {
 	return rdev_mmap(rd, 0, region_device_sz(rd));
+}
+
+static inline int rdev_chain_full(struct region_device *child,
+				const struct region_device *parent)
+{
+	/* Chain full size of parent. */
+	return rdev_chain(child, parent, 0, region_device_sz(parent));
 }
 
 /*
@@ -157,7 +173,7 @@ struct mem_region_device {
 	struct region_device rdev;
 };
 
-/* Inititalize at runtime a mem_region_device. This would be used when
+/* Initialize at runtime a mem_region_device. This would be used when
  * the base and size are dynamic or can't be known during linking.
  * There are two variants: read-only and read-write. */
 void mem_region_device_ro_init(struct mem_region_device *mdev, void *base,

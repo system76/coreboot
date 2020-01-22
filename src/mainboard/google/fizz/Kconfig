@@ -17,6 +17,7 @@ config BOARD_GOOGLE_BASEBOARD_FIZZ
 	select INTEL_GMA_HAVE_VBT
 	select INTEL_LPSS_UART_FOR_CONSOLE
 	select MAINBOARD_HAS_CHROMEOS
+	select MAINBOARD_HAS_LIBGFXINIT
 	select NO_FADT_8042
 	select SOC_INTEL_KABYLAKE
 	select MAINBOARD_HAS_SPI_TPM_CR50
@@ -52,11 +53,13 @@ config MAINBOARD_PART_NUMBER
 	string
 	default "Fizz" if BOARD_GOOGLE_FIZZ
 	default "Karma" if BOARD_GOOGLE_KARMA
+	default "Endeavour" if BOARD_GOOGLE_ENDEAVOUR
 
 config MAINBOARD_FAMILY
 	string
 	default "Google_Fizz" if BOARD_GOOGLE_FIZZ
 	default "Google_Kalista" if BOARD_GOOGLE_KARMA
+	default "Google_Endeavour" if BOARD_GOOGLE_ENDEAVOUR
 
 config MAX_CPUS
 	int
@@ -78,6 +81,7 @@ config VARIANT_DIR
 	string
 	default "fizz" if BOARD_GOOGLE_FIZZ
 	default "karma" if BOARD_GOOGLE_KARMA
+	default "endeavour" if BOARD_GOOGLE_ENDEAVOUR
 
 config INCLUDE_NHLT_BLOBS
 	bool "Include blobs for audio."

@@ -24,7 +24,6 @@ DefinitionBlock(
 	0x20110725	// OEM revision
 )
 {
-	// Some generic macros
 	#include "acpi/platform.asl"
 
 	// Thermal handler
@@ -52,6 +51,5 @@ DefinitionBlock(
 	// Chrome OS specific
 	#include <vendorcode/google/chromeos/acpi/chromeos.asl>
 
-	// Chipset specific sleep states
 	#include <southbridge/intel/common/acpi/sleepstates.asl>
 }

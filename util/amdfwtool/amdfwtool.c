@@ -110,10 +110,12 @@
  */
 #define PSP_COMBO 0
 
+#if defined(__GLIBC__)
 typedef unsigned long long int uint64_t;
 typedef unsigned int uint32_t;
 typedef unsigned char uint8_t;
 typedef unsigned short uint16_t;
+#endif
 
 /*
  * Creates the OSI Fletcher checksum. See 8473-1, Appendix C, section C.3.
@@ -362,7 +364,11 @@ static amd_bios_entry amd_bios_table[] = {
 	{ .type = AMD_BIOS_APCB, .inst = 2, .level = BDT_BOTH },
 	{ .type = AMD_BIOS_APCB, .inst = 3, .level = BDT_BOTH },
 	{ .type = AMD_BIOS_APCB, .inst = 4, .level = BDT_BOTH },
-	{ .type = AMD_BIOS_APCB_BK, .level = BDT_BOTH },
+	{ .type = AMD_BIOS_APCB_BK, .inst = 0, .level = BDT_BOTH },
+	{ .type = AMD_BIOS_APCB_BK, .inst = 1, .level = BDT_BOTH },
+	{ .type = AMD_BIOS_APCB_BK, .inst = 2, .level = BDT_BOTH },
+	{ .type = AMD_BIOS_APCB_BK, .inst = 3, .level = BDT_BOTH },
+	{ .type = AMD_BIOS_APCB_BK, .inst = 4, .level = BDT_BOTH },
 	{ .type = AMD_BIOS_APOB, .level = BDT_BOTH },
 	{ .type = AMD_BIOS_BIN,
 			.reset = 1, .copy = 1, .zlib = 1, .level = BDT_BOTH },

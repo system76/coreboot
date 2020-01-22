@@ -15,24 +15,13 @@
  * GNU General Public License for more details.
  */
 
-#include <device/early_smbus.h>
 #include <soc/iomap.h>
 #include <soc/pci_devs.h>
 #include <device/pci_def.h>
 #include <device/pci_type.h>
 #include <device/pci_ops.h>
+#include <device/smbus_host.h>
 #include <soc/smbus.h>
-#include <southbridge/intel/common/smbus.h>
-
-u8 smbus_read_byte(u32 smbus_dev, u8 addr, u8 offset)
-{
-	return do_smbus_read_byte(SMBUS_BASE_ADDRESS, addr, offset);
-}
-
-u8 smbus_write_byte(u32 smbus_dev, u8 addr, u8 offset, u8 value)
-{
-	return do_smbus_write_byte(SMBUS_BASE_ADDRESS, addr, offset, value);
-}
 
 int smbus_i2c_block_write(u8 addr, u8 bytes, u8 *buf)
 {

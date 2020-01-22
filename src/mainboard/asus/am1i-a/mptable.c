@@ -15,7 +15,6 @@
  */
 
 #include <arch/smp/mpspec.h>
-#include <device/pci.h>
 #include <arch/ioapic.h>
 #include <stdint.h>
 #include <cpu/x86/lapic.h>
@@ -92,6 +91,8 @@ static void *smp_write_config_table(void *v)
 	PCI_INT(0x0, 0x12, 0x1, intr_data_ptr[PIRQ_EHCI1]);
 	PCI_INT(0x0, 0x13, 0x0, intr_data_ptr[PIRQ_OHCI2]);
 	PCI_INT(0x0, 0x13, 0x1, intr_data_ptr[PIRQ_EHCI2]);
+	PCI_INT(0x0, 0x16, 0x0, intr_data_ptr[PIRQ_OHCI3]);
+	PCI_INT(0x0, 0x16, 0x1, intr_data_ptr[PIRQ_EHCI3]);
 
 	/* Southbridge HD Audio */
 	PCI_INT(0x0, 0x14, 0x0, intr_data_ptr[PIRQ_HDA]);

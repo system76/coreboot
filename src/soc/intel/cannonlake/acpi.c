@@ -3,7 +3,7 @@
  *
  * Copyright (C) 2009 coresystems GmbH
  * Copyright (C) 2014 Google Inc.
- * Copyright (C) 2017-2018 Intel Corporation.
+ * Copyright (C) 2017-2020 Intel Corporation.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -179,16 +179,14 @@ void soc_fill_fadt(acpi_fadt_t *fadt)
 	const struct soc_intel_cannonlake_config *config;
 	config = config_of_soc();
 
-	if (!config->PmTimerDisabled) {
-		fadt->pm_tmr_blk = pmbase + PM1_TMR;
-		fadt->pm_tmr_len = 4;
-		fadt->x_pm_tmr_blk.space_id = 1;
-		fadt->x_pm_tmr_blk.bit_width = fadt->pm_tmr_len * 8;
-		fadt->x_pm_tmr_blk.bit_offset = 0;
-		fadt->x_pm_tmr_blk.access_size = 0;
-		fadt->x_pm_tmr_blk.addrl = pmbase + PM1_TMR;
-		fadt->x_pm_tmr_blk.addrh = 0x0;
-	}
+	fadt->pm_tmr_blk = pmbase + PM1_TMR;
+	fadt->pm_tmr_len = 4;
+	fadt->x_pm_tmr_blk.space_id = 1;
+	fadt->x_pm_tmr_blk.bit_width = fadt->pm_tmr_len * 8;
+	fadt->x_pm_tmr_blk.bit_offset = 0;
+	fadt->x_pm_tmr_blk.access_size = 0;
+	fadt->x_pm_tmr_blk.addrl = pmbase + PM1_TMR;
+	fadt->x_pm_tmr_blk.addrh = 0x0;
 
 	if (config->s0ix_enable)
 		fadt->flags |= ACPI_FADT_LOW_PWR_IDLE_S0;
@@ -233,6 +231,9 @@ void acpi_create_gnvs(struct global_nvs_t *gnvs)
 	/* Set USB2/USB3 wake enable bitmaps. */
 	gnvs->u2we = config->usb2_wake_enable_bitmap;
 	gnvs->u3we = config->usb3_wake_enable_bitmap;
+
+	/* Fill in Above 4GB MMIO resource */
+	sa_fill_gnvs(gnvs);
 }
 
 uint32_t acpi_fill_soc_wake(uint32_t generic_pm1_en,

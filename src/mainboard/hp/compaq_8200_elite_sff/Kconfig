@@ -1,4 +1,4 @@
-if BOARD_HEWLETT_PACKARD_HP_COMPAQ_8200_ELITE_SFF_PC
+if BOARD_HP_COMPAQ_8200_ELITE_SFF_PC
 
 config BOARD_SPECIFIC_OPTIONS
 	def_bool y
@@ -21,7 +21,7 @@ config BOARD_SPECIFIC_OPTIONS
 
 config MAINBOARD_DIR
 	string
-	default hp/compaq_8200_elite_sff
+	default "hp/compaq_8200_elite_sff"
 
 config MAINBOARD_PART_NUMBER
 	string

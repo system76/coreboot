@@ -20,7 +20,7 @@
 #include <ec/acpi/ec.h>
 #include <string.h>
 #include <smbios.h>
-#include <pc80/mc146818rtc.h>
+#include <option.h>
 #include <pc80/keyboard.h>
 #include <types.h>
 
@@ -106,7 +106,7 @@ static void h8_log_ec_version(void)
 	fwvh = ec_read(0xe9);
 	fwvl = ec_read(0xe8);
 
-	printk(BIOS_INFO, "EC Firmware ID %s, Version %d.%d%d%c\n", ecfw,
+	printk(BIOS_INFO, "H8: EC Firmware ID %s, Version %d.%d%d%c\n", ecfw,
 	       fwvh >> 4, fwvh & 0x0f, fwvl >> 4, 0x41 + (fwvl & 0xf));
 }
 
@@ -353,10 +353,6 @@ static void h8_enable(struct device *dev)
 	h8_charge_priority(val);
 
 	h8_set_audio_mute(0);
-
-#if !CONFIG(H8_DOCK_EARLY_INIT)
-	h8_mainboard_init_dock();
-#endif
 }
 
 struct chip_operations ec_lenovo_h8_ops = {

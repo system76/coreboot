@@ -15,9 +15,7 @@
  */
 
 #include <device/device.h>
-#include <device/pci_def.h>
 #include <device/pci_ops.h>
-#include <delay.h>
 #include <drivers/intel/gma/int15.h>
 
 

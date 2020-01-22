@@ -18,6 +18,7 @@
 
 #include <stdint.h>
 #include <device/pci_ops.h>
+#include <device/smbus_host.h>
 #include <northbridge/intel/nehalem/nehalem.h>
 #include <southbridge/intel/ibexpeak/pch.h>
 #include <southbridge/intel/common/gpio.h>
@@ -44,6 +45,7 @@ static void pch_default_disable(void)
 void early_pch_init(void)
 {
 	early_gpio_init();
+	enable_smbus();
 	/* TODO, make this configurable */
 	pch_setup_cir(NEHALEM_MOBILE);
 	southbridge_configure_default_intmap();

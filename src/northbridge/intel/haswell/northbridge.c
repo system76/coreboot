@@ -25,7 +25,6 @@
 #include <device/pci_def.h>
 #include <device/pci_ids.h>
 #include <device/pci_ops.h>
-#include <stdlib.h>
 #include <cpu/x86/smm.h>
 #include <boot/tables.h>
 
@@ -92,7 +91,6 @@ static const char *northbridge_acpi_name(const struct device *dev)
 
 	/* TODO We could determine how many PCIe busses we need in
 	 * the bar. For now that number is hardcoded to a max of 64.
-	 * See e7525/northbridge.c for an example.
 	 */
 static struct device_operations pci_domain_ops = {
 	.read_resources   = pci_domain_read_resources,

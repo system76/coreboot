@@ -196,34 +196,35 @@ void superio_common_fill_ssdt_generator(struct device *dev)
 	/* Device */
 	acpigen_write_device(name);
 
-	acpigen_write_name_byte("_UID", 0);
+	acpi_device_write_uid(dev);
+
 	acpigen_write_name_byte("LDN", ldn);
 	acpigen_write_name_byte("VLDN", vldn);
 
-	acpigen_write_STA(dev->enabled ? 0xf : 0);
+	acpigen_write_method("_STA", 0);
+	{
+		acpigen_write_store();
+		acpigen_emit_namestring("^^QLDN");
+		acpigen_write_integer(ldn);
+		acpigen_emit_byte(LOCAL0_OP);
 
-	if (!dev->enabled) {
-		acpigen_pop_len(); /* Device */
-		acpigen_pop_len(); /* Scope */
-		return;
+		/* Multiply (Local0, 0xf, Local0) */
+		acpigen_emit_byte(MULTIPLY_OP);
+		acpigen_emit_byte(LOCAL0_OP);
+		acpigen_write_integer(0xf);
+		acpigen_emit_byte(LOCAL0_OP);
+
+		acpigen_emit_byte(RETURN_OP);
+		acpigen_emit_byte(LOCAL0_OP);
+
 	}
+	acpigen_pop_len(); /* Method */
 
-	if (has_resources(dev)) {
-		/* Resources - _CRS */
-		acpigen_write_name("_CRS");
-		acpigen_write_resourcetemplate_header();
-		ldn_gen_resources(dev);
-		acpigen_write_resourcetemplate_footer();
-
-		/* Resources - _PRS */
-		acpigen_write_name("_PRS");
-		acpigen_write_resourcetemplate_header();
-		ldn_gen_resources(dev);
-		acpigen_write_resourcetemplate_footer();
-
-		/* Resources base and size for 3rd party ACPI code */
-		ldn_gen_resources_use(dev);
-	}
+	/*
+	 * The ACPI6.2 spec Chapter 6.1.5 requires to set a  _HID if no _ADR
+	 * is present. Tests on Windows 10 showed that this is also true for
+	 * disabled (_STA = 0) devices, otherwise it BSODs.
+	 */
 
 	hid = acpi_device_hid(dev);
 	if (!hid) {
@@ -241,6 +242,30 @@ void superio_common_fill_ssdt_generator(struct device *dev)
 
 	acpigen_write_name_string("_HID", hid);
 	acpigen_write_name_string("_DDN", name_from_hid(hid));
+
+	acpigen_write_method("_DIS", 0);
+	{
+		acpigen_emit_namestring("^^DLDN");
+		acpigen_write_integer(ldn);
+	}
+	acpigen_pop_len(); /* Method */
+
+	if (dev->enabled && has_resources(dev)) {
+		/* Resources - _CRS */
+		acpigen_write_name("_CRS");
+		acpigen_write_resourcetemplate_header();
+		ldn_gen_resources(dev);
+		acpigen_write_resourcetemplate_footer();
+
+		/* Resources - _PRS */
+		acpigen_write_name("_PRS");
+		acpigen_write_resourcetemplate_header();
+		ldn_gen_resources(dev);
+		acpigen_write_resourcetemplate_footer();
+
+		/* Resources base and size for 3rd party ACPI code */
+		ldn_gen_resources_use(dev);
+	}
 
 	acpigen_pop_len(); /* Device */
 	acpigen_pop_len(); /* Scope */

@@ -199,6 +199,21 @@ void acpigen_write_name_string(const char *name, const char *string)
 	acpigen_write_string(string);
 }
 
+void acpigen_write_name_unicode(const char *name, const char *string)
+{
+	const size_t len = strlen(string) + 1;
+	acpigen_write_name(name);
+	acpigen_emit_byte(BUFFER_OP);
+	acpigen_write_len_f();
+	acpigen_write_integer(len);
+	for (size_t i = 0; i < len; i++) {
+		const char c = string[i];
+		/* Simple ASCII to UTF-16 conversion, replace non ASCII characters */
+		acpigen_emit_word(c >= 0 ? c : '?');
+	}
+	acpigen_pop_len();
+}
+
 void acpigen_emit_stream(const char *data, int size)
 {
 	int i;
@@ -401,6 +416,37 @@ void acpigen_write_opregion(struct opregion *opreg)
 	/* RegionOffset & RegionLen, it can be byte word or double word */
 	acpigen_write_integer(opreg->regionoffset);
 	acpigen_write_integer(opreg->regionlen);
+}
+
+/*
+ * Generate ACPI AML code for Mutex
+ * Arg0: Pointer to name of mutex
+ * Arg1: Initial value of mutex
+ */
+void acpigen_write_mutex(const char *name, const uint8_t flags)
+{
+	/* MutexOp */
+	acpigen_emit_ext_op(MUTEX_OP);
+	/* NameString 4 chars only */
+	acpigen_emit_simple_namestring(name);
+	acpigen_emit_byte(flags);
+}
+
+void acpigen_write_acquire(const char *name, const uint16_t val)
+{
+	/* AcquireOp */
+	acpigen_emit_ext_op(ACQUIRE_OP);
+	/* NameString 4 chars only */
+	acpigen_emit_simple_namestring(name);
+	acpigen_emit_word(val);
+}
+
+void acpigen_write_release(const char *name)
+{
+	/* ReleaseOp */
+	acpigen_emit_ext_op(RELEASE_OP);
+	/* NameString 4 chars only */
+	acpigen_emit_simple_namestring(name);
 }
 
 static void acpigen_write_field_length(uint32_t len)
@@ -960,7 +1006,7 @@ void acpigen_write_resourcetemplate_header(void)
 	acpigen_emit_byte(WORD_PREFIX);
 	len_stack[ltop++] = acpigen_get_current();
 	/* Add 2 dummy bytes for the ACPI word (keep aligned with
-	   the calclulation in acpigen_write_resourcetemplate() below). */
+	   the calculation in acpigen_write_resourcetemplate() below). */
 	acpigen_emit_byte(0x00);
 	acpigen_emit_byte(0x00);
 }

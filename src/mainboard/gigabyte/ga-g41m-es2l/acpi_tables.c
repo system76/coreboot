@@ -14,14 +14,10 @@
  * GNU General Public License for more details.
  */
 
-#include <stdint.h>
-#include <string.h>
 #include <southbridge/intel/i82801gx/nvs.h>
 
 void acpi_create_gnvs(global_nvs_t *gnvs)
 {
-	memset((void *)gnvs, 0, sizeof(*gnvs));
-
 	gnvs->pwrs = 1;    /* Power state (AC = 1) */
 	gnvs->lptp = 0;    /* LPT port */
 	gnvs->fdcp = 0;    /* Floppy Disk Controller */

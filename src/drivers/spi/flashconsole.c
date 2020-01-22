@@ -11,38 +11,36 @@
  * GNU General Public License for more details.
  */
 
-#include <arch/early_variables.h>
+#include <commonlib/helpers.h>
 #include <commonlib/region.h>
 #include <boot_device.h>
 #include <fmap.h>
 #include <console/console.h>
 #include <console/flash.h>
-#include <stdlib.h>
 #include <types.h>
 
 #define LINE_BUFFER_SIZE 128
 #define READ_BUFFER_SIZE 0x100
 
-static const struct region_device *g_rdev_ptr CAR_GLOBAL;
-static struct region_device g_rdev CAR_GLOBAL;
-static uint8_t g_line_buffer[LINE_BUFFER_SIZE] CAR_GLOBAL;
-static size_t g_offset CAR_GLOBAL;
-static size_t g_line_offset CAR_GLOBAL;
+static const struct region_device *rdev_ptr;
+static struct region_device rdev;
+static uint8_t line_buffer[LINE_BUFFER_SIZE];
+static size_t offset;
+static size_t line_offset;
 
 void flashconsole_init(void)
 {
-	struct region_device *rdev = car_get_var_ptr(&g_rdev);
 	uint8_t buffer[READ_BUFFER_SIZE];
 	size_t size;
-	size_t offset = 0;
+	size_t initial_offset = 0;
 	size_t len = READ_BUFFER_SIZE;
 	size_t i;
 
-	if (fmap_locate_area_as_rdev_rw("CONSOLE", rdev)) {
+	if (fmap_locate_area_as_rdev_rw("CONSOLE", &rdev)) {
 		printk(BIOS_INFO, "Can't find 'CONSOLE' area in FMAP\n");
 		return;
 	}
-	size = region_device_sz(rdev);
+	size = region_device_sz(&rdev);
 
 	/*
 	 * We need to check the region until we find a 0xff indicating
@@ -54,88 +52,77 @@ void flashconsole_init(void)
 	 * the sector is already erased, so we would need to read
 	 * anyways to check if it's all 0xff).
 	 */
-	for (i = 0; i < len && offset < size;) {
+	for (i = 0; i < len && initial_offset < size;) {
 		// Fill the buffer on first iteration
 		if (i == 0) {
-			len = min(READ_BUFFER_SIZE, size - offset);
-			if (rdev_readat(rdev, buffer, offset, len) != len)
+			len = MIN(READ_BUFFER_SIZE, size - offset);
+			if (rdev_readat(&rdev, buffer, initial_offset, len) != len)
 				return;
 		}
 		if (buffer[i] == 0xff) {
-			offset += i;
+			initial_offset += i;
 			break;
 		}
 		// If we're done, repeat the process for the next sector
 		if (++i == READ_BUFFER_SIZE) {
-			offset += len;
+			initial_offset += len;
 			i = 0;
 		}
 	}
 	// Make sure there is still space left on the console
-	if (offset >= size) {
+	if (initial_offset >= size) {
 		printk(BIOS_INFO, "No space left on 'console' region in SPI flash\n");
 		return;
 	}
 
-	car_set_var(g_offset, offset);
-	/* Set g_rdev_ptr last so tx_byte doesn't get executed early */
-	car_set_var(g_rdev_ptr, rdev);
+	offset = initial_offset;
+	rdev_ptr = &rdev;
 }
 
 void flashconsole_tx_byte(unsigned char c)
 {
-	const struct region_device *rdev = car_get_var(g_rdev_ptr);
-	uint8_t *line_buffer;
-	size_t offset;
-	size_t len;
-	size_t region_size;
-
-	if (!rdev)
+	if (!rdev_ptr)
 		return;
 
-	line_buffer = car_get_var_ptr(g_line_buffer);
-	offset = car_get_var(g_offset);
-	len = car_get_var(g_line_offset);
-	region_size = region_device_sz(rdev);
+	size_t region_size = region_device_sz(rdev_ptr);
 
-	line_buffer[len++] = c;
-	car_set_var(g_line_offset, len);
+	line_buffer[line_offset++] = c;
 
-	if (len >= LINE_BUFFER_SIZE ||
-		offset + len >= region_size || c == '\n') {
+	if (line_offset >= LINE_BUFFER_SIZE ||
+	    offset + line_offset >= region_size || c == '\n') {
 		flashconsole_tx_flush();
 	}
 }
 
 void flashconsole_tx_flush(void)
 {
-	const struct region_device *rdev = car_get_var(g_rdev_ptr);
-	uint8_t *line_buffer = car_get_var_ptr(g_line_buffer);
-	size_t offset = car_get_var(g_offset);
-	size_t len = car_get_var(g_line_offset);
+	size_t len = line_offset;
 	size_t region_size;
-
-	if (!rdev)
-		return;
+	static int busy;
 
 	/* Prevent any recursive loops in case the spi flash driver
 	 * calls printk (in case of transaction timeout or
 	 * any other error while writing) */
-	car_set_var(g_rdev_ptr, NULL);
+	if (busy)
+		return;
 
-	region_size = region_device_sz(rdev);
+	if (!rdev_ptr)
+		return;
+
+	busy = 1;
+	region_size = region_device_sz(rdev_ptr);
 	if (offset + len >= region_size)
 		len = region_size - offset;
 
-	if (rdev_writeat(rdev, line_buffer, offset, len) != len)
-		rdev = NULL;
+	if (rdev_writeat(&rdev, line_buffer, offset, len) != len)
+		return;
 
 	// If the region is full, stop future write attempts
 	if (offset + len >= region_size)
-		rdev = NULL;
+		return;
 
-	car_set_var(g_offset, offset + len);
-	car_set_var(g_line_offset, 0);
+	offset += len;
+	line_offset = 0;
 
-	car_set_var(g_rdev_ptr, rdev);
+	busy = 0;
 }

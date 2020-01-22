@@ -20,7 +20,6 @@
 #include <device/mmio.h>
 #include <device/pci_ops.h>
 #include <arch/acpi.h>
-#include <arch/cpu.h>
 #include <bootstate.h>
 #include <cbmem.h>
 #include <console/console.h>
@@ -577,9 +576,6 @@ static void finalize_chipset(void *unused)
 		write32(spi + UVSCC, cfg.uvscc);
 		write32(spi + LVSCC, cfg.lvscc | VCL);
 	}
-
-	printk(BIOS_DEBUG, "Finalizing SMM.\n");
-	outb(APM_CNT_FINALIZE, APM_CNT);
 }
 
 BOOT_STATE_INIT_ENTRY(BS_OS_RESUME, BS_ON_ENTRY, finalize_chipset, NULL);

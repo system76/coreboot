@@ -16,6 +16,8 @@
 
 /* Thermal Threshold Event Handler */
 #define HAVE_THERM_EVENT_HANDLER
+
+#if CONFIG(EC_SUPPORTS_DPTF_TEVT)
 Method (TEVT, 1, NotSerialized)
 {
 
@@ -40,6 +42,7 @@ Method (TEVT, 1, NotSerialized)
 	}
 #endif
 }
+#endif
 
 /* Thermal device initialization - Disable Aux Trip Points */
 Method (TINI)
@@ -75,6 +78,12 @@ Method (TPET)
 #endif
 }
 
+#if defined(DPTF_TSR0_SENSOR_ID) || defined(DPTF_TSR1_SENSOR_ID) || defined(DPTF_TSR2_SENSOR_ID)
+
+#ifndef EC_ENABLE_MULTIPLE_DPTF_PROFILES
+External (\_SB.PCI0.LPCB.EC0.RCDP, MethodObj)
+#endif
+
 /*
  * Method to return trip temperature value depending upon the device mode.
  * Arg0 --> Value to return when device is in tablet mode
@@ -82,16 +91,14 @@ Method (TPET)
  */
 Method (DTRP, 2, Serialized)
 {
-#ifdef EC_ENABLE_MULTIPLE_DPTF_PROFILES
-	If (LEqual (\_SB.PCI0.LPCB.EC0.RCDP, One)) {
-		Return (CTOK (Arg0))
-	} Else {
-#endif
-		Return (CTOK (Arg1))
-#ifdef EC_ENABLE_MULTIPLE_DPTF_PROFILES
+	If (CondRefOf (\_SB.PCI0.LPCB.EC0.RCDP)) {
+		If (LEqual (\_SB.PCI0.LPCB.EC0.RCDP, One)) {
+			Return (CTOK (Arg0))
+		}
 	}
-#endif
+	Return (CTOK (Arg1))
 }
+#endif
 
 #ifdef DPTF_TSR0_SENSOR_ID
 

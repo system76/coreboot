@@ -22,58 +22,26 @@
 #include <imd.h>
 #include <lib.h>
 #include <stdlib.h>
-#include <arch/early_variables.h>
-
-/*
- * We need special handling on x86 where CAR global migration is employed. One
- * cannot use true globals in that circumstance because CAR is where the globals
- * are backed -- creating a circular dependency. For non CAR platforms globals
- * are free to be used as well as any stages that are purely executing out of
- * RAM. For CAR platforms that don't migrate globals the as-linked globals can
- * be used, but they need special decoration using CAR_GLOBAL. That ensures
- * proper object placement in conjunction with the linker.
- *
- * For the CAR global migration platforms we have to always try to partially
- * recover CBMEM from cbmem_top() whenever we try to access it. In other
- * environments we're not so constrained and just keep the backing imd struct
- * in a global. This also means that we can easily tell whether CBMEM has
- * explicitly been initialized or recovered yet on those platforms, and don't
- * need to put the burden on board or chipset code to tell us by returning
- * NULL from cbmem_top() before that point.
- */
-#define CAN_USE_GLOBALS \
-	(!CONFIG(ARCH_X86) || ENV_RAMSTAGE || ENV_POSTCAR || \
-	 !CONFIG(CAR_GLOBAL_MIGRATION))
 
 /* The program loader passes on cbmem_top and the program entry point
    has to fill in the _cbmem_top_ptr symbol based on the calling arguments. */
 uintptr_t _cbmem_top_ptr;
 
+static struct imd imd;
+
 void *cbmem_top(void)
 {
-	if (ENV_ROMSTAGE
-	    || ((ENV_POSTCAR || ENV_RAMSTAGE)
-		&& !CONFIG(RAMSTAGE_CBMEM_TOP_ARG))) {
+	if (ENV_ROMSTAGE) {
 		MAYBE_STATIC_BSS void *top = NULL;
 		if (top)
 			return top;
 		top = cbmem_top_chipset();
 		return top;
 	}
-	if ((ENV_POSTCAR || ENV_RAMSTAGE) && CONFIG(RAMSTAGE_CBMEM_TOP_ARG))
+	if (ENV_POSTCAR || ENV_RAMSTAGE)
 		return (void *)_cbmem_top_ptr;
 
 	dead_code();
-}
-
-
-static inline struct imd *cbmem_get_imd(void)
-{
-	if (CAN_USE_GLOBALS) {
-		static struct imd imd_cbmem CAR_GLOBAL;
-		return &imd_cbmem;
-	}
-	return NULL;
 }
 
 static inline const struct cbmem_entry *imd_to_cbmem(const struct imd_entry *e)
@@ -86,54 +54,9 @@ static inline const struct imd_entry *cbmem_to_imd(const struct cbmem_entry *e)
 	return (const struct imd_entry *)e;
 }
 
-/* These are the different situations to handle:
- *
- *      In ramstage cbmem_initialize() attempts a recovery of the
- *      cbmem region set up by romstage. It uses cbmem_top() as the
- *      starting point of recovery.
- *
- *      In romstage, similar to ramstage,  cbmem_initialize() needs to
- *      attempt recovery of the cbmem area using cbmem_top() as the limit.
- *      cbmem_initialize_empty() initializes an empty cbmem area from
- *      cbmem_top();
- *
- */
-static struct imd *imd_init_backing(struct imd *backing)
-{
-	struct imd *imd;
-
-	imd = cbmem_get_imd();
-
-	if (imd != NULL)
-		return imd;
-
-	imd = backing;
-
-	return imd;
-}
-
-static struct imd *imd_init_backing_with_recover(struct imd *backing)
-{
-	struct imd *imd;
-
-	imd = imd_init_backing(backing);
-	if (!CAN_USE_GLOBALS) {
-		/* Always partially recover if we can't keep track of whether
-		 * we have already initialized CBMEM in this stage. */
-		imd_handle_init(imd, cbmem_top());
-		imd_handle_init_partial_recovery(imd);
-	}
-
-	return imd;
-}
-
 void cbmem_initialize_empty(void)
 {
 	cbmem_initialize_empty_id_size(0, 0);
-}
-
-void __weak cbmem_top_init(void)
-{
 }
 
 static void cbmem_top_init_once(void)
@@ -143,8 +66,6 @@ static void cbmem_top_init_once(void)
 	if (!ENV_ROMSTAGE)
 		return;
 
-	cbmem_top_init();
-
 	/* The test is only effective on X86 and when address hits UC memory. */
 	if (ENV_X86)
 		quick_ram_check_or_die((uintptr_t)cbmem_top() - sizeof(u32));
@@ -152,18 +73,15 @@ static void cbmem_top_init_once(void)
 
 void cbmem_initialize_empty_id_size(u32 id, u64 size)
 {
-	struct imd *imd;
-	struct imd imd_backing;
 	const int no_recovery = 0;
 
 	cbmem_top_init_once();
 
-	imd = imd_init_backing(&imd_backing);
-	imd_handle_init(imd, cbmem_top());
+	imd_handle_init(&imd, cbmem_top());
 
 	printk(BIOS_DEBUG, "CBMEM:\n");
 
-	if (imd_create_tiered_empty(imd, CBMEM_ROOT_MIN_SIZE, CBMEM_LG_ALIGN,
+	if (imd_create_tiered_empty(&imd, CBMEM_ROOT_MIN_SIZE, CBMEM_LG_ALIGN,
 					CBMEM_SM_ROOT_SIZE, CBMEM_SM_ALIGN)) {
 		printk(BIOS_DEBUG, "failed.\n");
 		return;
@@ -184,16 +102,13 @@ int cbmem_initialize(void)
 
 int cbmem_initialize_id_size(u32 id, u64 size)
 {
-	struct imd *imd;
-	struct imd imd_backing;
 	const int recovery = 1;
 
 	cbmem_top_init_once();
 
-	imd = imd_init_backing(&imd_backing);
-	imd_handle_init(imd, cbmem_top());
+	imd_handle_init(&imd, cbmem_top());
 
-	if (imd_recover(imd))
+	if (imd_recover(&imd))
 		return 1;
 
 	/*
@@ -202,7 +117,7 @@ int cbmem_initialize_id_size(u32 id, u64 size)
 	 * is being taken.
 	 */
 	if (ENV_ROMSTAGE)
-		imd_lockdown(imd);
+		imd_lockdown(&imd);
 
 	/* Add the specified range first */
 	if (size)
@@ -227,93 +142,62 @@ int cbmem_recovery(int is_wakeup)
 
 const struct cbmem_entry *cbmem_entry_add(u32 id, u64 size64)
 {
-	struct imd *imd;
-	struct imd imd_backing;
 	const struct imd_entry *e;
 
-	imd = imd_init_backing_with_recover(&imd_backing);
-
-	e = imd_entry_find_or_add(imd, id, size64);
+	e = imd_entry_find_or_add(&imd, id, size64);
 
 	return imd_to_cbmem(e);
 }
 
 void *cbmem_add(u32 id, u64 size)
 {
-	struct imd *imd;
-	struct imd imd_backing;
 	const struct imd_entry *e;
 
-	imd = imd_init_backing_with_recover(&imd_backing);
-
-	e = imd_entry_find_or_add(imd, id, size);
+	e = imd_entry_find_or_add(&imd, id, size);
 
 	if (e == NULL)
 		return NULL;
 
-	return imd_entry_at(imd, e);
+	return imd_entry_at(&imd, e);
 }
 
 /* Retrieve a region provided a given id. */
 const struct cbmem_entry *cbmem_entry_find(u32 id)
 {
-	struct imd *imd;
-	struct imd imd_backing;
 	const struct imd_entry *e;
 
-	imd = imd_init_backing_with_recover(&imd_backing);
-
-	e = imd_entry_find(imd, id);
+	e = imd_entry_find(&imd, id);
 
 	return imd_to_cbmem(e);
 }
 
 void *cbmem_find(u32 id)
 {
-	struct imd *imd;
-	struct imd imd_backing;
 	const struct imd_entry *e;
 
-	imd = imd_init_backing_with_recover(&imd_backing);
-
-	e = imd_entry_find(imd, id);
+	e = imd_entry_find(&imd, id);
 
 	if (e == NULL)
 		return NULL;
 
-	return imd_entry_at(imd, e);
+	return imd_entry_at(&imd, e);
 }
 
 /* Remove a reserved region. Returns 0 on success, < 0 on error. Note: A region
  * cannot be removed unless it was the last one added. */
 int cbmem_entry_remove(const struct cbmem_entry *entry)
 {
-	struct imd *imd;
-	struct imd imd_backing;
-
-	imd = imd_init_backing_with_recover(&imd_backing);
-
-	return imd_entry_remove(imd, cbmem_to_imd(entry));
+	return imd_entry_remove(&imd, cbmem_to_imd(entry));
 }
 
 u64 cbmem_entry_size(const struct cbmem_entry *entry)
 {
-	struct imd *imd;
-	struct imd imd_backing;
-
-	imd = imd_init_backing_with_recover(&imd_backing);
-
-	return imd_entry_size(imd, cbmem_to_imd(entry));
+	return imd_entry_size(&imd, cbmem_to_imd(entry));
 }
 
 void *cbmem_entry_start(const struct cbmem_entry *entry)
 {
-	struct imd *imd;
-	struct imd imd_backing;
-
-	imd = imd_init_backing_with_recover(&imd_backing);
-
-	return imd_entry_at(imd, cbmem_to_imd(entry));
+	return imd_entry_at(&imd, cbmem_to_imd(entry));
 }
 
 void cbmem_add_bootmem(void)
@@ -327,7 +211,7 @@ void cbmem_add_bootmem(void)
 
 void cbmem_get_region(void **baseptr, size_t *size)
 {
-	imd_region_used(cbmem_get_imd(), baseptr, size);
+	imd_region_used(&imd, baseptr, size);
 }
 
 #if ENV_PAYLOAD_LOADER || (CONFIG(EARLY_CBMEM_LIST) \
@@ -340,22 +224,16 @@ void cbmem_get_region(void **baseptr, size_t *size)
 void cbmem_list(void)
 {
 	static const struct imd_lookup lookup[] = { CBMEM_ID_TO_NAME_TABLE };
-	struct imd *imd;
-	struct imd imd_backing;
 
-	imd = imd_init_backing_with_recover(&imd_backing);
-	imd_print_entries(imd, lookup, ARRAY_SIZE(lookup));
+	imd_print_entries(&imd, lookup, ARRAY_SIZE(lookup));
 }
 #endif
 
 void cbmem_add_records_to_cbtable(struct lb_header *header)
 {
 	struct imd_cursor cursor;
-	struct imd *imd;
 
-	imd = cbmem_get_imd();
-
-	if (imd_cursor_init(imd, &cursor))
+	if (imd_cursor_init(&imd, &cursor))
 		return;
 
 	while (1) {
@@ -368,7 +246,7 @@ void cbmem_add_records_to_cbtable(struct lb_header *header)
 		if (e == NULL)
 			break;
 
-		id = imd_entry_id(imd, e);
+		id = imd_entry_id(&imd, e);
 		/* Don't add these metadata entries. */
 		if (id == CBMEM_ID_IMD_ROOT || id == CBMEM_ID_IMD_SMALL)
 			continue;
@@ -376,8 +254,8 @@ void cbmem_add_records_to_cbtable(struct lb_header *header)
 		lbe = (struct lb_cbmem_entry *)lb_new_record(header);
 		lbe->tag = LB_TAG_CBMEM_ENTRY;
 		lbe->size = sizeof(*lbe);
-		lbe->address = (uintptr_t)imd_entry_at(imd, e);
-		lbe->entry_size = imd_entry_size(imd, e);
+		lbe->address = (uintptr_t)imd_entry_at(&imd, e);
+		lbe->entry_size = imd_entry_size(&imd, e);
 		lbe->id = id;
 	}
 }

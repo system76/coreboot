@@ -22,7 +22,6 @@
  */
 #define SPI_FLASH_PROG_TIMEOUT_MS		200
 #define SPI_FLASH_PAGE_ERASE_TIMEOUT_MS		500
-#define SPI_FLASH_SECTOR_ERASE_TIMEOUT_MS	1000
 
 #include <commonlib/region.h>
 #include <stdint.h>
@@ -38,7 +37,6 @@
 #define VENDOR_ID_SPANSION			0x01
 #define VENDOR_ID_SST				0xbf
 #define VENDOR_ID_STMICRO			0x20
-#define VENDOR_ID_STMICRO_FF			0xff
 #define VENDOR_ID_WINBOND			0xef
 
 /* Controller-specific definitions: */
@@ -266,7 +264,7 @@ void spi_release_bus(const struct spi_slave *slave);
  *   din:	Pointer to a string of bytes that will be filled in.
  *   bytesin:	How many bytes to read.
  *
- * Note that din and dout are transferred simulataneously in a full duplex
+ * Note that din and dout are transferred simultaneously in a full duplex
  * transaction. The number of clocks within one transaction is calculated
  * as: MAX(bytesout*8, bytesin*8).
  *

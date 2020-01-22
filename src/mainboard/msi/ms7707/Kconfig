@@ -2,7 +2,6 @@ if BOARD_MSI_MS7707
 
 config BOARD_SPECIFIC_OPTIONS
 	def_bool y
-	select ARCH_X86
 	select NORTHBRIDGE_INTEL_SANDYBRIDGE
 	select USE_NATIVE_RAMINIT
 	select SOUTHBRIDGE_INTEL_BD82X6X
@@ -16,7 +15,7 @@ config BOARD_SPECIFIC_OPTIONS
 
 config MAINBOARD_DIR
 	string
-	default msi/ms7707
+	default "msi/ms7707"
 
 config MAINBOARD_PART_NUMBER
 	string

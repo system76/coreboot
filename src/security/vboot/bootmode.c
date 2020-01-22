@@ -26,7 +26,7 @@
 
 static int vboot_get_recovery_reason_shared_data(void)
 {
-	struct vb2_shared_data *sd = vboot_get_shared_data();
+	struct vb2_shared_data *sd = vb2_get_sd(vboot_get_context());
 	assert(sd);
 	return sd->recovery_reason;
 }
@@ -65,36 +65,14 @@ BOOT_STATE_INIT_ENTRY(BS_DEV_INIT, BS_ON_EXIT,
 		      vboot_clear_recovery_reason_vbnv, NULL);
 
 /*
- * Returns 1 if vboot is being used and currently in a stage which might have
- * already executed vboot verification.
- */
-static int vboot_possibly_executed(void)
-{
-	if (CONFIG(VBOOT_STARTS_IN_BOOTBLOCK)) {
-		if (ENV_BOOTBLOCK && CONFIG(VBOOT_SEPARATE_VERSTAGE))
-			return 0;
-		return 1;
-	}
-
-	if (CONFIG(VBOOT_STARTS_IN_ROMSTAGE)) {
-		if (ENV_BOOTBLOCK)
-			return 0;
-		return 1;
-	}
-
-	return 0;
-}
-
-/*
  * vb2_check_recovery_request looks up different components to identify if there
  * is a recovery request and returns appropriate reason code:
  * 1. Checks if recovery mode is initiated by EC. If yes, returns
  * VB2_RECOVERY_RO_MANUAL.
  * 2. Checks if recovery request is present in VBNV and returns the code read
  * from it.
- * 3. Checks if vboot verification is done and looks up selected region
- * to identify if vboot_reference library has requested recovery path.
- * If yes, return the reason code from shared data.
+ * 3. Checks if vboot verification is done. If yes, return the reason code from
+ * shared data.
  * 4. If nothing applies, return 0 indicating no recovery request.
  */
 int vboot_check_recovery_request(void)
@@ -109,12 +87,8 @@ int vboot_check_recovery_request(void)
 	if ((reason = get_recovery_mode_from_vbnv()) != 0)
 		return reason;
 
-	/*
-	 * Identify if vboot verification is already complete and no slot
-	 * was selected i.e. recovery path was requested.
-	 */
-	if (vboot_possibly_executed() && vboot_logic_executed() &&
-	    !vboot_is_slot_selected())
+	/* Identify if vboot verification is already complete. */
+	if (vboot_logic_executed())
 		return vboot_get_recovery_reason_shared_data();
 
 	return 0;
@@ -148,8 +122,8 @@ int vboot_recovery_mode_memory_retrain(void)
 
 int vboot_developer_mode_enabled(void)
 {
-	return cbmem_possibly_online() &&
-		vboot_get_working_data()->flags & VBOOT_WD_FLAG_DEVELOPER_MODE;
+	return vboot_logic_executed() &&
+		vboot_get_context()->flags & VB2_CONTEXT_DEVELOPER_MODE;
 }
 
 #if CONFIG(VBOOT_NO_BOARD_SUPPORT)

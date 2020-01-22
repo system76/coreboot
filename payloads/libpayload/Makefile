@@ -95,7 +95,6 @@ include $(HAVE_DOTCONFIG)
 
 ARCHDIR-$(CONFIG_LP_ARCH_ARM)     := arm
 ARCHDIR-$(CONFIG_LP_ARCH_ARM64)   := arm64
-ARCHDIR-$(CONFIG_LP_ARCH_MIPS)    := mips
 ARCHDIR-$(CONFIG_LP_ARCH_X86)     := x86
 
 ARCH-y := $(ARCHDIR-y)
@@ -105,7 +104,6 @@ ARCH-y := $(ARCHDIR-y)
 ARCH-$(CONFIG_LP_ARCH_ARM)     := arm
 ARCH-$(CONFIG_LP_ARCH_ARM64)   := arm64
 ARCH-$(CONFIG_LP_ARCH_X86)     := x86_32
-ARCH-$(CONFIG_LP_ARCH_MIPS)    := mips
 
 # Three cases where we don't need fully populated $(obj) lists:
 # 1. when no .config exists
@@ -165,7 +163,6 @@ CCACHE:=CCACHE_COMPILERCHECK=content CCACHE_BASEDIR=$(top) $(CCACHE)
 CC := $(CCACHE) $(CC)
 HOSTCC := $(CCACHE) $(HOSTCC)
 HOSTCXX := $(CCACHE) $(HOSTCXX)
-ROMCC := $(CCACHE) $(ROMCC)
 endif
 
 strip_quotes = $(subst ",,$(subst \",,$(1)))

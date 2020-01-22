@@ -19,6 +19,28 @@
 
 #include <stdint.h>
 
+/* MKHI Command groups */
+#define MKHI_GROUP_ID_CBM	0x0
+#define MKHI_GROUP_ID_HMRFPO	0x5
+
+/* Global Reset Command ID */
+#define MKHI_CBM_GLOBAL_RESET_REQ	0xb
+
+/* Origin of Global Reset command */
+#define GR_ORIGIN_BIOS_POST	0x2
+
+/* HMRFPO Command Ids */
+#define MKHI_HMRFPO_ENABLE	0x1
+#define MKHI_HMRFPO_GET_STATUS	0x3
+
+/* ME Current Working States */
+#define ME_HFS1_CWS_NORMAL	0x5
+
+/* ME Current Operation Modes */
+#define ME_HFS1_COM_NORMAL	0x0
+#define ME_HFS1_COM_SOFT_TEMP_DISABLE	0x3
+#define ME_HFS1_COM_SECOVER_MEI_MSG	0x5
+
 /* HFSTS register offsets in PCI config space */
 enum {
 	PCI_ME_HFSTS1 = 0x40,
@@ -84,14 +106,14 @@ heci_send(const void *msg, size_t len, uint8_t host_addr, uint8_t cse_addr);
 /*
  * Sends snd_msg of size snd_sz, and reads message into buffer pointed by
  * rcv_msg of size rcv_sz
- * Returns 0 on failure a 1 on success.
+ * Returns 0 on failure and 1 on success.
  */
 int heci_send_receive(const void *snd_msg, size_t snd_sz, void *rcv_msg, size_t *rcv_sz);
 
 /*
  * Attempt device reset. This is useful and perhaps only thing left to do when
  * CPU and CSE are out of sync or CSE fails to respond.
- * Returns 0 on failure a 1 on success.
+ * Returns 0 on failure and 1 on success.
  */
 int heci_reset(void);
 
@@ -105,20 +127,19 @@ uint32_t me_read_config32(int offset);
  */
 bool is_cse_enabled(void);
 
-
 /* Makes the host ready to communicate with CSE*/
 void set_host_ready(void);
 
 /*
  * Polls for ME state 'HECI_OP_MODE_SEC_OVERRIDE' for 15 seconds.
- * Returns 0 on failure a 1 on success.
+ * Returns 0 on failure and 1 on success.
  */
 uint8_t wait_cse_sec_override_mode(void);
 
 /*
  * Sends GLOBAL_RESET_REQ cmd to CSE.The reset type can be
  * GLOBAL_RESET/HOST_RESET_ONLY/CSE_RESET_ONLY.
- * Returns -1 on failure a 0 on success.
+ * Returns -1 on failure and 0 on success.
  */
 int send_heci_reset_req_message(uint8_t rst_type);
 
@@ -135,18 +156,20 @@ int send_hmrfpo_enable_msg(void);
  */
 int send_hmrfpo_get_status_msg(void);
 
+/* Fixed Address MEI Header's Host Address field value */
+#define BIOS_HOST_ADDR	0x00
 
-#define BIOS_HOST_ADDR							0x00
-#define HECI_MKHI_ADDR							0x07
+/* Fixed Address MEI Header's ME Address field value */
+#define HECI_MKHI_ADDR	0x07
 
 /* Command GLOBAL_RESET_REQ Reset Types */
-#define GLOBAL_RESET       1
-#define HOST_RESET_ONLY    2
-#define CSE_RESET_ONLY     3
+#define GLOBAL_RESET	1
+#define HOST_RESET_ONLY	2
+#define CSE_RESET_ONLY	3
 
-/*HMRFPO Status types */
+/* HMRFPO Status types */
 #define MKHI_HMRFPO_DISABLED	0
 #define MKHI_HMRFPO_LOCKED	1
 #define MKHI_HMRFPO_ENABLED	2
 
-#endif // SOC_INTEL_COMMON_MSR_H
+#endif // SOC_INTEL_COMMON_CSE_H

@@ -24,6 +24,8 @@
 
 #include <arch/acpi.h>
 #include <device/mmio.h>
+#include <device/device.h>
+#include <device/pci.h>
 #include <device/pci_ops.h>
 #include <console/console.h>
 #include <device/pci_ids.h>
@@ -33,11 +35,6 @@
 #include <elog.h>
 #include <halt.h>
 
-#ifndef __SMM__
-#include <device/device.h>
-#include <device/pci.h>
-#endif
-
 #include "me.h"
 #include "pch.h"
 
@@ -46,9 +43,8 @@
 #include <vendorcode/google/chromeos/gnvs.h>
 #endif
 
-#ifndef __SMM__
 /* Path that the BIOS should take based on ME state */
-static const char *me_bios_path_values[] = {
+static const char *me_bios_path_values[] __unused  = {
 	[ME_NORMAL_BIOS_PATH]		= "Normal",
 	[ME_S3WAKE_BIOS_PATH]		= "S3 Wake",
 	[ME_ERROR_BIOS_PATH]		= "Error",
@@ -57,15 +53,17 @@ static const char *me_bios_path_values[] = {
 	[ME_FIRMWARE_UPDATE_BIOS_PATH]	= "Firmware Update",
 };
 static int intel_me_read_mbp(me_bios_payload *mbp_data);
-#endif
 
 /* MMIO base address for MEI interface */
 static u32 *mei_base_address;
 
-#if CONFIG(DEBUG_INTEL_ME)
+
 static void mei_dump(void *ptr, int dword, int offset, const char *type)
 {
 	struct mei_csr *csr;
+
+	if (!CONFIG(DEBUG_INTEL_ME))
+		return;
 
 	printk(BIOS_SPEW, "%-9s[%02x] : ", type, offset);
 
@@ -92,9 +90,6 @@ static void mei_dump(void *ptr, int dword, int offset, const char *type)
 		break;
 	}
 }
-#else
-# define mei_dump(ptr,dword,offset,type) do {} while (0)
-#endif
 
 /*
  * ME/MEI access helpers using memcpy to avoid aliasing.
@@ -115,7 +110,7 @@ static inline void mei_write_dword_ptr(void *ptr, int offset)
 	mei_dump(ptr, dword, offset, "WRITE");
 }
 
-#ifndef __SMM__
+#ifndef __SIMPLE_DEVICE__
 static inline void pci_read_dword_ptr(struct device *dev, void *ptr, int offset)
 {
 	u32 dword = pci_read_config32(dev, offset);
@@ -350,14 +345,13 @@ static inline int mei_sendrecv(struct mei_header *mei, struct mkhi_header *mkhi,
 	return 0;
 }
 
-#if (CONFIG_DEFAULT_CONSOLE_LOGLEVEL >= BIOS_DEBUG) && !defined(__SMM__)
 static inline void print_cap(const char *name, int state)
 {
 	printk(BIOS_DEBUG, "ME Capability: %-41s : %sabled\n",
 	       name, state ? " en" : "dis");
 }
 
-static void me_print_fw_version(mbp_fw_version_name *vers_name)
+static void __unused me_print_fw_version(mbp_fw_version_name *vers_name)
 {
 	if (!vers_name->major_version) {
 		printk(BIOS_ERR, "ME: mbp missing version report\n");
@@ -395,7 +389,7 @@ static int mkhi_get_fwcaps(mefwcaps_sku *cap)
 }
 
 /* Get ME Firmware Capabilities */
-static void me_print_fwcaps(mbp_fw_caps *caps_section)
+static void __unused me_print_fwcaps(mbp_fw_caps *caps_section)
 {
 	mefwcaps_sku *cap = &caps_section->fw_capabilities;
 	if (!caps_section->available) {
@@ -421,7 +415,6 @@ static void me_print_fwcaps(mbp_fw_caps *caps_section)
 	print_cap("TLS", cap->tls);
 	print_cap("Wireless LAN (WLAN)", cap->wlan);
 }
-#endif
 
 #if CONFIG(CHROMEOS) && 0 /* DISABLED */
 /* Tell ME to issue a global reset */
@@ -455,10 +448,8 @@ static int mkhi_global_reset(void)
 }
 #endif
 
-#ifdef __SMM__
-
 /* Send END OF POST message to the ME */
-static int mkhi_end_of_post(void)
+static int __unused mkhi_end_of_post(void)
 {
 	struct mkhi_header mkhi = {
 		.group_id	= MKHI_GROUP_ID_GEN,
@@ -483,6 +474,8 @@ static int mkhi_end_of_post(void)
 	printk(BIOS_INFO, "ME: END OF POST message successful (%d)\n", eop_ack);
 	return 0;
 }
+
+#ifdef __SIMPLE_DEVICE__
 
 void intel_me8_finalize_smm(void)
 {
@@ -519,7 +512,7 @@ void intel_me8_finalize_smm(void)
 	RCBA32_OR(FD2, PCH_DISABLE_MEI1);
 }
 
-#else /* !__SMM__ */
+#else /* !__SIMPLE_DEVICE__ */
 
 /* Determine the path that we should take based on ME status */
 static me_bios_path intel_me_path(struct device *dev)
@@ -575,8 +568,7 @@ static me_bios_path intel_me_path(struct device *dev)
 		path = ME_ERROR_BIOS_PATH;
 	}
 
-#if CONFIG(ELOG)
-	if (path != ME_NORMAL_BIOS_PATH) {
+	if (CONFIG(ELOG) && path != ME_NORMAL_BIOS_PATH) {
 		struct elog_event_data_me_extended data = {
 			.current_working_state = hfs.working_state,
 			.operation_state       = hfs.operation_state,
@@ -590,7 +582,6 @@ static me_bios_path intel_me_path(struct device *dev)
 		elog_add_event_raw(ELOG_TYPE_MANAGEMENT_ENGINE_EXT,
 				   &data, sizeof(data));
 	}
-#endif
 
 	return path;
 }
@@ -719,10 +710,10 @@ static void intel_me_init(struct device *dev)
 		}
 #endif
 
-#if (CONFIG_DEFAULT_CONSOLE_LOGLEVEL >= BIOS_DEBUG)
-		me_print_fw_version(&mbp_data.fw_version_name);
-		me_print_fwcaps(&mbp_data.fw_caps_sku);
-#endif
+		if (CONFIG_DEFAULT_CONSOLE_LOGLEVEL >= BIOS_DEBUG) {
+			me_print_fw_version(&mbp_data.fw_version_name);
+			me_print_fwcaps(&mbp_data.fw_caps_sku);
+		}
 
 		/*
 		 * Leave the ME unlocked in this path.
@@ -756,6 +747,8 @@ static const struct pci_driver intel_me __pci_driver = {
 	.device	= 0x1e3a,
 };
 
+#endif /* !__SIMPLE_DEVICE__ */
+
 /******************************************************************************
  *									     */
 static u32 me_to_host_words_pending(void)
@@ -787,7 +780,7 @@ static u32 host_to_me_words_room(void)
  * mbp seems to be following its own flow, let's retrieve it in a dedicated
  * function.
  */
-static int intel_me_read_mbp(me_bios_payload *mbp_data)
+static int __unused intel_me_read_mbp(me_bios_payload *mbp_data)
 {
 	mbp_header mbp_hdr;
 	mbp_item_header	mbp_item_hdr;
@@ -911,5 +904,3 @@ static int intel_me_read_mbp(me_bios_payload *mbp_data)
 
 	return 0;
 }
-
-#endif /* !__SMM__ */

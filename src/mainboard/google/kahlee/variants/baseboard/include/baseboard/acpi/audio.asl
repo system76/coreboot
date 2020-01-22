@@ -12,12 +12,12 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  */
-#include <soc/iomap.h>
+
+#include <amdblocks/acpimmio_map.h>
 
 /* Grunt specific I2S machine driver */
 Device (I2S)
 {
-	Name (_ADR, 1)
 	Name (_HID, "AMD7219")
 	Name (_CID, "AMD7219")
 

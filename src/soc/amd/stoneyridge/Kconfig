@@ -13,30 +13,12 @@
 ## GNU General Public License for more details.
 ##
 
-config SOC_AMD_STONEYRIDGE_FP4
+config SOC_AMD_STONEYRIDGE
 	bool
 	help
-	  AMD Stoney Ridge FP4 support
+	  AMD support for SOCs in Family 15h Models 60h-6Fh and Models 70h-7Fh.
 
-config SOC_AMD_STONEYRIDGE_FT4
-	bool
-	help
-	  AMD Stoney Ridge FT4 support
-
-config SOC_AMD_MERLINFALCON
-	bool
-	help
-	  AMD Merlin Falcon FP4 support
-
-config HAVE_MERLINFALCON_BINARIES
-	depends on SOC_AMD_MERLINFALCON
-	bool "Merlinfalcon binaries are present"
-	default n
-	help
-	  This config option will be removed once the binaries are merged
-	  to the blobs repo. See 33615.
-
-if SOC_AMD_STONEYRIDGE_FP4 || SOC_AMD_STONEYRIDGE_FT4 || SOC_AMD_MERLINFALCON
+if SOC_AMD_STONEYRIDGE
 
 config CPU_SPECIFIC_OPTIONS
 	def_bool y
@@ -69,7 +51,6 @@ config CPU_SPECIFIC_OPTIONS
 	select SOC_AMD_COMMON_BLOCK_PSP
 	select SOC_AMD_COMMON_BLOCK_CAR
 	select SOC_AMD_COMMON_BLOCK_S3
-	select C_ENVIRONMENT_BOOTBLOCK
 	select BOOT_DEVICE_SUPPORTS_WRITES if BOOT_DEVICE_SPI_FLASH
 	select BOOT_DEVICE_SPI_FLASH_RW_NOMMAP_EARLY if BOOT_DEVICE_SPI_FLASH
 	select PARALLEL_MP
@@ -77,6 +58,36 @@ config CPU_SPECIFIC_OPTIONS
 	select HAVE_SMI_HANDLER
 	select SSE2
 	select RTC
+
+config AMD_APU_STONEYRIDGE
+	bool
+	help
+	  AMD Stoney Ridge APU
+
+config AMD_APU_PRAIRIEFALCON
+	bool
+	help
+	  AMD Embedded Prairie Falcon APU
+
+config AMD_APU_MERLINFALCON
+	bool
+	help
+	  AMD Embedded Merlin Falcon APU
+
+config AMD_APU_PKG_FP4
+	bool
+	help
+	  AMD FP4 package
+
+config AMD_APU_PKG_FT4
+	bool
+	help
+	  AMD FT4 package
+
+config AMD_SOC_PACKAGE
+	string
+	default "FP4" if AMD_APU_PKG_FP4
+	default "FT4" if AMD_APU_PKG_FT4
 
 config VBOOT
 	select VBOOT_SEPARATE_VERSTAGE
@@ -98,7 +109,6 @@ config DCACHE_RAM_SIZE
 	default 0x10000
 
 config DCACHE_BSP_STACK_SIZE
-	depends on C_ENVIRONMENT_BOOTBLOCK
 	hex
 	default 0x4000
 	help
@@ -137,7 +147,7 @@ config MMCONF_BUS_NUMBER
 
 config VGA_BIOS_ID
 	string
-	default "1002,9874" if SOC_AMD_MERLINFALCON
+	default "1002,9874" if AMD_APU_MERLINFALCON
 	default "1002,98e4"
 	help
 	  The default VGA BIOS PCI vendor/device ID should be set to the
@@ -145,8 +155,10 @@ config VGA_BIOS_ID
 
 config VGA_BIOS_FILE
 	string
-	default "3rdparty/blobs/soc/amd/merlinfalcon/VBIOS.bin" if SOC_AMD_MERLINFALCON && HAVE_MERLINFALCON_BINARIES
-	default "3rdparty/blobs/soc/amd/stoneyridge/VBIOS.bin"
+	default "" if !USE_AMD_BLOBS
+	default "3rdparty/amd_blobs/stoneyridge/CarrizoGenericVbios.bin" if AMD_APU_MERLINFALCON
+	default "3rdparty/amd_blobs/stoneyridge/StoneyGenericVbios.bin" if AMD_APU_PRAIRIEFALCON
+	default "3rdparty/amd_blobs/stoneyridge/StoneyGenericVbios.bin" if AMD_APU_STONEYRIDGE
 
 config S3_VGA_ROM_RUN
 	bool
@@ -185,7 +197,8 @@ config STONEYRIDGE_GEC_FWM
 
 config STONEYRIDGE_XHCI_FWM_FILE
 	string "XHCI firmware path and filename"
-	default "3rdparty/blobs/soc/amd/stoneyridge/xhci.bin"
+	default "" if !USE_AMD_BLOBS
+	default "3rdparty/amd_blobs/stoneyridge/xhci.bin"
 	depends on STONEYRIDGE_XHCI_FWM
 
 config STONEYRIDGE_GEC_FWM_FILE
@@ -194,8 +207,10 @@ config STONEYRIDGE_GEC_FWM_FILE
 
 config AMD_PUBKEY_FILE
 	string "AMD public Key"
-	default "3rdparty/blobs/soc/amd/merlinfalcon/PSP/AmdPubKeyCZ.bin" if SOC_AMD_MERLINFALCON && HAVE_MERLINFALCON_BINARIES
-	default "3rdparty/blobs/soc/amd/stoneyridge/PSP/AmdPubKeyST.bin"
+	default "" if !USE_AMD_BLOBS
+	default "3rdparty/amd_blobs/stoneyridge/PSP/CZ/AmdPubKeyCZ.bin" if AMD_APU_MERLINFALCON
+	default "3rdparty/amd_blobs/stoneyridge/PSP/ST/AmdPubKeyST.bin" if AMD_APU_PRAIRIEFALCON
+	default "3rdparty/amd_blobs/stoneyridge/PSP/ST/AmdPubKeyST.bin" if AMD_APU_STONEYRIDGE
 
 config STONEYRIDGE_SATA_MODE
 	int "SATA Mode"
@@ -315,8 +330,7 @@ config USE_PSPSECUREOS
 
 config SOC_AMD_PSP_SELECTABLE_SMU_FW
 	bool
-	default n if SOC_AMD_MERLINFALCON
-	default y
+	default y if AMD_APU_STONEYRIDGE
 	help
 	  Some ST implementations allow storing SMU firmware into cbfs and
 	  calling the PSP to load the blobs at the proper time.
@@ -402,4 +416,4 @@ config MAINBOARD_POWER_RESTORE
 	  return to S0.  Otherwise the system will remain in S5 once power
 	  is restored.
 
-endif # SOC_AMD_STONEYRIDGE_FP4 || SOC_AMD_STONEYRIDGE_FT4 || SOC_AMD_MERLINFALCON
+endif # SOC_AMD_STONEYRIDGE

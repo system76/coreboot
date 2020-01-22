@@ -14,8 +14,8 @@
  */
 
 #include <arch/acpi.h>
-#include "variant/ec.h"
-#include "variant/gpio.h"
+#include <baseboard/ec.h>
+#include <baseboard/gpio.h>
 
 DefinitionBlock(
 	"dsdt.aml",
@@ -26,7 +26,6 @@ DefinitionBlock(
 	0x20110725	// OEM revision
 )
 {
-	// Some generic macros
 	#include <soc/intel/icelake/acpi/platform.asl>
 
 	// global NVS and variables
@@ -38,7 +37,7 @@ DefinitionBlock(
 	Scope (\_SB) {
 		Device (PCI0)
 		{
-			#include <soc/intel/icelake/acpi/northbridge.asl>
+			#include <soc/intel/common/block/acpi/acpi/northbridge.asl>
 			#include <soc/intel/icelake/acpi/southbridge.asl>
 		}
 	}
@@ -59,7 +58,6 @@ DefinitionBlock(
 		}
 #endif
 
-	// Chipset specific sleep states
 	#include <southbridge/intel/common/acpi/sleepstates.asl>
 
 	// Mainboard specific

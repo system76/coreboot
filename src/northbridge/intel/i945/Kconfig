@@ -33,10 +33,6 @@ config NORTHBRIDGE_INTEL_SUBTYPE_I945GC
 config NORTHBRIDGE_INTEL_SUBTYPE_I945GM
 	def_bool n
 
-config BOOTBLOCK_NORTHBRIDGE_INIT
-	string
-	default "northbridge/intel/i945/bootblock.c"
-
 config VGA_BIOS_ID
 	string
 	default "8086,27a2" if NORTHBRIDGE_INTEL_SUBTYPE_I945GM

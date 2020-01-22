@@ -22,6 +22,7 @@
 #include <console/console.h>
 #include <device/pci_def.h>
 #include <fsp/util.h>
+#include <intelblocks/cpulib.h>
 #include <intelblocks/pmclib.h>
 #include <memory_info.h>
 #include <smbios.h>
@@ -145,7 +146,8 @@ void mainboard_romstage_entry(void)
 
 	/* Program MCHBAR, DMIBAR, GDXBAR and EDRAMBAR */
 	systemagent_early_init();
-
+	/* Program PCH init */
+	romstage_pch_init();
 	ps = pmc_get_power_state();
 	s3wake = pmc_fill_power_state(ps) == ACPI_S3;
 	fsp_memory_init(s3wake);
@@ -237,7 +239,7 @@ static void soc_memory_init_params(FSP_M_CONFIG *m_cfg,
 	m_cfg->CmdTriStateDis = config->CmdTriStateDis;
 	m_cfg->DdrFreqLimit = config->DdrFreqLimit;
 	m_cfg->VmxEnable = CONFIG(ENABLE_VMX);
-	m_cfg->PrmrrSize = config->PrmrrSize;
+	m_cfg->PrmrrSize = get_prmrr_size();
 	for (i = 0; i < ARRAY_SIZE(config->PcieRpEnable); i++) {
 		if (config->PcieRpEnable[i])
 			mask |= (1<<i);
@@ -246,12 +248,9 @@ static void soc_memory_init_params(FSP_M_CONFIG *m_cfg,
 
 	cpu_flex_override(m_cfg);
 
-	if (!config->ignore_vtd) {
-		m_cfg->PchHpetBdfValid = 1;
-		m_cfg->PchHpetBusNumber = V_P2SB_HBDF_BUS;
-		m_cfg->PchHpetDeviceNumber = V_P2SB_HBDF_DEV;
-		m_cfg->PchHpetFunctionNumber = V_P2SB_HBDF_FUN;
-	}
+	/* HPET BDF already handled in coreboot code, so tell FSP to ignore UPDs */
+	m_cfg->PchHpetBdfValid = 0;
+
 	m_cfg->HyperThreading = CONFIG(FSP_HYPERTHREADING);
 }
 

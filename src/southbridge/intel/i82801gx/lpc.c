@@ -18,6 +18,7 @@
 #include <device/device.h>
 #include <device/pci.h>
 #include <device/pci_ids.h>
+#include <option.h>
 #include <pc80/mc146818rtc.h>
 #include <pc80/isa-dma.h>
 #include <pc80/i8259.h>
@@ -40,8 +41,6 @@
 #include "nvs.h"
 
 #define NMI_OFF	0
-
-#define ENABLE_ACPI_MODE_IN_COREBOOT	0
 
 typedef struct southbridge_intel_i82801gx_config config_t;
 
@@ -337,19 +336,15 @@ static void enable_clock_gating(void)
 
 static void i82801gx_set_acpi_mode(struct device *dev)
 {
-	if (!acpi_is_wakeup_s3()) {
-#if ENABLE_ACPI_MODE_IN_COREBOOT
-		printk(BIOS_DEBUG, "Enabling ACPI via APMC:\n");
-		outb(APM_CNT_ACPI_ENABLE, APM_CNT); // Enable ACPI mode
-		printk(BIOS_DEBUG, "done.\n");
-#else
-		printk(BIOS_DEBUG, "Disabling ACPI via APMC:\n");
-		outb(APM_CNT_ACPI_DISABLE, APM_CNT); // Disable ACPI mode
-		printk(BIOS_DEBUG, "done.\n");
-#endif
-	} else {
-		printk(BIOS_DEBUG, "S3 wakeup, enabling ACPI via APMC\n");
-		outb(APM_CNT_ACPI_ENABLE, APM_CNT);
+	if (CONFIG(HAVE_SMI_HANDLER)) {
+		if (!acpi_is_wakeup_s3()) {
+			printk(BIOS_DEBUG, "Disabling ACPI via APMC:\n");
+			outb(APM_CNT_ACPI_DISABLE, APM_CNT); // Disable ACPI mode
+			printk(BIOS_DEBUG, "done.\n");
+		} else {
+			printk(BIOS_DEBUG, "S3 wakeup, enabling ACPI via APMC\n");
+			outb(APM_CNT_ACPI_ENABLE, APM_CNT);
+		}
 	}
 }
 
@@ -417,8 +412,7 @@ static void lpc_init(struct device *dev)
 	/* Interrupt 9 should be level triggered (SCI) */
 	i8259_configure_irq_trigger(9, 1);
 
-	if (CONFIG(HAVE_SMI_HANDLER))
-		i82801gx_set_acpi_mode(dev);
+	i82801gx_set_acpi_mode(dev);
 
 	i82801gx_spi_init();
 
@@ -623,7 +617,8 @@ static void lpc_final(struct device *dev)
 	if (!CONFIG(INTEL_CHIPSET_LOCKDOWN))
 		return;
 
-	spi_finalize_ops();
+	if (CONFIG(BOOT_DEVICE_SPI_FLASH))
+		spi_finalize_ops();
 
 	/* Lock SPIBAR */
 	SPIBAR16(0) = SPIBAR16(0) | (1 << 15);

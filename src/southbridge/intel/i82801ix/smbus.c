@@ -20,7 +20,7 @@
 #include <device/pci.h>
 #include <device/pci_ids.h>
 #include <device/pci_ops.h>
-#include <southbridge/intel/common/smbus.h>
+#include <device/smbus_host.h>
 #include "i82801ix.h"
 
 static void pch_smbus_init(struct device *dev)
@@ -91,10 +91,8 @@ static struct device_operations smbus_ops = {
 	.ops_pci		= &smbus_pci_ops,
 };
 
-static const unsigned short pci_device_ids[] = { 0x2930, 0 };
-
 static const struct pci_driver pch_smbus __pci_driver = {
 	.ops	 = &smbus_ops,
 	.vendor	 = PCI_VENDOR_ID_INTEL,
-	.devices = pci_device_ids,
+	.device = PCI_DEVICE_ID_INTEL_82801IB_SMB,
 };

@@ -13,14 +13,19 @@
 # GNU General Public License for more details.
 #
 
+config BOARD_AMD_LAMAR
+	def_bool n
+
 if BOARD_AMD_LAMAR
 
 config BOARD_SPECIFIC_OPTIONS
 	def_bool y
-	select BINARYPI_LEGACY_WRAPPER
+	#select BINARYPI_LEGACY_WRAPPER
+	#select ROMCC_BOOTBLOCK
 	select CPU_AMD_PI_00630F01
 	select NORTHBRIDGE_AMD_PI_00630F01
 	select SOUTHBRIDGE_AMD_PI_BOLTON
+	select DEFAULT_POST_ON_LPC
 	select SUPERIO_FINTEK_F81216H
 	select HAVE_OPTION_TABLE
 	select HAVE_PIRQ_TABLE
@@ -31,7 +36,7 @@ config BOARD_SPECIFIC_OPTIONS
 
 config MAINBOARD_DIR
 	string
-	default amd/lamar
+	default "amd/lamar"
 
 config MAINBOARD_PART_NUMBER
 	string

@@ -16,9 +16,9 @@
 #ifndef BOOTMEM_H
 #define BOOTMEM_H
 
-#include <memrange.h>
-#include <stdint.h>
 #include <boot/coreboot_tables.h>
+#include <memrange.h>
+#include <types.h>
 
 /**
  * Bootmem types match to LB_MEM tags, except for the following:
@@ -38,7 +38,7 @@ enum bootmem_type {
 	BM_MEM_UNUSABLE,	/* Unusable address space */
 	BM_MEM_VENDOR_RSVD,	/* Vendor Reserved */
 	BM_MEM_OPENSBI,		/* Risc-V OpenSBI */
-	BM_MEM_BL31,		/* Arm64 BL31 exectuable */
+	BM_MEM_BL31,		/* Arm64 BL31 executable */
 	BM_MEM_TABLE,		/* Ram configuration tables are kept in */
 	/* Tags below this point are ignored for the OS table. */
 	BM_MEM_OS_CUTOFF = BM_MEM_TABLE,

@@ -16,7 +16,6 @@
 
 #include <types.h>
 #include <device/device.h>
-#include <device/pci_def.h>
 #include <drivers/intel/gma/int15.h>
 #include <arch/acpi.h>
 #include <arch/io.h>
@@ -24,7 +23,6 @@
 #include "ec.h"
 #include <southbridge/intel/bd82x6x/pch.h>
 #include <smbios.h>
-#include <device/pci.h>
 #include <ec/compal/ene932/ec.h>
 #include <vendorcode/google/chromeos/chromeos.h>
 

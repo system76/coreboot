@@ -17,12 +17,9 @@
 
 #include <console/console.h>
 #include <delay.h>
-#ifdef __SMM__
-#include <device/pci_def.h>
-#else /* !__SMM__ */
 #include <device/device.h>
 #include <device/pci.h>
-#endif
+#include <device/pci_def.h>
 #include <device/pci_ops.h>
 #include <string.h>
 
@@ -145,7 +142,7 @@ void pch_iobp_update(u32 address, u32 andvalue, u32 orvalue)
 		return;
 }
 
-#ifndef __SMM__
+#ifndef __SIMPLE_DEVICE__
 /* Set bit in function disable register to hide this device */
 static void pch_hide_devfn(unsigned int devfn)
 {
@@ -169,7 +166,7 @@ static void pch_hide_devfn(unsigned int devfn)
 		RCBA32_OR(FD2, PCH_DISABLE_KT);
 		break;
 	case PCI_DEVFN(25, 0): /* Gigabit Ethernet */
-		RCBA32_OR(BUC, PCH_DISABLE_GBE);
+		/* BUC is already handled in `early_pch.c`. */
 		break;
 	case PCI_DEVFN(26, 0): /* EHCI #2 */
 		RCBA32_OR(FD, PCH_DISABLE_EHCI2);

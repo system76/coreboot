@@ -22,22 +22,7 @@
 
 /* These registers live behind SPI_BASE_ADDRESS. */
 #define HSFSTS				0x04
-#define FDATA0				0x10
 # define FLOCKDN			(0x1 << 15)
-#define SSFS				0x90
-# define CYCLE_DONE_STATUS		(0x1 << 2)
-# define FLASH_CYCLE_ERROR		(0x1 << 3)
-#define SSFC				0x91
-# define SPI_CYCLE_GO			(0x1 << 1)
-# define DATA_CYCLE			(0x1 << 14)
-#define PREOP				0x94
-#define OPTYPE				0x96
-# define SPI_OPTYPE_RD_NOADDR		0x00	/* Read, no address */
-# define SPI_OPTYPE_WR_NOADDR		0x01	/* Write, no address */
-# define SPI_OPTYPE_RD_ADDR		0x02	/* Read, address required */
-# define SPI_OPTYPE_WR_ADDR		0x03	/* Write, address required */
-#define OPMENU0				0x98
-#define OPMENU1				0x9c
 #define LVSCC				0xc4
 # define VCL				(0x1 << 23)
 # define EO(x)				(((x) & 0xff) << 8)
@@ -60,17 +45,14 @@
 # define BCR_WPD			(0x1 << 0)
 
 /*
- * SPI lockdown configuration.
+ * SPI VSCC configuration.
  */
-struct spi_config {
-	uint16_t preop;
-	uint16_t optype;
-	uint32_t opmenu[2];
+struct vscc_config {
 	uint32_t lvscc;
 	uint32_t uvscc;
 };
 
 /* Return 0 on success < 0 on failure. */
-int mainboard_get_spi_config(struct spi_config *cfg);
+int mainboard_get_spi_vscc_config(struct vscc_config *cfg);
 
 #endif /* _SOC_SPI_H_ */

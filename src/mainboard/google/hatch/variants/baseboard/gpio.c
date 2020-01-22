@@ -19,26 +19,26 @@
 #include <commonlib/helpers.h>
 
 static const struct pad_config gpio_table[] = {
-	/* A0  : SAR0_INT_ODL */
-	PAD_CFG_GPI_INT(GPP_A0, NONE, PLTRST, LEVEL),
+	/* A0  : GPP_A0 ==> NC */
+	PAD_NC(GPP_A0, NONE),
 	/* A1  : ESPI_IO0 */
 	/* A2  : ESPI_IO1 */
 	/* A3  : ESPI_IO2 */
 	/* A4  : ESPI_IO3 */
 	/* A5  : ESPI_CS# */
-	/* A6  : SAR1_INT_ODL */
-	PAD_CFG_GPI_INT(GPP_A6, NONE, PLTRST, LEVEL),
+	/* A6  : GPP_A6 ==> NC */
+	PAD_NC(GPP_A6, NONE),
 	/* A7  : PP3300_SOC_A */
 	PAD_NC(GPP_A7, NONE),
-	/* A8  : PEN_GARAGE_DET_L (wake) */
-	PAD_CFG_GPI_SCI(GPP_A8, NONE, DEEP, EDGE_SINGLE, NONE),
+	/* A8  : GPP_A8 ==> NC */
+	PAD_NC(GPP_A8, NONE),
 	/* A9  : ESPI_CLK */
-	/* A10 : FPMCU_PCH_BOOT1 */
-	PAD_CFG_GPO(GPP_A10, 0, DEEP),
-	/* A11 : PCH_SPI_FPMCU_CS_L */
-	PAD_CFG_NF(GPP_A11, NONE, DEEP, NF2),
-	/* A12 : FPMCU_RST_ODL */
-	PAD_CFG_GPO(GPP_A12, 1, DEEP),
+	/* A10  : GPP_A10 ==> NC */
+	PAD_NC(GPP_A10, NONE),
+	/* A11  : GPP_A11 ==> NC */
+	PAD_NC(GPP_A11, NONE),
+	/* A12  : GPP_A12 ==> NC */
+	PAD_NC(GPP_A12, NONE),
 	/* A13 : SUSWARN_L */
 	PAD_CFG_NF(GPP_A13, NONE, DEEP, NF1),
 	/* A14 : ESPI_RST_L */
@@ -133,19 +133,15 @@ static const struct pad_config gpio_table[] = {
 	/* C10 : GPP_10 ==> GPP_C10_TP */
 	PAD_NC(GPP_C10, NONE),
 	/* C11 : GPP_11 ==> EN_FP_RAILS */
-	PAD_CFG_GPO(GPP_C11, 1, DEEP),
+	PAD_CFG_GPO(GPP_C11, 0, DEEP),
 	/* C12 : GPP_C12 ==> NC */
 	PAD_NC(GPP_C12, NONE),
 	/* C13 : EC_PCH_INT_L */
 	PAD_CFG_GPI_APIC(GPP_C13, NONE, PLTRST, LEVEL, INVERT),
 	/* C14 : BT_DISABLE_L */
 	PAD_CFG_GPO(GPP_C14, 1, DEEP),
-	/* C15 : WWAN_DPR_SAR_ODL
-	 *
-	 * TODO: Driver doesn't use this pin as of now. In case driver starts
-	 * using this pin, expose this pin to driver.
-	 */
-	PAD_CFG_GPO(GPP_C15, 1, DEEP),
+	/* C15 : NC */
+	PAD_NC(GPP_C15, NONE),
 	/* C16 : PCH_I2C_TRACKPAD_SDA */
 	PAD_CFG_NF(GPP_C16, NONE, DEEP, NF1),
 	/* C17 : PCH_I2C_TRACKPAD_SCL */
@@ -338,8 +334,8 @@ static const struct pad_config gpio_table[] = {
 	PAD_CFG_NF(GPP_H1, NONE, DEEP, NF3),
 	/* H2  : CNV_CLKREQ0 */
 	PAD_CFG_NF(GPP_H2, NONE, DEEP, NF3),
-	/* H3  : SPKR_PA_EN */
-	PAD_CFG_GPO(GPP_H3, 0, DEEP),
+	/* H3 : GPP_H3 ==> NC */
+	PAD_NC(GPP_H3, NONE),
 	/* H4  : PCH_I2C_PEN_SDA */
 	PAD_NC(GPP_H4, NONE),
 	/* H5  : PCH_I2C_PEN_SCL */
@@ -398,8 +394,10 @@ const struct pad_config *base_gpio_table(size_t *num)
 }
 
 /*
- * Default GPIO settings before entering sleep. Configure A12: FPMCU_RST_ODL
- * as GPO before entering sleep.
+ * Default GPIO settings before entering non-S5 sleep states.
+ * Configure A12: FPMCU_RST_ODL as GPO before entering sleep.
+ * This guarantees that A12's native3 function is disabled.
+ * See https://review.coreboot.org/c/coreboot/+/32111 .
  */
 static const struct pad_config default_sleep_gpio_table[] = {
 	PAD_CFG_GPO(GPP_A12, 1, DEEP), /* FPMCU_RST_ODL */
@@ -408,10 +406,11 @@ static const struct pad_config default_sleep_gpio_table[] = {
 /*
  * GPIO settings before entering S5, which are same as
  * default_sleep_gpio_table but also,
- * turn off EN_PP3300_WWAN.
+ * turn off EN_PP3300_WWAN and FPMCU.
  */
 static const struct pad_config s5_sleep_gpio_table[] = {
-	PAD_CFG_GPO(GPP_A12, 1, DEEP), /* FPMCU_RST_ODL */
+	PAD_CFG_GPO(GPP_A12, 0, DEEP), /* FPMCU_RST_ODL */
+	PAD_CFG_GPO(GPP_C11, 0, DEEP), /* PCH_FP_PWR_EN */
 	PAD_CFG_GPO(GPP_A18, 0, DEEP), /* EN_PP3300_WWAN */
 };
 

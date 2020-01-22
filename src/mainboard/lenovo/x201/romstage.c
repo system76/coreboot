@@ -18,7 +18,6 @@
 
 #include <stdint.h>
 #include <arch/io.h>
-#include <device/pci_ops.h>
 #include <ec/acpi/ec.h>
 
 #include <southbridge/intel/ibexpeak/pch.h>
@@ -55,8 +54,6 @@ static void set_fsb_frequency(void)
 
 void mainboard_pre_raminit(void)
 {
-	outb((inb(DEFAULT_GPIOBASE | 0x3a) & ~0x2) | 0x20,
-	     DEFAULT_GPIOBASE | 0x3a);
 	outb(0x50, 0x15ec);
 	outb(inb(0x15ee) & 0x70, 0x15ee);
 

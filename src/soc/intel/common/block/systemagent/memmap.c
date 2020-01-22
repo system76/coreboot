@@ -20,7 +20,46 @@
 #include <cpu/x86/mtrr.h>
 #include <cpu/x86/smm.h>
 #include <intelblocks/systemagent.h>
-#include <stdlib.h>
+
+/*
+ * Expected Host Memory Map (we don't know 100% and not all regions are present on all SoCs):
+ *
+ * +---------------------------+ TOUUD
+ * |                           |
+ * +---------------------------+ TOM (if mem > 4GB)
+ * | CSME UMA (if mem > 4 GiB) |
+ * +---------------------------+ TOUUD
+ * |                           |
+ * +---------------------------+ 4GiB
+ * | PCI Address Space         |
+ * +---------------------------+ TOM (if mem < 4GB)
+ * | CSME UMA (if mem < 4 GiB) |
+ * +---------------------------+ TOLUD (also maps into MC address space)
+ * | iGD / DSM                 |
+ * +---------------------------+ BDSM
+ * | GTT / GSM                 |
+ * +---------------------------+ TOLM
+ * | TSEG                      |
+ * +---------------------------+ TSEGMB
+ * | DMA Protected Region      |
+ * +---------------------------+ DPR
+ * | PRM (C6DRAM/SGX)          |
+ * +---------------------------+ PRMRR
+ * | Probeless Trace           |
+ * +---------------------------+ ME Stolen
+ * | PTT                       |
+ * +---------------------------+ TOLUM / top_of_ram / cbmem_top
+ * | CBMEM Root                |
+ * +---------------------------+
+ * | FSP Reserved Memory       |
+ * +---------------------------+
+ * | various CBMEM entries     |
+ * +---------------------------+ top_of_stack (8 byte aligned)
+ * | stack (CBMEM entry)       |
+ * +---------------------------+ FSP TOLUM
+ * |                           |
+ * +---------------------------+ 0
+ */
 
 void smm_region(uintptr_t *start, size_t *size)
 {

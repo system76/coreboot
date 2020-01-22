@@ -18,7 +18,6 @@
 #include <commonlib/region.h>
 #include <console/console.h>
 #include <smmstore.h>
-#include <stdlib.h>
 #include <types.h>
 
 /*
@@ -43,7 +42,7 @@
  * crash/reboot could clear out all variables.
  */
 
-static int lookup_store_region(struct region *region)
+static enum cb_err lookup_store_region(struct region *region)
 {
 	if (CONFIG(SMMSTORE_IN_CBFS)) {
 		struct cbfsf file;
@@ -53,7 +52,7 @@ static int lookup_store_region(struct region *region)
 			printk(BIOS_WARNING,
 			       "smm store: Unable to find SMM store file in region '%s'\n",
 			       CONFIG_SMMSTORE_REGION);
-			return -1;
+			return CB_ERR;
 		}
 		struct region_device rdev;
 		cbfs_file_data(&rdev, &file);
@@ -63,11 +62,11 @@ static int lookup_store_region(struct region *region)
 			printk(BIOS_WARNING,
 			       "smm store: Unable to find SMM store FMAP region '%s'\n",
 			       CONFIG_SMMSTORE_REGION);
-			return -1;
+			return CB_ERR;
 		}
 	}
 
-	return 0;
+	return CB_SUCCESS;
 }
 
 /*
@@ -89,7 +88,7 @@ static int lookup_store(struct region_device *rstore)
 	struct region region;
 	const struct region_device *rdev;
 
-	if (lookup_store_region(&region))
+	if (lookup_store_region(&region) != CB_SUCCESS)
 		return -1;
 
 	if (boot_device_ro_subregion(&region, &read_rdev) < 0)

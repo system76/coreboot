@@ -25,7 +25,6 @@ DefinitionBlock(
 	0x20110725	/* OEM revision */
 )
 {
-	/* Some generic macros */
 	#include <acpi/platform.asl>
 
 	/* global NVS and variables */
@@ -57,7 +56,6 @@ DefinitionBlock(
 	}
 	#include <vendorcode/google/chromeos/acpi/chromeos.asl>
 
-	/* Chipset specific sleep states */
 	#include <southbridge/intel/common/acpi/sleepstates.asl>
 
 	#include "acpi/mainboard.asl"

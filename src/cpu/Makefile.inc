@@ -4,10 +4,8 @@
 subdirs-y += allwinner
 subdirs-y += amd
 subdirs-y += armltd
-subdirs-y += imgtec
 subdirs-y += intel
 subdirs-y += ti
-subdirs-y += via
 subdirs-$(CONFIG_ARCH_X86) += x86
 subdirs-$(CONFIG_CPU_QEMU_X86) += qemu-x86
 
@@ -61,9 +59,4 @@ $(obj)/cpu_microcode_blob.bin: $$(wildcard $$(cpu_microcode_bins))
 
 cpu_microcode_blob.bin-file ?= $(obj)/cpu_microcode_blob.bin
 cpu_microcode_blob.bin-type := microcode
-
-ifneq ($(CONFIG_CPU_MICROCODE_CBFS_LOC),)
-cpu_microcode_blob.bin-COREBOOT-position := $(CONFIG_CPU_MICROCODE_CBFS_LOC)
-else
 cpu_microcode_blob.bin-align := 16
-endif

@@ -50,11 +50,7 @@ config VBOOT
 
 config MAINBOARD_DIR
 	string
-	default google/oak
-
-config MAINBOARD_VENDOR
-	string
-	default "Google"
+	default "google/oak"
 
 config EC_GOOGLE_CHROMEEC_SPI_BUS
 	hex

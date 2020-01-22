@@ -40,12 +40,12 @@ func LenovoEC(ctx Context) {
 		}, GPEDefine)
 
 	ap.WriteString(
-		`Method(_WAK,1)
+		`Method(_WAK, 1)
 {
 	/* ME may not be up yet.  */
-	Store (0, \_TZ.MEB1)
-	Store (0, \_TZ.MEB2)
-	Return(Package(){0,0})
+	Store(0, \_TZ.MEB1)
+	Store(0, \_TZ.MEB2)
+	Return(Package() {0, 0})
 }
 
 Method(_PTS,1)
@@ -58,20 +58,6 @@ Method(_PTS,1)
 	defer si.Close()
 
 	si.WriteString("#include <drivers/pc80/pc/ps2_controller.asl>\n")
-
-	dock := Create(ctx, "dock.c")
-	defer dock.Close()
-
-	AddRAMStageFile("dock.c", "")
-
-	dock.WriteString(
-		`#include <ec/lenovo/h8/h8.h>
-
-void h8_mainboard_init_dock (void)
-{
-/* FIXME: fill this if needed.  */
-}
-`)
 
 	/* FIXME:XX Move this to ec/lenovo.  */
 	smi := Create(ctx, "smihandler.c")

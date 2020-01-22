@@ -208,13 +208,6 @@ $(call src-to-obj,smm,$(dir)/version.c) : $(obj)/build.h
 $(call src-to-obj,verstage,$(dir)/version.c) : $(obj)/build.h
 $(call src-to-obj,postcar,$(dir)/version.c) : $(obj)/build.h
 
-$(call src-to-obj,bootblock,$(dir)/cbfs.c) : $(obj)/fmap_config.h
-$(call src-to-obj,romstage,$(dir)/cbfs.c) : $(obj)/fmap_config.h
-$(call src-to-obj,ramstage,$(dir)/cbfs.c) : $(obj)/fmap_config.h
-$(call src-to-obj,smm,$(dir)/cbfs.c) : $(obj)/fmap_config.h
-$(call src-to-obj,verstage,$(dir)/cbfs.c) : $(obj)/fmap_config.h
-$(call src-to-obj,postcar,$(dir)/cbfs.c) : $(obj)/fmap_config.h
-
 $(call src-to-obj,bootblock,$(dir)/fmap.c) : $(obj)/fmap_config.h
 $(call src-to-obj,romstage,$(dir)/fmap.c) : $(obj)/fmap_config.h
 $(call src-to-obj,ramstage,$(dir)/fmap.c) : $(obj)/fmap_config.h
@@ -249,6 +242,14 @@ postcar-y += string.c
 ramstage-y += string.c
 smm-y += string.c
 
+decompressor-y += crc_byte.c
+bootblock-y += crc_byte.c
+verstage-y += crc_byte.c
+romstage-y += crc_byte.c
+postcar-y += crc_byte.c
+ramstage-y += crc_byte.c
+smm-y += crc_byte.c
+
 postcar-y += bootmode.c
 postcar-y += boot_device.c
 postcar-y += cbfs.c
@@ -267,7 +268,7 @@ postcar-$(CONFIG_COLLECT_TIMESTAMPS) += timestamp.c
 postcar-$(CONFIG_GENERIC_UDELAY) += timer.c
 
 # Use program.ld for all the platforms which use C fo the bootblock.
-bootblock-$(CONFIG_C_ENVIRONMENT_BOOTBLOCK) += program.ld
+bootblock-y += program.ld
 
 decompressor-y += program.ld
 postcar-y += program.ld

@@ -14,8 +14,7 @@
 #ifndef ARCH_CPU_H
 #define ARCH_CPU_H
 
-#include <stdint.h>
-#include <stddef.h>
+#include <types.h>
 
 /*
  * EFLAGS bits
@@ -211,17 +210,13 @@ int cpu_have_cpuid(void);
 
 static inline bool cpu_is_amd(void)
 {
-	return CONFIG(CPU_AMD_AGESA) || CONFIG(CPU_AMD_PI)
-			|| CONFIG(SOC_AMD_COMMON) || CONFIG(CPU_AMD_MODEL_10XXX);
+	return CONFIG(CPU_AMD_AGESA) || CONFIG(CPU_AMD_PI) || CONFIG(SOC_AMD_COMMON);
 }
 
 static inline bool cpu_is_intel(void)
 {
 	return CONFIG(CPU_INTEL_COMMON) || CONFIG(SOC_INTEL_COMMON);
 }
-
-#ifndef __ROMCC__
-/* romcc does not support anonymous structs. */
 
 struct device;
 
@@ -290,13 +285,10 @@ static inline void get_fms(struct cpuinfo_x86 *c, uint32_t tfms)
 #define asmlinkage __attribute__((regparm(0)))
 
 /*
- * When using CONFIG_C_ENVIRONMENT_BOOTBLOCK the car_stage_entry()
- * is the symbol jumped to for each stage after bootblock using
- * cache-as-ram.
+ * The car_stage_entry() is the symbol jumped to for each stage
+ * after bootblock using cache-as-ram.
  */
 asmlinkage void car_stage_entry(void);
-
-#endif
 
 /*
  * Get processor id using cpuid eax=1

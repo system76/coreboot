@@ -51,7 +51,7 @@ endchoice
 
 config MAINBOARD_DIR
 	string
-	default portwell/m107
+	default "portwell/m107"
 
 config MAINBOARD_PART_NUMBER
 	string
@@ -60,16 +60,6 @@ config MAINBOARD_PART_NUMBER
 config CBFS_SIZE
 	hex
 	default 0x00800000
-
-config CPU_MICROCODE_CBFS_LEN
-	hex
-	default 0x10C00
-	help
-	  This should be updated when the microcode patch changes.
-
-config CPU_MICROCODE_CBFS_LOC
-	hex
-	default 0xFFFE9400
 
 config MRC_SETTINGS_CACHE_SIZE
 	hex

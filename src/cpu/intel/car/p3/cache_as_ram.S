@@ -18,14 +18,10 @@
 #define CACHE_AS_RAM_SIZE CONFIG_DCACHE_RAM_SIZE
 #define CACHE_AS_RAM_BASE CONFIG_DCACHE_RAM_BASE
 
-#if CONFIG(C_ENVIRONMENT_BOOTBLOCK)
 #if ((CONFIG_C_ENV_BOOTBLOCK_SIZE & (CONFIG_C_ENV_BOOTBLOCK_SIZE - 1)) != 0)
 #error "CONFIG_C_ENV_BOOTBLOCK_SIZE must be a power of 2!"
 #endif
 #define XIP_ROM_SIZE CONFIG_C_ENV_BOOTBLOCK_SIZE
-#else
-#define XIP_ROM_SIZE CONFIG_XIP_ROM_SIZE
-#endif
 
 .global bootblock_pre_c_entry
 
@@ -161,7 +157,7 @@ addrsize_set_high:
 	movl	%eax, %cr0
 
 	/* Setup the stack. */
-	mov	$_car_stack_end, %esp
+	mov	$_ecar_stack, %esp
 
 	/* Need to align stack to 16 bytes at call instruction. Account for
 	the pushes below. */

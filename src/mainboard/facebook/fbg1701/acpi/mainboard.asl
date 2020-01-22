@@ -16,17 +16,6 @@
  * GNU General Public License for more details.
  */
 
-#include "onboard.h"
-
-Scope (\_SB)
-{
-	Device (PWRB)
-	{
-		Name (_HID, EisaId ("PNP0C0C"))
-		Name (_UID, 1)
-	}
-}
-
 /*
  * Onboard CPLD
  */

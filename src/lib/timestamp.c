@@ -22,7 +22,6 @@
 #include <symbols.h>
 #include <timer.h>
 #include <timestamp.h>
-#include <arch/early_variables.h>
 #include <smp/node.h>
 
 #define MAX_TIMESTAMPS 192
@@ -31,7 +30,7 @@ DECLARE_OPTIONAL_REGION(timestamp);
 
 /* This points to the active timestamp_table and can change within a stage
    as CBMEM comes available. */
-static struct timestamp_table *glob_ts_table CAR_GLOBAL;
+static struct timestamp_table *glob_ts_table;
 
 static void timestamp_cache_init(struct timestamp_table *ts_cache,
 				 uint64_t base)
@@ -94,21 +93,17 @@ static int timestamp_should_run(void)
 
 static struct timestamp_table *timestamp_table_get(void)
 {
-	struct timestamp_table *ts_table;
+	if (glob_ts_table)
+		return glob_ts_table;
 
-	ts_table = car_get_ptr(glob_ts_table);
-	if (ts_table)
-		return ts_table;
+	glob_ts_table = timestamp_cache_get();
 
-	ts_table = timestamp_cache_get();
-	car_set_ptr(glob_ts_table, ts_table);
-
-	return ts_table;
+	return glob_ts_table;
 }
 
 static void timestamp_table_set(struct timestamp_table *ts)
 {
-	car_set_ptr(glob_ts_table, ts);
+	glob_ts_table = ts;
 }
 
 static const char *timestamp_name(enum timestamp_id id)
@@ -133,10 +128,7 @@ static void timestamp_add_table_entry(struct timestamp_table *ts_table,
 
 	tse = &ts_table->entries[ts_table->num_entries++];
 	tse->entry_id = id;
-	tse->entry_stamp = ts_time - ts_table->base_time;
-
-	if (CONFIG(TIMESTAMPS_ON_CONSOLE))
-		printk(BIOS_SPEW, "Timestamp - %s: %llu\n", timestamp_name(id), ts_time);
+	tse->entry_stamp = ts_time;
 
 	if (ts_table->num_entries == ts_table->max_entries)
 		printk(BIOS_ERR, "ERROR: Timestamp table full\n");
@@ -156,7 +148,11 @@ void timestamp_add(enum timestamp_id id, uint64_t ts_time)
 		return;
 	}
 
+	ts_time -= ts_table->base_time;
 	timestamp_add_table_entry(ts_table, id, ts_time);
+
+	if (CONFIG(TIMESTAMPS_ON_CONSOLE))
+		printk(BIOS_INFO, "Timestamp - %s: %llu\n", timestamp_name(id), ts_time);
 }
 
 void timestamp_add_now(enum timestamp_id id)
@@ -211,21 +207,17 @@ static void timestamp_sync_cache_to_cbmem(struct timestamp_table *ts_cbmem_table
 	 *
 	 * If you try to initialize timestamps before ramstage but don't define
 	 * a TIMESTAMP region, all operations will fail (safely), and coreboot
-	 * will behave as if timestamps only get initialized in ramstage.
-	 *
-	 * If timestamps only get initialized in ramstage, the base_time from
-	 * timestamp_init() will get ignored and all timestamps will be 0-based.
+	 * will behave as if timestamps collection was disabled.
 	 */
+
+	/* Inherit cache base_time. */
+	ts_cbmem_table->base_time = ts_cache_table->base_time;
 
 	for (i = 0; i < ts_cache_table->num_entries; i++) {
 		struct timestamp_entry *tse = &ts_cache_table->entries[i];
 		timestamp_add_table_entry(ts_cbmem_table, tse->entry_id,
 					  tse->entry_stamp);
 	}
-
-	/* Freshly added cbmem table has base_time 0. Inherit cache base_time */
-	if (ts_cbmem_table->base_time == 0)
-		ts_cbmem_table->base_time = ts_cache_table->base_time;
 
 	/* Cache no longer required. */
 	ts_cache_table->num_entries = 0;

@@ -16,28 +16,22 @@
 ##
 
 ifneq ($(filter y,$(CONFIG_VENDORCODE_ELTAN_VBOOT) $(CONFIG_VENDORCODE_ELTAN_MBOOT)),)
-bootblock-$(CONFIG_C_ENVIRONMENT_BOOTBLOCK) += board_verified_boot.c
+bootblock-y += board_verified_boot.c
 postcar-y += board_verified_boot.c
 ramstage-y += board_verified_boot.c
 romstage-y += board_verified_boot.c
 endif
 
-bootblock-$(CONFIG_C_ENVIRONMENT_BOOTBLOCK) += com_init.c
+bootblock-y += com_init.c
 
 ramstage-y += cpld.c
 ramstage-y += gpio.c
 ramstage-y += hda_verb.c
 ramstage-y += irqroute.c
-ramstage-$(CONFIG_FSP1_1_DISPLAY_LOGO) += logo.c
 ramstage-y += ramstage.c
 ramstage-y += w25q64.c
 
 romstage-y += cpld.c
-
-cbfs-files-$(CONFIG_FSP1_1_DISPLAY_LOGO) += logo.bmp
-logo.bmp-file := $(call strip_quotes,$(CONFIG_FSP1_1_LOGO_FILE_NAME))
-logo.bmp-type := raw
-logo.bmp-compression := LZMA
 
 # Order of names in SPD_SOURCES is important!
 SPD_SOURCES  = SAMSUNG_K4B8G1646D-MYKO

@@ -267,7 +267,7 @@ static void pcie_update_device_tree(unsigned int devfn0, int num_funcs)
 	devfn = devfn0 + inc;
 
 	/*
-	 * Increase funtion by 1.
+	 * Increase function by 1.
 	 * Then find first enabled device to replace func0
 	 * as that port was move to func0.
 	 */
@@ -418,10 +418,8 @@ static void soc_init(void *data)
 
 static void soc_final(void *data)
 {
-	/* Disable global reset, just in case */
-	pmc_global_reset_enable(0);
 	/* Make sure payload/OS can't trigger global reset */
-	pmc_global_reset_lock();
+	pmc_global_reset_disable_and_lock();
 }
 
 static void disable_dev(struct device *dev, FSP_S_CONFIG *silconfig)
@@ -879,6 +877,12 @@ __weak
 void mainboard_silicon_init_params(FSP_S_CONFIG *silconfig)
 {
 	printk(BIOS_DEBUG, "WEAK: %s/%s called\n", __FILE__, __func__);
+}
+
+/* Handle FSP logo params */
+const struct cbmem_entry *soc_load_logo(FSPS_UPD *supd)
+{
+	return fsp_load_logo(&supd->FspsConfig.LogoPtr, &supd->FspsConfig.LogoSize);
 }
 
 BOOT_STATE_INIT_ENTRY(BS_PRE_DEVICE, BS_ON_ENTRY, spi_flash_init_cb, NULL);

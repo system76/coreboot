@@ -20,13 +20,12 @@
 #include <device/pci.h>
 #include <device/pci_ids.h>
 #include <device/pci_ops.h>
-#include <pc80/mc146818rtc.h>
+#include <option.h>
 #include <pc80/isa-dma.h>
 #include <pc80/i8259.h>
 #include <arch/io.h>
 #include <arch/ioapic.h>
 #include <arch/acpi.h>
-#include <arch/cpu.h>
 #include <cpu/x86/smm.h>
 #include <cbmem.h>
 #include <string.h>
@@ -40,8 +39,6 @@
 #include <southbridge/intel/common/spi.h>
 
 #define NMI_OFF	0
-
-#define ENABLE_ACPI_MODE_IN_COREBOOT	0
 
 typedef struct southbridge_intel_lynxpoint_config config_t;
 
@@ -493,15 +490,9 @@ static void enable_lp_clock_gating(struct device *dev)
 static void pch_set_acpi_mode(void)
 {
 	if (CONFIG(HAVE_SMI_HANDLER) && !acpi_is_wakeup_s3()) {
-#if ENABLE_ACPI_MODE_IN_COREBOOT
-		printk(BIOS_DEBUG, "Enabling ACPI via APMC:\n");
-		outb(APM_CNT_ACPI_ENABLE, APM_CNT);
-		printk(BIOS_DEBUG, "done.\n");
-#else
 		printk(BIOS_DEBUG, "Disabling ACPI via APMC:\n");
 		outb(APM_CNT_ACPI_DISABLE, APM_CNT);
 		printk(BIOS_DEBUG, "done.\n");
-#endif
 	}
 }
 

@@ -17,7 +17,6 @@
 #include <arch/acpi.h>
 #include <arch/smp/mpspec.h>
 #include <device/device.h>
-#include <device/pci.h>
 #include <vendorcode/google/chromeos/gnvs.h>
 #include <ec/compal/ene932/ec.h>
 #include "ec.h"
@@ -26,13 +25,6 @@
 #include <southbridge/intel/bd82x6x/nvs.h>
 #include "thermal.h"
 #include "onboard.h"
-
-static void acpi_update_thermal_table(global_nvs_t *gnvs)
-{
-	/* EC handles all active thermal and fan control on Parrot. */
-	gnvs->tcrt = CRITICAL_TEMPERATURE;
-	gnvs->tpsv = PASSIVE_TEMPERATURE;
-}
 
 void acpi_create_gnvs(global_nvs_t *gnvs)
 {
@@ -50,7 +42,9 @@ void acpi_create_gnvs(global_nvs_t *gnvs)
 		ACTIVE_ECFW_RO : ACTIVE_ECFW_RW;
 #endif
 
-	acpi_update_thermal_table(gnvs);
+	/* EC handles all active thermal and fan control on Parrot. */
+	gnvs->tcrt = CRITICAL_TEMPERATURE;
+	gnvs->tpsv = PASSIVE_TEMPERATURE;
 
 	// the lid is open by default.
 	gnvs->lids = 1;

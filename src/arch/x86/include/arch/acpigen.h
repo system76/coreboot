@@ -14,7 +14,6 @@
 #ifndef LIBACPI_H
 #define LIBACPI_H
 
-#include <stdlib.h>
 #include <stdint.h>
 #include <arch/acpi.h>
 #include <arch/acpi_device.h>
@@ -87,7 +86,7 @@ enum {
 	 BANK_FIELD_OP		= 0x87,
 	 DATA_REGION_OP		= 0x88,
 	ROOT_PREFIX		= 0x5C,
-	PARENT_PREFIX		= 0x5D,
+	PARENT_PREFIX		= 0x5E,
 	LOCAL0_OP		= 0x60,
 	LOCAL1_OP		= 0x61,
 	LOCAL2_OP		= 0x62,
@@ -310,6 +309,7 @@ void acpigen_write_dword(unsigned int data);
 void acpigen_write_qword(uint64_t data);
 void acpigen_write_integer(uint64_t data);
 void acpigen_write_string(const char *string);
+void acpigen_write_name_unicode(const char *name, const char *string);
 void acpigen_write_name(const char *name);
 void acpigen_write_name_zero(const char *name);
 void acpigen_write_name_one(const char *name);
@@ -389,7 +389,7 @@ void acpigen_write_dsm(const char *uuid, void (**callbacks)(void *),
 void acpigen_write_dsm_uuid_arr(struct dsm_uuid *ids, size_t count);
 
 /*
- * Generate ACPI AML code for _CPC (Continuous Perfmance Control).
+ * Generate ACPI AML code for _CPC (Continuous Performance Control).
  * Execute the package function once to create a global table, then
  * execute the method function within each processor object to
  * create a method that points to the global table.
@@ -410,6 +410,21 @@ void acpigen_write_rom(void *bios, const size_t length);
  * length.
  */
 void acpigen_write_opregion(struct opregion *opreg);
+/*
+ * Generate ACPI AML code for Mutex
+ * This function takes mutex name and initial value.
+ */
+void acpigen_write_mutex(const char *name, const uint8_t flags);
+/*
+ * Generate ACPI AML code for Acquire
+ * This function takes mutex name and privilege value.
+ */
+void acpigen_write_acquire(const char *name, const uint16_t val);
+/*
+ * Generate ACPI AML code for Release
+ * This function takes mutex name.
+ */
+void acpigen_write_release(const char *name);
 /*
  * Generate ACPI AML code for Field
  * This function takes input region name, fieldlist, count & flags.

@@ -23,11 +23,11 @@
 #include <arch/cpu.h>
 #include <device/mmio.h>
 #include <device/pci_ops.h>
+#include <device/smbus_host.h>
 #include <cbmem.h>
 #include <timestamp.h>
 #include <mrc_cache.h>
 #include <southbridge/intel/bd82x6x/me.h>
-#include <southbridge/intel/common/smbus.h>
 #include <southbridge/intel/bd82x6x/pch.h>
 #include <cpu/x86/msr.h>
 #include <types.h>
@@ -101,9 +101,9 @@ static void report_memory_config(void)
 	u32 addr_decoder_common, addr_decode_ch[NUM_CHANNELS];
 	int i, refclk;
 
-	addr_decoder_common = MCHBAR32(0x5000);
-	addr_decode_ch[0] = MCHBAR32(0x5004);
-	addr_decode_ch[1] = MCHBAR32(0x5008);
+	addr_decoder_common = MCHBAR32(MAD_CHNL);
+	addr_decode_ch[0] = MCHBAR32(MAD_DIMM_CH0);
+	addr_decode_ch[1] = MCHBAR32(MAD_DIMM_CH1);
 
 	refclk = MCHBAR32(MC_BIOS_REQ) & 0x100 ? 100 : 133;
 
@@ -293,7 +293,7 @@ static void init_dram_ddr3(int min_tck, int s3resume)
 	int err;
 	u32 cpu;
 
-	MCHBAR32(0x5f00) |= 1;
+	MCHBAR32(SAPMCTL) |= 1;
 
 	/* Wait for ME to be ready */
 	intel_early_me_init();
@@ -404,12 +404,12 @@ static void init_dram_ddr3(int min_tck, int s3resume)
 	if (err)
 		die("raminit failed");
 
-	/* FIXME: should be hardware revision-dependent.  */
-	MCHBAR32(0x5024) = 0x00a030ce;
+	/* FIXME: should be hardware revision-dependent. The register only exists on IVB. */
+	MCHBAR32(CHANNEL_HASH) = 0x00a030ce;
 
 	set_scrambling_seed(&ctrl);
 
-	set_42a0(&ctrl);
+	set_normal_operation(&ctrl);
 
 	final_registers(&ctrl);
 

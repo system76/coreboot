@@ -30,6 +30,14 @@
 #include <southbridge/intel/common/pmclib.h>
 #include <elog.h>
 
+__weak void mainboard_early_init(int s3_resume)
+{
+}
+
+__weak void mainboard_late_rcba_config(void)
+{
+}
+
 static void early_pch_reset_pmcon(void)
 {
 	u8 reg8;
@@ -55,16 +63,10 @@ void mainboard_romstage_entry(void)
 	/* Init LPC, GPIO, BARs, disable watchdog ... */
 	early_pch_init();
 
-	/* Initialize superio */
-	mainboard_config_superio();
-
 	/* USB is initialized in MRC if MRC is used.  */
 	if (CONFIG(USE_NATIVE_RAMINIT)) {
 		early_usb_init(mainboard_usb_ports);
 	}
-
-	/* Initialize console device(s) */
-	console_init();
 
 	/* Perform some early chipset initialization required
 	 * before RAM initialization can work
@@ -80,9 +82,6 @@ void mainboard_romstage_entry(void)
 
 	mainboard_early_init(s3resume);
 
-	/* Enable SPD ROMs and DDR-III DRAM */
-	enable_smbus();
-
 	post_code(0x39);
 
 	perform_raminit(s3resume);
@@ -96,7 +95,7 @@ void mainboard_romstage_entry(void)
 
 	southbridge_configure_default_intmap();
 	southbridge_rcba_config();
-	mainboard_rcba_config();
+	mainboard_late_rcba_config();
 
 	post_code(0x3d);
 

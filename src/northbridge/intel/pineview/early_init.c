@@ -14,15 +14,13 @@
  * GNU General Public License for more details.
  */
 
-#include <stdlib.h>
 #include <console/console.h>
-#include <arch/io.h>
 #include <device/pci_ops.h>
 #include <device/pci_def.h>
 #include <device/pci.h>
 #include <northbridge/intel/pineview/pineview.h>
 #include <northbridge/intel/pineview/chip.h>
-#include <pc80/mc146818rtc.h>
+#include <option.h>
 #include <types.h>
 
 #define LPC PCI_DEV(0, 0x1f, 0)
@@ -136,8 +134,6 @@ static void early_misc_setup(void)
 	pci_write_config8(LPC, 0x8, 0x0);
 	RCBA32(0x3410) = 0x00020465;
 
-	ich7_setup_cir();
-
 	pci_write_config32(PCI_DEV(0, 0x1d, 0), 0xca, 0x1);
 	pci_write_config32(PCI_DEV(0, 0x1d, 1), 0xca, 0x1);
 	pci_write_config32(PCI_DEV(0, 0x1d, 2), 0xca, 0x1);
@@ -156,26 +152,6 @@ static void early_misc_setup(void)
 
 static void pineview_setup_bars(void)
 {
-	/* Setting up Southbridge. In the northbridge code. */
-	printk(BIOS_DEBUG, "Setting up static southbridge registers...");
-	pci_write_config32(LPC, RCBA, (uintptr_t)DEFAULT_RCBA | 1);
-	pci_write_config32(LPC, PMBASE, DEFAULT_PMBASE | 1);
-	pci_write_config8(LPC, 0x44 /* ACPI_CNTL */, 0x80); /* Enable ACPI */
-	pci_write_config32(LPC, GPIOBASE, DEFAULT_GPIOBASE | 1);
-	pci_write_config8(LPC, 0x4c /* GC */, 0x10);	/* Enable GPIOs */
-	pci_write_config32(LPC, 0x88, 0x007c0291);
-
-	pci_write_config32(PCI_DEV(0, 0x1e, 0), 0x1b, 0x20);
-	printk(BIOS_DEBUG, " done.\n");
-
-	printk(BIOS_DEBUG, "Disabling Watchdog reboot...");
-	RCBA32(GCS) = RCBA32(GCS) | (1 << 5);	/* No reset */
-	outw((1 << 11), DEFAULT_PMBASE | 0x60 | 0x08);	/* halt timer */
-	printk(BIOS_DEBUG, " done.\n");
-
-	/* Enable upper 128bytes of CMOS */
-	RCBA32(0x3400) = (1 << 2);
-
 	printk(BIOS_DEBUG, "Setting up static northbridge registers...");
 	pci_write_config8(D0F0, 0x8, 0x69);
 

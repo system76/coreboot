@@ -154,9 +154,7 @@ config COMPRESS_RAMSTAGE
 	depends on HAVE_RAMSTAGE
 	# Default value set at the end of the file
 	help
-	  Compress ramstage to save memory in the flash image. Note
-	  that decompression might slow down booting if the boot flash
-	  is connected through a slow link (i.e. SPI).
+	  Compress ramstage to save memory in the flash image.
 
 config COMPRESS_PRERAM_STAGES
 	bool "Compress romstage and verstage with LZ4"
@@ -226,7 +224,7 @@ config TIMESTAMPS_ON_CONSOLE
 	default n
 	depends on COLLECT_TIMESTAMPS
 	help
-	  Print the timestamps to the debug console if enabled at level spew.
+	  Print the timestamps to the debug console if enabled at level info.
 
 config USE_BLOBS
 	bool "Allow use of binary-only repository"
@@ -265,14 +263,9 @@ config UBSAN
 	  say N because it adds a small performance penalty and may abort
 	  on code that happens to work in spite of the UB.
 
-config NO_RELOCATABLE_RAMSTAGE
-	bool
-	default n if ARCH_X86
-	default y
-
 config RELOCATABLE_RAMSTAGE
 	bool
-	default !NO_RELOCATABLE_RAMSTAGE
+	default y if ARCH_X86
 	select RELOCATABLE_MODULES
 	help
 	 The reloctable ramstage support allows for the ramstage to be built
@@ -281,18 +274,28 @@ config RELOCATABLE_RAMSTAGE
 	 wake. When selecting this option the romstage is responsible for
 	 determing a stack location to use for loading the ramstage.
 
+choice
+	prompt "Stage Cache for ACPI S3 resume"
+	default NO_STAGE_CACHE if !HAVE_ACPI_RESUME || !RELOCATABLE_RAMSTAGE
+	default TSEG_STAGE_CACHE if SMM_TSEG
+
+config NO_STAGE_CACHE
+	bool "Disabled"
+	help
+	  Do not save any component in stage cache for resume path. On resume,
+	  all components would be read back from CBFS again.
+
 config TSEG_STAGE_CACHE
-	bool
-	default y
-	depends on !NO_STAGE_CACHE && SMM_TSEG
+	bool "TSEG"
+	depends on SMM_TSEG
 	help
 	  The option enables stage cache support for platform. Platform
 	  can stash copies of postcar, ramstage and raw runtime data
 	  inside SMM TSEG, to be restored on S3 resume path.
 
 config CBMEM_STAGE_CACHE
-	bool "Cache stages in CBMEM"
-	depends on !NO_STAGE_CACHE && !TSEG_STAGE_CACHE
+	bool "CBMEM"
+	depends on !SMM_TSEG
 	help
 	  The option enables stage cache support for platform. Platform
 	  can stash copies of postcar, ramstage and raw runtime data
@@ -303,6 +306,8 @@ config CBMEM_STAGE_CACHE
 	  circumvent SMM locks and SPI write protections.
 
 	  If unsure, select 'N'
+
+endchoice
 
 config UPDATE_IMAGE
 	bool "Update existing coreboot.rom image"
@@ -463,6 +468,7 @@ endmenu
 menu "Security"
 
 source "src/security/Kconfig"
+source "src/vendorcode/eltan/security/Kconfig"
 
 endmenu
 
@@ -519,6 +525,12 @@ config HAVE_ACPI_RESUME
 	default n
 	depends on RELOCATABLE_RAMSTAGE
 
+config DISABLE_ACPI_HIBERNATE
+	bool
+	default n
+	help
+	  Removes S4 from the available sleepstates
+
 config RESUME_PATH_SAME_AS_BOOT
 	bool
 	default y if ARCH_X86
@@ -527,22 +539,6 @@ config RESUME_PATH_SAME_AS_BOOT
 	  This option indicates that when a system resumes it takes the
 	  same path as a regular boot. e.g. an x86 system runs from the
 	  reset vector at 0xfffffff0 on both resume and warm/cold boot.
-
-config HAVE_ROMSTAGE_CONSOLE_SPINLOCK
-	bool
-	default n
-
-config HAVE_ROMSTAGE_NVRAM_CBFS_SPINLOCK
-	bool
-	default n
-	help
-	  This should be enabled on certain plaforms, such as the AMD
-	  SR565x, that cannot handle concurrent CBFS accesses from
-	  multiple APs during early startup.
-
-config HAVE_ROMSTAGE_MICROCODE_CBFS_SPINLOCK
-	bool
-	default n
 
 config NO_MONOTONIC_TIMER
 	def_bool n
@@ -738,7 +734,10 @@ source "payloads/Kconfig"
 menu "Debugging"
 
 comment "CPU Debug Settings"
-source "src/cpu/*/Kconfig.debug"
+source "src/cpu/*/Kconfig.debug_cpu"
+
+comment "BLOB Debug Settings"
+source "src/drivers/intel/fsp*/Kconfig.debug_blob"
 
 comment "General Debug Settings"
 
@@ -837,19 +836,6 @@ config DEBUG_MALLOC
 	  This option enables additional malloc related debug messages.
 
 	  Note: This option will increase the size of the coreboot image.
-
-	  If unsure, say N.
-
-# Only visible if debug level is DEBUG (7) or SPEW (8) as it does additional
-# printk(BIOS_DEBUG, ...) calls.
-config DEBUG_ACPI
-	prompt "Output verbose ACPI debug messages" if DEFAULT_CONSOLE_LOGLEVEL_7 || DEFAULT_CONSOLE_LOGLEVEL_8
-	bool
-	default n
-	help
-	  This option enables additional ACPI related debug messages.
-
-	  Note: This option will slightly increase the size of the coreboot image.
 
 	  If unsure, say N.
 
@@ -1185,13 +1171,6 @@ config RELOCATABLE_MODULES
 	  building relocatable modules in the RAM stage. Those modules can be
 	  loaded anywhere and all the relocations are handled automatically.
 
-config NO_STAGE_CACHE
-	bool
-	default y if !HAVE_ACPI_RESUME || !RELOCATABLE_RAMSTAGE
-	help
-	  Do not save any component in stage cache for resume path. On resume,
-	  all components would be read back from CBFS again.
-
 config GENERIC_GPIO_LIB
 	bool
 	help
@@ -1202,11 +1181,6 @@ config GENERIC_GPIO_LIB
 config BOOTBLOCK_CUSTOM
 	# To be selected by arch, SoC or mainboard if it does not want use the normal
 	# src/lib/bootblock.c#main() C entry point.
-	bool
-
-config C_ENVIRONMENT_BOOTBLOCK
-	# To be selected by arch or platform if a C environment is available during the
-	# bootblock. Normally this signifies availability of RW memory (e.g. SRAM).
 	bool
 
 ###############################################################################

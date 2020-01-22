@@ -174,7 +174,6 @@ void pch_log_state(void);
 void acpi_create_intel_hpet(acpi_hpet_t * hpet);
 void acpi_create_serialio_ssdt(acpi_header_t *ssdt);
 
-void enable_smbus(void);
 
 #if ENV_ROMSTAGE
 int smbus_read_byte(unsigned int device, unsigned int address);
@@ -440,7 +439,6 @@ void mainboard_config_superio(void);
 #define PCH_SMBUS_DEV		PCI_DEV(0, 0x1f, 3)
 #define SMB_BASE		0x20
 #define HOSTC			0x40
-#define SMB_RCV_SLVA		0x09
 
 /* HOSTC bits */
 #define I2C_EN			(1 << 2)

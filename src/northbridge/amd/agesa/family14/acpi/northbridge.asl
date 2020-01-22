@@ -18,7 +18,6 @@ External (TOM1)
 External (TOM2)
 Name(_HID, EISAID("PNP0A08"))	/* PCI Express Root Bridge */
 Name(_CID, EISAID("PNP0A03"))	/* PCI Root Bridge */
-Name(_ADR, 0x00180000)	/* Dev# = BSP Dev#, Func# = 0 */
 
 /* Describe the Northbridge devices */
 Device(AMRT) {
@@ -128,5 +127,5 @@ Device(NBF3) {
 	Name(_ADR, 0x00180003)
 
 	/* k10temp thermal zone */
-	#include <northbridge/amd/amdfam10/thermal_mixin.asl>
+	#include "thermal_mixin.asl"
 } /* end NBF3 */

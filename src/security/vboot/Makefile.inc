@@ -14,6 +14,43 @@
 ## GNU General Public License for more details.
 ##
 
+ifeq ($(CONFIG_VBOOT_LIB),y)
+
+vboot-fixup-includes = $(patsubst -I%,-I$(top)/%,\
+		       $(patsubst $(src)/%.h,$(top)/$(src)/%.h,\
+		       $(filter-out -I$(obj),$(1))))
+
+# call with $1 = stage name to create rules for building the library
+# for the stage and adding it to the stage's set of object files.
+define vboot-for-stage
+VBOOT_LIB_$(1) = $(obj)/external/vboot_reference-$(1)/vboot_fw.a
+VBOOT_CFLAGS_$(1) += $$(call vboot-fixup-includes,$$(CPPFLAGS_$(1)))
+VBOOT_CFLAGS_$(1) += $$(CFLAGS_$(1))
+VBOOT_CFLAGS_$(1) += $$(call vboot-fixup-includes,$$($(1)-c-ccopts))
+VBOOT_CFLAGS_$(1) += -I$(abspath $(obj)) -Wno-missing-prototypes
+VBOOT_CFLAGS_$(1) += -DVBOOT_DEBUG
+
+$$(VBOOT_LIB_$(1)): $(obj)/config.h
+	printf "    MAKE       $(subst $(obj)/,,$(@))\n"
+	+FIRMWARE_ARCH=$$(ARCHDIR-$$(ARCH-$(1)-y)) \
+	CC="$$(CC_$(1))" \
+	CFLAGS="$$(VBOOT_CFLAGS_$(1))" VBOOT2="y" \
+	$(MAKE) -C $(VBOOT_SOURCE) \
+		BUILD=$$(abspath $$(dir $$(VBOOT_LIB_$(1)))) \
+		V=$(V) \
+		fwlib
+
+$(1)-srcs += $$(VBOOT_LIB_$(1))
+
+endef # vboot-for-stage
+
+$(eval $(call vboot-for-stage,bootblock))
+$(eval $(call vboot-for-stage,romstage))
+$(eval $(call vboot-for-stage,ramstage))
+$(eval $(call vboot-for-stage,postcar))
+
+endif # CONFIG_VBOOT_LIB
+
 ifeq ($(CONFIG_VBOOT),y)
 
 bootblock-y += bootmode.c
@@ -22,20 +59,14 @@ ramstage-y += bootmode.c
 verstage-y += bootmode.c
 postcar-y += bootmode.c
 
-# When VBOOT_STARTS_IN_ROMSTAGE is selected, DRAM is already up by
-# the time verstage runs.
-ifneq ($(CONFIG_VBOOT_STARTS_IN_ROMSTAGE),y)
-verstage-generic-ccopts += -D__PRE_RAM__
-endif
-
 verstage-generic-ccopts += -D__VERSTAGE__
-
-ramstage-y += gbb.c
 
 bootblock-y += vbnv.c
 verstage-y += vbnv.c
 romstage-y += vbnv.c
 ramstage-y += vbnv.c
+
+romstage-$(CONFIG_VBOOT_EARLY_EC_SYNC) += ec_sync.c
 
 bootblock-$(CONFIG_VBOOT_VBNV_CMOS) += vbnv_cmos.c
 verstage-$(CONFIG_VBOOT_VBNV_CMOS) += vbnv_cmos.c
@@ -101,41 +132,6 @@ postcar-y += common.c
 
 romstage-$(CONFIG_FSP2_0_USES_TPM_MRC_HASH) += mrc_cache_hash_tpm.c
 
-vboot-fixup-includes = $(patsubst -I%,-I$(top)/%,\
-		       $(patsubst $(src)/%.h,$(top)/$(src)/%.h,\
-		       $(filter-out -I$(obj),$(1))))
-
-# call with $1 = stage name to create rules for building the library
-# for the stage and adding it to the stage's set of object files.
-define vboot-for-stage
-VB2_LIB_$(1) = $(obj)/external/vboot_reference-$(1)/vboot_fw20.a
-VBOOT_CFLAGS_$(1) += $$(call vboot-fixup-includes,$$(CPPFLAGS_$(1)))
-VBOOT_CFLAGS_$(1) += $$(CFLAGS_$(1))
-VBOOT_CFLAGS_$(1) += $$(call vboot-fixup-includes,$$($(1)-c-ccopts))
-VBOOT_CFLAGS_$(1) += -I$(abspath $(obj)) -Wno-missing-prototypes
-VBOOT_CFLAGS_$(1) += -DVBOOT_DEBUG
-
-$$(VB2_LIB_$(1)): $(obj)/config.h
-	printf "    MAKE       $(subst $(obj)/,,$(@))\n"
-	+FIRMWARE_ARCH=$$(ARCHDIR-$$(ARCH-$(1)-y)) \
-	CC="$$(CC_$(1))" \
-	CFLAGS="$$(VBOOT_CFLAGS_$(1))" VBOOT2="y" \
-	$(MAKE) -C $(VBOOT_SOURCE) \
-		BUILD=$$(abspath $$(dir $$(VB2_LIB_$(1)))) \
-		V=$(V) \
-		fwlib20
-
-$(1)-srcs += $$(VB2_LIB_$(1))
-
-endef # vboot-for-stage
-
-CFLAGS_common += -I3rdparty/vboot/firmware/2lib/include
-
-$(eval $(call vboot-for-stage,bootblock))
-$(eval $(call vboot-for-stage,romstage))
-$(eval $(call vboot-for-stage,ramstage))
-$(eval $(call vboot-for-stage,postcar))
-
 ifeq ($(CONFIG_VBOOT_SEPARATE_VERSTAGE),y)
 
 $(eval $(call vboot-for-stage,verstage))
@@ -170,13 +166,17 @@ VBOOT_PARTITIONS := COREBOOT
 # Check for RW_A partition
 ifeq ($(CONFIG_VBOOT_SLOTS_RW_A),y)
 VBOOT_PARTITIONS += FW_MAIN_A
+RW_PARTITIONS := FW_MAIN_A
 endif
 # Check for RW_B partition
 ifeq ($(CONFIG_VBOOT_SLOTS_RW_AB),y)
 VBOOT_PARTITIONS += FW_MAIN_B
+RW_PARTITIONS += FW_MAIN_B
 endif
 
-# Define a list of files that need to be in RO only.
+# Return the regions a specific file should be placed in. The files listed below and the ones
+# that are specified in CONFIG_RO_REGION_ONLY are only specified in the RO region. The files
+# specified in the CONFIG_RW_REGION_ONLY are only placed in the RW regions.
 # All other files will be installed into RO and RW regions
 # Use $(sort) to cut down on extra spaces that would be translated to commas
 regions-for-file = $(subst $(spc),$(comma),$(sort \
@@ -193,7 +193,11 @@ regions-for-file = $(subst $(spc),$(comma),$(sort \
 		cmos_layout.bin \
 		cmos.default \
 		$(call strip_quotes,$(CONFIG_RO_REGION_ONLY)) \
-		,$(1)),COREBOOT,$(VBOOT_PARTITIONS))))
+		,$(1)),COREBOOT,\
+		$(if $(filter \
+			$(call strip_quotes,$(CONFIG_RW_REGION_ONLY)) \
+			,$(1)), $(RW_PARTITIONS), $(VBOOT_PARTITIONS) ) \
+		)))
 
 CONFIG_GBB_HWID := $(call strip_quotes,$(CONFIG_GBB_HWID))
 CONFIG_GBB_BMPFV_FILE := $(call strip_quotes,$(CONFIG_GBB_BMPFV_FILE))

@@ -47,7 +47,7 @@ config VBOOT
 
 config MAINBOARD_DIR
 	string
-	default google/veyron
+	default "google/veyron"
 
 config MAINBOARD_PART_NUMBER
 	string
@@ -57,10 +57,6 @@ config MAINBOARD_PART_NUMBER
 	default "Veyron_Minnie" if BOARD_GOOGLE_VEYRON_MINNIE
 	default "Veyron_Speedy" if BOARD_GOOGLE_VEYRON_SPEEDY
 	default "Veyron"
-
-config MAINBOARD_VENDOR
-	string
-	default "Google"
 
 config EC_GOOGLE_CHROMEEC_SPI_BUS
 	hex

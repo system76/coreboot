@@ -34,7 +34,8 @@ DEVTREE_CONST struct device * DEVTREE_CONST all_devices = &dev_root;
  * @param devfn A device/function number.
  * @return Pointer to the device structure (if found), 0 otherwise.
  */
-DEVTREE_CONST struct device *dev_find_slot(unsigned int bus,
+
+static DEVTREE_CONST struct device *dev_find_slot(unsigned int bus,
 						unsigned int devfn)
 {
 	DEVTREE_CONST struct device *dev, *result;
@@ -218,13 +219,6 @@ DEVTREE_CONST struct bus *pci_root_bus(void)
 
 DEVTREE_CONST struct device *pcidev_path_on_root(pci_devfn_t devfn)
 {
-	/* Work around pcidev_path_behind() below failing
-	 * due tue complicated devicetree with topology
-	 * being manipulated on-the-fly.
-	 */
-	if (CONFIG(NORTHBRIDGE_AMD_AMDFAM10))
-		return dev_find_slot(0, devfn);
-
 	return pcidev_path_behind(pci_root_bus(), devfn);
 }
 

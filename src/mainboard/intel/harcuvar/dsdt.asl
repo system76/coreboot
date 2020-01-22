@@ -26,13 +26,9 @@ DefinitionBlock(
 	0x20110725	// OEM revision
 )
 {
-	// Some generic macros
 	#include <southbridge/intel/common/acpi/platform.asl>
 	#include "acpi/platform.asl"
 	#include "acpi/mainboard.asl"
-
-	// General Purpose Events
-	//#include "acpi/gpe.asl"
 
 	// Thermal Handler
 	#include "acpi/thermal.asl"
@@ -50,6 +46,5 @@ DefinitionBlock(
 		}
 	}
 
-	/* Chipset specific sleep states */
 	#include <southbridge/intel/common/acpi/sleepstates.asl>
 }

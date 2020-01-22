@@ -25,15 +25,14 @@ romstage-$(CONFIG_SOUTHBRIDGE_INTEL_COMMON_PMCLIB) += pmclib.c
 
 ramstage-$(CONFIG_SOUTHBRIDGE_INTEL_COMMON_WATCHDOG) += watchdog.c
 
-ifeq ($(CONFIG_SOUTHBRIDGE_INTEL_COMMON),y)
-
 all-$(CONFIG_SOUTHBRIDGE_INTEL_COMMON_PMBASE) += pmbase.c
 smm-$(CONFIG_SOUTHBRIDGE_INTEL_COMMON_PMBASE) += pmbase.c
 
-bootblock-$(CONFIG_USBDEBUG) += usb_debug.c
-romstage-$(CONFIG_USBDEBUG) += usb_debug.c
-ramstage-$(CONFIG_USBDEBUG) += usb_debug.c
+bootblock-$(CONFIG_SOUTHBRIDGE_INTEL_COMMON_USB_DEBUG) += usb_debug.c
+romstage-$(CONFIG_SOUTHBRIDGE_INTEL_COMMON_USB_DEBUG) += usb_debug.c
+ramstage-$(CONFIG_SOUTHBRIDGE_INTEL_COMMON_USB_DEBUG) += usb_debug.c
 
+bootblock-$(CONFIG_SOUTHBRIDGE_INTEL_COMMON_GPIO) += gpio.c
 romstage-$(CONFIG_SOUTHBRIDGE_INTEL_COMMON_GPIO) += gpio.c
 ramstage-$(CONFIG_SOUTHBRIDGE_INTEL_COMMON_GPIO) += gpio.c
 smm-$(CONFIG_SOUTHBRIDGE_INTEL_COMMON_GPIO) += gpio.c
@@ -53,6 +52,4 @@ ramstage-$(CONFIG_SOUTHBRIDGE_INTEL_COMMON_ACPI_MADT) += madt.c
 
 smm-$(CONFIG_SOUTHBRIDGE_INTEL_COMMON_FINALIZE) += finalize.c
 
-all-y += rtc.c
-
-endif
+all-$(CONFIG_SOUTHBRIDGE_INTEL_COMMON_RTC) += rtc.c

@@ -16,7 +16,7 @@ chip soc/amd/stoneyridge
 
 	register "spd_addr_lookup" = "
 	{
-#if CONFIG(HAVE_MERLINFALCON_BINARIES)
+#if CONFIG(AMD_APU_MERLINFALCON)
 		{ {0xA0, 0x00}, {0xA4, 0x00} }, // socket 0 - Channel 0 & 1, slot 0
 #else
 		{ {0xA0, 0x00} }, // socket 0 - Channel 0, slot 0
@@ -45,14 +45,7 @@ chip soc/amd/stoneyridge
 		device pci 10.0 on  end # USB xHCI
 		device pci 11.0 on  end # SATA
 		device pci 12.0 on  end # USB EHCI
-		device pci 14.0 on      # SM
-			chip drivers/generic/generic #dimm 0-0-0
-				device i2c 50 on end
-			end
-			chip drivers/generic/generic #dimm 0-1-0
-				device i2c 52 on end
-			end
-		end # SM
+		device pci 14.0 on  end # SM
 		device pci 14.3 on      # LPC	0x439d
 			chip superio/fintek/f81803a
 				device pnp 4e.1 on      # COM1

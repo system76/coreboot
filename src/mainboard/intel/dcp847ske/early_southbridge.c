@@ -16,10 +16,9 @@
  * GNU General Public License for more details.
  */
 
+#include <bootblock_common.h>
 #include <stdint.h>
 #include <cf9_reset.h>
-#include <device/pci_ops.h>
-#include <device/pci_def.h>
 #include <console/console.h>
 #include <northbridge/intel/sandybridge/raminit_native.h>
 #include <southbridge/intel/bd82x6x/pch.h>
@@ -27,33 +26,12 @@
 #include "superio.h"
 #include "thermal.h"
 
-void pch_enable_lpc(void)
+void mainboard_late_rcba_config(void)
 {
-}
-
-void mainboard_rcba_config(void)
-{
-	/* Disable devices */
-	RCBA32(FD) |= PCH_DISABLE_P2P | PCH_DISABLE_XHCI;
-
-#if CONFIG(USE_NATIVE_RAMINIT)
-	/* Enable Gigabit Ethernet */
-	if (RCBA32(BUC) & PCH_DISABLE_GBE) {
-		RCBA32(BUC) &= ~PCH_DISABLE_GBE;
-		/* Datasheet says clearing the bit requires a reset after */
-		printk(BIOS_DEBUG, "Enabled gigabit ethernet, reset once.\n");
-		full_reset();
-	}
-#endif
-
 	/* Set "mobile" bit in MCH (which makes sense layout-wise). */
 	/* Note sure if this has any effect at all though. */
 	MCHBAR32(0x0004) |= 0x00001000;
 	MCHBAR32(0x0104) |= 0x00001000;
-}
-
-void mainboard_early_init(int s3resume)
-{
 }
 
 static const u16 hwm_initvals[] = {
@@ -168,7 +146,7 @@ static void superio_init(void)
 	SUPERIO_LOCK;
 }
 
-void mainboard_config_superio(void)
+void bootblock_mainboard_early_init(void)
 {
 	superio_init();
 	hwm_init();

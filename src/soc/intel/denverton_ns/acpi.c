@@ -19,7 +19,6 @@
 
 #include <arch/acpi.h>
 #include <arch/acpigen.h>
-#include <arch/cpu.h>
 #include <arch/smp/mpspec.h>
 #include <cpu/x86/smm.h>
 #include <string.h>
@@ -81,7 +80,7 @@ void acpi_init_gnvs(global_nvs_t *gnvs)
 	gnvs->pcnt = dev_count_cpu();
 
 	/* Top of Low Memory (start of resource allocation) */
-	gnvs->tolm = top_of_32bit_ram();
+	gnvs->tolm = (uintptr_t)cbmem_top();
 
 #if CONFIG(CONSOLE_CBMEM)
 	/* Update the mem console pointer. */

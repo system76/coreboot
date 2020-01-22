@@ -13,7 +13,6 @@
  * GNU General Public License for more details.
  */
 
-#include <stdlib.h>
 #include <cf9_reset.h>
 #include <console/console.h>
 #include <arch/io.h>
@@ -22,8 +21,7 @@
 #include <device/pci_def.h>
 #include <cbmem.h>
 #include <romstage_handoff.h>
-#include <pc80/mc146818rtc.h>
-#include <southbridge/intel/common/gpio.h>
+#include <option.h>
 #include <types.h>
 
 #include "i945.h"
@@ -155,24 +153,6 @@ static void i945_setup_bars(void)
 	/* As of now, we don't have all the A0 workarounds implemented */
 	if (i945_silicon_revision() == 0)
 		printk(BIOS_INFO, "Warning: i945 silicon revision A0 might not work correctly.\n");
-
-	/* Setting up Southbridge. In the northbridge code. */
-	printk(BIOS_DEBUG, "Setting up static southbridge registers...");
-
-	pci_write_config32(PCI_DEV(0, 0x1f, 0), PMBASE, DEFAULT_PMBASE | 1);
-	pci_write_config8(PCI_DEV(0, 0x1f, 0), ACPI_CNTL, ACPI_EN);
-
-	pci_write_config32(PCI_DEV(0, 0x1f, 0), GPIOBASE, DEFAULT_GPIOBASE | 1);
-	pci_write_config8(PCI_DEV(0, 0x1f, 0), GPIO_CNTL, GPIO_EN);
-	setup_pch_gpios(&mainboard_gpio_map);
-	printk(BIOS_DEBUG, " done.\n");
-
-	printk(BIOS_DEBUG, "Disabling Watchdog reboot...");
-	RCBA32(GCS) = RCBA32(GCS) | (1 << 5);	/* No reset */
-	outw((1 << 11), DEFAULT_PMBASE | 0x60 | 0x08);	/* halt timer */
-	outw((1 <<  3), DEFAULT_PMBASE | 0x60 | 0x04);	/* clear timeout */
-	outw((1 <<  1), DEFAULT_PMBASE | 0x60 | 0x06);	/* clear 2nd timeout */
-	printk(BIOS_DEBUG, " done.\n");
 
 	printk(BIOS_DEBUG, "Setting up static northbridge registers...");
 	/* Set up all hardcoded northbridge BARs */
@@ -856,6 +836,7 @@ static void ich7_setup_root_complex_topology(void)
 
 static void ich7_setup_pci_express(void)
 {
+	/* Enable PCIe Root Port Clock Gate */
 	RCBA32(CG) |= (1 << 0);
 
 	/* Initialize slot power limit for root ports */

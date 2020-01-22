@@ -1,12 +1,10 @@
 config ARCH_PPC64
 	bool
-	select RAMSTAGE_CBMEM_TOP_ARG
 
 config ARCH_BOOTBLOCK_PPC64
 	bool
 	select ARCH_PPC64
 	select BOOTBLOCK_CUSTOM
-	select C_ENVIRONMENT_BOOTBLOCK
 
 config ARCH_VERSTAGE_PPC64
 	bool

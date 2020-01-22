@@ -67,11 +67,7 @@ config VBOOT
 
 config MAINBOARD_DIR
 	string
-	default google/gru
-
-config MAINBOARD_VENDOR
-	string
-	default "Google"
+	default "google/gru"
 
 config EC_GOOGLE_CHROMEEC_SPI_BUS
 	hex

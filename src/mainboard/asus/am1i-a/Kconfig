@@ -15,12 +15,13 @@ config BOARD_SPECIFIC_OPTIONS
 	select HAVE_ACPI_TABLES
 	select NORTHBRIDGE_AMD_AGESA_FAMILY16_KB
 	select SOUTHBRIDGE_AMD_AGESA_YANGTZE
+	select DEFAULT_POST_ON_LPC
 	select SUPERIO_ITE_IT8623E
 	select MAINBOARD_HAS_LPC_TPM
 
 config MAINBOARD_DIR
 	string
-	default asus/am1i-a
+	default "asus/am1i-a"
 
 config MAINBOARD_PART_NUMBER
 	string
@@ -36,15 +37,11 @@ config MAX_CPUS
 
 config IRQ_SLOT_COUNT
 	int
-	default 9
+	default 10
 
 config ONBOARD_VGA_IS_PRIMARY
 	bool
 	default y
-
-config VGA_BIOS_ID
-	string
-	default "1002,9836"
 
 config HUDSON_LEGACY_FREE
 	bool

@@ -38,7 +38,6 @@ config CPU_SPECIFIC_OPTIONS
 	select ACPI_NHLT
 	select SOC_INTEL_COMMON_NHLT
 	# Misc options
-	select C_ENVIRONMENT_BOOTBLOCK
 	select CACHE_MRC_SETTINGS
 	select COMMON_FADT
 	select FSP_PLATFORM_MEMORY_SETTINGS_VERSIONS
@@ -103,6 +102,7 @@ config CPU_SPECIFIC_OPTIONS
 	select HAVE_CF9_RESET_PREPARE
 	select INTEL_GMA_ADD_VBT if RUN_FSP_GOP
 	select HAVE_FSP_GOP
+	select HAVE_FSP_LOGO_SUPPORT
 	select NO_UART_ON_SUPERIO
 	select INTEL_GMA_ACPI
 	select INTEL_GMA_SWSMISCI
@@ -212,9 +212,17 @@ config LBP2_FMAP_NAME
 	help
 	  Name of FMAP region to write logical boot partition 2 data.
 
+config LBP2_FROM_IFWI
+	bool "Extract the LBP2 from the IFWI binary"
+	depends on NEED_LBP2
+	default n
+	help
+	 The Logical Boot Partition will be automatically extracted
+	 from the supplied IFWI binary
+
 config LBP2_FILE_NAME
 	string "Path of file to write to logical boot partition 2 region"
-	depends on NEED_LBP2
+	depends on NEED_LBP2 && !LBP2_FROM_IFWI
 	default "3rdparty/blobs/mainboard/$(CONFIG_MAINBOARD_DIR)/lbp2.bin"
 	help
 	  Name of file to store in the logical boot partition 2 region.
@@ -332,10 +340,6 @@ config L2_CACHE_SIZE
 	hex
 	default 0x400000 if SOC_INTEL_GLK
 	default 0x100000
-
-config SPI_FLASH_INCLUDE_ALL_DRIVERS
-	bool
-	default n
 
 config SMM_RESERVED_SIZE
 	hex

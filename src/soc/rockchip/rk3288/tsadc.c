@@ -19,7 +19,6 @@
 #include <soc/pmu.h>
 #include <soc/tsadc.h>
 #include <stdint.h>
-#include <stdlib.h>
 
 struct rk3288_tsadc_regs {
 	u32	user_con;
@@ -81,9 +80,9 @@ void tsadc_init(void)
 {
 	rkclk_configure_tsadc(TSADC_CLOCK_HZ);
 
-	setbits_le32(&rk3288_tsadc->auto_con, LAST_TSHUT);
+	setbits32(&rk3288_tsadc->auto_con, LAST_TSHUT);
 
-	setbits_le32(&rk3288_tsadc->int_en,
+	setbits32(&rk3288_tsadc->int_en,
 			TSHUT_CRU_EN_SRC2 | TSHUT_CRU_EN_SRC1 |
 			TSHUT_GPIO_EN_SRC2 | TSHUT_GPIO_EN_SRC1);
 
@@ -96,7 +95,7 @@ void tsadc_init(void)
 	write32(&rk3288_tsadc->comp2_shut, TSADC_SHUT_VALUE);
 
 	/* polarity set to high,channel1 for cpu,channel2 for gpu */
-	setbits_le32(&rk3288_tsadc->auto_con, TSHUT_POL_HIGH | SRC2_EN |
+	setbits32(&rk3288_tsadc->auto_con, TSHUT_POL_HIGH | SRC2_EN |
 				SRC1_EN | AUTO_EN);
 
 	/*
@@ -104,5 +103,5 @@ void tsadc_init(void)
 	  since the tshut polarity defalut low active,
 	  so if you enable tsadc iomux,it will output high
 	 */
-	setbits_le32(&rk3288_pmu->iomux_tsadc_int, IOMUX_TSADC_INT);
+	setbits32(&rk3288_pmu->iomux_tsadc_int, IOMUX_TSADC_INT);
 }

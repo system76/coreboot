@@ -133,10 +133,15 @@ void pmc_clear_prsts(void);
  */
 void pmc_global_reset_enable(bool enable);
 /*
- * If possible, lock 0xcf9. Once the register is locked, it can't be changed.
- * This lock is reset on cold boot, hard reset, soft reset and Sx.
+ * Disable global reset and lock the CF9 global reset register in accordance to PCH ME BWG
+ * sections 4.4.1, 4.5.1 and 18.4 and the PCH datasheet(s) (Intel doc e.g. 332691-002EN,
+ * 332996-002EN). Deviate from the BGW we don't depend on the Intel ME state because Intel
+ * FPT (Flash Programming Tool) normally is not used with coreboot.
+ *
+ * Once the register is locked, it can't be changed. This lock is reset on cold boot, hard
+ * reset, soft reset and Sx.
  */
-void pmc_global_reset_lock(void);
+void pmc_global_reset_disable_and_lock(void);
 
 /* Returns the power state structure */
 struct chipset_power_state *pmc_get_power_state(void);
@@ -168,6 +173,9 @@ void pmc_gpe_init(void);
 
 /* Returns PMC base address */
 uintptr_t soc_read_pmc_base(void);
+
+/* Returns pointer to the ETR register */
+uint32_t *soc_pmc_etr_addr(void);
 
 /*
  * This function returns array of string which represents

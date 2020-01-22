@@ -11,7 +11,6 @@ subdirs-y += ../../../cpu/x86/smm
 subdirs-y += ../../../cpu/x86/tsc
 
 bootblock-y += bootblock/bootblock.c
-bootblock-$(CONFIG_FSP_CAR) += fspcar.c
 bootblock-y += bootblock/cpu.c
 bootblock-y += i2c.c
 bootblock-y += bootblock/pch.c
@@ -33,7 +32,6 @@ verstage-y += uart.c
 romstage-y += gpio.c
 romstage-y += gspi.c
 romstage-y += i2c.c
-romstage-y += memmap.c
 romstage-y += me.c
 romstage-y += pmc.c
 romstage-y += pmutil.c
@@ -54,7 +52,6 @@ ramstage-y += irq.c
 ramstage-y += lockdown.c
 ramstage-y += lpc.c
 ramstage-y += me.c
-ramstage-y += memmap.c
 ramstage-y += p2sb.c
 ramstage-y += pmc.c
 ramstage-y += pmutil.c
@@ -76,24 +73,33 @@ smm-y += smihandler.c
 smm-y += uart.c
 smm-y += xhci.c
 
-postcar-y += memmap.c
 postcar-y += gspi.c
 postcar-y += spi.c
 postcar-y += i2c.c
 postcar-y += uart.c
 
 ifeq ($(CONFIG_SKYLAKE_SOC_PCH_H),y)
+ifeq ($(CONFIG_MAINBOARD_SUPPORTS_SKYLAKE_CPU),y)
 # Skylake H Q0
 cpu_microcode_bins += 3rdparty/intel-microcode/intel-ucode/06-5e-03
+endif
+ifeq ($(CONFIG_MAINBOARD_SUPPORTS_KABYLAKE_CPU),y)
 # Kabylake H B0 S0
 cpu_microcode_bins += 3rdparty/intel-microcode/intel-ucode/06-9e-09
+endif
 else
+ifeq ($(CONFIG_MAINBOARD_SUPPORTS_SKYLAKE_CPU),y)
 # Skylake D0
 cpu_microcode_bins += 3rdparty/intel-microcode/intel-ucode/06-4e-03
+endif
+ifeq ($(CONFIG_MAINBOARD_SUPPORTS_KABYLAKE_DUAL),y)
 # Kabylake H0, J0, J1
 cpu_microcode_bins += 3rdparty/intel-microcode/intel-ucode/06-8e-09
+endif
+ifeq ($(CONFIG_MAINBOARD_SUPPORTS_KABYLAKE_QUAD),y)
 # Kabylake Y0
 cpu_microcode_bins += 3rdparty/intel-microcode/intel-ucode/06-8e-0a
+endif
 endif
 # Missing for Skylake C0 (0x406e2), Kabylake G0 (0x406e8), Kabylake HA0 (0x506e8)
 # since those are probably pre-release samples.

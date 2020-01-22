@@ -15,23 +15,14 @@
  */
 
 #include <arch/io.h>
-#include <device/pci_def.h>
-#include <console/console.h>
 #include <southbridge/intel/i82371eb/i82371eb.h>
 #include <northbridge/intel/i440bx/raminit.h>
-#include <arch/romstage.h>
 #include <superio/winbond/common/winbond.h>
 /* FIXME: The ASUS P3B-F has a Winbond W83977EF, actually. */
 #include <superio/winbond/w83977tf/w83977tf.h>
-#include <cbmem.h>
 
 /* FIXME: The ASUS P3B-F has a Winbond W83977EF, actually. */
 #define SERIAL_DEV PNP_DEV(0x3f0, W83977TF_SP1)
-
-int spd_read_byte(unsigned int device, unsigned int address)
-{
-	return smbus_read_byte(device, address);
-}
 
 /*
  * ASUS P3B-F specific SPD enable magic.
@@ -50,7 +41,7 @@ int spd_read_byte(unsigned int device, unsigned int address)
  * 24-30 of the PIIX4E (bit 31 is reserved). Thus, GPIOs 27 and 28
  * control which SMBus/I2C offsets can be accessed.
  */
-static void enable_spd(void)
+void enable_spd(void)
 {
 	outb(0x6f, PM_IO_BASE + 0x37);
 }
@@ -59,23 +50,12 @@ static void enable_spd(void)
  * Disable SPD access after RAM init to allow access to SMBus/I2C offsets
  * 0x48/0x49/0x2d, which is required e.g. by lm-sensors.
  */
-static void disable_spd(void)
+void disable_spd(void)
 {
 	outb(0x67, PM_IO_BASE + 0x37);
 }
 
-void mainboard_romstage_entry(void)
+void mainboard_enable_serial(void)
 {
 	winbond_enable_serial(SERIAL_DEV, CONFIG_TTYS0_BASE);
-	console_init();
-
-	enable_smbus();
-	enable_pm();
-
-	enable_spd();
-
-	sdram_initialize();
-
-	disable_spd();
-	cbmem_initialize_empty();
 }

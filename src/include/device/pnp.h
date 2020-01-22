@@ -34,7 +34,8 @@ extern struct device_operations pnp_ops;
 
 struct pnp_info {
 	struct device_operations *ops; /* LDN-specific ops override */
-	unsigned int function; /* Must be at least 16 bits (virtual LDNs)! */
+#define PNP_SKIP_FUNCTION 0xffff
+	u16 function; /* Must be at least 16 bits (virtual LDNs)! */
 	unsigned int flags;
 #define PNP_IO0  0x000001
 #define PNP_IO1  0x000002
@@ -66,13 +67,34 @@ struct resource *pnp_get_resource(struct device *dev, unsigned int index);
 void pnp_enable_devices(struct device *dev, struct device_operations *ops,
 			unsigned int functions, struct pnp_info *info);
 
+
 struct pnp_mode_ops {
 	void (*enter_conf_mode)(struct device *dev);
 	void (*exit_conf_mode)(struct device *dev);
+#if CONFIG(HAVE_ACPI_TABLES)
+	/*
+	 * Generates ASL code to enter/exit config mode.
+	 *
+	 * @param idx	The ACPI name of the SuperIO index port register. eg. 'INDX'.
+	 * @param data	The ACPI name of the SuperIO data port register. eg. 'DATA'.
+	 */
+	void (*ssdt_enter_conf_mode)(struct device *dev, const char *idx, const char *data);
+	void (*ssdt_exit_conf_mode)(struct device *dev, const char *idx, const char *data);
+#endif
 };
 void pnp_enter_conf_mode(struct device *dev);
 void pnp_exit_conf_mode(struct device *dev);
-
+#if CONFIG(HAVE_ACPI_TABLES)
+/*
+ * Generates ASL code to enter/exit config mode if supported.
+ * The calling code has to place this within an ASL MethodOP.
+ *
+ * @param idx	The ACPI name of the SuperIO index port register. eg. 'INDX'.
+ * @param data	The ACPI name of the SuperIO data port register. eg. 'DATA'.
+ */
+void pnp_ssdt_enter_conf_mode(struct device *dev, const char *idx, const char *data);
+void pnp_ssdt_exit_conf_mode(struct device *dev, const char *idx, const char *data);
+#endif
 /* PNP indexed I/O operations */
 
 /*

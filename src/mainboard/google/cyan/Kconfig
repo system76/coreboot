@@ -34,7 +34,7 @@ config DISPLAY_SPD_DATA
 
 config MAINBOARD_DIR
 	string
-	default google/cyan
+	default "google/cyan"
 
 config MAINBOARD_FAMILY
 	string
@@ -68,10 +68,6 @@ config MAINBOARD_PART_NUMBER
 	default "Terra" if BOARD_GOOGLE_TERRA
 	default "Ultima" if BOARD_GOOGLE_ULTIMA
 	default "Wizpig" if BOARD_GOOGLE_WIZPIG
-
-config MAINBOARD_VENDOR
-	string
-	default "Google"
 
 config DEVICETREE
 	string

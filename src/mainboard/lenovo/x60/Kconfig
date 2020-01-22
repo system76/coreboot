@@ -22,14 +22,13 @@ config BOARD_SPECIFIC_OPTIONS
 	select HAVE_ACPI_TABLES
 	select HAVE_ACPI_RESUME
 	select USE_OPTION_TABLE
-	select H8_DOCK_EARLY_INIT
 	select DRIVERS_LENOVO_WACOM
 	select I945_LVDS
 	select INTEL_GMA_HAVE_VBT
 
 config MAINBOARD_DIR
 	string
-	default lenovo/x60
+	default "lenovo/x60"
 
 config MAINBOARD_PART_NUMBER
 	string

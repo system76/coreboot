@@ -43,7 +43,7 @@
  * waiting for each device to become available, a single delay will be
  * executed.
  */
-const static struct stoneyridge_aoac aoac_devs[] = {
+static const struct stoneyridge_aoac aoac_devs[] = {
 	{ (FCH_AOAC_D3_CONTROL_UART0 + CONFIG_UART_FOR_CONSOLE * 2),
 		(FCH_AOAC_D3_STATE_UART0 + CONFIG_UART_FOR_CONSOLE * 2) },
 	{ FCH_AOAC_D3_CONTROL_AMBA, FCH_AOAC_D3_STATE_AMBA },
@@ -115,7 +115,7 @@ void SetFchMidParams(FCH_INTERFACE *params)
  * amd_pci_int_defs.h, just add the pair at the end of this table.
  * Order is not important.
  */
-const static struct irq_idx_name irq_association[] = {
+static const struct irq_idx_name irq_association[] = {
 	{ PIRQ_A,	"INTA#" },
 	{ PIRQ_B,	"INTB#" },
 	{ PIRQ_C,	"INTC#" },
@@ -399,7 +399,7 @@ void bootblock_fch_early_init(void)
 	lpc_enable_spi_prefetch();
 	sb_init_spi_base();
 	sb_disable_4dw_burst(); /* Must be disabled on CZ(ST) */
-	enable_acpimmio_decode();
+	enable_acpimmio_decode_pm04();
 	fch_smbus_init();
 	sb_enable_cf9_io();
 	setup_spread_spectrum(&reboot);
@@ -648,27 +648,3 @@ static void set_pci_irqs(void *unused)
  * on entry into BS_DEV_ENABLE.
  */
 BOOT_STATE_INIT_ENTRY(BS_DEV_ENABLE, BS_ON_ENTRY, set_pci_irqs, NULL);
-
-void save_uma_size(uint32_t size)
-{
-	biosram_write32(BIOSRAM_UMA_SIZE, size);
-}
-
-void save_uma_base(uint64_t base)
-{
-	biosram_write32(BIOSRAM_UMA_BASE, (uint32_t) base);
-	biosram_write32(BIOSRAM_UMA_BASE + 4, (uint32_t) (base >> 32));
-}
-
-uint32_t get_uma_size(void)
-{
-	return biosram_read32(BIOSRAM_UMA_SIZE);
-}
-
-uint64_t get_uma_base(void)
-{
-	uint64_t base;
-	base = biosram_read32(BIOSRAM_UMA_BASE);
-	base |= ((uint64_t)(biosram_read32(BIOSRAM_UMA_BASE + 4)) << 32);
-	return base;
-}

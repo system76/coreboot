@@ -13,7 +13,6 @@
  * GNU General Public License for more details.
  */
 
-#include <arch/cbfs.h>
 #include <assert.h>
 #include <cbfs.h>
 #include <cbmem.h>
@@ -33,7 +32,6 @@
 #include <soc/pei_wrapper.h>
 #include <soc/pm.h>
 #include <soc/romstage.h>
-#include <soc/smm.h>
 #include <soc/systemagent.h>
 
 /*

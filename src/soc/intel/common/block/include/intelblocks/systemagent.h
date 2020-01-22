@@ -1,7 +1,7 @@
 /*
  * This file is part of the coreboot project.
  *
- * Copyright 2017 Intel Corporation.
+ * Copyright 2017-2020 Intel Corporation.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@
 
 #include <device/device.h>
 #include <soc/iomap.h>
+#include <soc/nvs.h>
 #include <stddef.h>
 
 /* Device 0:0.0 PCI configuration space */
@@ -76,18 +77,14 @@ void enable_pam_region(void);
 void enable_power_aware_intr(void);
 /* API to get TOLUD base address */
 uintptr_t sa_get_tolud_base(void);
-/* API to get DSM size */
-size_t sa_get_dsm_size(void);
 /* API to get GSM base address */
 uintptr_t sa_get_gsm_base(void);
-/* API to get GSM size */
-size_t sa_get_gsm_size(void);
 /* API to get TSEG base address */
 uintptr_t sa_get_tseg_base(void);
 /* API to get TSEG size */
 size_t sa_get_tseg_size(void);
-/* API to get DPR size */
-size_t sa_get_dpr_size(void);
+/* Fill MMIO resource above 4GB into GNVS */
+void sa_fill_gnvs(global_nvs_t *gnvs);
 /*
  * SoC overrides
  *

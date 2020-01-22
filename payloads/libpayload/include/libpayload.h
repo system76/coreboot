@@ -85,6 +85,7 @@
 #define MAX(a, b) __CMP(a, b, >)
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
+#define BIT(x)	(1ul << (x))
 
 #define DIV_ROUND_UP(x, y) ({ \
 	typeof(x) _div_local_x = (x); \
@@ -187,6 +188,7 @@ unsigned char keyboard_get_scancode(void);
 int keyboard_getchar(void);
 int keyboard_set_layout(char *country);
 int keyboard_getmodifier(void);
+void initialize_keyboard_media_key_mapping_callback(int (*media_key_mapper)(char));
 
 enum KEYBOARD_MODIFIERS {
 	KB_MOD_SHIFT = (1 << 0),
@@ -311,6 +313,13 @@ void video_printf(int foreground, int background, enum video_printf_align align,
  */
 void cbmem_console_init(void);
 void cbmem_console_write(const void *buffer, size_t count);
+/**
+ * Take a snapshot of the CBMEM memory console. This function will allocate a
+ * range of memory. Callers must free the returned buffer by themselves.
+ *
+ * @return The allocated buffer on success, NULL on failure.
+ */
+char *cbmem_console_snapshot(void);
 /** @} */
 
 /* drivers/option.c */
@@ -457,7 +466,7 @@ void buffer_to_fifo32_prefix(void *buffer, u32 prefix, int prefsz, size_t size,
 static inline void buffer_to_fifo32(void *buffer, size_t size, void *fifo,
 				    int fifo_stride, int fifo_width)
 {
-	buffer_to_fifo32_prefix(buffer, size, 0, 0, fifo,
+	buffer_to_fifo32_prefix(buffer, 0, 0, size, fifo,
 				fifo_stride, fifo_width);
 }
 #endif

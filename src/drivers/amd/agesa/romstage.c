@@ -11,12 +11,11 @@
  * GNU General Public License for more details.
  */
 
+#include <amdblocks/biosram.h>
 #include <arch/acpi.h>
 #include <arch/cpu.h>
 #include <arch/romstage.h>
 #include <cbmem.h>
-#include <cpu/amd/car.h>
-#include <cpu/x86/bist.h>
 #include <console/console.h>
 #include <halt.h>
 #include <program_loading.h>
@@ -27,22 +26,7 @@
 #include <northbridge/amd/agesa/agesa_helper.h>
 #include <northbridge/amd/agesa/state_machine.h>
 
-#if !CONFIG(POSTCAR_STAGE)
-#error "Only POSTCAR_STAGE is supported."
-#endif
-#if HAS_LEGACY_WRAPPER
-#error "LEGACY_WRAPPER code not supported"
-#endif
-
-void asmlinkage early_all_cores(void)
-{
-	amd_initmmio();
-}
-
-void __weak platform_once(struct sysinfo *cb)
-{
-	board_BeforeAgesa(cb);
-}
+void __weak board_BeforeAgesa(struct sysinfo *cb) { }
 
 static void fill_sysinfo(struct sysinfo *cb)
 {
@@ -52,7 +36,12 @@ static void fill_sysinfo(struct sysinfo *cb)
 	agesa_set_interface(cb);
 }
 
-void *asmlinkage romstage_main(unsigned long bist)
+/* APs will enter directly here from bootblock, bypassing verstage
+ * and potential fallback / normal bootflow detection.
+ */
+static void ap_romstage_main(void);
+
+static void romstage_main(void)
 {
 	struct postcar_frame pcf;
 	struct sysinfo romstage_state;
@@ -62,12 +51,11 @@ void *asmlinkage romstage_main(unsigned long bist)
 
 	fill_sysinfo(cb);
 
-	if ((initial_apic_id == 0) && boot_cpu()) {
+	if (initial_apic_id == 0) {
 
-		timestamp_init(timestamp_get());
 		timestamp_add_now(TS_START_ROMSTAGE);
 
-		platform_once(cb);
+		board_BeforeAgesa(cb);
 
 		console_init();
 	}
@@ -75,8 +63,7 @@ void *asmlinkage romstage_main(unsigned long bist)
 	printk(BIOS_DEBUG, "APIC %02d: CPU Family_Model = %08x\n",
 		initial_apic_id, cpuid_eax(1));
 
-	/* Halt if there was a built in self test failure */
-	report_bist_failure(bist);
+	set_ap_entry_ptr(ap_romstage_main);
 
 	agesa_execute_state(cb, AMD_INIT_RESET);
 
@@ -110,5 +97,24 @@ void *asmlinkage romstage_main(unsigned long bist)
 
 	run_postcar_phase(&pcf);
 	/* We do not return. */
-	return NULL;
+}
+
+static void ap_romstage_main(void)
+{
+	struct sysinfo romstage_state;
+	struct sysinfo *cb = &romstage_state;
+
+	fill_sysinfo(cb);
+
+	agesa_execute_state(cb, AMD_INIT_RESET);
+
+	agesa_execute_state(cb, AMD_INIT_EARLY);
+
+	/* Not reached. */
+	halt();
+}
+
+asmlinkage void car_stage_entry(void)
+{
+	romstage_main();
 }

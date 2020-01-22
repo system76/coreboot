@@ -15,7 +15,9 @@
 
 config BOARD_GOOGLE_BASEBOARD_KAHLEE
 	bool
-	select SOC_AMD_STONEYRIDGE_FT4
+	select SOC_AMD_STONEYRIDGE
+	select AMD_APU_STONEYRIDGE
+	select AMD_APU_PKG_FT4
 	select ALWAYS_LOAD_OPROM
 	select ALWAYS_RUN_OPROM
 	select BOARD_ROMSIZE_KB_16384
@@ -50,7 +52,7 @@ if BOARD_GOOGLE_BASEBOARD_KAHLEE
 
 config MAINBOARD_DIR
 	string
-	default google/kahlee
+	default "google/kahlee"
 
 config VGA_BIOS_FILE
 	string

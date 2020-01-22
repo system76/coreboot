@@ -8,6 +8,7 @@ config BOARD_SPECIFIC_OPTIONS
 	select CHECK_SLFRCS_ON_RESUME
 	select SOUTHBRIDGE_INTEL_I82801GX
 	select SUPERIO_WINBOND_W83627THG
+	select SUPERIO_NUVOTON_COMMON_HWM # Nuvoton is a Winbond spin-off
 	select HAVE_ACPI_TABLES
 	select HAVE_PIRQ_TABLE
 	select HAVE_MP_TABLE
@@ -16,10 +17,11 @@ config BOARD_SPECIFIC_OPTIONS
 	select BOARD_ROMSIZE_KB_1024
 	select INTEL_INT15
 	select OVERRIDE_CLOCK_DISABLE
+	select BOOT_DEVICE_NOT_SPI_FLASH
 
 config MAINBOARD_DIR
 	string
-	default kontron/986lcd-m
+	default "kontron/986lcd-m"
 
 config MAINBOARD_PART_NUMBER
 	string

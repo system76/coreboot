@@ -49,29 +49,34 @@ be more frequent than was needed, so we scaled it back to twice a year.
 ## Checklist
 ### ~2 weeks prior to release
 - [ ] Announce upcoming release to mailing list, ask people to test and
-      to update release notes
+      to update release notes.
 
 ### ~1 week prior to release
 - [ ] Send reminder email to mailing list, ask for people to test,
-      and to update the release notes
-- [ ] Update the topic in the irc channel with the date of the upcoming
-      release
+      and to update the release notes.
+- [ ] Update the topic in the IRC channel with the date of the upcoming
+      release.
+- [ ] If there are any deprecations announced for the following release,
+      make sure that a list of currently affected boards and chipsets is
+      part of the release notes.
+- [ ] Finalize release notes (as much as possible), without specifying
+      release commit ids.
 
 ### Day of release
-- [ ] Update release notes, without specifying release commit ids
 - [ ] Select a commit ID to base the release upon, announce to IRC,
       ask for testing.
-- [ ] Test the commit selected for release
-- [ ] Run release script
-- [ ] Test the release from the actual release tarballs
-- [ ] Push signed Tag to repo
-- [ ] Announce that the release tag is done on IRC
-- [ ] Update release notes with actual commit id, push to repo
+- [ ] Test the commit selected for release.
+- [ ] Update release notes with actual commit id, push to repo.
+- [ ] Run release script.
+- [ ] Test the release from the actual release tarballs.
+- [ ] Push signed Tag to repo.
+- [ ] Announce that the release tag is done on IRC.
 - [ ] Upload release files to web server
-- [ ] Upload crossgcc sources to web server
-- [ ] Update download page to point to files, push to repo
+- [ ] Upload crossgcc sources to web server.
+- [ ] Update download page to point to files, push to repo.
 - [ ] Write and publish blog post with release notes.
-- [ ] Update the topic in the irc channel that the release is done.
+- [ ] Update the topic in the IRC channel that the release is done.
+- [ ] Announce the release to the mailing list.
 
 ## Pre-Release tasks
 Announce the upcoming release to the mailing list release 2 weeks ahead
@@ -82,9 +87,7 @@ release notes that are in the making and ask people to test the hardware
 they have to make sure it's working with the current master branch,
 from which the release will ultimately be derived from.
 
-People should also be encouraged to provide additions to the
-release notes, for example by putting them on some [collaborative
-editor](https://www.piratenpad.de).
+People should be encouraged to provide additions to the release notes.
 
 The final release notes will reside in coreboot's Documentation/releases
 directory, so asking for additions to that through the regular Gerrit
@@ -99,7 +102,7 @@ to have in the release.  The release was based on the final of those
 patches to be pulled in.
 
 When a release candidate has been selected, announce the commit ID to
-the #coreboot irc channel, and request that it get some testing, just
+the #coreboot IRC channel, and request that it get some testing, just
 to make sure that everything is sane.
 
 ## Generate the release

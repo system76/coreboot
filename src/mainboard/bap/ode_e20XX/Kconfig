@@ -14,13 +14,18 @@
 # GNU General Public License for more details.
 #
 
+config BOARD_ODE_E20XX
+	def_bool n
+
 if BOARD_ODE_E20XX
 
 config BOARD_SPECIFIC_OPTIONS
 	def_bool y
+	#select ROMCC_BOOTBLOCK
 	select CPU_AMD_AGESA_FAMILY16_KB
 	select NORTHBRIDGE_AMD_AGESA_FAMILY16_KB
 	select SOUTHBRIDGE_AMD_AGESA_YANGTZE
+	select DEFAULT_POST_ON_LPC
 	select HAVE_OPTION_TABLE
 	select HAVE_PIRQ_TABLE
 	select HAVE_MP_TABLE
@@ -31,7 +36,7 @@ config BOARD_SPECIFIC_OPTIONS
 
 config MAINBOARD_DIR
 	string
-	default bap/ode_e20XX
+	default "bap/ode_e20XX"
 
 config MAINBOARD_PART_NUMBER
 	string

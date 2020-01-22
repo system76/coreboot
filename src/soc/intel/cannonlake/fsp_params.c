@@ -13,6 +13,7 @@
  * GNU General Public License for more details.
  */
 
+#include <cbmem.h>
 #include <console/console.h>
 #include <device/device.h>
 #include <device/pci.h>
@@ -273,6 +274,9 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 		params->Usb2AfePehalfbit[i] = config->usb2_ports[i].pre_emp_bit;
 	}
 
+	if (config->PchUsb2PhySusPgDisable)
+		params->PchUsb2PhySusPgEnable = 0;
+
 	for (i = 0; i < ARRAY_SIZE(config->usb3_ports); i++) {
 		params->PortUsb30Enable[i] = config->usb3_ports[i].enable;
 		params->Usb3OverCurrentPin[i] = config->usb3_ports[i].ocpin;
@@ -482,4 +486,10 @@ const pci_devfn_t *soc_lpss_controllers_list(size_t *size)
 {
 	*size = ARRAY_SIZE(serial_io_dev);
 	return serial_io_dev;
+}
+
+/* Handle FSP logo params */
+const struct cbmem_entry *soc_load_logo(FSPS_UPD *supd)
+{
+	return fsp_load_logo(&supd->FspsConfig.LogoPtr, &supd->FspsConfig.LogoSize);
 }

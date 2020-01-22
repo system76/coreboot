@@ -8,6 +8,7 @@ config BOARD_GOOGLE_BASEBOARD_OCTOPUS
 	select DRIVERS_I2C_DA7219
 	select DRIVERS_I2C_GENERIC
 	select DRIVERS_I2C_HID
+	select DRIVERS_I2C_SX9310
 	select DRIVERS_SPI_ACPI
 	select DRIVERS_USB_ACPI
 	select EC_GOOGLE_CHROMEEC
@@ -21,6 +22,7 @@ config BOARD_GOOGLE_BASEBOARD_OCTOPUS
 	select MAINBOARD_HAS_SPI_TPM_CR50
 	select MAINBOARD_HAS_TPM2
 	select GOOGLE_SMBIOS_MAINBOARD_VERSION
+	select NO_FMAP_CACHE
 
 if BOARD_GOOGLE_BASEBOARD_OCTOPUS
 
@@ -46,7 +48,7 @@ config CHROMEOS
 
 config MAINBOARD_DIR
 	string
-	default google/octopus
+	default "google/octopus"
 
 config VARIANT_DIR
 	string
@@ -61,6 +63,8 @@ config VARIANT_DIR
 	default "octopus" if BOARD_GOOGLE_OCTOPUS
 	default "garg" if BOARD_GOOGLE_GARG
 	default "dood" if BOARD_GOOGLE_DOOD
+	default "lick" if BOARD_GOOGLE_LICK
+	default "foob" if BOARD_GOOGLE_FOOB
 
 config DEVICETREE
 	string
@@ -83,6 +87,8 @@ config MAINBOARD_PART_NUMBER
 	default "Octopus" if BOARD_GOOGLE_OCTOPUS
 	default "Garg" if BOARD_GOOGLE_GARG
 	default "Dood" if BOARD_GOOGLE_DOOD
+	default "Lick" if BOARD_GOOGLE_LICK
+	default "Foob" if BOARD_GOOGLE_FOOB
 
 config MAINBOARD_FAMILY
 	string

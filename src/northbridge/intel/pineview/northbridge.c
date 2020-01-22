@@ -16,11 +16,11 @@
 
 #include <cbmem.h>
 #include <console/console.h>
+#include <device/pci_def.h>
 #include <device/pci_ops.h>
 #include <stdint.h>
 #include <device/device.h>
 #include <device/pci.h>
-#include <stdlib.h>
 #include <boot/tables.h>
 #include <arch/acpi.h>
 #include <northbridge/intel/pineview/pineview.h>

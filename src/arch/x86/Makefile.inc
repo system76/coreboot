@@ -99,6 +99,7 @@ all-y += boot.c
 all-y += memcpy.c
 all-y += memset.c
 all-y += cpu_common.c
+all-y += post.c
 
 endif
 
@@ -112,11 +113,9 @@ bootblock-$(CONFIG_IDT_IN_EVERY_STAGE) += exception.c
 bootblock-$(CONFIG_IDT_IN_EVERY_STAGE) += idt.S
 bootblock-$(CONFIG_COLLECT_TIMESTAMPS_TSC) += timestamp.c
 bootblock-$(CONFIG_X86_TOP4G_BOOTMEDIA_MAP) += mmap_boot.c
-
+bootblock-$(CONFIG_BOOTBLOCK_NORMAL) += bootblock_normal.c
 bootblock-y += id.S
 $(call src-to-obj,bootblock,$(dir)/id.S): $(obj)/build.h
-
-ifeq ($(CONFIG_C_ENVIRONMENT_BOOTBLOCK),y)
 
 bootblock-y += bootblock_crt0.S
 
@@ -126,58 +125,7 @@ else
 $(eval $(call early_x86_stage,bootblock,elf64-x86-64))
 endif
 
-bootblock-$(CONFIG_ARCH_BOOTBLOCK_X86_32) += walkcbfs.S
-
-else # !C_ENVIRONMENT_BOOTBLOCK
-
-# x86-specific linker flags
-ifeq ($(CONFIG_ARCH_BOOTBLOCK_X86_32),y)
-LDFLAGS_bootblock += -m elf_i386 --oformat elf32-i386
-else
-LDFLAGS_bootblock += -m elf_x86_64 --oformat elf64-x86-64
-endif
-
-# Add the assembly file that pulls in the rest of the dependencies in
-# the right order. Make sure the auto generated bootblock.inc is a proper
-# dependency. Make the same true for the linker sript.
-bootblock-y += bootblock_romcc.S
-bootblock-y += walkcbfs.S
-$(call src-to-obj,bootblock,$(dir)/bootblock_romcc.S): $(objgenerated)/bootblock.inc
-
-bootblock-y += bootblock.ld
-$(call src-to-obj,bootblock,$(dir)/bootblock.ld): $(objgenerated)/bootblock.ld
-
-bootblock_romccflags := -mcpu=i386 -O2 -D__PRE_RAM__ -D__BOOTBLOCK__
-ifeq ($(CONFIG_SSE),y)
-bootblock_romccflags := -mcpu=k7 -mno-mmx -msse -O2 -D__PRE_RAM__ -D__BOOTBLOCK__
-endif
-
-# This is a hack in case there are no per chipset linker files.
-$(objgenerated)/empty: build-dirs
-	touch $@
-
-$(objgenerated)/bootblock.ld: $$(filter-out $(call src-to-obj,bootblock,src/arch/x86/bootblock.ld), $$(filter %.ld,$$(bootblock-objs))) $(objgenerated)/empty
-	@printf "    GEN        $(subst $(obj)/,,$(@))\n"
-	cat $^ >> $@.tmp
-	mv $@.tmp $@
-
--include $(objgenerated)/bootblock.inc.d
-$(objgenerated)/bootblock.inc: $(src)/arch/x86/$(subst ",,$(CONFIG_BOOTBLOCK_SOURCE)) $(objutil)/romcc/romcc $(OPTION_TABLE_H) $(KCONFIG_AUTOHEADER)
-# The open quote in the subst messes with syntax highlighting. Fix it - ")
-	@printf "    ROMCC      $(subst $(obj)/,,$(@))\n"
-	$(CC_bootblock) -D__ROMCC__ -D__PRE_RAM__ -D__BOOTBLOCK__ $(CPPFLAGS_bootblock) -MM -MT$(objgenerated)/bootblock.inc \
-		$< > $(objgenerated)/bootblock.inc.d
-	$(ROMCC) -c -S $(bootblock_romccflags) -I. $(CPPFLAGS_bootblock) $< -o $@
-
-# bootblock.ld is part of $(bootblock-objs)
-$(objcbfs)/bootblock.debug: $$(bootblock-objs)
-	@printf "    LINK       $(subst $(obj)/,,$(@))\n"
-	$(LD_bootblock) $(LDFLAGS_bootblock) -o $@ -L$(obj) \
-		$(filter-out %.ld,$(bootblock-objs)) \
-		-T $(call src-to-obj,bootblock,src/arch/x86/bootblock.ld)
-
-endif # C_ENVIRONMENT_BOOTBLOCK
-
+bootblock-$(CONFIG_MICROCODE_UPDATE_PRE_RAM) += walkcbfs.S
 
 endif # CONFIG_ARCH_BOOTBLOCK_X86_32 / CONFIG_ARCH_BOOTBLOCK_X86_64
 
@@ -221,17 +169,14 @@ ifeq ($(CONFIG_ARCH_ROMSTAGE_X86_32)$(CONFIG_ARCH_ROMSTAGE_X86_64),y)
 romstage-$(CONFIG_HAVE_ACPI_RESUME) += acpi_s3.c
 # gdt_init.S is included by entry32.inc when romstage is the first C
 # environment.
-romstage-$(CONFIG_C_ENVIRONMENT_BOOTBLOCK) += gdt_init.S
+romstage-y += gdt_init.S
 romstage-y += cbmem.c
-romstage-y += cbfs_and_run.c
-romstage-$(CONFIG_EARLY_EBDA_INIT) += ebda.c
 romstage-$(CONFIG_IDT_IN_EVERY_STAGE) += exception.c
 romstage-$(CONFIG_IDT_IN_EVERY_STAGE) += idt.S
 romstage-y += memmove.c
 romstage-$(CONFIG_X86_TOP4G_BOOTMEDIA_MAP) += mmap_boot.c
 romstage-y += postcar_loader.c
 romstage-$(CONFIG_COLLECT_TIMESTAMPS_TSC) += timestamp.c
-romstage-$(CONFIG_ARCH_ROMSTAGE_X86_32) += walkcbfs.S
 
 romstage-srcs += $(wildcard $(src)/mainboard/$(MAINBOARDDIR)/romstage.c)
 romstage-libs ?=
@@ -258,8 +203,6 @@ postcar-generic-ccopts += -D__POSTCAR__
 
 postcar-$(CONFIG_HAVE_ACPI_RESUME) += acpi_s3.c
 postcar-y += gdt_init.S
-postcar-y += cbfs_and_run.c
-postcar-$(CONFIG_EARLY_EBDA_INIT) += ebda.c
 postcar-$(CONFIG_IDT_IN_EVERY_STAGE) += exception.c
 postcar-$(CONFIG_IDT_IN_EVERY_STAGE) += idt.S
 postcar-y += exit_car.S
@@ -347,7 +290,9 @@ ifneq ($(wildcard src/mainboard/$(MAINBOARDDIR)/reset.c),)
 ramstage-srcs += src/mainboard/$(MAINBOARDDIR)/reset.c
 endif
 ifeq ($(CONFIG_HAVE_ACPI_TABLES),y)
+ifneq ($(wildcard src/mainboard/$(MAINBOARDDIR)/acpi_tables.c),)
 ramstage-srcs += src/mainboard/$(MAINBOARDDIR)/acpi_tables.c
+endif
 $(eval $(call asl_template,dsdt))
 ifneq ($(wildcard src/mainboard/$(MAINBOARDDIR)/fadt.c),)
 ramstage-srcs += src/mainboard/$(MAINBOARDDIR)/fadt.c

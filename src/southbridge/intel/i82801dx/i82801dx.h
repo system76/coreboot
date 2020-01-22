@@ -35,7 +35,7 @@
 #include "chip.h"
 
 void i82801dx_enable(struct device *dev);
-void enable_smbus(void);
+void i82801dx_early_init(void);
 int smbus_read_byte(unsigned int device, unsigned int address);
 void aseg_smm_lock(void);
 

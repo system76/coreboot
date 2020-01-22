@@ -30,6 +30,7 @@
 #include <symbols.h>
 #include <timestamp.h>
 #include <fit_payload.h>
+#include <security/vboot/vboot_common.h>
 
 /* Only can represent up to 1 byte less than size_t. */
 const struct mem_region_device addrspace_32bit =
@@ -41,8 +42,6 @@ int prog_locate(struct prog *prog)
 
 	if (prog_locate_hook(prog))
 		return -1;
-
-	cbfs_prepare_program_locate();
 
 	if (cbfs_boot_locate(&file, prog_name(prog), NULL))
 		return -1;
@@ -59,8 +58,15 @@ void run_romstage(void)
 	struct prog romstage =
 		PROG_INIT(PROG_ROMSTAGE, CONFIG_CBFS_PREFIX "/romstage");
 
-	if (prog_locate(&romstage))
-		goto fail;
+	vboot_run_logic();
+
+	if (CONFIG(ARCH_X86) && CONFIG(BOOTBLOCK_NORMAL)) {
+		if (legacy_romstage_selector(&romstage))
+			goto fail;
+	} else {
+		if (prog_locate(&romstage))
+			goto fail;
+	}
 
 	timestamp_add_now(TS_START_COPYROM);
 
@@ -68,6 +74,8 @@ void run_romstage(void)
 		goto fail;
 
 	timestamp_add_now(TS_END_COPYROM);
+
+	console_time_report();
 
 	prog_run(&romstage);
 
@@ -79,14 +87,6 @@ fail:
 }
 
 int __weak prog_locate_hook(struct prog *prog) { return 0; }
-
-static void ramstage_cache_invalid(void)
-{
-	printk(BIOS_ERR, "ramstage cache invalid.\n");
-	if (CONFIG(RESET_ON_INVALID_RAMSTAGE_CACHE)) {
-		board_reset();
-	}
-}
 
 static void run_ramstage_from_resume(struct prog *ramstage)
 {
@@ -102,7 +102,9 @@ static void run_ramstage_from_resume(struct prog *ramstage)
 		printk(BIOS_DEBUG, "Jumping to image.\n");
 		prog_run(ramstage);
 	}
-	ramstage_cache_invalid();
+
+	printk(BIOS_ERR, "ramstage cache invalid.\n");
+	board_reset();
 }
 
 static int load_relocatable_ramstage(struct prog *ramstage)
@@ -135,6 +137,8 @@ void run_ramstage(void)
 	    !CONFIG(NO_STAGE_CACHE))
 		run_ramstage_from_resume(&ramstage);
 
+	vboot_run_logic();
+
 	if (prog_locate(&ramstage))
 		goto fail;
 
@@ -149,6 +153,8 @@ void run_ramstage(void)
 	stage_cache_add(STAGE_RAMSTAGE, &ramstage);
 
 	timestamp_add_now(TS_END_COPYRAM);
+
+	console_time_report();
 
 	/* This overrides the arg fetched from the relocatable module */
 	prog_set_arg(&ramstage, cbmem_top());

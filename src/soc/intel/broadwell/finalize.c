@@ -13,20 +13,19 @@
  * GNU General Public License for more details.
  */
 
-#include <arch/io.h>
 #include <bootstate.h>
 #include <console/console.h>
 #include <console/post_codes.h>
 #include <cpu/x86/smm.h>
 #include <reg_script.h>
 #include <spi-generic.h>
-#include <stdlib.h>
 #include <soc/pci_devs.h>
 #include <soc/lpc.h>
 #include <soc/me.h>
 #include <soc/rcba.h>
 #include <soc/spi.h>
 #include <soc/systemagent.h>
+#include <southbridge/intel/common/spi.h>
 
 const struct reg_script system_agent_finalize_script[] = {
 	REG_PCI_OR16(0x50, 1 << 0),				/* GGC */
@@ -57,16 +56,6 @@ const struct reg_script system_agent_finalize_script[] = {
 
 const struct reg_script pch_finalize_script[] = {
 #if !CONFIG(SPI_CONSOLE)
-	/* Set SPI opcode menu */
-	REG_MMIO_WRITE16(RCBA_BASE_ADDRESS + SPIBAR_OFFSET + SPIBAR_PREOP,
-			 SPI_OPPREFIX),
-	REG_MMIO_WRITE16(RCBA_BASE_ADDRESS + SPIBAR_OFFSET + SPIBAR_OPTYPE,
-			 SPI_OPTYPE),
-	REG_MMIO_WRITE32(RCBA_BASE_ADDRESS + SPIBAR_OFFSET +
-			 SPIBAR_OPMENU_LOWER, SPI_OPMENU_LOWER),
-	REG_MMIO_WRITE32(RCBA_BASE_ADDRESS + SPIBAR_OFFSET +
-			 SPIBAR_OPMENU_UPPER, SPI_OPMENU_UPPER),
-
 	/* Lock SPIBAR */
 	REG_MMIO_OR32(RCBA_BASE_ADDRESS + SPIBAR_OFFSET + SPIBAR_HSFS,
 		      SPIBAR_HSFS_FLOCKDN),
@@ -101,6 +90,8 @@ static void broadwell_finalize(void *unused)
 	printk(BIOS_DEBUG, "Finalizing chipset.\n");
 
 	reg_script_run_on_dev(sa_dev, system_agent_finalize_script);
+
+	spi_finalize_ops();
 	reg_script_run_on_dev(PCH_DEV_LPC, pch_finalize_script);
 
 	/* Lock */
@@ -111,12 +102,6 @@ static void broadwell_finalize(void *unused)
 	MCHBAR32(0x6034) = MCHBAR32(0x6034);
 	MCHBAR32(0x6008) = MCHBAR32(0x6008);
 	RCBA32(0x21a4) = RCBA32(0x21a4);
-
-	/* Re-init SPI after lockdown */
-	spi_init();
-
-	printk(BIOS_DEBUG, "Finalizing SMM.\n");
-	outb(APM_CNT_FINALIZE, APM_CNT);
 
 	/* Indicate finalize step with post code */
 	post_code(POST_OS_BOOT);

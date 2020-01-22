@@ -1,4 +1,4 @@
-if BOARD_HP_COMPAQ_8200_ELITE_SFF_PC
+if BOARD_HP_Z220_SFF_WORKSTATION
 
 config BOARD_SPECIFIC_OPTIONS
 	def_bool y
@@ -32,7 +32,7 @@ config VBOOT_VBNV_OFFSET
 
 config MAINBOARD_DIR
 	string
-	default hp/z220_sff_workstation
+	default "hp/z220_sff_workstation"
 
 config MAINBOARD_PART_NUMBER
 	string

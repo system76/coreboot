@@ -23,15 +23,11 @@ config BOARD_SPECIFIC_OPTIONS
 
 config MAINBOARD_DIR
 	string
-	default intel/harcuvar
+	default "intel/harcuvar"
 
 config MAINBOARD_PART_NUMBER
 	string
 	default "Harcuvar CRB"
-
-config MAINBOARD_VENDOR
-	string
-	default "Intel"
 
 config ENABLE_FSP_MEMORY_DOWN
 	bool "Enable Memory Down"

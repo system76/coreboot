@@ -21,6 +21,7 @@
 #include <commonlib/helpers.h>
 #include <program_loading.h>
 #include <timestamp.h>
+#include <security/vboot/vboot_common.h>
 
 /* If we do not have a constrained _car_stack region size, use the
    following as a guideline for acceptable stack usage. */
@@ -46,10 +47,13 @@ static void romstage_main(unsigned long bist)
 		printk(BIOS_DEBUG, "Romstage stack size limited to 0x%x!\n",
 			size);
 
-	stack_base = (u32 *) (_car_stack_end - size);
+	stack_base = (u32 *) (_ecar_stack - size);
 
 	for (i = 0; i < num_guards; i++)
 		stack_base[i] = stack_guard;
+
+	if (CONFIG(VBOOT_EARLY_EC_SYNC))
+		vboot_sync_ec();
 
 	mainboard_romstage_entry();
 
@@ -66,19 +70,6 @@ static void romstage_main(unsigned long bist)
 	prepare_and_run_postcar(&early_mtrrs);
 	/* We do not return here. */
 }
-
-#if !CONFIG(C_ENVIRONMENT_BOOTBLOCK)
-/* This wrapper enables easy transition towards C_ENVIRONMENT_BOOTBLOCK,
- * keeping changes in cache_as_ram.S easy to manage.
- */
-asmlinkage void bootblock_c_entry_bist(uint64_t base_timestamp, uint32_t bist)
-{
-	timestamp_init(base_timestamp);
-	timestamp_add_now(TS_START_ROMSTAGE);
-	romstage_main(bist);
-}
-#endif
-
 
 /* We don't carry BIST from bootblock in a good location to read from.
  * Any error should have been reported in bootblock already.

@@ -163,6 +163,11 @@ M:	Patrick Rudolph <siro@das-labor.org>
 S:	Maintained
 F:	src/mainboard/lenovo/
 
+LENOVO G505S MAINBOARD
+M:	Mike Banon <mikebdp2@gmail.com>
+S:	Maintained
+F:	src/mainboard/lenovo/g505s/
+
 APPLE MAINBOARDS
 M:	Evgeny Zinoviev <me@ch1p.io>
 S:	Maintained
@@ -217,18 +222,10 @@ F:	src/mainboard/google/parrot/
 F:	src/mainboard/google/slippy/
 F:	src/mainboard/google/stout/
 
-OCP MAINBOARDS
-M:	Philipp Deppenwiese <zaolin.daisuki@gmail.com>
-M:	Patrick Rudolph <patrick.rudolph@9elements.com>
-S:	Supported
-F:	src/mainboard/ocp/wedge100s/
-F:	src/mainboard/ocp/monolake/
-
 OPENCELLULAR MAINBOARDS
 M:	Philipp Deppenwiese <zaolin.daisuki@gmail.com>
 M:	Patrick Rudolph <patrick.rudolph@9elements.com>
 S:	Supported
-F:	src/mainboard/opencellular/rotundu/
 F:	src/mainboard/opencellular/elgon/
 
 PURISM MAINBOARDS
@@ -242,30 +239,6 @@ S:	Maintained
 F:	src/mainboard/samsung/lumpy/
 F:	src/mainboard/samsung/stumpy/
 
-INTEL MINNOWBOARD MAX MAINBOARD
-M:	Huang Jin <huang.jin@intel.com>
-M:	York Yang <york.yang@intel.com>
-S:	Supported
-F:	src/mainboard/intel/minnowmax/
-
-INTEL FSP BAYTRAIL CHIP & CRBs
-M:	Huang Jin <huang.jin@intel.com>
-M:	York Yang <york.yang@intel.com>
-M:	Philipp Deppenwiese <zaolin.daisuki@gmail.com>
-S:	Supported
-F:	src/soc/intel/fsp_baytrail/
-F:	src/vendorcode/intel/fsp1_0/baytrail/
-F:	src/mainboard/intel/bakersport_fsp/
-F:	src/mainboard/intel/bayleybay_fsp/
-
-INTEL FSP BROADWELL-DE SOC & CRB
-M:	York Yang <york.yang@intel.com>
-M:	Philipp Deppenwiese <zaolin.daisuki@gmail.com>
-S:	Supported
-F:	src/soc/intel/fsp_broadwell_de/
-F:	src/vendorcode/intel/fsp1_0/broadwell_de/
-F:	src/mainboard/intel/camelbackmountain_fsp/
-
 INTEL FSP DENVERTON-NS SOC & HARCUVAR CRB
 M:	Vanessa Eusebio <vanessa.f.eusebio@intel.com>
 M:	David Guckian <david.guckian@intel.com>
@@ -273,24 +246,6 @@ S:	Odd Fixes
 F:	src/mainboard/intel/harcuvar/
 F:	src/soc/intel/denverton_ns/
 F:	src/vendorcode/intel/fsp/fsp2_0/denverton_ns/
-
-FSP 1.0 RANGELEY & CRB
-M:	David Guckian <david.guckian@intel.com>
-M:	Fei Wang <fei.z.wang@intel.com>
-S:	Supported
-F:	src/cpu/intel/fsp_model_406dx/
-F:	src/northbridge/intel/fsp_rangeley/
-F:	src/southbridge/intel/fsp_rangeley/
-F:	src/vendorcode/intel/fsp1_0/rangeley/
-F:	src/mainboard/intel/mohonpeak/
-
-INTEL FSP 1.0
-M:	Huang Jin <huang.jin@intel.com>
-M:	York Yang <york.yang@intel.com>
-M:	Philipp Deppenwiese <zaolin.daisuki@gmail.com>
-S:	Supported
-F:	src/drivers/intel/fsp1_0/
-F:	src/vendorcode/intel/fsp1_0/broadwell_de/
 
 INTEL FSP 1.1
 M:	Lee Leahy <leroy.p.leahy@intel.com>
@@ -332,21 +287,10 @@ M:	Tristan Corrick <tristan@corrick.kiwi>
 S:	Maintained
 F:	src/mainboard/asrock/h81m-hds/
 
-ASUS KFSN4-DRE & KFSN4-DRE_K8 MAINBOARDS
-M:	Timothy Pearson <tpearson@raptorengineeringinc.com>
-S:	Supported
-F:	src/mainboard/asus/kfsn4-dre/
-F:	src/mainboard/asus/kfsn4-dre_k8/
-
-ASUS KCMA-D8 MAINBOARD
-M:	Timothy Pearson <tpearson@raptorengineeringinc.com>
-S:	Supported
-F:	src/mainboard/asus/kcma-d8/
-
-ASUS KGPE-D16 MAINBOARD
-M:	Timothy Pearson <tpearson@raptorengineeringinc.com>
-S:	Supported
-F:	src/mainboard/asus/kgpe-d16/
+ASUS AM1I-A MAINBOARD
+M:	Mike Banon <mikebdp2@gmail.com>
+S:	Maintained
+F:	src/mainboard/asus/am1i-a/
 
 ASUS MAXIMUS IV GENE-Z MAINBOARD
 M:	Tristan Corrick <tristan@corrick.kiwi>
@@ -383,8 +327,6 @@ SIEMENS MC_xxxx MAINBOARDS
 M:	Werner Zeh <werner.zeh@siemens.com>
 S:	Maintained
 F:	src/mainboard/siemens/mc_apl1/
-F:	src/mainboard/siemens/mc_bdx1/
-F:	src/mainboard/siemens/mc_tcu3/
 
 SUPERMICRO X10SLM+-F MAINBOARD
 M:	Tristan Corrick <tristan@corrick.kiwi>
@@ -402,29 +344,17 @@ M:	Wim Vervoorn <wvervoorn@eltan.com>
 S:	Maintained
 F:	src/mainboard/facebook/fbg1701/
 
+FACEBOOK MONOLITH MAINBOARD
+M:	Frans Hendriks <fhendriks@eltan.com>
+M:	Wim Vervoorn <wvervoorn@eltan.com>
+S:	Maintained
+F:	src/mainboard/facebook/monolith/
+
 PORTWELL PQ-M107 MAINBOARD
 M:	Frans Hendriks <fhendriks@eltan.com>
 M:	Wim Vervoorn <wvervoorn@eltan.com>
 S:	Maintained
 F:	src/mainboard/portwell/m107/
-
-AMD FAMILY10H & FAMILY15H (NON-AGESA) CPUS & NORTHBRIDGE
-M:	Timothy Pearson <tpearson@raptorengineeringinc.com>
-S:	Supported
-F:	src/cpu/amd/family_10h-family_15h/
-F:	src/northbridge/amd/amdfam10/
-F:	src/northbridge/amd/amdmct/
-F:	src/northbridge/amd/amdht/
-
-AMD SB700 (NON-CIMX) SOUTHBRIDGE
-M:	Timothy Pearson <tpearson@raptorengineeringinc.com>
-S:	Supported
-F:	src/southbridge/amd/sb700/
-
-AMD SR5650 SOUTHBRIDGE
-M:	Timothy Pearson <tpearson@raptorengineeringinc.com>
-S:	Supported
-F:	src/southbridge/amd/sr5650/
 
 ASPEED AST2050 DRIVER & COMMON CODE
 M:	Timothy Pearson <tpearson@raptorengineeringinc.com>
@@ -477,12 +407,6 @@ F:	util/arm_boot_tools/
 F:	util/exynos/
 F:	util/ipqheader/
 
-MIPS ARCHITECTURE
-F:	src/arch/mips/
-F:	src/cpu/mips/
-F:	src/soc/imgtec/
-F:	util/bimgtool/
-
 X86 ARCHITECTURE
 F:	src/arch/x86/
 F:	src/cpu/x86/
@@ -507,11 +431,6 @@ F:	src/cpu/amd/
 F:	src/northbridge/amd/
 F:	src/southbridge/amd/
 F:	src/include/cpu/amd/
-
-VIA SUPPORT
-F:	src/cpu/via/
-F:	src/northbridge/via/
-F:	src/southbridge/via/
 
 LINT SCRIPTS
 M:	Patrick Georgi <patrick@georgi-clan.de>

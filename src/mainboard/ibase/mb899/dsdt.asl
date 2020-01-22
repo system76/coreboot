@@ -23,18 +23,12 @@ DefinitionBlock(
 	0x20090419	// OEM revision
 )
 {
-	// Some generic macros
 	#include "acpi/platform.asl"
 
 	// global NVS and variables
 	#include <southbridge/intel/i82801gx/acpi/globalnvs.asl>
 
 	#include <southbridge/intel/common/acpi/platform.asl>
-
-	// General Purpose Events
-	//#include "acpi/gpe.asl"
-
-	//#include "acpi/thermal.asl"
 
 	#include <cpu/intel/speedstep/acpi/cpu.asl>
 
@@ -46,6 +40,5 @@ DefinitionBlock(
 		}
 	}
 
-	/* Chipset specific sleep states */
 	#include <southbridge/intel/common/acpi/sleepstates.asl>
 }

@@ -28,6 +28,13 @@ config SPI_FLASH
 	  Select this option if your chipset driver needs to store certain
 	  data in the SPI flash.
 
+config SPI_SDCARD
+	bool
+	default n
+	help
+	  Select this option if your chipset driver needs to store certain
+	  data in the SPI sdcard.
+
 if SPI_FLASH
 
 # Keep at 0 because lots of boards assume this default.
@@ -54,9 +61,14 @@ config BOOT_DEVICE_SPI_FLASH_RW_NOMMAP_EARLY
 	  Include the common implementation in all stages, including the
 	  early ones.
 
+config SPI_FLASH_DONT_INCLUDE_ALL_DRIVERS
+	bool
+	default y if COMMON_CBFS_SPI_WRAPPER
+	default n
+
 config SPI_FLASH_INCLUDE_ALL_DRIVERS
 	bool
-	default n if COMMON_CBFS_SPI_WRAPPER
+	default n if SPI_FLASH_DONT_INCLUDE_ALL_DRIVERS
 	default y
 
 config SPI_FLASH_SMM
@@ -141,15 +153,6 @@ config SPI_FLASH_WINBOND
 	help
 	  Select this option if your chipset driver needs to store certain
 	  data in the SPI flash and your SPI flash is made by Winbond.
-
-config SPI_FLASH_FAST_READ_DUAL_OUTPUT_3B
-	bool
-	default n
-	depends on SPI_FLASH
-	help
-	  Select this option if your SPI flash supports the fast read dual-
-	  output command (opcode 0x3b) where the opcode and address are sent
-	  to the chip on MOSI and data is received on both MOSI and MISO.
 
 config SPI_FLASH_HAS_VOLATILE_GROUP
 	bool

@@ -17,7 +17,9 @@ if BOARD_AMD_GARDENIA
 
 config BOARD_SPECIFIC_OPTIONS
 	def_bool y
-	select SOC_AMD_STONEYRIDGE_FP4
+	select SOC_AMD_STONEYRIDGE
+	select AMD_APU_STONEYRIDGE
+	select AMD_APU_PKG_FP4
 	select HAVE_PIRQ_TABLE
 	select HAVE_MP_TABLE
 	select HAVE_ACPI_TABLES
@@ -26,7 +28,7 @@ config BOARD_SPECIFIC_OPTIONS
 
 config MAINBOARD_DIR
 	string
-	default amd/gardenia
+	default "amd/gardenia"
 
 config MAINBOARD_PART_NUMBER
 	string

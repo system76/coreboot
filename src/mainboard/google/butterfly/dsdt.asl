@@ -26,7 +26,6 @@ DefinitionBlock(
 {
 	#include <southbridge/intel/common/acpi/platform.asl>
 
-	// Some generic macros
 	#include "acpi/platform.asl"
 	#include "acpi/mainboard.asl"
 
@@ -35,9 +34,6 @@ DefinitionBlock(
 
 	// global NVS and variables
 	#include <southbridge/intel/bd82x6x/acpi/globalnvs.asl>
-
-	// General Purpose Events
-	//#include "acpi/gpe.asl"
 
 	#include <cpu/intel/common/acpi/cpu.asl>
 
@@ -53,6 +49,5 @@ DefinitionBlock(
 
 	#include <vendorcode/google/chromeos/acpi/chromeos.asl>
 
-	/* Chipset specific sleep states */
 	#include <southbridge/intel/common/acpi/sleepstates.asl>
 }

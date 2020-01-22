@@ -62,10 +62,6 @@ config VGA_BIOS_ID
 	string
 	default "8086,0106"
 
-config BOOTBLOCK_NORTHBRIDGE_INIT
-	string
-	default "northbridge/intel/sandybridge/bootblock.c"
-
 config MMCONF_BASE_ADDRESS
 	hex
 	default 0xf0000000
@@ -76,6 +72,12 @@ config DCACHE_RAM_BASE
 	hex
 	default 0xfefe0000
 
+config DCACHE_BSP_STACK_SIZE
+	hex
+	default 0x10000
+	help
+	  The amount of BSP stack anticipated in bootblock and
+	  other stages.
 
 if USE_NATIVE_RAMINIT
 

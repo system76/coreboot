@@ -36,7 +36,7 @@ config VBOOT
 
 config MAINBOARD_DIR
 	string
-	default google/daisy
+	default "google/daisy"
 
 config MAINBOARD_PART_NUMBER
 	string
@@ -57,5 +57,9 @@ config EC_GOOGLE_CHROMEEC_I2C_BUS
 config UART_FOR_CONSOLE
 	int
 	default 3
+
+config PMIC_BUS
+	int
+	default 0
 
 endif # BOARD_GOOGLE_DAISY

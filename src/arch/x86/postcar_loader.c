@@ -19,10 +19,12 @@
 #include <cpu/x86/mtrr.h>
 #include <cpu/x86/smm.h>
 #include <program_loading.h>
+#include <reset.h>
 #include <rmodule.h>
 #include <romstage_handoff.h>
 #include <stage_cache.h>
 #include <timestamp.h>
+#include <security/vboot/vboot_common.h>
 
 static inline void stack_push(struct postcar_frame *pcf, uint32_t val)
 {
@@ -171,6 +173,8 @@ static void load_postcar_cbfs(struct prog *prog, struct postcar_frame *pcf)
 		.prog = prog,
 	};
 
+	vboot_run_logic();
+
 	if (prog_locate(prog))
 		die_with_post_code(POST_INVALID_ROM,
 				   "Failed to locate after CAR program.\n");
@@ -205,6 +209,12 @@ void postcar_enable_tseg_cache(struct postcar_frame *pcf)
 				MTRR_TYPE_WRBACK);
 }
 
+static void postcar_cache_invalid(void)
+{
+	printk(BIOS_ERR, "postcar cache invalid.\n");
+	board_reset();
+}
+
 void run_postcar_phase(struct postcar_frame *pcf)
 {
 	struct prog prog =
@@ -219,11 +229,16 @@ void run_postcar_phase(struct postcar_frame *pcf)
 		   parameters between S3 resume and normal boot. On the
 		   platforms where the values are the same it's a nop. */
 		finalize_load(prog.arg, pcf->stack);
+
+		if (prog_entry(&prog) == NULL)
+			postcar_cache_invalid();
 	} else
 		load_postcar_cbfs(&prog, pcf);
 
 	/* As postcar exist, it's end of romstage here */
 	timestamp_add_now(TS_END_ROMSTAGE);
+
+	console_time_report();
 
 	prog_set_arg(&prog, cbmem_top());
 

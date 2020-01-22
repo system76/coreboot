@@ -14,11 +14,6 @@
 ## GNU General Public License for more details.
 ##
 
-config FSP_VENDORCODE_HEADER_PATH
-	string
-	default "fsp1_0/baytrail" if SOC_INTEL_FSP_BAYTRAIL
-	default "fsp1_0/rangeley" if CPU_INTEL_FSP_MODEL_406DX
-
 config UEFI_2_4_BINDING
 	def_bool n
 
@@ -28,6 +23,7 @@ config UDK_2015_BINDING
 config UDK_2017_BINDING
 	def_bool n
 
+if (UEFI_2_4_BINDING || UDK_2015_BINDING || UDK_2017_BINDING)
 config UDK_2013_VERSION
 	int
 	default 2013
@@ -47,3 +43,4 @@ config UDK_VERSION
 	default UDK_2013_VERSION
 	help
 	  UEFI Development Kit version for Platform
+endif # {UEFI,UDK}_BINDING

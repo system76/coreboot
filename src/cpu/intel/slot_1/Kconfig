@@ -24,7 +24,8 @@ config SLOT_SPECIFIC_OPTIONS # dummy
 	select CPU_INTEL_MODEL_6BX
 	select CPU_INTEL_MODEL_6XX
 	select NO_SMM
-	select NO_MONOTONIC_TIMER
+	select UDELAY_TSC
+	select TSC_MONOTONIC_TIMER
 	select UNKNOWN_TSC_RATE
 
 config DCACHE_RAM_BASE
@@ -34,5 +35,13 @@ config DCACHE_RAM_BASE
 config DCACHE_RAM_SIZE
 	hex
 	default 0x02000
+
+config DCACHE_BSP_STACK_SIZE
+	hex
+	default 0x1000
+
+config C_ENV_BOOTBLOCK_SIZE
+	hex
+	default 0x2000
 
 endif

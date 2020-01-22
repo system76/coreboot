@@ -13,7 +13,6 @@
 
 config CPU_AMD_AGESA
 	bool
-	default y if CPU_AMD_AGESA_FAMILY12
 	default y if CPU_AMD_AGESA_FAMILY14
 	default y if CPU_AMD_AGESA_FAMILY15_TN
 	default y if CPU_AMD_AGESA_FAMILY16_KB
@@ -29,6 +28,7 @@ config CPU_AMD_AGESA
 	select SPI_FLASH if HAVE_ACPI_RESUME
 	select SMM_ASEG
 	select NO_FIXED_XIP_ROM_SIZE
+	select SSE2
 
 if CPU_AMD_AGESA
 
@@ -48,6 +48,14 @@ config DCACHE_RAM_SIZE
 	hex
 	default 0x10000
 
+config DCACHE_BSP_STACK_SIZE
+	hex
+	default 0x4000
+
+config C_ENV_BOOTBLOCK_SIZE
+	hex
+	default 0x8000
+
 config ENABLE_MRC_CACHE
 	bool "Use cached memory configuration"
 	default n
@@ -62,11 +70,10 @@ config S3_DATA_POS
 
 config S3_DATA_SIZE
 	int
-	default 32768
+	default 8192
 
 endif # CPU_AMD_AGESA
 
-source src/cpu/amd/agesa/family12/Kconfig
-source src/cpu/amd/agesa/family14/Kconfig
-source src/cpu/amd/agesa/family15tn/Kconfig
-source src/cpu/amd/agesa/family16kb/Kconfig
+source "src/cpu/amd/agesa/family14/Kconfig"
+source "src/cpu/amd/agesa/family15tn/Kconfig"
+source "src/cpu/amd/agesa/family16kb/Kconfig"

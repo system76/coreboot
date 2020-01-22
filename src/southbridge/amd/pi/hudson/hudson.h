@@ -117,6 +117,10 @@
 #define   LPC_ALT_WIDEIO1_ENABLE	BIT(2)
 #define   LPC_ALT_WIDEIO0_ENABLE	BIT(0)
 
+#define LPC_TRUSTED_PLATFORM_MODULE	0x7c
+#define   TPM_12_EN			BIT(0)
+#define   TPM_LEGACY_EN			BIT(2)
+
 #define LPC_WIDEIO2_GENERIC_PORT	0x90
 
 #define SPI_CNTRL0			0x00
@@ -169,11 +173,6 @@ static inline int hudson_ide_enable(void)
 	return (CONFIG_HUDSON_SATA_MODE == 0) || (CONFIG_HUDSON_SATA_MODE == 3);
 }
 
-void pm_write8(u8 reg, u8 value);
-u8 pm_read8(u8 reg);
-void pm_write16(u8 reg, u16 value);
-u16 pm_read16(u16 reg);
-
 void hudson_lpc_port80(void);
 void hudson_lpc_decode(void);
 void hudson_pci_port80(void);
@@ -185,8 +184,6 @@ void hudson_set_readspeed(u16 norm, u16 fast);
 void lpc_wideio_512_window(uint16_t base);
 void lpc_wideio_16_window(uint16_t base);
 void hudson_tpm_decode_spi(void);
-int s3_save_nvram_early(u32 dword, int size, int  nvram_pos);
-int s3_load_nvram_early(int size, u32 *old_dword, int nvram_pos);
 void configure_hudson_uart(void);
 
 void hudson_enable(struct device *dev);

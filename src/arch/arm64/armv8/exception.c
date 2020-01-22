@@ -34,9 +34,10 @@
 #include <arch/exception.h>
 #include <arch/transition.h>
 #include <console/console.h>
+#include <console/uart.h>
 #include <arch/lib_helpers.h>
 
-uint8_t exception_stack[0x200] __attribute__((aligned(16)));
+uint8_t exception_stack[2*KiB] __attribute__((aligned(16)));
 
 static const char *exception_names[NUM_EXC_VIDS] = {
 	[EXC_VID_CUR_SP_EL0_SYNC] = "_sync_sp_el0",
@@ -131,8 +132,13 @@ int exception_handler_unregister(uint64_t vid, struct exception_handler *h)
 
 static void print_exception_info(struct exc_state *state, uint64_t idx)
 {
-	if (idx < NUM_EXC_VIDS)
-		printk(BIOS_DEBUG, "exception %s\n", exception_names[idx]);
+	/* Poor man's sign of life in case printk() is shot. */
+	__uart_tx_byte('\r');
+	__uart_tx_byte('\n');
+	__uart_tx_byte('!');
+
+	printk(BIOS_DEBUG, "\nexception %s\n",
+	       idx < NUM_EXC_VIDS ? exception_names[idx] : "_unknown");
 
 	print_regs(state);
 	/* Few words below SP in case we need state from a returned function. */

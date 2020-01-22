@@ -41,7 +41,6 @@
 #include <soc/pci_devs.h>
 #include <soc/pm.h>
 #include <soc/ramstage.h>
-#include <soc/smm.h>
 #include <soc/systemagent.h>
 #include <timer.h>
 
@@ -231,7 +230,6 @@ void set_power_limits(u8 power_limit_1_time)
 
 	/* Use nominal TDP values for CPUs with configurable TDP */
 	if (cpu_config_tdp_levels()) {
-		msr = rdmsr(MSR_CONFIG_TDP_NOMINAL);
 		limit.hi = 0;
 		limit.lo = cpu_get_tdp_nominal_ratio();
 		wrmsr(MSR_TURBO_ACTIVATION_RATIO, limit);
@@ -442,8 +440,6 @@ static void cpu_lock_aesni(void)
 /* All CPUs including BSP will run the following function. */
 void soc_core_init(struct device *cpu)
 {
-	config_t *conf = config_of_soc();
-
 	/* Clear out pending MCEs */
 	/* TODO(adurbin): This should only be done on a cold boot. Also, some
 	 * of these banks are core vs package scope. For now every CPU clears
@@ -479,7 +475,7 @@ void soc_core_init(struct device *cpu)
 	enable_turbo();
 
 	/* Configure Core PRMRR for SGX. */
-	if (conf->sgx_enable)
+	if (CONFIG(SOC_INTEL_COMMON_BLOCK_SGX_ENABLE))
 		prmrr_core_configure();
 }
 
@@ -502,7 +498,6 @@ static void fc_lock_configure(void *unused)
 static void post_mp_init(void)
 {
 	int ret = 0;
-	config_t *conf = config_of_soc();
 
 	/* Set Max Ratio */
 	cpu_set_max_ratio();
@@ -519,7 +514,7 @@ static void post_mp_init(void)
 
 	ret |= mp_run_on_all_cpus(vmx_configure, NULL);
 
-	if (conf->sgx_enable)
+	if (CONFIG(SOC_INTEL_COMMON_BLOCK_SGX_ENABLE))
 		ret |= mp_run_on_all_cpus(sgx_configure, NULL);
 
 	ret |= mp_run_on_all_cpus(fc_lock_configure, NULL);

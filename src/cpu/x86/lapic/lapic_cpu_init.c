@@ -28,6 +28,7 @@
 #include <smp/spinlock.h>
 #include <cpu/cpu.h>
 #include <cpu/intel/speedstep.h>
+#include <smp/node.h>
 #include <stdlib.h>
 #include <thread.h>
 
@@ -142,11 +143,7 @@ static int lapic_start_cpu(unsigned long apicid)
 		}
 		return 0;
 	}
-#if !CONFIG(CPU_AMD_MODEL_10XXX) \
-	&& !CONFIG(CPU_INTEL_MODEL_206AX) \
-	&& !CONFIG(CPU_INTEL_MODEL_2065X)
 	mdelay(10);
-#endif
 
 	printk(BIOS_SPEW, "Deasserting INIT.\n");
 

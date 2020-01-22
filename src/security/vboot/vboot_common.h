@@ -20,12 +20,6 @@
 #include <vboot_api.h>
 #include <vboot_struct.h>
 
-/* Locate vboot area by name. Returns 0 on success and -1 on error. */
-int vboot_named_region_device(const char *name, struct region_device *rdev);
-
-/* Like vboot_named_region_device() but provides a RW region device. */
-int vboot_named_region_device_rw(const char *name, struct region_device *rdev);
-
 /*
  * Function to check if there is a request to enter recovery mode. Returns
  * reason code if request to enter recovery mode is present, otherwise 0.
@@ -76,12 +70,25 @@ int vboot_developer_mode_enabled(void);
 int vboot_recovery_mode_enabled(void);
 int vboot_recovery_mode_memory_retrain(void);
 int vboot_can_enable_udc(void);
+void vboot_run_logic(void);
+int vboot_locate_cbfs(struct region_device *rdev);
 #else /* !CONFIG_VBOOT */
 static inline int vboot_developer_mode_enabled(void) { return 0; }
 static inline int vboot_recovery_mode_enabled(void) { return 0; }
 static inline int vboot_recovery_mode_memory_retrain(void) { return 0; }
 /* If VBOOT is not enabled, we are okay enabling USB device controller (UDC). */
 static inline int vboot_can_enable_udc(void) { return 1; }
+static inline void vboot_run_logic(void) {}
+static inline int vboot_locate_cbfs(struct region_device *rdev) { return -1; }
 #endif
+
+void vboot_save_nvdata_only(struct vb2_context *ctx);
+void vboot_save_data(struct vb2_context *ctx);
+
+/*
+ * The API for performing EC software sync.  Does not support
+ * "slow" updates or Auxiliary FW sync.
+ */
+void vboot_sync_ec(void);
 
 #endif /* __VBOOT_VBOOT_COMMON_H__ */

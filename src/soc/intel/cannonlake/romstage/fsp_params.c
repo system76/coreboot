@@ -17,6 +17,7 @@
 #include <cpu/x86/msr.h>
 #include <console/console.h>
 #include <fsp/util.h>
+#include <intelblocks/cpulib.h>
 #include <intelblocks/pmclib.h>
 #include <soc/iomap.h>
 #include <soc/msr.h>
@@ -48,7 +49,7 @@ static void soc_memory_init_params(FSP_M_CONFIG *m_cfg, const config_t *config)
 			mask |= (1 << i);
 	}
 	m_cfg->PcieRpEnableMask = mask;
-	m_cfg->PrmrrSize = config->PrmrrSize;
+	m_cfg->PrmrrSize = get_prmrr_size();
 	m_cfg->EnableC6Dram = config->enable_c6dram;
 #if CONFIG(SOC_INTEL_COMETLAKE)
 	m_cfg->SerialIoUartDebugControllerNumber = CONFIG_UART_FOR_CONSOLE;
@@ -73,10 +74,14 @@ static void soc_memory_init_params(FSP_M_CONFIG *m_cfg, const config_t *config)
 	m_cfg->SkipMpInit = !CONFIG_USE_INTEL_FSP_MP_INIT;
 #endif
 
-	/* Set CpuRatio to match existing MSR value */
-	msr_t flex_ratio;
-	flex_ratio = rdmsr(MSR_FLEX_RATIO);
-	m_cfg->CpuRatio = (flex_ratio.lo >> 8) & 0xff;
+	if (config->cpu_ratio_override) {
+		m_cfg->CpuRatio = config->cpu_ratio_override;
+	} else {
+		/* Set CpuRatio to match existing MSR value */
+		msr_t flex_ratio;
+		flex_ratio = rdmsr(MSR_FLEX_RATIO);
+		m_cfg->CpuRatio = (flex_ratio.lo >> 8) & 0xff;
+	}
 
 	/* If ISH is enabled, enable ISH elements */
 	if (!dev)
@@ -96,6 +101,28 @@ static void soc_memory_init_params(FSP_M_CONFIG *m_cfg, const config_t *config)
 	dev = pcidev_path_on_root(SA_DEVFN_IPU);
 	if (dev)
 		m_cfg->SaIpuEnable = dev->enabled;
+
+	/* SATA Gen3 strength */
+	for (i = 0; i < SOC_INTEL_CML_SATA_DEV_MAX; i++) {
+		if (config->sata_port[i].RxGen3EqBoostMagEnable) {
+			m_cfg->PchSataHsioRxGen3EqBoostMagEnable[i] =
+				config->sata_port[i].RxGen3EqBoostMagEnable;
+			m_cfg->PchSataHsioRxGen3EqBoostMag[i] =
+				config->sata_port[i].RxGen3EqBoostMag;
+		}
+		if (config->sata_port[i].TxGen3DownscaleAmpEnable) {
+			m_cfg->PchSataHsioTxGen3DownscaleAmpEnable[i] =
+				config->sata_port[i].TxGen3DownscaleAmpEnable;
+			m_cfg->PchSataHsioTxGen3DownscaleAmp[i] =
+				config->sata_port[i].TxGen3DownscaleAmp;
+		}
+		if (config->sata_port[i].TxGen3DeEmphEnable) {
+			m_cfg->PchSataHsioTxGen3DeEmphEnable[i] =
+				config->sata_port[i].TxGen3DeEmphEnable;
+			m_cfg->PchSataHsioTxGen3DeEmph[i] =
+				config->sata_port[i].TxGen3DeEmph;
+		}
+	}
 }
 
 void platform_fsp_memory_init_params_cb(FSPM_UPD *mupd, uint32_t version)

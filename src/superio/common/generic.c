@@ -21,6 +21,9 @@ static void generic_set_resources(struct device *dev)
 {
 	struct resource *res;
 
+	if (dev->link_list)
+		assign_resources(dev->link_list);
+
 	for (res = dev->resource_list; res; res = res->next) {
 		if (!(res->flags & IORESOURCE_ASSIGNED))
 			continue;
@@ -153,6 +156,146 @@ static void generic_ssdt(struct device *dev)
 	acpigen_write_indexfield("INDX", "DATA", i, ARRAY_SIZE(i), FIELD_BYTEACC |
 				 FIELD_NOLOCK | FIELD_PRESERVE);
 
+	const char *mutex = "MTX0";
+
+	acpigen_write_mutex(mutex, 0);
+	/* Backup LDN */
+	acpigen_write_name_integer("BLDN", 0);
+
+	/* Acquire mutex - Enter config mode */
+	acpigen_write_method("AMTX", 0);
+	{
+		acpigen_write_acquire(mutex, 0xffff);
+
+		/* Pick one of the children as the generic SIO doesn't have config mode */
+		if (dev->link_list && dev->link_list->children)
+			pnp_ssdt_enter_conf_mode(dev->link_list->children, "^INDX", "^DATA");
+
+		/* Backup LDN */
+		acpigen_write_store();
+		acpigen_emit_namestring("^LDN");
+		acpigen_emit_namestring("^BLDN");
+	}
+	acpigen_pop_len(); /* Method */
+
+	/* Release mutex - Exit config mode */
+	acpigen_write_method("RMTX", 0);
+	{
+		/* Restore LDN */
+		acpigen_write_store();
+		acpigen_emit_namestring("^BLDN");
+		acpigen_emit_namestring("^LDN");
+
+		/* Pick one of the children as the generic SIO doesn't have config mode */
+		if (dev->link_list && dev->link_list->children)
+			pnp_ssdt_exit_conf_mode(dev->link_list->children, "^INDX", "^DATA");
+
+		acpigen_write_release(mutex);
+	}
+	acpigen_pop_len(); /* Method */
+
+	/* Select a LDN */
+	acpigen_write_method("SLDN", 1);
+	{
+		/* Local0 = Arg0 & 0xff */
+		acpigen_emit_byte(AND_OP);
+		acpigen_write_integer(0xff);
+		acpigen_emit_byte(ARG0_OP);
+		acpigen_emit_byte(LOCAL0_OP);
+
+		/* LDN = LOCAL0_OP */
+		acpigen_write_store();
+		acpigen_emit_byte(LOCAL0_OP);
+		acpigen_emit_namestring("^LDN");
+	}
+	acpigen_pop_len(); /* Method */
+
+	/* Disable a LDN/VLDN */
+	acpigen_write_method("DLDN", 1);
+	{
+		/* AMTX() */
+		acpigen_emit_namestring("AMTX");
+
+		/* SLDN (Local0) */
+		acpigen_emit_namestring("SLDN");
+		acpigen_emit_byte(ARG0_OP);
+
+		/* Local0 = Arg0 >> 8 */
+		acpigen_emit_byte(SHIFT_RIGHT_OP);
+		acpigen_emit_byte(ARG0_OP);
+		acpigen_write_integer(8);
+		acpigen_emit_byte(LOCAL0_OP);
+
+		/* Local0 = Local0 & 0x7 */
+		acpigen_emit_byte(AND_OP);
+		acpigen_write_integer(0x7);
+		acpigen_emit_byte(LOCAL0_OP);
+		acpigen_emit_byte(LOCAL0_OP);
+
+		for (int j = 0; j < 8; j++) {
+			char act[6] = "^ACT0";
+			act[4] += j;
+
+			/* If (Local0 == j) { */
+			acpigen_write_if_lequal_op_int(LOCAL0_OP, j);
+
+			/* ACT[j] = 0 */
+			acpigen_write_store();
+			acpigen_emit_byte(ZERO_OP);
+			acpigen_emit_namestring(act);
+
+			acpigen_pop_len(); /* } */
+		}
+
+		/* RMTX() */
+		acpigen_emit_namestring("RMTX");
+	}
+	acpigen_pop_len(); /* Method */
+
+	/* Query LDN enable state. Returns 1 if LDN/VLDN is enabled. */
+	acpigen_write_method("QLDN", 1);
+	{
+		acpigen_emit_namestring("AMTX");
+
+		/* SLDN (Local0) */
+		acpigen_emit_namestring("SLDN");
+		acpigen_emit_byte(ARG0_OP);
+
+		/* Local0 = Arg0 >> 8 */
+		acpigen_emit_byte(SHIFT_RIGHT_OP);
+		acpigen_emit_byte(ARG0_OP);
+		acpigen_write_integer(8);
+		acpigen_emit_byte(LOCAL0_OP);
+
+		/* Local0 = Local0 & 0x7 */
+		acpigen_emit_byte(AND_OP);
+		acpigen_write_integer(0x7);
+		acpigen_emit_byte(LOCAL0_OP);
+		acpigen_emit_byte(LOCAL0_OP);
+
+		for (int j = 0; j < 8; j++) {
+			char act[6] = "^ACT0";
+			act[4] += j;
+			/* If (Local0 == j) { */
+			acpigen_write_if_lequal_op_int(LOCAL0_OP, j);
+
+			/* Local1 = ACT[j] */
+			acpigen_write_store();
+			acpigen_emit_namestring(act);
+			acpigen_emit_byte(LOCAL1_OP);
+
+			acpigen_pop_len(); /* } */
+		}
+
+		/* RMTX() */
+		acpigen_emit_namestring("RMTX");
+
+		/* Return (Local1) */
+		acpigen_emit_byte(RETURN_OP);
+		acpigen_emit_byte(LOCAL1_OP);
+	}
+	acpigen_pop_len(); /* Method */
+
 	acpigen_pop_len(); /* Device */
 	acpigen_pop_len(); /* Scope */
 }
@@ -167,6 +310,7 @@ static struct device_operations ops = {
 	.read_resources   = generic_read_resources,
 	.set_resources    = generic_set_resources,
 	.enable_resources = DEVICE_NOOP,
+	.scan_bus	  = scan_static_bus,
 #if CONFIG(HAVE_ACPI_TABLES)
 	.acpi_fill_ssdt_generator = generic_ssdt,
 	.acpi_name = generic_acpi_name,
@@ -182,11 +326,6 @@ static void enable_dev(struct device *dev)
 	else
 		dev->ops = &ops;
 
-	/*
-	 * Need to call enable_dev() on the devices "behind" the Generic Super I/O.
-	 * coreboot's generic allocator doesn't expect them behind PnP devices.
-	 */
-	enable_static_devices(dev);
 }
 
 struct chip_operations superio_common_ops = {

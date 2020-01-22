@@ -22,6 +22,7 @@
 #include <device/pci.h>
 #include <device/pci_ids.h>
 #include <device/pci_ops.h>
+#include <option.h>
 #include <pc80/mc146818rtc.h>
 #include <pc80/isa-dma.h>
 #include <arch/io.h>
@@ -304,7 +305,7 @@ static void lpc_init(struct device *dev)
 	/* Don't allow evil boot loaders, kernels, or
 	 * userspace applications to deceive us:
 	 */
-	if (CONFIG(HAVE_SMI_HANDLER))
+	if (CONFIG(HAVE_SMI_HANDLER) && !CONFIG(PARALLEL_MP))
 		aseg_smm_lock();
 }
 

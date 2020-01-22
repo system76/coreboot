@@ -13,7 +13,10 @@ subdirs-y += ../microcode
 subdirs-y += ../hyperthreading
 subdirs-y += ../speedstep
 
-cpu_incs-y += $(src)/cpu/intel/car/p4-netburst/cache_as_ram.S
+bootblock-y += ../car/p4-netburst/cache_as_ram.S
+bootblock-y += ../car/bootblock.c
+bootblock-y += ../../x86/early_reset.S
+
 postcar-y += ../car/p4-netburst/exit_car.S
 
 romstage-y += ../car/romstage.c

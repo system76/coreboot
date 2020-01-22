@@ -13,13 +13,13 @@
  * GNU General Public License for more details.
  */
 
-#include <arch/io.h>
 #include <device/device.h>
 #include <device/path.h>
 #include <device/smbus.h>
 #include <device/pci.h>
 #include <device/pci_ids.h>
 #include <soc/smbus.h>
+#include <device/smbus_host.h>
 #include "smbuslib.h"
 
 static int lsmbus_read_byte(struct device *dev, u8 address)
@@ -30,7 +30,7 @@ static int lsmbus_read_byte(struct device *dev, u8 address)
 	device = dev->path.i2c.device;
 	pbus = get_pbus_smbus(dev);
 	res = find_resource(pbus->dev, PCI_BASE_ADDRESS_4);
-	return smbus_read8(res->base, device, address);
+	return do_smbus_read_byte(res->base, device, address);
 }
 
 static int lsmbus_write_byte(struct device *dev, u8 address, u8 data)
@@ -42,7 +42,7 @@ static int lsmbus_write_byte(struct device *dev, u8 address, u8 data)
 	device = dev->path.i2c.device;
 	pbus = get_pbus_smbus(dev);
 	res = find_resource(pbus->dev, PCI_BASE_ADDRESS_4);
-	return smbus_write8(res->base, device, address, data);
+	return do_smbus_write_byte(res->base, device, address, data);
 }
 
 static struct smbus_bus_operations lops_smbus_bus = {
@@ -61,7 +61,7 @@ static void pch_smbus_init(struct device *dev)
 	/* Set Receive Slave Address */
 	res = find_resource(dev, PCI_BASE_ADDRESS_4);
 	if (res)
-		outb(SMBUS_SLAVE_ADDR, res->base + SMB_RCV_SLVA);
+		smbus_set_slave_addr(res->base, SMBUS_SLAVE_ADDR);
 }
 
 static void smbus_read_resources(struct device *dev)
@@ -92,9 +92,13 @@ static const unsigned short pci_device_ids[] = {
 	PCI_DEVICE_ID_INTEL_SPT_LP_SMBUS,
 	PCI_DEVICE_ID_INTEL_SPT_H_SMBUS,
 	PCI_DEVICE_ID_INTEL_LWB_SMBUS_SUPER,
-	PCI_DEVICE_ID_INTEL_KBP_H_LWB_SMBUS,
+	PCI_DEVICE_ID_INTEL_LWB_SMBUS,
 	PCI_DEVICE_ID_INTEL_ICP_LP_SMBUS,
 	PCI_DEVICE_ID_INTEL_CMP_SMBUS,
+	PCI_DEVICE_ID_INTEL_CMP_H_SMBUS,
+	PCI_DEVICE_ID_INTEL_TGP_LP_SMBUS,
+	PCI_DEVICE_ID_INTEL_JSP_PRE_PROD_SMBUS,
+	PCI_DEVICE_ID_INTEL_MCC_SMBUS,
 	0
 };
 

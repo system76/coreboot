@@ -59,6 +59,10 @@ struct spi_flash_ops {
 			const void *buf);
 	int (*erase)(const struct spi_flash *flash, u32 offset, size_t len);
 	int (*status)(const struct spi_flash *flash, u8 *reg);
+};
+
+/* Current code assumes all callbacks are supplied in this object. */
+struct spi_flash_protection_ops {
 	/*
 	 * Returns 1 if the whole region is software write protected.
 	 * Hardware write protection mechanism aren't accounted.
@@ -66,7 +70,7 @@ struct spi_flash_ops {
 	 * register for example, 0 should be returned.
 	 * Returns 0 on success.
 	 */
-	int (*get_write_protection)(const struct spi_flash *flash,
+	int (*get_write)(const struct spi_flash *flash,
 				    const struct region *region);
 	/*
 	 * Enable the status register write protection, if supported on the
@@ -80,12 +84,14 @@ struct spi_flash_ops {
 	 * @return 0 on success
 	 */
 	int
-	(*set_write_protection)(const struct spi_flash *flash,
+	(*set_write)(const struct spi_flash *flash,
 				const struct region *region,
 				const bool non_volatile,
 				const enum spi_flash_status_reg_lockdown mode);
 
 };
+
+struct spi_flash_part_id;
 
 struct spi_flash {
 	struct spi_slave spi;
@@ -104,8 +110,12 @@ struct spi_flash {
 	u32 page_size;
 	u8 erase_cmd;
 	u8 status_cmd;
+	u8 pp_cmd; /* Page program command. */
+	u8 wren_cmd; /* Write Enable command. */
 	const struct spi_flash_ops *ops;
-	const void *driver_private;
+	/* If !NULL all protection callbacks exist. */
+	const struct spi_flash_protection_ops *prot_ops;
+	const struct spi_flash_part_id *part;
 };
 
 void lb_spi_flash(struct lb_header *header);

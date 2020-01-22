@@ -22,7 +22,6 @@
 #define SMB_BASE		0x20
 #define HOSTC			0x40
 #define  HST_EN			(1 << 0)
-#define SMB_RCV_SLVA		0x09
 
 /* SMBus I/O bits. */
 #define SMBHSTSTAT		0x0
@@ -39,10 +38,5 @@
 
 #define SMBUS_TIMEOUT		(10 * 1000 * 100)
 #define SMBUS_SLAVE_ADDR	0x24
-
-int do_smbus_read_byte(unsigned int smbus_base, unsigned int device,
-		       unsigned int address);
-int do_smbus_write_byte(unsigned int smbus_base, unsigned int device,
-			unsigned int address, unsigned int data);
 
 #endif

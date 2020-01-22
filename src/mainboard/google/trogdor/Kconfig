@@ -25,11 +25,7 @@ config VBOOT
 
 config MAINBOARD_DIR
 	string
-	default google/trogdor
-
-config MAINBOARD_VENDOR
-	string
-	default "Google"
+	default "google/trogdor"
 
 config DRIVER_TPM_SPI_BUS
 	hex

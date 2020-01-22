@@ -9,15 +9,11 @@ config BOARD_SPECIFIC_OPTIONS
 
 config MAINBOARD_DIR
 	string
-	default intel/apollolake_rvp
+	default "intel/apollolake_rvp"
 
 config MAINBOARD_PART_NUMBER
 	string
 	default "Apollolake RVP"
-
-config MAINBOARD_VENDOR
-	string
-	default "Intel"
 
 config UART_FOR_CONSOLE
 	default 2

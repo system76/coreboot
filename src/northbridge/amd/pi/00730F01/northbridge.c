@@ -23,13 +23,11 @@
 #include <device/pci.h>
 #include <device/pci_ids.h>
 #include <device/hypertransport.h>
-#include <stdlib.h>
 #include <string.h>
 #include <lib.h>
 #include <cpu/cpu.h>
 #include <Porting.h>
 #include <AGESA.h>
-#include <FieldAccessors.h>
 #include <Topology.h>
 #include <cpu/x86/lapic.h>
 #include <cpu/amd/msr.h>
@@ -37,10 +35,6 @@
 #include <arch/acpigen.h>
 #include <northbridge/amd/pi/nb_common.h>
 #include <northbridge/amd/agesa/agesa_helper.h>
-#if CONFIG(BINARYPI_LEGACY_WRAPPER)
-#include <northbridge/amd/pi/agesawrapper.h>
-#include <northbridge/amd/pi/agesawrapper_call.h>
-#endif
 
 #define MAX_NODE_NUMS MAX_NODES
 
@@ -165,7 +159,7 @@ static void set_vga_enable_reg(u32 nodeid, u32 linkn)
 
 /**
  * @return
- *  @retval 2  resoure does not exist, usable
+ *  @retval 2  resource does not exist, usable
  *  @retval 0  resource exists, not usable
  *  @retval 1  resource exist, resource has been allocated before
  */
@@ -836,13 +830,6 @@ static void domain_read_resources(struct device *dev)
 
 static void domain_enable_resources(struct device *dev)
 {
-#if CONFIG(BINARYPI_LEGACY_WRAPPER)
-	/* Must be called after PCI enumeration and resource allocation */
-	if (!acpi_is_wakeup_s3())
-		AGESAWRAPPER(amdinitmid);
-
-	printk(BIOS_DEBUG, "  ader - leaving domain_enable_resources.\n");
-#endif
 }
 
 #if CONFIG_HW_MEM_HOLE_SIZEK != 0
@@ -882,7 +869,7 @@ static struct hw_mem_hole_info get_hw_mem_hole_info(void)
 			base_k = ((resource_t)(d.base & 0x1fffff00)) <<9;
 			if (base_k > 4 *1024 * 1024) break; // don't need to go to check
 			if (limitk_pri != base_k) { // we find the hole
-				mem_hole.hole_startk = (unsigned int)limitk_pri; // must beblow 4G
+				mem_hole.hole_startk = (unsigned int)limitk_pri; // must be below 4G
 				mem_hole.node_id = i;
 				break; //only one hole
 			}
@@ -1031,21 +1018,12 @@ static void cpu_bus_scan(struct device *dev)
 	int siblings = 0;
 	unsigned int family;
 	u32 modules = 0;
-	VOID* modules_ptr = &modules;
-	BUILD_OPT_CFG* options = NULL;
 	int ioapic_count = 0;
 
-	// TODO Remove the printk's.
-	printk(BIOS_SPEW, "MullinsPI Debug: Grabbing the AMD Topology Information.\n");
-	AmdGetValue(AMD_GLOBAL_USER_OPTIONS, (VOID**)&options, sizeof(options));
-	AmdGetValue(AMD_GLOBAL_NUM_MODULES, &modules_ptr, sizeof(modules));
-	modules = *(u32*)modules_ptr;
-	ASSERT(modules > 0);
-	ASSERT(options);
-	ioapic_count = (int)options->CfgPlatNumIoApics;
-	ASSERT(ioapic_count > 0);
-	printk(BIOS_SPEW, "MullinsPI Debug: AMD Topology Number of Modules (@0x%p) is %d\n", modules_ptr, modules);
-	printk(BIOS_SPEW, "MullinsPI Debug: AMD Topology Number of IOAPICs (@0x%p) is %d\n", options, (int)options->CfgPlatNumIoApics);
+	/* For binaryPI there is no multiprocessor configuration, the number of
+	 * modules will always be 1. */
+	modules = 1;
+	ioapic_count = CONFIG_NUM_OF_IOAPICS;
 
 	dev_mc = pcidev_on_root(DEV_CDB, 0);
 	if (!dev_mc) {
@@ -1119,7 +1097,7 @@ static void cpu_bus_scan(struct device *dev)
 			u32 lapicid_start = 0;
 
 			/*
-			 * APIC ID calucation is tightly coupled with AGESA v5 code.
+			 * APIC ID calculation is tightly coupled with AGESA v5 code.
 			 * This calculation MUST match the assignment calculation done
 			 * in LocalApicInitializationAtEarly() function.
 			 * And reference GetLocalApicIdForCore()

@@ -16,12 +16,16 @@
 
 #include <arch/io.h>
 #include <device/pci_ops.h>
+#include <device/smbus_host.h>
 #include "i82801ix.h"
 #include "chip.h"
 
 void i82801ix_early_init(void)
 {
 	const pci_devfn_t d31f0 = PCI_DEV(0, 0x1f, 0);
+
+	if (ENV_ROMSTAGE)
+		enable_smbus();
 
 	/* Set up RCBA. */
 	pci_write_config32(d31f0, RCBA, (uintptr_t)DEFAULT_RCBA | 1);
@@ -76,6 +80,8 @@ void i82801ix_lpc_decode(void)
 	 * - 0x378-0x37f and 0x778-0x77f LPT
 	 * - 0x2f8-0x2ff COMB
 	 * - 0x3f8-0x3ff COMA
+	 * - 0x208-0x20f GAMEH
+	 * - 0x200-0x207 GAMEL
 	 */
 	pci_write_config16(d31f0, D31F0_LPC_IODEC, 0x0010);
 	pci_write_config16(d31f0, D31F0_LPC_EN, 0x3f0f);

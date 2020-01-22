@@ -18,10 +18,10 @@
 #include <bootmode.h>
 #include <cf9_reset.h>
 #include <string.h>
+#include <device/device.h>
 #include <device/pci_ops.h>
 #include <arch/cpu.h>
 #include <cbmem.h>
-#include <arch/cbfs.h>
 #include <cbfs.h>
 #include <ip_checksum.h>
 #include <pc80/mc146818rtc.h>
@@ -66,11 +66,11 @@ void save_mrc_data(struct pei_data *pei_data)
 			pei_data->mrc_output_len);
 
 	/* Save the MRC seed values to CMOS */
-	cmos_write32(CMOS_OFFSET_MRC_SEED, pei_data->scrambler_seed);
+	cmos_write32(pei_data->scrambler_seed, CMOS_OFFSET_MRC_SEED);
 	printk(BIOS_DEBUG, "Save scrambler seed    0x%08x to CMOS 0x%02x\n",
 	       pei_data->scrambler_seed, CMOS_OFFSET_MRC_SEED);
 
-	cmos_write32(CMOS_OFFSET_MRC_SEED_S3, pei_data->scrambler_seed_s3);
+	cmos_write32(pei_data->scrambler_seed_s3, CMOS_OFFSET_MRC_SEED_S3);
 	printk(BIOS_DEBUG, "Save s3 scrambler seed 0x%08x to CMOS 0x%02x\n",
 	       pei_data->scrambler_seed_s3, CMOS_OFFSET_MRC_SEED_S3);
 
@@ -149,12 +149,12 @@ static void report_memory_config(void)
 	u32 addr_decoder_common, addr_decode_ch[2];
 	int i;
 
-	addr_decoder_common = MCHBAR32(0x5000);
-	addr_decode_ch[0] = MCHBAR32(0x5004);
-	addr_decode_ch[1] = MCHBAR32(0x5008);
+	addr_decoder_common = MCHBAR32(MAD_CHNL);
+	addr_decode_ch[0] = MCHBAR32(MAD_DIMM_CH0);
+	addr_decode_ch[1] = MCHBAR32(MAD_DIMM_CH1);
 
 	printk(BIOS_DEBUG, "memcfg DDR3 clock %d MHz\n",
-	       (MCHBAR32(0x5e04) * 13333 * 2 + 50)/100);
+	       (MCHBAR32(MC_BIOS_DATA) * 13333 * 2 + 50)/100);
 	printk(BIOS_DEBUG, "memcfg channel assignment: A: %d, B % d, C % d\n",
 	       addr_decoder_common & 3,
 	       (addr_decoder_common >> 2) & 3,
@@ -249,7 +249,7 @@ void sdram_initialize(struct pei_data *pei_data)
 	/* For reference print the System Agent version
 	 * after executing the UEFI PEI stage.
 	 */
-	u32 version = MCHBAR32(0x5034);
+	u32 version = MCHBAR32(MRC_REVISION);
 	printk(BIOS_DEBUG, "System Agent Version %d.%d.%d Build %d\n",
 		version >> 24, (version >> 16) & 0xff,
 		(version >> 8) & 0xff, version & 0xff);
@@ -382,6 +382,16 @@ static void devicetree_fill_pei_data(struct pei_data *pei_data)
 	pei_data->usb3.xhci_streams = cfg->usb3.xhci_streams;
 }
 
+static void disable_p2p(void)
+{
+	/* Disable PCI-to-PCI bridge early to prevent probing by MRC. */
+	const struct device *const p2p = pcidev_on_root(0x1e, 0);
+	if (p2p && p2p->enabled)
+		return;
+
+	RCBA32(FD) |= PCH_DISABLE_P2P;
+}
+
 void perform_raminit(int s3resume)
 {
 	int cbmem_was_initted;
@@ -422,6 +432,8 @@ void perform_raminit(int s3resume)
 				die("Onboard SPDs must match each other");
 		}
 	}
+
+	disable_p2p();
 
 	pei_data.boot_mode = s3resume ? 2 : 0;
 	timestamp_add_now(TS_BEFORE_INITRAM);

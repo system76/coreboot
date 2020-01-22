@@ -14,11 +14,11 @@
  * GNU General Public License for more details.
  */
 
+#include <amdblocks/acpimmio.h>
 #include <console/console.h>
 #include <device/device.h>
 #include <device/mmio.h>
 #include <southbridge/amd/common/amd_pci_util.h>
-#include <southbridge/amd/cimx/cimx_util.h>
 #include <southbridge/amd/cimx/sb800/SBPLATFORM.h>
 #include <southbridge/amd/cimx/sb800/pci_devs.h>
 #include <northbridge/amd/agesa/family14/pci_devs.h>
@@ -126,12 +126,11 @@ static void mainboard_enable(struct device *dev)
 
 	/* enable GPP CLK0 thru CLK1 */
 	/* disable GPP CLK2 thru SLT_GFX_CLK */
-	u8 *misc_mem_clk_cntrl = (u8 *)(ACPI_MMIO_BASE + MISC_BASE);
-	write8(misc_mem_clk_cntrl + 0, 0xFF);
-	write8(misc_mem_clk_cntrl + 1, 0x00);
-	write8(misc_mem_clk_cntrl + 2, 0x00);
-	write8(misc_mem_clk_cntrl + 3, 0x00);
-	write8(misc_mem_clk_cntrl + 4, 0x00);
+	misc_write8(0, 0xff);
+	misc_write8(1, 0);
+	misc_write8(2, 0);
+	misc_write8(3, 0);
+	misc_write8(4, 0);
 
 	/*
 	 * Initialize ASF registers to an arbitrary address because someone
@@ -139,8 +138,8 @@ static void mainboard_enable(struct device *dev)
 	 * SPD read code has been made generic and moved out of the board
 	 * directory, so the ASF init is being done here.
 	 */
-	pm_iowrite(0x29, 0x80);
-	pm_iowrite(0x28, 0x61);
+	pm_write8(0x29, 0x80);
+	pm_write8(0x28, 0x61);
 
 	/* Initialize the PIRQ data structures for consumption */
 	pirq_setup();

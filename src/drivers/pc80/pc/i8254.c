@@ -11,7 +11,6 @@
  * GNU General Public License for more details.
  */
 
-#include <arch/early_variables.h>
 #include <arch/io.h>
 #include <commonlib/helpers.h>
 #include <cpu/x86/tsc.h>
@@ -31,24 +30,6 @@ void setup_i8254(void)
 	     TIMER_MODE_PORT);
 	outb(0x12, TIMER1_PORT);
 }
-
-#if CONFIG(UDELAY_TIMER2)
-static void load_timer2(unsigned int ticks)
-{
-	/* Set up the timer gate, turn off the speaker */
-	outb((inb(PPC_PORTB) & ~PPCB_SPKR) | PPCB_T2GATE, PPC_PORTB);
-	outb(TIMER2_SEL | WORD_ACCESS | MODE0 | BINARY_COUNT, TIMER_MODE_PORT);
-	outb(ticks & 0xFF, TIMER2_PORT);
-	outb(ticks >> 8, TIMER2_PORT);
-}
-
-void udelay(int usecs)
-{
-	load_timer2((usecs * TICKS_PER_MS) / 1000);
-	while ((inb(PPC_PORTB) & PPCB_T2OUT) == 0)
-		;
-}
-#endif
 
 #define CLOCK_TICK_RATE	1193180U /* Underlying HZ */
 
@@ -125,23 +106,19 @@ bad_ctc:
 }
 
 #if CONFIG(UNKNOWN_TSC_RATE)
-static u32 g_timer_tsc CAR_GLOBAL;
+static u32 timer_tsc;
 
 unsigned long tsc_freq_mhz(void)
 {
-	u32 tsc;
+	if (timer_tsc > 0)
+		return timer_tsc;
 
-	tsc = car_get_var(g_timer_tsc);
-	if (tsc > 0)
-		return tsc;
-
-	tsc = calibrate_tsc_with_pit();
+	timer_tsc = calibrate_tsc_with_pit();
 
 	/* Set some semi-ridiculous rate if approximation fails. */
-	if (tsc == 0)
-		tsc = 5000;
+	if (timer_tsc == 0)
+		timer_tsc = 5000;
 
-	car_set_var(g_timer_tsc, tsc);
-	return tsc;
+	return timer_tsc;
 }
 #endif

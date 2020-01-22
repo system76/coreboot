@@ -12,7 +12,6 @@
  */
 
 #include <console/console.h>
-#include <stdlib.h>
 #include <stdint.h>
 #include <arch/io.h>
 #include <device/device.h>
@@ -31,6 +30,19 @@ void pnp_exit_conf_mode(struct device *dev)
 	if (dev->ops->ops_pnp_mode)
 		dev->ops->ops_pnp_mode->exit_conf_mode(dev);
 }
+
+#if CONFIG(HAVE_ACPI_TABLES)
+void pnp_ssdt_enter_conf_mode(struct device *dev, const char *idx, const char *data)
+{
+	if (dev->ops->ops_pnp_mode && dev->ops->ops_pnp_mode->ssdt_enter_conf_mode)
+		dev->ops->ops_pnp_mode->ssdt_enter_conf_mode(dev, idx, data);
+}
+void pnp_ssdt_exit_conf_mode(struct device *dev, const char *idx, const char *data)
+{
+	if (dev->ops->ops_pnp_mode && dev->ops->ops_pnp_mode->ssdt_exit_conf_mode)
+		dev->ops->ops_pnp_mode->ssdt_exit_conf_mode(dev, idx, data);
+}
+#endif
 
 /* PNP fundamental operations */
 
@@ -370,7 +382,7 @@ void pnp_enable_devices(struct device *base_dev, struct device_operations *ops,
 	/* Setup the ops and resources on the newly allocated devices. */
 	for (i = 0; i < functions; i++) {
 		/* Skip logical devices this Super I/O doesn't have. */
-		if (info[i].function == -1)
+		if (info[i].function == PNP_SKIP_FUNCTION)
 			continue;
 
 		path.pnp.device = info[i].function;

@@ -29,7 +29,6 @@
 #include <intelblocks/pmclib.h>
 #include <intelblocks/lpc_lib.h>
 #include <intelblocks/tco.h>
-#include <stdlib.h>
 #include <soc/gpe.h>
 #include <soc/gpio.h>
 #include <soc/iomap.h>
@@ -171,6 +170,16 @@ uint8_t *pmc_mmio_regs(void)
 uintptr_t soc_read_pmc_base(void)
 {
 	return (uintptr_t) (pmc_mmio_regs());
+}
+
+uint32_t *soc_pmc_etr_addr(void)
+{
+	/*
+	 * The pointer returned must not be cached, because the address depends on the
+	 * MMCONF base address and the assigned PCI bus number, which both may change
+	 * during the boot process!
+	 */
+	return pci_mmio_config32_addr(PCH_DEVFN_PMC << 12, ETR);
 }
 
 void soc_get_gpi_gpe_configs(uint8_t *dw0, uint8_t *dw1, uint8_t *dw2)

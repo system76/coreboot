@@ -142,21 +142,21 @@ Scope (\_SB.PCI0.I2C2)
 				2
 			}
 			/* GPIO.4 is AVDD pin for user facing camera */
-			GpioIo (Exclusive, PullDefault, 0x0000, 0x0000,
+			GpioIo (Exclusive, PullDown, 0x0000, 0x0000,
 				IoRestrictionOutputOnly, "\\_SB.PCI0.I2C2.PMIC",
 				0x00, ResourceConsumer,,)
 			{
 				4
 			}
 			/* GPIO.5 is XSHUTDOWN pin for user facing camera */
-			GpioIo (Exclusive, PullDefault, 0x0000, 0x0000,
+			GpioIo (Exclusive, PullDown, 0x0000, 0x0000,
 				IoRestrictionOutputOnly, "\\_SB.PCI0.I2C2.PMIC",
 				0x00, ResourceConsumer,,)
 			{
 				5
 			}
 			/* GPIO.9 is XSHUTDOWN pin for world facing camera */
-			GpioIo (Exclusive, PullDefault, 0x0000, 0x0000,
+			GpioIo (Exclusive, PullDown, 0x0000, 0x0000,
 				IoRestrictionOutputOnly, "\\_SB.PCI0.I2C2.PMIC",
 				0x00, ResourceConsumer,,)
 			{
@@ -188,7 +188,7 @@ Scope (\_SB.PCI0.I2C2)
 			GPO2, 1,
 			Connection
 			(
-				GpioIo (Exclusive, PullDefault, 0x0000, 0x0000,
+				GpioIo (Exclusive, PullDown, 0x0000, 0x0000,
 					IoRestrictionOutputOnly,
 					"\\_SB.PCI0.I2C2.PMIC", 0x00,
 					ResourceConsumer,,)
@@ -199,7 +199,7 @@ Scope (\_SB.PCI0.I2C2)
 			GRST, 1,
 			Connection
 			(
-				GpioIo (Exclusive, PullDefault, 0x0000, 0x0000,
+				GpioIo (Exclusive, PullDown, 0x0000, 0x0000,
 					IoRestrictionOutputOnly,
 					"\\_SB.PCI0.I2C2.PMIC", 0x00,
 					ResourceConsumer,,)
@@ -210,7 +210,7 @@ Scope (\_SB.PCI0.I2C2)
 			GPO4, 1,
 			Connection
 			(
-				GpioIo (Exclusive, PullDefault, 0x0000, 0x0000,
+				GpioIo (Exclusive, PullDown, 0x0000, 0x0000,
 					IoRestrictionOutputOnly,
 					"\\_SB.PCI0.I2C2.PMIC", 0x00,
 					ResourceConsumer,,)
@@ -400,57 +400,44 @@ Scope (\_SB.PCI0.I2C2)
 		}
 
 		/* Reference count for VSIO */
-		Mutex (MUTV, 0)
 		Name (VSIC, 0)
 		Method (DOVD, 1, Serialized) {
-			/* Save Acquire result so we can check for
-			Mutex acquired */
-			Store (Acquire (MUTV, 1000), Local0)
-			/* Check for Mutex acquired */
-			If (LEqual (Local0, Zero)) {
-				/* Turn off VSIO */
-				If (LEqual (Arg0, Zero)) {
-					/* Decrement only if VSIC > 0 */
-					if (LGreater (VSIC, 0)) {
-						Decrement (VSIC)
-						If (LEqual (VSIC, Zero)) {
-							VSIO = 0
-							Sleep(1)
-							PMOF()
-						}
-					}
-				} ElseIf (LEqual (Arg0, 1)) {
-					/* Increment only if VSIC < 4 */
-					If (LLess (VSIC, 4)) {
-						/* Turn on VSIO */
-						If (LEqual (VSIC, Zero)) {
-							PMON()
-							VSIO = 3
-
-							if (LNotEqual (IOVA, 52)) {
-								/* Set VSIO value as
-								1.8006 V */
-								IOVA = 52
-							}
-							if (LNotEqual (SIOV, 52)) {
-								/* Set VSIO value as
-								1.8006 V */
-								SIOV = 52
-							}
-							Sleep(3)
-						}
-						Increment (VSIC)
+			/* Turn off VSIO */
+			If (LEqual (Arg0, Zero)) {
+				/* Decrement only if VSIC > 0 */
+				if (LGreater (VSIC, 0)) {
+					Decrement (VSIC)
+					If (LEqual (VSIC, Zero)) {
+						VSIO = 0
+						Sleep(1)
+						PMOF()
 					}
 				}
+			} ElseIf (LEqual (Arg0, 1)) {
+				/* Increment only if VSIC < 4 */
+				If (LLess (VSIC, 4)) {
+					/* Turn on VSIO */
+					If (LEqual (VSIC, Zero)) {
+						PMON()
+						VSIO = 3
 
-				Release (MUTV)
+						if (LNotEqual (IOVA, 52)) {
+							/* Set VSIO value as
+							1.8006 V */
+							IOVA = 52
+						}
+						if (LNotEqual (SIOV, 52)) {
+							/* Set VSIO value as
+							1.8006 V */
+							SIOV = 52
+						}
+						Sleep(3)
+					}
+					Increment (VSIC)
+				}
 			}
 		}
 
-		/* C0GP is used to indicate if CAM0
-		 * GPIOs are configured as input.
-		 */
-		Name (C0GP, 0)
 		/* Power resource methods for CAM0 */
 		PowerResource (OVTH, 0, 0) {
 			Name (STA, 0)
@@ -458,33 +445,36 @@ Scope (\_SB.PCI0.I2C2)
 				/* TODO: Read Voltage and Sleep values from Sensor Obj */
 				If (LEqual (AVBL, 1)) {
 					If (LEqual (STA, 0)) {
-						If (LEqual (C0GP, 0)) {
-							\_SB.PCI0.I2C2.PMIC.CGP1()
-							\_SB.PCI0.I2C2.PMIC.CGP2()
-							C0GP = 1
-						}
-
 						/* Enable VSIO regulator +
 						daisy chain */
 						DOVD(1)
 
+						\_SB.PCI0.I2C2.PMIC.CGP1()
+						\_SB.PCI0.I2C2.PMIC.CGP2()
+
+						/* Set ANA at 2.8152V */
+						ACVA = 109
 						VACT = 1
-						if (LNotEqual (ACVA, 109)) {
-							/* Set ANA at 2.8152V */
-							ACVA = 109
-						}
-						Sleep(3)
+
+						/* Set CORE at 1.2V */
+						DCVA = 12
+						VDCT = 1
 
 						\_SB.PCI0.I2C2.PMIC.CLKE()
 						CLE0 = 1
 
-						VDCT = 1
-						if (LNotEqual (DCVA, 12)) {
-							/* Set CORE at 1.2V */
-							DCVA = 12
-						}
-						Sleep(3)
+						/*
+						 * Wait for all regulator
+						 * outputs to settle.
+						 */
+						Sleep(1)
+
 						\_SB.PCI0.I2C2.PMIC.CRST(1)
+
+						/*
+						 * 5 ms needed before
+						 * streaming on.
+						 */
 						Sleep(5)
 
 						STA = 1
@@ -526,30 +516,34 @@ Scope (\_SB.PCI0.I2C2)
 						daisy chain */
 						DOVD(1)
 
+						/* Set VAUX2 as 1.8006 V */
+						AX2V = 52
 						VAX2 = 1 /* Enable VAUX2 */
 
-						if (LNotEqual (AX2V, 52)) {
-							/* Set VAUX2 as
-							1.8006 V */
-							AX2V = 52
-						}
+						\_SB.PCI0.I2C2.PMIC.CGP4(1)
+
+						/*
+						 * Wait for DOVDD and AVDD
+						 * to settle.
+						 */
+						Sleep(1)
+
+						/* Set VAUX1 as 1.2132V */
+						AX1V = 19
+						VAX1 = 1 /* Enable VAUX1 */
+
+						/* Wait for VDD to settle. */
 						Sleep(1)
 
 						\_SB.PCI0.I2C2.PMIC.CLKE()
 						CLE1 = 1
 
-						VAX1 = 1 /* Enable VAUX1 */
-						if (LNotEqual (AX1V, 19)) {
-						/* Set VAUX1 as 1.2132V */
-							AX1V = 19
-						}
-						Sleep(3)
-
-						\_SB.PCI0.I2C2.PMIC.CGP4(1)
-						Sleep(3)
-
 						\_SB.PCI0.I2C2.PMIC.CGP5(1)
-						Sleep(3)
+						/*
+						 * Ensure 10 ms between
+						 * power-up and streamon.
+						 */
+						Sleep(10)
 						STA = 1
 					}
 				}
@@ -593,11 +587,8 @@ Scope (\_SB.PCI0.I2C2)
 
 						/* Enable VCM regulator */
 						VCMC = 1
-						if (LNotEqual (VCMV, 109)) {
-							/* Set VCM value at
-							2.8152 V */
-							VCMV = 109
-						}
+						/* Set VCM value at 2.8152 V */
+						VCMV = 109
 						Sleep(3)
 
 						STA = 1

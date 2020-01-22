@@ -26,14 +26,11 @@ config CPU_AMD_PI
 	select UDELAY_LAPIC
 	select LAPIC_MONOTONIC_TIMER
 	select SPI_FLASH if HAVE_ACPI_RESUME
-	select CAR_GLOBAL_MIGRATION if BINARYPI_LEGACY_WRAPPER
 	select SMM_ASEG
 	select NO_FIXED_XIP_ROM_SIZE
+	select SSE2
 
 if CPU_AMD_PI
-
-config BINARYPI_LEGACY_WRAPPER
-	def_bool n
 
 config UDELAY_LAPIC_FIXED_FSB
 	int
@@ -51,16 +48,16 @@ config DCACHE_RAM_SIZE
 	hex
 	default 0x10000
 
-config S3_DATA_POS
+config DCACHE_BSP_STACK_SIZE
 	hex
-	default 0xFFFF0000
+	default 0x4000
 
-config S3_DATA_SIZE
-	int
-	default 32768
+config C_ENV_BOOTBLOCK_SIZE
+	hex
+	default 0x8000
 
 endif # CPU_AMD_PI
 
-source src/cpu/amd/pi/00630F01/Kconfig
-source src/cpu/amd/pi/00730F01/Kconfig
-source src/cpu/amd/pi/00660F01/Kconfig
+source "src/cpu/amd/pi/00630F01/Kconfig"
+source "src/cpu/amd/pi/00730F01/Kconfig"
+source "src/cpu/amd/pi/00660F01/Kconfig"

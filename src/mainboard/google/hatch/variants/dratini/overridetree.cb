@@ -35,15 +35,18 @@ chip soc/intel/cannonlake
 		},
 		.i2c[0] = {
 			.speed = I2C_SPEED_FAST,
+                        .rise_time_ns = 50,
+                        .fall_time_ns = 15,
 		},
 		.i2c[1] = {
 			.speed = I2C_SPEED_FAST,
-		},
-		.i2c[3] = {
-			.speed = I2C_SPEED_FAST,
+                        .rise_time_ns = 60,
+                        .fall_time_ns = 25,
 		},
 		.i2c[4] = {
 			.speed = I2C_SPEED_FAST,
+                        .rise_time_ns = 60,
+                        .fall_time_ns = 60,
 		},
 	}"
 
@@ -154,6 +157,13 @@ chip soc/intel/cannonlake
 				device spi 1 on end
 			end # FPMCU
 		end # GSPI #1
+		device pci 1f.3 on
+			chip drivers/generic/max98357a
+				register "sdmode_gpio" =  "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_H3)"
+				register "sdmode_delay" = "5"
+				device generic 0 on end
+			end
+		end # Intel HDA
 	end
 
 end

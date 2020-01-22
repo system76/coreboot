@@ -14,10 +14,10 @@
  * GNU General Public License for more details.
  */
 #include <boot_device.h>
+#include <bootmem.h>
 #include <cbfs.h>
 #include <vboot_check.h>
 #include <vboot_common.h>
-#include "fmap_config.h"
 
 #define RSA_PUBLICKEY_FILE_NAME "vboot_public_key.bin"
 
@@ -91,48 +91,6 @@ fail:
 	return -1;
 }
 
-static int vendor_secure_locate(struct cbfs_props *props)
-{
-	struct cbfs_header header;
-	const struct region_device *bdev;
-	int32_t rel_offset;
-	size_t offset;
-
-	bdev = boot_device_ro();
-
-	if (bdev == NULL)
-		return -1;
-
-	size_t fmap_top = ___FMAP__COREBOOT_BASE + ___FMAP__COREBOOT_SIZE;
-
-	/* Find location of header using signed 32-bit offset from
-	 * end of CBFS region. */
-	offset = fmap_top - sizeof(int32_t);
-	if (rdev_readat(bdev, &rel_offset, offset, sizeof(int32_t)) < 0)
-		return -1;
-
-	offset = fmap_top + rel_offset;
-	if (rdev_readat(bdev, &header, offset, sizeof(header)) < 0)
-		return -1;
-
-	header.magic = ntohl(header.magic);
-	header.romsize = ntohl(header.romsize);
-	header.offset = ntohl(header.offset);
-
-	if (header.magic != CBFS_HEADER_MAGIC)
-		return -1;
-
-	props->offset = header.offset;
-	props->size = header.romsize;
-	props->size -= props->offset;
-
-	printk(BIOS_SPEW, "CBFS @ %zx size %zx\n", props->offset, props->size);
-
-	return 0;
-}
-
-#ifndef __BOOTBLOCK__
-
 /*
  *
  * measure_item
@@ -168,7 +126,6 @@ static int measure_item(uint32_t pcr, uint8_t *hashData, uint32_t hashDataLen,
 	}
 	return status;
 }
-#endif
 
 static void verified_boot_check_buffer(const char *name, void *start, size_t size,
 				       uint32_t hash_index, int32_t pcr)
@@ -186,7 +143,8 @@ static void verified_boot_check_buffer(const char *name, void *start, size_t siz
 		else
 			hash_algorithm = VB2_HASH_SHA256;
 
-		status = cb_sha_little_endian(hash_algorithm, (const uint8_t *)start, size, digest);
+		status = cb_sha_little_endian(hash_algorithm, (const uint8_t *)start, size,
+					      digest);
 		if ((CONFIG(VENDORCODE_ELTAN_VBOOT) && memcmp((void *)(
 		    (uint8_t *)CONFIG_VENDORCODE_ELTAN_OEM_MANIFEST_LOC +
 		    sizeof(digest) * hash_index), digest, sizeof(digest))) || status) {
@@ -198,17 +156,16 @@ static void verified_boot_check_buffer(const char *name, void *start, size_t siz
 			printk(BIOS_EMERG, "%s ", name);
 			die("HASH verification failed!\n");
 		} else {
-#ifndef __BOOTBLOCK__
-			if (CONFIG(VENDORCODE_ELTAN_MBOOT)) {
+			if (!ENV_BOOTBLOCK && CONFIG(VENDORCODE_ELTAN_MBOOT)) {
 				if (pcr != -1) {
-					printk(BIOS_DEBUG, "%s: measuring %s\n", __func__, name);
+					printk(BIOS_DEBUG, "%s: measuring %s\n", __func__,
+					       name);
 					if (measure_item(pcr, digest, sizeof(digest),
 							 (int8_t *)name, 0))
 						printk(BIOS_DEBUG, "%s: measuring failed!\n",
 						       __func__);
 				}
 			}
-#endif
 			if (CONFIG(VENDORCODE_ELTAN_VBOOT))
 				printk(BIOS_DEBUG, "%s HASH verification success\n", name);
 		}
@@ -227,16 +184,33 @@ void verified_boot_check_cbfsfile(const char *name, uint32_t type, uint32_t hash
 	start = cbfs_boot_map_with_leak(name, type & ~VERIFIED_BOOT_COPY_BLOCK, &size);
 	if (start && size) {
 		/* Speed up processing by copying the file content to memory first */
-#ifndef __PRE_RAM__
-		if ((type & VERIFIED_BOOT_COPY_BLOCK) && (buffer) && (*buffer) &&
-		    ((uint32_t) start > (uint32_t)(~(CONFIG_CBFS_SIZE-1)))) {
+		if (!ENV_ROMSTAGE_OR_BEFORE && (type & VERIFIED_BOOT_COPY_BLOCK)) {
+
+			if ((buffer) && (*buffer) && (*filesize >= size) &&
+			    ((uint32_t) start > (uint32_t)(~(CONFIG_CBFS_SIZE-1)))) {
+
+				/* Use the buffer passed in if possible */
 				printk(BIOS_DEBUG, "%s: move buffer to memory\n", __func__);
-			/* Move the file to a memory bufferof which we know it doesn't harm */
-			memcpy(*buffer, start, size);
-			start = *buffer;
-			printk(BIOS_DEBUG, "%s: done\n", __func__);
+				/* Move the file to memory buffer passed in */
+				memcpy(*buffer, start, size);
+				start = *buffer;
+				printk(BIOS_DEBUG, "%s: done\n", __func__);
+
+			} else if (ENV_RAMSTAGE) {
+				/* Try to allocate a buffer from boot_mem */
+				void *local_buffer = bootmem_allocate_buffer(size);
+
+				if (local_buffer) {
+
+					/* Use the allocated buffer */
+					printk(BIOS_DEBUG, "%s: move file to memory\n",
+					       __func__);
+					memcpy(local_buffer, start, size);
+					start = local_buffer;
+					printk(BIOS_DEBUG, "%s: done\n", __func__);
+				}
+			}
 		}
-#endif // __PRE_RAM__
 		verified_boot_check_buffer(name, start, size, hash_index, pcr);
 	} else {
 		printk(BIOS_EMERG, "CBFS Failed to get file content for %s\n", name);
@@ -276,12 +250,10 @@ void process_verify_list(const verify_item_t list[])
 		i++;
 	}
 }
-#ifdef __BOOTBLOCK__
+
 /*
  * BOOTBLOCK
  */
-
-extern verify_item_t bootblock_verify_list[];
 
 void verified_boot_bootblock_check(void)
 {
@@ -296,30 +268,13 @@ void verified_boot_bootblock_check(void)
 	process_verify_list(bootblock_verify_list);
 }
 
-static void vendor_secure_prepare(void)
-{
-	printk(BIOS_SPEW, "%s: bootblock\n", __func__);
-	verified_boot_bootblock_check();
-}
-#endif //__BOOTBLOCK__
-
-#ifdef __ROMSTAGE__
 /*
  * ROMSTAGE
  */
 
-extern verify_item_t romstage_verify_list[];
-
 void verified_boot_early_check(void)
 {
 	printk(BIOS_SPEW, "%s: processing early items\n", __func__);
-
-	if (!CONFIG(C_ENVIRONMENT_BOOTBLOCK) &&
-	    CONFIG(VENDORCODE_ELTAN_VBOOT_SIGNED_MANIFEST)) {
-		printk(BIOS_SPEW, "%s: check the manifest\n", __func__);
-		if (verified_boot_check_manifest() != 0)
-			die("invalid manifest");
-	}
 
 	if (CONFIG(VENDORCODE_ELTAN_MBOOT)) {
 		printk(BIOS_DEBUG, "mb_measure returned 0x%x\n",
@@ -330,33 +285,6 @@ void verified_boot_early_check(void)
 	process_verify_list(romstage_verify_list);
 }
 
-static int prepare_romstage = 0;
-
-static void vendor_secure_prepare(void)
-{
-	printk(BIOS_SPEW, "%s: romstage\n", __func__);
-	if (!prepare_romstage) {
-		verified_boot_early_check();
-		prepare_romstage = 1;
-	}
-}
-#endif //__ROMSTAGE__
-
-#ifdef __POSTCAR__
-/*
- * POSTCAR
- */
-
-extern verify_item_t postcar_verify_list[];
-
-static void vendor_secure_prepare(void)
-{
-	printk(BIOS_SPEW, "%s: postcar\n", __func__);
-	process_verify_list(postcar_verify_list);
-}
-#endif //__POSTCAR__
-
-#ifdef __RAMSTAGE__
 /*
  * RAM STAGE
  */
@@ -408,24 +336,32 @@ static int process_oprom_list(const verify_item_t list[],
 	return 0;
 }
 
-extern verify_item_t payload_verify_list[];
-
-extern verify_item_t oprom_verify_list[];
-
 int verified_boot_should_run_oprom(struct rom_header *rom_header)
 {
 	return process_oprom_list(oprom_verify_list, rom_header);
 }
 
-static void vendor_secure_prepare(void)
+int prog_locate_hook(struct prog *prog)
 {
-	printk(BIOS_SPEW, "%s: ramstage\n", __func__);
-	process_verify_list(payload_verify_list);
-}
-#endif //__RAMSTAGE__
+	if (ENV_BOOTBLOCK)
+		verified_boot_bootblock_check();
 
-const struct cbfs_locator cbfs_master_header_locator = {
-	.name = "Vendorcode Header Locator",
-	.prepare = vendor_secure_prepare,
-	.locate = vendor_secure_locate
-};
+	if (ENV_ROMSTAGE) {
+		if (prog->type == PROG_REFCODE)
+			verified_boot_early_check();
+
+		if (CONFIG(POSTCAR_STAGE) && prog->type == PROG_POSTCAR)
+			process_verify_list(postcar_verify_list);
+
+		if (!CONFIG(POSTCAR_STAGE) && prog->type == PROG_RAMSTAGE)
+			process_verify_list(ramstage_verify_list);
+	}
+
+	if (ENV_POSTCAR && prog->type == PROG_RAMSTAGE)
+		process_verify_list(ramstage_verify_list);
+
+	if (ENV_RAMSTAGE && prog->type == PROG_PAYLOAD)
+		process_verify_list(payload_verify_list);
+
+	return 0;
+}

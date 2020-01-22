@@ -15,9 +15,18 @@
 
 menu "Verified Boot (vboot)"
 
+config VBOOT_LIB
+	bool
+	depends on !VENDORCODE_ELTAN_VBOOT && !VENDORCODE_ELTAN_MBOOT
+	help
+	  Build and link the vboot library. Makes the vboot API accessible across
+	  all coreboot stages, without enabling vboot verification. For verification,
+	  please see the VBOOT option below.
+
 config VBOOT
 	bool "Verify firmware with vboot."
 	default n
+	select VBOOT_LIB
 	select VBOOT_MOCK_SECDATA if !TPM1 && !TPM2
 	depends on !MISSING_BOARD_RESET
 	help
@@ -95,7 +104,6 @@ config VBOOT_VBNV_FLASH
 config VBOOT_STARTS_IN_BOOTBLOCK
 	bool
 	default n
-	depends on C_ENVIRONMENT_BOOTBLOCK
 	help
 	  Firmware verification happens during the end of or right after the
 	  bootblock. This implies that a static VBOOT2_WORK() buffer must be
@@ -167,16 +175,25 @@ config VBOOT_MUST_REQUEST_DISPLAY
 	  Unless display is specifically requested, the video option ROM is not
 	  loaded, and any other native display initialization code is not run.
 
+config VBOOT_ALWAYS_ENABLE_DISPLAY
+	bool "Force to always enable display"
+	default n
+	help
+	  Set this option to indicate to vboot that display should always be enabled.
+
+config VBOOT_ALWAYS_ALLOW_UDC
+	bool "Always allow UDC"
+	default n
+	depends on !CHROMEOS
+	help
+	  This option allows UDC to be enabled regardless of the vboot state.
+
 config VBOOT_HAS_REC_HASH_SPACE
 	bool
 	default n
 	help
 	  Set this option to indicate to vboot that recovery data hash space
 	  is present in TPM.
-
-config VBOOT_SOFT_REBOOT_WORKAROUND
-	bool
-	default n
 
 config VBOOT_LID_SWITCH
 	bool
@@ -223,6 +240,34 @@ config RO_REGION_ONLY
 	help
 	  Add a space delimited list of filenames that should only be in the
 	  RO section.
+
+config RW_REGION_ONLY
+	string
+	default ""
+	depends on VBOOT_SLOTS_RW_A
+	help
+	  Add a space delimited list of filenames that should only be in the
+	  RW sections.
+
+config VBOOT_ENABLE_CBFS_FALLBACK
+	bool
+	default n
+	depends on VBOOT_SLOTS_RW_A
+	help
+	  When this option is enabled cbfs_boot_locate will look for a file in the RO
+	  (COREBOOT) region if it isn't available in the active RW region.
+
+config VBOOT_EARLY_EC_SYNC
+	bool
+	default n
+	depends on EC_GOOGLE_CHROMEEC
+	help
+	  Enables CrOS EC software sync in romstage, before memory training
+	  runs. This is useful mainly as a way to achieve full USB-PD
+	  negotiation earlier in the boot flow, as the EC will only do this once
+	  it has made the sysjump to its RW firmware. It should not
+	  significantly impact boot time, as this operation will be performed
+	  later in the boot flow if it is disabled here.
 
 menu "GBB configuration"
 

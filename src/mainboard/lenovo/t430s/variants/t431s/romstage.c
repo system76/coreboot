@@ -16,7 +16,6 @@
  */
 
 #include <option.h>
-#include <device/pci_def.h>
 #include <console/console.h>
 #include <cbfs.h>
 #include <northbridge/intel/sandybridge/raminit_native.h>
@@ -53,8 +52,4 @@ void mainboard_get_spd(spd_raw_data *spd, bool id_only)
 
 	memcpy(&spd[0], spd_file, spd_file_len);
 	read_spd(&spd[2], 0x51, id_only);
-}
-
-void mainboard_early_init(int s3resume)
-{
 }

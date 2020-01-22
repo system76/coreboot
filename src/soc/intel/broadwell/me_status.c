@@ -16,7 +16,6 @@
 #include <device/pci_ops.h>
 #include <console/console.h>
 #include <device/pci.h>
-#include <stdlib.h>
 #include <string.h>
 #include <soc/pci_devs.h>
 #include <soc/me.h>
@@ -33,8 +32,6 @@ static inline void me_read_dword_ptr(void *ptr, int offset)
 	u32 dword = pci_read_config32(PCH_DEV_ME, offset);
 	memcpy(ptr, &dword, sizeof(dword));
 }
-
-#if (CONFIG_DEFAULT_CONSOLE_LOGLEVEL >= BIOS_DEBUG)
 
 /* HFS1[3:0] Current Working State Values */
 static const char *me_cws_values[] = {
@@ -210,6 +207,9 @@ static const char *me_progress_policy_values[] = {
 
 void intel_me_status(void)
 {
+	if (CONFIG_DEFAULT_CONSOLE_LOGLEVEL < BIOS_DEBUG)
+		return;
+
 	struct me_hfs _hfs, *hfs = &_hfs;
 	struct me_hfs2 _hfs2, *hfs2 = &_hfs2;
 
@@ -302,7 +302,6 @@ void intel_me_status(void)
 	}
 	printk(BIOS_DEBUG, "\n");
 }
-#endif
 
 void intel_me_hsio_version(uint16_t *version, uint16_t *checksum)
 {

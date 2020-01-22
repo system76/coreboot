@@ -45,7 +45,7 @@
  * MP Tables.  TODO: Make ACPI use these values too.
  */
 
-const u8 mainboard_picr_data[] = {
+static const u8 mainboard_picr_data[] = {
 	[0x00] = 0x03, 0x04, 0x05, 0x07, 0x0B, 0x1F, 0x1F, 0x1F,
 	[0x08] = 0xFA, 0xF1, 0x00, 0x00, 0x1F, 0x1F, 0x1F, 0x1F,
 	[0x10] = 0x09, 0x1F, 0x1F, 0x03, 0x1F, 0x1F, 0x1F, 0x03,
@@ -64,7 +64,7 @@ const u8 mainboard_picr_data[] = {
 	[0x78] = 0x1F, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F,
 };
 
-const u8 mainboard_intr_data[] = {
+static const u8 mainboard_intr_data[] = {
 	[0x00] = 0x10, 0x11, 0x12, 0x13, 0x14, 0x1F, 0x16, 0x17,
 	[0x08] = 0x00, 0x00, 0x00, 0x00, 0x1F, 0x1F, 0x1F, 0x1F,
 	[0x10] = 0x09, 0x1F, 0x1F, 0x10, 0x1F, 0x1F, 0x1F, 0x10,
@@ -147,16 +147,16 @@ static void mainboard_init(void *chip_info)
 	pm_write8(PM_PCIB_CFG, pm_read8(PM_PCIB_CFG) | PM_GENINT_DISABLE);
 
 	/* Set low-power mode for BayHub eMMC bridge's PCIe clock. */
-	clrsetbits_le32((uint32_t *)(ACPIMMIO_MISC_BASE + GPP_CLK_CNTRL),
-			GPP_CLK2_REQ_MAP_MASK,
-			GPP_CLK2_REQ_MAP_CLK_REQ2 <<
-			GPP_CLK2_REQ_MAP_SHIFT);
+	clrsetbits32((uint32_t *)(ACPIMMIO_MISC_BASE + GPP_CLK_CNTRL),
+		     GPP_CLK2_REQ_MAP_MASK,
+		     GPP_CLK2_REQ_MAP_CLK_REQ2 <<
+		     GPP_CLK2_REQ_MAP_SHIFT);
 
 	/* Same for the WiFi */
-	clrsetbits_le32((uint32_t *)(ACPIMMIO_MISC_BASE + GPP_CLK_CNTRL),
-			GPP_CLK0_REQ_MAP_MASK,
-			GPP_CLK0_REQ_MAP_CLK_REQ0 <<
-			GPP_CLK0_REQ_MAP_SHIFT);
+	clrsetbits32((uint32_t *)(ACPIMMIO_MISC_BASE + GPP_CLK_CNTRL),
+		     GPP_CLK0_REQ_MAP_MASK,
+		     GPP_CLK0_REQ_MAP_CLK_REQ0 <<
+		     GPP_CLK0_REQ_MAP_SHIFT);
 }
 
 /*************************************************

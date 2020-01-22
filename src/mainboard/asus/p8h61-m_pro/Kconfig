@@ -17,7 +17,6 @@ if BOARD_ASUS_P8H61_M_PRO
 
 config BOARD_SPECIFIC_OPTIONS
 	def_bool y
-	select ARCH_X86
 	select BOARD_ROMSIZE_KB_4096
 	select HAVE_ACPI_RESUME
 	select HAVE_ACPI_TABLES
@@ -37,7 +36,7 @@ config BOARD_SPECIFIC_OPTIONS
 
 config MAINBOARD_DIR
 	string
-	default asus/p8h61-m_pro
+	default "asus/p8h61-m_pro"
 
 config MAINBOARD_PART_NUMBER
 	string

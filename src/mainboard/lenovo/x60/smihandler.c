@@ -21,7 +21,7 @@
 #include <southbridge/intel/i82801gx/nvs.h>
 #include <southbridge/intel/common/pmutil.h>
 #include <ec/acpi/ec.h>
-#include <pc80/mc146818rtc.h>
+#include <option.h>
 #include <ec/lenovo/h8/h8.h>
 #include <delay.h>
 #include "dock.h"
@@ -51,7 +51,7 @@ int mainboard_io_trap_handler(int smif)
 	switch (smif) {
 	case SMI_DOCK_CONNECT:
 		ec_clr_bit(0x03, 2);
-		udelay(250000);
+		mdelay(250);
 		if (!dock_connect()) {
 			ec_set_bit(0x03, 2);
 			/* set dock LED to indicate status */

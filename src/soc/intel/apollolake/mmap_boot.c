@@ -90,6 +90,16 @@ static void bios_mmap_init(void)
 				 CONFIG_ROM_SIZE);
 
 	bios_size = size;
+
+	/* Check that the CBFS lies within the memory mapped area. It's too
+	   easy to forget the SRAM mapping when crafting an FMAP file. */
+	struct region cbfs_region;
+	if (!fmap_locate_area("COREBOOT", &cbfs_region) &&
+	    !region_is_subregion(&real_dev.sub_region, &cbfs_region))
+		printk(BIOS_CRIT,
+		       "ERROR: CBFS @ %zx size %zx exceeds mem-mapped area @ %zx size %zx\n",
+		       region_offset(&cbfs_region), region_sz(&cbfs_region),
+		       start, bios_mapped_size);
 }
 
 const struct region_device *boot_device_ro(void)
@@ -98,40 +108,3 @@ const struct region_device *boot_device_ro(void)
 
 	return &real_dev.rdev;
 }
-
-static int iafw_boot_region_properties(struct cbfs_props *props)
-{
-	struct region *real_dev_reg;
-	struct region regn;
-
-	/* use fmap to locate CBFS area */
-	if (fmap_locate_area("COREBOOT", &regn))
-		return -1;
-
-	props->offset = region_offset(&regn);
-	props->size = region_sz(&regn);
-
-	/* Check that we are within the memory mapped area. It's too
-	   easy to forget the SRAM mapping when crafting an FMAP file. */
-	real_dev_reg = &real_dev.sub_region;
-	if (region_is_subregion(real_dev_reg, &regn)) {
-		printk(BIOS_DEBUG, "CBFS @ %zx size %zx\n",
-		       props->offset, props->size);
-	} else {
-		printk(BIOS_CRIT,
-		       "ERROR: CBFS @ %zx size %zx exceeds mem-mapped area @ %zx size %zx\n",
-		       props->offset, props->size,
-		       region_offset(real_dev_reg), region_sz(real_dev_reg));
-	}
-
-	return 0;
-}
-
-/*
- * Named cbfs_master_header_locator so that it overrides the default, but
- * incompatible locator in cbfs.c
- */
-const struct cbfs_locator cbfs_master_header_locator = {
-	.name = "IAFW Locator",
-	.locate = iafw_boot_region_properties,
-};

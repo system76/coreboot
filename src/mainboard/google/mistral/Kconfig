@@ -22,11 +22,7 @@ config VBOOT
 
 config MAINBOARD_DIR
 	string
-	default google/mistral
-
-config MAINBOARD_VENDOR
-	string
-	default "Google"
+	default "google/mistral"
 
 ##########################################################
 #### Update below when adding a new derivative board. ####

@@ -11,10 +11,11 @@
  * GNU General Public License for more details.
  */
 
-#include <smp/node.h>
-#include <arch/bootblock_romcc.h>
-#include <pc80/mc146818rtc.h>
-#include <halt.h>
+#include <cbfs.h>
+#include <fallback.h>
+#include <program_loading.h>
+#include <stddef.h>
+#include <string.h>
 
 static const char *get_fallback(const char *stagelist)
 {
@@ -23,44 +24,22 @@ static const char *get_fallback(const char *stagelist)
 	return ++stagelist;
 }
 
-static void main(unsigned long bist)
+int legacy_romstage_selector(struct prog *romstage)
 {
-	u8 boot_mode;
-	const char *default_filenames =
-		"normal/romstage\0fallback/romstage";
+	static const char *default_filenames = "normal/romstage\0fallback/romstage";
+	const char *boot_candidate;
+	size_t stages_len;
 
-	if (boot_cpu()) {
-		bootblock_mainboard_init();
+	boot_candidate = cbfs_boot_map_with_leak("coreboot-stages", CBFS_TYPE_RAW, &stages_len);
+	if (!boot_candidate)
+		boot_candidate = default_filenames;
 
-		sanitize_cmos();
-
-		boot_mode = do_normal_boot();
-	} else {
-
-		/* Questionable single byte read from CMOS.
-		 * Do not add any other CMOS access in the
-		 * bootblock for AP CPUs.
-		 */
-		boot_mode = boot_use_normal(cmos_read(RTC_BOOT_BYTE));
+	if (do_normal_boot()) {
+		romstage->name = boot_candidate;
+		if (!prog_locate(romstage))
+			return 0;
 	}
 
-	char *normal_candidate = (char *)walkcbfs("coreboot-stages");
-
-	if (!normal_candidate)
-		normal_candidate = default_filenames;
-
-	unsigned long entry;
-
-	if (boot_mode) {
-		entry = findstage(normal_candidate);
-		if (entry)
-			call(entry, bist);
-	}
-
-	entry = findstage(get_fallback(normal_candidate));
-	if (entry)
-		call(entry, bist);
-
-	/* duh. we're stuck */
-	halt();
+	romstage->name = get_fallback(boot_candidate);
+	return prog_locate(romstage);
 }

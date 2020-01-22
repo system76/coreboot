@@ -14,7 +14,6 @@ config CPU_SPECIFIC_OPTIONS
 	select ARCH_VERSTAGE_X86_32
 	select BOOT_DEVICE_SPI_FLASH_RW_NOMMAP_EARLY if BOOT_DEVICE_SPI_FLASH
 	select BOOT_DEVICE_SUPPORTS_WRITES
-	select C_ENVIRONMENT_BOOTBLOCK
 	select CACHE_MRC_SETTINGS
 	select COMMON_FADT
 	select CPU_INTEL_FIRMWARE_INTERFACE_TABLE
@@ -36,6 +35,7 @@ config CPU_SPECIFIC_OPTIONS
 	select SMP
 	select SOC_AHCI_PORT_IMPLEMENTED_INVERT
 	select PMC_GLOBAL_RESET_ENABLE_LOCK
+	select CPU_INTEL_COMMON_SMM
 	select SOC_INTEL_COMMON
 	select SOC_INTEL_COMMON_ACPI_WAKE_SOURCE
 	select SOC_INTEL_COMMON_BLOCK
@@ -43,14 +43,16 @@ config CPU_SPECIFIC_OPTIONS
 	select SOC_INTEL_COMMON_BLOCK_CHIP_CONFIG
 	select SOC_INTEL_COMMON_BLOCK_CPU
 	select SOC_INTEL_COMMON_BLOCK_CPU_MPINIT
-	select SOC_INTEL_COMMON_BLOCK_EBDA
 	select SOC_INTEL_COMMON_BLOCK_GSPI_VERSION_2
 	select SOC_INTEL_COMMON_BLOCK_HDA
 	select SOC_INTEL_COMMON_BLOCK_SA
 	select SOC_INTEL_COMMON_BLOCK_SMM
 	select SOC_INTEL_COMMON_BLOCK_SMM_IO_TRAP
+	select SOC_INTEL_COMMON_BLOCK_THERMAL
 	select SOC_INTEL_COMMON_PCH_BASE
 	select SOC_INTEL_COMMON_RESET
+	select SOC_INTEL_COMMON_BLOCK_CAR
+	select INTEL_CAR_NEM_ENHANCED
 	select SSE2
 	select SUPPORT_CPU_UCODE_IN_CBFS
 	select TSC_MONOTONIC_TIMER
@@ -58,6 +60,7 @@ config CPU_SPECIFIC_OPTIONS
 	select UDK_2017_BINDING
 	select DISPLAY_FSP_VERSION_INFO
 	select HECI_DISABLE_USING_SMM
+	select USE_INTEL_FSP_TO_CALL_COREBOOT_PUBLISH_MP_PPI
 
 config DCACHE_RAM_BASE
 	default 0xfef00000
@@ -78,7 +81,6 @@ config DCACHE_BSP_STACK_SIZE
 
 config FSP_TEMP_RAM_SIZE
 	hex
-	depends on FSP_USES_CB_STACK
 	default 0x10000
 	help
 	  The amount of anticipated heap usage in CAR by FSP.
@@ -175,32 +177,6 @@ config C_ENV_BOOTBLOCK_SIZE
 config CBFS_SIZE
 	hex
 	default 0x200000
-
-choice
-	prompt "Cache-as-ram implementation"
-	default USE_ICELAKE_CAR_NEM_ENHANCED
-	help
-	  This option allows you to select how cache-as-ram (CAR) is set up.
-
-config USE_ICELAKE_CAR_NEM_ENHANCED
-	bool "Enhanced Non-evict mode"
-	select SOC_INTEL_COMMON_BLOCK_CAR
-	select INTEL_CAR_NEM_ENHANCED
-	help
-	  A current limitation of NEM (Non-Evict mode) is that code and data
-	  sizes are derived from the requirement to not write out any modified
-	  cache line. With NEM, if there is no physical memory behind the
-	  cached area, the modified data will be lost and NEM results will be
-	  inconsistent. ENHANCED NEM guarantees that modified data is always
-	  kept in cache while clean data is replaced.
-
-config USE_ICELAKE_FSP_CAR
-	bool "Use FSP CAR"
-	select FSP_CAR
-	help
-	  Use FSP APIs to initialize and tear down the Cache-As-Ram.
-
-endchoice
 
 config FSP_HEADER_PATH
 	string "Location of FSP headers"

@@ -28,23 +28,13 @@
 #include <cpu/intel/em64t101_save_state.h>
 #include <cpu/intel/smm_reloc.h>
 #include <console/console.h>
+#include <smp/node.h>
 #include <soc/cpu.h>
 #include <soc/msr.h>
 #include <soc/pci_devs.h>
-#include <soc/smm.h>
 #include <soc/systemagent.h>
 #include "chip.h"
 
-/* This gets filled in and used during relocation. */
-static struct smm_relocation_params smm_reloc_params;
-
-static inline void write_smrr(struct smm_relocation_params *relo_params)
-{
-	printk(BIOS_DEBUG, "Writing SMRR. base = 0x%08x, mask=0x%08x\n",
-	       relo_params->smrr_base.lo, relo_params->smrr_mask.lo);
-	wrmsr(IA32_SMRR_PHYS_BASE, relo_params->smrr_base);
-	wrmsr(IA32_SMRR_PHYS_MASK, relo_params->smrr_mask);
-}
 
 static void update_save_state(int cpu, uintptr_t curr_smbase,
 				uintptr_t staggered_smbase,

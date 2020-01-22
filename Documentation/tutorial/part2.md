@@ -1,8 +1,8 @@
 # Tutorial, part 2: Submitting a patch to coreboot.org
 
-## Part 1: Setting up an account at coreboot.org
+## Step 1: Set up an account at coreboot.org
 
-If you already have an account, skip to Part 2.
+If you already have an account, skip to Step 2.
 
 Otherwise, go to <https://review.coreboot.org> in your preferred web browser.
 Select **Sign in** in the upper right corner.
@@ -12,13 +12,13 @@ select **Google OAuth2** (gerrit-oauth-provider plugin). **Note:** Your
 username for the account will be the username of the account you used to
 sign-in with. (ex. your Google username).
 
-## Part 2a: Set up RSA Private/Public Key
+## Step 2a: Set up RSA Private/Public Key
 
-If you prefer to use an HTTP password instead, skip to Part 2b.
+If you prefer to use an HTTP password instead, skip to Step 2b.
 
 For the most up-to-date instructions on how to set up SSH keys with Gerrit go to
 <https://gerrit-documentation.storage.googleapis.com/Documentation/2.14.2/user-upload.html#configure_ssh>
-and follow the instructions there. Then, skip to Part 3.
+and follow the instructions there. Then, skip to Step 3.
 
 Additionally, that section of the Web site provides explanation on starting
 an ssh-agent, which may be particularly helpful for those who anticipate
@@ -44,7 +44,7 @@ forego the password altogether as you will be using it very often.
 Open `id_rsa.pub`, copy all contents and paste into the textbox under
 "Add SSH Public Key" in the https://review.coreboot.org webpage.
 
-## Part 2b: Setting up an HTTP Password
+## Step 2b: Set up an HTTP Password
 
 Alternatively, instead of using SSH keys, you can use an HTTP password. To do so,
 after you select your name and click on **Settings** on the left-hand side, rather
@@ -58,7 +58,21 @@ the password, and add the following to your `$HOME/.netrc` file:
 where YourUserNameHere is your username, and YourPasswordHere is the password you
 just generated.
 
-## Part 3: Clone coreboot and configure it for submitting patches
+If your system is behind a snooping HTTPS proxy, you might also have to
+make its SSL certificate known to curl, a system specific operation.
+If that's not possible for some reason, you can also disable SSL
+certificate verification in git:
+
+	git config [--global] http.sslVerify [true|false]
+
+The `--global` argument sets it for all git transfers of your local
+user, `false` means not to validate the certificate.
+
+If that still doesn't allow you to pull or push changes to the server, the
+proxy is likely tampering with the data stream, in which case there's nothing
+we can do.
+
+## Step 3: Clone coreboot and configure it for submitting patches
 
 On Gerrit, click on the **Browse** tab in the upper left corner and select
 **Repositories**. From the listing, select the "coreboot" repo. You may have
@@ -87,7 +101,7 @@ and other configurations.
 	cd coreboot
 	make gitconfig
 
-## Part 4: Submit a commit
+## Step 4: Submit a commit
 
 An easy first commit to make is fixing existing checkpatch errors and warnings
 in the source files. To see errors that are already present, build the files in
@@ -105,9 +119,9 @@ and can be submitted for review.
 Once you finish making your desired changes, use the command line to stage
 and submit your changes. An alternative and potentially easier way to stage
 and submit commits is to use git cola, a graphical user interface for git. For
-instructions on how to do so, skip to Part 4b.
+instructions on how to do so, skip to Step 4b.
 
-## Part 4a: Using the command line to stage and submit a commit
+## Step 4a: Use the command line to stage and submit a commit
 
 To use the command line to stage a commit, run
 
@@ -157,17 +171,17 @@ commit, you wish to make changes to it, running `git commit --amend` allows
 you to take back your commit and amend it.
 
 When you are done with your commit, run `git push` to push your commit to
-coreboot.org. **Note:** To submit as a draft, use
-`git push origin HEAD:refs/drafts/master`. Submitting as a draft means that
-your commit will be on coreboot.org, but is only visible to those you add
-as reviewers.
+coreboot.org. **Note:** To submit as a private patch, use
+`git push origin HEAD:refs/for/master%private`. Submitting as a private patch
+means that your commit will be on review.coreboot.org, but is only visible to
+yourself and those you add as reviewers.
 
 This has been a quick primer on how to submit a change to Gerrit for review
 using git. You may wish to review the [Gerrit code review workflow
 documentation](https://gerrit-review.googlesource.com/Documentation/intro-user.html#code-review),
 especially if you plan to work on multiple changes at the same time.
 
-## Part 4b: Using git cola to stage and submit a commit
+## Step 4b: Use git cola to stage and submit a commit
 
 If git cola is not installed on your machine, see
 <https://git-cola.github.io/downloads.html> for download instructions.
@@ -227,11 +241,8 @@ explained in the extended description.
 
 When ready, select 'Commit' again. Once all errors have been satisfied
 and the commit succeeds, move to the command line and run `git push`.
-**Note:** To submit as a draft, use `git push origin HEAD:refs/drafts/master`.
-Submitting as a draft means that your commit will be on coreboot.org, but is
-only visible to those you add as reviewers.
 
-## Part 5: Getting your commit reviewed
+## Step 5: Let others review your commit
 
 Your commits can now be seen on review.coreboot.org if you select "Your"
 and click on "Changes" and can be reviewed by others. Your code will
@@ -241,7 +252,7 @@ users may also give your commit +1. For a commit to be merged, it needs
 to receive a +2. **Note:** A +1 and a +1 does not make a +2. Only certain users
 can give a +2.
 
-## Part 6 (optional): bash-git-prompt
+## Step 6 (optional): bash-git-prompt
 
 To help make it easier to understand the state of the git repository
 without running `git status` or `git log`, there is a way to make the

@@ -22,7 +22,6 @@
 #include <device/mmio.h>
 #include <soc/clk_rst.h>
 #include <stdint.h>
-#include <stdlib.h>
 
 enum {
 	CLK_L_CPU = 0x1 << 0,
@@ -320,8 +319,8 @@ static inline void _clock_set_div(u32 *reg, const char *name, u32 div,
 		printk(BIOS_ERR, "%s clock divisor overflow!", name);
 		hlt();
 	}
-	clrsetbits_le32(reg, CLK_SOURCE_MASK | CLK_DIVISOR_MASK,
-			src << CLK_SOURCE_SHIFT | div);
+	clrsetbits32(reg, CLK_SOURCE_MASK | CLK_DIVISOR_MASK,
+		     src << CLK_SOURCE_SHIFT | div);
 }
 
 #define get_i2c_clk_div(src, freq)	\

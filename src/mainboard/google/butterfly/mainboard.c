@@ -17,7 +17,6 @@
 #include <types.h>
 #include <cbfs.h>
 #include <device/device.h>
-#include <device/pci_def.h>
 #include <device/pci_ops.h>
 #include <console/console.h>
 #include <drivers/intel/gma/int15.h>
@@ -28,7 +27,6 @@
 #include "ec.h"
 #include <southbridge/intel/bd82x6x/pch.h>
 #include <smbios.h>
-#include <device/pci.h>
 #include <ec/quanta/ene_kb3940q/ec.h>
 #include <vendorcode/google/chromeos/chromeos.h>
 

@@ -218,18 +218,6 @@ static void lb_vbnv(struct lb_header *header)
 }
 #endif /* CONFIG_CHROMEOS */
 
-static void lb_vboot_workbuf(struct lb_header *header)
-{
-	struct lb_range *vbwb;
-	struct vboot_working_data *wd = vboot_get_working_data();
-
-	vbwb = (struct lb_range *)lb_new_record(header);
-	vbwb->tag = LB_TAG_VBOOT_WORKBUF;
-	vbwb->size = sizeof(*vbwb);
-	vbwb->range_start = (uintptr_t)wd + wd->buffer_offset;
-	vbwb->range_size = wd->buffer_size;
-}
-
 __weak uint32_t board_id(void) { return UNDEFINED_STRAPPING_ID; }
 __weak uint32_t ram_code(void) { return UNDEFINED_STRAPPING_ID; }
 __weak uint32_t sku_id(void) { return UNDEFINED_STRAPPING_ID; }
@@ -254,12 +242,12 @@ static void lb_board_id(struct lb_header *header)
 static void lb_boot_media_params(struct lb_header *header)
 {
 	struct lb_boot_media_params *bmp;
-	struct cbfs_props props;
 	const struct region_device *boot_dev;
+	struct region_device cbfs_dev;
 
 	boot_device_init();
 
-	if (cbfs_boot_region_properties(&props))
+	if (cbfs_boot_region_device(&cbfs_dev))
 		return;
 
 	boot_dev = boot_device_ro();
@@ -270,8 +258,8 @@ static void lb_boot_media_params(struct lb_header *header)
 	bmp->tag = LB_TAG_BOOT_MEDIA_PARAMS;
 	bmp->size = sizeof(*bmp);
 
-	bmp->cbfs_offset = props.offset;
-	bmp->cbfs_size = props.size;
+	bmp->cbfs_offset = region_device_offset(&cbfs_dev);
+	bmp->cbfs_size = region_device_sz(&cbfs_dev);
 	bmp->boot_media_size = region_device_sz(boot_dev);
 
 	bmp->fmap_offset = get_fmap_flash_offset();
@@ -344,6 +332,7 @@ static void add_cbmem_pointers(struct lb_header *header)
 		{CBMEM_ID_WIFI_CALIBRATION, LB_TAG_WIFI_CALIBRATION},
 		{CBMEM_ID_TCPA_LOG, LB_TAG_TCPA_LOG},
 		{CBMEM_ID_FMAP, LB_TAG_FMAP},
+		{CBMEM_ID_VBOOT_WORKBUF, LB_TAG_VBOOT_WORKBUF},
 	};
 	int i;
 
@@ -487,7 +476,7 @@ size_t write_coreboot_forwarding_table(uintptr_t entry, uintptr_t target)
 {
 	struct lb_header *head;
 
-	printk(BIOS_DEBUG, "Writing table forward entry at 0x%p\n",
+	printk(BIOS_DEBUG, "Writing table forward entry at %p\n",
 		(void *)entry);
 
 	head = lb_table_init(entry);
@@ -552,11 +541,6 @@ static uintptr_t write_coreboot_table(uintptr_t rom_table_end)
 	/* pass along VBNV offsets in CMOS */
 	lb_vbnv(head);
 #endif
-
-	if (CONFIG(VBOOT)) {
-		/* pass along the vboot workbuf address. */
-		lb_vboot_workbuf(head);
-	}
 
 	/* Add strapping IDs if available */
 	lb_board_id(head);

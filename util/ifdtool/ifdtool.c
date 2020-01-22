@@ -217,6 +217,7 @@ static int is_platform_ifd_2(void)
 		PLATFORM_CNL,
 		PLATFORM_ICL,
 		PLATFORM_TGL,
+		PLATFORM_JSL,
 	};
 	unsigned int i;
 
@@ -1357,11 +1358,12 @@ static void new_layout(const char *filename, char *image, int size,
 		if (new->size > current->size) {
 			/* copy from the end of the current region */
 			copy_size = current->size;
-			offset_new = new->size - current->size;
+			if (i == REGION_BIOS)
+				offset_new = new->size - current->size;
 		}
 
-		if (new->size < current->size) {
-			/* copy to the end of the new region */
+		if ((i == REGION_BIOS) && (new->size < current->size)) {
+			/* copy BIOS region to the end of the new region */
 			offset_current = current->size - new->size;
 		}
 
@@ -1637,6 +1639,8 @@ int main(int argc, char *argv[])
 				platform = PLATFORM_GLK;
 			} else if (!strcmp(optarg, "icl")) {
 				platform = PLATFORM_ICL;
+			} else if (!strcmp(optarg, "jsl")) {
+                                platform = PLATFORM_JSL;
 			} else if (!strcmp(optarg, "sklkbl")) {
 				platform = PLATFORM_SKLKBL;
 			} else if (!strcmp(optarg, "tgl")) {

@@ -50,7 +50,7 @@ config VBOOT
 
 config MAINBOARD_DIR
 	string
-	default intel/glkrvp
+	default "intel/glkrvp"
 
 config VARIANT_DIR
 	string
@@ -85,5 +85,9 @@ config INCLUDE_NHLT_BLOBS
 config IS_GLK_RVP_1
 	bool "Is this RVP1?"
 	default n
+
+config SOC_INTEL_COMMON_BLOCK_SGX_ENABLE
+	bool
+	default y
 
 endif # BOARD_INTEL_GLKRVP

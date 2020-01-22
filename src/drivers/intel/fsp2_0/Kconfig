@@ -37,47 +37,6 @@ config ADD_FSP_BINARIES
 	  Add the FSP-M and FSP-S binaries to CBFS. Currently coreboot does not
 	  use the FSP-T binary and it is not added.
 
-config DISPLAY_FSP_CALLS_AND_STATUS
-	bool "Display the FSP calls and status"
-	default n
-	help
-	  Display the FSP call entry point and parameters prior to calling FSP
-	  and display the status upon return from FSP.
-
-config DISPLAY_FSP_HEADER
-	bool "Display the FSP header"
-	default n
-	help
-	  Display the FSP header information when the FSP file is found.
-
-config DISPLAY_HOBS
-	bool "Display the hand-off-blocks"
-	default n
-	help
-	  Display the FSP HOBs which are provided for coreboot.
-
-config DISPLAY_UPD_DATA
-	bool "Display UPD data"
-	default n
-	help
-	  Display the user specified product data prior to memory
-	  initialization.
-
-config CPU_MICROCODE_CBFS_LEN
-	hex "Microcode update region length in bytes"
-	depends on FSP_CAR
-	default 0x0
-	help
-	  The length in bytes of the microcode update region.
-
-config CPU_MICROCODE_CBFS_LOC
-	hex "Microcode update base address in CBFS"
-	depends on FSP_CAR
-	default 0x0
-	help
-	  The location (base address) in CBFS that contains the
-	  microcode update binary.
-
 config FSP_T_CBFS
 	string "Name of FSP-T in CBFS"
 	depends on FSP_CAR
@@ -96,7 +55,7 @@ config FSP_USE_REPO
 	depends on ADD_FSP_BINARIES
 	depends on SOC_INTEL_APOLLOLAKE || SOC_INTEL_SKYLAKE || \
 		SOC_INTEL_KABYLAKE || SOC_INTEL_COFFEELAKE || \
-		SOC_INTEL_WHISKEYLAKE
+		SOC_INTEL_ICELAKE  || SOC_INTEL_WHISKEYLAKE
 	help
 	  When selecting this option, the SoC must set FSP_HEADER_PATH
 	  and FSP_FD_PATH correctly so FSP splitting works.
@@ -123,14 +82,13 @@ config FSP_S_FILE
 	  The path and filename of the Intel FSP-S binary for this platform.
 
 config FSP_CAR
-	bool "Use FSP TempRamInit & TempRamExit APIs"
-	depends on ADD_FSP_BINARIES
+	bool
 	default n
 	help
 	  Use FSP APIs to initialize & Tear Down the Cache-As-Ram
 
 config FSP_M_XIP
-	bool "Is FSP-M XIP"
+	bool
 	default n
 	help
 	  Select this value when FSP-M is execute-in-place.
@@ -158,22 +116,6 @@ config FSP_TEMP_RAM_SIZE
 	  This configuration is applicable for FSP specification using shared
 	  stack with coreboot/bootloader.
 	  Sync this value with Platform FSP integration guide recommendation.
-
-config VERIFY_HOBS
-	bool "Verify the FSP hand-off-blocks"
-	default n
-	help
-	  Verify that the HOBs required by coreboot are returned by FSP and
-	  that the resource HOBs are in the correct order and position.
-
-config RESET_ON_INVALID_RAMSTAGE_CACHE
-	bool "Reset the system on S3 wake when ramstage cache invalid."
-	default n
-
-config DISPLAY_FSP_VERSION_INFO
-	bool "Display Firmware Ingredient Version Information"
-	help
-	  Select this option to display Firmware version information.
 
 config FSP2_0_USES_TPM_MRC_HASH
 	bool
@@ -209,6 +151,24 @@ config FSP_PEIM_TO_PEIM_INTERFACE
 	  along with all APIs as per EFI specification. So far this feature
 	  is limited till EFI_PEI_MP_SERVICE_PPI and this option might be
 	  useful to add further PPI if required.
+
+config HAVE_FSP_LOGO_SUPPORT
+	bool
+	default n
+
+config FSP2_0_DISPLAY_LOGO
+	bool "Enable logo"
+	default n
+	depends on HAVE_FSP_LOGO_SUPPORT
+	help
+	  Uses the FSP to display the boot logo. This method supports a
+	  BMP file only. The uncompressed size can be up to 1 MB. The logo can be compressed
+	  using LZMA.
+
+config FSP2_0_LOGO_FILE_NAME
+	string "Logo file"
+	depends on FSP2_0_DISPLAY_LOGO
+	default "3rdparty/blobs/mainboard/$(MAINBOARDDIR)/logo.bmp"
 
 if FSP_PEIM_TO_PEIM_INTERFACE
 source "src/drivers/intel/fsp2_0/ppi/Kconfig"

@@ -11,7 +11,6 @@
  * GNU General Public License for more details.
  */
 
-#include <arch/early_variables.h>
 #include <console/console.h>
 #include <security/tpm/tis.h>
 #include <arch/acpigen.h>
@@ -21,7 +20,7 @@
 #include "tpm.h"
 #include "chip.h"
 
-static unsigned tpm_is_open CAR_GLOBAL;
+static unsigned int tpm_is_open;
 
 static const struct {
 	uint16_t vid;
@@ -45,7 +44,7 @@ static const char *tis_get_dev_name(struct tpm2_info *info)
 
 int tis_open(void)
 {
-	if (car_get_var(tpm_is_open)) {
+	if (tpm_is_open) {
 		printk(BIOS_ERR, "%s called twice.\n", __func__);
 		return -1;
 	}
@@ -63,13 +62,13 @@ int tis_open(void)
 
 int tis_close(void)
 {
-	if (car_get_var(tpm_is_open)) {
+	if (tpm_is_open) {
 
 		/*
 		 * Do we need to do something here, like waiting for a
 		 * transaction to stop?
 		 */
-		car_set_var(tpm_is_open, 0);
+		tpm_is_open = 0;
 	}
 
 	return 0;
@@ -104,8 +103,6 @@ int tis_sendrecv(const uint8_t *sendbuf, size_t sbuf_size, uint8_t *recvbuf, siz
 	return 0;
 }
 
-#ifdef __RAMSTAGE__
-
 static void crb_tpm_fill_ssdt(struct device *dev)
 {
 	const char *path = acpi_device_path(dev);
@@ -120,7 +117,7 @@ static void crb_tpm_fill_ssdt(struct device *dev)
 	acpigen_write_name_string("_HID", "MSFT0101");
 	acpigen_write_name_string("_CID", "MSFT0101");
 
-	acpigen_write_name_integer("_UID", 1);
+	acpi_device_write_uid(dev);
 
 	acpigen_write_STA(ACPI_STATUS_DEVICE_ALL_ON);
 
@@ -139,7 +136,7 @@ static const char *crb_tpm_acpi_name(const struct device *dev)
 	return "TPM";
 }
 
-static struct device_operations crb_ops = {
+static struct device_operations __unused crb_ops = {
 	.read_resources = DEVICE_NOOP,
 	.set_resources = DEVICE_NOOP,
 #if CONFIG(HAVE_ACPI_TABLES)
@@ -151,9 +148,12 @@ static struct device_operations crb_ops = {
 
 static void enable_dev(struct device *dev)
 {
+#if !DEVTREE_EARLY
 	dev->ops = &crb_ops;
+#endif
 }
 
-struct chip_operations drivers_crb_ops = {CHIP_NAME("CRB TPM").enable_dev = enable_dev};
-
-#endif /* __RAMSTAGE__ */
+struct chip_operations drivers_crb_ops = {
+	CHIP_NAME("CRB TPM")
+	.enable_dev = enable_dev
+};

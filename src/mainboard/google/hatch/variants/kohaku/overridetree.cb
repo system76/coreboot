@@ -2,8 +2,6 @@ chip soc/intel/cannonlake
 	register "tdp_pl1_override" = "8"
 	register "tdp_pl2_override" = "51"
 
-	register "tcc_offset" = "35"	# TCC of 65C
-
 	register "SerialIoDevMode" = "{
 		[PchSerialIoIndexI2C0] = PchSerialIoPci,
 		[PchSerialIoIndexI2C1] = PchSerialIoPci,
@@ -60,6 +58,8 @@ chip soc/intel/cannonlake
 		},
 		.i2c[1] = {
 			.speed = I2C_SPEED_FAST,
+			.rise_time_ns = 60,
+			.fall_time_ns = 25,
 		},
 		.i2c[2] = {
 			.speed = I2C_SPEED_FAST,
@@ -68,8 +68,8 @@ chip soc/intel/cannonlake
 		},
 		.i2c[4] = {
 			.speed = I2C_SPEED_FAST,
-			.rise_time_ns = 100,
-			.fall_time_ns = 20,
+			.rise_time_ns = 104,
+			.fall_time_ns = 52,
 		},
 		.gspi[0] = {
 		       .speed_mhz = 1,
@@ -206,7 +206,7 @@ chip soc/intel/cannonlake
 				register "generic.irq" = "ACPI_IRQ_LEVEL_LOW(GPP_C7_IRQ)"
 				register "generic.enable_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_C15)"
 				register "generic.reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_A19)"
-				register "generic.reset_delay_ms" = "1"
+				register "generic.reset_delay_ms" = "100"
 				register "generic.has_power_resource" = "1"
 				register "hid_desc_reg_offset" = "0x1"
 				device i2c 0x09 on end
@@ -259,5 +259,12 @@ chip soc/intel/cannonlake
 				device spi 1 on end
 			end # FPMCU
 		end # GSPI #1
+		device pci 1f.3 on
+			chip drivers/generic/max98357a
+				register "sdmode_gpio" =  "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_H3)"
+				register "sdmode_delay" = "5"
+				device generic 0 on end
+			end
+		end # Intel HDA
 	end # domain
 end

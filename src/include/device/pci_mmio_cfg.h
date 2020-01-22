@@ -20,7 +20,6 @@
 #include <device/mmio.h>
 #include <device/pci_type.h>
 
-#if !defined(__ROMCC__)
 
 /* By not assigning this to CONFIG_MMCONF_BASE_ADDRESS here we
  * prevent some sub-optimal constant folding. */
@@ -86,9 +85,35 @@ void pci_mmio_write_config32(pci_devfn_t dev, uint16_t reg, uint32_t value)
 	pcicfg(dev)->reg32[reg / sizeof(uint32_t)] = value;
 }
 
-#endif /* !defined(__ROMCC__) */
+/*
+ * The functions pci_mmio_config*_addr provide a way to determine the MMIO address of a PCI
+ * config register. The address returned is dependent of both the MMCONF base address and the
+ * assigned PCI bus number of the requested device, which both can change during the boot
+ * process. Thus, the pointer returned here must not be cached!
+ */
+static __always_inline
+uint8_t *pci_mmio_config8_addr(pci_devfn_t dev, uint16_t reg)
+{
+	return (uint8_t *)&pcicfg(dev)->reg8[reg];
+}
+
+static __always_inline
+uint16_t *pci_mmio_config16_addr(pci_devfn_t dev, uint16_t reg)
+{
+	return (uint16_t *)&pcicfg(dev)->reg16[reg / sizeof(uint16_t)];
+}
+
+static __always_inline
+uint32_t *pci_mmio_config32_addr(pci_devfn_t dev, uint16_t reg)
+{
+	return (uint32_t *)&pcicfg(dev)->reg32[reg / sizeof(uint32_t)];
+}
 
 #if CONFIG(MMCONF_SUPPORT)
+
+#if CONFIG_MMCONF_BASE_ADDRESS == 0
+#error "CONFIG_MMCONF_BASE_ADDRESS undefined!"
+#endif
 
 /* Avoid name collisions as different stages have different signature
  * for these functions. The _s_ stands for simple, fundamental IO or

@@ -19,7 +19,24 @@
 #include <endian.h>
 #include <types.h>
 
-#ifndef __ROMCC__
+#define __clrsetbits_impl(bits, addr, clear, set) write##bits(addr, \
+	(read##bits(addr) & ~((uint##bits##_t)(clear))) | (set))
+
+#define clrsetbits8(addr, clear, set)	__clrsetbits_impl(8, addr, clear, set)
+#define clrsetbits16(addr, clear, set)	__clrsetbits_impl(16, addr, clear, set)
+#define clrsetbits32(addr, clear, set)	__clrsetbits_impl(32, addr, clear, set)
+#define clrsetbits64(addr, clear, set)	__clrsetbits_impl(64, addr, clear, set)
+
+#define setbits8(addr, set)		clrsetbits8(addr, 0, set)
+#define setbits16(addr, set)		clrsetbits16(addr, 0, set)
+#define setbits32(addr, set)		clrsetbits32(addr, 0, set)
+#define setbits64(addr, set)		clrsetbits64(addr, 0, set)
+
+#define clrbits8(addr, clear)		clrsetbits8(addr, clear, 0)
+#define clrbits16(addr, clear)		clrsetbits16(addr, clear, 0)
+#define clrbits32(addr, clear)		clrsetbits32(addr, clear, 0)
+#define clrbits64(addr, clear)		clrsetbits64(addr, clear, 0)
+
 /*
  * Reads a transfer buffer from 32-bit FIFO registers. fifo_stride is the
  * distance in bytes between registers (e.g. pass 4 for a normal array of 32-bit
@@ -48,7 +65,7 @@ void buffer_to_fifo32_prefix(void *buffer, u32 prefix, int prefsz, size_t size,
 static inline void buffer_to_fifo32(void *buffer, size_t size, void *fifo,
 				    int fifo_stride, int fifo_width)
 {
-	buffer_to_fifo32_prefix(buffer, size, 0, 0, fifo,
+	buffer_to_fifo32_prefix(buffer, 0, 0, size, fifo,
 				fifo_stride, fifo_width);
 }
 
@@ -102,10 +119,10 @@ static inline void buffer_to_fifo32(void *buffer, size_t size, void *fifo,
  *
  * These will be translated to:
  *
- *  clrsetbits_le32(&disp_regs.ctrl, 0x6, 0x4);
- *  clrsetbits_le32(&disp_regs.ctrl, 0x1, 0x0);
+ *  clrsetbits32(&disp_regs.ctrl, 0x6, 0x4);
+ *  clrsetbits32(&disp_regs.ctrl, 0x1, 0x0);
  *
- *  clrsetbits_le32(&disp_regs.ctrl, 0x7, 0x3);
+ *  clrsetbits32(&disp_regs.ctrl, 0x7, 0x3);
  *  write32(&disp_regs.ctrl, 0x3);
  *
  *  (read32(&reg) & 0x6) >> 1
@@ -169,14 +186,12 @@ static inline void buffer_to_fifo32(void *buffer, size_t size, void *fifo,
 	_BF_IMPL(_WRITE32_BITFIELDS_IMPL, addr, __VA_ARGS__)
 
 #define SET32_BITFIELDS(addr, ...) \
-	_BF_IMPL(clrsetbits_le32, addr, __VA_ARGS__)
+	_BF_IMPL(clrsetbits32, addr, __VA_ARGS__)
 
 #define EXTRACT_BITFIELD(value, name) \
 	(((value) & _BF_MASK(name, 0)) >> name##_BITFIELD_SHIFT)
 
 #define READ32_BITFIELD(addr, name) \
 	EXTRACT_BITFIELD(read32(addr), name)
-
-#endif	/* !__ROMCC__ */
 
 #endif	/* __DEVICE_MMIO_H__ */

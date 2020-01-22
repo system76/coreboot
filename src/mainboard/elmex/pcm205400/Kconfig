@@ -13,6 +13,9 @@
 # GNU General Public License for more details.
 #
 
+config BOARD_ELMEX_PCM205400
+	def_bool n
+
 if BOARD_ELMEX_PCM205400
 
 config MAINBOARD_PART_NUMBER
@@ -29,6 +32,7 @@ if BOARD_ELMEX_PCM205400 || BOARD_ELMEX_PCM205401
 
 config BOARD_SPECIFIC_OPTIONS
 	def_bool y
+	#select ROMCC_BOOTBLOCK
 	select CPU_AMD_AGESA_FAMILY14
 	select NORTHBRIDGE_AMD_AGESA_FAMILY14
 	select SOUTHBRIDGE_AMD_CIMX_SB800
@@ -43,7 +47,7 @@ config BOARD_SPECIFIC_OPTIONS
 
 config MAINBOARD_DIR
 	string
-	default elmex/pcm205400
+	default "elmex/pcm205400"
 
 config HW_MEM_HOLE_SIZEK
 	hex

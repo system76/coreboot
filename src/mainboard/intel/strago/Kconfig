@@ -24,15 +24,11 @@ config VBOOT
 
 config MAINBOARD_DIR
 	string
-	default intel/strago
+	default "intel/strago"
 
 config MAINBOARD_PART_NUMBER
 	string
 	default "Strago"
-
-config MAINBOARD_VENDOR
-	string
-	default "Intel"
 
 config VGA_BIOS_FILE
 	string

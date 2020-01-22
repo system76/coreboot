@@ -36,11 +36,9 @@
 	/* Stack for CAR stages. Since it persists across all stages that
 	 * use CAR it can be reused. The chipset/SoC is expected to provide
 	 * the stack size. */
-#if CONFIG(C_ENVIRONMENT_BOOTBLOCK)
-	_car_stack_start = .;
+	_car_stack = .;
 	. += CONFIG_DCACHE_BSP_STACK_SIZE;
-	_car_stack_end = .;
-#endif
+	_ecar_stack = .;
 	/* The pre-ram cbmem console as well as the timestamp region are fixed
 	 * in size. Therefore place them above the car global section so that
          * multiple stages (romstage and verstage) have a consistent
@@ -59,15 +57,19 @@
 
 	TIMESTAMP(., 0x200)
 
-	_car_ehci_dbg_info_start = .;
+#if !CONFIG(NO_FMAP_CACHE)
+	FMAP_CACHE(., FMAP_SIZE)
+#endif
+
+	_car_ehci_dbg_info = .;
 	/* Reserve sizeof(struct ehci_dbg_info). */
         . += 80;
-        _car_ehci_dbg_info_end = .;
+        _ecar_ehci_dbg_info = .;
 
 	/* _bss and _ebss provide symbols to per-stage
 	 * variables that are not shared like the timestamp and the pre-ram
 	 * cbmem console. This is useful for clearing this area on a per-stage
-	 * basis when more than one stage uses cache-as-ram for CAR_GLOBALs. */
+	 * basis when more than one stage uses cache-as-ram. */
 
 	. = ALIGN(ARCH_POINTER_ALIGN_SIZE);
 	_bss = .;
@@ -77,19 +79,11 @@
 	*(.bss.*)
 	*(.sbss)
 	*(.sbss.*)
-#else
-	_car_global_start = .;
-	*(.car.global_data);
-	_car_global_end = .;
 #endif
 	. = ALIGN(ARCH_POINTER_ALIGN_SIZE);
 	_ebss = .;
 	_car_unallocated_start = .;
 
-#if !CONFIG(C_ENVIRONMENT_BOOTBLOCK)
-	_car_stack_start = .;
-	_car_stack_end = _car_region_end;
-#endif
 	_car_region_end = . + CONFIG_DCACHE_RAM_SIZE - (. - _car_region_start);
 }
 
@@ -102,21 +96,10 @@
 .illegal_globals . : {
 	*(EXCLUDE_FILE ("*/libagesa.*.a:" "*/romstage*/buildOpts.o" "*/romstage*/agesawrapper.o" "*/vendorcode/amd/agesa/*" "*/vendorcode/amd/cimx/*") .data)
 		*(EXCLUDE_FILE ("*/libagesa.*.a:" "*/romstage*/buildOpts.o" "*/romstage*/agesawrapper.o" "*/vendorcode/amd/agesa/*" "*/vendorcode/amd/cimx/*") .data.*)
-#if CONFIG(CAR_GLOBAL_MIGRATION)
-	*(.bss)
-	*(.bss.*)
-	*(.sbss)
-	*(.sbss.*)
-#else
-	/* In case something sneaks through when it shouldn't. */
-	*(.car.global_data);
-#endif
 }
 
 _bogus = ASSERT((CONFIG_DCACHE_RAM_SIZE == 0) || (SIZEOF(.car.data) <= CONFIG_DCACHE_RAM_SIZE), "Cache as RAM area is too full");
 #if CONFIG(PAGING_IN_CACHE_AS_RAM)
 _bogus2 = ASSERT(_pagetables == ALIGN(_pagetables, 4096), "_pagetables aren't 4KiB aligned");
 #endif
-#if CONFIG(C_ENVIRONMENT_BOOTBLOCK)
 _bogus3 = ASSERT(CONFIG_DCACHE_BSP_STACK_SIZE > 0x0, "BSP stack size not configured");
-#endif

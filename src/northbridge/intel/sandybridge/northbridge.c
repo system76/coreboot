@@ -24,7 +24,6 @@
 #include <device/device.h>
 #include <device/pci.h>
 #include <device/pci_ids.h>
-#include <stdlib.h>
 #include "chip.h"
 #include "sandybridge.h"
 #include <cpu/intel/smm_reloc.h>
@@ -258,7 +257,6 @@ static const char *northbridge_acpi_name(const struct device *dev)
 
 	/* TODO We could determine how many PCIe busses we need in
 	 * the bar. For now that number is hardcoded to a max of 64.
-	 * See e7525/northbridge.c for an example.
 	 */
 static struct device_operations pci_domain_ops = {
 	.read_resources   = pci_domain_read_resources,
@@ -393,15 +391,15 @@ static void northbridge_init(struct device *dev)
 
 	northbridge_dmi_init(dev);
 
-	bridge_type = MCHBAR32(0x5f10);
+	bridge_type = MCHBAR32(SAPMTIMERS);
 	bridge_type &= ~0xff;
 
 	if ((bridge_silicon_revision() & BASE_REV_MASK) == BASE_REV_IVB) {
 		/* Enable Power Aware Interrupt Routing */
-		u8 pair = MCHBAR8(0x5418);
+		u8 pair = MCHBAR8(PAIR_CTL);
 		pair &= ~0xf;	/* Clear 3:0 */
 		pair |= 0x4;	/* Fixed Priority */
-		MCHBAR8(0x5418) = pair;
+		MCHBAR8(PAIR_CTL) = pair;
 
 		/* 30h for IvyBridge */
 		bridge_type |= 0x30;
@@ -409,7 +407,7 @@ static void northbridge_init(struct device *dev)
 		/* 20h for Sandybridge */
 		bridge_type |= 0x20;
 	}
-	MCHBAR32(0x5f10) = bridge_type;
+	MCHBAR32(SAPMTIMERS) = bridge_type;
 
 	/* Turn off unused devices. Has to be done before
 	 * setting BIOS_RESET_CPL.
@@ -435,12 +433,12 @@ static void northbridge_init(struct device *dev)
 	 */
 	if (cpu_config_tdp_levels()) {
 		msr_t msr = rdmsr(MSR_PKG_POWER_LIMIT);
-		MCHBAR32(0x59A0) = msr.lo;
-		MCHBAR32(0x59A4) = msr.hi;
+		MCHBAR32(MC_TURBO_PL1) = msr.lo;
+		MCHBAR32(MC_TURBO_PL2) = msr.hi;
 	}
 
 	/* Set here before graphics PM init */
-	MCHBAR32(0x5500) = 0x00100001;
+	MCHBAR32(MMIO_PAVP_CTL) = 0x00100001;
 }
 
 void northbridge_write_smram(u8 smram)

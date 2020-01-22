@@ -21,6 +21,7 @@ config BOARD_SPECIFIC_OPTIONS
 	select CPU_AMD_AGESA_FAMILY15_TN
 	select NORTHBRIDGE_AMD_AGESA_FAMILY15_TN
 	select SOUTHBRIDGE_AMD_AGESA_HUDSON
+	select DEFAULT_POST_ON_LPC
 	select EC_COMPAL_ENE932
 	select HAVE_OPTION_TABLE
 	select HAVE_PIRQ_TABLE
@@ -35,7 +36,7 @@ config BOARD_SPECIFIC_OPTIONS
 
 config MAINBOARD_DIR
 	string
-	default hp/pavilion_m6_1035dx
+	default "hp/pavilion_m6_1035dx"
 
 config MAINBOARD_PART_NUMBER
 	string

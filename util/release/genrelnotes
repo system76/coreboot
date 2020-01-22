@@ -192,7 +192,6 @@ version_ctrl_c() {
 		-exec rename 's/gnumakefile/Makefile\.inc/' {} \;
 	git checkout origin/master > /dev/null 2>&1
 	git submodule update --init --checkout  > /dev/null 2>&1
-	rm -f "$mainboard_list_old" "$mainboard_list_new"
 	rm "$LOGFILE"
 	exit 1;
 }
@@ -202,12 +201,22 @@ show_diff () {
 	local new
 	local old
 
-	new="$(comm -13 <(echo "$2") <(echo "$3") | sed 's/^/* /')"
+	new="$(comm -13 <(echo "$2") <(echo "$3"))"
+	old="$(comm -23 <(echo "$2") <(echo "$3"))"
+
+	# Allow running a postprocessor, given as 4th argument over the
+	# resulting diff, provide context if it's old or new data
+	if [ -n "$4" ]; then
+		new=$(echo "$new" | $4 new | sort)
+		old=$(echo "$old" | $4 old | sort)
+	fi
+	new="$(printf "$new" | sed 's/^/* /')"
+	old="$(printf "$old" | sed 's/^/* /')"
+
 	if [ -n "$new" ]; then
 		printf "Added %s $1:\n-------------------\n%s\n\n" \
 			"$(echo "$new" | wc -l)" "$new"  >> "$LOGFILE"
 	fi
-	old="$(comm -23 <(echo "$2") <(echo "$3") | sed 's/^/* /')"
 	if [ -n "$old" ]; then
 		printf "Removed %s $1:\n-------------------\n%s\n\n" \
 			"$(echo "$old" | wc -l)" "$old"  >> "$LOGFILE"
@@ -216,14 +225,29 @@ show_diff () {
 
 get_sloc () {
 	# Because cloc works on extensions, and .inc identifies as pascal,
-	# rename Makefile.inc, then remap the other .inc files to c
-	find 'src' -name 'Makefile.inc' -exec rename 's/Makefile\.inc/gnumakefile/' {} \;
+	# while we use it both for Makefile.inc and some files that are
+	# really C, do three passes: everything but .inc files, all .inc files
+	# that aren't Makefiles, all Makefile.inc, then combine them.
 
-	cloc --progress-rate=0 --quiet --script-lang="Bourne Shell",bash \
-		--force-lang=c,inc --exclude-dir=vendorcode src
+	local base=`mktemp`
+	find src -name Makefile.inc > ${base}.mak
 
-	# Change all the makefiles back to Makefile.inc
-	find 'src' -name 'gnumakefile' -exec rename 's/gnumakefile/Makefile\.inc/' {} \;
+	cloc --progress-rate=0 --quiet \
+		--script-lang="Bourne Shell",bash --exclude-ext=inc \
+		--exclude-dir=vendorcode --out=${base} src
+	cloc --progress-rate=0 --quiet \
+		--exclude-list-file=${base}.mak --force-lang=c,inc \
+		--exclude-dir=vendorcode --out=${base}.c src
+	cloc --progress-rate=0 --quiet \
+		--list-file=${base}.mak --force-lang=make,inc \
+		--exclude-dir=vendorcode --out=${base}.m src
+	cloc --progress-rate=0 --quiet --sum-reports \
+		${base} ${base}.c ${base}.m --out ${base}.result
+
+	echo
+	cat ${base}.result.lang
+
+	rm -f ${base}*
 }
 
 # Start collecting data from the old and new revisions.
@@ -353,11 +377,6 @@ get_log_dedupe "ARM" \
 get_log_dedupe "RISC-V" \
 	"$(for codedir in $(grep -rl "_RISCV" --include=Kconfig | grep -v 'payloads/\|drivers/\|vendorcode/\|console' ); do dirname "$codedir"; done | grep -v '^src$')" \
 	"riscv\|risc-v\|sifive"
-
-get_log_dedupe "MIPS" \
-	"$(for codedir in $(grep -rl "_MIPS" --include=Kconfig | \
-	grep -v 'src/mainboard\|payloads/\|drivers/\|vendorcode/\|console' ); \
-	do dirname "$codedir"; done | grep -v '^src$')"
 }
 
 get_log_dedupe "X86 intel" \
@@ -405,8 +424,26 @@ get_log_dedupe "Maintainers" "MAINTAINERS" ""
 # Finally, get anything that was missed above
 get_log_dedupe "MISC" "."
 
+# Replace VENDOR_DEVICE from stdin with their nice names on stdout
+real_mainboard_names() {
+	local tree_version=$1 # "old" or "new"
+	local git_version_var=${tree_version^^}_GIT_VERSION
+	local git_version=${!git_version_var}
+	local line
+
+	while read line; do
+		local file="$(git grep -l "^[[:space:]]*config\>[[:space:]]*\<BOARD_${line}\$" ${git_version} -- src/mainboard/\*/\*/Kconfig.name | sed "s,^${git_version}:,,")"
+		if [ -z "$file" ]; then
+			echo "This shouldn't happen: couldn't find Kconfig for $line"
+			exit 1
+		fi
+		local vendor="$(git grep \" ${git_version} -- $(echo ${file} | cut -d/ -f1-3,5) | cut -d\" -f2)"
+		git grep -h -A1 "^[[:space:]]*config\>[[:space:]]*\<BOARD_${line}\$" ${git_version} -- ${file} | grep \" |cut -d\" -f2 |sed "s,^,${vendor} ,"
+	done
+}
+
 # Show areas that have been added or removed
-show_diff "mainboards"   "$mainboard_list_old"   "$mainboard_list_new"
+show_diff "mainboards"   "$mainboard_list_old"   "$mainboard_list_new"    real_mainboard_names
 show_diff "processors"   "$cpu_list_old"         "$cpu_list_new"
 show_diff "socs"         "$soc_list_old"         "$soc_list_new"
 show_diff "northbridges" "$northbridge_list_old" "$northbridge_list_new"
@@ -432,8 +469,8 @@ NEW_AUTHORS=$(git log --pretty=%an "${OLD_GIT_VERSION}" 2>/dev/null | sort | \
 	git log --pretty=%an "${NEW_GIT_VERSION}" 2>/dev/null | \
 	sort | uniq > "$after_names" && \
 	grep -Fxv -c -f "$before_names" "$after_names")
-NEW_AUTHOR_LIST=$( grep -Fxv -f "$before_names" "$after_names" && \
-	rm "$before_names" "$after_names")
+NEW_AUTHOR_LIST=$( grep -Fxv -f "$before_names" "$after_names")
+rm -f "$before_names" "$after_names"
 {
 	printf -- "- Total commits: %s\n" "$TOTAL_COMMITS"
 	printf -- "- Total authors: %s\n" \

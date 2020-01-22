@@ -14,10 +14,12 @@
  */
 
 #include <stdint.h>
+#include <amdblocks/acpimmio.h>
 #include <device/pci_def.h>
 #include <arch/io.h>
 #include <console/console.h>
 #include <device/pci_ops.h>
+#include <amdblocks/acpimmio.h>
 #include <northbridge/amd/agesa/state_machine.h>
 #include <southbridge/amd/agesa/hudson/hudson.h>
 #include <superio/smsc/lpc47n217/lpc47n217.h>
@@ -31,7 +33,6 @@ void board_BeforeAgesa(struct sysinfo *cb)
 
 	/* Set LPC decode enables. */
 	dev = PCI_DEV(0, 0x14, 3);
-	hudson_lpc_port80();
 
 	byte = pci_read_config8(dev, 0x48);
 	byte |= 3;		/* 2e, 2f */
@@ -47,9 +48,7 @@ void board_BeforeAgesa(struct sysinfo *cb)
 	post_code(0x31);
 	lpc47n217_enable_serial(SERIAL_DEV, CONFIG_TTYS0_BASE);
 
-	outb(0x24, 0xcd6);
-	outb(0x1, 0xcd7);
-	outb(0xea, 0xcd6);
-	outb(0x1, 0xcd7);
-	*(u8 *)0xfed80101 = 0x98;
+	pm_io_write8(0x24, 1);
+	pm_io_write8(0xea, 1);
+	gpio_100_write8(0x1, 0x98);
 }

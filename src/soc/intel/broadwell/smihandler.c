@@ -27,13 +27,12 @@
 #include <spi-generic.h>
 #include <elog.h>
 #include <halt.h>
-#include <pc80/mc146818rtc.h>
+#include <option.h>
 #include <soc/lpc.h>
 #include <soc/nvs.h>
 #include <soc/pci_devs.h>
 #include <soc/pm.h>
 #include <soc/rcba.h>
-#include <soc/smm.h>
 #include <soc/xhci.h>
 #include <drivers/intel/gma/i915_reg.h>
 
@@ -179,11 +178,9 @@ static void southbridge_smi_sleep(void)
 	/* USB sleep preparations */
 	usb_xhci_sleep_prepare(PCH_DEV_XHCI, slp_typ);
 
-#if CONFIG(ELOG_GSMI)
 	/* Log S3, S4, and S5 entry */
 	if (slp_typ >= ACPI_S3)
-		elog_add_event_byte(ELOG_TYPE_ACPI_ENTER, slp_typ);
-#endif
+		elog_gsmi_add_event_byte(ELOG_TYPE_ACPI_ENTER, slp_typ);
 
 	/* Clear pending GPE events */
 	clear_gpe_status();
@@ -293,7 +290,6 @@ static em64t101_smm_state_save_area_t *smi_apmc_find_state_save(u8 cmd)
 	return NULL;
 }
 
-#if CONFIG(ELOG_GSMI)
 static void southbridge_smi_gsmi(void)
 {
 	u32 *ret, *param;
@@ -313,23 +309,6 @@ static void southbridge_smi_gsmi(void)
 
 	/* drivers/elog/gsmi.c */
 	*ret = gsmi_exec(sub_command, param);
-}
-#endif
-
-static void finalize(void)
-{
-	static int finalize_done;
-
-	if (finalize_done) {
-		printk(BIOS_DEBUG, "SMM already finalized.\n");
-		return;
-	}
-	finalize_done = 1;
-
-#if CONFIG(SPI_FLASH_SMM)
-	/* Re-init SPI driver to handle locked BAR */
-	spi_init();
-#endif
 }
 
 static void southbridge_smi_apmc(void)
@@ -355,9 +334,6 @@ static void southbridge_smi_apmc(void)
 		enable_pm1_control(SCI_EN);
 		printk(BIOS_DEBUG, "SMI#: ACPI enabled.\n");
 		break;
-	case APM_CNT_FINALIZE:
-		finalize();
-		break;
 	case APM_CNT_GNVS_UPDATE:
 		if (smm_initialized) {
 			printk(BIOS_DEBUG,
@@ -372,11 +348,10 @@ static void southbridge_smi_apmc(void)
 			printk(BIOS_DEBUG, "SMI#: Setting GNVS to %p\n", gnvs);
 		}
 		break;
-#if CONFIG(ELOG_GSMI)
 	case APM_CNT_ELOG_GSMI:
-		southbridge_smi_gsmi();
+		if (CONFIG(ELOG_GSMI))
+			southbridge_smi_gsmi();
 		break;
-#endif
 	}
 
 	mainboard_smi_apmc(reg8);
@@ -391,9 +366,7 @@ static void southbridge_smi_pm1(void)
 	 */
 	if (pm1_sts & PWRBTN_STS) {
 		/* power button pressed */
-#if CONFIG(ELOG_GSMI)
-		elog_add_event(ELOG_TYPE_POWER_BUTTON);
-#endif
+		elog_gsmi_add_event(ELOG_TYPE_POWER_BUTTON);
 		disable_pm1_control(-1UL);
 		enable_pm1_control(SLP_EN | (SLP_TYP_S5 << 10));
 	}

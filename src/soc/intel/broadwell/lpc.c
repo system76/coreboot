@@ -18,10 +18,9 @@
 #include <device/device.h>
 #include <device/pci.h>
 #include <device/pci_ids.h>
-#include <pc80/mc146818rtc.h>
+#include <option.h>
 #include <pc80/isa-dma.h>
 #include <pc80/i8259.h>
-#include <arch/cpu.h>
 #include <arch/io.h>
 #include <device/pci_ops.h>
 #include <arch/ioapic.h>
@@ -42,6 +41,7 @@
 #include <soc/rcba.h>
 #include <soc/intel/broadwell/chip.h>
 #include <arch/acpigen.h>
+#include <southbridge/intel/common/rtc.h>
 
 static void pch_enable_ioapic(struct device *dev)
 {
@@ -188,11 +188,6 @@ static void pch_power_options(struct device *dev)
 
 	/* SMI setup based on device tree configuration */
 	enable_alt_smi(config->alt_gp_smi_en);
-}
-
-static void pch_rtc_init(struct device *dev)
-{
-	cmos_init(rtc_failure());
 }
 
 static const struct reg_script pch_misc_init_script[] = {
@@ -439,7 +434,7 @@ static void lpc_init(struct device *dev)
 {
 	/* Legacy initialization */
 	isa_dma_init();
-	pch_rtc_init(dev);
+	sb_rtc_init();
 	reg_script_run_on_dev(dev, pch_misc_init_script);
 
 	/* Interrupt configuration */

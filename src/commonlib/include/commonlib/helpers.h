@@ -41,13 +41,10 @@
 	var_a op var_b ? var_a : var_b; \
 })
 
-#ifdef __ROMCC__	/* romcc doesn't support __builtin_choose_expr() */
-#define __CMP(a, b, op) __CMP_UNSAFE(a, b, op)
-#else
+
 #define __CMP(a, b, op) __builtin_choose_expr( \
 	__builtin_constant_p(a) && __builtin_constant_p(b), \
 	__CMP_UNSAFE(a, b, op), __CMP_SAFE(a, b, op, __TMPNAME, __TMPNAME))
-#endif
 
 #ifndef MIN
 #define MIN(a, b) __CMP(a, b, <)
@@ -108,16 +105,12 @@
 #define GHz (1000 * MHz)
 
 #ifndef offsetof
-#define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
+#define offsetof(TYPE, MEMBER) __builtin_offsetof(TYPE, MEMBER)
 #endif
 
-#if !defined(__clang__)
 #define check_member(structure, member, offset) _Static_assert( \
 	offsetof(struct structure, member) == offset, \
 	"`struct " #structure "` offset for `" #member "` is not " #offset)
-#else
-#define check_member(structure, member, offset)
-#endif
 
 /**
  * container_of - cast a member of a structure out to the containing structure
