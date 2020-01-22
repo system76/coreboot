@@ -16,6 +16,7 @@
 #include <string.h>
 #include <arch/acpi.h>
 #include <arch/acpigen.h>
+#include <arch/io.h>
 #include <console/console.h>
 #include <device/device.h>
 #include <option.h>
@@ -23,7 +24,8 @@
 #include <soc/ramstage.h>
 #include "gpio.h"
 
-void mainboard_silicon_init_params(FSP_S_CONFIG *params) {
+void mainboard_silicon_init_params(FSP_S_CONFIG *params)
+{
 	/* Configure pads prior to SiliconInit() in case there's any
 	 * dependencies during hardware initialization. */
 	cnl_configure_pads(gpio_table, ARRAY_SIZE(gpio_table));

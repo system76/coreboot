@@ -13,13 +13,10 @@
  * GNU General Public License for more details.
  */
 
-#ifndef HDA_VERB_H
-#define HDA_VERB_H
-
 #include <device/azalia_device.h>
 
 const u32 cim_verb_data[] = {
-	/* Realtek, ALC293 */
+	/* Realtek ALC293 */
 	0x10ec0293, /* Vendor ID */
 	0x15581325, /* Subsystem ID */
 	12, /* Number of entries */
@@ -35,7 +32,8 @@ const u32 cim_verb_data[] = {
 	AZALIA_PIN_CFG(0, 0x1b, 0x411111f0),
 	AZALIA_PIN_CFG(0, 0x1d, 0x41738205),
 	AZALIA_PIN_CFG(0, 0x1e, 0x02451130),
-	/* Intel, KabylakeHDMI */
+
+	/* Intel GPU HDMI */
 	0x8086280b, /* Vendor ID */
 	0x80860101, /* Subsystem ID */
 	4, /* Number of entries */
@@ -48,5 +46,3 @@ const u32 cim_verb_data[] = {
 const u32 pc_beep_verbs[] = {};
 
 AZALIA_ARRAY_SIZES;
-
-#endif
