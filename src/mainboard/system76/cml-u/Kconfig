@@ -15,7 +15,7 @@ config BOARD_SPECIFIC_OPTIONS
 # Chip select 2 is not yet supported by intel fast_spi
 #	select MAINBOARD_HAS_SPI_TPM_CR50
 #	select MAINBOARD_HAS_TPM2
-	select NO_UART_ON_SUPERIO\
+	select NO_UART_ON_SUPERIO
 	select PCIEXP_HOTPLUG
 	select SOC_INTEL_COMETLAKE
 	select SOC_INTEL_COMMON_ACPI_EC_PTS_WAK
