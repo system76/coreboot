@@ -17,8 +17,10 @@
 
 #include <soc/iomap.h>
 
-Name (_HID, EISAID ("PNP0A08"))	/* PCIe */
-Name (_CID, EISAID ("PNP0A03"))	/* PCI */
+Name (_HID, EisaId ("PNP0A08") /* PCI Express Bus */)  // _HID: Hardware ID
+Name (_CID, EisaId ("PNP0A03") /* PCI Bus */)  // _CID: Compatible ID
+Name (_SEG, Zero)  // _SEG: PCI Segment
+Name (_UID, Zero)  // _UID: Unique ID
 
 Device (MCHC)
 {
@@ -30,26 +32,27 @@ Device (MCHC)
 		Offset(0x40),	/* EPBAR (0:0:0:40) */
 		EPEN, 1,	/* Enable */
 		, 11,
-		EPBR, 20,	/* EPBAR [31:12] */
+		EPBR, 27,	/* EPBAR [38:12] */
 
 		Offset(0x48),	/* MCHBAR (0:0:0:48) */
 		MHEN, 1,	/* Enable */
 		, 14,
-		MHBR, 17,	/* MCHBAR [31:15] */
+		MHBR, 24,	/* MCHBAR [38:15] */
 
 		Offset(0x60),	/* PCIEXBAR (0:0:0:60) */
 		PXEN, 1,	/* Enable */
 		PXSZ, 2,	/* PCI Express Size */
 		, 23,
-		PXBR, 6,	/* PCI Express BAR [31:26] */
+		PXBR, 13,	/* PCI Express BAR [38:26] */
 
 		Offset(0x68),	/* DMIBAR (0:0:0:68) */
 		DIEN, 1,	/* Enable */
 		, 11,
-		DIBR, 20,	/* DMIBAR [31:12] */
+		DIBR, 27,	/* DMIBAR [38:12] */
 
 		Offset (0x70),	/* ME Base Address */
 		MEBA, 64,
+
 		Offset (0xa0),
 		TOM, 64,	/* Top of Used Memory */
 		TUUD, 64,	/* Top of Upper Used Memory */
@@ -182,11 +185,13 @@ Method (_CRS, 0, Serialized)
 				0x00000000, PCH_PRESERVED_BASE_ADDRESS, 0xfe7fffff,
 				0x00000000, PCH_PRESERVED_BASE_SIZE)
 
+#if !CONFIG(TPM_CR50)
 		/* TPM Area (0xfed40000-0xfed44fff) */
 		DWordMemory (ResourceProducer, PosDecode, MinFixed, MaxFixed,
 				Cacheable, ReadWrite,
 				0x00000000, 0xfed40000, 0xfed44fff, 0x00000000,
 				0x00005000)
+#endif
 })
 
 	/* Find PCI resource area in MCRS */
@@ -292,18 +297,8 @@ Device (PDRC)
 			 */
 			Memory32Fixed (ReadWrite, 0, 0, PCIX)
 
-			/* MISC ICH TTT base address reserved for the
-			 * TxT module use.
-			 */
-			Memory32Fixed (ReadWrite, 0xFED20000, 0x20000)
-
 			/* VTD engine memory range. */
 			Memory32Fixed (ReadOnly, VTD_BASE_ADDRESS, VTD_BASE_SIZE)
-
-			/* MISC ICH. Check if the hard code meets the
-			 * real configuration.
-			 */
-			Memory32Fixed (ReadWrite, 0xFED45000, 0x4B000, TPMM)
 
 			/* FLASH range */
 			Memory32Fixed (ReadOnly, 0, CONFIG_ROM_SIZE, FIOH)
@@ -336,6 +331,3 @@ Device (PDRC)
 		Return (BUF0)
 	}
 }
-
-/* PCI IRQ assignment */
-#include "pci_irqs.asl"

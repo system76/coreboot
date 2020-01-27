@@ -1,7 +1,7 @@
 /*
  * This file is part of the coreboot project.
  *
- * Copyright 2019 Google LLC
+ * Copyright (C) 2020 Intel Corporation.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -13,19 +13,11 @@
  * GNU General Public License for more details.
  */
 
-#ifndef VARIANT_EC_H
-#define VARIANT_EC_H
-
-#include <baseboard/ec.h>
-
-#define EC_ENABLE_MULTIPLE_DPTF_PROFILES
-
-#undef MAINBOARD_EC_S3_WAKE_EVENTS
-
-#define MAINBOARD_EC_S3_WAKE_EVENTS \
-	(MAINBOARD_EC_S5_WAKE_EVENTS |\
-	 EC_HOST_EVENT_MASK(EC_HOST_EVENT_KEY_PRESSED) |\
-	 EC_HOST_EVENT_MASK(EC_HOST_EVENT_MKBP)        |\
-	 EC_HOST_EVENT_MASK(EC_HOST_EVENT_MODE_CHANGE))
-
-#endif /* VARIANT_EC_H */
+Scope (\_SB.PCI0)
+{
+	Device (IPU0)
+	{
+		Name (_ADR, 0x00050000)
+		Name (_DDN, "Camera and Imaging Subsystem")
+	}
+}

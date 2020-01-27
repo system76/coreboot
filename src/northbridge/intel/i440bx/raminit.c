@@ -22,6 +22,7 @@
 #include <device/pci_ops.h>
 #include <device/pci_def.h>
 #include <console/console.h>
+#include <timestamp.h>
 #include "i440bx.h"
 #include "raminit.h"
 
@@ -356,10 +357,7 @@ static const u8 register_values[] = {
 	 *         1 = Enable
 	 *         0 = Disable
 	 */
-	/* Enable normal refresh and the gated clock. */
-	// TODO: Only do this later?
-	// PMCR, 0x00, 0x14,
-	PMCR, 0x00, 0x00,
+	/* PMCR will be set later. */
 
 	/* Enable SCRR.SRRAEN and let BX choose the SRR. */
 	SCRR + 1, 0x00, 0x10,
@@ -984,13 +982,6 @@ static void sdram_set_spd_registers(void)
 
 	/* Setup DRAM buffer strength. */
 	set_dram_buffer_strength();
-
-	/* TODO: Set PMCR? */
-	// pci_write_config8(NB, PMCR, 0x14);
-	pci_write_config8(NB, PMCR, 0x10);
-
-	/* TODO: This is for EDO memory only. */
-	pci_write_config8(NB, DRAMT, 0x03);
 }
 
 static void sdram_enable(void)
@@ -1029,7 +1020,7 @@ static void sdram_enable(void)
 
 	/* 6. Finally enable refresh. */
 	PRINT_DEBUG("RAM Enable 6: Enable refresh\n");
-	// pci_write_config8(NB, PMCR, 0x10);
+	pci_write_config8(NB, PMCR, 0x10);
 	spd_enable_refresh();
 	udelay(1);
 
@@ -1043,6 +1034,7 @@ void __weak disable_spd(void) { }
 
 void sdram_initialize(void)
 {
+	timestamp_add_now(TS_BEFORE_INITRAM);
 	enable_spd();
 
 	dump_spd_registers();
@@ -1051,4 +1043,5 @@ void sdram_initialize(void)
 	sdram_enable();
 
 	disable_spd();
+	timestamp_add_now(TS_AFTER_INITRAM);
 }

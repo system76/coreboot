@@ -1,4 +1,3 @@
-# System76 Lemur Pro (lemp9)
 
 ## Specs
 
@@ -19,8 +18,8 @@
     - HDMI video
     - USB-C DisplayPort video
 - Memory
-    - 8-GB DDR4 Samsung K4AAG165WA-BCTD (Channel 0)
-    - 8-GB/16-GB/32-GB DDR4 SO-DIMM (Channel 1)
+    - Channel 0: 8-GB on-board DDR4 Samsung K4AAG165WA-BCTD
+    - Channel 1: 8-GB/16-GB/32-GB DDR4 SO-DIMM
 - Networking
     - M.2 PCIe/CNVi WiFi/Bluetooth
 - Sound

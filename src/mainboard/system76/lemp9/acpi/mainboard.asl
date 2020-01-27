@@ -13,8 +13,6 @@
  * GNU General Public License for more details.
  */
 
-#define COLOR_KEYBOARD 0
-
 Scope (\_SB) {
 	#include "ac.asl"
 	#include "battery.asl"
