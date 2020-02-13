@@ -33,8 +33,6 @@ LOCAL &RAMStage			// Ram         Stage stop?
 LOCAL &BL31Stage		// BL31        Stage stop?
 LOCAL &DCStage			// Depthcharge Stage stop?
 
-LOCAL &KernelSyms		// Load Kernel Symbols?
-
 LOCAL &RAMLoad			// T32 Load Code?
 
 ;============================================================================
@@ -45,10 +43,10 @@ LOCAL &RAMLoad			// T32 Load Code?
 ENTRY &TargetPkg &srcpath &xblsrcpath &ImageName
 
   // Parse for RAMLoad first
-  if (STR.CP("&ImageName","RAM,*"))
+  if (STR.CP("&ImageName","LOAD,*"))
   (
     &RAMLoad=TRUE()
-    &ImageName=STR.CUT("&ImageName",4)
+    &ImageName=STR.CUT("&ImageName",5)
   )
   else
     &RAMLoad=FALSE()
@@ -63,7 +61,6 @@ ENTRY &TargetPkg &srcpath &xblsrcpath &ImageName
     &RAMStage=TRUE()
     ;&BL31Stage=TRUE()
     &DCStage=TRUE()
-    &KernelSyms=STRING.CP("&ImageName", "*KERNEL*")
   )
   else
   (
@@ -72,14 +69,12 @@ ENTRY &TargetPkg &srcpath &xblsrcpath &ImageName
     &ROMStage=STRING.CP("&ImageName","*ROM*")
     &QCLStage=STRING.CP("&ImageName","*QCL*")
     &RAMStage=STRING.CP("&ImageName","*RAM*")
-    &BL31Stage=STRING.CP("&ImageName","*BL31*")
+    ;&BL31Stage=STRING.CP("&ImageName","*BL31*")
     &DCStage=STRING.CP("&ImageName","*DC*")
-    &KernelSyms=STRING.CP("&ImageName", "*KERNEL*")
   )
 
   PRINT %String "Debug Script: debug_cb_common.cmm"
   PRINT %String "Images to debug: &ImageName"
-  PRINT %String "Loading Kernel Symbols: &KernelSyms"
   PRINT %String "RAMLoad Requested: &RAMLoad"
   PRINT %String "BootBlock   Entry Addr: &BBEntryAddr"
   PRINT %String "VerStage    Entry Addr: &VEREntryAddr"
@@ -104,31 +99,17 @@ ENTRY &TargetPkg &srcpath &xblsrcpath &ImageName
 
   if &BBStage
   (
-    IF "&debug"==""
-    (
-      d.load.binary build/coreboot.rom 0xA0000000
-    )
-    &imgpath="build\cbfs\fallback\bootblock.elf"
+    &imgpath="build\cbfs\fallback\bootblock.raw.elf"
     if (&RAMLoad)
       d.load.elf &imgpath /strippart "coreboot" /sourcepath &srcpath
     else
       d.load.elf &imgpath /strippart "coreboot" /sourcepath &srcpath /nocode
 
-    ;uncomment b.s if not simulating (CONFIG_SOC_SIMULATE)
-    ;b.s run_romstage /o
-    ;d.set &PreRamConsoleAddr++0x8000 0
-    d.dump &PreRamConsoleAddr /spotlight
-    IF (STR.CP("&debug","DEBUG"))
-    (
-      print %String "Now the control is in BootBlock, press enter after debugging to go to next stage"
-      print %String "Press enter to go to next stage"
-      enter
-    )
-    ELSE
-    (
-      go
-      enddo
-    )
+    d.l
+
+    print %String "Now the control is in BootBlock, press enter after debugging to go to next stage"
+    print %String "Press enter to go to next stage"
+    enter
   )
 
   go &VEREntryAddr
@@ -163,21 +144,28 @@ ENTRY &TargetPkg &srcpath &xblsrcpath &ImageName
     enter
   )
 
+;;;; START OF COMMENTED OUT CODE TO SKIP QCLIB DEBUG
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;  go &QCLEntryAddr
 ;  wait !run()
-;
+
 ;  if &QCLStage
 ;  (
-;    &imgpath="3rdparty\blobs\soc\qualcomm\sdm845\QcLib.elf"
+
 ;    if (&RAMLoad)
-;      d.load.elf &imgpath /strippart "coreboot" /sourcepath &srcpath /noclear
-;    else
-;      d.load.elf &imgpath /strippart "coreboot" /sourcepath &srcpath /nocode /noclear
-;
+;      d.load ...\QcLib.dll
+;   else
+;      d.load ...\QcLib.dll
+
+
 ;    print %String "Now the control is in QCLStage, press enter after debugging to go to next stage"
 ;    print %String "Press enter to go to next stage"
 ;    enter
 ;  )
+
+;;;; END OF QCLIB COMMENTED OUT CODE
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   go &RAMEntryAddr
   wait !run()
@@ -194,24 +182,9 @@ ENTRY &TargetPkg &srcpath &xblsrcpath &ImageName
     enter
   )
 
-; BL31 disabled for now
-; Next block of code commented out
-;  go &BL31EntryAddr
-;  wait !run()
-;
-;  if &BL31Stage
-;  (
-;    &imgpath="build\bl31.elf"
-;    if (&RAMLoad)
-;      d.load.elf &imgpath /strippart "coreboot" /sourcepath &srcpath
-;    else
-;      d.load.elf &imgpath /strippart "coreboot" /sourcepath &srcpath /nocode
-;    y.spath.srd 3rdparty/arm-trusted-firmware
-;    print %String "Now the control is in BL31, press enter after debugging to go to next stage"
-;    print %String "Press enter to go to next stage"
-;    enter
-;  )
-; End of commented out code block: bl31
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;; BL31 DEBUG CODE WOULD BE ADDED HERE
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   go &DCEntryAddr
   wait !run()
@@ -220,36 +193,16 @@ ENTRY &TargetPkg &srcpath &xblsrcpath &ImageName
   (
     &imgpath="payloads\external\depthcharge\depthcharge\build\depthcharge.elf"
     symbol.sourcepath.setbasedir &srcpath\payloads
+    y.spath.srd payloads\external\depthcharge\depthcharge\src
     if (&RAMLoad)
       d.load.elf &imgpath /strippart "payloads" /sourcepath &srcpath
     else
       d.load.elf &imgpath /strippart "payloads" /sourcepath &srcpath /nocode
-    b.d /all
-    b.set main
-    b.set halt
-    b.set &KernelEntryAddr	; kernel entry point
-    y.spath.srd + payloads/external/depthcharge/depthcharge
-    y.spath.srd + 3rdparty\vboot_reference
-    d.dump &RamConsoleAddr /spotlight
-    &CBTablePtr=Register(X0)
-    Data.SAVE.Binary CBTablePtr.bin &CBTablePtr++0x400
-    print %String "Now the control is in Depthcharge, press enter after debugging to run free"
-    ;print %String "Use this command to load kernel symbols:  d.load.elf vmlinux /nocode /strippart kernel"
-    print %String "Press enter when done debugging Depthcharge"
-    enter
+    print %String "Now the control is in depthcharge, end of script"
+    d.l
+    ;b.s main
+    ;Execute this command in T32 if you start debugging vboot code, e.g. vboot_select_and_load_kernel()
+    ;y.spath.srd 3rdparty\vboot\firmware
   )
-
-;  go &KernelEntryAddr
-;  wait !run()
-;
-;  if &KernelSyms
-;  (
-;    print %String "Kernel Symbols are being loaded, this requires two files in coreboot root tree:"
-;    print %String "vmlinux needs to be copied from ChromiumOS build tree"
-;    print %String "msm-4.4 needs to be symbolic link to kernel source tree"
-;    d.load.elf vmlinux /strippart "msm-4.4" /nocode
-;    y.spath.srd msm-4.4
-;    print %String "This script now concludes at kernel entry point"
-;  )
 
   enddo

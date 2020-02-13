@@ -41,6 +41,11 @@
 #define ME_HFS1_COM_SOFT_TEMP_DISABLE	0x3
 #define ME_HFS1_COM_SECOVER_MEI_MSG	0x5
 
+/* ME Firmware SKU Types */
+#define ME_HFS3_FW_SKU_CONSUMER	0x2
+#define ME_HFS3_FW_SKU_CORPORATE	0x3
+#define ME_HFS3_FW_SKU_CUSTOM	0x5
+
 /* HFSTS register offsets in PCI config space */
 enum {
 	PCI_ME_HFSTS1 = 0x40,
@@ -51,31 +56,7 @@ enum {
 	PCI_ME_HFSTS6 = 0x6C,
 };
 
-/* ME Host Firmware Status register 1 */
-union me_hfsts1 {
-	u32 data;
-	struct {
-		u32 working_state: 4;
-		u32 mfg_mode: 1;
-		u32 fpt_bad: 1;
-		u32 operation_state: 3;
-		u32 fw_init_complete: 1;
-		u32 ft_bup_ld_flr: 1;
-		u32 update_in_progress: 1;
-		u32 error_code: 4;
-		u32 operation_mode: 4;
-		u32 reset_count: 4;
-		u32 boot_options_present: 1;
-		u32 reserved1: 1;
-		u32 bist_test_state: 1;
-		u32 bist_reset_request: 1;
-		u32 current_power_source: 2;
-		u32 d3_support_valid: 1;
-		u32 d0i3_support_valid: 1;
-	} __packed fields;
-};
-
-/* HECI Message Header */
+/* MKHI Message Header */
 struct mkhi_hdr {
 	uint8_t group_id;
 	uint8_t command:7;
@@ -127,34 +108,40 @@ uint32_t me_read_config32(int offset);
  */
 bool is_cse_enabled(void);
 
-/* Makes the host ready to communicate with CSE*/
-void set_host_ready(void);
+/* Makes the host ready to communicate with CSE */
+void cse_set_host_ready(void);
 
 /*
  * Polls for ME state 'HECI_OP_MODE_SEC_OVERRIDE' for 15 seconds.
  * Returns 0 on failure and 1 on success.
  */
-uint8_t wait_cse_sec_override_mode(void);
+uint8_t cse_wait_sec_override_mode(void);
+
+enum rst_req_type {
+	GLOBAL_RESET = 1,
+	HOST_RESET_ONLY = 2,
+	CSE_RESET_ONLY = 3,
+};
 
 /*
- * Sends GLOBAL_RESET_REQ cmd to CSE.The reset type can be
- * GLOBAL_RESET/HOST_RESET_ONLY/CSE_RESET_ONLY.
- * Returns -1 on failure and 0 on success.
+ * Sends GLOBAL_RESET_REQ cmd to CSE.
+ * The reset type can be one of the above defined reset type.
+ * Returns 0 on failure and 1 on success.
  */
-int send_heci_reset_req_message(uint8_t rst_type);
+int cse_request_global_reset(enum rst_req_type rst_type);
 
 /*
  * Send HMRFPO_ENABLE command.
  * returns 0 on failure and 1 on success.
  */
-int send_hmrfpo_enable_msg(void);
+int cse_hmrfpo_enable(void);
 
 /*
  * Send HMRFPO_GET_STATUS command.
  * returns -1 on failure and 0 (DISABLED)/ 1 (LOCKED)/ 2 (ENABLED)
  * on success.
  */
-int send_hmrfpo_get_status_msg(void);
+int cse_hmrfpo_get_status(void);
 
 /* Fixed Address MEI Header's Host Address field value */
 #define BIOS_HOST_ADDR	0x00
@@ -162,14 +149,41 @@ int send_hmrfpo_get_status_msg(void);
 /* Fixed Address MEI Header's ME Address field value */
 #define HECI_MKHI_ADDR	0x07
 
-/* Command GLOBAL_RESET_REQ Reset Types */
-#define GLOBAL_RESET	1
-#define HOST_RESET_ONLY	2
-#define CSE_RESET_ONLY	3
-
 /* HMRFPO Status types */
+/* Host can't access ME region */
 #define MKHI_HMRFPO_DISABLED	0
+
+/*
+ * ME Firmware locked down HMRFPO Feature.
+ * Host can't access ME region.
+ */
 #define MKHI_HMRFPO_LOCKED	1
+
+/* Host can access ME region */
 #define MKHI_HMRFPO_ENABLED	2
+
+/*
+ * Checks current working operation state is normal or not.
+ * Returns true if CSE's current working state is normal, otherwise false.
+ */
+bool cse_is_hfs1_cws_normal(void);
+
+/*
+ * Checks CSE's current operation mode is normal or not.
+ * Returns true if CSE's current operation mode is normal, otherwise false.
+ */
+bool cse_is_hfs1_com_normal(void);
+
+/*
+ * Checks CSE's current operation mode is SECOVER_MEI_MSG or not.
+ * Returns true if CSE's current operation mode is SECOVER_MEI_MSG, otherwise false.
+ */
+bool cse_is_hfs1_com_secover_mei_msg(void);
+
+/*
+ * Checks CSE's current operation mode is Soft Disable Mode or not.
+ * Returns true if CSE's current operation mode is Soft Disable Mode, otherwise false.
+ */
+bool cse_is_hfs1_com_soft_temp_disable(void);
 
 #endif // SOC_INTEL_COMMON_CSE_H

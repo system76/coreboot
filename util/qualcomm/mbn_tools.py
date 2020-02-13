@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 #===============================================================================
 #
 # MBN TOOLS
@@ -41,6 +41,7 @@
 #
 # when       who     what, where, why
 # --------   ---     ---------------------------------------------------------
+# 05/21/18   rissha  Added support for extended MBNV6 and Add support for hashing elf segments with SHA384
 # 03/22/18   thiru   Added support for extended MBNV5.
 # 06/06/13   yliong  CR 497042: Signed and encrypted image is corrupted. MRC features.
 # 03/18/13   dhaval  Add support for hashing elf segments with SHA256 and
@@ -64,23 +65,21 @@ import hashlib
 #----------------------------------------------------------------------------
 # GLOBAL VARIABLES BEGIN
 #----------------------------------------------------------------------------
-PAD_BYTE_1                = 255             # Padding byte 1s
-PAD_BYTE_0                = 0               # Padding byte 0s
-SHA256_SIGNATURE_SIZE     = 256             # Support SHA256
-MAX_NUM_ROOT_CERTS        = 4               # Maximum number of OEM root certificates
-MI_BOOT_IMG_HDR_SIZE      = 40              # sizeof(mi_boot_image_header_type)
-MI_BOOT_SBL_HDR_SIZE      = 80              # sizeof(sbl_header)
-BOOT_HEADER_LENGTH        = 20              # Boot Header Number of Elements
-SBL_HEADER_LENGTH         = 20              # SBL Header Number of Elements
-FLASH_PARTI_VERSION       = 3               # Flash Partition Version Number
-MAX_PHDR_COUNT            = 100             # Maximum allowable program headers
-CERT_CHAIN_ONEROOT_MAXSIZE = 6*1024          # Default Cert Chain Max Size for one root
-VIRTUAL_BLOCK_SIZE        = 131072          # Virtual block size for MCs insertion in SBL1 if ENABLE_VIRTUAL_BLK ON
-MAGIC_COOKIE_LENGTH       = 12              # Length of magic Cookie inserted per VIRTUAL_BLOCK_SIZE
-MIN_IMAGE_SIZE_WITH_PAD   = 256*1024        # Minimum image size for sbl1 Nand based OTA feature
+PAD_BYTE_1                  = 255           # Padding byte 1s
+PAD_BYTE_0                  = 0             # Padding byte 0s
+SHA256_SIGNATURE_SIZE       = 256           # Support SHA256
+MAX_NUM_ROOT_CERTS          = 4             # Maximum number of OEM root certificates
+MI_BOOT_SBL_HDR_SIZE        = 80            # sizeof(sbl_header)
+BOOT_HEADER_LENGTH          = 20            # Boot Header Number of Elements
+SBL_HEADER_LENGTH           = 20            # SBL Header Number of Elements
+MAX_PHDR_COUNT              = 100           # Maximum allowable program headers
+CERT_CHAIN_ONEROOT_MAXSIZE  = 6*1024        # Default Cert Chain Max Size for one root
+VIRTUAL_BLOCK_SIZE          = 131072        # Virtual block size for MCs insertion in SBL1 if ENABLE_VIRTUAL_BLK ON
+MAGIC_COOKIE_LENGTH         = 12            # Length of magic Cookie inserted per VIRTUAL_BLOCK_SIZE
+MIN_IMAGE_SIZE_WITH_PAD     = 256*1024      # Minimum image size for sbl1 Nand based OTA feature
 
-SBL_AARCH64               = 0xF             # Indicate that SBL is a Aarch64 image
-SBL_AARCH32               = 0x0             # Indicate that SBL is a Aarch32 image
+SBL_AARCH64                 = 0xF           # Indicate that SBL is a Aarch64 image
+SBL_AARCH32                 = 0x0           # Indicate that SBL is a Aarch32 image
 
 # Magic numbers filled in for boot headers
 FLASH_CODE_WORD                       = 0x844BDCD1
@@ -101,24 +100,24 @@ ELFINFO_MAG0_INDEX        = 0
 ELFINFO_MAG1_INDEX        = 1
 ELFINFO_MAG2_INDEX        = 2
 ELFINFO_MAG3_INDEX        = 3
-ELFINFO_MAG0              = '\x7f'
-ELFINFO_MAG1              = 'E'
-ELFINFO_MAG2              = 'L'
-ELFINFO_MAG3              = 'F'
+ELFINFO_MAG0              = 127     # 0x7F
+ELFINFO_MAG1              = 69      # E
+ELFINFO_MAG2              = 76      # L
+ELFINFO_MAG3              = 70      # F
 ELFINFO_CLASS_INDEX       = 4
-ELFINFO_CLASS_32          = '\x01'
-ELFINFO_CLASS_64          = '\x02'
+ELFINFO_CLASS_32          = 1
+ELFINFO_CLASS_64          = 2
 ELFINFO_VERSION_INDEX     = 6
-ELFINFO_VERSION_CURRENT   = '\x01'
+ELFINFO_VERSION_CURRENT   = 1
 ELF_BLOCK_ALIGN           = 0x1000
 ALIGNVALUE_1MB             = 0x100000
 ALIGNVALUE_4MB            = 0x400000
-ELFINFO_DATA2LSB          = '\x01'
-ELFINFO_EXEC_ETYPE        = '\x02\x00'
-ELFINFO_ARM_MACHINETYPE   = '\x28\x00'
-ELFINFO_VERSION_EV_CURRENT = '\x01\x00\x00\x00'
+ELFINFO_DATA2LSB          = b'\x01'
+ELFINFO_EXEC_ETYPE        = b'\x02\x00'
+ELFINFO_ARM_MACHINETYPE   = b'\x28\x00'
+ELFINFO_VERSION_EV_CURRENT = b'\x01\x00\x00\x00'
 ELFINFO_SHOFF             = 0x00
-ELFINFO_PHNUM             = '\x01\x00'
+ELFINFO_PHNUM             = b'\x01\x00'
 ELFINFO_RESERVED          = 0x00
 
 # ELF Program Header Types
@@ -150,7 +149,6 @@ values.
 MI_PBT_FLAGS_MASK = 0x0FF00000
 
 # Helper defines to help parse ELF program headers
-MI_PROG_BOOT_DIGEST_SIZE              = 20
 MI_PBT_FLAG_SEGMENT_TYPE_MASK         = 0x07000000
 MI_PBT_FLAG_SEGMENT_TYPE_SHIFT        = 0x18
 MI_PBT_FLAG_PAGE_MODE_MASK            = 0x00100000
@@ -332,9 +330,9 @@ class Elf_Ehdr_common:
       self.e_version      = unpacked_data[3]
 
    def printValues(self):
-      print "ATTRIBUTE / VALUE"
-      for attr, value in self.__dict__.iteritems():
-         print attr, value
+      print("ATTRIBUTE / VALUE")
+      for attr, value in self.__dict__.items():
+         print(attr, value)
 
 
 
@@ -364,12 +362,16 @@ class Elf32_Ehdr:
       self.e_shstrndx     = unpacked_data[13]
 
    def printValues(self):
-      print "ATTRIBUTE / VALUE"
-      for attr, value in self.__dict__.iteritems():
-         print attr, value
+      print("ATTRIBUTE / VALUE")
+      for attr, value in self.__dict__.items():
+         print(attr, value)
 
    def getPackedData(self):
-      values = [self.e_ident,
+      if type(self.e_ident) == str:
+        packvalue = bytes(self.e_ident, 'utf-8')
+      else:
+        packvalue = self.e_ident
+      values = [packvalue,
                 self.e_type,
                 self.e_machine,
                 self.e_version,
@@ -408,9 +410,9 @@ class Elf32_Phdr:
       self.p_align        = unpacked_data[7]
 
    def printValues(self):
-      print "ATTRIBUTE / VALUE"
-      for attr, value in self.__dict__.iteritems():
-         print attr, value
+      print("ATTRIBUTE / VALUE")
+      for attr, value in self.__dict__.items():
+         print(attr, value)
 
    def getPackedData(self):
       values = [self.p_type,
@@ -451,12 +453,16 @@ class Elf64_Ehdr:
       self.e_shstrndx     = unpacked_data[13]
 
    def printValues(self):
-      print "ATTRIBUTE / VALUE"
-      for attr, value in self.__dict__.iteritems():
-         print attr, value
+      print("ATTRIBUTE / VALUE")
+      for attr, value in self.__dict__.items():
+         print(attr, value)
 
    def getPackedData(self):
-      values = [self.e_ident,
+      if type(self.e_ident) == str:
+        packvalue = bytes(self.e_ident, 'utf-8')
+      else:
+        packvalue = self.e_ident
+      values = [packvalue,
                 self.e_type,
                 self.e_machine,
                 self.e_version,
@@ -495,9 +501,9 @@ class Elf64_Phdr:
       self.p_align        = unpacked_data[7]
 
    def printValues(self):
-      print "ATTRIBUTE / VALUE"
-      for attr, value in self.__dict__.iteritems():
-         print attr, value
+      print("ATTRIBUTE / VALUE")
+      for attr, value in self.__dict__.items():
+         print(attr, value)
 
    def getPackedData(self):
       values = [self.p_type,
@@ -520,7 +526,7 @@ class SegmentInfo:
    def __init__(self):
       self.flag  = 0
    def printValues(self):
-      print 'Flag: ' + str(self.flag)
+      print('Flag: ' + str(self.flag))
 
 #----------------------------------------------------------------------------
 # Regular Boot Header Class
@@ -528,7 +534,7 @@ class SegmentInfo:
 class Boot_Hdr:
    def __init__(self, init_val):
       self.image_id = ImageType.NONE_IMG
-      self.flash_parti_ver = FLASH_PARTI_VERSION
+      self.flash_parti_ver = 3
       self.image_src = init_val
       self.image_dest_ptr = init_val
       self.image_size = init_val
@@ -573,6 +579,10 @@ class Boot_Hdr:
                 self.reserved_2,
                 self.reserved_3 ]
 
+      if self.flash_parti_ver >= 6:
+        values.insert(10, self.metadata_size_qti)
+        values.insert(11, self.metadata_size)
+
       if self.image_dest_ptr >= 0x100000000:
         values[3] = 0xFFFFFFFF
 
@@ -584,8 +594,12 @@ class Boot_Hdr:
 
       # Write 10 entries(40B) or 20 entries(80B) of boot header
       if write_full_hdr is False:
-         s = struct.Struct('I'* 10)
-         values = values[:10]
+         if self.flash_parti_ver >= 6:
+            s = struct.Struct('I'* 12)
+            values = values[:12]
+         else:
+            s = struct.Struct('I'* 10)
+            values = values[:10]
       else:
          s = struct.Struct('I' * self.getLength())
 
@@ -734,7 +748,7 @@ def generate_meta_data(env, meta_out_file_name, add_magic_num = False):
       xml_target_file.close()
    else:
       xml_target_file.close()
-      raise RuntimeError, "XML Size too large: " + str(xml_header_size)
+      raise RuntimeError("XML Size too large: " + str(xml_header_size))
 
 #----------------------------------------------------------------------------
 # encrypt_mbn
@@ -825,7 +839,7 @@ def create_elf_header( output_file_name,
                        is_elf_64_bit = False):
 
    if (output_file_name is None):
-      raise RuntimeError, "Requires a ELF header file"
+      raise RuntimeError("Requires a ELF header file")
 
    # Create a elf header and program header
    # Write the headers to the output file
@@ -904,7 +918,6 @@ def image_header(env, gen_dict,
                       code_file_name,
                       output_file_name,
                       secure_type,
-                      is_ext_mbn_v5,
                       header_format = 'reg',
                       requires_preamble = False,
                       preamble_file_name = None,
@@ -912,17 +925,18 @@ def image_header(env, gen_dict,
                       write_full_hdr = False,
                       in_code_size = None,
                       cert_chain_size_in = CERT_CHAIN_ONEROOT_MAXSIZE,
-                      num_of_pages = None):
+                      num_of_pages = None,
+                      header_version = None):
 
    # Preliminary checks
    if (requires_preamble is True) and (preamble_file_name is None):
-      raise RuntimeError, "Image Header requires a preamble file"
+      raise RuntimeError("Image Header requires a preamble file")
 
    if (gen_dict['IMAGE_KEY_MBN_TYPE'] == 'elf') and (elf_file_name is None):
-      raise RuntimeError, "ELF Image Headers require an elf file"
+      raise RuntimeError("ELF Image Headers require an elf file")
 
    if (in_code_size is None) and (os.path.exists(code_file_name) is False):
-      raise RuntimeError, "Code size unavailable, and input file does not exist"
+      raise RuntimeError("Code size unavailable, and input file does not exist")
 
    # Initialize
    if in_code_size is not None:
@@ -945,9 +959,12 @@ def image_header(env, gen_dict,
       cert_chain_size = 0
       image_size = code_size
 
+   if header_version:
+      assert header_version in [3, 5, 6], 'Not a valid MBN header version'
+
    # For ELF or hashed images, image destination will be determined from an ELF input file
    if gen_dict['IMAGE_KEY_MBN_TYPE'] == 'elf':
-      image_dest = get_hash_address(elf_file_name) + MI_BOOT_IMG_HDR_SIZE
+      image_dest = get_hash_address(elf_file_name) + (header_size(header_version))
    elif gen_dict['IMAGE_KEY_MBN_TYPE'] == 'bin':
       image_dest = gen_dict['IMAGE_KEY_IMAGE_DEST']
       image_source = gen_dict['IMAGE_KEY_IMAGE_SOURCE']
@@ -991,12 +1008,15 @@ def image_header(env, gen_dict,
       boot_header.sig_size = signature_size
       boot_header.cert_chain_ptr = image_dest + code_size + signature_size
       boot_header.cert_chain_size = cert_chain_size
+      boot_header.flash_parti_ver = header_version  # version
 
-      if is_ext_mbn_v5 == True:
-      	# If platform image integrity check is enabled
-	boot_header.flash_parti_ver = 5   # version
-	boot_header.image_src = 0         # sig_size_qc
-	boot_header.image_dest_ptr = 0    # cert_chain_size_qc
+      if header_version >= 5:
+         boot_header.image_src = 0                            # sig_size_qc
+         boot_header.image_dest_ptr = 0                       # cert_chain_size_qc
+
+      if header_version >= 6:
+         boot_header.metadata_size_qti = 0                    # qti_metadata size
+         boot_header.metadata_size = 0                        # oem_metadata size
 
       # If preamble is required, output the preamble file and update the boot_header
       if requires_preamble is True:
@@ -1006,7 +1026,7 @@ def image_header(env, gen_dict,
       boot_header.writePackedData(target = output_file_name, write_full_hdr = write_full_hdr)
 
    else:
-      raise RuntimeError, "Header format not supported: " + str(header_format)
+      raise RuntimeError("Header format not supported: " + str(header_format))
    return 0
 
 
@@ -1021,12 +1041,22 @@ def pboot_gen_elf(env, elf_in_file_name,
                        last_phys_addr = None,
                        append_xml_hdr = False,
                        is_sha256_algo = True,
-                       cert_chain_size_in = CERT_CHAIN_ONEROOT_MAXSIZE):
-   global MI_PROG_BOOT_DIGEST_SIZE
-   if (is_sha256_algo is True):
-      MI_PROG_BOOT_DIGEST_SIZE = 32
+                       cert_chain_size_in = CERT_CHAIN_ONEROOT_MAXSIZE,
+                       header_version = None):
+   sha_algo = 'SHA1'
+   if is_sha256_algo:
+       sha_algo = 'SHA256'
+
+   if header_version >= 6:
+       sha_algo = 'SHA384'
+   image_header_size = header_size(header_version)
+
+   if (sha_algo == 'SHA384'):
+      mi_prog_boot_digest_size = 48
+   elif sha_algo == 'SHA256':
+      mi_prog_boot_digest_size = 32
    else:
-      MI_PROG_BOOT_DIGEST_SIZE = 20
+      mi_prog_boot_digest_size = 20
 
    # Open Files
    elf_in_fp = OPEN(elf_in_file_name, "rb")
@@ -1044,15 +1074,15 @@ def pboot_gen_elf(env, elf_in_file_name,
    hashtable_shift = 0
 
    if elf_header.e_ident[ELFINFO_CLASS_INDEX] == ELFINFO_CLASS_64:
-      new_phdr = Elf64_Phdr('\0' * ELF64_PHDR_SIZE)
+      new_phdr = Elf64_Phdr(b'\0' * ELF64_PHDR_SIZE)
       elf_header_size = ELF64_HDR_SIZE
       is_elf64 = True
    else:
-      new_phdr = Elf32_Phdr('\0' * ELF32_PHDR_SIZE)
+      new_phdr = Elf32_Phdr(b'\0' * ELF32_PHDR_SIZE)
       elf_header_size = ELF32_HDR_SIZE
       is_elf64 = False
 
-   hash = '\0' * MI_PROG_BOOT_DIGEST_SIZE
+   hash = b'\0' * mi_prog_boot_digest_size
    phdr_start = 0
    bytes_to_pad = 0
    hash_seg_end = 0
@@ -1061,7 +1091,7 @@ def pboot_gen_elf(env, elf_in_file_name,
    if elf_out_file_name is not None:
       # Assert limit on number of program headers in input ELF
       if num_phdrs > MAX_PHDR_COUNT:
-         raise RuntimeError, "Input ELF has exceeded maximum number of program headers"
+         raise RuntimeError("Input ELF has exceeded maximum number of program headers")
 
       # Create new program header for the ELF Header + Program Headers
       new_phdr.p_type = NULL_TYPE
@@ -1071,12 +1101,12 @@ def pboot_gen_elf(env, elf_in_file_name,
       elf_header.e_phnum += 2
 
       # Create an empty hash entry for PHDR_TYPE
-      hash_out_fp.write('\0' * MI_PROG_BOOT_DIGEST_SIZE)
-      hashtable_size += MI_PROG_BOOT_DIGEST_SIZE
+      hash_out_fp.write(b'\0' * mi_prog_boot_digest_size)
+      hashtable_size += mi_prog_boot_digest_size
 
       # Create an empty hash entry for the hash segment itself
-      hash_out_fp.write('\0' * MI_PROG_BOOT_DIGEST_SIZE)
-      hashtable_size += MI_PROG_BOOT_DIGEST_SIZE
+      hash_out_fp.write(b'\0' * mi_prog_boot_digest_size)
+      hashtable_size += mi_prog_boot_digest_size
 
    # Begin hash table generation
    for i in range(num_phdrs):
@@ -1095,7 +1125,7 @@ def pboot_gen_elf(env, elf_in_file_name,
 
          # Seg_size should be page aligned
          if (seg_size & (ELF_BLOCK_ALIGN - 1)) > 0:
-            raise RuntimeError, "seg_size: " + hex(seg_size) + " is not ELF page aligned!"
+            raise RuntimeError("seg_size: " + hex(seg_size) + " is not ELF page aligned!")
 
          off = seg_offset + seg_size
 
@@ -1110,14 +1140,14 @@ def pboot_gen_elf(env, elf_in_file_name,
             fbuf = elf_in_fp.read(hash_size)
 
             if MI_PBT_CHECK_FLAG_TYPE(curr_phdr.p_flags) is True:
-               hash = generate_hash(fbuf, is_sha256_algo)
+               hash = generate_hash(fbuf, sha_algo)
             else:
-               hash = '\0' * MI_PROG_BOOT_DIGEST_SIZE
+               hash = b'\0' * mi_prog_boot_digest_size
 
             # Write hash to file
             hash_out_fp.write(hash)
 
-            hashtable_size += MI_PROG_BOOT_DIGEST_SIZE
+            hashtable_size += mi_prog_boot_digest_size
             seg_offset += ELF_BLOCK_ALIGN
 
       # Copy the hash entry for all that are PAGED segments and those that are not the PHDR type. This is for
@@ -1129,14 +1159,14 @@ def pboot_gen_elf(env, elf_in_file_name,
          file_buff = elf_in_fp.read(data_len)
 
          if (MI_PBT_CHECK_FLAG_TYPE(curr_phdr.p_flags) is True) and (data_len > 0):
-            hash = generate_hash(file_buff, is_sha256_algo)
+            hash = generate_hash(file_buff, sha_algo)
          else:
-            hash = '\0' *  MI_PROG_BOOT_DIGEST_SIZE
+            hash = b'\0' *  mi_prog_boot_digest_size
 
          # Write hash to file
          hash_out_fp.write(hash)
 
-         hashtable_size += MI_PROG_BOOT_DIGEST_SIZE
+         hashtable_size += mi_prog_boot_digest_size
    # End hash table generation
 
    # Generate the rest of the ELF output file if specified
@@ -1151,15 +1181,15 @@ def pboot_gen_elf(env, elf_in_file_name,
 
      # Initialize the hash table program header
      [hash_Phdr, pad_hash_segment, hash_tbl_end_addr, hash_tbl_offset] = \
-          initialize_hash_phdr(elf_in_file_name, hashtable_size, MI_BOOT_IMG_HDR_SIZE, ELF_BLOCK_ALIGN, is_elf64)
+            initialize_hash_phdr(elf_in_file_name, hashtable_size, image_header_size, ELF_BLOCK_ALIGN, is_elf64)
 
      # Check if hash segment max size parameter was passed
      if (hash_seg_max_size is not None):
          # Error checking for hash segment size validity
         if hashtable_size > hash_seg_max_size:
-           raise RuntimeError, "Hash table exceeds maximum hash segment size: " + hex(hash_seg_max_size)
+           raise RuntimeError("Hash table exceeds maximum hash segment size: " + hex(hash_seg_max_size))
         if (hash_seg_max_size & (ELF_BLOCK_ALIGN-1)) is not 0:
-           raise RuntimeError, "Hash segment size passed is not ELF Block Aligned: " + hex(hash_seg_max_size)
+           raise RuntimeError("Hash segment size passed is not ELF Block Aligned: " + hex(hash_seg_max_size))
 
      # Check if hash physical address parameter was passed
      if last_phys_addr is not None:
@@ -1252,7 +1282,7 @@ def pboot_gen_elf(env, elf_in_file_name,
      # Read the program header and compute hash
      proghdr_buff = elf_out_fp.read(elf_header.e_phnum * phdr_size)
 
-     hash = generate_hash(elfhdr_buff + proghdr_buff, is_sha256_algo)
+     hash = generate_hash(elfhdr_buff + proghdr_buff, sha_algo)
 
      # Write hash to file as first hash table entry
      hash_out_fp.seek(0)
@@ -1302,7 +1332,7 @@ def pboot_add_hash(env, elf_in_file_name,
       file_copy_offset(hash_tbl_fp, 0, elf_out_fp, hash_hdr_offset, hash_size)
 
    else:
-      raise RuntimeError, "Hash segment program header not found in file " + elf_in_file_name
+      raise RuntimeError("Hash segment program header not found in file " + elf_in_file_name)
 
    # Close files
    elf_in_fp.close()
@@ -1317,7 +1347,7 @@ def pboot_add_hash(env, elf_in_file_name,
 def image_auth(env, *args):
 
    if len(args) < 7 or len(args) > 8:
-      raise RuntimeError, "Usage Invalid"
+      raise RuntimeError("Usage Invalid")
 
    # Initialize File Names
    binary_in            = args[0]
@@ -1347,7 +1377,7 @@ def image_auth(env, *args):
       num_certs = num_certs + 1
 
    if (num_certs == 0):
-      raise RuntimeError, "Missing file(s) required for signing.\n"
+      raise RuntimeError("Missing file(s) required for signing.\n")
 
    # Create the Certificate Chain
    concat_files (cert_chain_out, cert_list)
@@ -1361,7 +1391,7 @@ def image_auth(env, *args):
       pad_file(cert_fp, bytes_to_pad, PAD_BYTE_1)
       cert_fp.close()
    else:
-      raise RuntimeError, "Certificate Size too large: " + str(cert_size)
+      raise RuntimeError("Certificate Size too large: " + str(cert_size))
 
    # Create the Final Signed Image File
    concat_files (signed_image_out, [binary_in, signature, cert_chain_out])
@@ -1466,7 +1496,7 @@ def modify_elf_flags(env, elf_in_file_name,
 
    # Check for corresponding number of segments
    if len(segment_list) is not elf_header.e_phnum:
-      raise RuntimeError, 'SCL file and ELF file have different number of segments!'
+      raise RuntimeError('SCL file and ELF file have different number of segments!')
 
    # Go to the start of the p_flag entry in the first program header
    file_offset = elf_header.e_phoff + phdr_flag_off
@@ -1573,11 +1603,11 @@ def generate_code_hash(env, elf_in_file_name):
           (curr_phdr.p_flags & PH_PERM_MASK) == PH_PERM_RX and
           curr_pages == code_seg_pages):
          if (code_seg_idx != -1):
-            raise RuntimeError, 'Multiple code segments match for: ' + code_seg_pages + ' pages'
+            raise RuntimeError('Multiple code segments match for: ' + code_seg_pages + ' pages')
          code_seg_idx = i
 
    if (code_seg_idx == -1):
-      raise RuntimeError, 'No matching code segment found'
+      raise RuntimeError('No matching code segment found')
 
    code_phdr = phdr_table[code_seg_idx]
 
@@ -1592,7 +1622,7 @@ def generate_code_hash(env, elf_in_file_name):
          page = page + elf_in_fp.read(bytes_in_page - len(page))
       if (len(page) < DP_PAGE_SIZE):
          page = page + (struct.pack('b', 0) * (DP_PAGE_SIZE - len(page)))
-      hashes = hashes + [generate_hash(page, True)]
+      hashes = hashes + [generate_hash(page, 'SHA256')]
       bytes_left -= bytes_in_page
 
    # And write them to the hash segment
@@ -1651,7 +1681,7 @@ def readSCL(filename, global_dict):
            # Token 1: Segment Name
            # Token 2: Start Address -- not used in MBN tools
            if len(tokens) < 2:
-              raise RuntimeError, 'SCL Segment Syntax malformed: ' + previous_line
+              raise RuntimeError('SCL Segment Syntax malformed: ' + previous_line)
 
            # Get the segment flags corresponding to the segment name description
            new_scl_entry.flag = getSegmentFlag(tokens[0].strip(strip_chars))
@@ -1698,7 +1728,7 @@ def getSegmentFlag(seg_info):
    UNSECURE = "UNSECURE"
 
    if seg_info is None or len(seg_info) is 0:
-      raise RuntimeError, 'Invalid segment information passed: ' + seg_info
+      raise RuntimeError('Invalid segment information passed: ' + seg_info)
 
    # Conditional checks and assignments of the corresponding segment flag values
    if NOTPAGEABLE in seg_info:
@@ -1760,7 +1790,7 @@ def getSegmentFlag(seg_info):
       ret_val = MI_PBT_ELF_UNSECURE_SEGMENT
 
    else:
-      raise RuntimeError, 'The segment name is wrongly defined in the SCL file: ' + seg_info
+      raise RuntimeError('The segment name is wrongly defined in the SCL file: ' + seg_info)
 
    return ret_val
 
@@ -1771,7 +1801,7 @@ def getSegmentFlag(seg_info):
 def pad_file(fp, num_bytes, value):
 
    if num_bytes < 0:
-      raise RuntimeError, "Number of bytes to pad must be greater than zero"
+      raise RuntimeError("Number of bytes to pad must be greater than zero")
 
    while num_bytes > 0:
       fp.write('%c' % value)
@@ -1840,7 +1870,7 @@ def generate_global_dict(env):
 def populate_dictionary(*args):
 
    if len(args) < 1:
-      raise RuntimeError, "At least 1 file must be specified as an input"
+      raise RuntimeError("At least 1 file must be specified as an input")
 
    global_dict = {}
    Fields = ["Define", "Key", "Value"]
@@ -1893,11 +1923,11 @@ def filter_dictionary(env, global_dict, **kwargs):
    # Check for Image Type
    # If IMAGE_TYPE parameter is not provided, raise error
    if not kwargs.has_key('IMAGE_TYPE'):
-      raise RuntimeError, "IMAGE_TYPE must be defined to use FilterDictionary."
+      raise RuntimeError("IMAGE_TYPE must be defined to use FilterDictionary.")
    else:
       image_type = kwargs.get('IMAGE_TYPE')
       if type(image_type) is not str:
-         raise RuntimeError, "IMAGE_TYPE must be of string type."
+         raise RuntimeError("IMAGE_TYPE must be of string type.")
 
    # Check for Flash Type
    # If FLASH_TYPE parameter is not provided, default to 'nand'
@@ -1906,7 +1936,7 @@ def filter_dictionary(env, global_dict, **kwargs):
    else:
       flash_type = kwargs.get('FLASH_TYPE')
       if type(flash_type) is not str:
-         raise RuntimeError, "FLASH_TYPE must be of string type. "
+         raise RuntimeError("FLASH_TYPE must be of string type. ")
 
    # Check for MBN Type
    # If MBN_TYPE parameter is not provided, default to 'elf'
@@ -1915,7 +1945,7 @@ def filter_dictionary(env, global_dict, **kwargs):
    else:
       mbn_type = kwargs.get('MBN_TYPE')
       if mbn_type != 'elf' and mbn_type != 'bin':
-         raise RuntimeError, "MBN_TYPE currently not supported: " + mbn_type
+         raise RuntimeError("MBN_TYPE currently not supported: " + mbn_type)
 
    # Check for Image ID
    # If IMAGE_ID parameter is not provided, default to ID 0
@@ -1924,7 +1954,7 @@ def filter_dictionary(env, global_dict, **kwargs):
    else:
       image_id = kwargs.get('IMAGE_ID')
       if type(image_id) is not int:
-         raise RuntimeError, "IMAGE_ID must be of integer type."
+         raise RuntimeError("IMAGE_ID must be of integer type.")
 
    # Initialize
    gen_dict = {}
@@ -1949,9 +1979,9 @@ def filter_dictionary(env, global_dict, **kwargs):
       if template_key_match in global_dict:
          image_dest = global_dict[template_key_match]
       else:
-         raise RuntimeError, "Builds file does not have IMAGE_KEY pair for: " + image_type
+         raise RuntimeError("Builds file does not have IMAGE_KEY pair for: " + image_type)
    else:
-      raise RuntimeError, "MBN_TYPE currently not supported: " + mbn_type
+      raise RuntimeError("MBN_TYPE currently not supported: " + mbn_type)
 
    # Assign generic dictionary key/value pairs
    gen_dict['IMAGE_KEY_IMAGE_ID'] = id
@@ -1982,7 +2012,7 @@ def filter_dictionary(env, global_dict, **kwargs):
       gen_dict['IMAGE_KEY_OEM_NUM_ROOT_CERTS'] = oem_num_root_certs
 
    else:
-      raise RuntimeError, "Invalid OEM root certificate configuration values"
+      raise RuntimeError("Invalid OEM root certificate configuration values")
 
    # Assign additional dictionary key/values pair as needed by tools.
 
@@ -2012,7 +2042,7 @@ def preprocess_elf_file(elf_file_name):
    elf_header = Elf_Ehdr_common(elf_fp.read(ELF_HDR_COMMON_SIZE))
 
    if verify_elf_header(elf_header) is False:
-      raise RuntimeError, "ELF file failed verification: " + elf_file_name
+      raise RuntimeError("ELF file failed verification: " + elf_file_name)
 
    elf_fp.seek(0)
 
@@ -2025,7 +2055,7 @@ def preprocess_elf_file(elf_file_name):
 
    # Verify ELF header information
    if verify_elf_header(elf_header) is False:
-      raise RuntimeError, "ELF file failed verification: " + elf_file_name
+      raise RuntimeError("ELF file failed verification: " + elf_file_name)
 
    # Get program header size
    phdr_size = elf_header.e_phentsize
@@ -2075,17 +2105,26 @@ def get_hash_address(elf_file_name):
 # Verify ELF header contents from an input ELF file
 #----------------------------------------------------------------------------
 def verify_elf_header(elf_header):
-   if (elf_header.e_ident[ELFINFO_MAG0_INDEX] != ELFINFO_MAG0) or \
-      (elf_header.e_ident[ELFINFO_MAG1_INDEX] != ELFINFO_MAG1) or \
-      (elf_header.e_ident[ELFINFO_MAG2_INDEX] != ELFINFO_MAG2) or \
-      (elf_header.e_ident[ELFINFO_MAG3_INDEX] != ELFINFO_MAG3) or \
-      ((elf_header.e_ident[ELFINFO_CLASS_INDEX] != ELFINFO_CLASS_64) and \
-       (elf_header.e_ident[ELFINFO_CLASS_INDEX] != ELFINFO_CLASS_32)) or \
-      (elf_header.e_ident[ELFINFO_VERSION_INDEX] != ELFINFO_VERSION_CURRENT):
-
+   if (elf_header.e_ident[ELFINFO_MAG0_INDEX] != ELFINFO_MAG0):
+      print("MAG0[{:d}]\n".format((elf_header.e_ident[ELFINFO_MAG0_INDEX])))
       return False
-   else:
-      return True
+   if (elf_header.e_ident[ELFINFO_MAG1_INDEX] != ELFINFO_MAG1):
+      print("MAG1[{:d}]\n".format((elf_header.e_ident[ELFINFO_MAG1_INDEX])))
+      return False
+   if (elf_header.e_ident[ELFINFO_MAG2_INDEX] != ELFINFO_MAG2):
+      print("MAG2[{:d}]\n".format((elf_header.e_ident[ELFINFO_MAG2_INDEX])))
+      return False
+   if (elf_header.e_ident[ELFINFO_MAG3_INDEX] != ELFINFO_MAG3):
+      print("MAG3[{:d}]\n".format((elf_header.e_ident[ELFINFO_MAG3_INDEX])))
+      return False
+   if ((elf_header.e_ident[ELFINFO_CLASS_INDEX] != ELFINFO_CLASS_64) and \
+       (elf_header.e_ident[ELFINFO_CLASS_INDEX] != ELFINFO_CLASS_32)):
+      print("ELFINFO_CLASS_INDEX[{:d}]\n".format((elf_header.e_ident[ELFINFO_CLASS_INDEX])))
+      return False
+   if (elf_header.e_ident[ELFINFO_VERSION_INDEX] != ELFINFO_VERSION_CURRENT):
+      print("ELFINFO_VERSION_INDEX[{:d}]\n".format((elf_header.e_ident[ELFINFO_VERSION_INDEX])))
+      return False
+   return True
 
 #----------------------------------------------------------------------------
 # Perform file copy given offsets and the number of bytes to copy
@@ -2101,9 +2140,20 @@ def file_copy_offset(in_fp, in_off, out_fp, out_off, num_bytes):
 #----------------------------------------------------------------------------
 # sha1/sha256 hash routine wrapper
 #----------------------------------------------------------------------------
-def generate_hash(in_buf, is_sha256_algo):
+def header_size(header_version):
+    if header_version >= 6:
+        return 48
+    else:
+        return 40
+
+#----------------------------------------------------------------------------
+# sha1/sha256 hash routine wrapper
+#----------------------------------------------------------------------------
+def generate_hash(in_buf, sha_algo):
    # Initialize a SHA1 object from the Python hash library
-   if (is_sha256_algo is True):
+   if sha_algo == 'SHA384':
+      m = hashlib.sha384()
+   elif sha_algo == 'SHA256':
       m = hashlib.sha256()
    else:
       m = hashlib.sha1()
@@ -2126,9 +2176,9 @@ def initialize_hash_phdr(elf_in_file_name, hash_tbl_size, hdr_size, hdr_offset, 
 
    # Update the hash table program header
    if is_elf64 is True:
-      hash_Phdr = Elf64_Phdr('\0'*ELF64_PHDR_SIZE)
+      hash_Phdr = Elf64_Phdr(b'\0'*ELF64_PHDR_SIZE)
    else:
-      hash_Phdr = Elf32_Phdr('\0'*ELF32_PHDR_SIZE)
+      hash_Phdr = Elf32_Phdr(b'\0'*ELF32_PHDR_SIZE)
    hash_Phdr.p_flags = MI_PBT_ELF_HASH_SEGMENT
    hash_Phdr.p_align = ELF_BLOCK_ALIGN
    hash_Phdr.p_offset = hash_hdr_offset
@@ -2210,7 +2260,7 @@ def OPEN(file_name, mode):
     try:
        fp = open(file_name, mode)
     except IOError:
-       raise RuntimeError, "The file could not be opened: " + file_name
+       raise RuntimeError("The file could not be opened: " + file_name)
 
     # File open has succeeded with the given mode, return the file object
     return fp

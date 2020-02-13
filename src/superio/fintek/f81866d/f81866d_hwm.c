@@ -1,20 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2014 Edward O'Callaghan <eocallaghan@alterapraxis.com>
- * Copyright (C) 2015 BAP - Bruhnspace Advanced Projects
- * (Written by Fabian Kunkel <fabi@adv.bruhnspace.com> for BAP)
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
+/* This file is part of the coreboot project. */
 
 /* Setup only for Fan2
  * TODO: Add support for Fan1 and Fan3
@@ -41,7 +26,7 @@
 #define HWM_FAN_MODE		0x96
 #define HWM_FAN2_TEMP_MAP_SEL      0xBF
 
-// Fan 2 - 4 Boundries
+// Fan 2 - 4 Boundaries
 #define HWM_FAN2_BOUND1	0xB6
 #define HWM_FAN2_BOUND2	0xB7
 #define HWM_FAN2_BOUND3	0xB8
@@ -81,7 +66,7 @@ void f81866d_hwm_init(struct device *dev)
 	/* Select FAN Mode*/
 	pnp_write_index(port, HWM_FAN_MODE, reg->hwm_fan_mode);
 
-	/* Set Boundries */
+	/* Set Boundaries */
 	pnp_write_index(port, HWM_FAN2_BOUND1, reg->hwm_fan2_bound1);
 	pnp_write_index(port, HWM_FAN2_BOUND2, reg->hwm_fan2_bound2);
 	pnp_write_index(port, HWM_FAN2_BOUND3, reg->hwm_fan2_bound3);

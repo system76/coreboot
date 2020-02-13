@@ -24,6 +24,7 @@
 #include <intelblocks/cse.h>
 #include <soc/iomap.h>
 #include <soc/pci_devs.h>
+#include <soc/me.h>
 #include <string.h>
 #include <timer.h>
 
@@ -238,21 +239,39 @@ static int cse_ready(void)
 	return csr & CSR_READY;
 }
 
-/*
- * Checks if CSE is in ME_HFS1_COM_SECOVER_MEI_MSG operation mode. This is the mode where
- * CSE will allow reflashing of CSE region.
- */
-static uint8_t check_cse_sec_override_mode(void)
+static bool cse_check_hfs1_com(int mode)
 {
 	union me_hfsts1 hfs1;
 	hfs1.data = me_read_config32(PCI_ME_HFSTS1);
-	if (hfs1.fields.operation_mode == ME_HFS1_COM_SECOVER_MEI_MSG)
-		return 1;
-	return 0;
+	return hfs1.fields.operation_mode == mode;
+}
+
+bool cse_is_hfs1_cws_normal(void)
+{
+	union me_hfsts1 hfs1;
+	hfs1.data = me_read_config32(PCI_ME_HFSTS1);
+	if (hfs1.fields.working_state == ME_HFS1_CWS_NORMAL)
+		return true;
+	return false;
+}
+
+bool cse_is_hfs1_com_normal(void)
+{
+	return cse_check_hfs1_com(ME_HFS1_COM_NORMAL);
+}
+
+bool cse_is_hfs1_com_secover_mei_msg(void)
+{
+	return cse_check_hfs1_com(ME_HFS1_COM_SECOVER_MEI_MSG);
+}
+
+bool cse_is_hfs1_com_soft_temp_disable(void)
+{
+	return cse_check_hfs1_com(ME_HFS1_COM_SOFT_TEMP_DISABLE);
 }
 
 /* Makes the host ready to communicate with CSE */
-void set_host_ready(void)
+void cse_set_host_ready(void)
 {
 	uint32_t csr;
 	csr = read_host_csr();
@@ -261,17 +280,20 @@ void set_host_ready(void)
 	write_host_csr(csr);
 }
 
-/* Polls for ME state 'HECI_OP_MODE_SEC_OVERRIDE' for 15 seconds */
-uint8_t wait_cse_sec_override_mode(void)
+/* Polls for ME mode ME_HFS1_COM_SECOVER_MEI_MSG for 15 seconds */
+uint8_t cse_wait_sec_override_mode(void)
 {
 	struct stopwatch sw;
 	stopwatch_init_msecs_expire(&sw, HECI_DELAY_READY);
-	while (!check_cse_sec_override_mode()) {
+	while (!cse_is_hfs1_com_secover_mei_msg()) {
 		udelay(HECI_DELAY);
-		if (stopwatch_expired(&sw))
+		if (stopwatch_expired(&sw)) {
+			printk(BIOS_ERR, "HECI: Timed out waiting for SEC_OVERRIDE mode!\n");
 			return 0;
+		}
 	}
-
+	printk(BIOS_DEBUG, "HECI: CSE took %lu ms to enter security override mode\n",
+			stopwatch_duration_msecs(&sw));
 	return 1;
 }
 
@@ -525,7 +547,7 @@ int heci_reset(void)
 
 	if (wait_heci_ready()) {
 		/* Device is back on its imaginary feet, clear reset */
-		set_host_ready();
+		cse_set_host_ready();
 		return 1;
 	}
 
@@ -560,7 +582,7 @@ uint32_t me_read_config32(int offset)
  * Sends GLOBAL_RESET_REQ cmd to CSE.The reset type can be GLOBAL_RESET/
  * HOST_RESET_ONLY/CSE_RESET_ONLY.
  */
-int send_heci_reset_req_message(uint8_t rst_type)
+int cse_request_global_reset(enum rst_req_type rst_type)
 {
 	int status;
 	struct mkhi_hdr reply;
@@ -579,31 +601,29 @@ int send_heci_reset_req_message(uint8_t rst_type)
 	};
 	size_t reply_size;
 
+	printk(BIOS_DEBUG, "HECI: Global Reset(Type:%d) Command\n", rst_type);
 	if (!((rst_type == GLOBAL_RESET) ||
-		(rst_type == HOST_RESET_ONLY) || (rst_type == CSE_RESET_ONLY)))
-		return -1;
+		(rst_type == HOST_RESET_ONLY) || (rst_type == CSE_RESET_ONLY))) {
+		printk(BIOS_ERR, "HECI: Unsupported reset type is requested\n");
+		return 0;
+	}
 
 	heci_reset();
 
 	reply_size = sizeof(reply);
 	memset(&reply, 0, reply_size);
 
-	printk(BIOS_DEBUG, "HECI: Global Reset(Type:%d) Command\n", rst_type);
 	if (rst_type == CSE_RESET_ONLY)
-		status = heci_send_receive(&msg, sizeof(msg), NULL, 0);
+		status = heci_send(&msg, sizeof(msg), BIOS_HOST_ADDR, HECI_MKHI_ADDR);
 	else
-		status = heci_send_receive(&msg, sizeof(msg), &reply,
-						&reply_size);
+		status = heci_send_receive(&msg, sizeof(msg), &reply, &reply_size);
 
-	if (status != 1)
-		return -1;
-
-	printk(BIOS_DEBUG, "HECI: Global Reset success!\n");
-	return 0;
+	printk(BIOS_DEBUG, "HECI: Global Reset %s!\n", status ? "success" : "failure");
+	return status;
 }
 
 /* Sends HMRFPO Enable command to CSE */
-int send_hmrfpo_enable_msg(void)
+int cse_hmrfpo_enable(void)
 {
 	struct hmrfpo_enable_msg {
 		struct mkhi_hdr hdr;
@@ -632,18 +652,15 @@ int send_hmrfpo_enable_msg(void)
 
 	struct hmrfpo_enable_resp resp;
 	size_t resp_size = sizeof(struct hmrfpo_enable_resp);
-	union me_hfsts1 hfs1;
 
 	printk(BIOS_DEBUG, "HECI: Send HMRFPO Enable Command\n");
-	hfs1.data = me_read_config32(PCI_ME_HFSTS1);
 	/*
 	 * This command can be run only if:
 	 * - Working state is normal and
 	 * - Operation mode is normal or temporary disable mode.
 	 */
-	if (hfs1.fields.working_state != ME_HFS1_CWS_NORMAL ||
-		(hfs1.fields.operation_mode != ME_HFS1_COM_NORMAL &&
-		hfs1.fields.operation_mode != ME_HFS1_COM_SOFT_TEMP_DISABLE)) {
+	if (!cse_is_hfs1_cws_normal() ||
+		(!cse_is_hfs1_com_normal() && !cse_is_hfs1_com_soft_temp_disable())) {
 		printk(BIOS_ERR, "HECI: ME not in required Mode\n");
 		goto failed;
 	}
@@ -664,9 +681,9 @@ failed:
 
 /*
  * Sends HMRFPO Get Status command to CSE to get the HMRFPO status.
- * The status can be DISABLES/LOCKED/ENABLED
+ * The status can be DISABLED/LOCKED/ENABLED
  */
-int send_hmrfpo_get_status_msg(void)
+int cse_hmrfpo_get_status(void)
 {
 	struct hmrfpo_get_status_msg {
 		struct mkhi_hdr hdr;
@@ -675,7 +692,7 @@ int send_hmrfpo_get_status_msg(void)
 	struct hmrfpo_get_status_resp {
 		struct mkhi_hdr hdr;
 		uint8_t status;
-		uint8_t padding[3];
+		uint8_t reserved[3];
 	} __packed;
 
 	struct hmrfpo_get_status_msg msg = {

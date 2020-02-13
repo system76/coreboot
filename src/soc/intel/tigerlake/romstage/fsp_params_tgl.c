@@ -1,7 +1,7 @@
 /*
  * This file is part of the coreboot project.
  *
- * Copyright (C) 2019 Intel Corp.
+ * Copyright (C) 2019-2020 Intel Corp.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -83,6 +83,31 @@ static void soc_memory_init_params(FSP_M_CONFIG *m_cfg,
 		m_cfg->InternalGfx = 0;
 	else
 		m_cfg->InternalGfx = 0x1;
+
+	/* DP port config */
+	m_cfg->DdiPortAConfig = config->DdiPortAConfig;
+	m_cfg->DdiPortBConfig = config->DdiPortBConfig;
+	m_cfg->DdiPortAHpd = config->DdiPortAHpd;
+	m_cfg->DdiPortBHpd = config->DdiPortBHpd;
+	m_cfg->DdiPortCHpd = config->DdiPortCHpd;
+	m_cfg->DdiPort1Hpd = config->DdiPort1Hpd;
+	m_cfg->DdiPort2Hpd = config->DdiPort2Hpd;
+	m_cfg->DdiPort3Hpd = config->DdiPort3Hpd;
+	m_cfg->DdiPort4Hpd = config->DdiPort4Hpd;
+	m_cfg->DdiPortADdc = config->DdiPortADdc;
+	m_cfg->DdiPortBDdc = config->DdiPortBDdc;
+	m_cfg->DdiPortCDdc = config->DdiPortCDdc;
+	m_cfg->DdiPort1Ddc = config->DdiPort1Ddc;
+	m_cfg->DdiPort2Ddc = config->DdiPort2Ddc;
+	m_cfg->DdiPort3Ddc = config->DdiPort3Ddc;
+	m_cfg->DdiPort4Ddc = config->DdiPort4Ddc;
+
+	/* Image clock: disable all clocks for bypassing FSP pin mux */
+	memset(m_cfg->ImguClkOutEn, 0, sizeof(m_cfg->ImguClkOutEn));
+
+	/* Tcss */
+	m_cfg->TcssXhciEn = config->TcssXhciEn;
+	m_cfg->TcssXdciEn = config->TcssXdciEn;
 
 	/* Enable Hyper Threading */
 	m_cfg->HyperThreading = 1;

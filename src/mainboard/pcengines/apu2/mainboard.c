@@ -169,7 +169,7 @@ static int mainboard_smbios_type16(DMI_INFO *agesa_dmi, int *handle,
 
 	t = (struct smbios_type16 *)*current;
 	len = sizeof(struct smbios_type16);
-	memset(t, 0, sizeof(struct smbios_type16));
+	memset(t, 0, len);
 	max_capacity = get_spd_offset() ? 4 : 2; /* 4GB or 2GB variant */
 
 	t->type = SMBIOS_PHYS_MEMORY_ARRAY;
@@ -192,7 +192,7 @@ static int mainboard_smbios_type17(DMI_INFO *agesa_dmi, int *handle,
 				 unsigned long *current)
 {
 	struct smbios_type17 *t;
-	int len = 0;
+	int len;
 
 	t = (struct smbios_type17 *)*current;
 	memset(t, 0, sizeof(struct smbios_type17));

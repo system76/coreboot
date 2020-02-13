@@ -29,7 +29,6 @@
 #include <amdblocks/acpi.h>
 #include <soc/cpu.h>
 #include <soc/southbridge.h>
-#include <soc/smbus.h>
 #include <soc/smi.h>
 #include <soc/amd_pci_int_defs.h>
 #include <delay.h>
@@ -253,8 +252,11 @@ void sb_read_mode(u32 mode)
 
 static void fch_smbus_init(void)
 {
+	/* 400 kHz smbus speed. */
+	const uint8_t smbus_speed = (66000000 / (400000 * 4));
+
 	pm_write8(SMB_ASF_IO_BASE, SMB_BASE_ADDR >> 8);
-	smbus_write8(SMBTIMING, SMB_SPEED_400KHZ);
+	smbus_write8(SMBTIMING, smbus_speed);
 	/* Clear all SMBUS status bits */
 	smbus_write8(SMBHSTSTAT, SMBHST_STAT_CLEAR);
 	smbus_write8(SMBSLVSTAT, SMBSLV_STAT_CLEAR);

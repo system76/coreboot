@@ -13,6 +13,7 @@
  */
 
 #include <console/console.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <string.h>
 #include <rmodule.h>
@@ -36,6 +37,8 @@
 #include <symbols.h>
 #include <timer.h>
 #include <thread.h>
+
+#include <security/intel/stm/SmmStm.h>
 
 #define MAX_APIC_IDS 256
 
@@ -518,11 +521,12 @@ static int bsp_do_flight_plan(struct mp_params *mp_params)
 	int i;
 	int ret = 0;
 	/*
-	 * Set time-out to wait for APs to a huge value (=1 second) since it
-	 * could take a longer time for APs to check-in as the number of APs
-	 * increases (contention for resources like UART also increases).
+	 * Set time out for flight plan to a huge minimum value (>=1 second).
+	 * CPUs with many APs may take longer if there is contention for
+	 * resources such as UART, so scale the time out up by increments of
+	 * 100ms if needed.
 	 */
-	const int timeout_us = 1000000;
+	const int timeout_us = MAX(1000000, 100000 * mp_params->num_cpus);
 	const int step_us = 100;
 	int num_aps = mp_params->num_cpus - 1;
 	struct stopwatch sw;
@@ -741,6 +745,23 @@ static void asmlinkage smm_do_relocation(void *arg)
 
 	/* Setup code checks this callback for validity. */
 	mp_state.ops.relocation_handler(cpu, curr_smbase, perm_smbase);
+
+	if (CONFIG(STM)) {
+		if (is_smm_enabled()) {
+			uintptr_t mseg;
+
+			mseg = mp_state.perm_smbase +
+				(mp_state.perm_smsize - CONFIG_MSEG_SIZE);
+
+			stm_setup(mseg, p->cpu, runtime->num_cpus,
+					perm_smbase,
+					mp_state.perm_smbase,
+					runtime->start32_offset);
+		} else {
+			printk(BIOS_DEBUG,
+				"STM not loaded because SMM is not enabled!\n");
+		}
+	}
 }
 
 static void adjust_smm_apic_id_map(struct smm_loader_params *smm_params)
@@ -1019,6 +1040,26 @@ static void fill_mp_state(struct mp_state *state, const struct mp_ops *ops)
 	if (ops->get_smm_info != NULL)
 		ops->get_smm_info(&state->perm_smbase, &state->perm_smsize,
 					&state->smm_save_state_size);
+
+	/*
+	 * Make sure there is enough room for the SMM descriptor
+	 */
+	if (CONFIG(STM)) {
+		state->smm_save_state_size +=
+			sizeof(TXT_PROCESSOR_SMM_DESCRIPTOR);
+
+		/* Currently, the CPU SMM save state size is based on a simplistic
+		 * algorithm. (align on 4K)
+		 * note: In the future, this will need to handle newer x86 processors
+		 * that require alignment of the save state on 32K boundaries.
+		 * The alignment is done here because coreboot has a hard coded
+		 * value of 0x400 for this value.
+		 * Also, this alignment only works on CPUs less than 5 threads
+		 */
+		if (CONFIG(STM))
+			state->smm_save_state_size =
+				ALIGN_UP(state->smm_save_state_size, 0x1000);
+	}
 
 	/*
 	 * Default to smm_initiate_relocation() if trigger callback isn't

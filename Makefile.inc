@@ -159,7 +159,7 @@ ws_to_under=$(shell echo '$1' | tr ' \t' '_')
 #######################################################################
 # Helper functions for ramstage postprocess
 spc :=
-spc +=
+spc := $(spc) $(spc)
 comma := ,
 
 # Returns all files and dirs below `dir` (recursively).
@@ -261,7 +261,16 @@ EMPTY_RESOURCE_TEMPLATE_WARNING = 3150
 # Redundant offset remarks are not useful in any way and are masking useful
 # ones that might indicate an issue so it is better to hide them.
 REDUNDANT_OFFSET_REMARK = 2158
+# Ignore _HID & _ADR coexisting in Intel Lynxpoint and Broadwell ASL code.
+# See cb:38803 & cb:38802
+# "Multiple types (Device object requires either a _HID or _ADR, but not both)"
+MULTIPLE_TYPES_WARNING = 3073
+
+ifeq ($(CONFIG_SOUTHBRIDGE_INTEL_LYNXPOINT)$(CONFIG_SOC_INTEL_BROADWELL),y)
+IGNORED_IASL_WARNINGS = -vw $(EMPTY_RESOURCE_TEMPLATE_WARNING) -vw $(REDUNDANT_OFFSET_REMARK) -vw $(MULTIPLE_TYPES_WARNING)
+else
 IGNORED_IASL_WARNINGS = -vw $(EMPTY_RESOURCE_TEMPLATE_WARNING) -vw $(REDUNDANT_OFFSET_REMARK)
+endif
 
 define asl_template
 $(CONFIG_CBFS_PREFIX)/$(1).aml-file = $(obj)/$(1).aml
@@ -307,15 +316,16 @@ cbfs-files-processor-vsa= \
 # Reduce a .config file to its minimal representation
 # arg1: input
 # arg2: output
-cbfs-files-processor-defconfig= \
+define cbfs-files-processor-defconfig
 	$(eval $(2): $(1) $(obj)/build.h $(objutil)/kconfig/conf; \
 		+printf "    CREATE     $(2) (from $(1))\n"; \
-		printf "\# This image was built using coreboot " > $(2).tmp && \
+		printf "# This image was built using coreboot " > $(2).tmp && \
 		grep "\<COREBOOT_VERSION\>" $(obj)/build.h |cut -d\" -f2 >> $(2).tmp && \
 		$(MAKE) DOTCONFIG=$(1) DEFCONFIG=$(2).tmp2 savedefconfig && \
 		cat $(2).tmp2 >> $(2).tmp && \
 		rm -f $(2).tmp2 && \
 		\mv -f $(2).tmp $(2))
+endef
 
 #######################################################################
 # Compile a C file with a bare struct definition into binary
@@ -394,12 +404,12 @@ COREBOOT_EXTRA_VERSION := -$(call strip_quotes,$(CONFIG_LOCALVERSION))
 COREBOOT_EXPORTS += COREBOOT_EXTRA_VERSION
 endif
 
-CPPFLAGS_common := -Isrc -Isrc/include -Isrc/commonlib/include -I$(obj)
+CPPFLAGS_common := -Isrc -Isrc/include -Isrc/commonlib/include -Isrc/commonlib/bsd/include -I$(obj)
 VBOOT_SOURCE ?= 3rdparty/vboot
 CPPFLAGS_common += -I$(VBOOT_SOURCE)/firmware/include
 CPPFLAGS_common += -include $(src)/include/kconfig.h
 CPPFLAGS_common += -include $(src)/include/rules.h
-CPPFLAGS_common += -include $(src)/commonlib/include/commonlib/compiler.h
+CPPFLAGS_common += -include $(src)/commonlib/bsd/include/commonlib/bsd/compiler.h
 CPPFLAGS_common += -I3rdparty
 CPPFLAGS_common += -D__BUILD_DIR__=\"$(obj)\"
 
@@ -414,7 +424,6 @@ CFLAGS_common += -Wstrict-aliasing -Wshadow -Wdate-time -Wtype-limits -Wvla
 CFLAGS_common += -fno-common -ffreestanding -fno-builtin -fomit-frame-pointer
 CFLAGS_common += -ffunction-sections -fdata-sections -fno-pie
 ifeq ($(CONFIG_COMPILER_GCC),y)
-CFLAGS_common += -fno-delete-null-pointer-checks
 # Don't add these GCC specific flags when running scan-build
 ifeq ($(CCC_ANALYZER_OUTPUT_FORMAT),)
 CFLAGS_common += -Wno-packed-not-aligned
