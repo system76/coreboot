@@ -90,8 +90,4 @@ config POST_DEVICE
 	bool
 	default n
 
-config TPM_PIRQ
-	hex
-	default 0x1F # GPP_A7_IRQ
-
 endif
