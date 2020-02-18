@@ -12,9 +12,8 @@ config BOARD_SPECIFIC_OPTIONS
 	select HAVE_SMI_HANDLER
 	select INTEL_GMA_HAVE_VBT
 	select INTEL_LPSS_UART_FOR_CONSOLE
-# Chip select 2 is not yet supported by intel fast_spi
-#	select MAINBOARD_HAS_SPI_TPM_CR50
-#	select MAINBOARD_HAS_TPM2
+	select MAINBOARD_HAS_LPC_TPM
+	select MAINBOARD_HAS_TPM2
 	select NO_UART_ON_SUPERIO
 	select PCIEXP_HOTPLUG
 	select SOC_INTEL_COMMON_ACPI_EC_PTS_WAK
@@ -98,13 +97,8 @@ config POST_DEVICE
 	bool
 	default n
 
-# Chip select 2 is not yet supported by intel fast_spi
-#config DRIVER_TPM_SPI_BUS
-#	hex
-#	default 0x0
-#
-#config DRIVER_TPM_SPI_CHIP
-#	int
-#	default 2
+config TPM_PIRQ
+	hex
+	default 0x1F # GPP_A7_IRQ
 
 endif

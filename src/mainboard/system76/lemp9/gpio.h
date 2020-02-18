@@ -89,8 +89,8 @@ static const struct pad_config gpio_table[] = {
 		PAD_CFG_NF(GPP_A6, NONE, DEEP, NF1),
 
 	// GSPI0
-		// TODO - TPM_PIRQ#
-		PAD_CFG_NC(GPP_A7),
+		// TPM_PIRQ#
+		PAD_CFG_GPI_APIC_HIGH(GPP_A7, NONE, DEEP),
 
 	// LPC
 		// PM_CLKRUN# with pull-up
