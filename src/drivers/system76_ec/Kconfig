@@ -1,0 +1,2 @@
+config DRIVERS_SYSTEM76_EC
+	bool

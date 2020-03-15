@@ -20,6 +20,7 @@
 #include <console/usb.h>
 #include <console/spi.h>
 #include <console/flash.h>
+#include <console/system76_ec.h>
 
 void console_hw_init(void)
 {
@@ -53,6 +54,7 @@ void console_tx_byte(unsigned char byte)
 	__usb_tx_byte(byte);
 	__spiconsole_tx_byte(byte);
 	__flashconsole_tx_byte(byte);
+	__system76_ec_tx_byte(byte);
 }
 
 void console_tx_flush(void)
