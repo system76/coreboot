@@ -84,8 +84,6 @@ Device (EC0)
 			Notify(^^^^AC, Zero)
 			Notify(^^^^BAT0, Zero)
 
-			Sleep (1000)
-
 			// Reset System76 Device
 			^^^^S76D.RSET()
 		}
@@ -163,13 +161,10 @@ Device (EC0)
 		Debug = "EC: AC Detect"
 		^^^^AC.ACFG = ADP
 		Notify (AC, 0x80) // Status Change
-		Sleep (0x01F4)
 		If (BAT0)
 		{
 			Notify (^^^^BAT0, 0x81) // Information Change
-			Sleep (0x32)
 			Notify (^^^^BAT0, 0x80) // Status Change
-			Sleep (0x32)
 		}
 	}
 
