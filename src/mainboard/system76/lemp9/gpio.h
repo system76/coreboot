@@ -164,11 +164,11 @@ static const struct pad_config gpio_table[] = {
 		PAD_CFG_NC(GPP_B6),
 		// WLAN_CLKREQ#
 		PAD_CFG_NF(GPP_B7, NONE, DEEP, NF1),
-		// LAN_CLKREQ#
+		// CARD_CLKREQ#
 		PAD_CFG_NF(GPP_B8, NONE, DEEP, NF1),
-		// TBT_CLKREQ#
+		// SSD2_CLKREQ#
 		PAD_CFG_NF(GPP_B9, NONE, DEEP, NF1),
-		// SSD_CLKREQ#
+		// SSD1_CLKREQ#
 		PAD_CFG_NF(GPP_B10, NONE, DEEP, NF1),
 
 	// Power Management
