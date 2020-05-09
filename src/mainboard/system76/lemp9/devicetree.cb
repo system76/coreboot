@@ -165,11 +165,11 @@ chip soc/intel/cannonlake
 	register "tcc_offset" = "12"
 
 	# Serial IRQ Continuous
-	register "SerialIrqConfigSirqMode" = "1"
+	register "serirq_mode" = "SERIRQ_CONTINUOUS"
 
 # Graphics (soc/intel/cannonlake/graphics.c)
 	# IGD Displays
-    register "gfx" = "GMA_STATIC_DISPLAYS(0)"
+	register "gfx" = "GMA_STATIC_DISPLAYS(0)"
 
 # LPC (soc/intel/cannonlake/lpc.c)
 	# LPC configuration from lspci -s 1f.0 -xxx
