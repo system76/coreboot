@@ -93,8 +93,8 @@ uintptr_t graphics_soc_write_acpi_opregion(const struct device *device,
 }
 
 const struct i915_gpu_controller_info *
-intel_igd_get_controller_info(struct device *device)
+intel_igd_get_controller_info(const struct device *device)
 {
-	struct soc_intel_apollolake_config *chip = device->chip_info;
+	struct soc_intel_cannonlake_config *chip = device->chip_info;
 	return &chip->gfx;
 }

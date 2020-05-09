@@ -429,9 +429,6 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 				&params->SerialIoSpiCsPolarity[0], NULL, NULL);
 #endif
 
-	/* Set correct Sirq mode based on config */
-	params->PchSirqMode = config->SerialIrqConfigSirqMode;
-
 	/* Chipset Lockdown */
 	if (get_lockdown_config() == CHIPSET_LOCKDOWN_COREBOOT) {
 		tconfig->PchLockDownGlobalSmi = 0;
