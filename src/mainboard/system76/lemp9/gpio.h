@@ -152,8 +152,8 @@ static const struct pad_config gpio_table[] = {
 		PAD_CFG_NC(GPP_B2),
 
 	// CPU Misc
-		// GPP_B3
-		_PAD_CFG_STRUCT(GPP_B3, 0x80100100, 0x0000),
+		// GPP_B3 (touchpad interrupt)
+		PAD_CFG_GPI_APIC(GPP_B3, NONE, PLTRST, EDGE_SINGLE, INVERT),
 		// NC
 		PAD_CFG_NC(GPP_B4),
 
