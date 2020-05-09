@@ -18,7 +18,7 @@
 #endif
 
 /* GFX 00:02.0 */
-#include "gfx.asl"
+//TODO - make this compatible with including gma stuff #include "gfx.asl"
 
 /* LPC 0:1f.0 */
 #include <soc/intel/common/block/acpi/acpi/lpc.asl>
