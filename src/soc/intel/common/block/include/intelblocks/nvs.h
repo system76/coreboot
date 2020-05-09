@@ -41,7 +41,8 @@ typedef struct global_nvs_t {
 	u8	e4gm; /* 0x30 - Enable above 4GB MMIO Resource */
 	u64	a4gb; /* 0x31 - 0x38 Base of above 4GB MMIO Resource */
 	u64	a4gs; /* 0x39 - 0x40 Length of above 4GB MMIO Resource */
-	u8	unused[191];
+	u32 aslb; /* 0x41 - 0x44 IGD OpRegion Base Address */
+	u8	unused[187];
 
 	/* ChromeOS specific (0x100 - 0xfff) */
 	chromeos_acpi_t	chromeos;

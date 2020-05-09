@@ -18,6 +18,7 @@
 #ifndef _SOC_CHIP_H_
 #define _SOC_CHIP_H_
 
+#include <drivers/intel/gma/gma.h>
 #include <intelblocks/cfg.h>
 #include <drivers/i2c/designware/dw_i2c.h>
 #include <intelblocks/gpio.h>
@@ -457,6 +458,9 @@ struct soc_intel_cannonlake_config {
 	 * Only override CPU flex ratio if don't want to boot with non-turbo max.
 	 */
 	uint8_t cpu_ratio_override;
+
+	/* i915 struct for GMA backlight control */
+	struct i915_gpu_controller_info gfx;
 };
 
 typedef struct soc_intel_cannonlake_config config_t;

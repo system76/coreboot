@@ -16,7 +16,9 @@
 
 #include <arch/acpi.h>
 #include <bootmode.h>
+#include <cbmem.h>
 #include <console/console.h>
+#include <drivers/intel/gma/gma.h>
 #include <fsp/util.h>
 #include <device/device.h>
 #include <device/pci.h>
@@ -26,6 +28,14 @@
 #include <drivers/intel/gma/opregion.h>
 #include <intelblocks/graphics.h>
 #include <types.h>
+#include <soc/nvs.h>
+#include "chip.h"
+
+uintptr_t gma_get_gnvs_aslb(const void *gnvs)
+{
+	const global_nvs_t *gnvs_ptr = gnvs;
+	return (uintptr_t)(gnvs_ptr ? gnvs_ptr->aslb : 0);
+}
 
 uintptr_t fsp_soc_get_igd_bar(void)
 {
@@ -73,12 +83,14 @@ void graphics_soc_init(struct device *dev)
 		/* Initialize PCI device, load/execute BIOS Option ROM */
 		pci_dev_init(dev);
 	}
+	intel_gma_restore_opregion();
 }
 
 uintptr_t graphics_soc_write_acpi_opregion(struct device *device,
 		uintptr_t current, struct acpi_rsdp *rsdp)
 {
 	igd_opregion_t *opregion;
+	global_nvs_t *gnvs = cbmem_find(CBMEM_ID_ACPI_GNVS);
 
 	printk(BIOS_DEBUG, "ACPI:    * IGD OpRegion\n");
 	opregion = (igd_opregion_t *)current;
@@ -86,7 +98,17 @@ uintptr_t graphics_soc_write_acpi_opregion(struct device *device,
 	if (intel_gma_init_igd_opregion(opregion) != CB_SUCCESS)
 		return current;
 
+	if (gnvs)
+		gnvs->aslb = (u32)(uintptr_t)opregion;
+
 	current += sizeof(igd_opregion_t);
 
 	return acpi_align_current(current);
+}
+
+const struct i915_gpu_controller_info *
+intel_igd_get_controller_info(struct device *device)
+{
+	struct soc_intel_apollolake_config *chip = device->chip_info;
+	return &chip->gfx;
 }
