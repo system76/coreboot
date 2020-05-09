@@ -1,18 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2008 Advanced Micro Devices, Inc.
- * Copyright (C) 2008-2009 coresystems GmbH
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <console/console.h>
 #include <device/device.h>
@@ -43,9 +30,7 @@ static int set_bits(void *port, u32 mask, u32 val)
 	reg32 |= val;
 	write32(port, reg32);
 
-	/* Wait for readback of register to
-	 * match what was just written to it
-	 */
+	/* Wait for readback of register to match what was just written to it */
 	count = 50;
 	do {
 		/* Wait 1ms based on BKDG wait time */
@@ -113,9 +98,7 @@ static u32 find_verb(struct device *dev, u32 viddid, const u32 **verb)
 
 static int wait_for_ready(u8 *base)
 {
-	/* Use a 50 usec timeout - the Linux kernel uses the
-	 * same duration */
-
+	/* Use a 50 usec timeout - the Linux kernel uses the same duration */
 	int timeout = 50;
 
 	while (timeout--) {
@@ -129,9 +112,8 @@ static int wait_for_ready(u8 *base)
 }
 
 /**
- *  Wait 50usec for the codec to indicate that it accepted
- *  the previous command.  No response would imply that the code
- *  is non-operative
+ *  Wait 50usec for the codec to indicate that it accepted the previous command.
+ *  No response would imply that the code is non-operative.
  */
 
 static int wait_for_valid(u8 *base)
@@ -143,14 +125,12 @@ static int wait_for_valid(u8 *base)
 	reg32 |= (1 << 0) | (1 << 1);
 	write32(base + 0x68, reg32);
 
-	/* Use a 50 usec timeout - the Linux kernel uses the
-	 * same duration */
+	/* Use a 50 usec timeout - the Linux kernel uses the same duration */
 
 	int timeout = 50;
 	while (timeout--) {
 		reg32 = read32(base + HDA_ICII_REG);
-		if ((reg32 & (HDA_ICII_VALID | HDA_ICII_BUSY)) ==
-			HDA_ICII_VALID)
+		if ((reg32 & (HDA_ICII_VALID | HDA_ICII_BUSY)) == HDA_ICII_VALID)
 			return 0;
 		udelay(1);
 	}
@@ -250,8 +230,7 @@ static void azalia_init(struct device *dev)
 	pci_write_config32(dev, 0x120, reg32);
 
 	/* Set Bus Master */
-	reg32 = pci_read_config32(dev, PCI_COMMAND);
-	pci_write_config32(dev, PCI_COMMAND, reg32 | PCI_COMMAND_MASTER);
+	pci_or_config16(dev, PCI_COMMAND, PCI_COMMAND_MASTER);
 
 	pci_write_config8(dev, 0x3c, 0x0a); // unused?
 
@@ -313,7 +292,6 @@ static struct device_operations azalia_ops = {
 	.set_resources		= pci_dev_set_resources,
 	.enable_resources	= pci_dev_enable_resources,
 	.init			= azalia_init,
-	.scan_bus		= 0,
 	.enable			= i82801gx_enable,
 	.ops_pci		= &azalia_pci_ops,
 };

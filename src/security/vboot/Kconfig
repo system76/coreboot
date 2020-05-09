@@ -1,17 +1,5 @@
-## This file is part of the coreboot project.
-##
-## Copyright (C) 2014 The ChromiumOS Authors.  All rights reserved.
-## Copyright (C) 2018 Siemens AG
-##
-## This program is free software; you can redistribute it and/or modify
-## it under the terms of the GNU General Public License as published by
-## the Free Software Foundation; version 2 of the License.
-##
-## This program is distributed in the hope that it will be useful,
-## but WITHOUT ANY WARRANTY; without even the implied warranty of
-## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-## GNU General Public License for more details.
-##
+# This file is part of the coreboot project.
+# SPDX-License-Identifier: GPL-2.0-only
 
 menu "Verified Boot (vboot)"
 
@@ -36,22 +24,6 @@ if VBOOT
 
 comment "Anti-Rollback Protection disabled because mocking secdata is enabled."
 	depends on VBOOT_MOCK_SECDATA
-
-config VBOOT_MEASURED_BOOT
-	bool "Enable Measured Boot"
-	default n
-	depends on TPM1 || TPM2
-	depends on !VBOOT_RETURN_FROM_VERSTAGE
-	help
-	  Enables measured boot mode in vboot (experimental)
-
-config VBOOT_MEASURED_BOOT_RUNTIME_DATA
-	string "Runtime data whitelist"
-	default ""
-	depends on VBOOT_MEASURED_BOOT
-	help
-	  Runtime data whitelist of cbfs filenames. Needs to be a comma separated
-	  list
 
 config VBOOT_SLOTS_RW_A
 	bool "Firmware RO + RW_A"
@@ -114,8 +86,8 @@ config VBOOT_STARTS_IN_ROMSTAGE
 	depends on !VBOOT_STARTS_IN_BOOTBLOCK
 	help
 	  Firmware verification happens during the end of romstage (after
-	  memory initialization). This implies that vboot working data is
-	  allocated in CBMEM.
+	  memory initialization). This implies that the vboot work buffer is
+	  in CBMEM from the start and doesn't need to be reserved in memlayout.
 
 config VBOOT_MOCK_SECDATA
 	bool "Mock secdata for firmware verification"
@@ -155,14 +127,6 @@ config VBOOT_RETURN_FROM_VERSTAGE
 	  of exiting to the succeeding stage so that the verstage space can be
 	  reused by the succeeding stage. This is useful if a RAM space is too
 	  small to fit both the verstage and the succeeding stage.
-
-config VBOOT_SAVE_RECOVERY_REASON_ON_REBOOT
-	bool
-	default n
-	help
-	  This option ensures that the recovery request is not lost because of
-	  reboots caused after vboot verification is run. e.g. reboots caused by
-	  FSP components on Intel platforms.
 
 config VBOOT_MUST_REQUEST_DISPLAY
 	bool
@@ -268,6 +232,14 @@ config VBOOT_EARLY_EC_SYNC
 	  significantly impact boot time, as this operation will be performed
 	  later in the boot flow if it is disabled here.
 
+config VBOOT_EC_EFS
+	bool "Early firmware selection (EFS) EC"
+	default n
+	help
+	  CrosEC can support EFS: Early Firmware Selection. If it's enabled,
+	  software sync needs to also support it. This setting tells vboot to
+	  perform EFS software sync.
+
 menu "GBB configuration"
 
 config GBB_HWID
@@ -315,8 +287,8 @@ config GBB_FLAG_FORCE_DEV_BOOT_LEGACY
 	bool "Allow booting to legacy in dev mode even if dev_boot_legacy=0"
 	default n
 
-config GBB_FLAG_FAFT_KEY_OVERIDE
-	bool "Allow booting using alternative keys for FAFT servo testing"
+config GBB_FLAG_RUNNING_FAFT
+	bool "Running FAFT tests; used as a hint to disable other debug features"
 	default n
 
 config GBB_FLAG_DISABLE_EC_SOFTWARE_SYNC

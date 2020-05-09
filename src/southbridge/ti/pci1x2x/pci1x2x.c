@@ -1,18 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2010 Marc Bertens <mbertens@xs4all.nl>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* This file is part of the coreboot project. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #include <device/device.h>
 #include <device/pci.h>
@@ -59,7 +46,6 @@ struct device_operations southbridge_ti_pci1x2x_pciops = {
 	.set_resources    = pci_dev_set_resources,
 	.enable_resources = cardbus_enable_resources,
 	.init             = ti_pci1x2y_init,
-	.scan_bus         = 0,
 	.ops_pci          = &ti_pci1x2y_pci_ops,
 };
 

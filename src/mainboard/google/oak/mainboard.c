@@ -1,19 +1,6 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright 2015 MediaTek Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
-#include <arch/cache.h>
 #include <boardid.h>
 #include <bootmode.h>
 #include <console/console.h>
@@ -145,7 +132,7 @@ static void configure_usb(void)
 
 static void configure_usb_hub(void)
 {
-	/* set usb hub reset pin (low active) to high */
+	/* set USB hub reset pin (low active) to high */
 	if (board_id() + CONFIG_BOARD_ID_ADJUSTMENT > 4)
 		gpio_output(GPIO(UTXD3), 1);
 }

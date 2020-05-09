@@ -1,18 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2008-2009 coresystems GmbH
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; version 2 of
- * the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <device/pci_ops.h>
 #include <device/pci_def.h>
@@ -27,15 +14,14 @@ uintptr_t smbus_base(void)
 int smbus_enable_iobar(uintptr_t base)
 {
 	/* Set the SMBus device statically. */
-	pci_devfn_t dev = PCI_DEV(0x0, 0x1f, 0x3);
+	const pci_devfn_t dev = PCI_DEV(0x0, 0x1f, 0x3);
 
 	/* Check to make sure we've got the right device. */
 	if (pci_read_config16(dev, 0x2) != 0x27da)
 		return -1;
 
 	/* Set SMBus I/O base. */
-	pci_write_config32(dev, SMB_BASE,
-			   base | PCI_BASE_ADDRESS_SPACE_IO);
+	pci_write_config32(dev, SMB_BASE, base | PCI_BASE_ADDRESS_SPACE_IO);
 
 	/* Set SMBus enable. */
 	pci_write_config8(dev, HOSTC, HST_EN);
@@ -61,8 +47,7 @@ int smbus_block_read(unsigned int device, unsigned int cmd, u8 bytes, u8 *buf)
 	return do_smbus_block_read(SMBUS_IO_BASE, device, cmd, bytes, buf);
 }
 
-int smbus_block_write(unsigned int device, unsigned int cmd, u8 bytes,
-		const u8 *buf)
+int smbus_block_write(unsigned int device, unsigned int cmd, u8 bytes, const u8 *buf)
 {
 	return do_smbus_block_write(SMBUS_IO_BASE, device, cmd, bytes, buf);
 }

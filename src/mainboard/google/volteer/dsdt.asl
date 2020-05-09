@@ -1,12 +1,11 @@
 /*
  * This file is part of the coreboot project.
  *
- * Copyright 2020 The coreboot project Authors.
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-#include <arch/acpi.h>
+#include <acpi/acpi.h>
 #include "variant/ec.h"
 #include "variant/gpio.h"
 
@@ -19,7 +18,6 @@ DefinitionBlock(
 	0x20110725	// OEM revision
 )
 {
-	// Some generic macros
 	#include <soc/intel/tigerlake/acpi/platform.asl>
 
 	// global NVS and variables
@@ -33,11 +31,18 @@ DefinitionBlock(
 		{
 			#include <soc/intel/common/block/acpi/acpi/northbridge.asl>
 			#include <soc/intel/tigerlake/acpi/southbridge.asl>
+			#include <soc/intel/tigerlake/acpi/tcss.asl>
 		}
+		/* Mainboard hooks */
+		#include "mainboard.asl"
 	}
 
 	// Chrome OS specific
 	#include <vendorcode/google/chromeos/acpi/chromeos.asl>
+
+	/* Include Low power idle table for a short term workaround to enable
+	   S0ix. Once cr50 pulse width is fixed, this can be removed. */
+	#include <soc/intel/common/acpi/lpit.asl>
 
 	// Chrome OS Embedded Controller
 	Scope (\_SB.PCI0.LPCB)
@@ -48,6 +53,11 @@ DefinitionBlock(
 		#include <ec/google/chromeec/acpi/ec.asl>
 	}
 
-	// Chipset specific sleep states
 	#include <southbridge/intel/common/acpi/sleepstates.asl>
+
+#if CONFIG(VARIANT_HAS_MIPI_CAMERA)
+	/* Camera */
+	#include <soc/intel/tigerlake/acpi/ipu.asl>
+	#include <variant/acpi/mipi_camera.asl>
+#endif /* VARIANT_HAS_MIPI_CAMERA */
 }

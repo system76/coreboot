@@ -1,16 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; version 2 of
- * the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 /*
  * Place in devicetree.cb:
@@ -24,8 +13,8 @@
 #include <device/device.h>
 #include <device/pnp.h>
 #if CONFIG(HAVE_ACPI_TABLES)
-#include <arch/acpi.h>
-#include <arch/acpigen.h>
+#include <acpi/acpi.h>
+#include <acpi/acpigen.h>
 #endif
 #if CONFIG(GENERATE_SMBIOS_TABLES)
 #include <smbios.h>
@@ -176,7 +165,7 @@ static void ipmi_kcs_init(struct device *dev)
 static uint32_t uid_cnt = 0;
 
 static unsigned long
-ipmi_write_acpi_tables(struct device *dev, unsigned long current,
+ipmi_write_acpi_tables(const struct device *dev, unsigned long current,
 		       struct acpi_rsdp *rsdp)
 {
 	struct drivers_ipmi_config *conf = NULL;
@@ -223,7 +212,7 @@ ipmi_write_acpi_tables(struct device *dev, unsigned long current,
 	acpi_create_ipmi(dev, spmi, (ipmi_revision_major << 8) |
 			 (ipmi_revision_minor << 4), &addr,
 			 IPMI_INTERFACE_KCS, gpe_interrupt, apic_interrupt,
-			 dev->command);
+			 conf->uid);
 
 	acpi_add_table(rsdp, spmi);
 
@@ -232,7 +221,7 @@ ipmi_write_acpi_tables(struct device *dev, unsigned long current,
 	return current;
 }
 
-static void ipmi_ssdt(struct device *dev)
+static void ipmi_ssdt(const struct device *dev)
 {
 	const char *scope = acpi_device_scope(dev);
 	struct drivers_ipmi_config *conf = NULL;
@@ -247,14 +236,14 @@ static void ipmi_ssdt(struct device *dev)
 		conf = dev->chip_info;
 
 	/* Use command to pass UID to ipmi_write_acpi_tables */
-	dev->command = uid_cnt++;
+	conf->uid = uid_cnt++;
 
 	/* write SPMI device */
 	acpigen_write_scope(scope);
 	acpigen_write_device("SPMI");
 	acpigen_write_name_string("_HID", "IPI0001");
 	acpigen_write_name_unicode("_STR", "IPMI_KCS");
-	acpigen_write_name_byte("_UID", dev->command);
+	acpigen_write_name_byte("_UID", conf->uid);
 	acpigen_write_STA(0xf);
 	acpigen_write_name("_CRS");
 	acpigen_write_resourcetemplate_header();
@@ -358,11 +347,10 @@ static void ipmi_read_resources(struct device *dev)
 static struct device_operations ops = {
 	.read_resources   = ipmi_read_resources,
 	.set_resources    = ipmi_set_resources,
-	.enable_resources = DEVICE_NOOP,
 	.init             = ipmi_kcs_init,
 #if CONFIG(HAVE_ACPI_TABLES)
 	.write_acpi_tables = ipmi_write_acpi_tables,
-	.acpi_fill_ssdt_generator = ipmi_ssdt,
+	.acpi_fill_ssdt    = ipmi_ssdt,
 #endif
 #if CONFIG(GENERATE_SMBIOS_TABLES)
 	.get_smbios_data = ipmi_smbios_data,

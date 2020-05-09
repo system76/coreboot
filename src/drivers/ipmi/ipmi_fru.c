@@ -1,18 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2019 Wiwynn Corp.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; version 2 of
- * the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <console/console.h>
 #include <string.h>
@@ -319,7 +306,7 @@ static void read_fru_product_info_area(const int port, const uint8_t id,
 				goto out;
 			}
 		if (!data2str((const uint8_t *)data_ptr, info->asset_tag, length))
-			free(info->serial_number);
+			free(info->asset_tag);
 	}
 
 out:

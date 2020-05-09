@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright 2018 MediaTek Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <device/mmio.h>
 #include <soc/dramc_param.h>
@@ -34,7 +22,7 @@ static const u8 freq_shuffle_emcp[DRAM_DFS_SHUFFLE_MAX] = {
 	[DRAM_DFS_SHUFFLE_3] = LP4X_DDR1600,
 };
 
-u32 frequency_table[LP4X_DDRFREQ_MAX] = {
+static const u32 frequency_table[LP4X_DDRFREQ_MAX] = {
 	[LP4X_DDR1600] = 1600,
 	[LP4X_DDR2400] = 2400,
 	[LP4X_DDR3200] = 3200,
@@ -64,6 +52,8 @@ const u8 phy_mapping[CHANNEL_MAX][16] = {
 struct optimize_ac_time {
 	u8 rfc;
 	u8 rfc_05t;
+	u8 rfc_pb;
+	u8 rfrc_pb05t;
 	u16 tx_ref_cnt;
 };
 
@@ -75,6 +65,13 @@ void dramc_set_broadcast(u32 onoff)
 u32 dramc_get_broadcast(void)
 {
 	return read32(&mt8183_infracfg->dramc_wbr);
+}
+
+u32 get_shu_freq(u8 shu)
+{
+	const u8 *freq_tbl = CONFIG(MT8183_DRAM_EMCP) ?
+		freq_shuffle_emcp : freq_shuffle;
+	return frequency_table[freq_tbl[shu]];
 }
 
 static u64 get_ch_rank_size(u8 chn, u8 rank)
@@ -299,8 +296,10 @@ static void emi_init2(const struct sdram_params *params)
 
 	setbits32(&emi_mpu->mpu_ctrl_d[1], 0x1 << 4);
 	setbits32(&emi_mpu->mpu_ctrl_d[7], 0x1 << 4);
-
-	write32(&emi_regs->bwct0, 0x0a000705);
+	if (CONFIG(MT8183_DRAM_EMCP))
+		write32(&emi_regs->bwct0, 0x0d000705);
+	else
+		write32(&emi_regs->bwct0, 0x0a000705);
 	write32(&emi_regs->bwct0_3rd, 0x0);
 
 	/* EMI QoS 0.5 */
@@ -324,19 +323,27 @@ static void dramc_init_pre_settings(void)
 static void dramc_ac_timing_optimize(u8 freq_group)
 {
 	struct optimize_ac_time rf_cab_opt[LP4X_DDRFREQ_MAX] = {
-		[LP4X_DDR1600] = {.rfc = 44, .rfc_05t = 0, .tx_ref_cnt = 62},
-		[LP4X_DDR2400] = {.rfc = 44, .rfc_05t = 0, .tx_ref_cnt = 62},
-		[LP4X_DDR3200] = {.rfc = 100, .rfc_05t = 0, .tx_ref_cnt = 119},
-		[LP4X_DDR3600] = {.rfc = 118, .rfc_05t = 1, .tx_ref_cnt = 138},
+		[LP4X_DDR1600] = {.rfc = 44, .rfc_05t = 0, .rfc_pb = 16,
+			.rfrc_pb05t = 0, .tx_ref_cnt = 62},
+		[LP4X_DDR2400] = {.rfc = 72, .rfc_05t = 0, .rfc_pb = 30,
+			.rfrc_pb05t = 0, .tx_ref_cnt = 91},
+		[LP4X_DDR3200] = {.rfc = 100, .rfc_05t = 0, .rfc_pb = 44,
+			.rfrc_pb05t = 0, .tx_ref_cnt = 119},
+		[LP4X_DDR3600] = {.rfc = 118, .rfc_05t = 1, .rfc_pb = 53,
+			.rfrc_pb05t = 1, .tx_ref_cnt = 138},
 	};
 
 	for (size_t chn = 0; chn < CHANNEL_MAX; chn++) {
 		clrsetbits32(&ch[chn].ao.shu[0].actim[3],
 			0xff << 16, rf_cab_opt[freq_group].rfc << 16);
-		clrbits32(&ch[chn].ao.shu[0].ac_time_05t,
-			rf_cab_opt[freq_group].rfc_05t << 2);
+		clrsetbits32(&ch[chn].ao.shu[0].ac_time_05t,
+			0x1 << 2, rf_cab_opt[freq_group].rfc_05t << 2);
 		clrsetbits32(&ch[chn].ao.shu[0].actim[4],
 			0x3ff << 0, rf_cab_opt[freq_group].tx_ref_cnt << 0);
+		clrsetbits32(&ch[chn].ao.shu[0].actim[3],
+			0xff << 0, rf_cab_opt[freq_group].rfc_pb << 0);
+		clrsetbits32(&ch[chn].ao.shu[0].ac_time_05t,
+			0x1 << 1, rf_cab_opt[freq_group].rfrc_pb05t << 1);
 	}
 }
 
@@ -456,9 +463,9 @@ static void dramc_save_result_to_shuffle(u32 src_shuffle, u32 dst_shuffle)
 		value = read32(src_addr) & 0x7f;
 
 		if (dst_shuffle == DRAM_DFS_SHUFFLE_2)
-			clrsetbits32(dst_addr, 0x7f << 0x8, value << 0x8);
+			clrsetbits32(dst_addr, 0x7f << 8, value << 8);
 		else if (dst_shuffle == DRAM_DFS_SHUFFLE_3)
-			clrsetbits32(dst_addr, 0x7f << 0x16, value << 0x16);
+			clrsetbits32(dst_addr, 0x7f << 16, value << 16);
 
 		/* DRAMC-exception-2 */
 		src_addr = (u8 *)&ch[chn].ao.dvfsdll;

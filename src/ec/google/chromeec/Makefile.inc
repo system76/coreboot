@@ -1,10 +1,16 @@
 ifeq ($(CONFIG_EC_GOOGLE_CHROMEEC),y)
 
+subdirs-y += i2c_tunnel
+
 bootblock-$(CONFIG_EC_GOOGLE_CHROMEEC_BOARDID) += ec_boardid.c
 verstage-$(CONFIG_EC_GOOGLE_CHROMEEC_BOARDID) += ec_boardid.c
 romstage-$(CONFIG_EC_GOOGLE_CHROMEEC_BOARDID) += ec_boardid.c
 ramstage-$(CONFIG_EC_GOOGLE_CHROMEEC_BOARDID) += ec_boardid.c
 smm-$(CONFIG_EC_GOOGLE_CHROMEEC_BOARDID) += ec_boardid.c
+
+smm-$(CONFIG_EC_GOOGLE_CHROMEEC_SKUID) += ec_skuid.c
+romstage-$(CONFIG_EC_GOOGLE_CHROMEEC_SKUID) += ec_skuid.c
+ramstage-$(CONFIG_EC_GOOGLE_CHROMEEC_SKUID) += ec_skuid.c
 
 bootblock-y += ec.c
 bootblock-$(CONFIG_EC_GOOGLE_CHROMEEC_LPC) += ec_lpc.c
@@ -24,6 +30,7 @@ verstage-y += ec.c crosec_proto.c vstore.c
 verstage-$(CONFIG_EC_GOOGLE_CHROMEEC_I2C) += ec_i2c.c
 verstage-$(CONFIG_EC_GOOGLE_CHROMEEC_LPC) += ec_lpc.c
 verstage-$(CONFIG_EC_GOOGLE_CHROMEEC_SPI) += ec_spi.c
+ramstage-$(CONFIG_HAVE_ACPI_TABLES) += ec_acpi.c
 
 ramstage-$(CONFIG_VBOOT) += vboot_storage.c
 smm-$(CONFIG_VBOOT) += vboot_storage.c

@@ -1,19 +1,8 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2017 Intel Corporation.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <arch/io.h>
+#include <bootmode.h>
 #include <device/mmio.h>
 #include <cbmem.h>
 #include <console/console.h>
@@ -22,11 +11,12 @@
 #include <intelblocks/gpio.h>
 #include <intelblocks/tco.h>
 #include <option.h>
+#include <pc80/mc146818rtc.h>
+#include <security/vboot/vboot_common.h>
 #include <soc/pm.h>
 #include <stdint.h>
 #include <string.h>
 #include <timer.h>
-#include <security/vboot/vboot_common.h>
 
 static struct chipset_power_state power_state;
 
@@ -441,7 +431,7 @@ void pmc_global_reset_enable(bool enable)
 }
 #endif // CONFIG_PMC_GLOBAL_RESET_ENABLE_LOCK
 
-int vboot_platform_is_resuming(void)
+int platform_is_resuming(void)
 {
 	if (!(inw(ACPI_BASE_ADDRESS + PM1_STS) & WAK_STS))
 		return 0;
@@ -449,7 +439,7 @@ int vboot_platform_is_resuming(void)
 	return acpi_sleep_from_pm1(pmc_read_pm1_control()) == ACPI_S3;
 }
 
-/* Read and clear GPE status (defined in arch/acpi.h) */
+/* Read and clear GPE status (defined in acpi/acpi.h) */
 int acpi_get_gpe(int gpe)
 {
 	int bank;

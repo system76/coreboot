@@ -1,18 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2007 AMD
- * Written by Yinghai Lu <yinghai.lu@amd.com> for AMD.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #ifndef _CONSOLE_USB_H_
 #define _CONSOLE_USB_H_
@@ -31,7 +18,7 @@ int usb_can_rx_byte(int idx);
 	((ENV_BOOTBLOCK && CONFIG(USBDEBUG_IN_PRE_RAM)) || \
 	 (ENV_ROMSTAGE && CONFIG(USBDEBUG_IN_PRE_RAM)) || \
 	 (ENV_POSTCAR && CONFIG(USBDEBUG_IN_PRE_RAM)) || \
-	 (ENV_VERSTAGE && CONFIG(USBDEBUG_IN_PRE_RAM)) || \
+	 (ENV_SEPARATE_VERSTAGE && CONFIG(USBDEBUG_IN_PRE_RAM)) || \
 	 ENV_RAMSTAGE))
 
 #define USB_PIPE_FOR_CONSOLE 0

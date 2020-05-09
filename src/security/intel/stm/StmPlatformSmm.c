@@ -154,24 +154,30 @@ extern uint8_t *stm_resource_heap;
 
 static int stm_load_status = 0;
 
-void stm_setup(uintptr_t mseg, int cpu, int num_cpus, uintptr_t smbase,
+void stm_setup(uintptr_t mseg, int cpu, uintptr_t smbase,
 			uintptr_t base_smbase, uint32_t offset32)
 {
 	msr_t InitMseg;
 	msr_t MsegChk;
+	msr_t vmx_basic;
+
 	uintptr_t addr_calc;  // used to calculate the stm resource heap area
 
-	printk(BIOS_DEBUG, "STM: set up for cpu %d/%d\n", cpu, num_cpus);
+	printk(BIOS_DEBUG, "STM: set up for cpu %d\n", cpu);
+
+	vmx_basic = rdmsr(IA32_VMX_BASIC_MSR);
+
+	// Does this processor support an STM?
+	if ((vmx_basic.hi & VMX_BASIC_HI_DUAL_MONITOR) != VMX_BASIC_HI_DUAL_MONITOR) {
+		printk(BIOS_WARNING, "STM: not supported on CPU %d\n", cpu);
+		return;
+	}
+
 	if (cpu == 0) {
 
 		// need to create the BIOS resource list once
 		// first calculate the location in SMRAM
-		addr_calc = (mseg - (CONFIG_SMM_MODULE_STACK_SIZE * num_cpus));
-
-		if (CONFIG(SSE))
-			addr_calc -= FXSAVE_SIZE * num_cpus;
-
-		addr_calc -= CONFIG_BIOS_RESOURCE_LIST_SIZE;
+		addr_calc = mseg - CONFIG_BIOS_RESOURCE_LIST_SIZE;
 		stm_resource_heap = (uint8_t *) addr_calc;
 		printk(BIOS_DEBUG, "STM: stm_resource_heap located at %p\n",
 				stm_resource_heap);

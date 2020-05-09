@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2019 Intel Corporation.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 /*
  * Helper functions for dealing with power management registers
@@ -272,12 +260,15 @@ void soc_fill_power_state(struct chipset_power_state *ps)
 	ps->gen_pmcon_b = read32(pmc + GEN_PMCON_B);
 	ps->gblrst_cause[0] = read32(pmc + GBLRST_CAUSE0);
 	ps->gblrst_cause[1] = read32(pmc + GBLRST_CAUSE1);
+	ps->hpr_cause0 = read32(pmc + HPR_CAUSE0);
 
 	printk(BIOS_DEBUG, "GEN_PMCON: %08x %08x\n",
 		ps->gen_pmcon_a, ps->gen_pmcon_b);
 
 	printk(BIOS_DEBUG, "GBLRST_CAUSE: %08x %08x\n",
 		ps->gblrst_cause[0], ps->gblrst_cause[1]);
+
+	printk(BIOS_DEBUG, "HPR_CAUSE0: %08x\n", ps->hpr_cause0);
 }
 
 /* STM Support */

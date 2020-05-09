@@ -1,34 +1,26 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2019-2020 Intel Corporation.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #ifndef _SOC_CHIP_H_
 #define _SOC_CHIP_H_
 
-#include <intelblocks/cfg.h>
 #include <drivers/i2c/designware/dw_i2c.h>
+#include <intelblocks/cfg.h>
 #include <intelblocks/gpio.h>
 #include <intelblocks/gspi.h>
-#include <stdint.h>
 #include <soc/gpe.h>
 #include <soc/gpio.h>
-#include <soc/pch.h>
 #include <soc/gpio_defs.h>
+#include <soc/pch.h>
 #include <soc/pci_devs.h>
 #include <soc/pmc.h>
 #include <soc/serialio.h>
 #include <soc/usb.h>
+#include <stdint.h>
+
+#define MAX_HD_AUDIO_DMIC_LINKS 2
+#define MAX_HD_AUDIO_SNDW_LINKS 4
+#define MAX_HD_AUDIO_SSP_LINKS  6
 
 struct soc_intel_tigerlake_config {
 
@@ -99,24 +91,15 @@ struct soc_intel_tigerlake_config {
 	uint8_t SataPortsDevSlp[8];
 
 	/* Audio related */
-	uint8_t PchHdaEnable;
 	uint8_t PchHdaDspEnable;
-
-	/* Enable/Disable HD Audio Link. Muxed with SSP0/SSP1/SNDW1 */
-	uint8_t PchHdaAudioLinkHda;
-	uint8_t PchHdaAudioLinkDmic0;
-	uint8_t PchHdaAudioLinkDmic1;
-	uint8_t PchHdaAudioLinkSsp0;
-	uint8_t PchHdaAudioLinkSsp1;
-	uint8_t PchHdaAudioLinkSsp2;
-	uint8_t PchHdaAudioLinkSndw1;
-	uint8_t PchHdaAudioLinkSndw2;
-	uint8_t PchHdaAudioLinkSndw3;
-	uint8_t PchHdaAudioLinkSndw4;
+	uint8_t PchHdaAudioLinkHdaEnable;
+	uint8_t PchHdaAudioLinkDmicEnable[MAX_HD_AUDIO_DMIC_LINKS];
+	uint8_t PchHdaAudioLinkSspEnable[MAX_HD_AUDIO_SSP_LINKS];
+	uint8_t PchHdaAudioLinkSndwEnable[MAX_HD_AUDIO_SNDW_LINKS];
 
 	/* PCIe Root Ports */
 	uint8_t PcieRpEnable[CONFIG_MAX_ROOT_PORTS];
-	/* PCIe output clocks type to Pcie devices.
+	/* PCIe output clocks type to PCIe devices.
 	 * 0-23: PCH rootport, 0x70: LAN, 0x80: unspecified but in use,
 	 * 0xFF: not used */
 	uint8_t PcieClkSrcUsage[CONFIG_MAX_PCIE_CLOCKS];
@@ -124,14 +107,25 @@ struct soc_intel_tigerlake_config {
 	 * clksrc. */
 	uint8_t PcieClkSrcClkReq[CONFIG_MAX_PCIE_CLOCKS];
 
+	/* Probe CLKREQ# signal before enabling CLKREQ# based power management.*/
+	uint8_t PcieRpClkReqDetect[CONFIG_MAX_ROOT_PORTS];
+
+	/* PCIe RP L1 substate */
+	enum L1_substates_control {
+		L1_SS_FSP_DEFAULT,
+		L1_SS_DISABLED,
+		L1_SS_L1_1,
+		L1_SS_L1_2,
+	} PcieRpL1Substates[CONFIG_MAX_ROOT_PORTS];
+
+	/* PCIe LTR: Enable (1) / Disable (0) */
+	uint8_t PcieRpLtrEnable[CONFIG_MAX_ROOT_PORTS];
+
+	/* PCIE RP Advanced Error Report: Enable (1) / Disable (0) */
+	uint8_t PcieRpAdvancedErrorReporting[CONFIG_MAX_ROOT_PORTS];
+
 	/* SMBus */
 	uint8_t SmbusEnable;
-
-	/* eMMC and SD */
-	uint8_t ScsEmmcHs400Enabled;
-
-	/* Enable if SD Card Power Enable Signal is Active High */
-	uint8_t SdCardPowerEnableActiveHigh;
 
 	/* Integrated Sensor */
 	uint8_t PchIshEnable;
@@ -171,17 +165,6 @@ struct soc_intel_tigerlake_config {
 	 */
 	uint32_t PrmrrSize;
 	uint8_t PmTimerDisabled;
-	/* Desired platform debug type. */
-	enum {
-		DebugConsent_Disabled,
-		DebugConsent_DCI_DBC,
-		DebugConsent_DCI,
-		DebugConsent_USB3_DBC,
-		DebugConsent_XDP, /* XDP/Mipi60 */
-		DebugConsent_USB2_DBC,
-		DebugConsent_2WIRE_DCI,
-		DebugConsent_Manual,
-	} DebugConsent;
 	/*
 	 * SerialIO device mode selection:
 	 * PchSerialIoDisabled,
@@ -206,8 +189,20 @@ struct soc_intel_tigerlake_config {
 	 */
 	uint8_t SerialIoGSpiCsState[CONFIG_SOC_INTEL_COMMON_BLOCK_GSPI_MAX];
 
-	/* GPIO SD card detect pin */
-	unsigned int sdcard_cd_gpio;
+	/*
+	 * TraceHubMode config
+	 * 0: Disable, 1: Target Debugger Mode, 2: Host Debugger Mode
+	 */
+	uint8_t TraceHubMode;
+
+	/* Debug interface selection */
+	enum {
+		DEBUG_INTERFACE_RAM = (1 << 0),
+		DEBUG_INTERFACE_UART_8250IO = (1 << 1),
+		DEBUG_INTERFACE_USB3 = (1 << 3),
+		DEBUG_INTERFACE_LPSS_SERIAL_IO = (1 << 4),
+		DEBUG_INTERFACE_TRACEHUB = (1 << 5),
+	} debug_interface_flag;
 
 	/* Enable Pch iSCLK */
 	uint8_t pch_isclk;
@@ -221,6 +216,15 @@ struct soc_intel_tigerlake_config {
 	/* Tcss */
 	uint8_t TcssXhciEn;
 	uint8_t TcssXdciEn;
+
+	/*
+	 * SOC Aux orientation override:
+	 * This is a bitfield that corresponds to up to 4 TCSS ports on TGL.
+	 * Even numbered bits (0, 2, 4, 6) control the retimer being handled by SOC.
+	 * Odd numbered bits (1, 3, 5, 7) control the orientation of the physical aux lines
+	 * on the motherboard.
+	 */
+	uint16_t TcssAuxOri;
 
 	/*
 	 * Override GPIO PM configuration:
@@ -266,6 +270,25 @@ struct soc_intel_tigerlake_config {
 	uint8_t DdiPort2Ddc;
 	uint8_t DdiPort3Ddc;
 	uint8_t DdiPort4Ddc;
+
+	/* Hybrid storage mode enable (1) / disable (0)
+	 * This mode makes FSP detect Optane and NVME and set PCIe lane mode
+	 * accordingly */
+	uint8_t HybridStorageMode;
+
+	/*
+	 * Override CPU flex ratio value:
+	 * CPU ratio value controls the maximum processor non-turbo ratio.
+	 * Valid Range 0 to 63.
+	 * In general descriptor provides option to set default cpu flex ratio.
+	 * Default cpu flex ratio 0 ensures booting with non-turbo max frequency.
+	 * That's the reason FSP skips cpu_ratio override if cpu_ratio is 0.
+	 * Only override CPU flex ratio to not boot with non-turbo max.
+	 */
+	uint8_t cpu_ratio_override;
+
+	/* HyperThreadingDisable : Yes (1) / No (0) */
+	uint8_t HyperThreadingDisable;
 };
 
 typedef struct soc_intel_tigerlake_config config_t;

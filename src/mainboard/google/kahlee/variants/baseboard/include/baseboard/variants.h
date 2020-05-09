@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2017 Google Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 
 #ifndef __BASEBOARD_VARIANTS_H__
@@ -28,6 +16,7 @@ int variant_mainboard_read_spd(uint8_t spdAddress, char *buf, size_t len);
 int variant_get_xhci_oc_map(uint16_t *usb_oc_map);
 int variant_get_ehci_oc_map(uint16_t *usb_oc_map);
 const struct soc_amd_gpio *variant_early_gpio_table(size_t *size);
+const struct soc_amd_gpio *variant_wlan_rst_early_gpio_table(size_t *size);
 const struct soc_amd_gpio *variant_romstage_gpio_table(size_t *size);
 const struct soc_amd_gpio *variant_gpio_table(size_t *size);
 void variant_romstage_entry(int s3_resume);

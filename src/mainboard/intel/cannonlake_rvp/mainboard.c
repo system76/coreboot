@@ -1,19 +1,7 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright 2017 Intel Corp.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
-#include <arch/acpi.h>
+#include <acpi/acpi.h>
 #include <baseboard/variants.h>
 #include <device/device.h>
 #include <nhlt.h>
@@ -31,7 +19,7 @@ static void mainboard_init(void *chip_info)
 	gpio_configure_pads(pads, num);
 }
 
-static unsigned long mainboard_write_acpi_tables(struct device *device,
+static unsigned long mainboard_write_acpi_tables(const struct device *device,
 						 unsigned long current,
 						 acpi_rsdp_t *rsdp)
 {
@@ -59,7 +47,7 @@ static unsigned long mainboard_write_acpi_tables(struct device *device,
 static void mainboard_enable(struct device *dev)
 {
 	dev->ops->write_acpi_tables = mainboard_write_acpi_tables;
-	dev->ops->acpi_inject_dsdt_generator = chromeos_dsdt_generator;
+	dev->ops->acpi_inject_dsdt = chromeos_dsdt_generator;
 }
 
 struct chip_operations mainboard_ops = {

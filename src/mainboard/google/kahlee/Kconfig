@@ -1,7 +1,6 @@
 #
 # This file is part of the coreboot project.
 #
-# Copyright (C) 2015-2017 Advanced Micro Devices, Inc.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -66,6 +65,7 @@ config VARIANT_DIR
 	default "careena" if BOARD_GOOGLE_CAREENA
 	default "grunt" if BOARD_GOOGLE_GRUNT
 	default "liara" if BOARD_GOOGLE_LIARA
+	default "nuwani" if BOARD_GOOGLE_NUWANI
 	default "treeya" if BOARD_GOOGLE_TREEYA
 
 config MAINBOARD_PART_NUMBER

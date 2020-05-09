@@ -1,18 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright 2015 Google Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <device/pci_ids.h>
 #include <device/pci_ops.h>
@@ -22,15 +9,15 @@
 #include <console/console.h>
 #include <intelblocks/cpulib.h>
 
-/* Default values for domain configuration. PSI3 and PSI4 are disabled. */
+/* Default values for domain configuration. */
 static const struct vr_config default_configs[NUM_VR_DOMAINS] = {
 	[VR_SYSTEM_AGENT] = {
 		.vr_config_enable = 1,
 		.psi1threshold = VR_CFG_AMP(20),
 		.psi2threshold = VR_CFG_AMP(4),
 		.psi3threshold = VR_CFG_AMP(1),
-		.psi3enable = 0,
-		.psi4enable = 0,
+		.psi3enable = 1,
+		.psi4enable = 1,
 		.imon_slope = 0,
 		.imon_offset = 0,
 		.icc_max = 0,
@@ -41,8 +28,8 @@ static const struct vr_config default_configs[NUM_VR_DOMAINS] = {
 		.psi1threshold = VR_CFG_AMP(20),
 		.psi2threshold = VR_CFG_AMP(5),
 		.psi3threshold = VR_CFG_AMP(1),
-		.psi3enable = 0,
-		.psi4enable = 0,
+		.psi3enable = 1,
+		.psi4enable = 1,
 		.imon_slope = 0,
 		.imon_offset = 0,
 		.icc_max = 0,
@@ -53,8 +40,8 @@ static const struct vr_config default_configs[NUM_VR_DOMAINS] = {
 		.psi1threshold = VR_CFG_AMP(20),
 		.psi2threshold = VR_CFG_AMP(5),
 		.psi3threshold = VR_CFG_AMP(1),
-		.psi3enable = 0,
-		.psi4enable = 0,
+		.psi3enable = 1,
+		.psi4enable = 1,
 		.imon_slope = 0,
 		.imon_offset = 0,
 		.icc_max = 0,
@@ -65,8 +52,8 @@ static const struct vr_config default_configs[NUM_VR_DOMAINS] = {
 		.psi1threshold = VR_CFG_AMP(20),
 		.psi2threshold = VR_CFG_AMP(5),
 		.psi3threshold = VR_CFG_AMP(1),
-		.psi3enable = 0,
-		.psi4enable = 0,
+		.psi3enable = 1,
+		.psi4enable = 1,
 		.imon_slope = 0,
 		.imon_offset = 0,
 		.icc_max = 0,
@@ -236,7 +223,7 @@ static uint16_t get_sku_icc_max(int domain)
 		return icc_max[domain];
 	}
 	default:
-		printk(BIOS_ERR, "ERROR: Unknown MCH (0x%x) in VR-config\n", mch_id);
+		printk(BIOS_ERR, "ERROR: Unknown MCH (0x%x) in %s\n", mch_id, __func__);
 	}
 	return 0;
 }
@@ -306,7 +293,7 @@ static uint16_t get_sku_ac_dc_loadline(const int domain)
 		return loadline[domain];
 	}
 	default:
-		printk(BIOS_ERR, "ERROR: Unknown MCH (0x%x) in VR-config\n", mch_id);
+		printk(BIOS_ERR, "ERROR: Unknown MCH (0x%x) in %s\n", mch_id, __func__);
 	}
 	return 0;
 }

@@ -573,7 +573,7 @@ detailed_block(struct edid *result_edid, unsigned char *x, int in_extension,
 		"Detailed mode (IN HEX): Clock %d KHz, %x mm x %x mm\n"
 	       "               %04x %04x %04x %04x hborder %x\n"
 	       "               %04x %04x %04x %04x vborder %x\n"
-	       "               %chsync %cvsync%s%s %s\n",
+	       "               %chsync %cvsync%s%s%s\n",
 	       out->mode.pixel_clock,
 	       extra_info.x_mm,
 	       extra_info.y_mm,
@@ -1138,8 +1138,6 @@ int decode_edid(unsigned char *edid, int size, struct edid *out)
 	    .conformant = EDID_CONFORMANT,
 	};
 
-	memset(out, 0, sizeof(*out));
-
 	if (!edid) {
 		printk(BIOS_ERR, "No EDID found\n");
 		return EDID_ABSENT;
@@ -1151,6 +1149,8 @@ int decode_edid(unsigned char *edid, int size, struct edid *out)
 		printk(BIOS_ERR, "No header found\n");
 		return EDID_ABSENT;
 	}
+
+	memset(out, 0, sizeof(*out));
 
 	if (manufacturer_name(edid + 0x08, out->manufacturer_name))
 		c.manufacturer_name_well_formed = 1;

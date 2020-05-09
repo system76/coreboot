@@ -1,0 +1,65 @@
+##
+## This file is part of the coreboot project.
+##
+##
+## This program is free software; you can redistribute it and/or modify
+## it under the terms of the GNU General Public License as published by
+## the Free Software Foundation; version 2 of the License.
+##
+## This program is distributed in the hope that it will be useful,
+## but WITHOUT ANY WARRANTY; without even the implied warranty of
+## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+## GNU General Public License for more details.
+##
+
+if BOARD_GIGABYTE_GA_H61M_S2PV || BOARD_GIGABYTE_GA_H61M_DS2V || BOARD_GIGABYTE_GA_H61MA_D3V
+
+config BOARD_SPECIFIC_OPTIONS
+	def_bool y
+	select BOARD_ROMSIZE_KB_4096
+	select HAVE_ACPI_RESUME
+	select HAVE_ACPI_TABLES
+	select INTEL_INT15
+	select NORTHBRIDGE_INTEL_SANDYBRIDGE
+	select SERIRQ_CONTINUOUS_MODE
+	select SOUTHBRIDGE_INTEL_BD82X6X
+	select USE_NATIVE_RAMINIT
+	select SUPERIO_ITE_IT8728F
+	select MAINBOARD_HAS_LIBGFXINIT
+	select INTEL_GMA_HAVE_VBT
+	select HAVE_OPTION_TABLE
+	select HAVE_CMOS_DEFAULT
+
+config MAINBOARD_DIR
+	string
+	default "gigabyte/ga-h61m-series"
+
+config VARIANT_DIR
+	string
+	default "ga-h61m-s2pv" if BOARD_GIGABYTE_GA_H61M_S2PV
+	default "ga-h61m-ds2v" if BOARD_GIGABYTE_GA_H61M_DS2V
+	default "ga-h61ma-d3v" if BOARD_GIGABYTE_GA_H61MA_D3V
+
+config MAINBOARD_PART_NUMBER
+	string
+	default "GA-H61M-S2PV" if BOARD_GIGABYTE_GA_H61M_S2PV
+	default "GA-H61M-DS2V" if BOARD_GIGABYTE_GA_H61M_DS2V
+	default "GA-H61MA-D3V" if BOARD_GIGABYTE_GA_H61MA_D3V
+
+config OVERRIDE_DEVICETREE
+	string
+	default "variants/$(CONFIG_VARIANT_DIR)/overridetree.cb"
+
+config MAX_CPUS
+	int
+	default 8
+
+# Override the default variant behavior, since the data.vbt is the same
+config INTEL_GMA_VBT_FILE
+	default "src/mainboard/$(MAINBOARDDIR)/data.vbt"
+
+config USBDEBUG_HCD_INDEX # Bottom left port seen from rear
+	int
+	default 2
+
+endif # BOARD_GIGABYTE_GA_H61M*

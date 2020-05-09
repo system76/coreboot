@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2016 Google Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <string.h>
 #include <types.h>
@@ -99,26 +87,6 @@ void save_vbnv(const uint8_t *vbnv_copy)
 
 	/* Clear initialized flag to force cached data to be updated */
 	vbnv_initialized = 0;
-}
-
-/* Save a recovery reason into VBNV. */
-void set_recovery_mode_into_vbnv(int recovery_reason)
-{
-	uint8_t vbnv_copy[VBOOT_VBNV_BLOCK_SIZE];
-
-	read_vbnv(vbnv_copy);
-
-	vbnv_copy[RECOVERY_OFFSET] = recovery_reason;
-	vbnv_copy[CRC_OFFSET] = crc8_vbnv(vbnv_copy, CRC_OFFSET);
-
-	save_vbnv(vbnv_copy);
-}
-
-/* Read the recovery reason from VBNV. */
-int get_recovery_mode_from_vbnv(void)
-{
-	vbnv_setup();
-	return vbnv[RECOVERY_OFFSET];
 }
 
 /* Read the USB Device Controller(UDC) enable flag from VBNV. */

@@ -1,18 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright 2013 Google Inc.
- * Copyright (C) 2015 Intel Corp.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include "chip.h"
 #include <console/console.h>
@@ -20,6 +7,7 @@
 #include <device/pci.h>
 #include <device/pci_ids.h>
 #include <drivers/intel/gma/opregion.h>
+#include <drivers/intel/gma/i915.h>
 #include <reg_script.h>
 #include <soc/gfx.h>
 #include <soc/nvs.h>
@@ -34,38 +22,34 @@ static const struct reg_script gpu_pre_vbios_script[] = {
 
 static const struct reg_script gfx_post_vbios_script[] = {
 	/* Set Lock bits */
-	REG_PCI_RMW32(GGC, 0xffffffff, GGC_GGCLCK),
+	REG_PCI_RMW32(GGC,      0xffffffff, GGC_GGCLCK),
 	REG_PCI_RMW32(GSM_BASE, 0xffffffff, GSM_BDSM_LOCK),
 	REG_PCI_RMW32(GTT_BASE, 0xffffffff, GTT_BGSM_LOCK),
 	REG_SCRIPT_END
 };
 
-static inline void gfx_run_script(struct device *dev,
-				  const struct reg_script *ops)
+static inline void gfx_run_script(struct device *dev, const struct reg_script *ops)
 {
 	reg_script_run_on_dev(dev, ops);
 }
 
 static void gfx_pre_vbios_init(struct device *dev)
 {
-	printk(BIOS_SPEW, "%s/%s (%s)\n",
-			__FILE__, __func__, dev_name(dev));
+	printk(BIOS_SPEW, "%s/%s (%s)\n", __FILE__, __func__, dev_name(dev));
 	printk(BIOS_INFO, "GFX: Pre VBIOS Init\n");
 	gfx_run_script(dev, gpu_pre_vbios_script);
 }
 
 static void gfx_post_vbios_init(struct device *dev)
 {
-	printk(BIOS_SPEW, "%s/%s (%s)\n",
-			__FILE__, __func__, dev_name(dev));
+	printk(BIOS_SPEW, "%s/%s (%s)\n", __FILE__, __func__, dev_name(dev));
 	printk(BIOS_INFO, "GFX: Post VBIOS Init\n");
 	gfx_run_script(dev, gfx_post_vbios_script);
 }
 
 static void gfx_init(struct device *dev)
 {
-	printk(BIOS_SPEW, "%s/%s (%s)\n",
-			__FILE__, __func__, dev_name(dev));
+	printk(BIOS_SPEW, "%s/%s (%s)\n", __FILE__, __func__, dev_name(dev));
 
 	if (!CONFIG(RUN_FSP_GOP)) {
 		/* Pre VBIOS Init */
@@ -93,12 +77,20 @@ void gma_set_gnvs_aslb(void *gnvs, uintptr_t aslb)
 		gnvs_ptr->aslb = aslb;
 }
 
+static void gma_generate_ssdt(const struct device *dev)
+{
+	const struct soc_intel_braswell_config *chip = dev->chip_info;
+
+	drivers_intel_gma_displays_ssdt_generate(&chip->gfx);
+}
+
 static struct device_operations gfx_device_ops = {
 	.read_resources		= pci_dev_read_resources,
 	.set_resources		= pci_dev_set_resources,
 	.enable_resources	= pci_dev_enable_resources,
 	.init			= gfx_init,
 	.ops_pci		= &soc_pci_ops,
+	.acpi_fill_ssdt		= gma_generate_ssdt,
 };
 
 static const struct pci_driver gfx_driver __pci_driver = {

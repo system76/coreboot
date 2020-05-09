@@ -1,19 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (c) 2013 The Chromium OS Authors. All rights reserved.
- * Copyright 2018 Facebook Inc.
- * Copyright 2018 Siemens AG
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #ifndef TSPI_H_
 #define TSPI_H_
@@ -25,6 +11,12 @@
 
 #define TPM_PCR_MAX_LEN 64
 #define HASH_DATA_CHUNK_SIZE 1024
+
+/**
+ * Get the pointer to the single instance of global
+ * tcpa log data, and initialize it when necessary
+ */
+struct tcpa_table *tcpa_log_init(void);
 
 /**
  * Clears the pre-RAM tcpa log data and initializes
@@ -49,6 +41,7 @@ void tcpa_log_add_table_entry(const char *name, const uint32_t pcr,
  * Dump TCPA log entries on console
  */
 void tcpa_log_dump(void *unused);
+
 
 /**
  * Ask vboot for a digest and extend a TPM PCR with it.

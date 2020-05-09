@@ -1,17 +1,7 @@
-/*
- * This file is part of the coreboot project.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
-#include <arch/acpi.h>
+#include <acpi/acpi.h>
 #include <arch/io.h>
 #include <bcd.h>
 #include <fallback.h>
@@ -160,7 +150,7 @@ static void cmos_init_vbnv(bool invalid)
 	   occurred with !CONFIG_USE_OPTION_TABLE. However, __cmos_init() may
 	   clear vbnv data for other internal reasons. For that, always back up
 	   the vbnv contents and conditionally save them when __cmos_init()
-	   indicates cmos was cleared. */
+	   indicates CMOS was cleared. */
 	read_vbnv_cmos(vbnv);
 
 	if (__cmos_init(invalid))
@@ -204,7 +194,7 @@ void cmos_check_update_date(void)
 	year = cmos_read(RTC_CLK_YEAR);
 
 	/*
-	 * TODO: If century is 0xFF, 100% that the cmos is cleared.
+	 * TODO: If century is 0xFF, 100% that the CMOS is cleared.
 	 * Other than that, so far rtc_year is the only entry to check
 	 * if the date is valid.
 	 */

@@ -1,19 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2013 Google, Inc.
- * Copyright (C) 2014 - 2017 Intel Corporation.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #ifndef _DENVERTON_NS_MSR_H_
 #define _DENVERTON_NS_MSR_H_
@@ -25,6 +11,8 @@
 #define MSR_PKG_CST_CONFIG_CONTROL 0xe2
 #define MSR_PMG_IO_CAPTURE_BASE 0xe4
 #define MSR_FEATURE_CONFIG 0x13c
+#define   FEATURE_CONFIG_RESERVED_MASK	0x3ULL
+#define   FEATURE_CONFIG_LOCK	(1 << 0)
 #define IA32_MCG_CAP			0x179
 #define  IA32_MCG_CAP_COUNT_MASK	0xff
 #define  IA32_MCG_CAP_CTL_P_BIT		8

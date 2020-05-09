@@ -1,15 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <cpu/x86/msr.h>
 #include <cpu/x86/tsc.h>
@@ -48,7 +38,7 @@ static int get_fsb_tsc(int *fsb, int *ratio)
 			*fsb = core2_fsb[rdmsr(MSR_FSB_FREQ).lo & 7];
 			*ratio = (rdmsr(IA32_PERF_STATUS).hi >> 8) & 0x1f;
 			break;
-		case 0x25: /* Nehalem BCLK fixed at 133MHz */
+		case 0x25: /* Arrandale BCLK fixed at 133MHz */
 			*fsb = 133;
 			*ratio = (rdmsr(MSR_PLATFORM_INFO).lo >> 8) & 0xff;
 			break;

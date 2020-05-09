@@ -1,18 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2013 Vladimir Serbinenko
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; version 2 of
- * the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <console/console.h>
 #include <device/device.h>
@@ -53,14 +40,11 @@ static struct device_operations thermal_ops = {
 	.set_resources = pci_dev_set_resources,
 	.enable_resources = pci_dev_enable_resources,
 	.init = thermal_init,
-	.scan_bus = 0,
 	.ops_pci = &pci_ops,
 };
-
-static const unsigned short pci_device_ids[] = { 0x3b32, 0 };
 
 static const struct pci_driver pch_thermal __pci_driver = {
 	.ops = &thermal_ops,
 	.vendor = PCI_VENDOR_ID_INTEL,
-	.devices = pci_device_ids,
+	.device = PCI_DID_INTEL_IBEXPEAK_THERMAL,
 };

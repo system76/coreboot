@@ -1,18 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2009 Uwe Hermann <uwe@hermann-uwe.de>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* This file is part of the coreboot project. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #include <stdint.h>
 #include <arch/bootblock.h>
@@ -61,4 +48,7 @@ void bootblock_early_southbridge_init(void)
 	reg16 |= LOWER_BIOS_ENABLE | EXT_BIOS_ENABLE | EXT_BIOS_ENABLE_1MB;
 	reg16 &= ~(WRITE_PROTECT_ENABLE);	/* Disable ROM write access. */
 	pci_write_config16(dev, XBCS, reg16);
+
+	/* Enable (RTC and) upper NVRAM bank. */
+	pci_write_config8(dev, RTCCFG, RTC_POS_DECODE | UPPER_RAM_EN | RTC_ENABLE);
 }

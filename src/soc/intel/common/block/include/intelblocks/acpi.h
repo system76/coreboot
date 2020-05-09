@@ -1,24 +1,10 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2017 Intel Corp.
- * Copyright (C) 2017 Siemens AG
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* This file is part of the coreboot project. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #ifndef SOC_INTEL_COMMON_BLOCK_ACPI_H
 #define SOC_INTEL_COMMON_BLOCK_ACPI_H
 
-#include <arch/acpi.h>
+#include <acpi/acpi.h>
 #include <device/device.h>
 #include <intelblocks/cpulib.h>
 #include <stdint.h>
@@ -42,7 +28,7 @@ void soc_write_sci_irq_select(uint32_t scis);
  * Calls acpi_write_hpet which creates and fills HPET table and
  * adds it to the RSDT (and XSDT) structure.
  */
-unsigned long southbridge_write_acpi_tables(struct device *device,
+unsigned long southbridge_write_acpi_tables(const struct device *device,
 					    unsigned long current,
 					    struct acpi_rsdp *rsdp);
 
@@ -50,7 +36,7 @@ unsigned long southbridge_write_acpi_tables(struct device *device,
  * Creates acpi gnvs and adds it to the DSDT table.
  * GNVS creation is chipset specific and is done in soc specific acpi.c file.
  */
-void southbridge_inject_dsdt(struct device *device);
+void southbridge_inject_dsdt(const struct device *device);
 
 /*
  * This function populates the gnvs structure in acpi table.
@@ -82,7 +68,7 @@ uint32_t acpi_fill_soc_wake(uint32_t generic_pm1_en,
 void soc_fill_fadt(acpi_fadt_t *fadt);
 
 /* Chipset specific settings for filling up dmar table */
-unsigned long sa_write_acpi_tables(struct device *dev,
+unsigned long sa_write_acpi_tables(const struct device *dev,
 				   unsigned long current,
 				   struct acpi_rsdp *rsdp);
 

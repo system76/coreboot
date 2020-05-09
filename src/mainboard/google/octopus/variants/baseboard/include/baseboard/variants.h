@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright 2017 Intel Corp.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #ifndef BASEBOARD_VARIANTS_H
 #define BASEBOARD_VARIANTS_H
@@ -35,8 +23,6 @@ extern const struct lpddr4_swizzle_cfg baseboard_lpddr4_swizzle;
 const struct lpddr4_cfg *variant_lpddr4_config(void);
 /* Return memory SKU for the board. */
 size_t variant_memory_sku(void);
-/* Return board SKU */
-uint32_t get_board_sku(void);
 /* Return ChromeOS gpio table and fill in number of entries. */
 const struct cros_gpio *variant_cros_gpios(size_t *num);
 

@@ -1,19 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2008-2009 coresystems GmbH
- * Copyright 2013 Google Inc.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; version 2 of
- * the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <console/console.h>
 #include <device/device.h>
@@ -25,15 +11,14 @@
 #include <pc80/i8259.h>
 #include <arch/io.h>
 #include <arch/ioapic.h>
-#include <arch/acpi.h>
+#include <acpi/acpi.h>
 #include <cpu/x86/smm.h>
 #include <cbmem.h>
 #include <string.h>
 #include "chip.h"
 #include "nvs.h"
 #include "pch.h"
-#include <arch/acpigen.h>
-#include <drivers/intel/gma/i915.h>
+#include <acpi/acpigen.h>
 #include <southbridge/intel/common/acpi_pirq_gen.h>
 #include <southbridge/intel/common/rtc.h>
 #include <southbridge/intel/common/spi.h>
@@ -714,7 +699,7 @@ static void pch_lpc_enable(struct device *dev)
 	pch_enable(dev);
 }
 
-static void southbridge_inject_dsdt(struct device *dev)
+static void southbridge_inject_dsdt(const struct device *dev)
 {
 	global_nvs_t *gnvs;
 
@@ -726,8 +711,6 @@ static void southbridge_inject_dsdt(struct device *dev)
 	}
 
 	if (gnvs) {
-		const struct i915_gpu_controller_info *gfx = intel_gma_get_controller_info();
-
 		acpi_create_gnvs(gnvs);
 
 		gnvs->apic = 1;
@@ -740,11 +723,6 @@ static void southbridge_inject_dsdt(struct device *dev)
 
 		/* Update the mem console pointer. */
 		gnvs->cbmc = (u32)cbmem_find(CBMEM_ID_CONSOLE);
-
-		if (gfx) {
-			gnvs->ndid = gfx->ndid;
-			memcpy(gnvs->did, gfx->did, sizeof(gnvs->did));
-		}
 
 		/* And tell SMI about it */
 		smm_setup_structures(gnvs, NULL, NULL);
@@ -874,25 +852,17 @@ void acpi_fill_fadt(acpi_fadt_t *fadt)
 	fadt->x_pm_tmr_blk.addrh = 0x0;
 
 	/*
-	 * We don't set `fadt->x_gpe0_blk` for Lynx Point LP since the correct
-	 * bit width is 128 * 2, which is too large for an 8 bit unsigned int.
-	 * The OSPM can instead use the values in `fadt->gpe0_blk{,_len}`.
+	 * Windows 10 requires x_gpe0_blk to be set starting with FADT revision 5.
+	 * The bit_width field intentionally overflows here.
+	 * The OSPM can instead use the values in `fadt->gpe0_blk{,_len}`, which
+	 * seems to work fine on Linux 5.0 and Windows 10.
 	 */
-	if (!pch_is_lp()) {
-		fadt->x_gpe0_blk.space_id = ACPI_ADDRESS_SPACE_IO;
-		fadt->x_gpe0_blk.bit_width = 2 * 64;
-		fadt->x_gpe0_blk.bit_offset = 0;
-		fadt->x_gpe0_blk.access_size = ACPI_ACCESS_SIZE_BYTE_ACCESS;
-		fadt->x_gpe0_blk.addrl = pmbase + GPE0_STS;
-		fadt->x_gpe0_blk.addrh = 0x0;
-	} else {
-		fadt->x_gpe0_blk.space_id = ACPI_ADDRESS_SPACE_IO;
-		fadt->x_gpe0_blk.bit_width = 0;
-		fadt->x_gpe0_blk.bit_offset = 0;
-		fadt->x_gpe0_blk.access_size = 0;
-		fadt->x_gpe0_blk.addrl = 0x0;
-		fadt->x_gpe0_blk.addrh = 0x0;
-	}
+	fadt->x_gpe0_blk.space_id = ACPI_ADDRESS_SPACE_IO;
+	fadt->x_gpe0_blk.bit_width = fadt->gpe0_blk_len * 8;
+	fadt->x_gpe0_blk.bit_offset = 0;
+	fadt->x_gpe0_blk.access_size = ACPI_ACCESS_SIZE_DWORD_ACCESS;
+	fadt->x_gpe0_blk.addrl = fadt->gpe0_blk;
+	fadt->x_gpe0_blk.addrh = 0x0;
 
 	fadt->x_gpe1_blk.space_id = ACPI_ADDRESS_SPACE_IO;
 	fadt->x_gpe1_blk.bit_width = 0;
@@ -907,12 +877,12 @@ static const char *lpc_acpi_name(const struct device *dev)
 	return "LPCB";
 }
 
-static void southbridge_fill_ssdt(struct device *dev)
+static void southbridge_fill_ssdt(const struct device *dev)
 {
 	intel_acpi_gen_def_acpi_pirq(dev);
 }
 
-static unsigned long southbridge_write_acpi_tables(struct device *device,
+static unsigned long southbridge_write_acpi_tables(const struct device *device,
 						   unsigned long start,
 						   struct acpi_rsdp *rsdp)
 {
@@ -965,8 +935,8 @@ static struct device_operations device_ops = {
 	.read_resources		= pch_lpc_read_resources,
 	.set_resources		= pci_dev_set_resources,
 	.enable_resources	= pci_dev_enable_resources,
-	.acpi_fill_ssdt_generator   = southbridge_fill_ssdt,
-	.acpi_inject_dsdt_generator = southbridge_inject_dsdt,
+	.acpi_fill_ssdt		= southbridge_fill_ssdt,
+	.acpi_inject_dsdt	= southbridge_inject_dsdt,
 	.acpi_name		= lpc_acpi_name,
 	.write_acpi_tables      = southbridge_write_acpi_tables,
 	.init			= lpc_init,

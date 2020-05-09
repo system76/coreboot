@@ -1,19 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2008-2009 coresystems GmbH
- * Copyright (C) 2012 The Chromium OS Authors.  All rights reserved.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; version 2 of
- * the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <console/console.h>
 #include <delay.h>
@@ -351,8 +337,8 @@ static void pch_pcie_enable(struct device *dev)
 		 * If PCIe 0-3 disabled set Function 0 0xE2[0] = 1
 		 * If PCIe 4-7 disabled set Function 4 0xE2[0] = 1
 		 *
-		 * This check is done here instead of pcie driver
-		 * because the pcie driver enable() handler is not
+		 * This check is done here instead of PCIe driver
+		 * because the PCIe driver enable() handler is not
 		 * called unless the device is enabled.
 		 */
 		if ((PCI_FUNC(dev->path.pci.devfn) == 0 ||

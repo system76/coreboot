@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2018-2019 Intel Corp.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <device/mmio.h>
 #include <device/device.h>
@@ -140,10 +128,15 @@ void pch_early_iorange_init(void)
 	if (pch_check_decode_enable() == 0) {
 		io_enables = lpc_enable_fixed_io_ranges(io_enables);
 		/*
-		 * Set up ESPI IO Enables PCR[DMI] + 2774h [15:0] to the same
-		 * value program in ESPI PCI offset 82h.
+		 * Set ESPI IO Enables PCR[DMI] + 2774h [15:0] to the same
+		 * value programmed in ESPI PCI offset 82h.
 		 */
 		pcr_write16(PID_DMI, PCR_DMI_LPCIOE, io_enables);
+		/*
+		 * Set LPC IO Decode Ranges PCR[DMI] + 2770h [15:0] to the same
+		 * value programmed in LPC PCI offset 80h.
+		 */
+		pcr_write16(PID_DMI, PCR_DMI_LPCIOD, lpc_get_fixed_io_decode());
 	}
 
 	/* Program generic IO Decode Range */

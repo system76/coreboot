@@ -1,8 +1,6 @@
 ##
 ## This file is part of the coreboot project.
 ##
-## Copyright (C) 2012 Alexandru Gagniuc <mr.nuke.me@gmail.com>
-## Copyright (C) 2009-2010 coresystems GmbH
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -205,7 +203,7 @@ config INCLUDE_CONFIG_FILE
 	    Alignment: 64 bytes
 
 	    Name                           Offset     Type         Size
-	    cmos_layout.bin                0x0        cmos layout  1159
+	    cmos_layout.bin                0x0        CMOS layout  1159
 	    fallback/romstage              0x4c0      stage        339756
 	    fallback/ramstage              0x53440    stage        186664
 	    fallback/payload               0x80dc0    payload      51526
@@ -228,6 +226,7 @@ config TIMESTAMPS_ON_CONSOLE
 
 config USE_BLOBS
 	bool "Allow use of binary-only repository"
+	default y
 	help
 	  This draws in the blobs repository, which contains binary files that
 	  might be required for some chipsets or boards.
@@ -625,12 +624,6 @@ config GFXUMA
 	help
 	  Enable Unified Memory Architecture for graphics.
 
-config HAVE_ACPI_TABLES
-	bool
-	help
-	  This variable specifies whether a given board has ACPI table support.
-	  It is usually set in mainboard/*/Kconfig.
-
 config HAVE_MP_TABLE
 	bool
 	help
@@ -656,12 +649,6 @@ config ACPI_NHLT
 	default n
 	help
 	  Build support for NHLT (non HD Audio) ACPI table generation.
-
-config ACPI_BERT
-	bool
-	depends on HAVE_ACPI_TABLES
-	help
-	  Build an ACPI Boot Error Record Table.
 
 #These Options are here to avoid "undefined" warnings.
 #The actual selection and help texts are in the following menu.
@@ -764,7 +751,7 @@ comment "General Debug Settings"
 config GDB_STUB
 	bool "GDB debugging support"
 	default n
-	depends on CONSOLE_SERIAL
+	depends on DRIVERS_UART
 	help
 	  If enabled, you will be able to set breakpoints for gdb debugging.
 	  See src/arch/x86/lib/c_start.S for details.

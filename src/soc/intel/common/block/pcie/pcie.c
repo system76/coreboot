@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2017-2018 Intel Corporation.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <console/console.h>
 #include <device/pci.h>
@@ -290,14 +278,6 @@ static const unsigned short pcie_device_ids[] = {
 	PCI_DEVICE_ID_INTEL_TGP_LP_PCIE_RP14,
 	PCI_DEVICE_ID_INTEL_TGP_LP_PCIE_RP15,
 	PCI_DEVICE_ID_INTEL_TGP_LP_PCIE_RP16,
-	PCI_DEVICE_ID_INTEL_JSP_PRE_PROD_PCIE_RP1,
-	PCI_DEVICE_ID_INTEL_JSP_PRE_PROD_PCIE_RP2,
-	PCI_DEVICE_ID_INTEL_JSP_PRE_PROD_PCIE_RP3,
-	PCI_DEVICE_ID_INTEL_JSP_PRE_PROD_PCIE_RP4,
-	PCI_DEVICE_ID_INTEL_JSP_PRE_PROD_PCIE_RP5,
-	PCI_DEVICE_ID_INTEL_JSP_PRE_PROD_PCIE_RP6,
-	PCI_DEVICE_ID_INTEL_JSP_PRE_PROD_PCIE_RP7,
-	PCI_DEVICE_ID_INTEL_JSP_PRE_PROD_PCIE_RP8,
 	PCI_DEVICE_ID_INTEL_MCC_PCIE_RP1,
 	PCI_DEVICE_ID_INTEL_MCC_PCIE_RP2,
 	PCI_DEVICE_ID_INTEL_MCC_PCIE_RP3,
@@ -305,6 +285,14 @@ static const unsigned short pcie_device_ids[] = {
 	PCI_DEVICE_ID_INTEL_MCC_PCIE_RP5,
 	PCI_DEVICE_ID_INTEL_MCC_PCIE_RP6,
 	PCI_DEVICE_ID_INTEL_MCC_PCIE_RP7,
+	PCI_DEVICE_ID_INTEL_JSP_PCIE_RP1,
+	PCI_DEVICE_ID_INTEL_JSP_PCIE_RP2,
+	PCI_DEVICE_ID_INTEL_JSP_PCIE_RP3,
+	PCI_DEVICE_ID_INTEL_JSP_PCIE_RP4,
+	PCI_DEVICE_ID_INTEL_JSP_PCIE_RP5,
+	PCI_DEVICE_ID_INTEL_JSP_PCIE_RP6,
+	PCI_DEVICE_ID_INTEL_JSP_PCIE_RP7,
+	PCI_DEVICE_ID_INTEL_JSP_PCIE_RP8,
 	0
 };
 

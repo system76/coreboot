@@ -1,7 +1,6 @@
 #
 # This file is part of the coreboot project.
 #
-# Copyright (C) 2017 Iru Cai <mytbk920423@gmail.com>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,7 +15,6 @@
 
 chip northbridge/intel/sandybridge
 	register "gfx.did" = "{ 0x80000100, 0x80000240, 0x80000410 }"
-	register "gfx.link_frequency_270_mhz" = "1"
 	register "gfx.ndid" = "3"
 	register "gfx.use_spread_spectrum_clock" = "1"
 	register "gpu_cpu_backlight" = "0x00000129"

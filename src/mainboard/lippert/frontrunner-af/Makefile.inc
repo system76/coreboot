@@ -1,7 +1,6 @@
 #
 # This file is part of the coreboot project.
 #
-# Copyright (C) 2011 Advanced Micro Devices, Inc.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,6 +18,8 @@ cbfs-files-$(CONFIG_AHCI_BIOS) += pci$(stripped_ahcibios_id).rom
 pci$(stripped_ahcibios_id).rom-file := $(call strip_quotes,$(CONFIG_AHCI_BIOS_FILE))
 pci$(stripped_ahcibios_id).rom-type := optionrom
 endif
+
+bootblock-y += bootblock.c
 
 romstage-y += buildOpts.c
 romstage-y += BiosCallOuts.c

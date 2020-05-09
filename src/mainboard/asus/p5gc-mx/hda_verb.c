@@ -1,25 +1,13 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2016 Arthur Heymans <arthur@aheymans.xyz>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <device/azalia_device.h>
 
 const u32 cim_verb_data[] = {
 	/* coreboot specific header */
-	0x10ec0883,     /* Vendor ID */
-	0x104382c7,     /* Subsystem ID */
-	0x0000000c,     /* Number of entries */
+	0x10ec0883,	/* Vendor ID */
+	0x104382c7,	/* Subsystem ID */
+	0x0000000c,	/* Number of entries */
 
 	/* Pin Widget Verb Table */
 	AZALIA_PIN_CFG(0, 0x14, 0x01014010),

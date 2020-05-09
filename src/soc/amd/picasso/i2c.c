@@ -1,70 +1,50 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2017 Google
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <device/mmio.h>
-#include <arch/acpi.h>
+#include <acpi/acpi.h>
 #include <console/console.h>
 #include <delay.h>
+#include <device/device.h>
 #include <drivers/i2c/designware/dw_i2c.h>
 #include <amdblocks/acpimmio.h>
+#include <soc/i2c.h>
 #include <soc/iomap.h>
 #include <soc/pci_devs.h>
 #include <soc/southbridge.h>
-#include <soc/i2c.h>
 #include "chip.h"
 
 /* Global to provide access to chip.c */
 const char *i2c_acpi_name(const struct device *dev);
 
-static const uintptr_t i2c_bus_address[] = {
+/*
+ * We don't have addresses for I2C0-1.
+ */
+static const uintptr_t i2c_bus_address[I2C_MASTER_DEV_COUNT + I2C_SLAVE_DEV_COUNT] = {
+	0,
+	0,
 	APU_I2C2_BASE,
 	APU_I2C3_BASE,
-	APU_I2C4_BASE, /* slave device only */
+	APU_I2C4_BASE, /* Can only be used in slave mode */
 };
 
 uintptr_t dw_i2c_base_address(unsigned int bus)
 {
-	if (bus < APU_I2C_MIN_BUS || bus > APU_I2C_MAX_BUS)
+	if (bus >= ARRAY_SIZE(i2c_bus_address))
 		return 0;
 
-	return i2c_bus_address[bus - APU_I2C_MIN_BUS];
-}
-
-static const struct soc_amd_picasso_config *get_soc_config(void)
-{
-	const struct device *dev = pcidev_path_on_root(GNB_DEVFN);
-
-	if (!dev || !dev->chip_info) {
-		printk(BIOS_ERR, "%s: Could not find SoC devicetree config!\n",
-			__func__);
-		return NULL;
-	}
-
-	return dev->chip_info;
+	return i2c_bus_address[bus];
 }
 
 const struct dw_i2c_bus_config *dw_i2c_get_soc_cfg(unsigned int bus)
 {
 	const struct soc_amd_picasso_config *config;
 
-	if (bus < APU_I2C_MIN_BUS || bus > APU_I2C_MAX_BUS)
+	if (bus >= ARRAY_SIZE(config->i2c))
 		return NULL;
 
-	config = get_soc_config();
-	if (config == NULL)
-		return NULL;
+	/* config is not NULL; if it was, config_of_soc calls die() internally */
+	config = config_of_soc();
 
 	return &config->i2c[bus];
 }
@@ -83,7 +63,7 @@ const char *i2c_acpi_name(const struct device *dev)
 	}
 }
 
-int dw_i2c_soc_dev_to_bus(struct device *dev)
+int dw_i2c_soc_dev_to_bus(const struct device *dev)
 {
 	switch (dev->path.mmio.addr) {
 	case APU_I2C2_BASE:
@@ -105,12 +85,10 @@ static void dw_i2c_soc_init(bool is_early_init)
 	uint32_t pad_ctrl;
 	int misc_reg;
 
-	config = get_soc_config();
+	/* config is not NULL; if it was, config_of_soc calls die() internally */
+	config = config_of_soc();
 
-	if (config == NULL)
-		return;
-
-	for (i = 0; i < ARRAY_SIZE(config->i2c); i++) {
+	for (i = I2C_MASTER_START_INDEX; i < ARRAY_SIZE(config->i2c); i++) {
 		const struct dw_i2c_bus_config *cfg  = &config->i2c[i];
 
 		if (cfg->early_init != is_early_init)
@@ -153,12 +131,11 @@ void i2c_soc_init(void)
 
 struct device_operations picasso_i2c_mmio_ops = {
 	/* TODO(teravest): Move I2C resource info here. */
-	.read_resources = DEVICE_NOOP,
-	.set_resources = DEVICE_NOOP,
-	.enable_resources = DEVICE_NOOP,
+	.read_resources = noop_read_resources,
+	.set_resources = noop_set_resources,
 	.scan_bus = scan_smbus,
 	.acpi_name = i2c_acpi_name,
-	.acpi_fill_ssdt_generator = dw_i2c_acpi_fill_ssdt,
+	.acpi_fill_ssdt = dw_i2c_acpi_fill_ssdt,
 };
 
 /*

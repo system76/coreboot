@@ -1,7 +1,6 @@
 ##
 ## This file is part of the coreboot project.
 ##
-## Copyright (C) 2019 Intel Corporation.
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -13,8 +12,6 @@
 ## GNU General Public License for more details.
 ##
 
-romstage-y += spd_util.c
-
 SPD_BIN = $(obj)/spd.bin
 
-SPD_SOURCES = empty	# 0b000
+SPD_SOURCES = jslrvp	# 0b000

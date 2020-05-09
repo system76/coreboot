@@ -1,24 +1,8 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2007 - 2009 coresystems GmbH
- * Copyright (C) 2013 Google Inc.
- * Copyright (C) 2014 - 2017 Intel Corporation.
- * Copyright (C) 2018 Online SAS
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
-#include <arch/acpi.h>
-#include <arch/acpigen.h>
+#include <acpi/acpi.h>
+#include <acpi/acpigen.h>
 #include <arch/smp/mpspec.h>
 #include <cpu/x86/smm.h>
 #include <string.h>
@@ -280,7 +264,7 @@ int soc_madt_sci_irq_polarity(int sci)
 		return MP_IRQ_POLARITY_HIGH;
 }
 
-unsigned long southcluster_write_acpi_tables(struct device *device,
+unsigned long southcluster_write_acpi_tables(const struct device *device,
 					     unsigned long current,
 					     struct acpi_rsdp *rsdp)
 {
@@ -308,7 +292,7 @@ unsigned long southcluster_write_acpi_tables(struct device *device,
 	return current;
 }
 
-void southcluster_inject_dsdt(struct device *device)
+void southcluster_inject_dsdt(const struct device *device)
 {
 	global_nvs_t *gnvs;
 

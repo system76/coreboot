@@ -1,18 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2007-2009 coresystems GmbH
- * Copyright (C) 2015  Damien Zammit <damien@zamaudio.com>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <cbmem.h>
 #include <console/console.h>
@@ -20,13 +7,13 @@
 #include <device/pci_ops.h>
 #include <stdint.h>
 #include <device/device.h>
-#include <device/pci.h>
 #include <boot/tables.h>
-#include <arch/acpi.h>
+#include <acpi/acpi.h>
 #include <northbridge/intel/pineview/pineview.h>
 #include <cpu/intel/smm_reloc.h>
 
-/* Reserve everything between A segment and 1MB:
+/*
+ * Reserve everything between A segment and 1MB:
  *
  * 0xa0000 - 0xbffff: legacy VGA
  * 0xc0000 - 0xcffff: VGA OPROM (needed by kernel)
@@ -41,13 +28,14 @@ static void add_fixed_resources(struct device *dev, int index)
 	resource = new_resource(dev, index++);
 	resource->base = (resource_t) 0xfed00000;
 	resource->size = (resource_t) 0x00100000;
-	resource->flags = IORESOURCE_MEM | IORESOURCE_RESERVE |
-		IORESOURCE_FIXED | IORESOURCE_STORED | IORESOURCE_ASSIGNED;
+	resource->flags = IORESOURCE_MEM
+			| IORESOURCE_RESERVE
+			| IORESOURCE_FIXED
+			| IORESOURCE_STORED
+			| IORESOURCE_ASSIGNED;
 
-	mmio_resource(dev, index++, legacy_hole_base_k,
-			(0xc0000 >> 10) - legacy_hole_base_k);
-	reserved_ram_resource(dev, index++, 0xc0000 >> 10,
-			(0x100000 - 0xc0000) >> 10);
+	mmio_resource(dev, index++, legacy_hole_base_k, (0xc0000 >> 10) - legacy_hole_base_k);
+	reserved_ram_resource(dev, index++, 0xc0000 >> 10, (0x100000 - 0xc0000) >> 10);
 }
 
 static void mch_domain_read_resources(struct device *dev)
@@ -73,11 +61,10 @@ static void mch_domain_read_resources(struct device *dev)
 	tolud <<= 16;
 
 	/* Top of Memory - does not account for any UMA */
-	tom = pci_read_config16(mch, TOM) & 0x1ff;
+	tom = pci_read_config16(mch, TOM) & 0x01ff;
 	tom <<= 27;
 
-	printk(BIOS_DEBUG, "TOUUD 0x%llx TOLUD 0x%08x TOM 0x%llx ",
-	       touud, tolud, tom);
+	printk(BIOS_DEBUG, "TOUUD 0x%llx TOLUD 0x%08x TOM 0x%llx ", touud, tolud, tom);
 
 	tomk = tolud >> 10;
 
@@ -107,15 +94,14 @@ static void mch_domain_read_resources(struct device *dev)
 	delta_cbmem = tomk - cbmem_topk;
 	tomk -= delta_cbmem;
 
-	printk(BIOS_DEBUG, "Unused RAM between cbmem_top and TOMK: 0x%xK\n",
-	       delta_cbmem);
+	printk(BIOS_DEBUG, "Unused RAM between cbmem_top and TOMK: 0x%xK\n", delta_cbmem);
 
 	/* Report the memory regions */
 	ram_resource(dev, index++, 0, 640);
 	ram_resource(dev, index++, 768, tomk - 768);
 	reserved_ram_resource(dev, index++, tseg_basek, tseg_sizek);
-	reserved_ram_resource(dev, index++, gtt_basek, gsm_sizek);
-	reserved_ram_resource(dev, index++, igd_basek, gms_sizek);
+	reserved_ram_resource(dev, index++, gtt_basek,  gsm_sizek);
+	reserved_ram_resource(dev, index++, igd_basek,  gms_sizek);
 	reserved_ram_resource(dev, index++, cbmem_topk, delta_cbmem);
 
 	/*
@@ -126,12 +112,13 @@ static void mch_domain_read_resources(struct device *dev)
 	if (touud > top32memk) {
 		ram_resource(dev, index++, top32memk, touud - top32memk);
 		printk(BIOS_INFO, "Available memory above 4GB: %lluM\n",
-		       (touud - top32memk) >> 10);
+			(touud - top32memk) >> 10);
 	}
 
 	if (decode_pciebar(&pcie_config_base, &pcie_config_size)) {
-		printk(BIOS_DEBUG, "Adding PCIe config bar base=0x%08x "
-			"size=0x%x\n", pcie_config_base, pcie_config_size);
+		printk(BIOS_DEBUG, "Adding PCIe config bar base=0x%08x size=0x%x\n",
+			pcie_config_base, pcie_config_size);
+
 		fixed_mem_resource(dev, index++, pcie_config_base >> 10,
 			pcie_config_size >> 10, IORESOURCE_RESERVE);
 	}
@@ -186,18 +173,17 @@ static const char *northbridge_acpi_name(const struct device *dev)
 }
 
 static struct device_operations pci_domain_ops = {
-	.read_resources   = mch_domain_read_resources,
-	.set_resources    = mch_domain_set_resources,
-	.init             = mch_domain_init,
-	.scan_bus         = pci_domain_scan_bus,
-	.acpi_fill_ssdt_generator = generate_cpu_entries,
-	.acpi_name        = northbridge_acpi_name,
+	.read_resources	= mch_domain_read_resources,
+	.set_resources	= mch_domain_set_resources,
+	.init		= mch_domain_init,
+	.scan_bus	= pci_domain_scan_bus,
+	.acpi_fill_ssdt	= generate_cpu_entries,
+	.acpi_name	= northbridge_acpi_name,
 };
 
 static struct device_operations cpu_bus_ops = {
-	.read_resources   = DEVICE_NOOP,
-	.set_resources    = DEVICE_NOOP,
-	.enable_resources = DEVICE_NOOP,
+	.read_resources   = noop_read_resources,
+	.set_resources    = noop_set_resources,
 	.init             = mp_cpu_bus_init,
 };
 

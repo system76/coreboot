@@ -499,7 +499,7 @@ set_address (hci_t *controller, usb_speed speed, int hubport, int hubaddr)
 		break;
 	}
 
-	/* Gather up all endpoints belonging to this inteface */
+	/* Gather up all endpoints belonging to this interface */
 	dev->num_endp = 1;
 	for (; ptr + 2 <= end && ptr[0] && ptr + ptr[0] <= end; ptr += ptr[0]) {
 		if (ptr[1] == DT_INTF || ptr[1] == DT_CFG ||
@@ -634,14 +634,14 @@ set_address (hci_t *controller, usb_speed speed, int hubport, int hubaddr)
 
 /*
  * Should be called by the hub drivers whenever a physical detach occurs
- * and can be called by usb class drivers if they are unsatisfied with a
+ * and can be called by USB class drivers if they are unsatisfied with a
  * malfunctioning device.
  */
 void
 usb_detach_device(hci_t *controller, int devno)
 {
 	/* check if device exists, as we may have
-	   been called yet by the usb class driver */
+	   been called yet by the USB class driver */
 	if (controller->devices[devno]) {
 		controller->devices[devno]->destroy (controller->devices[devno]);
 
@@ -654,7 +654,7 @@ usb_detach_device(hci_t *controller, int devno)
 		controller->devices[devno]->configuration = NULL;
 
 		/* Tear down the device itself *after* destroy_device()
-		 * has had a chance to interoogate it. */
+		 * has had a chance to interrogate it. */
 		free(controller->devices[devno]);
 		controller->devices[devno] = NULL;
 	}

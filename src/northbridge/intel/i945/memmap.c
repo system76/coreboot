@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2007-2009 coresystems GmbH
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 // Use simple device model for this file even in ramstage
 #define __SIMPLE_DEVICE__
@@ -77,11 +65,10 @@ void *cbmem_top_chipset(void)
 	return (void *) top_of_ram;
 }
 
-/** Decodes used Graphics Mode Select (GMS) to kilobytes. */
+/* Decodes used Graphics Mode Select (GMS) to kilobytes. */
 u32 decode_igd_memory_size(const u32 gms)
 {
-	static const u16 ggc2uma[] = { 0, 1, 4, 8, 16, 32,
-			48, 64 };
+	static const u16 ggc2uma[] = { 0, 1, 4, 8, 16, 32, 48, 64 };
 
 	if (gms >= ARRAY_SIZE(ggc2uma))
 		die("Bad Graphics Mode Select (GMS) setting.\n");
@@ -99,13 +86,11 @@ void fill_postcar_frame(struct postcar_frame *pcf)
 {
 	uintptr_t top_of_ram;
 
-	/* Cache 8 MiB region below the top of ram and 2 MiB above top of
-	 * ram to cover both cbmem as the TSEG region.
+	/* Cache 8 MiB region below the top of RAM and 2 MiB above top of
+	 * RAM to cover both cbmem as the TSEG region.
 	 */
 	top_of_ram = (uintptr_t)cbmem_top();
-	postcar_frame_add_mtrr(pcf, top_of_ram - 8*MiB, 8*MiB,
-			MTRR_TYPE_WRBACK);
+	postcar_frame_add_mtrr(pcf, top_of_ram - 8*MiB, 8*MiB, MTRR_TYPE_WRBACK);
 	postcar_frame_add_mtrr(pcf, northbridge_get_tseg_base(),
 			       northbridge_get_tseg_size(), MTRR_TYPE_WRBACK);
-
 }

@@ -1,18 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2017-2020 Intel Corporation.
- * Copyright (C) 2019 Siemens AG
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <cbmem.h>
 #include <console/console.h>
@@ -47,7 +34,7 @@ __weak int soc_get_uncore_prmmr_base_and_mask(uint64_t *base,
 	return -1;
 }
 
-__weak unsigned long sa_write_acpi_tables(struct device *dev,
+__weak unsigned long sa_write_acpi_tables(const struct device *dev,
 					  unsigned long current,
 					  struct acpi_rsdp *rsdp)
 {
@@ -398,10 +385,14 @@ static const unsigned short systemagent_ids[] = {
 	PCI_DEVICE_ID_INTEL_CML_H_8_2,
 	PCI_DEVICE_ID_INTEL_TGL_ID_U,
 	PCI_DEVICE_ID_INTEL_TGL_ID_U_1,
+	PCI_DEVICE_ID_INTEL_TGL_ID_U_2_2,
 	PCI_DEVICE_ID_INTEL_TGL_ID_Y,
-	PCI_DEVICE_ID_INTEL_JSL_PRE_PROD,
 	PCI_DEVICE_ID_INTEL_JSL_EHL,
 	PCI_DEVICE_ID_INTEL_EHL_ID_1,
+	PCI_DEVICE_ID_INTEL_JSL_ID_1,
+	PCI_DEVICE_ID_INTEL_JSL_ID_2,
+	PCI_DEVICE_ID_INTEL_JSL_ID_3,
+	PCI_DEVICE_ID_INTEL_JSL_ID_4,
 	0
 };
 

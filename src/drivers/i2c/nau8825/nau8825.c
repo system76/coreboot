@@ -1,19 +1,9 @@
-/*
- * This file is part of the coreboot project.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
-#include <arch/acpi.h>
-#include <arch/acpi_device.h>
-#include <arch/acpigen.h>
+#include <acpi/acpi.h>
+#include <acpi/acpi_device.h>
+#include <acpi/acpigen.h>
 #include <console/console.h>
 #include <device/i2c_simple.h>
 #include <device/device.h>
@@ -29,7 +19,7 @@
 #define NAU8825_DP_INT(key,val) \
 	acpi_dp_add_integer(dp, "nuvoton," key, (val))
 
-static void nau8825_fill_ssdt(struct device *dev)
+static void nau8825_fill_ssdt(const struct device *dev)
 {
 	struct drivers_i2c_nau8825_config *config = dev->chip_info;
 	const char *scope = acpi_device_scope(dev);
@@ -96,12 +86,11 @@ static const char *nau8825_acpi_name(const struct device *dev)
 #endif
 
 static struct device_operations nau8825_ops = {
-	.read_resources		  = DEVICE_NOOP,
-	.set_resources		  = DEVICE_NOOP,
-	.enable_resources	  = DEVICE_NOOP,
+	.read_resources		= noop_read_resources,
+	.set_resources		= noop_set_resources,
 #if CONFIG(HAVE_ACPI_TABLES)
-	.acpi_name                = nau8825_acpi_name,
-	.acpi_fill_ssdt_generator = nau8825_fill_ssdt,
+	.acpi_name              = nau8825_acpi_name,
+	.acpi_fill_ssdt		= nau8825_fill_ssdt,
 #endif
 };
 

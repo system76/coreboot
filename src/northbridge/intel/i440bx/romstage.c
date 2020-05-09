@@ -1,30 +1,15 @@
-/*
- * This file is part of the coreboot project.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
+/* This file is part of the coreboot project. */
 
 #include <arch/romstage.h>
 #include <cbmem.h>
-#include <console/console.h>
 #include <southbridge/intel/i82371eb/i82371eb.h>
 #include <northbridge/intel/i440bx/raminit.h>
 
 void mainboard_romstage_entry(void)
 {
-	mainboard_enable_serial();
-	console_init();
-
 	i82371eb_early_init();
 
-	sdram_initialize();
+	sdram_initialize(0);
 	cbmem_initialize_empty();
 }

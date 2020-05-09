@@ -1,24 +1,10 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2008-2009 coresystems GmbH
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; version 2 of
- * the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <types.h>
 #include <arch/io.h>
 #include <device/pci_ops.h>
 #include <console/console.h>
-#include <cpu/x86/cache.h>
 #include <device/pci_def.h>
 #include <cpu/x86/smm.h>
 #include <cpu/intel/em64t101_save_state.h>
@@ -34,7 +20,7 @@
  *  1. the chipset can do it
  *  2. we don't need to worry about how we leave 0xcf8/0xcfc behind
  */
-#include <northbridge/intel/nehalem/nehalem.h>
+#include <northbridge/intel/ironlake/ironlake.h>
 #include <southbridge/intel/common/gpio.h>
 #include <southbridge/intel/common/pmutil.h>
 
@@ -185,6 +171,6 @@ void southbridge_finalize_all(void)
 {
 	intel_me_finalize_smm();
 	intel_pch_finalize_smm();
-	intel_nehalem_finalize_smm();
+	intel_ironlake_finalize_smm();
 	intel_model_2065x_finalize_smm();
 }

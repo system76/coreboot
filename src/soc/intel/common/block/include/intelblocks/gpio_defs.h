@@ -1,18 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2015-2016 Intel Corp.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* This file is part of the coreboot project. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #ifndef _SOC_BLOCK_GPIO_DEFS_H_
 #define _SOC_BLOCK_GPIO_DEFS_H_
@@ -23,6 +10,7 @@
 #define PAD_CFG0_RX_STATE		(1 << PAD_CFG0_RX_STATE_BIT)
 #define PAD_CFG0_TX_DISABLE		(1 << 8)
 #define PAD_CFG0_RX_DISABLE		(1 << 9)
+#define PAD_CFG0_MODE_SHIFT		10
 #define PAD_CFG0_MODE_MASK		(7 << 10)
 #define  PAD_CFG0_MODE_GPIO		(0 << 10)
 #define  PAD_CFG0_MODE_FUNC(x)		((x) << 10)
@@ -56,11 +44,15 @@
 #define  PAD_CFG0_LOGICAL_RESET_PLTRST		(2U << 30)
 #define  PAD_CFG0_LOGICAL_RESET_RSMRST		(3U << 30)
 
-/* Use the fourth bit in IntSel field to indicate gpio
+/*
+ * Use the fourth bit in IntSel field to indicate gpio
  * ownership. This field is RO and hence not used during
  * gpio configuration.
  */
-#define PAD_CFG1_GPIO_DRIVER		(0x1 << 4)
+#define PAD_CFG_OWN_GPIO_DRIVER		(1 << 4)
+#define PAD_CFG_OWN_GPIO_ACPI		(0 << 4)
+#define PAD_CFG_OWN_GPIO(own)		PAD_CFG_OWN_GPIO_##own
+
 #define PAD_CFG1_IRQ_MASK		(0xff << 0)
 #define PAD_CFG1_IOSTERM_MASK		(0x3 << 8)
 #define PAD_CFG1_IOSTERM_SAME		(0x0 << 8)
@@ -225,6 +217,11 @@
 	_PAD_CFG_STRUCT(pad, PAD_RESET(rst) | PAD_FUNC(func), PAD_PULL(pull) | \
 		PAD_IOSSTATE(iosstate) | PAD_IOSTERM(iosterm))
 
+/* Configure native function, iosstate, iosterm and disable input/output buffer */
+#define PAD_CFG_NF_BUF_IOSSTATE_IOSTERM(pad, pull, rst, func, bufdis, iosstate, iosterm) \
+	_PAD_CFG_STRUCT(pad, PAD_RESET(rst) | PAD_BUF(bufdis) | PAD_FUNC(func), \
+		PAD_PULL(pull) | PAD_IOSSTATE(iosstate) | PAD_IOSTERM(iosterm))
+
 /* General purpose output, no pullup/down. */
 #define PAD_CFG_GPO(pad, val, rst)	\
 	_PAD_CFG_STRUCT(pad,		\
@@ -244,7 +241,7 @@
 	_PAD_CFG_STRUCT(pad,		\
 		PAD_FUNC(GPIO) | PAD_RESET(rst) | \
 		PAD_CFG0_TRIG_OFF | PAD_BUF(RX_DISABLE) | !!val, \
-		PAD_PULL(pull) | PAD_IOSSTATE(TxLASTRxE) | PAD_CFG1_GPIO_DRIVER)
+		PAD_PULL(pull) | PAD_IOSSTATE(TxLASTRxE) | PAD_CFG_OWN_GPIO(DRIVER))
 
 /* General purpose output. */
 #define PAD_CFG_GPO_IOSSTATE_IOSTERM(pad, val, rst, pull, iosstate, ioterm)	\
@@ -259,18 +256,34 @@
 		PAD_FUNC(GPIO) | PAD_RESET(rst) | PAD_BUF(TX_DISABLE), \
 		PAD_PULL(pull) | PAD_IOSSTATE(TxDRxE))
 
-/* General purpose input. The following macro sets the
+#define PAD_CFG_GPI_IOSSTATE(pad, pull, rst, iosstate) \
+	_PAD_CFG_STRUCT(pad,		\
+		PAD_FUNC(GPIO) | PAD_RESET(rst) | PAD_CFG0_TX_DISABLE, \
+		PAD_PULL(pull) | PAD_IOSSTATE(iosstate))
+
+#define PAD_CFG_GPI_IOSSTATE_IOSTERM(pad, pull, rst, iosstate, iosterm) \
+	_PAD_CFG_STRUCT(pad,		\
+		PAD_FUNC(GPIO) | PAD_RESET(rst) | PAD_CFG0_TX_DISABLE, \
+		PAD_PULL(pull) | PAD_IOSSTATE(iosstate) | PAD_IOSTERM(iosterm))
+
+/*
+ * General purpose input. The following macro sets the
  * Host Software Pad Ownership to GPIO Driver mode.
  */
+#define PAD_CFG_GPI_TRIG_OWN(pad, pull, rst, trig, own)					\
+	_PAD_CFG_STRUCT(pad, PAD_FUNC(GPIO) | PAD_RESET(rst) |				\
+		PAD_CFG0_TRIG_##trig | PAD_CFG0_RX_POL_NONE | PAD_BUF(TX_DISABLE),	\
+		PAD_PULL(pull) | PAD_IOSSTATE(TxDRxE) | PAD_CFG_OWN_GPIO(own))
+
 #define PAD_CFG_GPI_GPIO_DRIVER(pad, pull, rst) \
 	_PAD_CFG_STRUCT(pad,		\
 		PAD_FUNC(GPIO) | PAD_RESET(rst) | PAD_BUF(TX_DISABLE), \
-		PAD_PULL(pull) | PAD_CFG1_GPIO_DRIVER | PAD_IOSSTATE(TxDRxE))
+		PAD_PULL(pull) | PAD_CFG_OWN_GPIO(DRIVER) | PAD_IOSSTATE(TxDRxE))
 
 #define PAD_CFG_GPIO_DRIVER_HI_Z(pad, pull, rst, iosstate, iosterm) \
 	_PAD_CFG_STRUCT(pad,		\
 		PAD_FUNC(GPIO) | PAD_RESET(rst) | PAD_BUF(TX_RX_DISABLE),	\
-		PAD_PULL(pull) | PAD_CFG1_GPIO_DRIVER |			\
+		PAD_PULL(pull) | PAD_CFG_OWN_GPIO(DRIVER) |			\
 		PAD_IOSSTATE(iosstate) | PAD_IOSTERM(iosterm))
 
 #define PAD_CFG_GPIO_HI_Z(pad, pull, rst, iosstate, iosterm) \
@@ -280,10 +293,7 @@
 
 /* GPIO Interrupt */
 #define PAD_CFG_GPI_INT(pad, pull, rst, trig) \
-	_PAD_CFG_STRUCT(pad,		\
-		PAD_FUNC(GPIO) | PAD_RESET(rst) | PAD_BUF(TX_DISABLE) |	\
-			PAD_CFG0_TRIG_##trig | PAD_CFG0_RX_POL_NONE,	\
-		PAD_PULL(pull) | PAD_CFG1_GPIO_DRIVER | PAD_IOSSTATE(TxDRxE))
+		PAD_CFG_GPI_TRIG_OWN(pad, pull, rst, trig, DRIVER)
 
 /*
  * No Connect configuration for unused pad.

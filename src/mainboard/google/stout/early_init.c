@@ -1,22 +1,9 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2007-2010 coresystems GmbH
- * Copyright (C) 2011 The ChromiumOS Authors.  All rights reserved.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <stdint.h>
 #include <cpu/x86/lapic.h>
-#include <arch/acpi.h>
+#include <acpi/acpi.h>
 #include <console/console.h>
 #include <northbridge/intel/sandybridge/sandybridge.h>
 #include <northbridge/intel/sandybridge/raminit.h>
@@ -131,7 +118,7 @@ void mainboard_fill_pei_data(struct pei_data *pei_data)
 		.dimm_channel1_disabled = 2,
 		.max_ddr3_freq = 1600,
 		.usb_port_config = {
-			/* enabled   usb oc pin    length */
+			/* enabled   USB oc pin    length */
 			{ 1, 0, 0x0040 }, /* P0: USB 3.0 1  (OC0) */
 			{ 1, 0, 0x0040 }, /* P1: USB 3.0 2  (OC0) */
 			{ 0, 1, 0x0000 }, /* P2: Empty */
@@ -171,7 +158,7 @@ int mainboard_should_reset_usb(int s3resume)
 }
 
 const struct southbridge_usb_port mainboard_usb_ports[] = {
-	/* enabled   usb oc pin    length */
+	/* enabled   USB oc pin    length */
 	{1, 0, 0},  /* P0: USB 3.0 1  (OC0) */
 	{1, 0, 0},  /* P1: USB 3.0 2  (OC0) */
 	{0, 0, 0},  /* P2: Empty */

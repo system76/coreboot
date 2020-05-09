@@ -1,19 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2017-2018 Intel Corp.
- * Copyright (C) 2018 Siemens AG
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* This file is part of the coreboot project. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #ifndef _SOC_COMMON_BLOCK_LPC_LIB_H_
 #define _SOC_COMMON_BLOCK_LPC_LIB_H_
@@ -72,6 +58,8 @@ struct lpc_mmio_range {
 uint16_t lpc_enable_fixed_io_ranges(uint16_t io_enables);
 /* Return the current decode settings */
 uint16_t lpc_get_fixed_io_decode(void);
+/* Set the current decode ranges */
+uint16_t lpc_set_fixed_io_ranges(uint16_t io_ranges, uint16_t mask);
 /* Open a generic IO window to the LPC bus. Four windows are available. */
 void lpc_open_pmio_window(uint16_t base, uint16_t size);
 /* Close all generic IO windows to the LPC bus. */

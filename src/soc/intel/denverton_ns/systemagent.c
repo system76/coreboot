@@ -1,19 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2007-2009 coresystems GmbH
- * Copyright (C) 2014 Google Inc.
- * Copyright (C) 2015 - 2017 Intel Corporation.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <cbmem.h>
 #include <console/console.h>
@@ -344,8 +330,8 @@ static struct device_operations systemagent_ops = {
 
 /* IDs for System Agent device of Intel Denverton SoC */
 static const unsigned short systemagent_ids[] = {
-	SA_DEVID, /* DVN System Agent */
-	SA_DEVID_DNVAD, /* DVN-AD System Agent */
+	PCI_DEVICE_ID_INTEL_DENVERTON_SA,
+	PCI_DEVICE_ID_INTEL_DENVERTONAD_SA,
 	0
 };
 

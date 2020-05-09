@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright 2014 Rockchip Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <device/mmio.h>
 #include <delay.h>
@@ -112,7 +100,7 @@ void tsadc_init(uint32_t polarity)
 
 	/* setup the automatic mode:
 	 * AUTO_PERIOD: interleave between every two accessing of TSADC
-	 * AUTO_DEBOUNCE: only generate interrupt or TSHUT when temprature
+	 * AUTO_DEBOUNCE: only generate interrupt or TSHUT when temperature
 	 *                is higher than COMP_INT for "debounce" times
 	 * AUTO_PERIOD_HT: the interleave between every two accessing after the
 	 *                 temperature is higher than COMP_SHUT or COMP_INT
@@ -123,7 +111,7 @@ void tsadc_init(uint32_t polarity)
 	write32(&rk3399_tsadc->hight_int_debounce, AUTO_DEBOUNCE);
 	write32(&rk3399_tsadc->auto_period_ht, AUTO_PERIOD_HT);
 	write32(&rk3399_tsadc->hight_tshut_debounce, AUTO_DEBOUNCE_HT);
-	/* Enable the src0, negative temprature coefficient */
+	/* Enable the src0, negative temperature coefficient */
 	setbits32(&rk3399_tsadc->auto_con, Q_SEL | SRC0_EN);
 	udelay(100);
 	setbits32(&rk3399_tsadc->auto_con, AUTO_EN);

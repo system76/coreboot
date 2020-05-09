@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2016 Google Inc.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 Device (TPSD)
 {
@@ -52,7 +40,9 @@ Device (EC)
 	OperationRegion (ERAM, EmbeddedControl, Zero, 0xFF)
 	Field (ERAM, ByteAcc, Lock, Preserve)
 	{
-		Offset (0x15),
+		Offset (0x13),
+		RTMP, 8,
+		, 8,
 		BSTS, 2,	/* Battery Status */
 		, 3,
 		BTEX, 1,	/* Battery Present */
@@ -63,6 +53,7 @@ Device (EC)
 		BTLE, 1,	/* Bluetooth Enable/Disable */
 		Offset (0x25),
 		, 5,
+		FANM, 2,
 		TPSE, 1,	/* topstar-laptop driver enable/disable */
 		Offset (0x31),
 		, 6,
@@ -230,4 +221,24 @@ Device (EC)
 
 	#include "ac.asl"
 	#include "battery.asl"
+}
+
+Scope (\_TZ)
+{
+	ThermalZone (TZ0)
+	{
+		/* _TMP: Temperature */
+		Method (_TMP, 0, Serialized)
+		{
+			Local0 = (0x0AAC + (\_SB.PCI0.LPCB.EC.RTMP * 0x0A))
+			Return (Local0)
+		}
+
+		/* _CRT: Critical Temperature */
+		Method (_CRT, 0, Serialized)
+		{
+			/* defined in board ec.asl */
+			Return (CRIT_TEMP)
+		}
+	}
 }

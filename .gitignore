@@ -54,11 +54,13 @@ util/crossgcc/xgcc
 site-local
 
 *.\#
+*.a
 *.bin
 *.debug
 !Kconfig.debug
 *.elf
 *.o
+*.o.d
 *.out
 *.pyc
 *.sw[po]
@@ -115,11 +117,9 @@ util/nvramtool/.dependencies
 util/nvramtool/nvramtool
 util/optionlist/Options.wiki
 util/pmh7tool/pmh7tool
-util/romcc/build
 util/runfw/googlesnow
 util/superiotool/superiotool
 util/vgabios/testbios
-util/viatool/viatool
 util/autoport/autoport
 util/kbc1126/kbc1126_ec_dump
 util/kbc1126/kbc1126_ec_insert

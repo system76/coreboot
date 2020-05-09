@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright 2018 MediaTek Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <assert.h>
 #include <console/console.h>
@@ -105,6 +93,25 @@ void dramc_cke_fix_onoff(u8 chn, bool cke_on, bool cke_off)
 			CKECTRL_CKEFIXOFF, cke_off);
 }
 
+static u16 dramc_mode_reg_read(u8 chn, u8 mr_idx)
+{
+	u16 value;
+	SET32_BITFIELDS(&ch[chn].ao.mrs, MRS_MRSMA, mr_idx);
+	SET32_BITFIELDS(&ch[chn].ao.spcmd, SPCMD_MRREN, 1);
+
+	/* Wait until MRW command fired */
+	while (READ32_BITFIELD(&ch[chn].nao.spcmdresp, SPCMDRESP_MRR_RESPONSE)
+	       == 0)
+		udelay(1);
+
+	value = READ32_BITFIELD(&ch[chn].nao.mrr_status, MRR_STATUS_MRR_REG);
+
+	SET32_BITFIELDS(&ch[chn].ao.spcmd, SPCMD_MRREN, 0);
+	dramc_dbg("Read MR%d =%#x\n", mr_idx, value);
+
+	return value;
+}
+
 void dramc_mode_reg_write(u8 chn, u8 mr_idx, u8 value)
 {
 	u32 ckectrl_bak = read32(&ch[chn].ao.ckectrl);
@@ -117,7 +124,7 @@ void dramc_mode_reg_write(u8 chn, u8 mr_idx, u8 value)
 	/* Wait MRW command fired */
 	while (READ32_BITFIELD(&ch[chn].nao.spcmdresp, SPCMDRESP_MRW_RESPONSE)
 	       == 0)
-		;
+		udelay(1);
 
 	SET32_BITFIELDS(&ch[chn].ao.spcmd, SPCMD_MRWEN, 0);
 	write32(&ch[chn].ao.ckectrl, ckectrl_bak);
@@ -263,18 +270,16 @@ static void dramc_cmd_bus_training(u8 chn, u8 rank, u8 freq_group,
 	dramc_mode_reg_write_by_rank(chn, rank, 12, final_vref);
 }
 
-static void dramc_read_dbi_onoff(bool on)
+static void dramc_read_dbi_onoff(size_t chn, bool on)
 {
-	for (size_t chn = 0; chn < CHANNEL_MAX; chn++)
-		for (size_t b = 0; b < 2; b++)
-			SET32_BITFIELDS(&ch[chn].phy.shu[0].b[b].dq[7],
-					SHU1_B0_DQ7_R_DMDQMDBI_SHU_B0, on);
+	for (size_t b = 0; b < 2; b++)
+		SET32_BITFIELDS(&ch[chn].phy.shu[0].b[b].dq[7],
+				SHU1_B0_DQ7_R_DMDQMDBI_SHU_B0, on);
 }
 
-static void dramc_write_dbi_onoff(bool onoff)
+static void dramc_write_dbi_onoff(size_t chn, bool onoff)
 {
-	for (size_t chn = 0; chn < CHANNEL_MAX; chn++)
-		SET32_BITFIELDS(&ch[chn].ao.shu[0].wodt, SHU1_WODT_DBIWR, onoff);
+	SET32_BITFIELDS(&ch[chn].ao.shu[0].wodt, SHU1_WODT_DBIWR, onoff);
 }
 
 static void dramc_phy_dcm_2_channel(u8 chn, bool en)
@@ -294,64 +299,61 @@ static void dramc_phy_dcm_2_channel(u8 chn, bool en)
 		((en ? 0x7 : 0) << 16) | ((en ? 0x7 : 0) << 20));
 }
 
-void dramc_enable_phy_dcm(bool en)
+void dramc_enable_phy_dcm(u8 chn, bool en)
 {
-	for (size_t chn = 0; chn < CHANNEL_MAX ; chn++) {
-		clrbits32(&ch[chn].phy.b[0].dll_fine_tune[1], 0x1 << 20);
-		clrbits32(&ch[chn].phy.b[1].dll_fine_tune[1], 0x1 << 20);
-		clrbits32(&ch[chn].phy.ca_dll_fine_tune[1], 0x1 << 20);
+	clrbits32(&ch[chn].phy.b[0].dll_fine_tune[1], 0x1 << 20);
+	clrbits32(&ch[chn].phy.b[1].dll_fine_tune[1], 0x1 << 20);
+	clrbits32(&ch[chn].phy.ca_dll_fine_tune[1], 0x1 << 20);
 
-		for (size_t i = 0; i < DRAM_DFS_SHUFFLE_MAX; i++) {
-			struct ddrphy_ao_shu *shu = &ch[chn].phy.shu[i];
-			setbits32(&shu->b[0].dll[0], 0x1);
-			setbits32(&shu->b[1].dll[0], 0x1);
-			setbits32(&shu->ca_dll[0], 0x1);
-		}
-
-		clrsetbits32(&ch[chn].ao.dramc_pd_ctrl,
-			(0x1 << 0) | (0x1 << 1) | (0x1 << 2) |
-			(0x1 << 5) | (0x1 << 26) | (0x1 << 30) | (0x1 << 31),
-			((en ? 0x1 : 0) << 0) | ((en ? 0x1 : 0) << 1) |
-			((en ? 0x1 : 0) << 2) | ((en ? 0 : 0x1) << 5) |
-			((en ? 0 : 0x1) << 26) | ((en ? 0x1 : 0) << 30) |
-			((en ? 0x1 : 0) << 31));
-
-		/* DCM on: CHANNEL_EMI free run; DCM off: mem_dcm */
-		write32(&ch[chn].phy.misc_cg_ctrl2,
-			0x8060033e | (0x40 << (en ? 0x1 : 0)));
-		write32(&ch[chn].phy.misc_cg_ctrl2,
-			0x8060033f | (0x40 << (en ? 0x1 : 0)));
-		write32(&ch[chn].phy.misc_cg_ctrl2,
-			0x8060033e | (0x40 << (en ? 0x1 : 0)));
-
-		clrsetbits32(&ch[chn].phy.misc_ctrl3, 0x3 << 26,
-			(en ? 0 : 0x3) << 26);
-		for (size_t i = 0; i < DRAM_DFS_SHUFFLE_MAX; i++) {
-			u32 mask = 0x7 << 17;
-			u32 value = (en ? 0x7 : 0) << 17;
-			struct ddrphy_ao_shu *shu = &ch[chn].phy.shu[i];
-
-			clrsetbits32(&shu->b[0].dq[7], mask, value);
-			clrsetbits32(&shu->b[1].dq[7], mask, value);
-			clrsetbits32(&shu->ca_cmd[7], mask, value);
-		}
-
-		dramc_phy_dcm_2_channel(chn, en);
+	for (size_t i = 0; i < DRAM_DFS_SHUFFLE_MAX; i++) {
+		struct ddrphy_ao_shu *shu = &ch[chn].phy.shu[i];
+		setbits32(&shu->b[0].dll[0], 0x1);
+		setbits32(&shu->b[1].dll[0], 0x1);
+		setbits32(&shu->ca_dll[0], 0x1);
 	}
+
+	clrsetbits32(&ch[chn].ao.dramc_pd_ctrl,
+		     (0x1 << 0) | (0x1 << 1) | (0x1 << 2) |
+		     (0x1 << 5) | (0x1 << 26) | (0x1 << 30) | (0x1 << 31),
+		     ((en ? 0x1 : 0) << 0) | ((en ? 0x1 : 0) << 1) |
+		     ((en ? 0x1 : 0) << 2) | ((en ? 0 : 0x1) << 5) |
+		     ((en ? 0 : 0x1) << 26) | ((en ? 0x1 : 0) << 30) |
+		     ((en ? 0x1 : 0) << 31));
+
+	/* DCM on: CHANNEL_EMI free run; DCM off: mem_dcm */
+	write32(&ch[chn].phy.misc_cg_ctrl2,
+		0x8060033e | (0x40 << (en ? 0x1 : 0)));
+	write32(&ch[chn].phy.misc_cg_ctrl2,
+		0x8060033f | (0x40 << (en ? 0x1 : 0)));
+	write32(&ch[chn].phy.misc_cg_ctrl2,
+		0x8060033e | (0x40 << (en ? 0x1 : 0)));
+
+	clrsetbits32(&ch[chn].phy.misc_ctrl3, 0x3 << 26,
+		     (en ? 0 : 0x3) << 26);
+	for (size_t i = 0; i < DRAM_DFS_SHUFFLE_MAX; i++) {
+		u32 mask = 0x7 << 17;
+		u32 value = (en ? 0x7 : 0) << 17;
+		struct ddrphy_ao_shu *shu = &ch[chn].phy.shu[i];
+
+		clrsetbits32(&shu->b[0].dq[7], mask, value);
+		clrsetbits32(&shu->b[1].dq[7], mask, value);
+		clrsetbits32(&shu->ca_cmd[7], mask, value);
+	}
+
+	dramc_phy_dcm_2_channel(chn, en);
 }
 
-static void dramc_reset_delay_chain_before_calibration(void)
+static void dramc_reset_delay_chain_before_calibration(size_t chn)
 {
-	for (size_t chn = 0; chn < CHANNEL_MAX; chn++)
-		for (size_t rank = 0; rank < RANK_MAX; rank++) {
-			struct dramc_ddrphy_regs_shu_rk *rk;
-			rk = &ch[chn].phy.shu[0].rk[rank];
-			clrbits32(&rk->ca_cmd[0], 0xffffff << 0);
-			clrbits32(&rk->b[0].dq[0], 0xfffffff << 0);
-			clrbits32(&rk->b[1].dq[0], 0xfffffff << 0);
-			clrbits32(&rk->b[0].dq[1], 0xf << 0);
-			clrbits32(&rk->b[1].dq[1], 0xf << 0);
-		}
+	for (size_t rank = 0; rank < RANK_MAX; rank++) {
+		struct dramc_ddrphy_regs_shu_rk *rk =
+			&ch[chn].phy.shu[0].rk[rank];
+		clrbits32(&rk->ca_cmd[0], 0xffffff << 0);
+		clrbits32(&rk->b[0].dq[0], 0xfffffff << 0);
+		clrbits32(&rk->b[1].dq[0], 0xfffffff << 0);
+		clrbits32(&rk->b[0].dq[1], 0xf << 0);
+		clrbits32(&rk->b[1].dq[1], 0xf << 0);
+	}
 }
 
 void dramc_hw_gating_onoff(u8 chn, bool on)
@@ -375,29 +377,31 @@ static void dramc_rx_input_delay_tracking_init_by_freq(u8 chn)
 
 void dramc_apply_config_before_calibration(u8 freq_group)
 {
-	dramc_enable_phy_dcm(false);
-	dramc_reset_delay_chain_before_calibration();
+	for (u8 chn = 0; chn < CHANNEL_MAX; chn++) {
+		dramc_enable_phy_dcm(chn, false);
+		dramc_reset_delay_chain_before_calibration(chn);
 
-	setbits32(&ch[0].ao.shu[0].conf[3], 0x1ff << 16);
-	setbits32(&ch[0].ao.spcmdctrl, 0x1 << 24);
-	clrsetbits32(&ch[0].ao.shu[0].scintv, 0x1f << 1, 0x1b << 1);
+		setbits32(&ch[chn].ao.shu[0].conf[3], 0x1ff << 16);
+		setbits32(&ch[chn].ao.spcmdctrl, 0x1 << 24);
+		clrsetbits32(&ch[chn].ao.shu[0].scintv, 0x1f << 1, 0x1b << 1);
 
-	for (size_t shu = DRAM_DFS_SHUFFLE_1; shu < DRAM_DFS_SHUFFLE_MAX; shu++)
-		setbits32(&ch[0].ao.shu[shu].conf[3], 0x1ff << 0);
+		for (u8 shu = DRAM_DFS_SHUFFLE_1; shu < DRAM_DFS_SHUFFLE_MAX;
+		     shu++)
+			setbits32(&ch[chn].ao.shu[shu].conf[3], 0x1ff << 0);
 
-	clrbits32(&ch[0].ao.dramctrl, 0x1 << 18);
-	clrbits32(&ch[0].ao.spcmdctrl, 0x1 << 31);
-	clrbits32(&ch[0].ao.spcmdctrl, 0x1 << 30);
-	clrbits32(&ch[0].ao.dqsoscr, 0x1 << 26);
-	clrbits32(&ch[0].ao.dqsoscr, 0x1 << 25);
+		clrbits32(&ch[chn].ao.dramctrl, 0x1 << 18);
+		clrbits32(&ch[chn].ao.spcmdctrl, 0x1 << 31);
+		clrbits32(&ch[chn].ao.spcmdctrl, 0x1 << 30);
+		clrbits32(&ch[chn].ao.dqsoscr, 0x1 << 26);
+		clrbits32(&ch[chn].ao.dqsoscr, 0x1 << 25);
 
-	dramc_write_dbi_onoff(false);
-	dramc_read_dbi_onoff(false);
+		dramc_write_dbi_onoff(chn, false);
+		dramc_read_dbi_onoff(chn, false);
 
-	for (size_t chn = 0; chn < CHANNEL_MAX; chn++) {
 		setbits32(&ch[chn].ao.spcmdctrl, 0x1 << 29);
 		setbits32(&ch[chn].ao.dqsoscr, 0x1 << 24);
-		for (size_t shu = DRAM_DFS_SHUFFLE_1; shu < DRAM_DFS_SHUFFLE_MAX; shu++)
+		for (u8 shu = DRAM_DFS_SHUFFLE_1; shu < DRAM_DFS_SHUFFLE_MAX;
+		     shu++)
 			setbits32(&ch[chn].ao.shu[shu].scintv, 0x1 << 30);
 
 		clrbits32(&ch[chn].ao.dummy_rd, (0x1 << 7) | (0x7 << 20));
@@ -768,7 +772,6 @@ static void dramc_rx_dqs_gating_cal_pre(u8 chn, u8 rank)
 	SET32_BITFIELDS(&ch[chn].ao.spcmd, SPCMD_DQSGCNTRST, 0);
 	SET32_BITFIELDS(&ch[chn].phy.misc_ctrl1, MISC_CTRL1_R_DMSTBENCMP_RK,
 			rank);
-
 }
 
 static void set_selph_gating_value(uint32_t *addr, u8 dly, u8 dly_p1)
@@ -1577,17 +1580,9 @@ static void dramc_set_tx_dly_center(struct per_byte_dly *center_dly,
 	}
 }
 
-static void dramc_set_tx_best_dly(u8 chn, u8 rank, bool bypass_tx,
-		struct win_perbit_dly *vref_dly, enum CAL_TYPE type, u8 freq_group,
-		u16 *tx_dq_precal_result, u16 dly_cell_unit, const struct sdram_params *params,
-		const bool fast_calib)
+static u32 get_freq_group_clock(u8 freq_group)
 {
-	int index, clock_rate;
-	u8 use_delay_cell;
-	u32 byte_dly_cell[DQS_NUMBER] = {0};
-	struct per_byte_dly center_dly[DQS_NUMBER];
-	u16 tune_diff, dq_delay_cell[DQ_DATA_WIDTH];
-
+	u32 clock_rate = 0;
 
 	/*
 	 * The clock rate is usually (frequency / 2 - delta), where the delta
@@ -1609,8 +1604,26 @@ static void dramc_set_tx_best_dly(u8 chn, u8 rank, bool bypass_tx,
 		break;
 	default:
 		die("Invalid DDR frequency group %u\n", freq_group);
-		return;
+		break;
 	}
+
+	return clock_rate;
+}
+
+static void dramc_set_tx_best_dly(u8 chn, u8 rank, bool bypass_tx,
+				  struct win_perbit_dly *vref_dly,
+				  enum CAL_TYPE type, u8 freq_group,
+				  u16 *tx_dq_precal_result, u16 dly_cell_unit,
+				  const struct sdram_params *params,
+				  const bool fast_calib)
+{
+	int index, clock_rate;
+	u8 use_delay_cell;
+	u32 byte_dly_cell[DQS_NUMBER] = { 0 };
+	struct per_byte_dly center_dly[DQS_NUMBER];
+	u16 tune_diff, dq_delay_cell[DQ_DATA_WIDTH];
+
+	clock_rate = get_freq_group_clock(freq_group);
 
 	if (type == TX_WIN_DQ_ONLY && get_freq_fsq(freq_group) == FSP_1)
 		use_delay_cell = 1;
@@ -1653,7 +1666,7 @@ static void dramc_set_tx_best_dly(u8 chn, u8 rank, bool bypass_tx,
 				dq_delay_cell[index] = ((tune_diff * 100000000) /
 					(clock_rate * 64)) / dly_cell_unit;
 				byte_dly_cell[byte] |= (dq_delay_cell[index] << (bit * 4));
-				dramc_show("u1DelayCellOfst[%d]=%d cells (%d PI)\n",
+				dramc_dbg("u1DelayCellOfst[%d]=%d cells (%d PI)\n",
 					index, dq_delay_cell[index], tune_diff);
 			}
 		}
@@ -2104,6 +2117,566 @@ static void dramc_rx_dqs_gating_post_process(u8 chn, u8 freq_group)
 			(0xff << 8) | (0x9 << 2) | ROEN);
 }
 
+static void start_dqsosc(u8 chn)
+{
+	SET32_BITFIELDS(&ch[chn].ao.spcmd, SPCMD_DQSOSCENEN, 1);
+	if (!wait_us(100, READ32_BITFIELD(&ch[chn].nao.spcmdresp,
+		     SPCMDRESP_DQSOSCEN_RESPONSE))) {
+		dramc_err("start dqsosc timed out\n");
+		return;
+	}
+	SET32_BITFIELDS(&ch[chn].ao.spcmd, SPCMD_DQSOSCENEN, 0);
+}
+
+static void dqsosc_auto(u8 chn, u8 rank, u8 freq_group,
+			u16 *osc_thrd_inc, u16 *osc_thrd_dec)
+{
+	u8 mr23 = MR23_DEFAULT_VALUE;
+	u16 mr18, mr19;
+	u16 dqsosc_cnt[2], dqs_cnt, dqsosc, thrd_inc, thrd_dec;
+	u32 clock_rate, tck;
+
+	struct reg_value regs_bak[] = {
+		{&ch[chn].ao.mrs},
+		{&ch[chn].ao.dramc_pd_ctrl},
+		{&ch[chn].ao.ckectrl},
+	};
+
+	for (size_t i = 0; i < ARRAY_SIZE(regs_bak); i++)
+		regs_bak[i].value = read32(regs_bak[i].addr);
+
+	SET32_BITFIELDS(&ch[chn].ao.rkcfg, RKCFG_DQSOSC2RK, 0);
+	SET32_BITFIELDS(&ch[chn].ao.mrs, MRS_MRSRK, rank);
+	SET32_BITFIELDS(&ch[chn].ao.mpc_option, MPC_OPTION_MPCRKEN, 1);
+
+	SET32_BITFIELDS(&ch[chn].ao.mrs, MRS_MRSRK, rank);
+	dramc_mode_reg_write(chn, 23, mr23);
+
+	for (u8 shu = 0; shu < DRAM_DFS_SHUFFLE_MAX; shu++)
+		SET32_BITFIELDS(&ch[chn].ao.shu[shu].scintv,
+				SHU_SCINTV_DQSOSCENDIS, 1);
+
+	SET32_BITFIELDS(&ch[chn].ao.dramc_pd_ctrl,
+			DRAMC_PD_CTRL_MIOCKCTRLOFF, 1);
+	dramc_cke_fix_onoff(chn, true, false);
+
+	start_dqsosc(chn);
+	udelay(1);
+	SET32_BITFIELDS(&ch[chn].ao.mrs, MRS_MRRRK, rank);
+
+	mr18 = dramc_mode_reg_read(chn, 18);
+	mr19 = dramc_mode_reg_read(chn, 19);
+	dqsosc_cnt[0] = (mr18 & 0xff) | ((mr19 & 0xff) << 8);
+	dqsosc_cnt[1] = (mr18 >> 8) | (mr19 & 0xff00);
+	dramc_dbg("DQSOscCnt B0=%#x, B1=%#x\n", dqsosc_cnt[0], dqsosc_cnt[1]);
+
+	/* get the INC and DEC values */
+	clock_rate = get_freq_group_clock(freq_group);
+	tck = 1000000 / clock_rate;
+
+	dqs_cnt = (mr18 & 0xff) | ((mr19 & 0xff) << 8);
+	if (dqs_cnt != 0) {
+		dqsosc = mr23 * 16 * 1000000 / (2 * dqs_cnt * clock_rate);
+		thrd_inc = mr23 * tck * tck / (dqsosc * dqsosc * 10);
+		thrd_dec = 3 * mr23 * tck * tck / (dqsosc * dqsosc * 20);
+	} else {
+		dqsosc = 0;
+		thrd_inc = 0x6;
+		thrd_dec = 0x4;
+	}
+	osc_thrd_inc[rank] = thrd_inc;
+	osc_thrd_dec[rank] = thrd_dec;
+	dramc_dbg("CH%d_RK%d: MR18=%#x, MR19=%#x, DQSOSC=%d, MR23=%d, "
+		  "INC=%d, DEC=%d\n",
+		  chn, rank, mr18, mr19, dqsosc, mr23, thrd_inc, thrd_dec);
+
+	for (size_t i = 0; i < ARRAY_SIZE(regs_bak); i++)
+		write32(regs_bak[i].addr, regs_bak[i].value);
+
+	SET32_BITFIELDS(&ch[chn].ao.shu[0].rk[rank].dqsosc,
+			SHU1RK0_DQSOSC_DQSOSC_BASE_RK0, dqsosc_cnt[0],
+			SHU1RK0_DQSOSC_DQSOSC_BASE_RK0_B1, dqsosc_cnt[1]);
+}
+
+void dramc_hw_dqsosc(u8 chn)
+{
+	u32 freq_shu1 = get_shu_freq(DRAM_DFS_SHUFFLE_1);
+	u32 freq_shu2 = get_shu_freq(DRAM_DFS_SHUFFLE_2);
+	u32 freq_shu3 = get_shu_freq(DRAM_DFS_SHUFFLE_3);
+
+	SET32_BITFIELDS(&ch[chn].ao.rk[2].dqsosc,
+			RK2_DQSOSC_FREQ_RATIO_TX_0, freq_shu2 * 8 / freq_shu1,
+			RK2_DQSOSC_FREQ_RATIO_TX_1, freq_shu3 * 8 / freq_shu1);
+	SET32_BITFIELDS(&ch[chn].ao.rk[2].dqsosc,
+			RK2_DQSOSC_FREQ_RATIO_TX_3, freq_shu1 * 8 / freq_shu2,
+			RK2_DQSOSC_FREQ_RATIO_TX_4, freq_shu3 * 8 / freq_shu2);
+	SET32_BITFIELDS(&ch[chn].ao.rk[2].dummy_rd_bk,
+			RK2_DUMMY_RD_BK_FREQ_RATIO_TX_6,
+			freq_shu1 * 8 / freq_shu3,
+			RK2_DUMMY_RD_BK_FREQ_RATIO_TX_7,
+			freq_shu2 * 8 / freq_shu3);
+
+	SET32_BITFIELDS(&ch[chn].ao.pre_tdqsck[0],
+			PRE_TDQSCK1_SHU_PRELOAD_TX_HW, 1,
+			PRE_TDQSCK1_SHU_PRELOAD_TX_START, 0,
+			PRE_TDQSCK1_SW_UP_TX_NOW_CASE, 0);
+
+	SET32_BITFIELDS(&ch[chn].ao.mpc_option, MPC_OPTION_MPC_BLOCKALE_OPT, 0);
+	SET32_BITFIELDS(&ch[chn].phy.misc_ctrl1, MISC_CTRL1_R_DMARPIDQ_SW, 1);
+	SET32_BITFIELDS(&ch[chn].ao.dqsoscr, DQSOSCR_ARUIDQ_SW, 1);
+	SET32_BITFIELDS(&ch[chn].ao.dqsoscr, DQSOSCR_DQSOSCRDIS, 1);
+
+	SET32_BITFIELDS(&ch[chn].ao.rk[0].dqsosc, RK0_DQSOSC_DQSOSCR_RK0EN, 1);
+	SET32_BITFIELDS(&ch[chn].ao.rk[1].dqsosc, RK1_DQSOSC_DQSOSCR_RK1EN, 1);
+	SET32_BITFIELDS(&ch[chn].ao.dqsoscr, DQSOSCR_DQSOSC_CALEN, 1);
+
+	for (u8 shu = 0; shu < DRAM_DFS_SHUFFLE_MAX; shu++)
+		SET32_BITFIELDS(&ch[chn].ao.shu[shu].scintv,
+				SHU_SCINTV_DQSOSCENDIS, 1);
+}
+
+static void dqsosc_shu_settings(u8 chn, u8 freq_group,
+				u16 *osc_thrd_inc, u16 *osc_thrd_dec)
+{
+	u8 filt_pithrd, w2r_sel, upd_sel;
+	u8 mr23 = MR23_DEFAULT_VALUE;
+	u16 prd_cnt, thrd_inc, thrd_dec;
+
+	SET32_BITFIELDS(&ch[chn].ao.shu[0].scintv,
+			SHU_SCINTV_DQS2DQ_SHU_PITHRD, 0);
+	SET32_BITFIELDS(&ch[chn].ao.rk[0].dqsosc,
+			RK0_DQSOSC_R_DMDQS2DQ_FILT_OPT, 0);
+
+	switch (freq_group) {
+	case LP4X_DDR1600:
+		filt_pithrd = 0x5;
+		w2r_sel = 0x5;
+		upd_sel = 0x0;
+		break;
+	case LP4X_DDR2400:
+		filt_pithrd = 0x8;
+		w2r_sel = 0x2;
+		upd_sel = 0x0;
+		break;
+	case LP4X_DDR3200:
+		filt_pithrd = 0xA;
+		w2r_sel = 0x2;
+		upd_sel = 0x0;
+		break;
+	case LP4X_DDR3600:
+		filt_pithrd = 0xB;
+		w2r_sel = 0x2;
+		upd_sel = 0x0;
+		break;
+	default:
+		die("Invalid DDR frequency group %u\n", freq_group);
+		return;
+	}
+
+	SET32_BITFIELDS(&ch[chn].ao.shu[0].scintv,
+			SHU_SCINTV_DQS2DQ_FILT_PITHRD, filt_pithrd);
+	SET32_BITFIELDS(&ch[chn].ao.shu[0].wodt,
+			SHU1_WODT_TXUPD_W2R_SEL, w2r_sel,
+			SHU1_WODT_TXUPD_SEL, upd_sel);
+
+	prd_cnt = mr23 / 4 + 3;
+	SET32_BITFIELDS(&ch[chn].ao.shu[0].dqsosc_prd,
+			SHU1_DQSOSC_PRD_DQSOSC_PRDCNT, prd_cnt);
+	SET32_BITFIELDS(&ch[chn].ao.shu[0].dqsoscr,
+			SHU_DQSOSCR_DQSOSCRCNT, 0x40);
+
+	for (u8 rk = RANK_0; rk < RANK_MAX; rk++) {
+		thrd_inc = osc_thrd_inc[rk];
+		thrd_dec = osc_thrd_dec[rk];
+
+		if (rk == RANK_0) {
+			SET32_BITFIELDS(&ch[chn].ao.shu[0].dqsoscthrd,
+					SHU_DQSOSCTHRD_DQSOSCTHRD_INC_RK0,
+					thrd_inc);
+			SET32_BITFIELDS(&ch[chn].ao.shu[0].dqsoscthrd,
+					SHU_DQSOSCTHRD_DQSOSCTHRD_DEC_RK0,
+					thrd_dec);
+		} else {
+			SET32_BITFIELDS(&ch[chn].ao.shu[0].dqsoscthrd,
+					SHU_DQSOSCTHRD_DQSOSCTHRD_INC_RK1_7TO0,
+					thrd_inc & 0xFF);
+			SET32_BITFIELDS(&ch[chn].ao.shu[0].dqsosc_prd,
+					SHU1_DQSOSC_PRD_DQSOSCTHRD_INC_RK1_11TO8,
+					(thrd_inc & 0xF00) >> 8);
+			SET32_BITFIELDS(&ch[chn].ao.shu[0].dqsosc_prd,
+					SHU1_DQSOSC_PRD_DQSOSCTHRD_DEC_RK1,
+					thrd_dec);
+		}
+	}
+
+	SET32_BITFIELDS(&ch[chn].ao.shu[0].dqsoscr2,
+			SHU_DQSOSCR2_DQSOSCENCNT, 0x1FF);
+}
+
+void dramc_dqs_precalculation_preset(void)
+{
+	u32 jump_ratio_index = 0;
+	u16 jump_ratio[DRAM_DFS_SHUFFLE_MAX * HW_REG_SHUFFLE_MAX] = {0};
+	u32 u4value = 0, u4value1 = 0;
+
+	for (u8 shu_src = 0; shu_src < HW_REG_SHUFFLE_MAX; shu_src++)
+		for (u8 shu_dst = 0; shu_dst < HW_REG_SHUFFLE_MAX; shu_dst++) {
+			if (shu_src == shu_dst)
+				continue;
+			if (shu_src >= DRAM_DFS_SHUFFLE_MAX ||
+			    shu_dst >= DRAM_DFS_SHUFFLE_MAX) {
+				jump_ratio_index++;
+				continue;
+			}
+
+			jump_ratio[jump_ratio_index] = DIV_ROUND_CLOSEST(
+				(get_shu_freq(shu_dst) >> 1) * 32,
+				get_shu_freq(shu_src) >> 1);
+			dramc_dbg("Jump_RATIO [%d]: %x Freq %d -> %d DDR%d ->"
+				  " DDR%d\n",
+				  jump_ratio_index,
+				  jump_ratio[jump_ratio_index],
+				  shu_src + 1, shu_dst + 1,
+				  get_shu_freq(shu_src), get_shu_freq(shu_dst));
+			jump_ratio_index++;
+		}
+
+	for (size_t chn = 0; chn < CHANNEL_MAX; chn++) {
+		struct dramc_ao_regs_shu *shu = &ch[chn].ao.shu[0];
+		struct dramc_ao_regs_rk *rk = &ch[chn].ao.rk[0];
+		SET32_BITFIELDS(&ch[chn].ao.pre_tdqsck[0],
+				PRE_TDQSCK1_TDQSCK_PRECAL_HW, 1);
+		SET32_BITFIELDS(&ch[chn].ao.pre_tdqsck[1],
+				PRE_TDQSCK2_TDDQSCK_JUMP_RATIO0, jump_ratio[0],
+				PRE_TDQSCK2_TDDQSCK_JUMP_RATIO1, jump_ratio[1],
+				PRE_TDQSCK2_TDDQSCK_JUMP_RATIO2, jump_ratio[2],
+				PRE_TDQSCK2_TDDQSCK_JUMP_RATIO3, jump_ratio[3]);
+		SET32_BITFIELDS(&ch[chn].ao.pre_tdqsck[2],
+				PRE_TDQSCK3_TDDQSCK_JUMP_RATIO4, jump_ratio[4],
+				PRE_TDQSCK3_TDDQSCK_JUMP_RATIO5, jump_ratio[5],
+				PRE_TDQSCK3_TDDQSCK_JUMP_RATIO6, jump_ratio[6],
+				PRE_TDQSCK3_TDDQSCK_JUMP_RATIO7, jump_ratio[7]);
+		SET32_BITFIELDS(&ch[chn].ao.pre_tdqsck[3],
+				PRE_TDQSCK4_TDDQSCK_JUMP_RATIO8, jump_ratio[8],
+				PRE_TDQSCK4_TDDQSCK_JUMP_RATIO9, jump_ratio[9],
+				PRE_TDQSCK4_TDDQSCK_JUMP_RATIO10, jump_ratio[10],
+				PRE_TDQSCK4_TDDQSCK_JUMP_RATIO11, jump_ratio[11]);
+
+		for (u8 rnk = RANK_0; rnk < RANK_MAX; rnk++) {
+			/* Shuffle 0 */
+			u4value = READ32_BITFIELD(
+				&shu[0].rk[rnk].selph_dqsg0,
+				SHURK0_SELPH_DQSG0_TX_DLY_DQS0_GATED);
+			u4value1 = READ32_BITFIELD(
+				&shu[0].rk[rnk].selph_dqsg1,
+				SHURK0_SELPH_DQSG1_REG_DLY_DQS0_GATED);
+			SET32_BITFIELDS(&rk[rnk].pre_tdqsck[0],
+					RK0_PRE_TDQSCK1_TDQSCK_UIFREQ1_B0R0,
+					(u4value << 3) | u4value1);
+			u4value = READ32_BITFIELD(
+				&shu[0].rk[rnk].dqsien,
+				SHURK0_DQSIEN_R0DQS0IEN);
+			SET32_BITFIELDS(&rk[rnk].pre_tdqsck[0],
+					RK0_PRE_TDQSCK1_TDQSCK_PIFREQ1_B0R0,
+					u4value);
+			u4value = READ32_BITFIELD(
+				&shu[0].rk[rnk].selph_dqsg0,
+				SHURK0_SELPH_DQSG0_TX_DLY_DQS0_GATED_P1);
+			u4value1 = READ32_BITFIELD(
+				&shu[0].rk[rnk].selph_dqsg1,
+				SHURK0_SELPH_DQSG1_REG_DLY_DQS0_GATED_P1);
+			SET32_BITFIELDS(&rk[rnk].pre_tdqsck[2],
+					RK0_PRE_TDQSCK3_TDQSCK_UIFREQ1_P1_B0R0,
+					(u4value << 3) | u4value1);
+			/* Shuffle 1 */
+			u4value = READ32_BITFIELD(
+				&shu[1].rk[rnk].selph_dqsg0,
+				SHURK0_SELPH_DQSG0_TX_DLY_DQS0_GATED);
+			u4value1 = READ32_BITFIELD(
+				&shu[1].rk[rnk].selph_dqsg1,
+				SHURK0_SELPH_DQSG1_REG_DLY_DQS0_GATED);
+			SET32_BITFIELDS(&rk[rnk].pre_tdqsck[0],
+					RK0_PRE_TDQSCK1_TDQSCK_UIFREQ2_B0R0,
+					(u4value << 3) | u4value1);
+			u4value = READ32_BITFIELD(
+				&shu[1].rk[rnk].dqsien,
+				SHURK0_DQSIEN_R0DQS0IEN);
+			SET32_BITFIELDS(&rk[rnk].pre_tdqsck[0],
+					RK0_PRE_TDQSCK1_TDQSCK_PIFREQ2_B0R0, u4value);
+			u4value = READ32_BITFIELD(
+				&shu[1].rk[rnk].selph_dqsg0,
+				SHURK0_SELPH_DQSG0_TX_DLY_DQS0_GATED_P1);
+			u4value1 = READ32_BITFIELD(
+				&shu[1].rk[rnk].selph_dqsg1,
+				SHURK0_SELPH_DQSG1_REG_DLY_DQS0_GATED_P1);
+			SET32_BITFIELDS(&rk[rnk].pre_tdqsck[2],
+					RK0_PRE_TDQSCK3_TDQSCK_UIFREQ2_P1_B0R0,
+					(u4value << 3) | u4value1);
+			/* Shuffle 2 */
+			u4value = READ32_BITFIELD(
+				&shu[2].rk[rnk].selph_dqsg0,
+				SHURK0_SELPH_DQSG0_TX_DLY_DQS0_GATED);
+			u4value1 = READ32_BITFIELD(
+				&shu[2].rk[rnk].selph_dqsg1,
+				SHURK0_SELPH_DQSG1_REG_DLY_DQS0_GATED);
+			SET32_BITFIELDS(&rk[rnk].pre_tdqsck[1],
+					RK0_PRE_TDQSCK2_TDQSCK_UIFREQ3_B0R0,
+					(u4value << 3) | u4value1);
+			u4value = READ32_BITFIELD(
+				&shu[2].rk[rnk].dqsien,
+				SHURK0_DQSIEN_R0DQS0IEN);
+			SET32_BITFIELDS(&rk[rnk].pre_tdqsck[1],
+					RK0_PRE_TDQSCK2_TDQSCK_PIFREQ3_B0R0,
+					u4value);
+			u4value = READ32_BITFIELD(
+				&shu[2].rk[rnk].selph_dqsg0,
+				SHURK0_SELPH_DQSG0_TX_DLY_DQS0_GATED_P1);
+			u4value1 = READ32_BITFIELD(
+				&shu[2].rk[rnk].selph_dqsg1,
+				SHURK0_SELPH_DQSG1_REG_DLY_DQS0_GATED_P1);
+			SET32_BITFIELDS(&rk[rnk].pre_tdqsck[2],
+					RK0_PRE_TDQSCK3_TDQSCK_UIFREQ3_P1_B0R0,
+					(u4value << 3) | u4value1);
+
+			/* Byte 1 */
+			/* Shuffle 0 */
+			u4value = READ32_BITFIELD(
+				&shu[0].rk[rnk].selph_dqsg0,
+				SHURK0_SELPH_DQSG0_TX_DLY_DQS1_GATED);
+			u4value1 = READ32_BITFIELD(
+				&shu[0].rk[rnk].selph_dqsg1,
+				SHURK0_SELPH_DQSG1_REG_DLY_DQS1_GATED);
+			SET32_BITFIELDS(&rk[rnk].pre_tdqsck[3],
+					RK0_PRE_TDQSCK4_TDQSCK_UIFREQ1_B1R0,
+					(u4value << 3) | u4value1);
+			u4value = READ32_BITFIELD(
+				&shu[0].rk[rnk].dqsien,
+				SHURK0_DQSIEN_R0DQS1IEN);
+			SET32_BITFIELDS(&rk[rnk].pre_tdqsck[3],
+					RK0_PRE_TDQSCK4_TDQSCK_PIFREQ1_B1R0,
+					u4value);
+			u4value = READ32_BITFIELD(
+				&shu[0].rk[rnk].selph_dqsg0,
+				SHURK0_SELPH_DQSG0_TX_DLY_DQS1_GATED_P1);
+			u4value1 = READ32_BITFIELD(
+				&shu[0].rk[rnk].selph_dqsg1,
+				SHURK0_SELPH_DQSG1_REG_DLY_DQS1_GATED_P1);
+			SET32_BITFIELDS(&rk[rnk].pre_tdqsck[5],
+					RK0_PRE_TDQSCK6_TDQSCK_UIFREQ1_P1_B1R0,
+					(u4value << 3) | u4value1);
+			/* Shuffle 1 */
+			u4value = READ32_BITFIELD(
+				&shu[1].rk[rnk].selph_dqsg0,
+				SHURK0_SELPH_DQSG0_TX_DLY_DQS1_GATED);
+			u4value1 = READ32_BITFIELD(
+				&shu[1].rk[rnk].selph_dqsg1,
+				SHURK0_SELPH_DQSG1_REG_DLY_DQS1_GATED);
+			SET32_BITFIELDS(&rk[rnk].pre_tdqsck[3],
+					RK0_PRE_TDQSCK4_TDQSCK_UIFREQ2_B1R0,
+					(u4value << 3) | u4value1);
+			u4value = READ32_BITFIELD(
+				&shu[1].rk[rnk].dqsien,
+				SHURK0_DQSIEN_R0DQS1IEN);
+			SET32_BITFIELDS(&rk[rnk].pre_tdqsck[3],
+					RK0_PRE_TDQSCK4_TDQSCK_PIFREQ2_B1R0,
+					u4value);
+			u4value = READ32_BITFIELD(
+				&shu[1].rk[rnk].selph_dqsg0,
+				SHURK0_SELPH_DQSG0_TX_DLY_DQS1_GATED_P1);
+			u4value1 = READ32_BITFIELD(
+				&shu[1].rk[rnk].selph_dqsg1,
+				SHURK0_SELPH_DQSG1_REG_DLY_DQS1_GATED_P1);
+			SET32_BITFIELDS(&rk[rnk].pre_tdqsck[5],
+					RK0_PRE_TDQSCK6_TDQSCK_UIFREQ2_P1_B1R0,
+					(u4value << 3) | u4value1);
+			/* Shuffle 2 */
+			u4value = READ32_BITFIELD(
+				&shu[2].rk[rnk].selph_dqsg0,
+				SHURK0_SELPH_DQSG0_TX_DLY_DQS1_GATED);
+			u4value1 = READ32_BITFIELD(
+				&shu[2].rk[rnk].selph_dqsg1,
+				SHURK0_SELPH_DQSG1_REG_DLY_DQS1_GATED);
+			SET32_BITFIELDS(&rk[rnk].pre_tdqsck[4],
+					RK0_PRE_TDQSCK5_TDQSCK_UIFREQ3_B1R0,
+					(u4value << 3) | u4value1);
+			u4value = READ32_BITFIELD(
+				&shu[2].rk[rnk].dqsien,
+				SHURK0_DQSIEN_R0DQS1IEN);
+			SET32_BITFIELDS(&rk[rnk].pre_tdqsck[4],
+					RK0_PRE_TDQSCK5_TDQSCK_PIFREQ3_B1R0,
+					u4value);
+			u4value = READ32_BITFIELD(
+				&shu[2].rk[rnk].selph_dqsg0,
+				SHURK0_SELPH_DQSG0_TX_DLY_DQS1_GATED_P1);
+			u4value1 = READ32_BITFIELD(
+				&shu[2].rk[rnk].selph_dqsg1,
+				SHURK0_SELPH_DQSG1_REG_DLY_DQS1_GATED_P1);
+			SET32_BITFIELDS(&rk[rnk].pre_tdqsck[5],
+					RK0_PRE_TDQSCK6_TDQSCK_UIFREQ3_P1_B1R0,
+					(u4value << 3) | u4value1);
+
+			/* Byte 2 */
+			/* Shuffle 0 */
+			u4value = READ32_BITFIELD(
+				&shu[0].rk[rnk].selph_dqsg0,
+				SHURK0_SELPH_DQSG0_TX_DLY_DQS2_GATED);
+			u4value1 = READ32_BITFIELD(
+				&shu[0].rk[rnk].selph_dqsg1,
+				SHURK0_SELPH_DQSG1_REG_DLY_DQS2_GATED);
+			SET32_BITFIELDS(&rk[rnk].pre_tdqsck[6],
+					RK0_PRE_TDQSCK7_TDQSCK_UIFREQ1_B2R0,
+					(u4value << 3) | u4value1);
+			u4value = READ32_BITFIELD(
+				&shu[0].rk[rnk].dqsien,
+				SHURK0_DQSIEN_R0DQS2IEN);
+			SET32_BITFIELDS(&rk[rnk].pre_tdqsck[6],
+					RK0_PRE_TDQSCK7_TDQSCK_PIFREQ1_B2R0,
+					u4value);
+			u4value = READ32_BITFIELD(
+				&shu[0].rk[rnk].selph_dqsg0,
+				SHURK0_SELPH_DQSG0_TX_DLY_DQS2_GATED_P1);
+			u4value1 = READ32_BITFIELD(
+				&shu[0].rk[rnk].selph_dqsg1,
+				SHURK0_SELPH_DQSG1_REG_DLY_DQS2_GATED_P1);
+			SET32_BITFIELDS(&rk[rnk].pre_tdqsck[8],
+					RK0_PRE_TDQSCK9_TDQSCK_UIFREQ1_P1_B2R0,
+					(u4value << 3) | u4value1);
+			/* Shuffle 1 */
+			u4value = READ32_BITFIELD(
+				&shu[1].rk[rnk].selph_dqsg0,
+				SHURK0_SELPH_DQSG0_TX_DLY_DQS2_GATED);
+			u4value1 = READ32_BITFIELD(
+				&shu[1].rk[rnk].selph_dqsg1,
+				SHURK0_SELPH_DQSG1_REG_DLY_DQS2_GATED);
+			SET32_BITFIELDS(&rk[rnk].pre_tdqsck[6],
+					RK0_PRE_TDQSCK7_TDQSCK_UIFREQ2_B2R0,
+					(u4value << 3) | u4value1);
+			u4value = READ32_BITFIELD(
+				&shu[1].rk[rnk].dqsien,
+				SHURK0_DQSIEN_R0DQS2IEN);
+			SET32_BITFIELDS(&rk[rnk].pre_tdqsck[6],
+					RK0_PRE_TDQSCK7_TDQSCK_PIFREQ2_B2R0,
+					u4value);
+			u4value = READ32_BITFIELD(
+				&shu[1].rk[rnk].selph_dqsg0,
+				SHURK0_SELPH_DQSG0_TX_DLY_DQS2_GATED_P1);
+			u4value1 = READ32_BITFIELD(
+				&shu[1].rk[rnk].selph_dqsg1,
+				SHURK0_SELPH_DQSG1_REG_DLY_DQS2_GATED_P1);
+			SET32_BITFIELDS(&rk[rnk].pre_tdqsck[8],
+					RK0_PRE_TDQSCK9_TDQSCK_UIFREQ2_P1_B2R0,
+					(u4value << 3) | u4value1);
+			/* Shuffle 2 */
+			u4value = READ32_BITFIELD(
+				&shu[2].rk[rnk].selph_dqsg0,
+				SHURK0_SELPH_DQSG0_TX_DLY_DQS2_GATED);
+			u4value1 = READ32_BITFIELD(
+				&shu[2].rk[rnk].selph_dqsg1,
+				SHURK0_SELPH_DQSG1_REG_DLY_DQS2_GATED);
+			SET32_BITFIELDS(&rk[rnk].pre_tdqsck[7],
+					RK0_PRE_TDQSCK8_TDQSCK_UIFREQ3_B2R0,
+					(u4value << 3) | u4value1);
+			u4value = READ32_BITFIELD(
+				&shu[2].rk[rnk].dqsien,
+				SHURK0_DQSIEN_R0DQS2IEN);
+			SET32_BITFIELDS(&rk[rnk].pre_tdqsck[7],
+					RK0_PRE_TDQSCK8_TDQSCK_PIFREQ3_B2R0,
+					u4value);
+			u4value = READ32_BITFIELD(
+				&shu[2].rk[rnk].selph_dqsg0,
+				SHURK0_SELPH_DQSG0_TX_DLY_DQS2_GATED_P1);
+			u4value1 = READ32_BITFIELD(
+				&shu[2].rk[rnk].selph_dqsg1,
+				SHURK0_SELPH_DQSG1_REG_DLY_DQS2_GATED_P1);
+			SET32_BITFIELDS(&rk[rnk].pre_tdqsck[8],
+					RK0_PRE_TDQSCK9_TDQSCK_UIFREQ3_P1_B2R0,
+					(u4value << 3) | u4value1);
+
+			/* Byte 3 */
+			/* Shuffle 0 */
+			u4value = READ32_BITFIELD(
+				&shu[0].rk[rnk].selph_dqsg0,
+				SHURK0_SELPH_DQSG0_TX_DLY_DQS3_GATED);
+			u4value1 = READ32_BITFIELD(
+				&shu[0].rk[rnk].selph_dqsg1,
+				SHURK0_SELPH_DQSG1_REG_DLY_DQS3_GATED);
+			SET32_BITFIELDS(&rk[rnk].pre_tdqsck[9],
+					RK0_PRE_TDQSCK10_TDQSCK_UIFREQ1_B3R0,
+					(u4value << 3) | u4value1);
+			u4value = READ32_BITFIELD(
+				&shu[0].rk[rnk].dqsien,
+				SHURK0_DQSIEN_R0DQS3IEN);
+			SET32_BITFIELDS(&rk[rnk].pre_tdqsck[9],
+					RK0_PRE_TDQSCK10_TDQSCK_PIFREQ1_B3R0,
+					u4value);
+			u4value = READ32_BITFIELD(
+				&shu[0].rk[rnk].selph_dqsg0,
+				SHURK0_SELPH_DQSG0_TX_DLY_DQS3_GATED_P1);
+			u4value1 = READ32_BITFIELD(
+				&shu[0].rk[rnk].selph_dqsg1,
+				SHURK0_SELPH_DQSG1_REG_DLY_DQS3_GATED_P1);
+			SET32_BITFIELDS(&rk[rnk].pre_tdqsck[11],
+					RK0_PRE_TDQSCK12_TDQSCK_UIFREQ1_P1_B3R0,
+					(u4value << 3) | u4value1);
+			/* Shuffle 1 */
+			u4value = READ32_BITFIELD(
+				&shu[1].rk[rnk].selph_dqsg0,
+				SHURK0_SELPH_DQSG0_TX_DLY_DQS3_GATED);
+			u4value1 = READ32_BITFIELD(
+				&shu[1].rk[rnk].selph_dqsg1,
+				SHURK0_SELPH_DQSG1_REG_DLY_DQS3_GATED);
+			SET32_BITFIELDS(&rk[rnk].pre_tdqsck[9],
+					RK0_PRE_TDQSCK10_TDQSCK_UIFREQ2_B3R0,
+					(u4value << 3) | u4value1);
+			u4value = READ32_BITFIELD(
+				&shu[1].rk[rnk].dqsien,
+				SHURK0_DQSIEN_R0DQS3IEN);
+			SET32_BITFIELDS(&rk[rnk].pre_tdqsck[9],
+					RK0_PRE_TDQSCK10_TDQSCK_PIFREQ2_B3R0,
+					u4value);
+			u4value = READ32_BITFIELD(
+				&shu[1].rk[rnk].selph_dqsg0,
+				SHURK0_SELPH_DQSG0_TX_DLY_DQS3_GATED_P1);
+			u4value1 = READ32_BITFIELD(
+				&shu[1].rk[rnk].selph_dqsg1,
+				SHURK0_SELPH_DQSG1_REG_DLY_DQS3_GATED_P1);
+			SET32_BITFIELDS(&rk[rnk].pre_tdqsck[11],
+					RK0_PRE_TDQSCK12_TDQSCK_UIFREQ2_P1_B3R0,
+					(u4value << 3) | u4value1);
+			/* Shuffle 2 */
+			u4value = READ32_BITFIELD(
+				&shu[2].rk[rnk].selph_dqsg0,
+				SHURK0_SELPH_DQSG0_TX_DLY_DQS3_GATED);
+			u4value1 = READ32_BITFIELD(
+				&shu[2].rk[rnk].selph_dqsg1,
+				SHURK0_SELPH_DQSG1_REG_DLY_DQS3_GATED);
+			SET32_BITFIELDS(&rk[rnk].pre_tdqsck[10],
+					RK0_PRE_TDQSCK11_TDQSCK_UIFREQ3_B3R0,
+					(u4value << 3) | u4value1);
+			u4value = READ32_BITFIELD(
+				&shu[2].rk[rnk].dqsien,
+				SHURK0_DQSIEN_R0DQS3IEN);
+			SET32_BITFIELDS(&rk[rnk].pre_tdqsck[10],
+					RK0_PRE_TDQSCK11_TDQSCK_PIFREQ3_B3R0,
+					u4value);
+			u4value = READ32_BITFIELD(
+				&shu[2].rk[rnk].selph_dqsg0,
+				SHURK0_SELPH_DQSG0_TX_DLY_DQS3_GATED_P1);
+			u4value1 = READ32_BITFIELD(
+				&shu[2].rk[rnk].selph_dqsg1,
+				SHURK0_SELPH_DQSG1_REG_DLY_DQS3_GATED_P1);
+			SET32_BITFIELDS(&rk[rnk].pre_tdqsck[11],
+					RK0_PRE_TDQSCK12_TDQSCK_UIFREQ3_P1_B3R0,
+					(u4value << 3) | u4value1);
+		}
+
+		SET32_BITFIELDS(&ch[chn].ao.pre_tdqsck[0],
+				PRE_TDQSCK1_TDQSCK_REG_DVFS, 0x1);
+		SET32_BITFIELDS(&ch[chn].ao.pre_tdqsck[0],
+				PRE_TDQSCK1_TDQSCK_HW_SW_UP_SEL, 1);
+	}
+}
+
 int dramc_calibrate_all_channels(const struct sdram_params *pams, u8 freq_group,
 				 const struct mr_value *mr)
 {
@@ -2122,6 +2695,8 @@ int dramc_calibrate_all_channels(const struct sdram_params *pams, u8 freq_group,
 
 	bool test_passed;
 	u8 rx_datlat[RANK_MAX] = {0};
+	u16 osc_thrd_inc[RANK_MAX];
+	u16 osc_thrd_dec[RANK_MAX];
 	for (u8 chn = 0; chn < CHANNEL_MAX; chn++) {
 		for (u8 rk = RANK_0; rk < RANK_MAX; rk++) {
 			dramc_dbg("Start K: freq=%d, ch=%d, rank=%d\n",
@@ -2146,8 +2721,11 @@ int dramc_calibrate_all_channels(const struct sdram_params *pams, u8 freq_group,
 			dramc_window_perbit_cal(chn, rk, freq_group,
 				RX_WIN_TEST_ENG, pams, fast_calib);
 			dramc_auto_refresh_switch(chn, false);
+
+			dqsosc_auto(chn, rk, freq_group, osc_thrd_inc, osc_thrd_dec);
 		}
 
+		dqsosc_shu_settings(chn, freq_group, osc_thrd_inc, osc_thrd_dec);
 		dramc_rx_dqs_gating_post_process(chn, freq_group);
 		dramc_dual_rank_rx_datlat_cal(chn, freq_group, rx_datlat[0], rx_datlat[1]);
 	}

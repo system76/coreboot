@@ -1,16 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; version 2 of
- * the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #ifndef __IPMI_KCS_H
 #define __IPMI_KCS_H
@@ -32,6 +21,7 @@
 #define IPMI_NETFN_FIRMWARE 0x08
 #define IPMI_NETFN_STORAGE 0x0a
 #define   IPMI_READ_FRU_DATA 0x11
+#define   IPMI_ADD_SEL_ENTRY 0x44
 #define IPMI_NETFN_TRANSPORT 0x0c
 
 #define IPMI_CMD_ACPI_POWERON 0x06

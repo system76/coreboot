@@ -1,17 +1,7 @@
-/*
- * This file is part of the coreboot project.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
-#include <arch/acpigen_dsm.h>
+#include <acpi/acpigen_dsm.h>
 #include <device/device.h>
 #include <stdint.h>
 #include <string.h>
@@ -20,7 +10,7 @@
 #include <console/console.h>
 
 #if CONFIG(HAVE_ACPI_TABLES)
-static void i2c_hid_fill_dsm(struct device *dev)
+static void i2c_hid_fill_dsm(const struct device *dev)
 {
 	struct drivers_i2c_hid_config *config = dev->chip_info;
 	struct dsm_i2c_hid_config dsm_config = {
@@ -30,7 +20,7 @@ static void i2c_hid_fill_dsm(struct device *dev)
 	acpigen_write_dsm_i2c_hid(&dsm_config);
 }
 
-static void i2c_hid_fill_ssdt_generator(struct device *dev)
+static void i2c_hid_fill_ssdt_generator(const struct device *dev)
 {
 	struct drivers_i2c_hid_config *config = dev->chip_info;
 	config->generic.cid = I2C_HID_CID;
@@ -47,12 +37,11 @@ static const char *i2c_hid_acpi_name(const struct device *dev)
 #endif
 
 static struct device_operations i2c_hid_ops = {
-	.read_resources		  = DEVICE_NOOP,
-	.set_resources		  = DEVICE_NOOP,
-	.enable_resources	  = DEVICE_NOOP,
+	.read_resources		= noop_read_resources,
+	.set_resources		= noop_set_resources,
 #if CONFIG(HAVE_ACPI_TABLES)
-	.acpi_name		  = i2c_hid_acpi_name,
-	.acpi_fill_ssdt_generator = i2c_hid_fill_ssdt_generator,
+	.acpi_name		= i2c_hid_acpi_name,
+	.acpi_fill_ssdt		= i2c_hid_fill_ssdt_generator,
 #endif
 };
 

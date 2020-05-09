@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2011-2012 The ChromiumOS Authors.  All rights reserved.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <bootmode.h>
 #include <boot/coreboot_tables.h>
@@ -28,9 +16,6 @@
 void fill_lb_gpios(struct lb_gpios *gpios)
 {
 	struct lb_gpio chromeos_gpios[] = {
-		/* Write Protect: GPIO7 */
-		{7, ACTIVE_LOW, !get_write_protect_state(), "write protect"},
-
 		/* Lid Switch: Virtual switch */
 		{-1, ACTIVE_HIGH, get_lid_switch(), "lid"},
 
@@ -75,7 +60,7 @@ int get_recovery_mode_switch(void)
 	if (ec_rec_flag_good)
 		return ec_in_rec_mode;
 
-	pci_devfn_t dev = PCI_DEV(0, 0x1f, 0);
+	const pci_devfn_t dev = PCI_DEV(0, 0x1f, 0);
 	u8 reg8 = pci_s_read_config8(dev, GEN_PMCON_3);
 
 	u8 ec_status = ec_read(EC_STATUS_REG);

@@ -1,20 +1,9 @@
-/*
- * This file is part of the coreboot project.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <string.h>
 #include <rmodule.h>
 #include <cpu/x86/smm.h>
-#include <cpu/x86/cache.h>
 #include <commonlib/helpers.h>
 #include <console/console.h>
 #include <security/intel/stm/SmmStm.h>
@@ -174,8 +163,9 @@ static void smm_stub_place_staggered_entry_points(char *base,
  * concurrent areas requested. The save state always lives at the top of SMRAM
  * space, and the entry point is at offset 0x8000.
  */
-static int smm_module_setup_stub(void *smbase, struct smm_loader_params *params,
-		void *fxsave_area)
+static int smm_module_setup_stub(void *smbase, size_t smm_size,
+				 struct smm_loader_params *params,
+				 void *fxsave_area)
 {
 	size_t total_save_state_size;
 	size_t smm_stub_size;
@@ -269,6 +259,7 @@ static int smm_module_setup_stub(void *smbase, struct smm_loader_params *params,
 	stub_params->fxsave_area = (uintptr_t)fxsave_area;
 	stub_params->fxsave_area_size = FXSAVE_SIZE;
 	stub_params->runtime.smbase = (uintptr_t)smbase;
+	stub_params->runtime.smm_size = smm_size;
 	stub_params->runtime.save_state_size = params->per_cpu_save_state_size;
 	stub_params->runtime.num_cpus = params->num_concurrent_stacks;
 
@@ -309,19 +300,20 @@ int smm_setup_relocation_handler(struct smm_loader_params *params)
 	if (params->num_concurrent_stacks == 0)
 		params->num_concurrent_stacks = CONFIG_MAX_CPUS;
 
-	return smm_module_setup_stub(smram, params, fxsave_area_relocation);
+	return smm_module_setup_stub(smram, SMM_DEFAULT_SIZE,
+				     params, fxsave_area_relocation);
 }
 
 /* The SMM module is placed within the provided region in the following
  * manner:
  * +-----------------+ <- smram + size
- * |    stacks       |
- * +-----------------+ <- smram + size - total_stack_size
- * |  fxsave area    |
- * +-----------------+ <- smram + size - total_stack_size - fxsave_size
  * | BIOS resource   |
  * | list (STM)      |
- * +-----------------+ <- .. - CONFIG_BIOS_RESOURCE_LIST_SIZE
+ * +-----------------+ <- smram + size - CONFIG_BIOS_RESOURCE_LIST_SIZE
+ * |    stacks       |
+ * +-----------------+ <- .. - total_stack_size
+ * |  fxsave area    |
+ * +-----------------+ <- .. - total_stack_size - fxsave_size
  * |      ...        |
  * +-----------------+ <- smram + handler_size + SMM_DEFAULT_SIZE
  * |    handler      |
@@ -362,11 +354,10 @@ int smm_load_module(void *smram, size_t size, struct smm_loader_params *params)
 
 	/* Stacks start at the top of the region. */
 	base = smram;
+	base += size;
 
 	if (CONFIG(STM))
-		base += size - CONFIG_MSEG_SIZE;     // take out the mseg
-	else
-		base += size;
+		base -= CONFIG_MSEG_SIZE + CONFIG_BIOS_RESOURCE_LIST_SIZE;
 
 	params->stack_top = base;
 
@@ -397,10 +388,6 @@ int smm_load_module(void *smram, size_t size, struct smm_loader_params *params)
 	total_size = total_stack_size + handler_size;
 	total_size += fxsave_size + SMM_DEFAULT_SIZE;
 
-	// account for the bios resource list
-	if (CONFIG(STM))
-		total_size += CONFIG_BIOS_RESOURCE_LIST_SIZE;
-
 	if (total_size > size)
 		return -1;
 
@@ -410,5 +397,5 @@ int smm_load_module(void *smram, size_t size, struct smm_loader_params *params)
 	params->handler = rmodule_entry(&smm_mod);
 	params->handler_arg = rmodule_parameters(&smm_mod);
 
-	return smm_module_setup_stub(smram, params, fxsave_area);
+	return smm_module_setup_stub(smram, size, params, fxsave_area);
 }

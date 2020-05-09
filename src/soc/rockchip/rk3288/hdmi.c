@@ -1,19 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) Rockchip, Inc.
- * Copyright (C) Freescale Semiconductor, Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* This file is part of the coreboot project. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 /*
  * Designware High-Definition Multimedia Interface (HDMI) driveG
@@ -733,7 +719,7 @@ static int hdmi_read_edid(int block, u8 *buff)
 	u32 trytime = 5;
 	u32 n, j, val;
 
-	/* set ddc i2c clk which devided from ddc_clk to 100khz */
+	/* set ddc i2c clk which derived from ddc_clk to 100kHz */
 	write32(&hdmi_regs->i2cm_ss_scl_hcnt_0_addr, 0x7a);
 	write32(&hdmi_regs->i2cm_ss_scl_lcnt_0_addr, 0x8d);
 	clrsetbits32(&hdmi_regs->i2cm_div, HDMI_I2CM_DIV_FAST_STD_MODE,

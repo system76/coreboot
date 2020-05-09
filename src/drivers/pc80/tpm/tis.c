@@ -1,15 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 /*
  * The code in this file has been heavily based on the article "Writing a TPM
@@ -25,9 +15,9 @@
 #include <string.h>
 #include <delay.h>
 #include <device/mmio.h>
-#include <arch/acpi.h>
-#include <arch/acpigen.h>
-#include <arch/acpi_device.h>
+#include <acpi/acpi.h>
+#include <acpi/acpigen.h>
+#include <acpi/acpi_device.h>
 #include <device/device.h>
 #include <console/console.h>
 #include <security/tpm/tis.h>
@@ -882,7 +872,7 @@ static void (*tpm_mci_callbacks[])(void *) = {
 	tpm_mci_func1_cb,
 };
 
-static void lpc_tpm_fill_ssdt(struct device *dev)
+static void lpc_tpm_fill_ssdt(const struct device *dev)
 {
 	const char *path = acpi_device_path(dev->bus->dev);
 	u32 arg;
@@ -896,11 +886,16 @@ static void lpc_tpm_fill_ssdt(struct device *dev)
 	acpigen_write_scope(path);
 	acpigen_write_device(acpi_device_name(dev));
 
-	acpigen_write_name("_HID");
-	acpigen_emit_eisaid("PNP0C31");
+	if (CONFIG(TPM2)) {
+		acpigen_write_name_string("_HID", "MSFT0101");
+		acpigen_write_name_string("_CID", "MSFT0101");
+	} else {
+		acpigen_write_name("_HID");
+		acpigen_emit_eisaid("PNP0C31");
 
-	acpigen_write_name("_CID");
-	acpigen_emit_eisaid("PNP0C31");
+		acpigen_write_name("_CID");
+		acpigen_emit_eisaid("PNP0C31");
+	}
 
 	acpi_device_write_uid(dev);
 
@@ -988,8 +983,8 @@ static struct device_operations lpc_tpm_ops = {
 	.read_resources   = lpc_tpm_read_resources,
 	.set_resources    = lpc_tpm_set_resources,
 #if CONFIG(HAVE_ACPI_TABLES)
-	.acpi_name		= lpc_tpm_acpi_name,
-	.acpi_fill_ssdt_generator = lpc_tpm_fill_ssdt,
+	.acpi_name        = lpc_tpm_acpi_name,
+	.acpi_fill_ssdt   = lpc_tpm_fill_ssdt,
 #endif
 };
 

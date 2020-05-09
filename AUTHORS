@@ -8,78 +8,141 @@
 # To see a list of contributors: git log --pretty=format:%an | sort | uniq
 # For patches adding or removing a name: git log -i -S "NAME" --source --all
 
+3mdeb Embedded Systems Consulting
 9elements Agency GmbH
+Abhinav Hardikar
+Advanced Computing Lab, LANL
 Advanced Micro Devices, Inc.
+AdaCore
 AG Electronics Ltd.
+Alex Thiessen
 Alex Züpke
 Alexander Couzens
 Alexandru Gagniuc
 Analog Devices Inc.
+Analogix Semiconductor
+Andre Heider
+Andriy Gapon
 Andy Fleming
+Angel Pons
+Anton Kochkov
 ARM Limited and Contributors
 Arthur Heymans
+Asami Doi
 ASPEED Technology Inc.
 Atheros Corporation
 Atmel Corporation
 BAP - Bruhnspace Advanced Projects
+Bill Xie
+Bitland Tech Inc.
+Boris Barbulovski
 Carl-Daniel Hailfinger
+Cavium Inc.
 Christoph Grenz
+Code Aurora Forum
 coresystems GmbH
 Corey Osgood
+Curt Brune
+Custom Ideas
 Damien Zammit
+Dave Airlie
 David Brownell
+David Greenman
 David Hendricks
 David Mosberger-Tang
+David Mueller
+Denis 'GNUtoo' Carikli
 Denis Dowling
 DENX Software Engineering
+Derek Waldner
 Digital Design Corporation
 DMP Electronics Inc.
+Donghwa Lee
 Drew Eckhardt
 Dynon Avionics
 Edward O'Callaghan
 Egbert Eich
+ELSOFT AG
 Eltan B.V
+Elyes Haouas
 Eric Biederman
 Eswar Nallusamy
+Evgeny Zinoviev
 Fabian Kunkel
+Fabrice Bellard
 Facebook, Inc.
 Felix Held
+Felix Singer
 Frederic Potter
 Free Software Foundation, Inc.
 Freescale Semiconductor, Inc.
 Gary Jennejohn
+George Trudeau
+Gerald Van Baren
 Gerd Hoffmann
 Gergely Kiss
 Google LLC
 Greg Watson
+Guennadi Liakhovetski
+Hal Martin
+HardenedLinux
+Hewlett-Packard Development Company, L.P.
+Hewlett Packard Enterprise Development LP
+Huaqin Telecom Inc.
+IBM Corporation
 Idwer Vollering
+Igor Pavlov
 Imagination Technologies
 Infineon Technologies
+InKi Dae
 Intel Corporation
+Iru Cai
+Isaku Yamahata
+Ivan Vatlin
+James Ye
 Jason Zhao
+Joe Pillow
+Johanna Schander
+Jonas 'Sortie' Termansen
+Jonathan A. Kollasch
 Jonathan Neuschäfer
 Jordan Crouse
 Joseph Smith
 Keith Hui
 Keith Packard
 Kevin Cody-Little
+Kevin O'Connor
+Kontron Europe GmbH
 Kshitij
 Kyösti Mälkki
+Leah Rowe
 Lei Wen
 Li-Ta Lo
 Libra Li
 Libretrend LDA
+Linaro Limited
 Linus Torvalds
 Linux Networx, Inc.
+LiPPERT ADLINK Technology GmbH
+Lubomir Rintel
 Luc Verhaegen
+Maciej Matuszczyk
+Marc Bertens
 Marc Jones
 Marek Vasut
 Marius Gröger
 Martin Mares
+Martin Renters
+Martin Roth
 Marvell International Ltd.
 Marvell Semiconductor Inc.
 Matt DeVillier
+Maxim Polyakov
 MediaTek Inc.
+Michael Brunner
+Michael Schroeder
+Michael Niewöhner
+Mika Westerberg
 Mondrian Nuessle
 MontaVista Software, Inc.
 Myles Watson
@@ -87,69 +150,96 @@ Network Appliance Inc.
 Nicholas Sielicki
 Nick Barker
 Nico Huber
+Nico Rikken
 Nicola Corna
+Nils Jacobs
+Nir Tzachar
+Nokia Corporation
+NVIDIA Corporation
+Olivier Langlois
 Ollie Lo
 Omar Pakker
+Online SAS
 Orion Technologies, LLC
 Patrick Georgi
 Patrick Rudolph
+Pattrick Hueper
+Paulo Alcantara
 Pavel Sayekat
 PC Engines GmbH
 Per Odlund
+Peter Korsgaard
 Peter Stuge
 Philipp Degler
+Philipp Deppenwiese
+Philipp Hug
 Protectli
+Purism SPC
+Qualcomm Technologies
 Raptor Engineering, LLC
-Red Hat Inc
+Red Hat, Inc
 Reinhard Meyer
+Renze Nicolai
 Richard Spiegel
 Richard Woodruff
+Rob Landley
+Robert Reeves
+Robinson P. Tryon
+Rockchip, Inc.
+Romain Lievin
+Roman Zippel
 Ronald G. Minnich
 Rudolf Marek
 Russell King
+Ruud Schramp
 Sage Electronic Engineering, LLC
+Sam Ravnborg
 Samsung Electronics
 Samuel Holland
 SciTech Software, Inc.
 Sebastian Grzywna
 secunet Security Networks AG
+Sencore Inc
+Sergej Ivanov
 Siemens AG
+SiFive, Inc
 Silicon Integrated System Corporation
-Silverback ltd.
+Silverback Ltd.
 Stefan Reinauer
+Stefan Tauner
 Steve Magnani
+Steve Shenton
 ST Microelectronics
 SUSE LINUX AG
 Sven Schnelle
 Syed Mohammed Khasim
+System76
 Texas Instruments
+The Android Open Source Project
 The ChromiumOS Authors
 The Linux Foundation
+The Regents of the University of California
 Thomas Winischhofer
 Timothy Pearson
 Tobias Diedrich
+Tristan Corrick
 Tungsten Graphics, Inc.
 Tyan Computer Corp.
 ucRobotics Inc.
 University of Heidelberg
 Uwe Hermann
 VIA Technologies, Inc
+Vikram Narayanan
 Vipin Kumar
 Vladimir Serbinenko
+Vlado Cibic
 Wang Qing Pei
 Ward Vandewege
+Wilbert Duijvenvoorde
 Win Enterprises
+Wiwynn Corp.
 Wolfgang Denk
+YADRO
+Yann Collet
 Yinghai Lu
-
-
-
-# Directories transferred
-src/acpi
-src/arch
-src/commonlib
-src/console
-src/cpu
-src/device
-src/drivers
-src/superio
+Zachary Yedidia

@@ -1,5 +1,8 @@
 chip soc/intel/skylake
 
+	# IGD Displays
+	register "gfx" = "GMA_STATIC_DISPLAYS(0)"
+
 	# Deep Sx states
 	register "deep_s3_enable_ac" = "0"
 	register "deep_s3_enable_dc" = "1"
@@ -401,6 +404,7 @@ chip soc/intel/skylake
 		end # I2C #2
 		device pci 15.3 on
 			chip drivers/generic/max98357a
+				register "hid" = ""MX98357A""
 				register "sdmode_gpio" =  "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_A23)"
 				register "sdmode_delay" = "5"
 				device generic 0 on end

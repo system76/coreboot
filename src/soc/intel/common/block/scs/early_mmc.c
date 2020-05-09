@@ -1,19 +1,7 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2018 Intel Corporation.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
-#include <arch/acpi.h>
+#include <acpi/acpi.h>
 #include <cbmem.h>
 #include <commonlib/storage/sd_mmc.h>
 #include <commonlib/sd_mmc_ctrlr.h>
@@ -44,14 +32,14 @@ static void enable_mmc_controller_bar(void)
 {
 	pci_write_config32(PCH_DEV_EMMC, PCI_BASE_ADDRESS_0,
 				PRERAM_MMC_BASE_ADDRESS);
-	pci_write_config32(PCH_DEV_EMMC, PCI_COMMAND,
+	pci_write_config16(PCH_DEV_EMMC, PCI_COMMAND,
 				PCI_COMMAND_MASTER | PCI_COMMAND_MEMORY);
 }
 
 static void disable_mmc_controller_bar(void)
 {
 	pci_write_config32(PCH_DEV_EMMC, PCI_BASE_ADDRESS_0, 0);
-	pci_write_config32(PCH_DEV_EMMC, PCI_COMMAND,
+	pci_write_config16(PCH_DEV_EMMC, PCI_COMMAND,
 				~(PCI_COMMAND_MASTER | PCI_COMMAND_MEMORY));
 }
 

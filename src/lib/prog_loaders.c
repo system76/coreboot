@@ -1,18 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright 2015 Google Inc.
- * Copyright (C) 2018-2019 Eltan B.V.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 
 #include <stdlib.h>
@@ -170,10 +157,6 @@ fail:
 static struct prog global_payload =
 	PROG_INIT(PROG_PAYLOAD, CONFIG_CBFS_PREFIX "/payload");
 
-void __weak mirror_payload(struct prog *payload)
-{
-}
-
 void payload_load(void)
 {
 	struct prog *payload = &global_payload;
@@ -182,8 +165,6 @@ void payload_load(void)
 
 	if (prog_locate(payload))
 		goto out;
-
-	mirror_payload(payload);
 
 	switch (prog_cbfs_type(payload)) {
 	case CBFS_TYPE_SELF: /* Simple ELF */

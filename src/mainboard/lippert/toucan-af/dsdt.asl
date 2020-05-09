@@ -1,20 +1,8 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2011 Advanced Micro Devices, Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 /* DefinitionBlock Statement */
-#include <arch/acpi.h>
+#include <acpi/acpi.h>
 DefinitionBlock (
 	"DSDT.AML",           /* Output filename */
 	"DSDT",                 /* Signature */
@@ -57,7 +45,7 @@ DefinitionBlock (
 	 * Processor Object
 	 *
 	 */
-	Scope (\_PR) {		/* define processor scope */
+	Scope (\_SB) {		/* define processor scope */
 		Device (C000) {
 		Name (_HID, "ACPI0007")
 		Name (_UID, 0)
@@ -74,7 +62,7 @@ DefinitionBlock (
 		Name (_HID, "ACPI0007")
 		Name (_UID, 3)
 		}
-	} /* End _PR scope */
+	} /* End _SB scope */
 
 	/* PIC IRQ mapping registers, C00h-C01h. */
 	OperationRegion(PRQM, SystemIO, 0x00000C00, 0x00000002)
@@ -1123,7 +1111,6 @@ DefinitionBlock (
 			External (TOM2)
 			Name(_HID, EISAID("PNP0A08"))	/* PCI Express Root Bridge */
 			Name(_CID, EISAID("PNP0A03"))	/* PCI Root Bridge */
-			Name(_ADR, 0x00180000)	/* Dev# = BSP Dev#, Func# = 0 */
 
 			/* Operating System Capabilities Method */
 			Method (_OSC, 4)

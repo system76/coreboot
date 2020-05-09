@@ -1,23 +1,14 @@
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
+
 /*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2012 The Chromium OS Authors. All rights reserved.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
  * Mailbox EC communication interface for Google Chrome Embedded Controller.
  */
 
 #ifndef _EC_GOOGLE_CHROMEEC_EC_H
 #define _EC_GOOGLE_CHROMEEC_EC_H
 #include <types.h>
+#include <device/device.h>
 #include "ec_commands.h"
 
 /* Fill in base and size of the IO port resources used. */
@@ -34,7 +25,7 @@ uint8_t google_chromeec_get_event(void);
 /* Check if EC supports feature EC_FEATURE_UNIFIED_WAKE_MASKS */
 bool google_chromeec_is_uhepi_supported(void);
 int google_ec_running_ro(void);
-enum ec_current_image google_chromeec_get_current_image(void);
+enum ec_image google_chromeec_get_current_image(void);
 void google_chromeec_init(void);
 int google_chromeec_pd_get_amode(uint16_t svid);
 int google_chromeec_wait_for_displayport(long timeout);
@@ -87,6 +78,15 @@ int google_chromeec_cbi_get_sku_id(uint32_t *id);
 int google_chromeec_cbi_get_fw_config(uint32_t *fw_config);
 int google_chromeec_cbi_get_dram_part_num(char *buf, size_t bufsize);
 int google_chromeec_cbi_get_oem_name(char *buf, size_t bufsize);
+/* version may be stored in CBI as a smaller integer width, but the EC code
+   handles it correctly. */
+int google_chromeec_cbi_get_board_version(uint32_t *version);
+
+#define CROS_SKU_UNKNOWN	0xFFFFFFFF
+#define CROS_SKU_UNPROVISIONED	0x7FFFFFFF
+/* Returns CROS_SKU_UNKNOWN on failure. */
+uint32_t google_chromeec_get_board_sku(void);
+const char *google_chromeec_smbios_system_sku(void);
 
 /* MEC uses 0x800/0x804 as register/index pair, thus an 8-byte resource. */
 #define MEC_EMI_BASE		0x800
@@ -102,11 +102,12 @@ int google_chromeec_set_usb_pd_role(uint8_t port, enum usb_pd_control_role role)
  * Retrieve the charger type and max wattage.
  *
  * @param type      charger type
- * @param max_watts charger max wattage
+ * @param current_max charger max current
+ * @param voltage_max charger max voltage
  * @return non-zero for error, otherwise 0.
  */
 int google_chromeec_get_usb_pd_power_info(enum usb_chg_type *type,
-					  uint32_t *max_watts);
+					  uint16_t *current_max, uint16_t *voltage_max);
 
 /*
  * Set max current and voltage of a dedicated charger.
@@ -328,5 +329,30 @@ struct usb_pd_port_caps {
  */
 int google_chromeec_get_pd_port_caps(int port,
 				struct usb_pd_port_caps *port_caps);
+
+/**
+ * Get the keyboard configuration / layout information from EC
+ *
+ * @param *keybd	If successful, this is filled with EC filled parameters
+ * @return		0 on success, -1 on error
+ */
+int google_chromeec_get_keybd_config(struct ec_response_keybd_config *keybd);
+
+#if CONFIG(HAVE_ACPI_TABLES)
+/**
+ * Writes USB Type-C PD related information to the SSDT
+ *
+ * @param dev			EC device
+ */
+void google_chromeec_fill_ssdt_generator(const struct device *dev);
+
+/**
+ * Returns the ACPI name for the EC device.
+ *
+ * @param dev			EC device
+ */
+const char *google_chromeec_acpi_name(const struct device *dev);
+
+#endif /* HAVE_ACPI_TABLES */
 
 #endif /* _EC_GOOGLE_CHROMEEC_EC_H */

@@ -1,24 +1,12 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2017-2018 Intel Corp.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* This file is part of the coreboot project. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #include <assert.h>
 #include <console/console.h>
 #include <device/mmio.h>
 #include <device/pci.h>
 #include <device/pci_ids.h>
+#include <drivers/intel/gma/i915.h>
 #include <intelblocks/graphics.h>
 #include <soc/pci_devs.h>
 
@@ -31,6 +19,20 @@ __weak void graphics_soc_init(struct device *dev)
 	 * along with pci_dev_init(dev)
 	 */
 	pci_dev_init(dev);
+}
+
+__weak const struct i915_gpu_controller_info *
+intel_igd_get_controller_info(const struct device *device)
+{
+	return NULL;
+}
+
+static void gma_generate_ssdt(const struct device *device)
+{
+	const struct i915_gpu_controller_info *gfx = intel_igd_get_controller_info(device);
+
+	if (gfx)
+		drivers_intel_gma_displays_ssdt_generate(gfx);
 }
 
 static int is_graphics_disabled(struct device *dev)
@@ -119,6 +121,7 @@ static const struct device_operations graphics_ops = {
 	.ops_pci		= &pci_dev_ops_pci,
 #if CONFIG(HAVE_ACPI_TABLES)
 	.write_acpi_tables	= graphics_soc_write_acpi_opregion,
+	.acpi_fill_ssdt		= gma_generate_ssdt,
 #endif
 	.scan_bus		= scan_generic_bus,
 };
@@ -219,13 +222,14 @@ static const unsigned short pci_device_ids[] = {
 	PCI_DEVICE_ID_INTEL_TGL_GT2_ULT,
 	PCI_DEVICE_ID_INTEL_TGL_GT2_ULX,
 	PCI_DEVICE_ID_INTEL_TGL_GT3_ULT,
-	PCI_DEVICE_ID_INTEL_JSL_PRE_PROD_GT0,
 	PCI_DEVICE_ID_INTEL_EHL_GT1_1,
 	PCI_DEVICE_ID_INTEL_EHL_GT2_1,
 	PCI_DEVICE_ID_INTEL_EHL_GT1_2,
 	PCI_DEVICE_ID_INTEL_EHL_GT2_2,
 	PCI_DEVICE_ID_INTEL_EHL_GT1_3,
 	PCI_DEVICE_ID_INTEL_EHL_GT2_3,
+	PCI_DEVICE_ID_INTEL_JSL_GT1,
+	PCI_DEVICE_ID_INTEL_JSL_GT2,
 	0,
 };
 

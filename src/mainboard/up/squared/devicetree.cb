@@ -1,6 +1,24 @@
 chip soc/intel/apollolake
 
+	# Override USB port configuration
+	register "usb_config_override" = "1"
+	# USB 2.0
+	register "usb2_port[0]" = "PORT_EN(OC0)"
+	register "usb2_port[1]" = "PORT_EN(OC1)"
+	register "usb2_port[2]" = "PORT_EN(OC1)"
+	register "usb2_port[3]" = "PORT_EN(OC1)"
+	register "usb2_port[4]" = "PORT_EN(OC1)"
+	register "usb2_port[5]" = "PORT_EN(OC1)"
+	register "usb2_port[6]" = "PORT_EN(OC_SKIP)"
+	register "usb2_port[7]" = "PORT_EN(OC_SKIP)"
+	# USB 3.0
+	register "usb3_port[0]" = "PORT_EN(OC0)"
+
 	register "enable_vtd" = "1"
+
+	# Override eMMC MaxHostSpeed
+	# 0:HS400 (Default) 1:HS200 2:DDR50
+	register "emmc_host_max_speed" = "1"
 
 	device cpu_cluster 0 on
 		device lapic 0 on end

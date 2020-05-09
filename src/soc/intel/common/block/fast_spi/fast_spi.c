@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2017 Intel Corporation.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <device/mmio.h>
 #include <assert.h>
@@ -237,7 +225,7 @@ void fast_spi_cache_bios_region(void)
 
 	/* LOCAL APIC default address is 0xFEE0000, bios_size over 16MB will
 	 * cause memory type conflict when setting memory type to write
-	 * protection, so limit the cached bios region to be no more than 16MB.
+	 * protection, so limit the cached BIOS region to be no more than 16MB.
 	 * */
 	bios_size = MIN(bios_size, 16 * MiB);
 	if (bios_size <= 0)
@@ -272,22 +260,20 @@ void fast_spi_early_init(uintptr_t spi_base_address)
 #else
 	struct device *dev = PCH_DEV_SPI;
 #endif
-	uint8_t pcireg;
+	uint16_t pcireg;
 
 	/* Assign Resources to SPI Controller */
 	/* Clear BIT 1-2 SPI Command Register */
-	pcireg = pci_read_config8(dev, PCI_COMMAND);
+	pcireg = pci_read_config16(dev, PCI_COMMAND);
 	pcireg &= ~(PCI_COMMAND_MASTER | PCI_COMMAND_MEMORY);
-	pci_write_config8(dev, PCI_COMMAND, pcireg);
+	pci_write_config16(dev, PCI_COMMAND, pcireg);
 
 	/* Program Temporary BAR for SPI */
 	pci_write_config32(dev, PCI_BASE_ADDRESS_0,
 		spi_base_address | PCI_BASE_ADDRESS_SPACE_MEMORY);
 
 	/* Enable Bus Master and MMIO Space */
-	pcireg = pci_read_config8(dev, PCI_COMMAND);
-	pcireg |= PCI_COMMAND_MASTER | PCI_COMMAND_MEMORY;
-	pci_write_config8(dev, PCI_COMMAND, pcireg);
+	pci_or_config16(dev, PCI_COMMAND, PCI_COMMAND_MASTER | PCI_COMMAND_MEMORY);
 
 	/* Initialize SPI to allow BIOS to write/erase on flash. */
 	fast_spi_init();

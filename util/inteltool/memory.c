@@ -227,6 +227,8 @@ int print_mchbar(struct pci_dev *nb, struct pci_access *pacc, const char *dump_s
 	case PCI_DEVICE_ID_INTEL_CORE_7TH_GEN_Y:
 	case PCI_DEVICE_ID_INTEL_CORE_7TH_GEN_U_Q:
 	case PCI_DEVICE_ID_INTEL_CORE_7TH_GEN_E3:
+	case PCI_DEVICE_ID_INTEL_CORE_8TH_GEN_U_1:
+	case PCI_DEVICE_ID_INTEL_CORE_8TH_GEN_U_2:
 		mchbar_phys = pci_read_long(nb, 0x48);
 		mchbar_phys |= ((uint64_t)pci_read_long(nb, 0x4c)) << 32;
 		mchbar_phys &= 0x0000007fffff8000UL; /* 38:15 */
@@ -259,8 +261,8 @@ int print_mchbar(struct pci_dev *nb, struct pci_access *pacc, const char *dump_s
 		printf("MCHBAR = 0x%08" PRIx64 " (MEM)\n\n", mchbar_phys);
 
 	for (i = 0; i < size; i += 4) {
-		if (*(uint32_t *)(mchbar + i))
-			printf("0x%04x: 0x%08"PRIx32"\n", i, *(uint32_t *)(mchbar+i));
+		if (read32(mchbar + i))
+			printf("0x%04x: 0x%08"PRIx32"\n", i, read32(mchbar+i));
 	}
 
 	switch (nb->device_id)

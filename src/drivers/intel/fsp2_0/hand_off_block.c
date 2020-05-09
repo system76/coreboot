@@ -1,16 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* This file is part of the coreboot project. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #include <device/mmio.h>
 #include <cbmem.h>
@@ -233,7 +222,6 @@ static void display_fsp_version_info_hob(const void *hob, size_t size)
 			 (fvih->Count * sizeof (FIRMWARE_VERSION_INFO)));
 	size -= sizeof(SMBIOS_STRUCTURE);
 
-	printk(BIOS_DEBUG, "Display FSP Version Info HOB\n");
 	for (index = 0; index < fvih->Count; index++) {
 		cnt = strlen(str_ptr);
 
@@ -282,6 +270,7 @@ void fsp_display_fvi_version_hob(void)
 	if (!hob)
 		return;
 
+	printk(BIOS_DEBUG, "Display FSP Version Info HOB\n");
 	for (; hob->type != HOB_TYPE_END_OF_HOB_LIST;
 			hob = fsp_next_hob(hob)) {
 		if (hob->type != HOB_TYPE_GUID_EXTENSION)

@@ -1,19 +1,7 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2011 Sven Schnelle <svens@stackframe.org>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
-#include <arch/acpi.h>
+#include <acpi/acpi.h>
 #include <console/console.h>
 #include <device/device.h>
 #include <device/pnp.h>
@@ -228,7 +216,7 @@ struct device_operations h8_dev_ops = {
 	.get_smbios_strings = h8_smbios_strings,
 #endif
 #if CONFIG(HAVE_ACPI_TABLES)
-	.acpi_fill_ssdt_generator = h8_ssdt_generator,
+	.acpi_fill_ssdt = h8_ssdt_generator,
 	.acpi_name = h8_acpi_name,
 #endif
 	.init = h8_init,

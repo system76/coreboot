@@ -1,19 +1,7 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2019 Intel Corporation
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
-#include <arch/acpi.h>
+#include <acpi/acpi.h>
 #include <baseboard/ec.h>
 #include <baseboard/gpio.h>
 
@@ -26,7 +14,6 @@ DefinitionBlock(
 	0x20110725	/* OEM revision */
 )
 {
-	/* Some generic macros */
 	#include <soc/intel/tigerlake/acpi/platform.asl>
 
 	/* global NVS and variables */
@@ -40,6 +27,7 @@ DefinitionBlock(
 		{
 			#include <soc/intel/common/block/acpi/acpi/northbridge.asl>
 			#include <soc/intel/tigerlake/acpi/southbridge.asl>
+			#include <soc/intel/tigerlake/acpi/tcss.asl>
 		}
 	}
 
@@ -59,7 +47,6 @@ DefinitionBlock(
 		}
 #endif
 
-	/* Chipset specific sleep states */
 	#include <southbridge/intel/common/acpi/sleepstates.asl>
 
 	/* Mainboard specific */

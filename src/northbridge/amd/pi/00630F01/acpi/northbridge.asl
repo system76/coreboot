@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2013 Sage Electronic Engineering, LLC
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 /* Note: Only need HID on Primary Bus */
 External (TOM1)
@@ -63,3 +51,8 @@ Device(PBR3) {
 		Return (PS3)				/* PIC Mode */
 	} /* end _PRT */
 } /* end PBR3 */
+
+Device(K10M) {
+	Name (_ADR, 0x00180003)
+	#include <soc/amd/common/acpi/thermal_zone.asl>
+}

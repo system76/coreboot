@@ -1,16 +1,6 @@
+/* This file is part of the coreboot project. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 /*
- * This file is part of the coreboot project.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
  * Secure Digital (SD) Host Controller interface specific code
  */
 
@@ -27,7 +17,7 @@
 #include <commonlib/stdlib.h>
 
 #define DMA_AVAILABLE	((CONFIG(SDHCI_ADMA_IN_BOOTBLOCK) && ENV_BOOTBLOCK) \
-			|| (CONFIG(SDHCI_ADMA_IN_VERSTAGE) && ENV_VERSTAGE) \
+			|| (CONFIG(SDHCI_ADMA_IN_VERSTAGE) && ENV_SEPARATE_VERSTAGE) \
 			|| (CONFIG(SDHCI_ADMA_IN_ROMSTAGE) && ENV_ROMSTAGE) \
 			|| ENV_POSTCAR || ENV_RAMSTAGE)
 

@@ -1,7 +1,6 @@
 #
 # This file is part of the coreboot project.
 #
-# Copyright (C) 2012 Advanced Micro Devices, Inc.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -12,6 +11,8 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
+
+bootblock-y += bootblock.c
 
 romstage-y += buildOpts.c
 romstage-y += BiosCallOuts.c

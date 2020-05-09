@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2016 Kyösti Mälkki
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include "Porting.h"
 #include "AGESA.h"
@@ -20,6 +8,7 @@
 #include <device/device.h>
 #include <northbridge/amd/agesa/state_machine.h>
 #include <northbridge/amd/agesa/agesa_helper.h>
+#include <northbridge/amd/pi/nb_common.h>
 
 void platform_BeforeInitReset(struct sysinfo *cb, AMD_RESET_PARAMS *Reset)
 {
@@ -64,7 +53,7 @@ void platform_BeforeInitMid(struct sysinfo *cb, AMD_MID_PARAMS *Mid)
 
 	/* 0 iGpuVgaAdapter, 1 iGpuVgaNonAdapter; */
 	Mid->GnbMidConfiguration.iGpuVgaMode = 0;
-	Mid->GnbMidConfiguration.GnbIoapicAddress = 0xFEC20000;
+	Mid->GnbMidConfiguration.GnbIoapicAddress = IO_APIC2_ADDR;
 }
 
 void platform_BeforeInitLate(struct sysinfo *cb, AMD_LATE_PARAMS *Late)

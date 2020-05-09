@@ -1,16 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; version 2 of
- * the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #ifndef __DEVICE_MMIO_H__
 #define __DEVICE_MMIO_H__
@@ -142,10 +131,10 @@ static inline void buffer_to_fifo32(void *buffer, size_t size, void *fifo,
 #define DEFINE_BIT(name, bit) DEFINE_BITFIELD(name, bit, bit)
 
 #define _BF_MASK(name, value) \
-	(((1 << name##_BITFIELD_SIZE) - 1) << name##_BITFIELD_SHIFT)
+	((u32)((1ULL << name##_BITFIELD_SIZE) - 1) << name##_BITFIELD_SHIFT)
 
 #define _BF_VALUE(name, value) \
-	((value) << name##_BITFIELD_SHIFT)
+	(((u32)(value) << name##_BITFIELD_SHIFT) & _BF_MASK(name, 0))
 
 #define _BF_APPLY1(op, name, value, ...) (op(name, value))
 #define _BF_APPLY2(op, name, value, ...) ((op(name, value)) | \

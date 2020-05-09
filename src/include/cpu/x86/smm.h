@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2008-2009 coresystems GmbH
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #ifndef CPU_X86_SMM_H
 #define CPU_X86_SMM_H
@@ -37,6 +25,7 @@
 #define APM_CNT_GNVS_UPDATE	0xea
 #define APM_CNT_FINALIZE	0xcb
 #define APM_CNT_LEGACY		0xcc
+#define APM_CNT_SMMINFO		0xec
 #define APM_CNT_SMMSTORE	0xed
 #define APM_CNT_ELOG_GSMI	0xef
 #define APM_STS		0xb3
@@ -63,6 +52,7 @@ extern unsigned char _binary_smm_end[];
 
 struct smm_runtime {
 	u32 smbase;
+	u32 smm_size;
 	u32 save_state_size;
 	u32 num_cpus;
 	/* STM's 32bit entry into SMI handler */

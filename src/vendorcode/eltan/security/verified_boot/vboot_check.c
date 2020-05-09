@@ -1,26 +1,13 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2016 Intel Corp.
- * Copyright (C) 2017-2019 Eltan B.V.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
-
-#define NEED_VB20_INTERNALS
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <boot_device.h>
 #include <bootmem.h>
+#include <bootmode.h>
 #include <cbfs.h>
 #include <vboot_check.h>
 #include <vboot_common.h>
+#include <vb2_internals_please_do_not_use.h>
 
 #define RSA_PUBLICKEY_FILE_NAME "vboot_public_key.bin"
 
@@ -39,7 +26,7 @@ int verified_boot_check_manifest(void)
 	struct vb2_kernel_preamble *pre;
 	static struct vb2_shared_data *sd;
 	size_t size;
-	uint8_t wb_buffer[2800];
+	uint8_t wb_buffer[3000];
 
 	if (vb2api_init(&wb_buffer, sizeof(wb_buffer), &ctx)) {
 		goto fail;
@@ -94,7 +81,7 @@ int verified_boot_check_manifest(void)
 					DIGEST_SIZE;
 	pre->body_signature.sig_offset = sizeof(struct vb2_signature) +
 					 pre->body_signature.data_size;
-	pre->body_signature.sig_size =  size - pre->body_signature.data_size;
+	pre->body_signature.sig_size = size - pre->body_signature.data_size;
 	sd->workbuf_used += size;
 	memcpy((void *)((void *)&pre->body_signature + (long)sizeof(struct vb2_signature)),
 	       (uint8_t *)CONFIG_VENDORCODE_ELTAN_OEM_MANIFEST_LOC, size);
@@ -159,7 +146,8 @@ static void verified_boot_check_buffer(const char *name, void *start, size_t siz
 
 	if (start && size) {
 
-		status = vb2_digest_buffer((const uint8_t *)start, size, HASH_ALG, digest, DIGEST_SIZE);
+		status = vb2_digest_buffer((const uint8_t *)start, size, HASH_ALG, digest,
+					   DIGEST_SIZE);
 		if ((CONFIG(VENDORCODE_ELTAN_VBOOT) && memcmp((void *)(
 		    (uint8_t *)CONFIG_VENDORCODE_ELTAN_OEM_MANIFEST_LOC +
 		    sizeof(digest) * hash_index), digest, sizeof(digest))) || status) {
@@ -293,7 +281,7 @@ void verified_boot_early_check(void)
 
 	if (CONFIG(VENDORCODE_ELTAN_MBOOT)) {
 		printk(BIOS_DEBUG, "mb_measure returned 0x%x\n",
-		mb_measure(vboot_platform_is_resuming()));
+		mb_measure(platform_is_resuming()));
 	}
 
 	printk(BIOS_SPEW, "%s: process early verify list\n", __func__);

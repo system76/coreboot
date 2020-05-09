@@ -1,15 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #ifndef __TIMESTAMP_SERIALIZED_H__
 #define __TIMESTAMP_SERIALIZED_H__
@@ -156,8 +146,8 @@ static const struct timestamp_id_to_name {
 	/* Marker to report base_time. */
 	{ 0,			"1st timestamp" },
 	{ TS_START_ROMSTAGE,	"start of romstage" },
-	{ TS_BEFORE_INITRAM,	"before ram initialization" },
-	{ TS_AFTER_INITRAM,	"after ram initialization" },
+	{ TS_BEFORE_INITRAM,	"before RAM initialization" },
+	{ TS_AFTER_INITRAM,	"after RAM initialization" },
 	{ TS_END_ROMSTAGE,	"end of romstage" },
 	{ TS_START_VBOOT,	"start of verified boot" },
 	{ TS_END_VBOOT,		"end of verified boot" },

@@ -1,20 +1,11 @@
-/*
- * This file is part of the coreboot project.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <bootstate.h>
 #include <boot/coreboot_tables.h>
 #include <console/console.h>
 #include <cpu/cpu.h>
+#include <post.h>
 #include <string.h>
 #include <cpu/x86/mp.h>
 #include <cpu/x86/lapic.h>
@@ -221,7 +212,7 @@ static void set_cpu_ops(struct device *cpu)
 	cpu->ops = driver ? driver->ops : NULL;
 }
 
-/* Keep track of default apic ids for SMM. */
+/* Keep track of default APIC ids for SMM. */
 static int cpus_default_apic_id[CONFIG_MAX_CPUS];
 
 /*
@@ -362,4 +353,9 @@ int cpu_index(void)
 			return i;
 	}
 	return -1;
+}
+
+uintptr_t cpu_get_lapic_addr(void)
+{
+	return LOCAL_APIC_ADDR;
 }

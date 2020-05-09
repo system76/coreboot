@@ -2,6 +2,9 @@ chip soc/intel/cannonlake
 	# Enable heci communication
 	register "HeciEnabled" = "1"
 
+	# Auto-switch between X4 NVMe and X2 NVMe.
+	register "TetonGlacierMode" = "1"
+
 	register "SerialIoDevMode" = "{
 		[PchSerialIoIndexI2C0]  = PchSerialIoDisabled,
 		[PchSerialIoIndexI2C1]  = PchSerialIoDisabled,
@@ -18,7 +21,17 @@ chip soc/intel/cannonlake
 	}"
 
 	# USB configuration
-	register "usb2_ports[0]" = "USB2_PORT_MID(OC2)"        # Type-A Port 2
+	# NOTE: This only applies to Puff,
+	# usb2_ports[1] and usb2_ports[3] were swapped on
+	# reference schematics after Puff has been built.
+	register "usb2_ports[0]" = "{
+		.enable = 1,
+		.ocpin = OC2,
+		.tx_bias = USB2_BIAS_0MV,
+		.tx_emp_enable = USB2_PRE_EMP_ON,
+		.pre_emp_bias  = USB2_BIAS_11P25MV,
+		.pre_emp_bit   = USB2_HALF_BIT_PRE_EMP,
+	}" # Type-A Port 2
 	register "usb2_ports[1]" = "USB2_PORT_TYPE_C(OC_SKIP)" # Type-C Port
 	register "usb2_ports[2]" = "{
 		.enable = 1,
@@ -158,14 +171,17 @@ chip soc/intel/cannonlake
 		},
 		.i2c[4] = {
 			.speed = I2C_SPEED_FAST,
-			.rise_time_ns = 0,
-			.fall_time_ns = 0,
+			.rise_time_ns = 60,
+			.fall_time_ns = 60,
 		},
 	}"
 
 	# PCIe port 7 for LAN
 	register "PcieRpEnable[6]" = "1"
 	register "PcieRpLtrEnable[6]" = "1"
+	# PCIe port 11 (x2) for NVMe hybrid storage devices
+	register "PcieRpEnable[10]" = "1"
+	register "PcieRpLtrEnable[10]" = "1"
 	# Uses CLK SRC 0
 	register "PcieClkSrcUsage[0]" = "6"
 	register "PcieClkSrcClkReq[0]" = "0"
@@ -185,31 +201,37 @@ chip soc/intel/cannonlake
 					chip drivers/usb/acpi
 						register "desc" = ""USB2 Type-A Front Left""
 						register "type" = "UPC_TYPE_A"
+						register "group" = "ACPI_PLD_GROUP(0, 0)"
 						device usb 2.0 on end
 					end
 					chip drivers/usb/acpi
 						register "desc" = ""USB2 Type-C Port Rear""
 						register "type" = "UPC_TYPE_C_USB2_SS_SWITCH"
+						register "group" = "ACPI_PLD_GROUP(1, 3)"
 						device usb 2.1 on end
 					end
 					chip drivers/usb/acpi
 						register "desc" = ""USB2 Type-A Front Right""
 						register "type" = "UPC_TYPE_A"
+						register "group" = "ACPI_PLD_GROUP(0, 1)"
 						device usb 2.2 on end
 					end
 					chip drivers/usb/acpi
 						register "desc" = ""USB2 Type-A Rear Right""
 						register "type" = "UPC_TYPE_A"
+						register "group" = "ACPI_PLD_GROUP(1, 2)"
 						device usb 2.3 on end
 					end
 					chip drivers/usb/acpi
 						register "desc" = ""USB2 Type-A Rear Middle""
 						register "type" = "UPC_TYPE_A"
+						register "group" = "ACPI_PLD_GROUP(1, 1)"
 						device usb 2.4 on end
 					end
 					chip drivers/usb/acpi
 						register "desc" = ""USB2 Type-A Rear Left""
 						register "type" = "UPC_TYPE_A"
+						register "group" = "ACPI_PLD_GROUP(1, 0)"
 						device usb 2.5 on end
 					end
 					chip drivers/usb/acpi
@@ -218,31 +240,37 @@ chip soc/intel/cannonlake
 					chip drivers/usb/acpi
 						register "desc" = ""USB3 Type-A Front Left""
 						register "type" = "UPC_TYPE_USB3_A"
+						register "group" = "ACPI_PLD_GROUP(0, 0)"
 						device usb 3.0 on end
 					end
 					chip drivers/usb/acpi
 						register "desc" = ""USB3 Type-A Front Right""
 						register "type" = "UPC_TYPE_USB3_A"
+						register "group" = "ACPI_PLD_GROUP(0, 1)"
 						device usb 3.1 on end
 					end
 					chip drivers/usb/acpi
 						register "desc" = ""USB3 Type-A Rear Right""
 						register "type" = "UPC_TYPE_USB3_A"
+						register "group" = "ACPI_PLD_GROUP(1, 2)"
 						device usb 3.2 on end
 					end
 					chip drivers/usb/acpi
 						register "desc" = ""USB3 Type-C Rear""
 						register "type" = "UPC_TYPE_C_USB2_SS_SWITCH"
+						register "group" = "ACPI_PLD_GROUP(1, 3)"
 						device usb 3.3 on end
 					end
 					chip drivers/usb/acpi
 						register "desc" = ""USB3 Type-A Rear Left""
 						register "type" = "UPC_TYPE_USB3_A"
+						register "group" = "ACPI_PLD_GROUP(1, 0)"
 						device usb 3.4 on end
 					end
 					chip drivers/usb/acpi
 						register "desc" = ""USB3 Type-A Rear Middle""
 						register "type" = "UPC_TYPE_USB3_A"
+						register "group" = "ACPI_PLD_GROUP(1, 1)"
 						device usb 3.5 on end
 					end
 				end
@@ -277,10 +305,12 @@ chip soc/intel/cannonlake
 				register "stop_delay_ms" = "12" # NIC needs time to quiesce
 				register "stop_off_delay_ms" = "1"
 				register "has_power_resource" = "1"
+				register "device_index" = "0"
 				device pci 00.0 on end
 			end
 		end # FSP requires func0 be enabled.
 		device pci 1c.6 on  end # RTL8111H Ethernet NIC (becomes RP1).
+		device pci 1d.2 on end # PCI Express Port 11 (X2 NVMe)
 		device pci 1e.3 off end # GSPI #1
 	end
 

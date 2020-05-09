@@ -78,7 +78,7 @@ static void dump_qh(ehci_qh_t *cur)
 	usb_debug("+===================================================+\n");
 	usb_debug("| ############# EHCI QH at [0x%08lx] ########### |\n", virt_to_phys(cur));
 	usb_debug("+---------------------------------------------------+\n");
-	usb_debug("| Horizonal Link Pointer         [0x%08lx]       |\n", cur->horiz_link_ptr);
+	usb_debug("| Horizontal Link Pointer        [0x%08lx]       |\n", cur->horiz_link_ptr);
 	usb_debug("+------------------[ 0x%08lx ]-------------------+\n", cur->epchar);
 	usb_debug("|        | Maximum Packet Length           | [%04ld] |\n", ((cur->epchar & (0x7ffUL << 16)) >> 16));
 	usb_debug("|        | Device Address                  |    [%ld] |\n", cur->epchar & 0x7F);
@@ -133,7 +133,7 @@ static void ehci_reset (hci_t *controller)
 {
 	short count = 0;
 	ehci_stop(controller);
-	/* wait 10 ms just to be shure */
+	/* wait 10 ms just to be sure */
 	mdelay(10);
 	if (EHCI_INST(controller)->operation->usbsts & HC_OP_HC_HALTED) {
 		EHCI_INST(controller)->operation->usbcmd = HC_OP_HC_RESET;
@@ -215,7 +215,7 @@ static int fill_td(qtd_t *td, void* data, int datalen)
 		total_len += page_len;
 
 		while (page_no < 5) {
-			/* we have a continguous mapping between virtual and physical memory */
+			/* we have a contiguous mapping between virtual and physical memory */
 			page += 4096;
 
 			td->bufptrs[page_no++] = page;
@@ -291,7 +291,7 @@ static int ehci_set_async_schedule(ehci_t *ehcic, int enable)
 
 	/* Memory barrier to ensure that all memory accesses before we set the
 	 * async schedule are complete. It was observed especially in the case of
-	 * arm64, that netboot and usb stuff resulted in lots of errors possibly
+	 * arm64, that netboot and USB stuff resulted in lots of errors possibly
 	 * due to CPU reordering. Hence, enforcing strict CPU ordering.
 	 */
 	mb();
@@ -860,9 +860,9 @@ ehci_pci_init (pcidev_t addr)
 	hci_t *controller;
 	u32 reg_base;
 
-	u32 pci_command = pci_read_config32(addr, PCI_COMMAND);
+	u16 pci_command = pci_read_config16(addr, PCI_COMMAND);
 	pci_command = (pci_command | PCI_COMMAND_MEMORY) & ~PCI_COMMAND_IO ;
-	pci_write_config32(addr, PCI_COMMAND, pci_command);
+	pci_write_config16(addr, PCI_COMMAND, pci_command);
 
 	reg_base = pci_read_config32 (addr, USBBASE);
 

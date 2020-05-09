@@ -1,25 +1,11 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2015-2016 Intel Corp.
- * (Written by Lance Zhao <lijian.zhao@intel.com> for Intel Corp.)
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* This file is part of the coreboot project. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #ifndef _SOC_APOLLOLAKE_PM_H_
 #define _SOC_APOLLOLAKE_PM_H_
 
 #include <stdint.h>
-#include <arch/acpi.h>
+#include <acpi/acpi.h>
 #include <soc/gpe.h>
 #include <soc/iomap.h>
 
@@ -78,7 +64,7 @@
 #endif
 #define   USB_EN	(1 << SMI_XHCI) /* Legacy USB2 SMI logic */
 #define   PERIODIC_EN	(1 << SMI_PERIODIC) /* SMI on PERIODIC_STS in SMI_STS */
-#define   TCO_EN	(1 << SMI_TCO) /* Enable TCO Logic (BIOSWE et al) */
+#define   TCO_SMI_EN	(1 << SMI_TCO) /* Enable TCO Logic (BIOSWE et al) */
 #define   GPIO_EN	(1 << SMI_GPIO) /* Enable GPIO SMI */
 #define   BIOS_RLS	(1 << SMI_BIOS_RLS) /* asserts SCI on bit set */
 /* start software smi timer on bit set */
@@ -99,35 +85,36 @@
  *  - on eSPI events (does nothing on LPC systems)
  * No SMIs:
  *  - on microcontroller writes (io 0x62/0x66)
- *  - on TCO events
+ *  - on TCO events, unless enabled in common code
  */
 #define   ENABLE_SMI_PARAMS \
 	(ESPI_SMI_EN | APMC_EN | SLP_SMI_EN | GBL_SMI_EN | EOS | GPIO_EN)
 
 #define SMI_STS			0x44
+#define  SMI_STS_BITS		32
 /* Bits for SMI status */
 #define  ESPI_SMI_STS_BIT	28
-#define  PMC_OCP_SMI_STS	27
-#define  SPI_SMI_STS		26
-#define  SPI_SSMI_STS		25
-#define  SCC2_SMI_STS		21
-#define  PCIE_SMI_STS		20
-#define  SCS_SMI_STS		19
-#define  HSMBUS_SMI_STS		18
-#define  XHCI_SMI_STS		17
-#define  SMBUS_SMI_STS		16
-#define  SERIRQ_SMI_STS		15
-#define  PERIODIC_SMI_STS	14
-#define  TCO_SMI_STS		13
-#define  MC_SMI_STS		12
-#define  GPIO_UNLOCK_SMI_STS	11
-#define  GPIO_SMI_STS		10
-#define  FAKE_PM1_SMI_STS	8
-#define  SWSMI_TMR_SMI_STS	6
-#define  APM_SMI_STS		5
-#define  SLP_SMI_STS		4
-#define  LEGACY_USB_SMI_STS	3
-#define  BIOS_SMI_STS		2
+#define  PMC_OCP_SMI_STS_BIT	27
+#define  SPI_SMI_STS_BIT	26
+#define  SPI_SSMI_STS_BIT	25
+#define  SCC2_SMI_STS_BIT	21
+#define  PCI_EXP_SMI_STS_BIT	20
+#define  SCS_SMI_STS_BIT	19
+#define  HSMBUS_SMI_STS_BIT	18
+#define  XHCI_SMI_STS_BIT	17
+#define  SMBUS_SMI_STS_BIT	16
+#define  SERIRQ_SMI_STS_BIT	15
+#define  PERIODIC_STS_BIT	14
+#define  TCO_STS_BIT		13
+#define  MC_SMI_STS_BIT		12
+#define  GPIO_UNLOCK_SMI_STS_BIT	11
+#define  GPIO_STS_BIT		10
+#define  PM1_STS_BIT		8
+#define  SWSMI_TMR_STS_BIT	6
+#define  APM_STS_BIT		5
+#define  SMI_ON_SLP_EN_STS_BIT	4
+#define  LEGACY_USB_STS_BIT	3
+#define  BIOS_STS_BIT		2
 
 #define GPE_CNTL		0x50
 #define DEVACT_STS		0x4c

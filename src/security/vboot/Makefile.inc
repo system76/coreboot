@@ -1,8 +1,6 @@
 ##
 ## This file is part of the coreboot project.
 ##
-## Copyright (C) 2014 The ChromiumOS Authors.  All rights reserved.
-## Copyright (C) 2018 Siemens AG
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -41,6 +39,7 @@ $$(VBOOT_LIB_$(1)): $(obj)/config.h
 	+FIRMWARE_ARCH=$$(ARCHDIR-$$(ARCH-$(1)-y)) \
 	CC="$$(CC_$(1))" \
 	CFLAGS="$$(VBOOT_CFLAGS_$(1))" VBOOT2="y" \
+	EC_EFS="$(CONFIG_VBOOT_EC_EFS)" \
 	$(MAKE) -C $(VBOOT_SOURCE) \
 		BUILD=$$(abspath $$(dir $$(VBOOT_LIB_$(1)))) \
 		V=$(V) \
@@ -106,31 +105,24 @@ romstage-y += vboot_common.c
 ramstage-y += vboot_common.c
 postcar-y += vboot_common.c
 
-ifeq ($(CONFIG_VBOOT_MEASURED_BOOT),y)
-bootblock-y += vboot_crtm.c
-verstage-y += vboot_crtm.c
-romstage-y += vboot_crtm.c
-ramstage-y += vboot_crtm.c
-postcar-y += vboot_crtm.c
-endif
-
 bootblock-y += common.c
 verstage-y += vboot_logic.c
 verstage-y += common.c
 verstage-$(CONFIG_VBOOT_SEPARATE_VERSTAGE) += verstage.c
 ifeq (${CONFIG_VBOOT_MOCK_SECDATA},y)
 verstage-y += secdata_mock.c
-romstage-$(CONFIG_VBOOT_SEPARATE_VERSTAGE) += secdata_mock.c
+romstage-y += secdata_mock.c
+ramstage-y += secdata_mock.c
 else
 verstage-y += secdata_tpm.c
-romstage-$(CONFIG_VBOOT_SEPARATE_VERSTAGE) += secdata_tpm.c
+romstage-y += secdata_tpm.c
+ramstage-y += secdata_tpm.c
 endif
 
 ifneq ($(CONFIG_TPM1)$(CONFIG_TPM2),)
 verstage-y += tpm_common.c
 endif
 
-romstage-y += vboot_logic.c
 romstage-y += common.c
 
 ramstage-y += common.c
@@ -226,7 +218,7 @@ GBB_FLAGS := $(call int-add, \
 	$(call bool-to-mask,$(CONFIG_GBB_FLAG_DISABLE_FW_ROLLBACK_CHECK),0x20) \
 	$(call bool-to-mask,$(CONFIG_GBB_FLAG_ENTER_TRIGGERS_TONORM),0x40) \
 	$(call bool-to-mask,$(CONFIG_GBB_FLAG_FORCE_DEV_BOOT_LEGACY),0x80) \
-	$(call bool-to-mask,$(CONFIG_GBB_FLAG_FAFT_KEY_OVERIDE),0x100) \
+	$(call bool-to-mask,$(CONFIG_GBB_FLAG_RUNNING_FAFT),0x100) \
 	$(call bool-to-mask,$(CONFIG_GBB_FLAG_DISABLE_EC_SOFTWARE_SYNC),0x200) \
 	$(call bool-to-mask,$(CONFIG_GBB_FLAG_DEFAULT_DEV_BOOT_LEGACY),0x400) \
 	$(call bool-to-mask,$(CONFIG_GBB_FLAG_DISABLE_PD_SOFTWARE_SYNC),0x800) \

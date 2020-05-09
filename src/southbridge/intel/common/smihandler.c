@@ -1,23 +1,10 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2008-2009 coresystems GmbH
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; version 2 of
- * the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <types.h>
 #include <arch/io.h>
 #include <device/pci_ops.h>
-#include <arch/acpi.h>
+#include <acpi/acpi.h>
 #include <console/console.h>
 #include <cpu/x86/cache.h>
 #include <device/pci_def.h>
@@ -74,7 +61,7 @@ static void busmaster_disable_on_bus(int bus)
 
 	for (slot = 0; slot < 0x20; slot++) {
 		for (func = 0; func < 8; func++) {
-			u32 reg32;
+			u16 reg16;
 			pci_devfn_t dev = PCI_DEV(bus, slot, func);
 
 			val = pci_read_config32(dev, PCI_VENDOR_ID);
@@ -84,9 +71,9 @@ static void busmaster_disable_on_bus(int bus)
 				continue;
 
 			/* Disable Bus Mastering for this one device */
-			reg32 = pci_read_config32(dev, PCI_COMMAND);
-			reg32 &= ~PCI_COMMAND_MASTER;
-			pci_write_config32(dev, PCI_COMMAND, reg32);
+			reg16 = pci_read_config16(dev, PCI_COMMAND);
+			reg16 &= ~PCI_COMMAND_MASTER;
+			pci_write_config16(dev, PCI_COMMAND, reg16);
 
 			/* If this is a bridge, then follow it. */
 			hdr = pci_read_config8(dev, PCI_HEADER_TYPE);

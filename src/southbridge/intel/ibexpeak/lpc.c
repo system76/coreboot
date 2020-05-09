@@ -1,19 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2008-2009 coresystems GmbH
- * Copyright (C) 2013 Vladimir Serbinenko
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; version 2 of
- * the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <console/console.h>
 #include <device/device.h>
@@ -27,10 +13,9 @@
 #include <device/mmio.h>
 #include <device/pci_ops.h>
 #include <arch/ioapic.h>
-#include <arch/acpi.h>
+#include <acpi/acpi.h>
 #include <elog.h>
-#include <arch/acpigen.h>
-#include <drivers/intel/gma/i915.h>
+#include <acpi/acpigen.h>
 #include <cbmem.h>
 #include <string.h>
 #include <cpu/x86/smm.h>
@@ -574,12 +559,11 @@ static void pch_lpc_enable(struct device *dev)
 	pch_enable(dev);
 }
 
-static void southbridge_inject_dsdt(struct device *dev)
+static void southbridge_inject_dsdt(const struct device *dev)
 {
 	global_nvs_t *gnvs = cbmem_add (CBMEM_ID_ACPI_GNVS, sizeof(*gnvs));
 
 	if (gnvs) {
-		const struct i915_gpu_controller_info *gfx = intel_gma_get_controller_info();
 		memset(gnvs, 0, sizeof(*gnvs));
 
 		acpi_create_gnvs(gnvs);
@@ -587,11 +571,6 @@ static void southbridge_inject_dsdt(struct device *dev)
 		gnvs->apic = 1;
 		gnvs->mpen = 1;		/* Enable Multi Processing */
 		gnvs->pcnt = dev_count_cpu();
-
-		if (gfx) {
-			gnvs->ndid = gfx->ndid;
-			memcpy(gnvs->did, gfx->did, sizeof(gnvs->did));
-		}
 
 		/* And tell SMI about it */
 		smm_setup_structures(gnvs, NULL, NULL);
@@ -737,7 +716,7 @@ static const char *lpc_acpi_name(const struct device *dev)
 	return "LPCB";
 }
 
-static void southbridge_fill_ssdt(struct device *device)
+static void southbridge_fill_ssdt(const struct device *device)
 {
 	struct device *dev = pcidev_on_root(0x1f, 0);
 	config_t *chip = dev->chip_info;
@@ -767,8 +746,8 @@ static struct device_operations device_ops = {
 	.read_resources		= pch_lpc_read_resources,
 	.set_resources		= pci_dev_set_resources,
 	.enable_resources	= pci_dev_enable_resources,
-	.acpi_inject_dsdt_generator = southbridge_inject_dsdt,
-	.acpi_fill_ssdt_generator = southbridge_fill_ssdt,
+	.acpi_inject_dsdt	= southbridge_inject_dsdt,
+	.acpi_fill_ssdt		= southbridge_fill_ssdt,
 	.acpi_name		= lpc_acpi_name,
 	.write_acpi_tables      = acpi_write_hpet,
 	.init			= lpc_init,
@@ -779,7 +758,11 @@ static struct device_operations device_ops = {
 };
 
 
-static const unsigned short pci_device_ids[] = { 0x3b07, 0x3b09, 0 };
+static const unsigned short pci_device_ids[] = {
+	PCI_DID_INTEL_IBEXPEAK_LPC_QM57,
+	PCI_DID_INTEL_IBEXPEAK_LPC_HM55,
+	0
+};
 
 static const struct pci_driver pch_lpc __pci_driver = {
 	.ops	 = &device_ops,

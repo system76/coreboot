@@ -1,18 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2011 The Chromium OS Authors. All rights reserved.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; version 2 of
- * the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <console/console.h>
 #include "me.h"
@@ -120,7 +107,7 @@ static const char *me_progress_bup_values[] = {
 
 /* Progress Code 3 states */
 static const char *me_progress_policy_values[] = {
-	[ME_HFS2_STATE_POLICY_ENTRY] = "Entery into Policy Module",
+	[ME_HFS2_STATE_POLICY_ENTRY] = "Entry into Policy Module",
 	[ME_HFS2_STATE_POLICY_RCVD_S3] = "Received S3 entry",
 	[ME_HFS2_STATE_POLICY_RCVD_S4] = "Received S4 entry",
 	[ME_HFS2_STATE_POLICY_RCVD_S5] = "Received S5 entry",

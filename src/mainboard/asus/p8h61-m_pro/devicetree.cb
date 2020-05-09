@@ -1,7 +1,6 @@
 ##
 ## This file is part of the coreboot project.
 ##
-## Copyright (C) 2018 Angel Pons <th3fanbus@gmail.com>
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -14,8 +13,6 @@
 ##
 
 chip northbridge/intel/sandybridge
-	register "gfx.did" = "{ 0x80000100, 0x80000240, 0x80000410 }"
-	register "gfx.ndid" = "3"
 	device cpu_cluster 0x0 on
 		chip cpu/intel/model_206ax
 			register "c1_acpower" = "1"
@@ -93,19 +90,19 @@ chip northbridge/intel/sandybridge
 						irq 0xe5 = 0x06
 						irq 0xe6 = 0x0c
 						irq 0xe7 = 0x11
-						irq 0xf0 = 0x20
+						irq 0xf0 = 0x00
 						irq 0xf2 = 0x5d
 					end
 					device pnp 2e.b on		# HWM, LED
 						io 0x60 = 0x0290
-						io 0x62 = 0x0200
+						io 0x62 = 0x0000
 					end
 					device pnp 2e.d on  end		# VID
 					device pnp 2e.e off end		# CIR WAKE-UP
 					device pnp 2e.f on		# GPIO Push-Pull or Open-drain
 						irq 0xf0 = 0x9d
 					end
-					device pnp 2e.14 on end		# SVID
+					device pnp 2e.14 off end	# SVID
 					device pnp 2e.16 on		# Deep Sleep
 						io 0x30 = 0x20
 					end

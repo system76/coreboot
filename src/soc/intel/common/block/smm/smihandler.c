@@ -1,18 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2013 Google Inc.
- * Copyright (C) 2015-2017 Intel Corp.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <arch/hlt.h>
 #include <arch/io.h>
@@ -28,6 +15,7 @@
 #include <intelblocks/fast_spi.h>
 #include <intelblocks/pmclib.h>
 #include <intelblocks/smihandler.h>
+#include <intelblocks/tco.h>
 #include <intelblocks/uart.h>
 #include <smmstore.h>
 #include <soc/nvs.h>
@@ -44,6 +32,11 @@ static struct global_nvs_t *gnvs;
 
 /* SoC overrides. */
 
+__weak const struct smm_save_state_ops *get_smm_save_state_ops(void)
+{
+	return &em64t101_smm_ops;
+}
+
 /* Specific SOC SMI handler during ramstage finalize phase */
 __weak void smihandler_soc_at_finalize(void)
 {
@@ -55,20 +48,29 @@ __weak int smihandler_soc_disable_busmaster(pci_devfn_t dev)
 	return 1;
 }
 
-/* SMI handlers that should be serviced in SCI mode too. */
-__weak uint32_t smihandler_soc_get_sci_mask(void)
-{
-	return 0; /* No valid SCI mask for SMI handler */
-}
-
 /*
  * Needs to implement the mechanism to know if an illegal attempt
  * has been made to write to the BIOS area.
  */
-__weak void smihandler_soc_check_illegal_access(
+static void smihandler_soc_check_illegal_access(
 	uint32_t tco_sts)
 {
-	return;
+	if (!((tco_sts & (1 << 8)) && CONFIG(SPI_FLASH_SMM)
+			&& fast_spi_wpd_status()))
+		return;
+
+	/*
+	 * BWE is RW, so the SMI was caused by a
+	 * write to BWE, not by a write to the BIOS
+	 *
+	 * This is the place where we notice someone
+	 * is trying to tinker with the BIOS. We are
+	 * trying to be nice and just ignore it. A more
+	 * resolute answer would be to power down the
+	 * box.
+	 */
+	printk(BIOS_DEBUG, "Switching back to RO\n");
+	fast_spi_enable_wp();
 }
 
 /* Mainboard overrides. */
@@ -137,7 +139,7 @@ static void busmaster_disable_on_bus(int bus)
 
 	for (slot = 0; slot < 0x20; slot++) {
 		for (func = 0; func < 8; func++) {
-			u32 reg32;
+			u16 reg16;
 
 			pci_devfn_t dev = PCI_DEV(bus, slot, func);
 
@@ -150,9 +152,9 @@ static void busmaster_disable_on_bus(int bus)
 				continue;
 
 			/* Disable Bus Mastering for this one device */
-			reg32 = pci_read_config32(dev, PCI_COMMAND);
-			reg32 &= ~PCI_COMMAND_MASTER;
-			pci_write_config32(dev, PCI_COMMAND, reg32);
+			reg16 = pci_read_config16(dev, PCI_COMMAND);
+			reg16 &= ~PCI_COMMAND_MASTER;
+			pci_write_config16(dev, PCI_COMMAND, reg16);
 
 			/* If it's not a bridge, move on. */
 			hdr = pci_read_config8(dev, PCI_HEADER_TYPE);
@@ -439,6 +441,14 @@ void smihandler_southbridge_tco(
 		/* Handle TCO timeout */
 		printk(BIOS_DEBUG, "TCO Timeout.\n");
 	}
+
+	if (tco_sts & (TCO_INTRD_DET << 16)) { /* INTRUDER# assertion */
+		/*
+		 * Handle intrusion event
+		 * If we ever get here, probably the case has been opened.
+		 */
+		printk(BIOS_CRIT, "Case intrusion detected.\n");
+	}
 }
 
 void smihandler_southbridge_periodic(
@@ -470,6 +480,16 @@ void smihandler_southbridge_espi(
 	const struct smm_save_state_ops *save_state_ops)
 {
 	mainboard_smi_espi_handler();
+}
+
+/* SMI handlers that should be serviced in SCI mode too. */
+static uint32_t smihandler_soc_get_sci_mask(void)
+{
+	uint32_t sci_mask =
+		SMI_HANDLER_SCI_EN(APM_STS_BIT) |
+		SMI_HANDLER_SCI_EN(SMI_ON_SLP_EN_STS_BIT);
+
+	return sci_mask;
 }
 
 void southbridge_smi_handler(void)

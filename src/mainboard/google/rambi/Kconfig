@@ -4,7 +4,7 @@ config BOARD_GOOGLE_BASEBOARD_RAMBI
 	select SOC_INTEL_BAYTRAIL
 	select EC_GOOGLE_CHROMEEC
 	select EC_GOOGLE_CHROMEEC_LPC
-	select ENABLE_BUILTIN_COM1
+	select ENABLE_BUILTIN_COM1 if CONSOLE_SERIAL
 	select BOARD_ROMSIZE_KB_8192
 	select HAVE_ACPI_TABLES
 	select HAVE_OPTION_TABLE
@@ -64,9 +64,9 @@ config MAINBOARD_PART_NUMBER
 	default "Swanky" if BOARD_GOOGLE_SWANKY
 	default "Winky" if BOARD_GOOGLE_WINKY
 
-config DEVICETREE
+config OVERRIDE_DEVICETREE
 	string
-	default "variants/$(CONFIG_VARIANT_DIR)/devicetree.cb"
+	default "variants/$(CONFIG_VARIANT_DIR)/overridetree.cb"
 
 config EC_GOOGLE_CHROMEEC_BOARDNAME
 	string
@@ -75,5 +75,13 @@ config EC_GOOGLE_CHROMEEC_BOARDNAME
 config MAINBOARD_SMBIOS_MANUFACTURER
 	string
 	default "GOOGLE"
+
+config CONSOLE_SERIAL
+	bool
+	default n
+
+config SEABIOS_HARDWARE_IRQ
+	bool
+	default n
 
 endif # BOARD_GOOGLE_BASEBOARD_RAMBI

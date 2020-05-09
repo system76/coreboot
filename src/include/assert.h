@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2010 coresystems GmbH
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #ifndef __ASSERT_H__
 #define __ASSERT_H__
@@ -34,6 +22,17 @@
 			hlt();					\
 	}							\
 }
+
+#define ASSERT_MSG(x, msg) {					\
+	if (!(x)) {						\
+		printk(BIOS_EMERG, "ASSERTION ERROR: file '%s'"	\
+			", line %d\n", __FILE__, __LINE__);	\
+		printk(BIOS_EMERG, "%s", msg);                  \
+		if (CONFIG(FATAL_ASSERTS))			\
+			hlt();					\
+	}							\
+}
+
 #define BUG() {							\
 	printk(BIOS_EMERG, "ERROR: BUG ENCOUNTERED at file '%s'"\
 		", line %d\n", __FILE__, __LINE__);		\
@@ -53,15 +52,10 @@
  * The error message when this hits will look like this:
  *
  * ramstage/lib/bootmode.o: In function `display_init_required':
- * bootmode.c:42: undefined reference to `dead_code_assertion_failed_at_line_42'
+ * bootmode.c:42: undefined reference to `_dead_code_assertion_failed'
  */
-#define __dead_code(line) do { \
-	extern void dead_code_assertion_failed_at_line_##line(void) \
-		__attribute__((noreturn)); \
-	dead_code_assertion_failed_at_line_##line(); \
-} while (0)
-#define _dead_code(line) __dead_code(line)
-#define dead_code() _dead_code(__LINE__)
+extern void _dead_code_assertion_failed(void) __attribute__((noreturn));
+#define dead_code() _dead_code_assertion_failed()
 
 /* This can be used in the context of an expression of type 'type'. */
 #define dead_code_t(type) ({ \

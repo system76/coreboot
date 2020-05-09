@@ -1,21 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2003 Linux Networx
- * Copyright (C) 2004 SuSE Linux AG
- * Copyright (C) 2004 Tyan Computer
- * Copyright (C) 2010 Joseph Smith <joe@settoplinux.org>
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; version 2 of
- * the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <console/console.h>
 #include <device/device.h>

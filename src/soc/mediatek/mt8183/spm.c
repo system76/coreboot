@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright 2019 MediaTek Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <assert.h>
 #include <cbfs.h>
@@ -274,7 +262,7 @@ static int spm_load_firmware(enum dyna_load_pcm_index index,
 	offset += copy_size;
 
 	/* version */
-	/* The termintating character should be contained in the spm binary */
+	/* The terminating character should be contained in the spm binary */
 	assert(spm_bin[file_size - 1] == '\0');
 	assert(offset < file_size);
 	printk(BIOS_DEBUG, "SPM: version = %s\n", spm_bin + offset);

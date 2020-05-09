@@ -1,30 +1,20 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright 2014 Google Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <arch/exception.h>
 #include <assert.h>
 #include <bootmode.h>
 #include <cbmem.h>
 #include <fmap.h>
+#include <security/tpm/tspi/crtm.h>
+#include <security/tpm/tss/vendor/cr50/cr50.h>
+#include <security/vboot/misc.h>
+#include <security/vboot/vbnv.h>
+#include <security/vboot/tpm_common.h>
 #include <string.h>
 #include <timestamp.h>
 #include <vb2_api.h>
-#include <security/vboot/misc.h>
-#include <security/vboot/vbnv.h>
-#include <security/vboot/vboot_crtm.h>
-#include <security/vboot/tpm_common.h>
+#include <boot_device.h>
 
 #include "antirollback.h"
 
@@ -114,7 +104,7 @@ static int handle_digest_result(void *slot_hash, size_t slot_hash_sz)
 	if (!CONFIG(VBOOT_STARTS_IN_BOOTBLOCK))
 		return 0;
 
-	is_resume = vboot_platform_is_resuming();
+	is_resume = platform_is_resuming();
 
 	if (is_resume > 0) {
 		uint8_t saved_hash[VBOOT_MAX_HASH_SIZE];
@@ -219,28 +209,6 @@ static vb2_error_t hash_body(struct vb2_context *ctx,
 	return VB2_SUCCESS;
 }
 
-void vboot_save_nvdata_only(struct vb2_context *ctx)
-{
-	assert(!(ctx->flags & (VB2_CONTEXT_SECDATA_FIRMWARE_CHANGED |
-			       VB2_CONTEXT_SECDATA_KERNEL_CHANGED)));
-
-	if (ctx->flags & VB2_CONTEXT_NVDATA_CHANGED) {
-		printk(BIOS_INFO, "Saving nvdata\n");
-		save_vbnv(ctx->nvdata);
-		ctx->flags &= ~VB2_CONTEXT_NVDATA_CHANGED;
-	}
-}
-
-void vboot_save_data(struct vb2_context *ctx)
-{
-	if (ctx->flags & VB2_CONTEXT_SECDATA_FIRMWARE_CHANGED) {
-		printk(BIOS_INFO, "Saving secdata\n");
-		antirollback_write_space_firmware(ctx);
-		ctx->flags &= ~VB2_CONTEXT_SECDATA_FIRMWARE_CHANGED;
-	}
-
-	vboot_save_nvdata_only(ctx);
-}
 
 static uint32_t extend_pcrs(struct vb2_context *ctx)
 {
@@ -248,25 +216,50 @@ static uint32_t extend_pcrs(struct vb2_context *ctx)
 		   vboot_extend_pcr(ctx, 1, HWID_DIGEST_PCR);
 }
 
-static void vboot_log_and_clear_recovery_mode_switch(int unused)
-{
-	/* Log the recovery mode switches if required, before clearing them. */
-	log_recovery_mode_switch();
+#define EC_EFS_BOOT_MODE_NORMAL		0x00
+#define EC_EFS_BOOT_MODE_NO_BOOT	0x01
 
-	/*
-	 * The recovery mode switch is cleared (typically backed by EC) here
-	 * to allow multiple queries to get_recovery_mode_switch() and have
-	 * them return consistent results during the verified boot path as well
-	 * as dram initialization. x86 systems ignore the saved dram settings
-	 * in the recovery path in order to start from a clean slate. Therefore
-	 * clear the state here since this function is called when memory
-	 * is known to be up.
-	 */
-	clear_recovery_mode_switch();
+static const char *get_boot_mode_string(uint8_t boot_mode)
+{
+	if (boot_mode == EC_EFS_BOOT_MODE_NORMAL)
+		return "NORMAL";
+	else if (boot_mode == EC_EFS_BOOT_MODE_NO_BOOT)
+		return "NO_BOOT";
+	else
+		return "UNDEFINED";
 }
-#if !CONFIG(VBOOT_STARTS_IN_ROMSTAGE)
-ROMSTAGE_CBMEM_INIT_HOOK(vboot_log_and_clear_recovery_mode_switch)
-#endif
+
+static void check_boot_mode(struct vb2_context *ctx)
+{
+	uint8_t boot_mode;
+	int rv;
+
+	rv = tlcl_cr50_get_boot_mode(&boot_mode);
+	switch (rv) {
+	case TPM_E_NO_SUCH_COMMAND:
+		printk(BIOS_WARNING, "Cr50 does not support GET_BOOT_MODE.\n");
+		/* Proceed to legacy boot model. */
+		return;
+	case TPM_SUCCESS:
+		break;
+	default:
+		printk(BIOS_ERR,
+		       "Communication error in getting Cr50 boot mode.\n");
+		if (ctx->flags & VB2_CONTEXT_RECOVERY_MODE)
+			/* Continue to boot in recovery mode */
+			return;
+		vb2api_fail(ctx, VB2_RECOVERY_CR50_BOOT_MODE, rv);
+		vboot_save_data(ctx);
+		vboot_reboot();
+		return;
+	}
+
+	printk(BIOS_INFO, "Cr50 says boot_mode is %s(0x%02x).\n",
+	       get_boot_mode_string(boot_mode), boot_mode);
+
+	if (boot_mode == EC_EFS_BOOT_MODE_NO_BOOT)
+		ctx->flags |= VB2_CONTEXT_NO_BOOT;
+}
 
 /**
  * Verify and select the firmware in the RW image
@@ -282,6 +275,10 @@ void verstage_main(void)
 
 	timestamp_add_now(TS_START_VBOOT);
 
+	/* Lockdown SPI flash controller if required */
+	if (CONFIG(BOOTMEDIA_LOCK_IN_VERSTAGE))
+		boot_device_security_lockdown();
+
 	/* Set up context and work buffer */
 	ctx = vboot_get_context();
 
@@ -293,24 +290,18 @@ void verstage_main(void)
 	 * does verification of memory init and thus must ensure it resumes with
 	 * the same slot that it booted from. */
 	if (CONFIG(RESUME_PATH_SAME_AS_BOOT) &&
-		vboot_platform_is_resuming())
+		platform_is_resuming())
 		ctx->flags |= VB2_CONTEXT_S3_RESUME;
 
 	/* Read secdata from TPM. Initialize TPM if secdata not found. We don't
 	 * check the return value here because vb2api_fw_phase1 will catch
 	 * invalid secdata and tell us what to do (=reboot). */
 	timestamp_add_now(TS_START_TPMINIT);
-	if (vboot_setup_tpm(ctx) == TPM_SUCCESS)
+	if (vboot_setup_tpm(ctx) == TPM_SUCCESS) {
 		antirollback_read_space_firmware(ctx);
-	timestamp_add_now(TS_END_TPMINIT);
-
-	/* Enable measured boot mode */
-	if (CONFIG(VBOOT_MEASURED_BOOT) &&
-		!(ctx->flags & VB2_CONTEXT_S3_RESUME)) {
-		if (vboot_init_crtm() != VB2_SUCCESS)
-			die_with_post_code(POST_INVALID_ROM,
-				"Initializing measured boot mode failed!");
+		antirollback_read_space_kernel(ctx);
 	}
+	timestamp_add_now(TS_END_TPMINIT);
 
 	if (get_recovery_mode_switch()) {
 		ctx->flags |= VB2_CONTEXT_FORCE_RECOVERY_MODE;
@@ -399,6 +390,9 @@ void verstage_main(void)
 		timestamp_add_now(TS_END_TPMPCR);
 	}
 
+	if (CONFIG(TPM_CR50))
+		check_boot_mode(ctx);
+
 	/* Lock TPM */
 
 	timestamp_add_now(TS_START_TPMLOCK);
@@ -428,13 +422,5 @@ void verstage_main(void)
 	       vboot_is_firmware_slot_a(ctx) ? 'A' : 'B');
 
  verstage_main_exit:
-	/* If CBMEM is not up yet, let the ROMSTAGE_CBMEM_INIT_HOOK take care
-	   of running this function. */
-	if (ENV_ROMSTAGE && CONFIG(VBOOT_STARTS_IN_ROMSTAGE))
-		vboot_log_and_clear_recovery_mode_switch(0);
-
-	/* Save recovery reason in case of unexpected reboots on x86. */
-	vboot_save_recovery_reason_vbnv();
-
 	timestamp_add_now(TS_END_VBOOT);
 }

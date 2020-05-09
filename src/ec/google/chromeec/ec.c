@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2012 The Chromium OS Authors. All rights reserved.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <stdint.h>
 #include <string.h>
@@ -29,9 +17,7 @@
 #include <stdlib.h>
 #include <timer.h>
 
-#include "chip.h"
 #include "ec.h"
-#include "ec_commands.h"
 
 #define INVALID_HCMD 0xFF
 
@@ -80,41 +66,6 @@ static const struct {
 		EC_CMD_HOST_EVENT_GET_WAKE_MASK,
 	},
 };
-
-void log_recovery_mode_switch(void)
-{
-	uint64_t *events;
-
-	if (cbmem_find(CBMEM_ID_EC_HOSTEVENT))
-		return;
-
-	events = cbmem_add(CBMEM_ID_EC_HOSTEVENT, sizeof(*events));
-	if (!events)
-		return;
-
-	*events = google_chromeec_get_events_b();
-}
-
-static void google_chromeec_elog_add_recovery_event(void *unused)
-{
-	uint64_t *events = cbmem_find(CBMEM_ID_EC_HOSTEVENT);
-	uint8_t event_byte = EC_HOST_EVENT_KEYBOARD_RECOVERY;
-
-	if (!events)
-		return;
-
-	if (!(*events & EC_HOST_EVENT_MASK(EC_HOST_EVENT_KEYBOARD_RECOVERY)))
-		return;
-
-	if (*events &
-	    EC_HOST_EVENT_MASK(EC_HOST_EVENT_KEYBOARD_RECOVERY_HW_REINIT))
-		event_byte = EC_HOST_EVENT_KEYBOARD_RECOVERY_HW_REINIT;
-
-	elog_add_event_byte(ELOG_TYPE_EC_EVENT, event_byte);
-}
-
-BOOT_STATE_INIT_ENTRY(BS_WRITE_TABLES, BS_ON_ENTRY,
-		      google_chromeec_elog_add_recovery_event, NULL);
 
 uint8_t google_chromeec_calc_checksum(const uint8_t *data, int size)
 {
@@ -897,6 +848,11 @@ int google_chromeec_cbi_get_oem_id(uint32_t *id)
 	return cbi_get_uint32(id, CBI_TAG_OEM_ID);
 }
 
+int google_chromeec_cbi_get_board_version(uint32_t *version)
+{
+	return cbi_get_uint32(version, CBI_TAG_BOARD_VERSION);
+}
+
 static int cbi_get_string(char *buf, size_t bufsize, uint32_t tag)
 {
 	struct ec_params_get_cbi params = {
@@ -1164,9 +1120,9 @@ int google_chromeec_set_usb_charge_mode(uint8_t port_id, enum usb_charge_mode mo
 	return google_chromeec_command(&cmd);
 }
 
-/* Get charger power info in Watts.  Also returns type of charger */
+/* Get charger voltage and current.  Also returns type of charger */
 int google_chromeec_get_usb_pd_power_info(enum usb_chg_type *type,
-					  uint32_t *max_watts)
+					  uint16_t *current_max, uint16_t *voltage_max)
 {
 	struct ec_params_usb_pd_power_info params = {
 		.port = PD_POWER_CHARGING_PORT,
@@ -1191,8 +1147,8 @@ int google_chromeec_get_usb_pd_power_info(enum usb_chg_type *type,
 	/* values are given in milliAmps and milliVolts */
 	*type = resp.type;
 	m = resp.meas;
-	*max_watts = (m.current_max * m.voltage_max) / 1000000;
-
+	*voltage_max = m.voltage_max;
+	*current_max = m.current_max;
 	return 0;
 }
 
@@ -1386,9 +1342,9 @@ static void google_chromeec_log_uptimeinfo(void)
 }
 
 /* Cache and retrieve the EC image type (ro or rw) */
-enum ec_current_image google_chromeec_get_current_image(void)
+enum ec_image google_chromeec_get_current_image(void)
 {
-	MAYBE_STATIC_BSS enum ec_current_image ec_image_type = EC_IMAGE_UNKNOWN;
+	MAYBE_STATIC_BSS enum ec_image ec_image_type = EC_IMAGE_UNKNOWN;
 
 	if (ec_image_type != EC_IMAGE_UNKNOWN)
 		return ec_image_type;
@@ -1561,4 +1517,22 @@ int google_chromeec_wait_for_displayport(long timeout)
 	       stopwatch_duration_msecs(&sw));
 
 	return 1;
+}
+
+int google_chromeec_get_keybd_config(struct ec_response_keybd_config *keybd)
+{
+	struct chromeec_command cmd = {
+		.cmd_code = EC_CMD_GET_KEYBD_CONFIG,
+		.cmd_version = 0,
+		.cmd_data_in = NULL,
+		.cmd_size_in = 0,
+		.cmd_data_out = keybd,
+		.cmd_size_out = sizeof(*keybd),
+		.cmd_dev_index = 0,
+	};
+
+	if (google_chromeec_command(&cmd))
+		return -1;
+
+	return 0;
 }

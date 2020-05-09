@@ -1,7 +1,6 @@
 /*
  * Early initialization code for aarch64 (a.k.a. armv8)
  *
- * Copyright 2019 Asami Doi <d0iasm.pub@gmail.com>
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
@@ -25,7 +24,7 @@ ENTRY(_start)
 	dmb     sy
 
 	/* Calculate relocation offset between bootblock in flash and in DRAM. */
- 	ldr	x0, =_flash
+	ldr	x0, =_flash
 	ldr	x1, =_bootblock
 	sub	x1, x1, x0
 

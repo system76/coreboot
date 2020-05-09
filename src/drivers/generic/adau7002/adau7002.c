@@ -1,18 +1,8 @@
-/*
- * This file is part of the coreboot project.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
-#include <arch/acpi_device.h>
-#include <arch/acpigen.h>
+#include <acpi/acpi_device.h>
+#include <acpi/acpigen.h>
 #include <console/console.h>
 #include <device/device.h>
 #include <device/path.h>
@@ -24,7 +14,7 @@
 #define ADAU7002_ACPI_NAME	"ADAU"
 #define ADAU7002_ACPI_HID	"ADAU7002"
 
-static void adau7002_fill_ssdt(struct device *dev)
+static void adau7002_fill_ssdt(const struct device *dev)
 {
 	struct drivers_generic_adau7002_config *config;
 	struct acpi_dp *dp;
@@ -65,12 +55,11 @@ static const char *adau7002_acpi_name(const struct device *dev)
 #endif
 
 static struct device_operations adau7002_ops = {
-	.read_resources			= DEVICE_NOOP,
-	.set_resources			= DEVICE_NOOP,
-	.enable_resources		= DEVICE_NOOP,
+	.read_resources		= noop_read_resources,
+	.set_resources		= noop_set_resources,
 #if CONFIG(HAVE_ACPI_TABLES)
-	.acpi_name			= adau7002_acpi_name,
-	.acpi_fill_ssdt_generator	= adau7002_fill_ssdt,
+	.acpi_name		= adau7002_acpi_name,
+	.acpi_fill_ssdt		= adau7002_fill_ssdt,
 #endif
 };
 

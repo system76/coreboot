@@ -1,30 +1,18 @@
-/*
- * This file is part of the coreboot project.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #if CONFIG(HAVE_ACPI_RESUME)
-#include <arch/acpi.h>
+#include <acpi/acpi.h>
 #endif
 #include <bootstate.h>
 #include <cbmem.h>
 #include <console/console.h>
-#if CONFIG(ARCH_X86)
-#include <pc80/mc146818rtc.h>
-#endif
 #include <bcd.h>
 #include <boot_device.h>
 #include <commonlib/region.h>
 #include <fmap.h>
 #include <lib.h>
+#include <post.h>
 #include <rtc.h>
 #include <smbios.h>
 #include <stdint.h>
@@ -758,16 +746,34 @@ static bool elog_do_add_boot_count(void)
 #endif
 }
 
+/* Check and log POST codes from previous boot */
+static void log_last_boot_post(void)
+{
+#if CONFIG(ARCH_X86)
+	u8 code;
+	u32 extra;
+
+	if (!CONFIG(CMOS_POST))
+		return;
+
+	if (cmos_post_previous_boot(&code, &extra) == 0)
+		return;
+
+	printk(BIOS_WARNING, "POST: Unexpected post code/extra "
+	       "in previous boot: 0x%02x/0x%04x\n", code, extra);
+
+	elog_add_event_word(ELOG_TYPE_LAST_POST_CODE, code);
+	if (extra)
+		elog_add_event_dword(ELOG_TYPE_POST_EXTRA, extra);
+#endif
+}
+
 static void elog_add_boot_count(void)
 {
 	if (elog_do_add_boot_count()) {
 		elog_add_event_dword(ELOG_TYPE_BOOT, boot_count_read());
 
-#if CONFIG(ARCH_X86)
-		/* Check and log POST codes from previous boot */
-		if (CONFIG(CMOS_POST))
-			cmos_post_log();
-#endif
+		log_last_boot_post();
 	}
 }
 

@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright 2019 MediaTek Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <assert.h>
 #include <device/mmio.h>
@@ -19,32 +7,28 @@
 #include <soc/dsi.h>
 #include <soc/pll.h>
 
-void mtk_dsi_configure_mipi_tx(int data_rate, u32 lanes)
+void mtk_dsi_configure_mipi_tx(u32 data_rate, u32 lanes)
 {
-	unsigned int txdiv, txdiv0, txdiv1;
+	unsigned int txdiv0, txdiv1;
 	u64 pcw;
 
-	if (data_rate >= 2000) {
-		txdiv = 1;
+	if (data_rate >= 2000 * MHz) {
 		txdiv0 = 0;
 		txdiv1 = 0;
-	} else if (data_rate >= 1000) {
-		txdiv = 2;
+	} else if (data_rate >= 1000 * MHz) {
 		txdiv0 = 1;
 		txdiv1 = 0;
-	} else if (data_rate >= 500) {
-		txdiv = 4;
+	} else if (data_rate >= 500 * MHz) {
 		txdiv0 = 2;
 		txdiv1 = 0;
-	} else if (data_rate > 250) {
-		/* Be aware that 250 is a special case that must use txdiv=4. */
-		txdiv = 8;
+	} else if (data_rate > 250 * MHz) {
+		/* (data_rate == 250MHz) is a special case that should go to the
+		   else-block below (txdiv0 = 4) */
 		txdiv0 = 3;
 		txdiv1 = 0;
 	} else {
 		/* MIN = 125 */
-		assert(data_rate >= MTK_DSI_DATA_RATE_MIN_MHZ);
-		txdiv = 16;
+		assert(data_rate >= MTK_DSI_DATA_RATE_MIN_MHZ * MHz);
 		txdiv0 = 4;
 		txdiv1 = 0;
 	}
@@ -56,7 +40,7 @@ void mtk_dsi_configure_mipi_tx(int data_rate, u32 lanes)
 
 	pcw = (u64)data_rate * (1 << txdiv0) * (1 << txdiv1);
 	pcw <<= 24;
-	pcw /= CLK26M_HZ / MHz;
+	pcw /= CLK26M_HZ;
 
 	write32(&mipi_tx->pll_con0, pcw);
 	clrsetbits32(&mipi_tx->pll_con1, RG_DSI_PLL_POSDIV, txdiv0 << 8);

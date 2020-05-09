@@ -1,18 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2019 Vlado Cibic <vladocb@protonmail.com>
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; version 2 of
- * the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 #include <bootblock_common.h>
 #include <device/pnp_ops.h>
 #include <northbridge/intel/sandybridge/sandybridge.h>
@@ -115,7 +102,7 @@ void mainboard_fill_pei_data(struct pei_data *pei_data)
 		.tseg_size = CONFIG_SMM_TSEG_SIZE,
 		.spd_addresses = { 0xa0, 0xa2, 0xa4, 0xa6 }, /* SMBus mul 2 */
 		.ts_addresses = { 0x00, 0x00, 0x00, 0x00 },
-		.ec_present = 0, /* Asus 2203 bios shows XUECA016, but no EC */
+		.ec_present = 0, /* Asus 2203 BIOS shows XUECA016, but no EC */
 		.gbe_enable = 0, /* Board uses no Intel GbE but a RTL8111F */
 		.dimm_channel0_disabled = 0, /* Both DIMM enabled */
 		.dimm_channel1_disabled = 0, /* Both DIMM enabled */
@@ -154,7 +141,7 @@ void mainboard_fill_pei_data(struct pei_data *pei_data)
 			 */
 			usb3_streams
 		},
-		/* ASUS P8Z77-M Pro manual says 1.35v DIMMs are supported */
+		/* ASUS P8Z77-M PRO manual says 1.35v DIMMs are supported */
 		.ddr3lv_support = 1,
 		/* PCIe 3.0 support. As we use Ivy Bridge, let's enable it,
 		 * but might cause some system instability !

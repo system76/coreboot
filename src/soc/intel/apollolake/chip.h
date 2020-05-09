@@ -1,20 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2015 Intel Corp.
- * Copyright (C) 2017 - 2018 Siemens AG
- * (Written by Alexandru Gagniuc <alexandrux.gagniuc@intel.com> for Intel Corp.)
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* This file is part of the coreboot project. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #ifndef _SOC_APOLLOLAKE_CHIP_H_
 #define _SOC_APOLLOLAKE_CHIP_H_
@@ -136,6 +121,11 @@ struct soc_intel_apollolake_config {
 	/* USB2 eye diagram settings per port */
 	struct usb2_eye_per_port usb2eye[APOLLOLAKE_USB2_PORT_MAX];
 
+	/* Override USB port configuration */
+	uint8_t usb_config_override;
+	struct usb_port_config usb2_port[APOLLOLAKE_USB2_PORT_MAX];
+	struct usb_port_config usb3_port[APOLLOLAKE_USB3_PORT_MAX];
+
 	/* GPIO SD card detect pin */
 	unsigned int sdcard_cd_gpio;
 
@@ -182,6 +172,14 @@ struct soc_intel_apollolake_config {
 	 * the Upd parameter VtdEnable.
 	 */
 	uint8_t enable_vtd;
+
+	/* Options to disable the LFPS periodic sampling for USB3 Ports.
+	 * Default value of PMCTRL_REG bits[7:4] is 9 which means periodic sampling
+	 * interval is 9ms.
+	 * Set 1 to update XHCI host MMIO BAR + PMCTRL_REG (0x80A4 bits[7:4]) to 0
+	 * 0:Enable (default), 1:Disable.
+	 */
+	uint8_t disable_xhci_lfps_pm;
 };
 
 typedef struct soc_intel_apollolake_config config_t;

@@ -1,23 +1,13 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2019-2020 Intel Corp.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
-#include <arch/acpi.h>
-#include <arch/acpigen.h>
+#include <acpi/acpi.h>
+#include <acpi/acpigen.h>
 #include <device/mmio.h>
 #include <arch/smp/mpspec.h>
 #include <cbmem.h>
+#include <console/console.h>
+#include <device/pci_ops.h>
 #include <ec/google/chromeec/ec.h>
 #include <intelblocks/cpulib.h>
 #include <intelblocks/pmclib.h>
@@ -177,7 +167,7 @@ void soc_fill_fadt(acpi_fadt_t *fadt)
 	fadt->x_pm_tmr_blk.space_id = 1;
 	fadt->x_pm_tmr_blk.bit_width = fadt->pm_tmr_len * 8;
 	fadt->x_pm_tmr_blk.bit_offset = 0;
-	fadt->x_pm_tmr_blk.access_size = 0;
+	fadt->x_pm_tmr_blk.access_size = ACPI_ACCESS_SIZE_DWORD_ACCESS;
 	fadt->x_pm_tmr_blk.addrl = pmbase + PM1_TMR;
 	fadt->x_pm_tmr_blk.addrh = 0x0;
 
@@ -189,6 +179,98 @@ uint32_t soc_read_sci_irq_select(void)
 {
 	uintptr_t pmc_bar = soc_read_pmc_base();
 	return read32((void *)pmc_bar + IRQ_REG);
+}
+
+static unsigned long soc_fill_dmar(unsigned long current)
+{
+	const struct device *const igfx_dev = pcidev_path_on_root(SA_DEVFN_IGD);
+	uint64_t gfxvtbar = MCHBAR64(GFXVTBAR) & VTBAR_MASK;
+	bool gfxvten = MCHBAR32(GFXVTBAR) & VTBAR_ENABLED;
+
+	if (igfx_dev && igfx_dev->enabled && gfxvtbar && gfxvten) {
+		unsigned long tmp = current;
+
+		current += acpi_create_dmar_drhd(current, 0, 0, gfxvtbar);
+		current += acpi_create_dmar_ds_pci(current, 0, 2, 0);
+
+		acpi_dmar_drhd_fixup(tmp, current);
+	}
+
+	const struct device *const ipu_dev = pcidev_path_on_root(SA_DEVFN_IPU);
+	uint64_t ipuvtbar = MCHBAR64(IPUVTBAR) & VTBAR_MASK;
+	bool ipuvten = MCHBAR32(IPUVTBAR) & VTBAR_ENABLED;
+
+	if (ipu_dev && ipu_dev->enabled && ipuvtbar && ipuvten) {
+		unsigned long tmp = current;
+
+		current += acpi_create_dmar_drhd(current, 0, 0, ipuvtbar);
+		current += acpi_create_dmar_ds_pci(current, 0, 5, 0);
+
+		acpi_dmar_drhd_fixup(tmp, current);
+	}
+
+	uint64_t vtvc0bar = MCHBAR64(VTVC0BAR) & VTBAR_MASK;
+	bool vtvc0en = MCHBAR32(VTVC0BAR) & VTBAR_ENABLED;
+
+	if (vtvc0bar && vtvc0en) {
+		const unsigned long tmp = current;
+
+		current += acpi_create_dmar_drhd(current,
+				DRHD_INCLUDE_PCI_ALL, 0, vtvc0bar);
+		current += acpi_create_dmar_ds_ioapic(current,
+				2, V_P2SB_CFG_IBDF_BUS, V_P2SB_CFG_IBDF_DEV,
+				V_P2SB_CFG_IBDF_FUNC);
+		current += acpi_create_dmar_ds_msi_hpet(current,
+				0, V_P2SB_CFG_HBDF_BUS, V_P2SB_CFG_HBDF_DEV,
+				V_P2SB_CFG_HBDF_FUNC);
+
+		acpi_dmar_drhd_fixup(tmp, current);
+	}
+
+	/* TCSS Thunderbolt root ports */
+	for (unsigned int i = 0; i < MAX_TBT_PCIE_PORT; i++) {
+		uint64_t tbtbar = MCHBAR64(TBT0BAR + i * 8) & VTBAR_MASK;
+		bool tbten = MCHBAR32(TBT0BAR + i * 8) & VTBAR_ENABLED;
+		if (tbtbar && tbten) {
+			unsigned long tmp = current;
+
+			current += acpi_create_dmar_drhd(current, 0, 0, tbtbar);
+			current += acpi_create_dmar_ds_pci_br(current, 0, 7, i);
+
+			acpi_dmar_drhd_fixup(tmp, current);
+		}
+	}
+
+	/* Add RMRR entry */
+	const unsigned long tmp = current;
+	current += acpi_create_dmar_rmrr(current, 0,
+		sa_get_gsm_base(), sa_get_tolud_base() - 1);
+	current += acpi_create_dmar_ds_pci(current, 0, 2, 0);
+	acpi_dmar_rmrr_fixup(tmp, current);
+
+	return current;
+}
+
+unsigned long sa_write_acpi_tables(const struct device *dev, unsigned long current,
+				   struct acpi_rsdp *rsdp)
+{
+	acpi_dmar_t *const dmar = (acpi_dmar_t *)current;
+
+	/*
+	 * Create DMAR table only if we have VT-d capability and FSP does not override its
+	 * feature.
+	 */
+	if ((pci_read_config32(dev, CAPID0_A) & VTD_DISABLE) ||
+	    !(MCHBAR32(VTVC0BAR) & VTBAR_ENABLED))
+		return current;
+
+	printk(BIOS_DEBUG, "ACPI:    * DMAR\n");
+	acpi_create_dmar(dmar, DMAR_INTR_REMAP | DMA_CTRL_PLATFORM_OPT_IN_FLAG, soc_fill_dmar);
+	current += dmar->header.length;
+	current = acpi_align_current(current);
+	acpi_add_table(rsdp, dmar);
+
+	return current;
 }
 
 void acpi_create_gnvs(struct global_nvs_t *gnvs)
@@ -247,4 +329,41 @@ uint32_t acpi_fill_soc_wake(uint32_t generic_pm1_en,
 int soc_madt_sci_irq_polarity(int sci)
 {
 	return MP_IRQ_POLARITY_HIGH;
+}
+
+static int acpigen_soc_gpio_op(const char *op, unsigned int gpio_num)
+{
+	/* op (gpio_num) */
+	acpigen_emit_namestring(op);
+	acpigen_write_integer(gpio_num);
+	return 0;
+}
+
+static int acpigen_soc_get_gpio_state(const char *op, unsigned int gpio_num)
+{
+	/* Store (op (gpio_num), Local0) */
+	acpigen_write_store();
+	acpigen_soc_gpio_op(op, gpio_num);
+	acpigen_emit_byte(LOCAL0_OP);
+	return 0;
+}
+
+int acpigen_soc_read_rx_gpio(unsigned int gpio_num)
+{
+	return acpigen_soc_get_gpio_state("\\_SB.PCI0.GRXS", gpio_num);
+}
+
+int acpigen_soc_get_tx_gpio(unsigned int gpio_num)
+{
+	return acpigen_soc_get_gpio_state("\\_SB.PCI0.GTXS", gpio_num);
+}
+
+int acpigen_soc_set_tx_gpio(unsigned int gpio_num)
+{
+	return acpigen_soc_gpio_op("\\_SB.PCI0.STXS", gpio_num);
+}
+
+int acpigen_soc_clear_tx_gpio(unsigned int gpio_num)
+{
+	return acpigen_soc_gpio_op("\\_SB.PCI0.CTXS", gpio_num);
 }

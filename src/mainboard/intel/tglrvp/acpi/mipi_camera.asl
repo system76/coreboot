@@ -1,21 +1,9 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2020 Intel Corporation.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 Scope (\_SB.PCI0.IPU0)
 {
-	Name (_DSD, Package (0x02)
+	Name (_DSD, Package (0x02)  /* _DSD: Device-Specific Data */
 	{
 		ToUUID ("dbb8e3e6-5886-4ba6-8795-1319f52a966b"),
 		Package (0x02)
@@ -25,7 +13,6 @@ Scope (\_SB.PCI0.IPU0)
 				"port0",
 				"PRT0"
 			},
-
 			Package (0x02)
 			{
 				"port1",
@@ -45,7 +32,6 @@ Scope (\_SB.PCI0.IPU0)
 				One
 			}
 		},
-
 		ToUUID ("dbb8e3e6-5886-4ba6-8795-1319f52a966b"),
 		Package (0x01)
 		{
@@ -81,7 +67,7 @@ Scope (\_SB.PCI0.IPU0)
 	})
 }
 
-Scope (_SB.PCI0.IPU0)
+Scope (\_SB.PCI0.IPU0)
 {
 	Name (EP00, Package (0x02)
 	{
@@ -93,13 +79,11 @@ Scope (_SB.PCI0.IPU0)
 				"endpoint",
 				Zero
 			},
-
 			Package (0x02)
 			{
 				"clock-lanes",
 				Zero
 			},
-
 			Package (0x02)
 			{
 				"data-lanes",
@@ -111,7 +95,6 @@ Scope (_SB.PCI0.IPU0)
 					0x04
 				}
 			},
-
 			Package (0x02)
 			{
 				"remote-endpoint",
@@ -134,13 +117,11 @@ Scope (_SB.PCI0.IPU0)
 				"endpoint",
 				Zero
 			},
-
 			Package (0x02)
 			{
 				"clock-lanes",
 				Zero
 			},
-
 			Package (0x02)
 			{
 				"data-lanes",
@@ -172,40 +153,45 @@ Scope (\_SB.PCI0.I2C3)
 	PowerResource (RCPR, 0x00, 0x0000)
 	{
 		Name (STA, Zero)
-		Method (_ON, 0, Serialized)
+		Method (_ON, 0, Serialized)  /* Rear camera_ON_: Power On */
 		{
 			If ((STA == Zero))
 			{
-				/* Enable CLK0 with 19.2MHz */
-				MCCT(0,1,1)
-				/* Pull PWREN(GPIO B23) high */
-				STXS(GPP_B23)
-				Sleep(5)
-				/* Pull RST(GPIO C15) low */
+				/* Enable IMG_CLK */
+				MCON(0,1) /* Clock 0, 19.2MHz */
+
+				/* Pull RST low */
 				CTXS(GPP_C15)
-				Sleep(5)
+
+				/* Pull PWREN high */
+				STXS(GPP_B23)
+				Sleep(2) /* reset pulse width */
+
 				/* Pull RST high */
 				STXS(GPP_C15)
-				Sleep(5)
+				Sleep(1) /* t2 */
+
 				Store(1,STA)
 			}
 		}
-
-		Method (_OFF, 0, Serialized)
+		Method (_OFF, 0, Serialized)  /* Rear camera _OFF: Power Off */
 		{
 			If ((STA == One))
 			{
+				/* Disable IMG_CLK */
+				Sleep(1) /* t0+t1 */
+				MCOF(0) /* Clock 0 */
+
 				/* Pull RST low */
 				CTXS(GPP_C15)
+
 				/* Pull PWREN low */
 				CTXS(GPP_B23)
-				/* Disable CLK0 */
-				MCCT(0,0,1)
+
 				Store(0,STA)
 			}
 		}
-
-		Method (_STA, 0, NotSerialized)
+		Method (_STA, 0, NotSerialized)  /* _STA: Status */
 		{
 			Return (STA)
 		}
@@ -213,33 +199,29 @@ Scope (\_SB.PCI0.I2C3)
 
 	Device (CAM0)
 	{
-		Name (_HID, "OVTI8856")
-		Name (_UID, Zero)
-		Name (_DDN, "Ov 8856 Camera")
-		Method (_STA, 0, NotSerialized)
+		Name (_HID, "OVTI8856")  /* _HID: Hardware ID */
+		Name (_UID, Zero)  /* _UID: Unique ID */
+		Name (_DDN, "Ov 8856 Camera")  /* _DDN: DOS Device Name */
+		Method (_STA, 0, NotSerialized)  /* _STA: Status */
 		{
 			Return (0x0F)
 		}
-
-		Name (_CRS, ResourceTemplate ()
+		Name (_CRS, ResourceTemplate ()  /* _CRS: Current Resource Settings */
 		{
 			I2cSerialBus (0x0010, ControllerInitiated, 0x00061A80,
 				AddressingMode7Bit, "\\_SB.PCI0.I2C3",
 				0x00, ResourceConsumer, ,
 			)
 		})
-
-		Name (_PR0, Package (0x01)
+		Name (_PR0, Package (0x01)  /* _PR0: Power Resources for D0 */
 		{
 			RCPR
 		})
-
-		Name (_PR3, Package (0x01)
+		Name (_PR3, Package (0x01)  /* _PR3: Power Resources for D3hot */
 		{
 			RCPR
 		})
-
-		Name (_DSD, Package (0x04)
+		Name (_DSD, Package (0x04)  /* _DSD: Device-Specific Data */
 		{
 			ToUUID ("dbb8e3e6-5886-4ba6-8795-1319f52a966b"),
 			Package (0x01)
@@ -250,7 +232,6 @@ Scope (\_SB.PCI0.I2C3)
 					"PRT0"
 				}
 			},
-
 			ToUUID ("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
 			Package (0x02)
 			{
@@ -269,7 +250,6 @@ Scope (\_SB.PCI0.I2C3)
 				}
 			}
 		})
-
 		Name (PRT0, Package (0x04)
 		{
 			ToUUID ("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
@@ -281,7 +261,6 @@ Scope (\_SB.PCI0.I2C3)
 					Zero
 				}
 			},
-
 			ToUUID ("dbb8e3e6-5886-4ba6-8795-1319f52a966b"),
 			Package (0x01)
 			{
@@ -292,24 +271,39 @@ Scope (\_SB.PCI0.I2C3)
 				}
 			}
 		})
-
 		Name (EP00, Package (0x02)
 		{
 			ToUUID ("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
-			Package (0x03)
+			Package (0x05)
 			{
 				Package (0x02)
 				{
 					"endpoint",
 					Zero
 				},
-
+				Package (0x02)
+				{
+					"clock-lanes",
+					Zero
+				},
+				Package (0x02)
+				{
+					"data-lanes",
+					Package (0x04)
+					{
+						One,
+						0x02,
+						0x03,
+						0x04
+					}
+				},
 				Package (0x02)
 				{
 					"link-frequencies",
-					Package (0x01)
+					Package (0x02)
 					{
-						0x325AA000
+						0x15752A00,
+						0xABA9500
 					}
 				},
 				Package (0x02)
@@ -328,34 +322,33 @@ Scope (\_SB.PCI0.I2C3)
 
 	Device (VCM0)
 	{
-		Name (_HID, "PRP0001")
-		Name (_UID, 0x03)
-		Name (_DDN, "DW9714 VCM")
-		Method (_STA, 0, NotSerialized)
+		Name (_HID, "PRP0001")  /* _HID: Hardware ID */
+		Name (_UID, 0x03)  /* _UID: Unique ID */
+		Name (_DDN, "DW9714 VCM")  /* _DDN: DOS Device Name */
+		Method (_STA, 0, NotSerialized)  /* _STA: Status */
 		{
 			Return (0x0F)
 		}
-
-		Name (_CRS, ResourceTemplate ()
+		Name (_CRS, ResourceTemplate ()  /* _CRS: Current Resource Settings */
 		{
 			I2cSerialBus (0x000C, ControllerInitiated, 0x00061A80,
 				AddressingMode7Bit, "\\_SB.PCI0.I2C3",
 				0x00, ResourceConsumer, ,
 			)
 		})
-		Name (_DEP, Package (0x01)
+		Name (_DEP, Package (0x01)  /* _DEP: Dependencies */
 		{
 			CAM0
 		})
-		Name (_PR0, Package (0x01)
+		Name (_PR0, Package (0x01)  /* _PR0: Power Resources for D0 */
 		{
 			RCPR
 		})
-		Name (_PR3, Package (0x01)
+		Name (_PR3, Package (0x01)  /* _PR3: Power Resources for D3hot */
 		{
 			RCPR
 		})
-		Name (_DSD, Package (0x02)
+		Name (_DSD, Package (0x02)  /* _DSD: Device-Specific Data */
 		{
 			ToUUID ("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
 			Package (0x01)
@@ -375,40 +368,53 @@ Scope (\_SB.PCI0.I2C5)
 	PowerResource (FCPR, 0x00, 0x0000)
 	{
 		Name (STA, Zero)
-		Method (_ON, 0, Serialized)
+		Method (_ON, 0, Serialized)  /* Front camera_ON_: Power On */
 		{
 			If ((STA == Zero))
 			{
-				/* Enable CLK1 with 19.2MHz */
-				MCCT(1,1,1)
-				/* Pull PWREN(GPIO R6) high */
-				STXS(GPP_R6)
-				Sleep(5)
-				/* Pull RST(GPIO H12) low */
+				/* Enable IMG_CLK */
+				MCON(1,1) /* Clock 1, 19.2MHz */
+
+				/* Pull RST low */
 				CTXS(GPP_H12)
-				Sleep(5)
+
+				/* Pull PWREN high */
+#if CONFIG(BOARD_INTEL_TGLRVP_UP4)
+				STXS(GPP_E22)
+#else
+				STXS(GPP_R6)
+#endif
+				Sleep(2) /* reset pulse width */
+
 				/* Pull RST high */
 				STXS(GPP_H12)
-				Sleep(5)
+				Sleep(1) /* t2 */
+
 				Store(1,STA)
 			}
 		}
-
-		Method (_OFF, 0, Serialized)
+		Method (_OFF, 0, Serialized)  /* Front camera_OFF_: Power Off */
 		{
 			If ((STA == One))
 			{
+				/* Disable IMG_CLK */
+				Sleep(1) /* t0+t1 */
+				MCOF(1) /* Clock 1 */
+
 				/* Pull RST low */
 				CTXS(GPP_H12)
+
 				/* Pull PWREN low */
+#if CONFIG(BOARD_INTEL_TGLRVP_UP4)
+				CTXS(GPP_E22)
+#else
 				CTXS(GPP_R6)
-				/* Disable CLK1 */
-				MCCT(1,0,1)
+#endif
+
 				Store(0,STA)
 			}
 		}
-
-		Method (_STA, 0, NotSerialized)  // _STA: Status
+		Method (_STA, 0, NotSerialized)  /* _STA: Status */
 		{
 			Return (STA)
 		}
@@ -416,33 +422,29 @@ Scope (\_SB.PCI0.I2C5)
 
 	Device (CAM1)
 	{
-		Name (_HID, "OVTI8856")
-		Name (_UID, Zero)
-		Name (_DDN, "Ov 8856 Camera")
-		Method (_STA, 0, NotSerialized)
+		Name (_HID, "OVTI8856")  /* _HID: Hardware ID */
+		Name (_UID, Zero)  /* _UID: Unique ID */
+		Name (_DDN, "Ov 8856 Camera")  /* _DDN: DOS Device Name */
+		Method (_STA, 0, NotSerialized)  /* _STA: Status */
 		{
 			Return (0x0F)
 		}
-
-		Name (_CRS, ResourceTemplate ()
+		Name (_CRS, ResourceTemplate ()  /* _CRS: Current Resource Settings */
 		{
 			I2cSerialBus (0x0010, ControllerInitiated, 0x00061A80,
 				AddressingMode7Bit, "\\_SB.PCI0.I2C5",
 				0x00, ResourceConsumer, ,
 			)
 		})
-
-		Name (_PR0, Package (0x01)
+		Name (_PR0, Package (0x01)  /* _PR0: Power Resources for D0 */
 		{
 			FCPR
 		})
-
-		Name (_PR3, Package (0x01)
+		Name (_PR3, Package (0x01)  /* _PR3: Power Resources for D3hot */
 		{
 			FCPR
 		})
-
-		Name (_DSD, Package (0x04)
+		Name (_DSD, Package (0x04)  /* _DSD: Device-Specific Data */
 		{
 			ToUUID ("dbb8e3e6-5886-4ba6-8795-1319f52a966b"),
 			Package (0x01)
@@ -453,7 +455,6 @@ Scope (\_SB.PCI0.I2C5)
 					"PRT0"
 				}
 			},
-
 			ToUUID ("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
 			Package (0x01)
 			{
@@ -464,7 +465,6 @@ Scope (\_SB.PCI0.I2C5)
 				}
 			}
 		})
-
 		Name (PRT0, Package (0x04)
 		{
 			ToUUID ("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
@@ -476,7 +476,6 @@ Scope (\_SB.PCI0.I2C5)
 					Zero
 				}
 			},
-
 			ToUUID ("dbb8e3e6-5886-4ba6-8795-1319f52a966b"),
 			Package (0x01)
 			{
@@ -487,24 +486,39 @@ Scope (\_SB.PCI0.I2C5)
 				}
 			}
 		})
-
 		Name (EP00, Package (0x02)
 		{
 			ToUUID ("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
-			Package (0x03)
+			Package (0x05)
 			{
 				Package (0x02)
 				{
 					"endpoint",
 					Zero
 				},
-
+				Package (0x02)
+				{
+					"clock-lanes",
+					Zero
+				},
+				Package (0x02)
+				{
+					"data-lanes",
+					Package (0x04)
+					{
+						One,
+						0x02,
+						0x03,
+						0x04
+					}
+				},
 				Package (0x02)
 				{
 					"link-frequencies",
-					Package (0x01)
+					Package (0x02)
 					{
-						0x325AA000
+						0x15752A00,
+						0xABA9500
 					}
 				},
 				Package (0x02)

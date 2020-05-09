@@ -1,18 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2008-2009 coresystems GmbH
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; version 2 of
- * the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <console/console.h>
 #include <device/device.h>
@@ -25,15 +12,15 @@
 #include <pc80/i8259.h>
 #include <arch/io.h>
 #include <arch/ioapic.h>
-#include <arch/acpi.h>
-#include <arch/acpigen.h>
-#include <drivers/intel/gma/i915.h>
+#include <acpi/acpi.h>
+#include <acpi/acpigen.h>
 #include <cpu/x86/smm.h>
 #include <cbmem.h>
 #include <string.h>
 #include "chip.h"
 #include "pch.h"
 #include "nvs.h"
+#include <northbridge/intel/sandybridge/sandybridge.h>
 #include <southbridge/intel/common/pciehp.h>
 #include <southbridge/intel/common/acpi_pirq_gen.h>
 #include <southbridge/intel/common/pmutil.h>
@@ -387,7 +374,12 @@ static void enable_clock_gating(struct device *dev)
 	RCBA32_AND_OR(DMIC, ~0UL, 0xf);
 
 	reg16 = pci_read_config16(dev, GEN_PMCON_1);
-	reg16 |= (1 << 2) | (1 << 11);
+	reg16 &= ~(3 << 2); /* Clear CLKRUN bits for mobile and desktop */
+	if (get_platform_type() == PLATFORM_MOBILE)
+		reg16 |= (1 << 2); /* CLKRUN_EN for mobile */
+	else if (get_platform_type() == PLATFORM_DESKTOP_SERVER)
+		reg16 |= (1 << 3); /* PSEUDO_CLKRUN_EN for desktop */
+	reg16 |= (1 << 11);
 	pci_write_config16(dev, GEN_PMCON_1, reg16);
 
 	pch_iobp_update(0xEB007F07, ~0UL, (1 << 31));
@@ -669,12 +661,11 @@ static void pch_lpc_enable(struct device *dev)
 	pch_enable(dev);
 }
 
-static void southbridge_inject_dsdt(struct device *dev)
+static void southbridge_inject_dsdt(const struct device *dev)
 {
 	global_nvs_t *gnvs = cbmem_add (CBMEM_ID_ACPI_GNVS, sizeof(*gnvs));
 
 	if (gnvs) {
-		const struct i915_gpu_controller_info *gfx = intel_gma_get_controller_info();
 		memset(gnvs, 0, sizeof(*gnvs));
 
 		acpi_create_gnvs(gnvs);
@@ -682,11 +673,6 @@ static void southbridge_inject_dsdt(struct device *dev)
 		gnvs->apic = 1;
 		gnvs->mpen = 1; /* Enable Multi Processing */
 		gnvs->pcnt = dev_count_cpu();
-
-		if (gfx) {
-			gnvs->ndid = gfx->ndid;
-			memcpy(gnvs->did, gfx->did, sizeof(gnvs->did));
-		}
 
 #if CONFIG(CHROMEOS)
 		chromeos_init_chromeos_acpi(&(gnvs->chromeos));
@@ -837,7 +823,7 @@ static const char *lpc_acpi_name(const struct device *dev)
 	return "LPCB";
 }
 
-static void southbridge_fill_ssdt(struct device *device)
+static void southbridge_fill_ssdt(const struct device *device)
 {
 	struct device *dev = pcidev_on_root(0x1f, 0);
 	config_t *chip = dev->chip_info;
@@ -885,8 +871,8 @@ static struct device_operations device_ops = {
 	.set_resources		= pci_dev_set_resources,
 	.enable_resources	= pci_dev_enable_resources,
 	.write_acpi_tables      = acpi_write_hpet,
-	.acpi_inject_dsdt_generator = southbridge_inject_dsdt,
-	.acpi_fill_ssdt_generator = southbridge_fill_ssdt,
+	.acpi_inject_dsdt	= southbridge_inject_dsdt,
+	.acpi_fill_ssdt		= southbridge_fill_ssdt,
 	.acpi_name		= lpc_acpi_name,
 	.init			= lpc_init,
 	.final			= lpc_final,

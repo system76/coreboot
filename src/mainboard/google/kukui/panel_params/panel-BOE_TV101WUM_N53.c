@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright 2019 Bitland Tech Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include "../panel.h"
 
@@ -22,11 +10,11 @@ struct panel_serializable_data BOE_TV101WUM_N53 = {
 		.panel_bits_per_color = 8,
 		.panel_bits_per_pixel = 24,
 		.mode = {
-			.pixel_clock = 159834,
+			.pixel_clock = 159916,
 			.lvds_dual_channel = 0,
 			.refresh = 60,
-			.ha = 1200, .hbl = 164, .hso = 114, .hspw = 10,
-			.va = 1920, .vbl = 33, .vso = 19, .vspw = 4,
+			.ha = 1200, .hbl = 164, .hso = 80, .hspw = 24,
+			.va = 1920, .vbl = 34, .vso = 20, .vspw = 4,
 			.phsync = '-', .pvsync = '-',
 			.x_mm = 135, .y_mm = 216,
 		},

@@ -1,19 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2008 - 2009 coresystems GmbH
- * Copyright (C) 2014 - 2017 Intel Corporation.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <device/mmio.h>
 #include <device/pci_ops.h>
@@ -31,7 +17,6 @@
 static void sata_init(struct device *dev)
 {
 	u32 reg32;
-	u16 reg16;
 	u32 abar;
 
 	printk(BIOS_DEBUG, "SATA: Initializing...\n");
@@ -46,10 +31,9 @@ static void sata_init(struct device *dev)
 	printk(BIOS_DEBUG, "SATA: Controller in AHCI mode.\n");
 
 	/* Set the controller mode */
-	reg16 = pci_read_config16(dev, SATA_MAP);
-	reg16 &= ~(3 << 6);
-	reg16 |= SATA_MAP_AHCI;
-	pci_write_config16(dev, SATA_MAP, reg16);
+	reg32 = pci_read_config32(dev, SATAGC);
+	reg32 &= ~SATAGC_AHCI;
+	pci_write_config32(dev, SATAGC, reg32);
 
 	/* Initialize AHCI memory-mapped space */
 	abar = pci_read_config32(dev, PCI_BASE_ADDRESS_5);
@@ -69,13 +53,12 @@ static struct device_operations sata_ops = {
 	.enable_resources = pci_dev_enable_resources,
 	.init = sata_init,
 	.enable = sata_enable,
-	.scan_bus = 0,
 	.ops_pci = &soc_pci_ops,
 };
 
 static const unsigned short pci_device_ids[] = {
-	AHCI_DEVID,  /* DVN SATA AHCI */
-	AHCI2_DEVID, /* DVN SATA2 AHCI */
+	PCI_DEVICE_ID_INTEL_DENVERTON_SATA_AHCI_1,
+	PCI_DEVICE_ID_INTEL_DENVERTON_SATA_AHCI_2,
 	0
 };
 

@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2015 Intel Corp.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <arch/io.h>
 #include <soc/gpio.h>
@@ -51,48 +39,47 @@
 static void lpc_gpio_config(u32 cycle)
 {
 	if (cycle == SUSPEND_CYCLE) { /* Suspend cycle */
-		write32((void *)(COMMUNITY_GPSOUTHEAST_BASE +
-				LPC_FRAME_MMIO_OFFSET),
+		write32((void *)(COMMUNITY_GPSOUTHEAST_BASE + LPC_FRAME_MMIO_OFFSET),
 				PAD_CFG0_NATIVE_PU20K(1));
-		write32((void *)(COMMUNITY_GPSOUTHEAST_BASE +
-				LPC_AD0_MMIO_OFFSET),
+
+		write32((void *)(COMMUNITY_GPSOUTHEAST_BASE + LPC_AD0_MMIO_OFFSET),
 				PAD_CFG0_NATIVE_PU20K(1));
-		write32((void *)(COMMUNITY_GPSOUTHEAST_BASE +
-				LPC_AD1_MMIO_OFFSET),
+
+		write32((void *)(COMMUNITY_GPSOUTHEAST_BASE + LPC_AD1_MMIO_OFFSET),
 				PAD_CFG0_NATIVE_PU20K(1));
-		write32((void *)(COMMUNITY_GPSOUTHEAST_BASE +
-				LPC_AD2_MMIO_OFFSET),
+
+		write32((void *)(COMMUNITY_GPSOUTHEAST_BASE + LPC_AD2_MMIO_OFFSET),
 				PAD_CFG0_NATIVE_PU20K(1));
-		write32((void *)(COMMUNITY_GPSOUTHEAST_BASE +
-				LPC_AD3_MMIO_OFFSET),
+
+		write32((void *)(COMMUNITY_GPSOUTHEAST_BASE + LPC_AD3_MMIO_OFFSET),
 				PAD_CFG0_NATIVE_PU20K(1));
-		write32((void *)(COMMUNITY_GPSOUTHEAST_BASE +
-				LPC_CLKRUN_MMIO_OFFSET),
+
+		write32((void *)(COMMUNITY_GPSOUTHEAST_BASE + LPC_CLKRUN_MMIO_OFFSET),
 				PAD_CFG0_NATIVE_PD20K(1));
+
 	} else { /* Resume cycle */
-		write32((void *)(COMMUNITY_GPSOUTHEAST_BASE +
-				LPC_FRAME_MMIO_OFFSET),
+		write32((void *)(COMMUNITY_GPSOUTHEAST_BASE + LPC_FRAME_MMIO_OFFSET),
 				PAD_CFG0_NATIVE_M1);
-		write32((void *)(COMMUNITY_GPSOUTHEAST_BASE +
-				LPC_AD0_MMIO_OFFSET),
+
+		write32((void *)(COMMUNITY_GPSOUTHEAST_BASE + LPC_AD0_MMIO_OFFSET),
 				PAD_CFG0_NATIVE_PU20K(1));
-		write32((void *)(COMMUNITY_GPSOUTHEAST_BASE +
-				LPC_AD1_MMIO_OFFSET),
+
+		write32((void *)(COMMUNITY_GPSOUTHEAST_BASE + LPC_AD1_MMIO_OFFSET),
 				PAD_CFG0_NATIVE_PU20K(1));
-		write32((void *)(COMMUNITY_GPSOUTHEAST_BASE +
-				LPC_AD2_MMIO_OFFSET),
+
+		write32((void *)(COMMUNITY_GPSOUTHEAST_BASE + LPC_AD2_MMIO_OFFSET),
 				PAD_CFG0_NATIVE_PU20K(1));
-		write32((void *)(COMMUNITY_GPSOUTHEAST_BASE +
-				LPC_AD3_MMIO_OFFSET),
+
+		write32((void *)(COMMUNITY_GPSOUTHEAST_BASE + LPC_AD3_MMIO_OFFSET),
 				PAD_CFG0_NATIVE_PU20K(1));
-		write32((void *)(COMMUNITY_GPSOUTHEAST_BASE +
-				LPC_CLKRUN_MMIO_OFFSET),
+
+		write32((void *)(COMMUNITY_GPSOUTHEAST_BASE + LPC_CLKRUN_MMIO_OFFSET),
 				PAD_CFG0_NATIVE_M1);
 	}
 }
 
 /*
- * configure LPC GPIO lines for low power
+ * Configure LPC GPIO lines for low power
  */
 void lpc_set_low_power(void)
 {

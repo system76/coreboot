@@ -1,19 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2007-2009 coresystems GmbH
- * Copyright (C) 2011 The ChromiumOS Authors.  All rights reserved.
- * Copyright (C) 2013 secunet Security Networks AG
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <types.h>
 #include <device/device.h>
@@ -41,12 +27,12 @@ static int int15_handler(void)
 		 *  bit 2 = Graphics Stretching
 		 *  bit 1 = Text Stretching
 		 *  bit 0 = Centering (do not set with bit1 or bit2)
-		 *  0     = video bios default
+		 *  0     = video BIOS default
 		 */
 		X86_EAX &= 0xffff0000;
 		X86_EAX |= 0x005f;
 		X86_ECX &= 0xffffff00;
-		X86_ECX |= 0x00;	/* Use video bios default */
+		X86_ECX |= 0x00;	/* Use video BIOS default */
 		res = 1;
 		break;
 	case 0x5f35:
@@ -64,7 +50,7 @@ static int int15_handler(void)
 		X86_EAX &= 0xffff0000;
 		X86_EAX |= 0x005f;
 		X86_ECX &= 0xffff0000;
-		X86_ECX |= 0x0000;	/* Use video bios default */
+		X86_ECX |= 0x0000;	/* Use video BIOS default */
 		res = 1;
 		break;
 	case 0x5f51:

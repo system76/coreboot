@@ -6,7 +6,7 @@
 #include <device/pnp.h>
 #include <pc80/keyboard.h>
 #include <option.h>
-#include <arch/acpi.h>
+#include <acpi/acpi.h>
 #include <superio/conf_mode.h>
 
 #include "w83667hg-a.h"
@@ -36,7 +36,7 @@ static void w83667hg_a_init(struct device *dev)
 
 		mouse_detected = pc_keyboard_init(PROBE_AUX_DEVICE);
 
-		if (!mouse_detected && !acpi_is_wakeup_s3()) {
+		if (!mouse_detected) {
 			printk(BIOS_INFO, "%s: Disable mouse controller.",
 					__func__);
 			pnp_enter_conf_mode(dev);

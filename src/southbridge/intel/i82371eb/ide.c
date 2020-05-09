@@ -1,18 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2007 Uwe Hermann <uwe@hermann-uwe.de>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* This file is part of the coreboot project. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 /* TODO: Check if this really works for all of the southbridges. */
 
@@ -147,8 +134,6 @@ static const struct device_operations ide_ops_fb_sb = {
 	.set_resources		= pci_dev_set_resources,
 	.enable_resources	= pci_dev_enable_resources,
 	.init			= ide_init_i82371fb_sb,
-	.scan_bus		= 0,
-	.enable			= 0,
 	.ops_pci		= 0, /* No subsystem IDs on 82371XX! */
 };
 
@@ -158,8 +143,6 @@ static const struct device_operations ide_ops_ab_eb_mb = {
 	.set_resources		= pci_dev_set_resources,
 	.enable_resources	= pci_dev_enable_resources,
 	.init			= ide_init_i82371ab_eb_mb,
-	.scan_bus		= 0,
-	.enable			= 0,
 	.ops_pci		= 0, /* No subsystem IDs on 82371XX! */
 };
 

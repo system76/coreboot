@@ -1,18 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2012, 2017 Advanced Micro Devices, Inc.
- * Copyright (C) 2014 Google Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 /*
  * ACPI - create the Fixed ACPI Description Tables (FADT)
@@ -20,8 +7,8 @@
 
 #include <string.h>
 #include <console/console.h>
-#include <arch/acpi.h>
-#include <arch/acpigen.h>
+#include <acpi/acpi.h>
+#include <acpi/acpigen.h>
 #include <device/pci_ops.h>
 #include <arch/ioapic.h>
 #include <cpu/x86/smm.h>
@@ -184,7 +171,7 @@ void acpi_create_fadt(acpi_fadt_t *fadt, acpi_facs_t *facs, void *dsdt)
 	fadt->x_pm1a_cnt_blk.space_id = ACPI_ADDRESS_SPACE_IO;
 	fadt->x_pm1a_cnt_blk.bit_width = 16;
 	fadt->x_pm1a_cnt_blk.bit_offset = 0;
-	fadt->x_pm1a_cnt_blk.access_size = 0;
+	fadt->x_pm1a_cnt_blk.access_size = ACPI_ACCESS_SIZE_WORD_ACCESS;
 	fadt->x_pm1a_cnt_blk.addrl = ACPI_PM1_CNT_BLK;
 	fadt->x_pm1a_cnt_blk.addrh = 0x0;
 
@@ -233,25 +220,25 @@ void acpi_create_fadt(acpi_fadt_t *fadt, acpi_facs_t *facs, void *dsdt)
 	header->checksum = acpi_checksum((void *)fadt, sizeof(acpi_fadt_t));
 }
 
-void generate_cpu_entries(struct device *device)
+void generate_cpu_entries(const struct device *device)
 {
 	int cores, cpu;
 
 	cores = get_cpu_count();
-	printk(BIOS_DEBUG, "ACPI \\_PR report %d core(s)\n", cores);
+	printk(BIOS_DEBUG, "ACPI \\_SB report %d core(s)\n", cores);
 
-	/* Generate BSP \_PR.P000 */
+	/* Generate BSP \_SB.P000 */
 	acpigen_write_processor(0, ACPI_GPE0_BLK, 6);
 	acpigen_pop_len();
 
-	/* Generate AP \_PR.Pxxx */
+	/* Generate AP \_SB.Pxxx */
 	for (cpu = 1; cpu < cores; cpu++) {
 		acpigen_write_processor(cpu, 0, 0);
 		acpigen_pop_len();
 	}
 }
 
-unsigned long southbridge_write_acpi_tables(struct device *device,
+unsigned long southbridge_write_acpi_tables(const struct device *device,
 		unsigned long current,
 		struct acpi_rsdp *rsdp)
 {
@@ -280,7 +267,7 @@ static void acpi_create_gnvs(struct global_nvs_t *gnvs)
 	gnvs->pcnt = dev_count_cpu();
 }
 
-void southbridge_inject_dsdt(struct device *device)
+void southbridge_inject_dsdt(const struct device *device)
 {
 	struct global_nvs_t *gnvs;
 

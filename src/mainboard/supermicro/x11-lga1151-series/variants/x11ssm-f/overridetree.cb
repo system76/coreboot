@@ -10,15 +10,13 @@ chip soc/intel/skylake
 
 	register "gen1_dec" = "0x007c0a01"	# Super IO SWC
 	register "gen2_dec" = "0x000c0ca1"	# IPMI KCS
-	register "gen3_dec" = "0x000c03e1"	# UART3
-	register "gen4_dec" = "0x000c02e1"	# UART4
 
 	# PCIe configuration
-	register "PcieRpEnable[0]" 	= "1"	# Enable PCH PCIe Port 1 / PCH SLOT4
-	register "PcieRpEnable[4]" 	= "1"	# Enable PCH PCIe Port 5 / PCH SLOT5
-	register "PcieRpEnable[8]" 	= "1"	# Enable PCH PCIe Port 9 / GbE 1
-	register "PcieRpEnable[9]" 	= "1"	# Enable PCH PCIe Port 10 / GbE 2
-	register "PcieRpEnable[10]" 	= "1"	# Enable PCH PCIe Port 11 / Aspeed 2400 VGA
+	register "PcieRpEnable[0]"	= "1"	# Enable PCH PCIe Port 1 / PCH SLOT4
+	register "PcieRpEnable[4]"	= "1"	# Enable PCH PCIe Port 5 / PCH SLOT5
+	register "PcieRpEnable[8]"	= "1"	# Enable PCH PCIe Port 9 / GbE 1
+	register "PcieRpEnable[9]"	= "1"	# Enable PCH PCIe Port 10 / GbE 2
+	register "PcieRpEnable[10]"	= "1"	# Enable PCH PCIe Port 11 / Aspeed 2400 VGA
 
 	# USB configuration
 	# USB0/1
@@ -89,10 +87,12 @@ chip soc/intel/skylake
 						device pnp 2e.2 on	# SUART1 / COM1 (ext)
 							io 0x60 = 0x3f8
 							irq 0x70 = 4
+							drq 0xf0 = 0x00
 						end
 						device pnp 2e.3 on	# SUART2 / COM2 (int)
 							io 0x60 = 0x2f8
 							irq 0x70 = 3
+							drq 0xf0 = 0x00
 						end
 						device pnp 2e.4 on	# SWC
 							io 0x60 = 0xa00
@@ -103,14 +103,8 @@ chip soc/intel/skylake
 						end
 						device pnp 2e.5 off end	# KBC
 						device pnp 2e.7 on  end	# GPIO
-						device pnp 2e.b on	# SUART3
-							io 0x60 = 0x3e8
-							irq 0x70 = 4
-						end
-						device pnp 2e.c on	# SUART4
-							io 0x60 = 0x2e8
-							irq 0x70 = 3
-						end
+						device pnp 2e.b off end	# SUART3
+						device pnp 2e.c off end	# SUART4
 						device pnp 2e.d on end	# iLPC2AHB
 						device pnp 2e.e on	# Mailbox
 							io 0x60 = 0xa40

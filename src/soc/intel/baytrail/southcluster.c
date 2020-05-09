@@ -1,25 +1,11 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2008-2009 coresystems GmbH
- * Copyright (C) 2013 Google Inc.
- * Copyright (C) 2018 Eltan B.V.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <stdint.h>
 #include <arch/io.h>
 #include <device/mmio.h>
 #include <device/pci_ops.h>
-#include <arch/acpi.h>
+#include <acpi/acpi.h>
 #include <bootstate.h>
 #include <cbmem.h>
 #include <console/console.h>
@@ -40,7 +26,7 @@
 #include <soc/ramstage.h>
 #include <soc/spi.h>
 #include "chip.h"
-#include <arch/acpigen.h>
+#include <acpi/acpigen.h>
 
 static inline void
 add_mmio_resource(struct device *dev, int i, unsigned long addr,
@@ -342,9 +328,9 @@ static void hda_work_around(struct device *dev)
 	 * that requires setting up the 64-bit BAR. */
 	pci_write_config32(dev, PCI_BASE_ADDRESS_0, TEMP_BASE_ADDRESS);
 	pci_write_config32(dev, PCI_BASE_ADDRESS_1, 0);
-	pci_write_config8(dev, PCI_COMMAND, PCI_COMMAND_MEMORY);
+	pci_write_config16(dev, PCI_COMMAND, PCI_COMMAND_MEMORY);
 	write32(gctl, read32(gctl) | 0x1);
-	pci_write_config8(dev, PCI_COMMAND, 0);
+	pci_write_config16(dev, PCI_COMMAND, 0);
 	pci_write_config32(dev, PCI_BASE_ADDRESS_0, 0);
 }
 
@@ -466,7 +452,7 @@ static int place_device_in_d3hot(struct device *dev)
 /* Common PCI device function disable. */
 void southcluster_enable_dev(struct device *dev)
 {
-	uint32_t reg32;
+	uint16_t reg16;
 
 	if (!dev->enabled) {
 		int slot = PCI_SLOT(dev->path.pci.devfn);
@@ -475,10 +461,10 @@ void southcluster_enable_dev(struct device *dev)
 		       dev_path(dev), slot, func);
 
 		/* Ensure memory, io, and bus master are all disabled */
-		reg32 = pci_read_config32(dev, PCI_COMMAND);
-		reg32 &= ~(PCI_COMMAND_MASTER |
+		reg16 = pci_read_config16(dev, PCI_COMMAND);
+		reg16 &= ~(PCI_COMMAND_MASTER |
 			   PCI_COMMAND_MEMORY | PCI_COMMAND_IO);
-		pci_write_config32(dev, PCI_COMMAND, reg32);
+		pci_write_config16(dev, PCI_COMMAND, reg16);
 
 		/* Place device in D3Hot */
 		if (place_device_in_d3hot(dev) < 0) {
@@ -491,13 +477,11 @@ void southcluster_enable_dev(struct device *dev)
 		sc_disable_devfn(dev);
 	} else {
 		/* Enable SERR */
-		reg32 = pci_read_config32(dev, PCI_COMMAND);
-		reg32 |= PCI_COMMAND_SERR;
-		pci_write_config32(dev, PCI_COMMAND, reg32);
+		pci_or_config16(dev, PCI_COMMAND, PCI_COMMAND_SERR);
 	}
 }
 
-static void southcluster_inject_dsdt(struct device *device)
+static void southcluster_inject_dsdt(const struct device *device)
 {
 	global_nvs_t *gnvs;
 
@@ -524,9 +508,8 @@ static void southcluster_inject_dsdt(struct device *device)
 static struct device_operations device_ops = {
 	.read_resources		= sc_read_resources,
 	.set_resources		= pci_dev_set_resources,
-	.acpi_inject_dsdt_generator = southcluster_inject_dsdt,
+	.acpi_inject_dsdt	= southcluster_inject_dsdt,
 	.write_acpi_tables      = acpi_write_hpet,
-	.enable_resources	= NULL,
 	.init			= sc_init,
 	.enable			= southcluster_enable_dev,
 	.scan_bus		= scan_static_bus,

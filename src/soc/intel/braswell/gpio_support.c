@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2015 Intel Corp.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <device/mmio.h>
 #include <gpio.h>
@@ -25,10 +13,9 @@
 uint16_t gpio_family_number(uint8_t community, uint8_t pad)
 {
 	/*
-	 * Refer to BSW BIOS Writers Guide, Table "Family Number".
-	 * BSW has 4 GPIO communities. Each community has up to 7 families and
-	 * each family contains a range of Pad numbers. The number in the array
-	 * is the maximum no. of that range.
+	 * Refer to BSW BIOS Writers Guide, Table "Family Number". BSW has 4 GPIO communities.
+	 * Each community has up to 7 families and each family contains a range of Pad numbers.
+	 * The number in the array is the maximum no. of that range.
 	 * For example: East community, family 0, Pad 0~11.
 	 */
 	static const uint8_t community_base[GPIO_COMMUNITY_COUNT]
@@ -58,8 +45,7 @@ uint16_t gpio_family_number(uint8_t community, uint8_t pad)
 }
 
 /*
- * Return pad configuration register offset by pad number and which community
- * it is in.
+ * Return pad configuration register offset by pad number and which community it is in.
  */
 uint32_t *gpio_pad_config_reg(uint8_t community, uint8_t pad)
 {
@@ -70,12 +56,11 @@ uint32_t *gpio_pad_config_reg(uint8_t community, uint8_t pad)
 	fpad = gpio_family_number(community, pad);
 
 	/*
-	 * Refer to BSW BIOS Writers Guide, Table "Per Pad Memory Space
-	 * Registers Addresses" for the Pad configuration register calculation.
+	 * Refer to BSW BIOS Writers Guide, Table "Per Pad Memory Space Registers Addresses"
+	 * for the Pad configuration register calculation.
 	 */
-	pad_config_reg = (uint32_t *)(COMMUNITY_BASE(community)
-		+ FAMILY_PAD_REGS_OFF + (FAMILY_PAD_REGS_SIZE * (fpad >> 8))
-		+ (GPIO_REGS_SIZE * (fpad & 0xff)));
+	pad_config_reg = (uint32_t *)(COMMUNITY_BASE(community) + FAMILY_PAD_REGS_OFF +
+		(FAMILY_PAD_REGS_SIZE * (fpad >> 8)) + (GPIO_REGS_SIZE * (fpad & 0xff)));
 
 	return pad_config_reg;
 }
@@ -87,17 +72,18 @@ static int gpio_get_community_num(gpio_t gpio_num, int *pad)
 	if (gpio_num >= GP_SW_00 && gpio_num <= GP_SW_97) {
 		comm =  GP_SOUTHWEST;
 		*pad = gpio_num % GP_SOUTHWEST_COUNT;
+
 	} else if (gpio_num >= GP_NC_00 && gpio_num <= GP_NC_72) {
 		comm =  GP_NORTH;
 		*pad = gpio_num % GP_SOUTHWEST_COUNT;
+
 	} else if (gpio_num >= GP_E_00 && gpio_num <= GP_E_26) {
 		comm =  GP_EAST;
-		*pad = gpio_num %
-				(GP_SOUTHWEST_COUNT + GP_NORTH_COUNT);
+		*pad = gpio_num % (GP_SOUTHWEST_COUNT + GP_NORTH_COUNT);
+
 	} else {
 		comm = GP_SOUTHEAST;
-		*pad = gpio_num % (GP_SOUTHWEST_COUNT +
-					GP_NORTH_COUNT + GP_EAST_COUNT);
+		*pad = gpio_num % (GP_SOUTHWEST_COUNT + GP_NORTH_COUNT + GP_EAST_COUNT);
 	}
 	return comm;
 }
@@ -108,10 +94,8 @@ static void gpio_config_pad(gpio_t gpio_num, const struct soc_gpio_map *cfg)
 	int pad_num = 0;
 	uint32_t *pad_config0_reg;
 	uint32_t *pad_config1_reg;
-	int max_gpio_cnt = GP_SOUTHWEST_COUNT + GP_NORTH_COUNT + GP_EAST_COUNT
-			+ GP_SOUTHEAST_COUNT;
 
-	if (gpio_num > max_gpio_cnt)
+	if (gpio_num > MAX_GPIO_CNT)
 		return;
 	/* Get GPIO Community based on GPIO_NUMBER */
 	comm = gpio_get_community_num(gpio_num, &pad_num);
@@ -148,10 +132,8 @@ int gpio_get(gpio_t gpio_num)
 	int pad_num = 0;
 	uint32_t *pad_config0_reg;
 	u32 pad_value;
-	int max_gpio_cnt = GP_SOUTHWEST_COUNT + GP_NORTH_COUNT + GP_EAST_COUNT
-				+ GP_SOUTHEAST_COUNT;
 
-	if (gpio_num > max_gpio_cnt)
+	if (gpio_num > MAX_GPIO_CNT)
 		return -1;
 
 	/* Get GPIO Community based on GPIO_NUMBER */

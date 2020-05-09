@@ -1,6 +1,5 @@
 ## This file is part of the coreboot project.
 ##
-## Copyright 2019 Google LLC
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -25,4 +24,5 @@ SPD_SOURCES += 16G_3200_4bg   # 0b1001
 
 bootblock-y += gpio.c
 ramstage-y += gpio.c
+ramstage-y += mainboard.c
 ramstage-y += ramstage.c

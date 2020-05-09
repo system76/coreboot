@@ -1,18 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2015 - 2017 Intel Corp.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <console/console.h>
 #include <device/device.h>
@@ -40,12 +27,11 @@ static struct device_operations usb_xhci_ops = {
 	.enable_resources = pci_dev_enable_resources,
 	.init = usb_xhci_init,
 	.enable = pci_dev_enable_resources,
-	.scan_bus = 0,
 	.ops_pci = &soc_pci_ops,
 };
 
 static const struct pci_driver pch_usb_xhci __pci_driver = {
 	.ops = &usb_xhci_ops,
 	.vendor = PCI_VENDOR_ID_INTEL,
-	.device = XHCI_DEVID,
+	.device = PCI_DEVICE_ID_INTEL_DENVERTON_XHCI,
 };

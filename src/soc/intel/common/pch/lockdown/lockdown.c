@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2018 Intel Corporation.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <bootstate.h>
 #include <intelblocks/cfg.h>
@@ -69,12 +57,12 @@ static void fast_spi_lockdown_cfg(int chipset_lockdown)
 	/* Lock FAST_SPIBAR */
 	fast_spi_lock_bar();
 
-	/* Set Bios Interface Lock, Bios Lock */
+	/* Set BIOS Interface Lock, BIOS Lock */
 	if (chipset_lockdown == CHIPSET_LOCKDOWN_COREBOOT) {
-		/* Bios Interface Lock */
+		/* BIOS Interface Lock */
 		fast_spi_set_bios_interface_lock_down();
 
-		/* Bios Lock */
+		/* BIOS Lock */
 		fast_spi_set_lock_enable();
 	}
 }

@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright 2016 Rockchip Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <assert.h>
 #include <console/console.h>
@@ -304,7 +292,7 @@ static void rkclk_set_pll(u32 *pll_con, const struct pll_div *div)
 	u32 output_khz = vco_khz / div->postdiv1 / div->postdiv2;
 
 	printk(BIOS_DEBUG, "PLL at %p: fbdiv=%d, refdiv=%d, postdiv1=%d, "
-			   "postdiv2=%d, vco=%u khz, output=%u khz\n",
+			   "postdiv2=%d, vco=%u kHz, output=%u kHz\n",
 			   pll_con, div->fbdiv, div->refdiv, div->postdiv1,
 			   div->postdiv2, vco_khz, output_khz);
 	assert(vco_khz >= VCO_MIN_KHZ && vco_khz <= VCO_MAX_KHZ &&
@@ -485,7 +473,7 @@ void rkclk_init(void)
 
 	/* some cru registers changed by bootrom, we'd better reset them to
 	 * reset/default values described in TRM to avoid confusion in kernel.
-	 * Please consider these threee lines as a fix of bootrom bug.
+	 * Please consider these three lines as a fix of bootrom bug.
 	 */
 	write32(&cru_ptr->clksel_con[12], 0xffff4101);
 	write32(&cru_ptr->clksel_con[19], 0xffff033f);

@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2011 Chromium OS Authors
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <arch/io.h>
 #include <device/mmio.h>
@@ -58,7 +46,7 @@ static const struct gt_powermeter snb_pm_gt1[] = {
 	{ 0xa240, 0x00000000 },
 	{ 0xa244, 0x00000000 },
 	{ 0xa248, 0x8000421e },
-	{ 0 }
+	{ 0 },
 };
 
 static const struct gt_powermeter snb_pm_gt2[] = {
@@ -81,7 +69,7 @@ static const struct gt_powermeter snb_pm_gt2[] = {
 	{ 0xa240, 0x00000000 },
 	{ 0xa244, 0x00000000 },
 	{ 0xa248, 0x8000421e },
-	{ 0 }
+	{ 0 },
 };
 
 static const struct gt_powermeter ivb_pm_gt1[] = {
@@ -137,7 +125,7 @@ static const struct gt_powermeter ivb_pm_gt1[] = {
 	{ 0xaa3c, 0x00001c00 },
 	{ 0xaa54, 0x00000004 },
 	{ 0xaa60, 0x00060000 },
-	{ 0 }
+	{ 0 },
 };
 
 static const struct gt_powermeter ivb_pm_gt2_17w[] = {
@@ -193,7 +181,7 @@ static const struct gt_powermeter ivb_pm_gt2_17w[] = {
 	{ 0xaa3c, 0x00003900 },
 	{ 0xaa54, 0x00000008 },
 	{ 0xaa60, 0x00110000 },
-	{ 0 }
+	{ 0 },
 };
 
 static const struct gt_powermeter ivb_pm_gt2_35w[] = {
@@ -249,12 +237,12 @@ static const struct gt_powermeter ivb_pm_gt2_35w[] = {
 	{ 0xaa3c, 0x00003900 },
 	{ 0xaa54, 0x00000008 },
 	{ 0xaa60, 0x00110000 },
-	{ 0 }
+	{ 0 },
 };
 
-/* some vga option roms are used for several chipsets but they only have one
- * PCI ID in their header. If we encounter such an option rom, we need to do
- * the mapping ourselves
+/*
+ * Some VGA option roms are used for several chipsets but they only have one PCI ID in their
+ * header. If we encounter such an option rom, we need to do the mapping ourselves.
  */
 
 u32 map_oprom_vendev(u32 vendev)
@@ -263,17 +251,17 @@ u32 map_oprom_vendev(u32 vendev)
 
 	switch (vendev) {
 	case 0x80860102:		/* SNB GT1 Desktop */
-	case 0x8086010a:		/* SNB GT1 Server */
+	case 0x8086010a:		/* SNB GT1 Server  */
 	case 0x80860112:		/* SNB GT2 Desktop */
-	case 0x80860116:		/* SNB GT2 Mobile */
+	case 0x80860116:		/* SNB GT2 Mobile  */
 	case 0x80860122:		/* SNB GT2 Desktop >=1.3GHz */
-	case 0x80860126:		/* SNB GT2 Mobile >=1.3GHz */
+	case 0x80860126:		/* SNB GT2 Mobile  >=1.3GHz */
 	case 0x80860152:		/* IVB GT1 Desktop */
-	case 0x80860156:		/* IVB GT1 Mobile */
+	case 0x80860156:		/* IVB GT1 Mobile  */
 	case 0x80860162:		/* IVB GT2 Desktop */
-	case 0x80860166:		/* IVB GT2 Mobile */
-	case 0x8086016a:		/* IVB GT2 Server */
-		new_vendev = 0x80860106;/* SNB GT1 Mobile */
+	case 0x80860166:		/* IVB GT2 Mobile  */
+	case 0x8086016a:		/* IVB GT2 Server  */
+		new_vendev = 0x80860106;/* SNB GT1 Mobile  */
 		break;
 	}
 
@@ -386,18 +374,15 @@ static void gma_pm_init_pre_vbios(struct device *dev)
 
 			if (tdp <= 17) {
 				/* <=17W ULV */
-				printk(BIOS_DEBUG, "IVB GT2 17W "
-				       "Power Meter Weights\n");
+				printk(BIOS_DEBUG, "IVB GT2 17W Power Meter Weights\n");
 				gtt_write_powermeter(ivb_pm_gt2_17w);
 			} else if ((tdp >= 25) && (tdp <= 35)) {
 				/* 25W-35W */
-				printk(BIOS_DEBUG, "IVB GT2 25W-35W "
-				       "Power Meter Weights\n");
+				printk(BIOS_DEBUG, "IVB GT2 25W-35W Power Meter Weights\n");
 				gtt_write_powermeter(ivb_pm_gt2_35w);
 			} else {
 				/* All others */
-				printk(BIOS_DEBUG, "IVB GT2 35W "
-				       "Power Meter Weights\n");
+				printk(BIOS_DEBUG, "IVB GT2 35W Power Meter Weights\n");
 				gtt_write_powermeter(ivb_pm_gt2_35w);
 			}
 		}
@@ -553,7 +538,7 @@ static void gma_pm_init_post_vbios(struct device *dev)
 	/* Setup Digital Port Hotplug */
 	reg32 = gtt_read(0xc4030);
 	if (!reg32) {
-		reg32 = (conf->gpu_dp_b_hotplug & 0x7) << 2;
+		reg32  = (conf->gpu_dp_b_hotplug & 0x7) <<  2;
 		reg32 |= (conf->gpu_dp_c_hotplug & 0x7) << 10;
 		reg32 |= (conf->gpu_dp_d_hotplug & 0x7) << 18;
 		gtt_write(0xc4030, reg32);
@@ -600,15 +585,15 @@ static void gma_enable_swsci(void)
 {
 	u16 reg16;
 
-	/* clear DMISCI status */
+	/* Clear DMISCI status */
 	reg16 = inw(DEFAULT_PMBASE + TCO1_STS);
 	reg16 &= DMISCI_STS;
 	outw(DEFAULT_PMBASE + TCO1_STS, reg16);
 
-	/* clear acpi tco status */
+	/* Clear ACPI TCO status */
 	outl(DEFAULT_PMBASE + GPE0_STS, TCOSCI_STS);
 
-	/* enable acpi tco scis */
+	/* Enable ACPI TCO SCIs */
 	reg16 = inw(DEFAULT_PMBASE + GPE0_EN);
 	reg16 |= TCOSCI_EN;
 	outw(DEFAULT_PMBASE + GPE0_EN, reg16);
@@ -655,31 +640,16 @@ static void gma_func0_init(struct device *dev)
 	intel_gma_restore_opregion();
 }
 
-const struct i915_gpu_controller_info *
-intel_gma_get_controller_info(void)
+static void gma_generate_ssdt(const struct device *device)
 {
-	struct device *dev = pcidev_on_root(0x2, 0);
-	if (!dev) {
-		return NULL;
-	}
-	struct northbridge_intel_sandybridge_config *chip = dev->chip_info;
-	return &chip->gfx;
+	const struct northbridge_intel_sandybridge_config *chip = device->chip_info;
+
+	drivers_intel_gma_displays_ssdt_generate(&chip->gfx);
 }
 
-static void gma_ssdt(struct device *device)
-{
-	const struct i915_gpu_controller_info *gfx = intel_gma_get_controller_info();
-	if (!gfx) {
-		return;
-	}
-
-	drivers_intel_gma_displays_ssdt_generate(gfx);
-}
-
-static unsigned long
-gma_write_acpi_tables(struct device *const dev,
-		      unsigned long current,
-		      struct acpi_rsdp *const rsdp)
+static unsigned long gma_write_acpi_tables(const struct device *const dev,
+					   unsigned long current,
+					   struct acpi_rsdp *const rsdp)
 {
 	igd_opregion_t *opregion = (igd_opregion_t *)current;
 	global_nvs_t *gnvs;
@@ -707,44 +677,44 @@ static const char *gma_acpi_name(const struct device *dev)
 	return "GFX0";
 }
 
-/* called by pci set_vga_bridge function */
+/* Called by PCI set_vga_bridge function */
 static void gma_func0_disable(struct device *dev)
 {
 	u16 reg16;
 	struct device *dev_host = pcidev_on_root(0, 0);
 
 	reg16 = pci_read_config16(dev_host, GGC);
-	reg16 |= (1 << 1); /* disable VGA decode */
+	reg16 |= (1 << 1); /* Disable VGA decode */
 	pci_write_config16(dev_host, GGC, reg16);
 
 	dev->enabled = 0;
 }
 
 static struct pci_operations gma_pci_ops = {
-	.set_subsystem    = pci_dev_set_subsystem,
+	.set_subsystem = pci_dev_set_subsystem,
 };
 
 static struct device_operations gma_func0_ops = {
-	.read_resources		= pci_dev_read_resources,
-	.set_resources		= pci_dev_set_resources,
-	.enable_resources	= pci_dev_enable_resources,
-	.acpi_fill_ssdt_generator = gma_ssdt,
-	.init			= gma_func0_init,
-	.scan_bus		= 0,
-	.enable			= 0,
-	.disable		= gma_func0_disable,
-	.ops_pci		= &gma_pci_ops,
-	.acpi_name		= gma_acpi_name,
-	.write_acpi_tables	= gma_write_acpi_tables,
+	.read_resources         = pci_dev_read_resources,
+	.set_resources          = pci_dev_set_resources,
+	.enable_resources       = pci_dev_enable_resources,
+	.acpi_fill_ssdt		= gma_generate_ssdt,
+	.init                   = gma_func0_init,
+	.disable                = gma_func0_disable,
+	.ops_pci                = &gma_pci_ops,
+	.acpi_name              = gma_acpi_name,
+	.write_acpi_tables      = gma_write_acpi_tables,
 };
 
-static const unsigned short pci_device_ids[] = { 0x0102, 0x0106, 0x010a, 0x0112,
-						 0x0116, 0x0122, 0x0126, 0x0156,
-						 0x0166, 0x0162, 0x016a, 0x0152,
-						 0 };
+static const unsigned short pci_device_ids[] = {
+	0x0102, 0x0106, 0x010a, 0x0112,
+	0x0116, 0x0122, 0x0126, 0x0156,
+	0x0166, 0x0162, 0x016a, 0x0152,
+	0
+};
 
 static const struct pci_driver gma __pci_driver = {
-	.ops	 = &gma_func0_ops,
-	.vendor	 = PCI_VENDOR_ID_INTEL,
+	.ops     = &gma_func0_ops,
+	.vendor  = PCI_VENDOR_ID_INTEL,
 	.devices = pci_device_ids,
 };

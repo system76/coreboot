@@ -1,23 +1,7 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2015 - 2017 Intel Corp.
- * Copyright (C) 2017 - 2019 Siemens AG
- * (Written by Alexandru Gagniuc <alexandrux.gagniuc@intel.com> for Intel Corp.)
- * (Written by Andrey Petrov <andrey.petrov@intel.com> for Intel Corp.)
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* This file is part of the coreboot project. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
-#include <arch/acpi.h>
+#include <acpi/acpi.h>
 #include <bootstate.h>
 #include <cbmem.h>
 #include <console/console.h>
@@ -102,6 +86,10 @@
 #define IOSFBTCGE		(1 << 1)
 /* IOSF Gasket Backbone Local Clock Gating Enable */
 #define IOSFGBLCGE		(1 << 0)
+
+#define CFG_XHCPMCTRL		0x80a4
+/* BIT[7:4] LFPS periodic sampling for USB3 Ports */
+#define LFPS_PM_DISABLE_MASK    0xFFFFFF0F
 
 const char *soc_acpi_name(const struct device *dev)
 {
@@ -218,19 +206,15 @@ static void pci_domain_set_resources(struct device *dev)
 static struct device_operations pci_domain_ops = {
 	.read_resources = pci_domain_read_resources,
 	.set_resources = pci_domain_set_resources,
-	.enable_resources = NULL,
-	.init = NULL,
 	.scan_bus = pci_domain_scan_bus,
 	.acpi_name = &soc_acpi_name,
 };
 
 static struct device_operations cpu_bus_ops = {
-	.read_resources = DEVICE_NOOP,
-	.set_resources = DEVICE_NOOP,
-	.enable_resources = DEVICE_NOOP,
+	.read_resources = noop_read_resources,
+	.set_resources = noop_set_resources,
 	.init = apollolake_init_cpus,
-	.scan_bus = NULL,
-	.acpi_fill_ssdt_generator = generate_cpu_entries,
+	.acpi_fill_ssdt = generate_cpu_entries,
 };
 
 static void enable_dev(struct device *dev)
@@ -425,6 +409,12 @@ static void soc_final(void *data)
 static void disable_dev(struct device *dev, FSP_S_CONFIG *silconfig)
 {
 	switch (dev->path.pci.devfn) {
+	case PCH_DEVFN_NPK:
+		/*
+		 * Disable this device in the parse_devicetree_setting() function
+		 * in romstage.c
+		 */
+		break;
 	case PCH_DEVFN_ISH:
 		silconfig->IshEnable = 0;
 		break;
@@ -552,11 +542,18 @@ static void parse_devicetree(FSP_S_CONFIG *silconfig)
 static void apl_fsp_silicon_init_params_cb(struct soc_intel_apollolake_config
 	*cfg, FSP_S_CONFIG *silconfig)
 {
-#if !CONFIG(SOC_INTEL_GLK) /* GLK FSP does not have these
-					 fields in FspsUpd.h yet */
+#if !CONFIG(SOC_INTEL_GLK) /* GLK FSP does not have these fields in FspsUpd.h yet */
 	uint8_t port;
 
 	for (port = 0; port < APOLLOLAKE_USB2_PORT_MAX; port++) {
+		if (cfg->usb_config_override) {
+			if (!cfg->usb2_port[port].enable)
+				continue;
+
+			silconfig->PortUsb20Enable[port] = 1;
+			silconfig->PortUs20bOverCurrentPin[port] = cfg->usb2_port[port].oc_pin;
+		}
+
 		if (cfg->usb2eye[port].Usb20PerPortTxPeHalf != 0)
 			silconfig->PortUsb20PerPortTxPeHalf[port] =
 				cfg->usb2eye[port].Usb20PerPortTxPeHalf;
@@ -585,6 +582,16 @@ static void apl_fsp_silicon_init_params_cb(struct soc_intel_apollolake_config
 			silconfig->PortUsb20HsNpreDrvSel[port] =
 				cfg->usb2eye[port].Usb20HsNpreDrvSel;
 	}
+
+	if (cfg->usb_config_override) {
+		for (port = 0; port < APOLLOLAKE_USB3_PORT_MAX; port++) {
+			if (!cfg->usb3_port[port].enable)
+				continue;
+
+			silconfig->PortUsb30Enable[port] = 1;
+			silconfig->PortUs30bOverCurrentPin[port] = cfg->usb3_port[port].oc_pin;
+		}
+	}
 #endif
 }
 
@@ -593,6 +600,7 @@ static void glk_fsp_silicon_init_params_cb(
 {
 #if CONFIG(SOC_INTEL_GLK)
 	uint8_t port;
+	struct device *dev;
 
 	for (port = 0; port < APOLLOLAKE_USB2_PORT_MAX; port++) {
 		if (!cfg->usb2eye[port].Usb20OverrideEn)
@@ -608,7 +616,8 @@ static void glk_fsp_silicon_init_params_cb(
 			cfg->usb2eye[port].Usb20IUsbTxEmphasisEn;
 	}
 
-	silconfig->Gmm = 0;
+	dev = pcidev_path_on_root(SA_GLK_DEVFN_GMM);
+	silconfig->Gmm = dev ? dev->enabled : 0;
 
 	/* On Geminilake, we need to override the default FSP PCIe de-emphasis
 	 * settings using the device tree settings. This is because PCIe
@@ -733,7 +742,7 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *silupd)
 	/* Enable Audio clk gate and power gate */
 	silconfig->HDAudioClkGate = cfg->hdaudio_clk_gate_enable;
 	silconfig->HDAudioPwrGate = cfg->hdaudio_pwr_gate_enable;
-	/* Bios config lockdown Audio clk and power gate */
+	/* BIOS config lockdown Audio clk and power gate */
 	silconfig->BiosCfgLockDown = cfg->hdaudio_bios_config_lockdown;
 	if (CONFIG(SOC_INTEL_GLK))
 		glk_fsp_silicon_init_params_cb(cfg, silconfig);
@@ -812,6 +821,30 @@ static int check_xdci_enable(void)
 	return !!dev->enabled;
 }
 
+static void disable_xhci_lfps_pm(void)
+{
+	struct soc_intel_apollolake_config *cfg;
+
+	cfg = config_of_soc();
+
+	if (cfg->disable_xhci_lfps_pm) {
+		void *addr;
+		const struct resource *res;
+		uint32_t reg;
+		struct device *xhci_dev = PCH_DEV_XHCI;
+
+		res = find_resource(xhci_dev, PCI_BASE_ADDRESS_0);
+		addr = (void *)(uintptr_t)(res->base + CFG_XHCPMCTRL);
+		reg = read32(addr);
+		printk(BIOS_DEBUG, "XHCI PM: control reg=0x%x.\n", reg);
+		if (reg) {
+			reg &= LFPS_PM_DISABLE_MASK;
+			write32(addr, reg);
+			printk(BIOS_INFO, "XHCI PM: Disable xHCI LFPS as configured in devicetree.\n");
+		}
+	}
+}
+
 void platform_fsp_notify_status(enum fsp_notify_phase phase)
 {
 	if (phase == END_OF_FIRMWARE) {
@@ -842,7 +875,7 @@ void platform_fsp_notify_status(enum fsp_notify_phase phase)
 
 		/*
 		 * Override GLK xhci clock gating register(XHCLKGTEN) to
-		 * mitigate usb device suspend and resume failure.
+		 * mitigate USB device suspend and resume failure.
 		 */
 		if (CONFIG(SOC_INTEL_GLK)) {
 			uint32_t *cfg;
@@ -859,6 +892,9 @@ void platform_fsp_notify_status(enum fsp_notify_phase phase)
 				IOSFGBLCGE;
 			write32(cfg, reg);
 		}
+
+		/* Disable XHCI LFPS power management if the option in dev tree is set. */
+		disable_xhci_lfps_pm();
 	}
 }
 

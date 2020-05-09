@@ -1,19 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2007-2009 coresystems GmbH
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; version 2 of
- * the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
-
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 Name(_HID,EISAID("PNP0A08"))	// PCIe
 Name(_CID,EISAID("PNP0A03"))	// PCI
@@ -142,16 +128,16 @@ Device (MCHC)
 	 *     Package (6) { freq, power, tlat, blat, control, status }
 	 *   }
 	 */
-	External (\_PR.CP00._PSS)
+	External (\_SB.CP00._PSS)
 	Method (PSSS, 1, NotSerialized)
 	{
 		Store (One, Local0) /* Start at P1 */
-		Store (SizeOf (\_PR.CP00._PSS), Local1)
+		Store (SizeOf (\_SB.CP00._PSS), Local1)
 
 		While (LLess (Local0, Local1)) {
 			/* Store _PSS entry Control value to Local2 */
 			ShiftRight (DeRefOf (Index (DeRefOf (Index
-			      (\_PR.CP00._PSS, Local0)), 4)), 8, Local2)
+			      (\_SB.CP00._PSS, Local0)), 4)), 8, Local2)
 			If (LEqual (Local2, Arg0)) {
 				Return (Subtract (Local0, 1))
 			}

@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2014 Google Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 /*
  * This is a ramstage driver for the Intel Management Engine found in the
@@ -21,7 +9,7 @@
  * not used unless the console loglevel is high enough.
  */
 
-#include <arch/acpi.h>
+#include <acpi/acpi.h>
 #include <device/mmio.h>
 #include <device/pci_ops.h>
 #include <console/console.h>
@@ -612,17 +600,17 @@ static int mkhi_hmrfpo_lock_noack(void)
 
 static void intel_me_finalize(struct device *dev)
 {
-	u32 reg32;
+	u16 reg16;
 
 	/* S3 path will have hidden this device already */
 	if (!mei_base_address || mei_base_address == (u8 *) 0xfffffff0)
 		return;
 
 	/* Make sure IO is disabled */
-	reg32 = pci_read_config32(dev, PCI_COMMAND);
-	reg32 &= ~(PCI_COMMAND_MASTER |
+	reg16 = pci_read_config16(dev, PCI_COMMAND);
+	reg16 &= ~(PCI_COMMAND_MASTER |
 		   PCI_COMMAND_MEMORY | PCI_COMMAND_IO);
-	pci_write_config32(dev, PCI_COMMAND, reg32);
+	pci_write_config16(dev, PCI_COMMAND, reg16);
 
 	/* Hide the PCI device */
 	RCBA32_OR(FD2, PCH_DISABLE_MEI1);
@@ -724,7 +712,6 @@ static int intel_mei_setup(struct device *dev)
 {
 	struct resource *res;
 	struct mei_csr host;
-	u32 reg32;
 
 	/* Find the MMIO base for the ME interface */
 	res = find_resource(dev, PCI_BASE_ADDRESS_0);
@@ -735,9 +722,7 @@ static int intel_mei_setup(struct device *dev)
 	mei_base_address = res2mmio(res, 0, 0);
 
 	/* Ensure Memory and Bus Master bits are set */
-	reg32 = pci_read_config32(dev, PCI_COMMAND);
-	reg32 |= PCI_COMMAND_MASTER | PCI_COMMAND_MEMORY;
-	pci_write_config32(dev, PCI_COMMAND, reg32);
+	pci_or_config16(dev, PCI_COMMAND, PCI_COMMAND_MASTER | PCI_COMMAND_MEMORY);
 
 	/* Clean up status for next message */
 	read_host_csr(&host);

@@ -1,18 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2010-2017 Advanced Micro Devices, Inc.
- * Copyright (C) 2014 Sage Electronic Engineering, LLC
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #ifndef __STONEYRIDGE_H__
 #define __STONEYRIDGE_H__
@@ -292,9 +279,16 @@
 #define   SPI_RD4DW_EN_HOST		BIT(15)
 
 /* Platform Security Processor D8F0 */
+void soc_enable_psp_early(void);
+
 #define PSP_MAILBOX_BAR			PCI_BASE_ADDRESS_4 /* BKDG: "BAR3" */
+#define PSP_MAILBOX_OFFSET		0x70 /* offset from BAR3 value */
+
 #define PSP_BAR_ENABLES			0x48
 #define  PSP_MAILBOX_BAR_EN		0x10
+
+#define MSR_CU_CBBCFG			0xc00110a2 /* PSP Pvt Blk Base Addr */
+#define   BAR3HIDE			BIT(12) /* Bit to hide BAR3 addr */
 
 /* IO 0xcf9 - Reset control port*/
 #define   FULL_RST			BIT(3)

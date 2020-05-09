@@ -1,16 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; version 2 of
- * the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* This file is part of the coreboot project. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #include <stdint.h>
 #include <edid.h>
@@ -340,7 +329,6 @@ static struct device_operations qemu_cirrus_graph_ops = {
 	.set_resources	  = pci_dev_set_resources,
 	.enable_resources = pci_dev_enable_resources,
 	.init		  = cirrus_init,
-	.scan_bus	  = 0,
 };
 
 static const struct pci_driver qemu_cirrus_driver __pci_driver = {

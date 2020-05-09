@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright 2019 Analogix Semiconductor.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <console/console.h>
 #include <delay.h>
@@ -273,7 +261,7 @@ static int anx7625_calculate_m_n(u32 pixelclock,
 		return 1;
 	}
 
-	*m = (unsigned long long)pixelclock * 599 / 600;
+	*m = pixelclock;
 	*n = XTAL_FRQ / post_divider;
 	*pd = post_divider;
 

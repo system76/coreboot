@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2019 Intel Corp.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 /*
  * This file is created based on Intel Tiger Lake Processor PCH Datasheet
@@ -69,24 +57,6 @@ void soc_setup_dmi_pcr_io_dec(uint32_t *gen_io_dec)
 	pcr_write32(PID_DMI, PCR_DMI_LPCLGIR2, gen_io_dec[1]);
 	pcr_write32(PID_DMI, PCR_DMI_LPCLGIR3, gen_io_dec[2]);
 	pcr_write32(PID_DMI, PCR_DMI_LPCLGIR4, gen_io_dec[3]);
-}
-
-uint8_t get_pch_series(void)
-{
-	uint16_t lpc_did_hi_byte;
-
-	/*
-	 * Fetch upper 8 bits on ESPI device ID to determine PCH type
-	 * Adding 1 to the offset to fetch upper 8 bits
-	 */
-	lpc_did_hi_byte = pci_read_config8(PCH_DEV_ESPI, PCI_DEVICE_ID + 1);
-
-	if (lpc_did_hi_byte == 0xA0)
-		return PCH_TGP;
-	else if (lpc_did_hi_byte == 0x38)
-		return PCH_JSP;
-	else
-		return PCH_UNKNOWN_SERIES;
 }
 
 #if ENV_RAMSTAGE

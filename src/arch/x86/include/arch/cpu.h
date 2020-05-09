@@ -1,15 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #ifndef ARCH_CPU_H
 #define ARCH_CPU_H
@@ -261,7 +251,6 @@ static inline struct cpu_info *cpu_info(void)
 	return ci;
 }
 
-/* romcc is segfaulting in some cases. */
 struct cpuinfo_x86 {
 	uint8_t	x86;		/* CPU family */
 	uint8_t	x86_vendor;	/* CPU vendor */
@@ -281,7 +270,6 @@ static inline void get_fms(struct cpuinfo_x86 *c, uint32_t tfms)
 
 }
 
-/* romcc does not understand regparm. */
 #define asmlinkage __attribute__((regparm(0)))
 
 /*

@@ -1,27 +1,18 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright 2019 The coreboot project Authors.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <baseboard/gpio.h>
 #include <baseboard/variants.h>
 #include <boardid.h>
 #include <gpio.h>
 #include <soc/gpio.h>
+#include <ec/google/chromeec/ec.h>
 
 enum {
 	SKU_1_LTE  = 1, /* Wifi + LTE */
 	SKU_2_WIFI = 2, /* Wifi */
+	SKU_3_LTE_2CAM = 3, /* Wifi + LTE + dual camera */
+	SKU_4_WIFI_2CAM = 4, /* Wifi + dual camera */
 };
 
 static const struct pad_config default_override_table[] = {
@@ -58,10 +49,11 @@ static const struct pad_config lte_override_table[] = {
 const struct pad_config *variant_override_gpio_table(size_t *num)
 {
 	uint32_t sku_id;
-	sku_id = get_board_sku();
+	sku_id = google_chromeec_get_board_sku();
 
 	switch (sku_id) {
 	case SKU_1_LTE:
+	case SKU_3_LTE_2CAM:
 		*num = ARRAY_SIZE(lte_override_table);
 		return lte_override_table;
 	default:

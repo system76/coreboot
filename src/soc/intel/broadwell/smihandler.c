@@ -1,18 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2008-2009 coresystems GmbH
- * Copyright (C) 2014 Google Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <delay.h>
 #include <types.h>
@@ -35,6 +22,7 @@
 #include <soc/rcba.h>
 #include <soc/xhci.h>
 #include <drivers/intel/gma/i915_reg.h>
+#include <smmstore.h>
 
 static u8 smm_initialized = 0;
 
@@ -81,7 +69,7 @@ static void busmaster_disable_on_bus(int bus)
 
 	for (slot = 0; slot < 0x20; slot++) {
 		for (func = 0; func < 8; func++) {
-			u32 reg32;
+			u16 reg16;
 
 			pci_devfn_t dev = PCI_DEV(bus, slot, func);
 			val = pci_read_config32(dev, PCI_VENDOR_ID);
@@ -91,9 +79,9 @@ static void busmaster_disable_on_bus(int bus)
 				continue;
 
 			/* Disable Bus Mastering for this one device */
-			reg32 = pci_read_config32(dev, PCI_COMMAND);
-			reg32 &= ~PCI_COMMAND_MASTER;
-			pci_write_config32(dev, PCI_COMMAND, reg32);
+			reg16 = pci_read_config16(dev, PCI_COMMAND);
+			reg16 &= ~PCI_COMMAND_MASTER;
+			pci_write_config16(dev, PCI_COMMAND, reg16);
 
 			/* If this is a bridge, then follow it. */
 			hdr = pci_read_config8(dev, PCI_HEADER_TYPE);
@@ -311,6 +299,26 @@ static void southbridge_smi_gsmi(void)
 	*ret = gsmi_exec(sub_command, param);
 }
 
+static void southbridge_smi_store(void)
+{
+	u8 sub_command, ret;
+	em64t101_smm_state_save_area_t *io_smi =
+		smi_apmc_find_state_save(APM_CNT_SMMSTORE);
+	uint32_t reg_ebx;
+
+	if (!io_smi)
+		return;
+	/* Command and return value in EAX */
+	sub_command = (io_smi->rax >> 8) & 0xff;
+
+	/* Parameter buffer in EBX */
+	reg_ebx = io_smi->rbx;
+
+	/* drivers/smmstore/smi.c */
+	ret = smmstore_exec(sub_command, (void *)reg_ebx);
+	io_smi->rax = ret;
+}
+
 static void southbridge_smi_apmc(void)
 {
 	u8 reg8;
@@ -351,6 +359,10 @@ static void southbridge_smi_apmc(void)
 	case APM_CNT_ELOG_GSMI:
 		if (CONFIG(ELOG_GSMI))
 			southbridge_smi_gsmi();
+		break;
+	case APM_CNT_SMMSTORE:
+		if (CONFIG(SMMSTORE))
+			southbridge_smi_store();
 		break;
 	}
 

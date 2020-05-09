@@ -1,18 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2014 Google Inc.
- * Copyright (C) 2015-2017 Intel Corporation.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <bootmode.h>
 #include <cbmem.h>
@@ -21,6 +8,7 @@
 #include <device/pci.h>
 #include <device/pci_ops.h>
 #include <device/resource.h>
+#include <drivers/intel/gma/i915.h>
 #include <drivers/intel/gma/i915_reg.h>
 #include <drivers/intel/gma/libgfxinit.h>
 #include <intelblocks/graphics.h>
@@ -159,7 +147,7 @@ static void update_igd_opregion(igd_opregion_t *opregion)
 	/* FIXME: Add platform specific mailbox initialization */
 }
 
-uintptr_t graphics_soc_write_acpi_opregion(struct device *device,
+uintptr_t graphics_soc_write_acpi_opregion(const struct device *device,
 		uintptr_t current, struct acpi_rsdp *rsdp)
 {
 	igd_opregion_t *opregion;
@@ -186,4 +174,11 @@ uintptr_t graphics_soc_write_acpi_opregion(struct device *device,
 
 	printk(BIOS_DEBUG, "current = %lx\n", current);
 	return current;
+}
+
+const struct i915_gpu_controller_info *
+intel_igd_get_controller_info(const struct device *device)
+{
+	struct soc_intel_skylake_config *chip = device->chip_info;
+	return &chip->gfx;
 }

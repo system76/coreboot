@@ -1,19 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2008-2009 coresystems GmbH
- * Copyright (C) 2013 Vladimir Serbinenko
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; version 2 of
- * the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <console/console.h>
 #include <device/device.h>
@@ -44,10 +30,7 @@ static void usb_ehci_init(struct device *dev)
 	pci_write_config32(dev, 0xf4, 0x00808588);
 	pci_write_config32(dev, 0xfc, 0x301b1728);
 
-	reg32 = pci_read_config32(dev, PCI_COMMAND);
-	reg32 |= PCI_COMMAND_MASTER;
-	//reg32 |= PCI_COMMAND_SERR;
-	pci_write_config32(dev, PCI_COMMAND, reg32);
+	pci_or_config16(dev, PCI_COMMAND, PCI_COMMAND_MASTER);
 
 	access_cntl = pci_read_config8(dev, 0x80);
 
@@ -94,11 +77,14 @@ static struct device_operations usb_ehci_ops = {
 	.set_resources = pci_dev_set_resources,
 	.enable_resources	= pci_dev_enable_resources,
 	.init = usb_ehci_init,
-	.scan_bus = 0,
 	.ops_pci = &lops_pci,
 };
 
-static const unsigned short pci_device_ids[] = { 0x3b34, 0x3b3c, 0 };
+static const unsigned short pci_device_ids[] = {
+	PCI_DID_INTEL_IBEXPEAK_EHCI_1,
+	PCI_DID_INTEL_IBEXPEAK_EHCI_2,
+	0
+};
 
 static const struct pci_driver pch_usb_ehci __pci_driver = {
 	.ops = &usb_ehci_ops,

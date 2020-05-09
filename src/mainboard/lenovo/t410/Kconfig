@@ -3,7 +3,7 @@ if BOARD_LENOVO_T410
 config BOARD_SPECIFIC_OPTIONS
 	def_bool y
 	select SYSTEM_TYPE_LAPTOP
-	select NORTHBRIDGE_INTEL_NEHALEM
+	select NORTHBRIDGE_INTEL_IRONLAKE
 	select SOUTHBRIDGE_INTEL_IBEXPEAK
 	select EC_LENOVO_PMH7
 	select EC_LENOVO_H8
@@ -62,5 +62,11 @@ config MAX_CPUS
 config DRAM_RESET_GATE_GPIO
 	int
 	default 10
+
+config PS2K_EISAID
+	default "PNP0303"
+
+config PS2M_EISAID
+	default "LEN0015"
 
 endif

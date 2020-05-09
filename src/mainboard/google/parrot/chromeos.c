@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2011-2012 The ChromiumOS Authors.  All rights reserved.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <console/console.h>
 #include <bootmode.h>
@@ -27,13 +15,10 @@
 
 void fill_lb_gpios(struct lb_gpios *gpios)
 {
-	pci_devfn_t dev = PCI_DEV(0, 0x1f, 0);
+	const pci_devfn_t dev = PCI_DEV(0, 0x1f, 0);
 	u16 gen_pmcon_1 = pci_s_read_config32(dev, GEN_PMCON_1);
 
 	struct lb_gpio chromeos_gpios[] = {
-		/* Write Protect: GPIO70 active high */
-		{70, ACTIVE_LOW, !get_write_protect_state(), "write protect"},
-
 		/* Lid switch GPIO active high (open). */
 		{15, ACTIVE_HIGH, get_lid_switch(), "lid"},
 

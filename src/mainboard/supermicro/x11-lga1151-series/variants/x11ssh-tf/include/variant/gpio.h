@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2018 Intel Corporation.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #ifndef _GPIO_X11SSH_TF_H
 #define _GPIO_X11SSH_TF_H
@@ -114,7 +102,7 @@ static const struct pad_config gpio_table[] = {
 /* GPIO */	_PAD_CFG_STRUCT(GPP_D19, 0x84000201, 0x00000000),
 /* GPIO */	_PAD_CFG_STRUCT(GPP_D20, 0x44000300, 0x00000000),
 /* GPIO */	_PAD_CFG_STRUCT(GPP_D21, 0x44000200, 0x00000000),
-/* GPIO */	_PAD_CFG_STRUCT(GPP_D22, 0x04000102, 0x00000000),
+/* GPIO */	_PAD_CFG_STRUCT(GPP_D22, 0xc4000102, 0x00000000),
 /* GPIO */	_PAD_CFG_STRUCT(GPP_D23, 0x44000300, 0x00000000),
 /* SATAXPCIE0 */	_PAD_CFG_STRUCT(GPP_E0, 0x44000502, 0x00000000),
 /* GPIO */	_PAD_CFG_STRUCT(GPP_E1, 0x44000300, 0x00000000),
@@ -152,7 +140,7 @@ static const struct pad_config gpio_table[] = {
 /* GPIO */	_PAD_CFG_STRUCT(GPP_F20, 0x44000300, 0x00000000),
 /* GPIO */	_PAD_CFG_STRUCT(GPP_F21, 0x44000300, 0x00000000),
 /* GPIO */	_PAD_CFG_STRUCT(GPP_F22, 0x44000300, 0x00000000),
-/* GPIO */	_PAD_CFG_STRUCT(GPP_F23, 0x04000200, 0x00000000),
+/* GPIO */	_PAD_CFG_STRUCT(GPP_F23, 0xc4000200, 0x00000000),
 /* GPIO */	_PAD_CFG_STRUCT(GPP_G0, 0x44000100, 0x00000000),
 /* GPIO */	_PAD_CFG_STRUCT(GPP_G1, 0x44000100, 0x00000000),
 /* GPIO */	_PAD_CFG_STRUCT(GPP_G2, 0x44000102, 0x00000000),

@@ -1,20 +1,7 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2017 Intel Corp.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* This file is part of the coreboot project. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
-#include <arch/acpigen.h>
+#include <acpi/acpigen.h>
 #include <arch/ioapic.h>
 #include <arch/smp/mpspec.h>
 #include <bootstate.h>
@@ -111,7 +98,6 @@ void acpi_fill_fadt(acpi_fadt_t *fadt)
 {
 	const uint16_t pmbase = ACPI_BASE_ADDRESS;
 
-	/* Use ACPI 3.0 revision. */
 	fadt->header.revision = get_acpi_table_revision(FADT);
 
 	fadt->sci_int = acpi_sci_irq();
@@ -147,26 +133,43 @@ void acpi_fill_fadt(acpi_fadt_t *fadt)
 	fadt->reset_reg.space_id = 1;
 	fadt->reset_reg.bit_width = 8;
 	fadt->reset_reg.addrl = RST_CNT;
+	fadt->reset_reg.access_size = ACPI_ACCESS_SIZE_BYTE_ACCESS;
 	fadt->reset_value = RST_CPU | SYS_RST;
 
 	fadt->x_pm1a_evt_blk.space_id = 1;
 	fadt->x_pm1a_evt_blk.bit_width = fadt->pm1_evt_len * 8;
 	fadt->x_pm1a_evt_blk.addrl = pmbase + PM1_STS;
+	fadt->x_pm1a_evt_blk.access_size = ACPI_ACCESS_SIZE_DWORD_ACCESS;
+
 
 	fadt->x_pm1b_evt_blk.space_id = 1;
 
 	fadt->x_pm1a_cnt_blk.space_id = 1;
 	fadt->x_pm1a_cnt_blk.bit_width = fadt->pm1_cnt_len * 8;
 	fadt->x_pm1a_cnt_blk.addrl = pmbase + PM1_CNT;
+	fadt->x_pm1a_cnt_blk.access_size = ACPI_ACCESS_SIZE_WORD_ACCESS;
 
 	fadt->x_pm1b_cnt_blk.space_id = 1;
+
+	/*
+	 * Windows 10 requires x_gpe0_blk to be set starting with FADT revision 5.
+	 * The bit_width field intentionally overflows here.
+	 * The OSPM can instead use the values in `fadt->gpe0_blk{,_len}`, which
+	 * seems to work fine on Linux 5.0 and Windows 10.
+	 */
+	fadt->x_gpe0_blk.space_id = ACPI_ADDRESS_SPACE_IO;
+	fadt->x_gpe0_blk.bit_width = fadt->gpe0_blk_len * 8;
+	fadt->x_gpe0_blk.bit_offset = 0;
+	fadt->x_gpe0_blk.access_size = ACPI_ACCESS_SIZE_DWORD_ACCESS;
+	fadt->x_gpe0_blk.addrl = fadt->gpe0_blk;
+	fadt->x_gpe0_blk.addrh = 0;
 
 	fadt->x_gpe1_blk.space_id = 1;
 
 	soc_fill_fadt(fadt);
 }
 
-unsigned long southbridge_write_acpi_tables(struct device *device,
+unsigned long southbridge_write_acpi_tables(const struct device *device,
 					    unsigned long current,
 					    struct acpi_rsdp *rsdp)
 {
@@ -228,7 +231,7 @@ __weak void acpi_create_gnvs(struct global_nvs_t *gnvs)
 {
 }
 
-void southbridge_inject_dsdt(struct device *device)
+void southbridge_inject_dsdt(const struct device *device)
 {
 	struct global_nvs_t *gnvs;
 
@@ -416,7 +419,7 @@ __weak void soc_power_states_generation(int core_id,
 {
 }
 
-void generate_cpu_entries(struct device *device)
+void generate_cpu_entries(const struct device *device)
 {
 	int core_id, cpu_id, pcontrol_blk = ACPI_BASE_ADDRESS;
 	int plen = 6;
@@ -434,7 +437,7 @@ void generate_cpu_entries(struct device *device)
 				plen = 0;
 			}
 
-			/* Generate processor \_PR.CPUx */
+			/* Generate processor \_SB.CPUx */
 			acpigen_write_processor((cpu_id) * cores_per_package +
 						core_id, pcontrol_blk, plen);
 

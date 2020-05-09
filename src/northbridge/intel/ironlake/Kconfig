@@ -1,0 +1,56 @@
+# This file is part of the coreboot project.
+# SPDX-License-Identifier: GPL-2.0-only
+
+config NORTHBRIDGE_INTEL_IRONLAKE
+	bool
+	select CPU_INTEL_MODEL_2065X
+	select VGA
+	select INTEL_EDID
+	select INTEL_GMA_ACPI
+	select CACHE_MRC_SETTINGS
+	select HAVE_DEBUG_RAM_SETUP
+
+if NORTHBRIDGE_INTEL_IRONLAKE
+
+config VBOOT
+	select VBOOT_MUST_REQUEST_DISPLAY
+	select VBOOT_STARTS_IN_BOOTBLOCK
+	select VBOOT_SEPARATE_VERSTAGE
+	# CPU is reset without platform/TPM during romstage
+	select TPM_STARTUP_IGNORE_POSTINIT
+
+config MMCONF_BUS_NUMBER
+	int
+	default 256
+
+config CBFS_SIZE
+	hex
+	default 0x100000
+
+config VGA_BIOS_ID
+	string
+	default "8086,0046"
+
+config DCACHE_RAM_BASE
+	hex
+	default 0xfefc0000
+
+config DCACHE_RAM_SIZE
+	hex
+	default 0x10000
+
+config DCACHE_BSP_STACK_SIZE
+	hex
+	default 0x2000
+	help
+	  The amount of anticipated stack usage in CAR by bootblock and
+	  other stages.
+
+config MMCONF_BASE_ADDRESS
+	hex
+	default 0xe0000000
+
+config INTEL_GMA_BCLV_OFFSET
+	default 0x48254
+
+endif

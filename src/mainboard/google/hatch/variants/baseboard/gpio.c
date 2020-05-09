@@ -1,19 +1,7 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright 2018 Google LLC
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
-#include <arch/acpi.h>
+#include <acpi/acpi.h>
 #include <baseboard/gpio.h>
 #include <baseboard/variants.h>
 #include <commonlib/helpers.h>
@@ -377,7 +365,7 @@ static const struct pad_config gpio_table[] = {
 	/* H23 : GPP_H23_STRAP */
 	PAD_NC(GPP_H23, NONE),
 
-	/* GPD2: LAN_WAKE# ==> EC_PCH_WAKE_OD */
+	/* GPD2: LAN_WAKE# ==> EC_PCH_WAKE_ODL */
 	PAD_CFG_NF(GPD2, NONE, DEEP, NF1),
 
 	/* SD card detect VGPIO */

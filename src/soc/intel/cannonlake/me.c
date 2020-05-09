@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2019 Google LLC.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <device/pci_ops.h>
 #include <bootstate.h>
@@ -23,16 +11,8 @@
 #include <soc/pci_devs.h>
 #include <stdint.h>
 
-/* Miscellaneous constants */
-enum {
-	MKHI_GEN_GROUP_ID	= 0xFF,
-	MKHI_GET_FW_VERSION	= 0x02,
-	ME_OPMODE_NORMAL	= 0x00,
-	ME_WSTATE_NORMAL	= 0x05,
-};
-
 /* Host Firmware Status Register 2 */
-union hfsts2 {
+union me_hfsts2 {
 	uint32_t raw;
 	struct {
 		uint32_t nftp_load_failure	: 1;
@@ -55,13 +35,8 @@ union hfsts2 {
 	} __packed fields;
 };
 
-/* Host Firmware Status Register 3 */
-union hfsts3 {
-	uint32_t raw;
-};
-
 /* Host Firmware Status Register 4 */
-union hfsts4 {
+union me_hfsts4 {
 	uint32_t raw;
 	struct {
 		uint32_t rsvd0			: 9;
@@ -77,7 +52,7 @@ union hfsts4 {
 };
 
 /* Host Firmware Status Register 5 */
-union hfsts5 {
+union me_hfsts5 {
 	uint32_t raw;
 	struct {
 		uint32_t acm_active		: 1;
@@ -96,7 +71,7 @@ union hfsts5 {
 };
 
 /* Host Firmware Status Register 6 */
-union hfsts6 {
+union me_hfsts6 {
 	uint32_t raw;
 	struct {
 		uint32_t force_boot_guard_acm	: 1;
@@ -120,91 +95,21 @@ union hfsts6 {
 	} __packed fields;
 };
 
-/*
- * From reading the documentation, this should work for both WHL and CML
- * platforms.  Also, calling this function from dump_me_status() does not
- * work, as the ME does not respond and the command times out.
- */
-static void print_me_version(void *unused)
-{
-	struct version {
-		uint16_t minor;
-		uint16_t major;
-		uint16_t build;
-		uint16_t hotfix;
-	} __packed;
-
-	struct fw_ver_resp {
-		struct mkhi_hdr hdr;
-		struct version code;
-		struct version rec;
-		struct version fitc;
-	} __packed;
-
-	union me_hfsts1 hfsts1;
-	const struct mkhi_hdr fw_ver_msg = {
-		.group_id = MKHI_GEN_GROUP_ID,
-		.command = MKHI_GET_FW_VERSION,
-	};
-	struct fw_ver_resp resp;
-	size_t resp_size = sizeof(resp);
-
-	/* Ignore if UART debugging is disabled */
-	if (!CONFIG(CONSOLE_SERIAL))
-		return;
-
-	if (!is_cse_enabled())
-		return;
-
-	hfsts1.data = me_read_config32(PCI_ME_HFSTS1);
-
-	/*
-	 * Prerequisites:
-	 * 1) HFSTS1 Current Working State is Normal
-	 * 2) HFSTS1 Current Operation Mode is Normal
-	 * 3) It's after DRAM INIT DONE message (taken care of by calling it
-	 *    during ramstage
-	 */
-	if ((hfsts1.fields.working_state != ME_WSTATE_NORMAL) ||
-		(hfsts1.fields.operation_mode != ME_OPMODE_NORMAL))
-		goto fail;
-
-	heci_reset();
-
-	if (!heci_send(&fw_ver_msg, sizeof(fw_ver_msg), BIOS_HOST_ADDR,
-			HECI_MKHI_ADDR))
-		goto fail;
-
-	if (!heci_receive(&resp, &resp_size))
-		goto fail;
-
-	if (resp.hdr.result)
-		goto fail;
-
-	printk(BIOS_DEBUG, "ME: Version: %d.%d.%d.%d\n", resp.code.major,
-		resp.code.minor, resp.code.hotfix, resp.code.build);
-	return;
-
-fail:
-	printk(BIOS_DEBUG, "ME: Version: Unavailable\n");
-}
-BOOT_STATE_INIT_ENTRY(BS_DEV_ENABLE, BS_ON_EXIT, print_me_version, NULL);
-
 void dump_me_status(void *unused)
 {
 	union me_hfsts1 hfsts1;
-	union hfsts2 hfsts2;
-	union hfsts3 hfsts3;
-	union hfsts4 hfsts4;
-	union hfsts5 hfsts5;
-	union hfsts6 hfsts6;
+	union me_hfsts2 hfsts2;
+	union me_hfsts3 hfsts3;
+	union me_hfsts4 hfsts4;
+	union me_hfsts5 hfsts5;
+	union me_hfsts6 hfsts6;
 
 	if (!is_cse_enabled())
 		return;
 
 	hfsts1.data = me_read_config32(PCI_ME_HFSTS1);
 	hfsts2.raw = me_read_config32(PCI_ME_HFSTS2);
-	hfsts3.raw = me_read_config32(PCI_ME_HFSTS3);
+	hfsts3.data = me_read_config32(PCI_ME_HFSTS3);
 	hfsts4.raw = me_read_config32(PCI_ME_HFSTS4);
 	hfsts5.raw = me_read_config32(PCI_ME_HFSTS5);
 	hfsts6.raw = me_read_config32(PCI_ME_HFSTS6);
@@ -214,7 +119,7 @@ void dump_me_status(void *unused)
 	printk(BIOS_DEBUG, "ME: HFSTS2                  : 0x%08X\n",
 		hfsts2.raw);
 	printk(BIOS_DEBUG, "ME: HFSTS3                  : 0x%08X\n",
-		hfsts3.raw);
+		hfsts3.data);
 	printk(BIOS_DEBUG, "ME: HFSTS4                  : 0x%08X\n",
 		hfsts4.raw);
 	printk(BIOS_DEBUG, "ME: HFSTS5                  : 0x%08X\n",
@@ -275,6 +180,7 @@ BOOT_STATE_INIT_ENTRY(BS_OS_RESUME_CHECK, BS_ON_EXIT, disable_me, NULL);
 
 #else // DISABLE_ME
 
+BOOT_STATE_INIT_ENTRY(BS_DEV_ENABLE, BS_ON_EXIT, print_me_fw_version, NULL);
 BOOT_STATE_INIT_ENTRY(BS_OS_RESUME_CHECK, BS_ON_EXIT, dump_me_status, NULL);
 
 #endif // DISABLE_ME

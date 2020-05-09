@@ -44,9 +44,9 @@ config CPU_SPECIFIC_OPTIONS
 	select GENERIC_GPIO_LIB
 	select INTEL_DESCRIPTOR_MODE_CAPABLE
 	select HAVE_SMI_HANDLER
+	select HAVE_INTEL_FSP_REPO if !SOC_INTEL_GLK
 	select MRC_SETTINGS_PROTECT
 	select MRC_SETTINGS_VARIABLE_DATA
-	select NO_FIXED_XIP_ROM_SIZE
 	select NO_XIP_EARLY_STAGES
 	select PARALLEL_MP
 	select PARALLEL_MP_AP_WORK
@@ -54,7 +54,6 @@ config CPU_SPECIFIC_OPTIONS
 	select PCIEXP_COMMON_CLOCK
 	select PCIEXP_CLK_PM
 	select PCIEXP_L1_SUB_STATE
-	select PCIEX_LENGTH_256MB
 	select PMC_INVALID_READ_AFTER_WRITE
 	select PMC_GLOBAL_RESET_ENABLE_LOCK
 	select REG_SCRIPT
@@ -113,7 +112,6 @@ config CHROMEOS
 config VBOOT
 	select VBOOT_SEPARATE_VERSTAGE
 	select VBOOT_MUST_REQUEST_DISPLAY
-	select VBOOT_SAVE_RECOVERY_REASON_ON_REBOOT
 	select VBOOT_STARTS_IN_BOOTBLOCK
 	select VBOOT_VBNV_CMOS
 	select VBOOT_VBNV_CMOS_BACKUP_TO_FLASH
@@ -183,13 +181,10 @@ config VERSTAGE_ADDR
 	  The base address (in CAR) where verstage should be linked
 
 config FSP_HEADER_PATH
-	string "Location of FSP headers"
 	default "src/vendorcode/intel/fsp/fsp2_0/glk" if SOC_INTEL_GLK
 	default "3rdparty/fsp/ApolloLakeFspBinPkg/Include/"
 
 config FSP_FD_PATH
-	string
-	depends on FSP_USE_REPO
 	default "3rdparty/fsp/ApolloLakeFspBinPkg/FspBin/Fsp.fd"
 
 config FSP_M_ADDR

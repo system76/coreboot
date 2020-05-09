@@ -1,7 +1,6 @@
 ##
 ## This file is part of the coreboot project.
 ##
-## Copyright (C) 2009 Uwe Hermann <uwe@hermann-uwe.de>
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -12,6 +11,7 @@
 ## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ## GNU General Public License for more details.
 ##
+
 if VENDOR_GIGABYTE
 
 choice
@@ -24,7 +24,6 @@ endchoice
 source "src/mainboard/gigabyte/*/Kconfig"
 
 config MAINBOARD_VENDOR
-	string
 	default "GIGABYTE"
 
 endif # VENDOR_GIGABYTE

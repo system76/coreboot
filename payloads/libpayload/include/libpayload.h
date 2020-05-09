@@ -130,6 +130,9 @@ static const char _pstruct(key)[]                                        \
 #define NVRAM_RTC_YEAR           9      /**< RTC Year offset in CMOS */
 #define NVRAM_RTC_FREQ_SELECT    10     /**< RTC Update Status Register */
 #define  NVRAM_RTC_UIP           0x80
+#define NVRAM_RTC_STATUSB        11     /**< RTC Status Register B */
+#define  NVRAM_RTC_FORMAT_24HOUR 0x02
+#define  NVRAM_RTC_FORMAT_BINARY 0x04
 
 /** Broken down time structure */
 struct tm {
@@ -148,6 +151,7 @@ u8 nvram_read(u8 addr);
 void nvram_write(u8 val, u8 addr);
 int nvram_updating(void);
 void rtc_read_clock(struct tm *tm);
+void rtc_write_clock(const struct tm *tm);
 /** @} */
 
 /**

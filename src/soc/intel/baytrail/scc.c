@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2013 Google Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 
 #include <cbmem.h>
@@ -86,7 +74,7 @@ void scc_enable_acpi_mode(struct device *dev, int iosf_reg, int nvs_index)
 {
 	struct reg_script ops[] = {
 		/* Disable PCI interrupt, enable Memory and Bus Master */
-		REG_PCI_OR32(PCI_COMMAND,
+		REG_PCI_OR16(PCI_COMMAND,
 			     PCI_COMMAND_MEMORY | PCI_COMMAND_MASTER | (1<<10)),
 		/* Enable ACPI mode */
 		REG_IOSF_OR(IOSF_PORT_SCC, iosf_reg,

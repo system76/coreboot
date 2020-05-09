@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright 2017 Rockchip Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <device/mmio.h>
 #include <console/console.h>
@@ -319,7 +307,7 @@ static int rk_mipi_dsi_get_lane_bps(struct rk_mipi_dsi *dsi,
 	min_prediv = DIV_ROUND_UP(fref, 40 * MHz);
 	max_prediv = fref / (5 * MHz);
 
-	/* constraint: 80MHz <= Fvco <= 1500Mhz */
+	/* constraint: 80MHz <= Fvco <= 1500MHz */
 	fvco_min = 80 * MHz;
 	fvco_max = 1500 * MHz;
 	min_delta = 1500 * MHz;

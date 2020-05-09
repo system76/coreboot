@@ -1,18 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2015 Damien Zammit <damien@zamaudio.com>
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* This file is part of the coreboot project. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #include <assert.h>
 #include <stdint.h>
@@ -1636,7 +1623,7 @@ static void set_dradrb(struct sysinfo *s)
 		dual_channel_size = MIN(size_ch0, size_ch1) * 2;
 	} else {
 		if (size_ch0 == 0) {
-			/* ME needs ram on CH0 */
+			/* ME needs RAM on CH0 */
 			size_me = 0;
 			/* TOTEST: bailout? */
 		} else {

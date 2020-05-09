@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2019 Intel Corp.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <device/device.h>
 #include <device/pci.h>
@@ -71,6 +59,7 @@ const char *soc_acpi_name(const struct device *dev)
 
 	switch (dev->path.pci.devfn) {
 	case SA_DEVFN_ROOT:	return "MCHC";
+	case PCH_DEVFN_ISH:	return "ISHB";
 	case PCH_DEVFN_XHCI:	return "XHCI";
 	case PCH_DEVFN_I2C0:	return "I2C0";
 	case PCH_DEVFN_I2C1:	return "I2C1";
@@ -91,6 +80,7 @@ const char *soc_acpi_name(const struct device *dev)
 	case PCH_DEVFN_PCIE10:	return "RP10";
 	case PCH_DEVFN_PCIE11:	return "RP11";
 	case PCH_DEVFN_PCIE12:	return "RP12";
+	case PCH_DEVFN_PMC:	return "PMC";
 	case PCH_DEVFN_UART0:	return "UAR0";
 	case PCH_DEVFN_UART1:	return "UAR1";
 	case PCH_DEVFN_UART2:	return "UAR2";
@@ -158,12 +148,10 @@ static struct device_operations pci_domain_ops = {
 };
 
 static struct device_operations cpu_bus_ops = {
-	.read_resources   = DEVICE_NOOP,
-	.set_resources    = DEVICE_NOOP,
-	.enable_resources = DEVICE_NOOP,
-	.init             = DEVICE_NOOP,
+	.read_resources   = noop_read_resources,
+	.set_resources    = noop_set_resources,
 #if CONFIG(HAVE_ACPI_TABLES)
-	.acpi_fill_ssdt_generator = generate_cpu_entries,
+	.acpi_fill_ssdt   = generate_cpu_entries,
 #endif
 };
 

@@ -1,0 +1,6 @@
+config DRIVERS_GFX_GENERIC
+	bool
+	default n
+	depends on HAVE_ACPI_TABLES
+	help
+	  Include support for generic graphics device in devicetree

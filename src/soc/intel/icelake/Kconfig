@@ -20,6 +20,7 @@ config CPU_SPECIFIC_OPTIONS
 	select FSP_M_XIP
 	select GENERIC_GPIO_LIB
 	select HAVE_FSP_GOP
+	select HAVE_INTEL_FSP_REPO
 	select INTEL_DESCRIPTOR_MODE_CAPABLE
 	select HAVE_SMI_HANDLER
 	select IDT_IN_EVERY_STAGE
@@ -46,6 +47,7 @@ config CPU_SPECIFIC_OPTIONS
 	select SOC_INTEL_COMMON_BLOCK_GSPI_VERSION_2
 	select SOC_INTEL_COMMON_BLOCK_HDA
 	select SOC_INTEL_COMMON_BLOCK_SA
+	select SOC_INTEL_COMMON_BLOCK_SCS
 	select SOC_INTEL_COMMON_BLOCK_SMM
 	select SOC_INTEL_COMMON_BLOCK_SMM_IO_TRAP
 	select SOC_INTEL_COMMON_BLOCK_THERMAL
@@ -165,7 +167,6 @@ config CHROMEOS
 config VBOOT
 	select VBOOT_SEPARATE_VERSTAGE
 	select VBOOT_MUST_REQUEST_DISPLAY
-	select VBOOT_SAVE_RECOVERY_REASON_ON_REBOOT
 	select VBOOT_STARTS_IN_BOOTBLOCK
 	select VBOOT_VBNV_CMOS
 	select VBOOT_VBNV_CMOS_BACKUP_TO_FLASH
@@ -179,13 +180,26 @@ config CBFS_SIZE
 	default 0x200000
 
 config FSP_HEADER_PATH
-	string "Location of FSP headers"
 	default "3rdparty/fsp/IceLakeFspBinPkg/Include"
 
 config FSP_FD_PATH
-	string
-	depends on FSP_USE_REPO
 	default "3rdparty/fsp/IceLakeFspBinPkg/Fsp.fd"
+
+config SOC_INTEL_ICELAKE_DEBUG_CONSENT
+	int "Debug Consent for ICL"
+	# USB DBC is more common for developers so make this default to 3 if
+	# SOC_INTEL_DEBUG_CONSENT=y
+	default 3 if SOC_INTEL_DEBUG_CONSENT
+	default 0
+	help
+	  This is to control debug interface on SOC.
+	  Setting non-zero value will allow to use DBC or DCI to debug SOC.
+	  PlatformDebugConsent in FspmUpd.h has the details.
+
+	  Desired platform debug types are
+	  0:Disabled, 1:Enabled (DCI OOB+[DbC]), 2:Enabled (DCI OOB),
+	  3:Enabled (USB3 DbC), 4:Enabled (XDP/MIPI60), 5:Enabled (USB2 DbC),
+	  6:Enable (2-wire DCI OOB), 7:Manual
 
 config ENABLE_DISPLAY_OVER_EXT_PCIE_GFX
 	bool "Enable display over external PCIE GFX card"

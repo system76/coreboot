@@ -1,23 +1,8 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2007-2009 coresystems GmbH
- * Copyright (C) 2013 Google Inc.
- * Copyright (C) 2015 Intel Corp.
- * Copyright (C) 2018 Eltan B.V.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
-#include <arch/acpi.h>
-#include <arch/acpigen.h>
+#include <acpi/acpi.h>
+#include <acpi/acpigen.h>
 #include <device/mmio.h>
 #include <arch/smp/mpspec.h>
 #include <cbmem.h>
@@ -190,7 +175,7 @@ void acpi_fill_in_fadt(acpi_fadt_t *fadt)
 	fadt->reset_reg.space_id = 1;
 	fadt->reset_reg.bit_width = 8;
 	fadt->reset_reg.bit_offset = 0;
-	fadt->reset_reg.access_size = 0;
+	fadt->reset_reg.access_size = ACPI_ACCESS_SIZE_BYTE_ACCESS;
 	fadt->reset_reg.addrl = 0xcf9;
 	fadt->reset_reg.addrh = 0;
 	fadt->reset_value = 6;
@@ -198,7 +183,7 @@ void acpi_fill_in_fadt(acpi_fadt_t *fadt)
 	fadt->x_pm1a_evt_blk.space_id = 1;
 	fadt->x_pm1a_evt_blk.bit_width = fadt->pm1_evt_len * 8;
 	fadt->x_pm1a_evt_blk.bit_offset = 0;
-	fadt->x_pm1a_evt_blk.access_size = 0;
+	fadt->x_pm1a_evt_blk.access_size = ACPI_ACCESS_SIZE_DWORD_ACCESS;
 	fadt->x_pm1a_evt_blk.addrl = pmbase + PM1_STS;
 	fadt->x_pm1a_evt_blk.addrh = 0x0;
 
@@ -212,7 +197,7 @@ void acpi_fill_in_fadt(acpi_fadt_t *fadt)
 	fadt->x_pm1a_cnt_blk.space_id = 1;
 	fadt->x_pm1a_cnt_blk.bit_width = fadt->pm1_cnt_len * 8;
 	fadt->x_pm1a_cnt_blk.bit_offset = 0;
-	fadt->x_pm1a_cnt_blk.access_size = 0;
+	fadt->x_pm1a_cnt_blk.access_size = ACPI_ACCESS_SIZE_WORD_ACCESS;
 	fadt->x_pm1a_cnt_blk.addrl = pmbase + PM1_CNT;
 	fadt->x_pm1a_cnt_blk.addrh = 0x0;
 
@@ -226,21 +211,27 @@ void acpi_fill_in_fadt(acpi_fadt_t *fadt)
 	fadt->x_pm2_cnt_blk.space_id = 1;
 	fadt->x_pm2_cnt_blk.bit_width = fadt->pm2_cnt_len * 8;
 	fadt->x_pm2_cnt_blk.bit_offset = 0;
-	fadt->x_pm2_cnt_blk.access_size = 0;
+	fadt->x_pm2_cnt_blk.access_size = ACPI_ACCESS_SIZE_BYTE_ACCESS;
 	fadt->x_pm2_cnt_blk.addrl = pmbase + PM2A_CNT_BLK;
 	fadt->x_pm2_cnt_blk.addrh = 0x0;
 
 	fadt->x_pm_tmr_blk.space_id = 1;
 	fadt->x_pm_tmr_blk.bit_width = fadt->pm_tmr_len * 8;
 	fadt->x_pm_tmr_blk.bit_offset = 0;
-	fadt->x_pm_tmr_blk.access_size = 0;
+	fadt->x_pm_tmr_blk.access_size = ACPI_ACCESS_SIZE_DWORD_ACCESS;
 	fadt->x_pm_tmr_blk.addrl = pmbase + PM1_TMR;
 	fadt->x_pm_tmr_blk.addrh = 0x0;
 
+	/*
+	 * Windows 10 requires x_gpe0_blk to be set starting with FADT revision 5.
+	 * The bit_width field intentionally overflows here.
+	 * The OSPM can instead use the values in `fadt->gpe0_blk{,_len}`, which
+	 * seems to work fine on Linux 5.0 and Windows 10.
+	 */
 	fadt->x_gpe0_blk.space_id = 1;
 	fadt->x_gpe0_blk.bit_width = fadt->gpe0_blk_len * 8;
 	fadt->x_gpe0_blk.bit_offset = 0;
-	fadt->x_gpe0_blk.access_size = 0;
+	fadt->x_gpe0_blk.access_size = ACPI_ACCESS_SIZE_BYTE_ACCESS;
 	fadt->x_gpe0_blk.addrl = pmbase + GPE0_STS;
 	fadt->x_gpe0_blk.addrh = 0x0;
 
@@ -254,13 +245,13 @@ void acpi_fill_in_fadt(acpi_fadt_t *fadt)
 
 static acpi_tstate_t soc_tss_table[] = {
 	{ 100, 1000, 0, 0x00, 0 },
-	{ 88, 875, 0, 0x1e, 0 },
-	{ 75, 750, 0, 0x1c, 0 },
-	{ 63, 625, 0, 0x1a, 0 },
-	{ 50, 500, 0, 0x18, 0 },
-	{ 38, 375, 0, 0x16, 0 },
-	{ 25, 250, 0, 0x14, 0 },
-	{ 13, 125, 0, 0x12, 0 },
+	{  88,  875, 0, 0x1e, 0 },
+	{  75,  750, 0, 0x1c, 0 },
+	{  63,  625, 0, 0x1a, 0 },
+	{  50,  500, 0, 0x18, 0 },
+	{  38,  375, 0, 0x16, 0 },
+	{  25,  250, 0, 0x14, 0 },
+	{  13,  125, 0, 0x12, 0 },
 };
 
 static void generate_t_state_entries(int core, int cores_per_package)
@@ -275,24 +266,23 @@ static void generate_t_state_entries(int core, int cores_per_package)
 	acpigen_write_TPC("\\TLVL");
 
 	/* Write TSS table for MSR access */
-	acpigen_write_TSS_package(
-		ARRAY_SIZE(soc_tss_table), soc_tss_table);
+	acpigen_write_TSS_package(ARRAY_SIZE(soc_tss_table), soc_tss_table);
 }
 
 static int calculate_power(int tdp, int p1_ratio, int ratio)
 {
-	u32 m;
-	u32 power;
+	u32 m, power;
 
 	/*
 	 * M = ((1.1 - ((p1_ratio - ratio) * 0.00625)) / 1.1) ^ 2
-	 *
-	 * Power = (ratio / p1_ratio) * m * tdp
 	 */
 
 	m = (110000 - ((p1_ratio - ratio) * 625)) / 11;
 	m = (m * m) / 1000;
 
+	/*
+	 * Power = (ratio / p1_ratio) * m * TDP
+	 */
 	power = ((ratio * 100000 / p1_ratio) / 100);
 	power *= (m / 100) * (tdp / 1000);
 	power /= 1000;
@@ -391,8 +381,8 @@ static void generate_p_state_entries(int core, int cores_per_package)
 	     ratio >= ratio_min; ratio -= ratio_step) {
 
 		/* Calculate VID for this ratio */
-		vid = ((ratio - ratio_min) * vid_range_2) /
-			ratio_range_2 + vid_min;
+		vid = ((ratio - ratio_min) * vid_range_2) / ratio_range_2 + vid_min;
+
 		/* Round up if remainder */
 		if (((ratio - ratio_min) * vid_range_2) % ratio_range_2)
 			vid++;
@@ -415,7 +405,7 @@ static void generate_p_state_entries(int core, int cores_per_package)
 	acpigen_pop_len();
 }
 
-void generate_cpu_entries(struct device *device)
+void generate_cpu_entries(const struct device *device)
 {
 	int core;
 	int pcontrol_blk = get_pmbase(), plen = 6;
@@ -427,21 +417,17 @@ void generate_cpu_entries(struct device *device)
 			plen = 0;
 		}
 
-		/* Generate processor \_PR.CPUx */
-		acpigen_write_processor(
-			core, pcontrol_blk, plen);
+		/* Generate processor \_SB.CPUx */
+		acpigen_write_processor(core, pcontrol_blk, plen);
 
 		/* Generate  P-state tables */
-		generate_p_state_entries(
-			core, pattrs->num_cpus);
+		generate_p_state_entries(core, pattrs->num_cpus);
 
 		/* Generate C-state tables */
-		acpigen_write_CST_package(
-			cstate_map, ARRAY_SIZE(cstate_map));
+		acpigen_write_CST_package(cstate_map, ARRAY_SIZE(cstate_map));
 
 		/* Generate T-state tables */
-		generate_t_state_entries(
-			core, pattrs->num_cpus);
+		generate_t_state_entries(core, pattrs->num_cpus);
 
 		acpigen_pop_len();
 	}
@@ -470,8 +456,7 @@ unsigned long acpi_madt_irq_overrides(unsigned long current)
 		sci_flags |= MP_IRQ_POLARITY_HIGH;
 
 	irqovr = (void *)current;
-	current += acpi_create_madt_irqoverride(irqovr, 0, sci_irq, sci_irq,
-						sci_flags);
+	current += acpi_create_madt_irqoverride(irqovr, 0, sci_irq, sci_irq, sci_flags);
 
 	return current;
 }
@@ -484,8 +469,7 @@ static int update_igd_opregion(igd_opregion_t *opregion)
 	return 0;
 }
 
-unsigned long southcluster_write_acpi_tables(struct device *device,
-					     unsigned long current,
+unsigned long southcluster_write_acpi_tables(const struct device *device, unsigned long current,
 					     struct acpi_rsdp *rsdp)
 {
 	acpi_header_t *ssdt2;
@@ -515,9 +499,9 @@ unsigned long southcluster_write_acpi_tables(struct device *device,
 	if (ssdt2->length) {
 		current += ssdt2->length;
 		acpi_add_table(rsdp, ssdt2);
-		printk(BIOS_DEBUG, "ACPI:     * SSDT2 @ %p Length %x\n", ssdt2,
-		       ssdt2->length);
+		printk(BIOS_DEBUG, "ACPI:     * SSDT2 @ %p Length %x\n", ssdt2, ssdt2->length);
 		current = acpi_align_current(current);
+
 	} else {
 		ssdt2 = NULL;
 		printk(BIOS_DEBUG, "ACPI:     * SSDT2 not generated.\n");
@@ -528,7 +512,7 @@ unsigned long southcluster_write_acpi_tables(struct device *device,
 	return current;
 }
 
-void southcluster_inject_dsdt(struct device *device)
+void southcluster_inject_dsdt(const struct device *device)
 {
 	global_nvs_t *gnvs;
 
@@ -541,15 +525,17 @@ void southcluster_inject_dsdt(struct device *device)
 
 	if (gnvs) {
 		acpi_create_gnvs(gnvs);
-		/* Fill in the Wifi Region id */
+
+		/* Fill in the Wi-Fi Region ID */
 		if (CONFIG(HAVE_REGULATORY_DOMAIN))
 			gnvs->cid1 = wifi_regulatory_domain();
 		else
 			gnvs->cid1 = WRDD_DEFAULT_REGULATORY_DOMAIN;
+
 		/* And tell SMI about it */
 		smm_setup_structures(gnvs, NULL, NULL);
 
-		/* Add it to DSDT.  */
+		/* Add it to DSDT */
 		acpigen_write_scope("\\");
 		acpigen_write_name_dword("NVSA", (u32) gnvs);
 		acpigen_pop_len();

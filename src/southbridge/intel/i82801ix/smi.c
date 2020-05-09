@@ -1,19 +1,7 @@
 /*
  * This file is part of the coreboot project.
  *
- * Copyright (C) 2008-2009 coresystems GmbH
- *               2012 secunet Security Networks AG
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; version 2 of
- * the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+ *               2012 secunet Security Networks AG SPDX-License-Identifier: GPL-2.0-only */
 
 
 #include <device/device.h>
@@ -21,7 +9,7 @@
 #include <console/console.h>
 #include <arch/io.h>
 #include <device/pci_ops.h>
-#include <arch/acpi.h>
+#include <acpi/acpi.h>
 #include <cpu/x86/cache.h>
 #include <cpu/x86/smm.h>
 #include <cpu/x86/smi_deprecated.h>
@@ -112,7 +100,7 @@ static void aseg_smm_relocate(void)
 	 *  - Writes to io 0xb2 (APMC)
 	 *  - Writes to the Local Apic ICR with Delivery mode SMI.
 	 *
-	 * Using the local apic is a bit more tricky. According to
+	 * Using the local APIC is a bit more tricky. According to
 	 * AMD Family 11 Processor BKDG no destination shorthand must be
 	 * used.
 	 * The whole SMM initialization is quite a bit hardware specific, so

@@ -1,16 +1,4 @@
-/*
- * Copyright (C) 2016-2017 Intel Corporation
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but without any warranty; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #include <bootmode.h>
 #include <device/i2c_simple.h>
@@ -24,12 +12,6 @@
 #include "gen1.h"
 #include "gen2.h"
 
-int clear_recovery_mode_switch(void)
-{
-	/* Nothing to do */
-	return 0;
-}
-
 int get_recovery_mode_switch(void)
 {
 	return 0;
@@ -39,10 +21,6 @@ int get_write_protect_state(void)
 {
 	/* Not write protected */
 	return 0;
-}
-
-void log_recovery_mode_switch(void)
-{
 }
 
 void verstage_mainboard_init(void)

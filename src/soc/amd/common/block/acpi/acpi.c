@@ -1,27 +1,17 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2018 Google Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
-#include <arch/acpi.h>
-#include <cbmem.h>
-#include <elog.h>
-#include <console/console.h>
-#include <soc/southbridge.h>
 #include <amdblocks/acpimmio.h>
 #include <amdblocks/acpi.h>
+#include <acpi/acpi.h>
+#include <bootmode.h>
+#include <cbmem.h>
+#include <console/console.h>
+#include <elog.h>
 #include <halt.h>
 #include <security/vboot/vboot_common.h>
+#include <soc/southbridge.h>
+#include <halt.h>
 
 void poweroff(void)
 {
@@ -137,7 +127,7 @@ int acpi_get_sleep_type(void)
 	return acpi_sleep_from_pm1(acpi_read16(MMIO_ACPI_PM1_CNT_BLK));
 }
 
-int vboot_platform_is_resuming(void)
+int platform_is_resuming(void)
 {
 	if (!(acpi_read16(MMIO_ACPI_PM1_STS) & WAK_STS))
 		return 0;

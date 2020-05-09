@@ -1,19 +1,9 @@
-/*
- * This file is part of the coreboot project.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
-#include <arch/acpi.h>
-#include <arch/acpi_device.h>
-#include <arch/acpigen.h>
+#include <acpi/acpi.h>
+#include <acpi/acpi_device.h>
+#include <acpi/acpigen.h>
 #include <console/console.h>
 #include <device/i2c.h>
 #include <device/device.h>
@@ -27,7 +17,7 @@
 #define RT5663_DP_INT(key, val) \
 	acpi_dp_add_integer(dp, "realtek," key, (val))
 
-static void rt5663_fill_ssdt(struct device *dev)
+static void rt5663_fill_ssdt(const struct device *dev)
 {
 	struct drivers_i2c_rt5663_config *config = dev->chip_info;
 	const char *scope = acpi_device_scope(dev);
@@ -85,11 +75,10 @@ static const char *rt5663_acpi_name(const struct device *dev)
 }
 
 static struct device_operations rt5663_ops = {
-	.read_resources			= DEVICE_NOOP,
-	.set_resources			= DEVICE_NOOP,
-	.enable_resources		= DEVICE_NOOP,
-	.acpi_name			= rt5663_acpi_name,
-	.acpi_fill_ssdt_generator	= rt5663_fill_ssdt,
+	.read_resources		= noop_read_resources,
+	.set_resources		= noop_set_resources,
+	.acpi_name		= rt5663_acpi_name,
+	.acpi_fill_ssdt		= rt5663_fill_ssdt,
 };
 
 static void rt5663_enable(struct device *dev)

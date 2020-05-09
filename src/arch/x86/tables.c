@@ -1,15 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <console/console.h>
 #include <bootmem.h>
@@ -18,7 +8,7 @@
 #include <boot/coreboot_tables.h>
 #include <arch/pirq_routing.h>
 #include <arch/smp/mpspec.h>
-#include <arch/acpi.h>
+#include <acpi/acpi.h>
 #include <commonlib/helpers.h>
 #include <string.h>
 #include <cbmem.h>
@@ -88,8 +78,7 @@ static unsigned long write_mptable(unsigned long rom_table_end)
 static unsigned long write_acpi_table(unsigned long rom_table_end)
 {
 	unsigned long high_table_pointer;
-
-#define MAX_ACPI_SIZE (144 * 1024)
+	const size_t max_acpi_size = CONFIG_MAX_ACPI_TABLE_SIZE_KB * KiB;
 
 	post_code(0x9c);
 
@@ -106,7 +95,7 @@ static unsigned long write_acpi_table(unsigned long rom_table_end)
 	 * how far we get.
 	 */
 	high_table_pointer = (unsigned long)cbmem_add(CBMEM_ID_ACPI,
-		MAX_ACPI_SIZE);
+		max_acpi_size);
 	if (high_table_pointer) {
 		unsigned long acpi_start = high_table_pointer;
 		unsigned long new_high_table_pointer;
@@ -114,7 +103,7 @@ static unsigned long write_acpi_table(unsigned long rom_table_end)
 		rom_table_end = ALIGN_UP(rom_table_end, 16);
 		new_high_table_pointer = write_acpi_tables(high_table_pointer);
 		if (new_high_table_pointer > (high_table_pointer
-			+ MAX_ACPI_SIZE))
+			+ max_acpi_size))
 			printk(BIOS_ERR, "ERROR: Increase ACPI size\n");
 		printk(BIOS_DEBUG, "ACPI tables: %ld bytes.\n",
 				new_high_table_pointer - high_table_pointer);

@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2017 Intel Corporation.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <device/mmio.h>
 #include <device/device.h>
@@ -46,8 +34,7 @@ static void sata_final(struct device *dev)
 	u8 port_impl, temp;
 
 	/* Set Bus Master */
-	temp = pci_read_config32(dev, PCI_COMMAND);
-	pci_write_config32(dev, PCI_COMMAND, temp | PCI_COMMAND_MASTER);
+	pci_or_config16(dev, PCI_COMMAND, PCI_COMMAND_MASTER);
 
 	/* Read Ports Implemented (GHC_PI) */
 	port_impl = read8(ahcibar + SATA_ABAR_PORT_IMPLEMENTED);
@@ -103,8 +90,9 @@ static const unsigned short pci_device_ids[] = {
 	PCI_DEVICE_ID_INTEL_TGP_SATA,
 	PCI_DEVICE_ID_INTEL_TGP_PREMIUM_SATA,
 	PCI_DEVICE_ID_INTEL_TGP_COMPAT_SATA,
-	PCI_DEVICE_ID_INTEL_JSP_PRE_PROD_SATA,
 	PCI_DEVICE_ID_INTEL_MCC_AHCI_SATA,
+	PCI_DEVICE_ID_INTEL_JSP_SATA_1,
+	PCI_DEVICE_ID_INTEL_JSP_SATA_2,
 	0
 };
 

@@ -1,15 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <console/console.h>
 #include <commonlib/cbfs.h>
@@ -18,9 +8,6 @@
 #include <string.h>
 #include <vb2_sha.h>
 
-#if !defined(ERROR)
-#define ERROR(x...) printk(BIOS_ERR, "CBFS: " x)
-#endif
 #if !defined(LOG)
 #define LOG(x...) printk(BIOS_INFO, "CBFS: " x)
 #endif
@@ -44,7 +31,7 @@ static size_t cbfs_next_offset(const struct region_device *cbfs,
 	if (f == NULL)
 		return 0;
 
-	/* The region_device objects store absolute offets over the whole
+	/* The region_device objects store absolute offsets over the whole
 	 * region. Therefore a relative offset needs to be calculated. */
 	offset = rdev_relative_offset(cbfs, &f->data);
 	offset += region_device_sz(&f->data);

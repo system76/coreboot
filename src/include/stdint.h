@@ -1,22 +1,8 @@
-/*
- * This file is part of the coreboot project.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #ifndef STDINT_H
 #define STDINT_H
-
-/* romcc does not support long long, _Static_assert, or _Bool, so we must ifdef that code out.
-   Also, GCC can provide its own implementation of stdint.h, so in theory we could use that
-   instead of this custom file once romcc is no more. */
 
 /* Fixed width integer types */
 typedef signed char        int8_t;

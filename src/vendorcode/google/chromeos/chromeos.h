@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2011 The ChromiumOS Authors.  All rights reserved.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #ifndef __CHROMEOS_H__
 #define __CHROMEOS_H__
@@ -82,9 +70,9 @@ void chromeos_acpi_gpio_generate(const struct cros_gpio *gpios, size_t num);
  */
 void mainboard_chromeos_acpi_generate(void);
 #if CONFIG(CHROMEOS)
-void chromeos_dsdt_generator(struct device *dev);
+void chromeos_dsdt_generator(const struct device *dev);
 #else
-#define chromeos_dsdt_generator DEVICE_NOOP
+#define chromeos_dsdt_generator NULL
 #endif
 
 enum {

@@ -1,19 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2008 Advanced Micro Devices, Inc.
- * Copyright (C) 2008-2009 coresystems GmbH
- * Copyright (C) 2011 The ChromiumOS Authors.  All rights reserved.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <console/console.h>
 #include <device/device.h>
@@ -276,8 +262,7 @@ static void azalia_init(struct device *dev)
 	pci_write_config32(dev, 0xd0, reg32);
 
 	/* Set Bus Master */
-	reg32 = pci_read_config32(dev, PCI_COMMAND);
-	pci_write_config32(dev, PCI_COMMAND, reg32 | PCI_COMMAND_MASTER);
+	pci_or_config16(dev, PCI_COMMAND, PCI_COMMAND_MASTER);
 
 	pci_write_config8(dev, 0x3c, 0x0a); // unused?
 
@@ -322,11 +307,15 @@ static struct device_operations azalia_ops = {
 	.set_resources		= pci_dev_set_resources,
 	.enable_resources	= pci_dev_enable_resources,
 	.init			= azalia_init,
-	.scan_bus		= 0,
 	.ops_pci		= &azalia_pci_ops,
 };
 
-static const unsigned short pci_device_ids[] = { 0x1c20, 0x1e20, 0x3b56, 0 };
+static const unsigned short pci_device_ids[] = {
+	0x1c20,
+	0x1e20,
+	PCI_DID_INTEL_IBEXPEAK_AUDIO,
+	0
+};
 
 static const struct pci_driver pch_azalia __pci_driver = {
 	.ops	 = &azalia_ops,

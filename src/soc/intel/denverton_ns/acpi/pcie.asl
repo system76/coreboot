@@ -1,20 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2007 - 2009 coresystems GmbH
- * Copyright (C) 2012 The Chromium OS Authors.  All Rights Reserved.
- * Copyright (C) 2014 - 2017 Intel Corporation.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 /* Intel 6/7 Series PCH PCIe support */
 
@@ -118,9 +103,54 @@ Method (IRQM, 1, Serialized) {
 		Package() { 0x0000ffff, 2, \_SB.PCI0.LPCB.LNKF, 0 },
 		Package() { 0x0000ffff, 3, \_SB.PCI0.LPCB.LNKG, 0 } })
 
+	/* Interrupt Map INTA->INTC, INTB->INTB, INTC->INTC, INTD->INTD */
+	Name (IQIA, Package() {
+		Package() { 0x0000ffff, 0, 0, 18 },
+		Package() { 0x0000ffff, 1, 0, 17 },
+		Package() { 0x0000ffff, 2, 0, 18 },
+		Package() { 0x0000ffff, 3, 0, 19 } })
+	Name (IQIP, Package() {
+		Package() { 0x0000ffff, 0, \_SB.PCI0.LPCB.LNKC, 0 },
+		Package() { 0x0000ffff, 1, \_SB.PCI0.LPCB.LNKB, 0 },
+		Package() { 0x0000ffff, 2, \_SB.PCI0.LPCB.LNKC, 0 },
+		Package() { 0x0000ffff, 3, \_SB.PCI0.LPCB.LNKD, 0 } })
+
+	/* Interrupt Map INTA->INTA, INTB->INTB, INTC->INTC, INTD->INTD */
+	Name (IQJA, Package() {
+		Package() { 0x0000ffff, 0, 0, 23 },
+		Package() { 0x0000ffff, 1, 0, 20 },
+		Package() { 0x0000ffff, 2, 0, 21 },
+		Package() { 0x0000ffff, 3, 0, 22 } })
+	Name (IQJP, Package() {
+		Package() { 0x0000ffff, 0, \_SB.PCI0.LPCB.LNKA, 0 },
+		Package() { 0x0000ffff, 1, \_SB.PCI0.LPCB.LNKB, 0 },
+		Package() { 0x0000ffff, 2, \_SB.PCI0.LPCB.LNKC, 0 },
+		Package() { 0x0000ffff, 3, \_SB.PCI0.LPCB.LNKD, 0 } })
+
+	/* Interrupt Map INTA->INTB, INTB->INTB, INTC->INTC, INTD->INTD */
+	Name (IQKA, Package() {
+		Package() { 0x0000ffff, 0, 0, 17 },
+		Package() { 0x0000ffff, 1, 0, 17 },
+		Package() { 0x0000ffff, 2, 0, 18 },
+		Package() { 0x0000ffff, 3, 0, 19 } })
+	Name (IQKP, Package() {
+		Package() { 0x0000ffff, 0, \_SB.PCI0.LPCB.LNKB, 0 },
+		Package() { 0x0000ffff, 1, \_SB.PCI0.LPCB.LNKB, 0 },
+		Package() { 0x0000ffff, 2, \_SB.PCI0.LPCB.LNKC, 0 },
+		Package() { 0x0000ffff, 3, \_SB.PCI0.LPCB.LNKD, 0 } })
+
 	Switch (ToInteger (Arg0)) {
+		/* Virtual Root Port 2 - QAT */
+		Case (Package() { 6 }) {
+			If (PICM) {
+				Return (IQIA)
+			} Else {
+				Return (IQIP)
+			}
+		}
+
 		/* PCIe Root Port 1 */
-		Case (Package() { 1 }) {
+		Case (Package() { 9 }) {
 			If (PICM) {
 				Return (IQAA)
 			} Else {
@@ -129,7 +159,7 @@ Method (IRQM, 1, Serialized) {
 		}
 
 		/* PCIe Root Port 2 */
-		Case (Package() { 2 }) {
+		Case (Package() { 10 }) {
 			If (PICM) {
 				Return (IQBA)
 			} Else {
@@ -138,7 +168,7 @@ Method (IRQM, 1, Serialized) {
 		}
 
 		/* PCIe Root Port 3 */
-		Case (Package() { 3 }) {
+		Case (Package() { 11 }) {
 			If (PICM) {
 				Return (IQCA)
 			} Else {
@@ -147,7 +177,7 @@ Method (IRQM, 1, Serialized) {
 		}
 
 		/* PCIe Root Port 4 */
-		Case (Package() { 4 }) {
+		Case (Package() { 12 }) {
 			If (PICM) {
 				Return (IQDA)
 			} Else {
@@ -156,7 +186,7 @@ Method (IRQM, 1, Serialized) {
 		}
 
 		/* PCIe Root Port 5 */
-		Case (Package() { 5 }) {
+		Case (Package() { 14 }) {
 			If (PICM) {
 				Return (IQEA)
 			} Else {
@@ -165,7 +195,7 @@ Method (IRQM, 1, Serialized) {
 		}
 
 		/* PCIe Root Port 6 */
-		Case (Package() { 6 }) {
+		Case (Package() { 15 }) {
 			If (PICM) {
 				Return (IQFA)
 			} Else {
@@ -174,7 +204,7 @@ Method (IRQM, 1, Serialized) {
 		}
 
 		/* PCIe Root Port 7 */
-		Case (Package() { 7 }) {
+		Case (Package() { 16 }) {
 			If (PICM) {
 				Return (IQGA)
 			} Else {
@@ -183,11 +213,29 @@ Method (IRQM, 1, Serialized) {
 		}
 
 		/* PCIe Root Port 8 */
-		Case (Package() { 8 }) {
+		Case (Package() { 17 }) {
 			If (PICM) {
 				Return (IQHA)
 			} Else {
 				Return (IQHP)
+			}
+		}
+
+		/* Virtual Root Port 0 - LAN 0 */
+		Case (Package() { 22 }) {
+			If (PICM) {
+				Return (IQJA)
+			} Else {
+				Return (IQJP)
+			}
+		}
+
+		/* Virtual Root Port 1 - LAN 1 */
+		Case (Package() { 23 }) {
+			If (PICM) {
+				Return (IQKA)
+			} Else {
+				Return (IQKP)
 			}
 		}
 

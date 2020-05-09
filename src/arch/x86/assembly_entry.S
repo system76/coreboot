@@ -1,15 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <rules.h>
 
@@ -19,6 +9,13 @@
  * continue with C code execution one needs to set stack pointer and
  * clear .bss variables that are stage specific.
  */
+
+#if CONFIG(RESET_VECTOR_IN_RAM)
+	#define _STACK_TOP _eearlyram_stack
+#else
+	#define _STACK_TOP _ecar_stack
+#endif
+
 .section ".text._start", "ax", @progbits
 .global _start
 _start:
@@ -26,8 +23,8 @@ _start:
 	/* Migrate GDT to this text segment */
 	call	gdt_init
 
-	/* reset stack pointer to CAR stack */
-	mov	$_ecar_stack, %esp
+	/* reset stack pointer to CAR/EARLYRAM stack */
+	mov	$_STACK_TOP, %esp
 
 	/* clear .bss section as it is not shared */
 	cld
@@ -38,7 +35,7 @@ _start:
 	shrl	$2, %ecx
 	rep	stosl
 
-#if ((ENV_VERSTAGE && CONFIG(VERSTAGE_DEBUG_SPINLOOP)) \
+#if ((ENV_SEPARATE_VERSTAGE && CONFIG(VERSTAGE_DEBUG_SPINLOOP)) \
 	|| (ENV_ROMSTAGE && CONFIG(ROMSTAGE_DEBUG_SPINLOOP)))
 
 	/* Wait for a JTAG debugger to break in and set EBX non-zero */

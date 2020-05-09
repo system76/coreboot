@@ -1,7 +1,6 @@
 /*
  * This file is part of the coreboot project.
  *
- * Copyright (C) 2019 Asami Doi <d0iasm.pub@gmail.com>
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
@@ -10,6 +9,14 @@
 #include <ramdetect.h>
 #include <symbols.h>
 #include <device/device.h>
+#include <bootmem.h>
+
+extern u8 _secram[], _esecram[];
+
+void bootmem_platform_add_ranges(void)
+{
+	bootmem_add_range((uintptr_t)_secram, REGION_SIZE(secram), BM_MEM_BL31);
+}
 
 static void mainboard_enable(struct device *dev)
 {

@@ -155,10 +155,10 @@ the SPD array must be `0x50`. After testing all the slots, your `mainboard_get_s
 should look similar to this:
 
 	void mainboard_get_spd(spd_raw_data *spd) {
-		read_spd (&spd[0], 0x50);
-		read_spd (&spd[1], 0x51);
-		read_spd (&spd[2], 0x52);
-		read_spd (&spd[3], 0x53);
+		read_spd(&spd[0], 0x50);
+		read_spd(&spd[1], 0x51);
+		read_spd(&spd[2], 0x52);
+		read_spd(&spd[3], 0x53);
 	}
 
 Note that there should be one line per memory slot on the mainboard.
@@ -342,7 +342,7 @@ on laptops (desktops have no "lid"!) but it makes sense to proofread it.
 ## `gfx.ndid` and `gfx.did`
 
 Those describe which video outputs are declared in ACPI tables.
-Normally, there is no need to adjust these values, but if you miss some
+Normally, there is no need to have these values, but if you miss some
 non-standard video output, you can declare it there. Bit 31 is set to
 indicate the presence of the output. Byte 1 is the type and byte 0 is
 used for disambigution so that ID composed of byte 1 and 0 is unique.
@@ -355,9 +355,9 @@ Types are:
 
 ## `c*_acpower` and `c*_battery`
 
-Which mwait states to match to which ACPI levels. Normall, there is no
-need to modify anything unless your device has very special power
-saving requirements.
+Which mwait states to match to which ACPI levels. Normally, there is no
+need to modify anything unless your device has very special power saving
+requirements.
 
 ## `install_intel_vga_int15_handler`
 

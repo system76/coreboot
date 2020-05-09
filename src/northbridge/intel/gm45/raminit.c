@@ -1,18 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2012 secunet Security Networks AG
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; version 2 of
- * the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <commonlib/helpers.h>
 #include <stdint.h>
@@ -1293,7 +1280,7 @@ static void program_memory_map(const dimminfo_t *const dimms, const channel_mode
 		MCHBAR32(DCC_MCHBAR) &= ~DCC_INTERLEAVED;
 		break;
 	case CHANNEL_MODE_DUAL_ASYNC:
-		printk(BIOS_DEBUG, "Memory configured in dual-channel assymetric mode.\n");
+		printk(BIOS_DEBUG, "Memory configured in dual-channel asymmetric mode.\n");
 		MCHBAR32(DCC_MCHBAR) &= ~DCC_INTERLEAVED;
 		break;
 	case CHANNEL_MODE_DUAL_INTERLEAVED:

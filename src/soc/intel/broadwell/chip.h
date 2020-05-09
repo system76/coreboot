@@ -1,22 +1,10 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2007-2008 coresystems GmbH
- * Copyright (C) 2014 Google Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #ifndef _SOC_INTEL_BROADWELL_CHIP_H_
 #define _SOC_INTEL_BROADWELL_CHIP_H_
 
+#include <drivers/intel/gma/i915.h>
 #include <stdint.h>
 
 struct soc_intel_broadwell_config {
@@ -131,6 +119,8 @@ struct soc_intel_broadwell_config {
 	 * 3 = 675MHz
 	 */
 	int cdclk;
+
+	struct i915_gpu_controller_info gfx;
 
 	/* Enable S0iX support */
 	int s0ix_enable;

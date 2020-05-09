@@ -164,7 +164,7 @@ Drivers (29 commits)
 * i2c/hid: Add generic I2C HID driver
 * i2c/max98927: add i2c driver for Maxim 98927 codec
 * i2c/wacom_ts: Add support for WCOM touchscreen device driver
-* pc80/rtc: Check cmos checksum BEFORE reading cmos value
+* pc80/rtc: Check CMOS checksum BEFORE reading CMOS value
 * regulator: Add driver for handling GPIO-based fixed regulator
 * storage: Add SD/MMC/eMMC driver based upon depthcharge
 
@@ -180,7 +180,7 @@ SuperIO (12 commits)
 * Add 2 new chips
 * Consolidate code to use common routines
 
-Vboot (23 commits)
+vboot (23 commits)
 * Add support for recovery hash space in TPM
 
 RISC-V (25 commits)

@@ -1,18 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2014 Google Inc.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; version 2 of
- * the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <device/azalia_device.h>
 
@@ -85,7 +72,7 @@ const u32 cim_verb_data[] = {
 	/* Pin Complex (NID 0x1D)  PCBeep */
 	0x01d71c2d, // eapd low on ex-amp, laptop, custom enable
 	0x01d71d81, // mute spkr on hpout
-	0x01d71e15, // pcbeep en able, checksum
+	0x01d71e15, // pcbeep enable, checksum
 	0x01d71f40, // no physical, Internal, Location N/A
 
 	/* Pin Complex (NID 0x1E)  SPDIF-OUT - Disabled*/

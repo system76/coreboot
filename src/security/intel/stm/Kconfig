@@ -1,13 +1,8 @@
-
-config PLATFORM_SUPPORTS_STM
-	bool
-	depends on SMM_TSEG
-
 config STM
 	bool "Enable STM"
 	default n
-	depends on PLATFORM_SUPPORTS_STM
-	select USE_BLOBS
+	depends on ENABLE_VMX
+	depends on SMM_TSEG
 
 	help
 	  Enabling the STM will load a simple hypervisor into SMM that will

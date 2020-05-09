@@ -1,18 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2007-2009 coresystems GmbH
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; version 2 of
- * the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 /* The _PTS method (Prepare To Sleep) is called before the OS is
  * entering a sleep state. The sleep state number is passed in Arg0
@@ -90,15 +77,15 @@ Method(_WAK,1)
 
 	// Windows XP SP2 P-State restore
 	If (LAnd(LEqual(OSYS, 2002), And(CFGD, 1))) {
-		If (LGreater(\_PR.CP00._PPC, 0)) {
-			Subtract(\_PR.CP00._PPC, 1, \_PR.CP00._PPC)
+		If (LGreater(\_SB.CP00._PPC, 0)) {
+			Subtract(\_SB.CP00._PPC, 1, \_SB.CP00._PPC)
 			PNOT()
-			Add(\_PR.CP00._PPC, 1, \_PR.CP00._PPC)
+			Add(\_SB.CP00._PPC, 1, \_SB.CP00._PPC)
 			PNOT()
 		} Else {
-			Add(\_PR.CP00._PPC, 1, \_PR.CP00._PPC)
+			Add(\_SB.CP00._PPC, 1, \_SB.CP00._PPC)
 			PNOT()
-			Subtract(\_PR.CP00._PPC, 1, \_PR.CP00._PPC)
+			Subtract(\_SB.CP00._PPC, 1, \_SB.CP00._PPC)
 			PNOT()
 		}
 	}

@@ -1,30 +1,18 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2019 Advanced Micro Devices, Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #ifndef __PICASSO_CPU_H__
 #define __PICASSO_CPU_H__
 
 #include <device/device.h>
 
-#define SOC_EARLY_VMTRR_FLASH 1
-#define SOC_EARLY_VMTRR_TEMPRAM 2
-
 #define CSTATE_BASE_REG 0xc0010073
 
 void picasso_init_cpus(struct device *dev);
 int get_cpu_count(void);
 void check_mca(void);
+
+#define PICASSO_CPUID			0x00810f81
+#define RAVEN2_CPUID			0x00820f01
 
 #endif /* __PICASSO_CPU_H__ */

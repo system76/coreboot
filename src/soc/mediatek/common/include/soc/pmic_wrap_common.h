@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright 2018 MediaTek Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #ifndef SOC_MEDIATEK_PMIC_WRAP_COMMON_H
 #define SOC_MEDIATEK_PMIC_WRAP_COMMON_H
@@ -69,7 +57,7 @@ static inline s32 pwrap_write_nochk(u16 addr, u16 wdata)
 	return pwrap_wacs2(1, addr, wdata, 0, 0);
 }
 
-/* dewrapper defaule value */
+/* dewrapper default value */
 enum {
 	DEFAULT_VALUE_READ_TEST  = 0x5aa5,
 	WRITE_TEST_VALUE         = 0xa55a
@@ -81,7 +69,7 @@ enum {
 	TIMEOUT_WAIT_IDLE_US   = 255
 };
 
-/* manual commnd */
+/* manual command */
 enum {
 	OP_WR    = 0x1,
 	OP_CSH   = 0x0,

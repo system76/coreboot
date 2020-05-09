@@ -1,8 +1,5 @@
+/* Bochs/QEMU ACPI DSDT ASL definition */
 /*
- * Bochs/QEMU ACPI DSDT ASL definition
- *
- * Copyright (c) 2006 Fabrice Bellard
- *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License version 2 as published by the Free Software Foundation.
@@ -13,7 +10,7 @@
  * Lesser General Public License for more details.
  */
 
-#include <arch/acpi.h>
+#include <acpi/acpi.h>
 DefinitionBlock (
 	"dsdt.aml",         // Output Filename
 	"DSDT",             // Signature

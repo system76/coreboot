@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2019 Felix Singer <felix.singer@9elements.com>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <soc/ramstage.h>
 #include <fsp/api.h>
@@ -42,7 +30,6 @@ void mainboard_silicon_init_params(FSP_S_CONFIG *silconfig)
 	silconfig->IoApicBdfValid = 0x1;		// 0x0
 	silconfig->IoApicDeviceNumber = 0x1F;		// 0xf
 	silconfig->LPSS_S0ixEnable = 0x1;		// 0x0
-	silconfig->eMMCHostMaxSpeed = 0x2;		// 0x0
 	silconfig->Usb30Mode = 0x1;			// 0x0
 	silconfig->HdAudioDspUaaCompliance = 0x1;	// 0x0
 	silconfig->InitS3Cpu = 0x1;			// 0x0
@@ -80,14 +67,4 @@ void mainboard_silicon_init_params(FSP_S_CONFIG *silconfig)
 	silconfig->PcieRpTransmitterHalfSwing[5] = 0x0; // 0x1
 	silconfig->PcieRpLtrMaxNonSnoopLatency[5] = 0x1003;	// 0x0
 	silconfig->PcieRpLtrMaxSnoopLatency[5] = 0x1003;	// 0x0
-
-	silconfig->PortUs30bOverCurrentPin[0] = 0x0;	// 0x1
-
-	silconfig->PortUs20bOverCurrentPin[1] = 0x1;	// 0x0
-	silconfig->PortUs20bOverCurrentPin[2] = 0x1;	// 0x0
-	silconfig->PortUs20bOverCurrentPin[3] = 0x1;	// 0x0
-	silconfig->PortUs20bOverCurrentPin[4] = 0x1;	// 0x0
-	silconfig->PortUs20bOverCurrentPin[5] = 0x1;	// 0x0
-	silconfig->PortUs20bOverCurrentPin[6] = 0x2;	// 0x0
-	silconfig->PortUs20bOverCurrentPin[7] = 0x2;	// 0x0
 }

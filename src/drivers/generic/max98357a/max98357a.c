@@ -1,18 +1,8 @@
-/*
- * This file is part of the coreboot project.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
-#include <arch/acpi_device.h>
-#include <arch/acpigen.h>
+#include <acpi/acpi_device.h>
+#include <acpi/acpigen.h>
 #include <console/console.h>
 #include <device/device.h>
 #include <device/path.h>
@@ -23,9 +13,8 @@
 #if CONFIG(HAVE_ACPI_TABLES)
 
 #define MAX98357A_ACPI_NAME	"MAXM"
-#define MAX98357A_ACPI_HID	"MX98357A"
 
-static void max98357a_fill_ssdt(struct device *dev)
+static void max98357a_fill_ssdt(const struct device *dev)
 {
 	struct drivers_generic_max98357a_config *config = dev->chip_info;
 	const char *path;
@@ -42,7 +31,13 @@ static void max98357a_fill_ssdt(struct device *dev)
 	/* Device */
 	acpigen_write_scope(scope);
 	acpigen_write_device(name);
-	acpigen_write_name_string("_HID", MAX98357A_ACPI_HID);
+
+	if (!config->hid) {
+		printk(BIOS_ERR, "%s: ERROR: _HID required\n", dev_path(dev));
+		return;
+	}
+
+	acpigen_write_name_string("_HID", config->hid);
 	acpigen_write_name_integer("_UID", 0);
 	acpigen_write_name_string("_DDN", dev->chip_ops->name);
 	acpigen_write_STA(acpi_device_status(dev));
@@ -75,12 +70,11 @@ static const char *max98357a_acpi_name(const struct device *dev)
 #endif
 
 static struct device_operations max98357a_ops = {
-	.read_resources		  = DEVICE_NOOP,
-	.set_resources		  = DEVICE_NOOP,
-	.enable_resources	  = DEVICE_NOOP,
+	.read_resources		= noop_read_resources,
+	.set_resources		= noop_set_resources,
 #if CONFIG(HAVE_ACPI_TABLES)
-	.acpi_name                = max98357a_acpi_name,
-	.acpi_fill_ssdt_generator = max98357a_fill_ssdt,
+	.acpi_name		= max98357a_acpi_name,
+	.acpi_fill_ssdt		= max98357a_fill_ssdt,
 #endif
 };
 

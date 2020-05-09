@@ -1,23 +1,11 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright 2018 Facebook Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <console/console.h>
 #include <security/tpm/tspi.h>
 #include <region_file.h>
 #include <string.h>
-#include <security/vboot/symbols.h>
+#include <symbols.h>
 #include <cbmem.h>
 #include <bootstate.h>
 #include <vb2_sha.h>
@@ -43,7 +31,7 @@ static struct tcpa_table *tcpa_cbmem_init(void)
 	return tclt;
 }
 
-static struct tcpa_table *tcpa_log_init(void)
+struct tcpa_table *tcpa_log_init(void)
 {
 	MAYBE_STATIC_BSS struct tcpa_table *tclt = NULL;
 
@@ -51,12 +39,12 @@ static struct tcpa_table *tcpa_log_init(void)
 	 * If cbmem isn't available use CAR or SRAM */
 	if (!cbmem_possibly_online() &&
 		!CONFIG(VBOOT_RETURN_FROM_VERSTAGE))
-		return (struct tcpa_table *)_vboot2_tpm_log;
+		return (struct tcpa_table *)_tpm_tcpa_log;
 	else if (ENV_ROMSTAGE &&
 		!CONFIG(VBOOT_RETURN_FROM_VERSTAGE)) {
 		tclt = tcpa_cbmem_init();
 		if (!tclt)
-			return (struct tcpa_table *)_vboot2_tpm_log;
+			return (struct tcpa_table *)_tpm_tcpa_log;
 	} else {
 		tclt = tcpa_cbmem_init();
 	}
@@ -129,7 +117,7 @@ void tcpa_log_add_table_entry(const char *name, const uint32_t pcr,
 void tcpa_preram_log_clear(void)
 {
 	printk(BIOS_INFO, "TCPA: Clearing coreboot TCPA log\n");
-	struct tcpa_table *tclt = (struct tcpa_table *)_vboot2_tpm_log;
+	struct tcpa_table *tclt = (struct tcpa_table *)_tpm_tcpa_log;
 	tclt->max_entries = MAX_TCPA_LOG_ENTRIES;
 	tclt->num_entries = 0;
 }
@@ -137,7 +125,7 @@ void tcpa_preram_log_clear(void)
 #if !CONFIG(VBOOT_RETURN_FROM_VERSTAGE)
 static void recover_tcpa_log(int is_recovery)
 {
-	struct tcpa_table *preram_log = (struct tcpa_table *)_vboot2_tpm_log;
+	struct tcpa_table *preram_log = (struct tcpa_table *)_tpm_tcpa_log;
 	struct tcpa_table *ram_log = NULL;
 	int i;
 

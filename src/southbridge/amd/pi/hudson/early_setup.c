@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2010 Advanced Micro Devices, Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #ifndef _HUDSON_EARLY_SETUP_C_
 #define _HUDSON_EARLY_SETUP_C_
@@ -104,10 +92,9 @@ void hudson_pci_port80(void)
 void hudson_lpc_port80(void)
 {
 	u8 byte;
-	pci_devfn_t dev;
 
 	/* Enable port 80 LPC decode in pci function 3 configuration space. */
-	dev = PCI_DEV(0, 0x14, 3);
+	const pci_devfn_t dev = PCI_DEV(0, 0x14, 3);
 	byte = pci_read_config8(dev, 0x4a);
 	byte |= 1 << 5; /* enable port 80 */
 	pci_write_config8(dev, 0x4a, byte);
@@ -115,13 +102,12 @@ void hudson_lpc_port80(void)
 
 void hudson_lpc_decode(void)
 {
-	pci_devfn_t dev;
 	u32 tmp;
 
 	/* Enable LPC controller */
 	pm_write8(0xec, pm_read8(0xec) | 0x01);
 
-	dev = PCI_DEV(0, 0x14, 3);
+	const pci_devfn_t dev = PCI_DEV(0, 0x14, 3);
 	/* Serial port numeration on Hudson:
 	 * PORT0 - 0x3f8
 	 * PORT1 - 0x2f8
@@ -146,7 +132,7 @@ static void enable_wideio(uint8_t port, uint16_t size)
 		LPC_ALT_WIDEIO1_ENABLE,
 		LPC_ALT_WIDEIO2_ENABLE
 	};
-	pci_devfn_t dev = PCI_DEV(0, PCU_DEV, LPC_FUNC);
+	const pci_devfn_t dev = PCI_DEV(0, PCU_DEV, LPC_FUNC);
 	uint32_t tmp;
 
 	/* Only allow port 0-2 */
@@ -180,7 +166,7 @@ static void enable_wideio(uint8_t port, uint16_t size)
  */
 static void lpc_wideio_window(uint16_t base, uint16_t size)
 {
-	pci_devfn_t dev = PCI_DEV(0, PCU_DEV, LPC_FUNC);
+	const pci_devfn_t dev = PCI_DEV(0, PCU_DEV, LPC_FUNC);
 	u32 tmp;
 
 	/* Support 512 or 16 bytes per range */
@@ -239,7 +225,7 @@ void hudson_clk_output_48Mhz(void)
 static uintptr_t hudson_spibase(void)
 {
 	/* Make sure the base address is predictable */
-	pci_devfn_t dev = PCI_DEV(0, 0x14, 3);
+	const pci_devfn_t dev = PCI_DEV(0, 0x14, 3);
 
 	u32 base = pci_read_config32(dev, SPIROM_BASE_ADDRESS_REGISTER)
 							& 0xfffffff0;
@@ -292,7 +278,7 @@ void hudson_read_mode(u32 mode)
 
 void hudson_tpm_decode_spi(void)
 {
-	pci_devfn_t dev = PCI_DEV(0, 0x14, 3);	/* LPC device */
+	const pci_devfn_t dev = PCI_DEV(0, 0x14, 3);	/* LPC device */
 
 	u32 spibase = pci_read_config32(dev, SPIROM_BASE_ADDRESS_REGISTER);
 	pci_write_config32(dev, SPIROM_BASE_ADDRESS_REGISTER, spibase

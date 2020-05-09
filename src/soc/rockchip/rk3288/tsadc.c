@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright 2014 Rockchip Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <device/mmio.h>
 #include <soc/clock.h>
@@ -100,7 +88,7 @@ void tsadc_init(void)
 
 	/*
 	  tsadc iomux must be set after the tshut polarity setting,
-	  since the tshut polarity defalut low active,
+	  since the tshut polarity default low active,
 	  so if you enable tsadc iomux,it will output high
 	 */
 	setbits32(&rk3288_pmu->iomux_tsadc_int, IOMUX_TSADC_INT);

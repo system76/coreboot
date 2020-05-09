@@ -1,19 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2012 Advanced Micro Devices, Inc.
- * Copyright (C) 2016 Edward O'Callaghan <funfunctor@folklore1984.net>
- * Copyright (C) 2017 Damien Zammit <damien@zamaudio.com>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <amdblocks/acpimmio.h>
 #include <bootblock_common.h>
@@ -49,7 +35,7 @@ void bootblock_mainboard_early_init(void)
 	pm_io_write8(0x24, 1);
 
 	/* Set LPC decode enables. */
-	pci_devfn_t dev = PCI_DEV(0, 0x14, 3);
+	const pci_devfn_t dev = PCI_DEV(0, 0x14, 3);
 	pci_write_config32(dev, 0x44, 0xff03ffd5);
 
 	/* enable SIO LPC decode */

@@ -1,19 +1,8 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2017-2018 Intel Corporation..
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <bootblock_common.h>
+#include <cpu/x86/mtrr.h>
 #include <intelblocks/gspi.h>
 #include <intelblocks/uart.h>
 #include <soc/bootblock.h>
@@ -40,12 +29,14 @@ const FSPT_UPD temp_ram_init_params = {
 		 * even before hitting CPU reset vector. Hence skipping FSP-T loading
 		 * microcode after CPU reset by passing '0' value to
 		 * FSPT_UPD.MicrocodeRegionBase and FSPT_UPD.MicrocodeRegionSize.
+		 *
+		 * Note: CodeRegionSize must be smaller than or equal to 16MiB to not
+		 * overlap with LAPIC or the CAR area at 0xfef00000.
 		 */
 		.MicrocodeRegionBase = 0,
 		.MicrocodeRegionSize = 0,
-		.CodeRegionBase =
-			(uint32_t)(0x100000000ULL - CONFIG_ROM_SIZE),
-		.CodeRegionSize = (uint32_t)CONFIG_ROM_SIZE,
+		.CodeRegionBase = (uint32_t)0x100000000ULL - CACHE_ROM_SIZE,
+		.CodeRegionSize = (uint32_t)CACHE_ROM_SIZE,
 	},
 };
 #endif

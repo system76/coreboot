@@ -1,19 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2008-2009 coresystems GmbH
- * Copyright (C) 2014 Google Inc.
- * Copyright (C) 2015-2020 Intel Corporation.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #ifndef _SOC_NVS_H_
 #define _SOC_NVS_H_
@@ -88,7 +74,7 @@ typedef struct global_nvs_t {
 	u8	pavp; /* 0xe9 - IGD PAVP data */
 	u8	rsvd12; /* 0xea - rsvd */
 	u8	oscc; /* 0xeb - PCIe OSC control */
-	u8	npce; /* 0xec - native pcie support */
+	u8	npce; /* 0xec - native PCIe support */
 	u8	plfl; /* 0xed - platform flavor */
 	u8	brev; /* 0xee - board revision */
 	u8	dpbm; /* 0xef - digital port b mode */

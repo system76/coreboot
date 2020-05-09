@@ -1,18 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2011 Advanced Micro Devices, Inc.
- * Copyright (C) 2014 Sage Electronic Engineering, LLC.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <amdblocks/acpimmio.h>
 #include <device/mmio.h>
@@ -27,7 +14,7 @@
 #include <pc80/i8254.h>
 #include <pc80/i8259.h>
 #include <console/console.h>	/* printk */
-#include <arch/acpi.h>
+#include <acpi/acpi.h>
 #include <device/pci_ehci.h>
 #include "lpc.h"		/* lpc_read_resources */
 #include "SBPLATFORM.h"		/* Platform Specific Definitions */
@@ -183,7 +170,6 @@ static struct device_operations sata_ops = {
 	.set_resources = pci_dev_set_resources,
 	.enable_resources = pci_dev_enable_resources,
 	.init = ahci_raid_init,
-	.scan_bus = 0,
 	.ops_pci = &lops_pci,
 };
 
@@ -208,13 +194,11 @@ static struct device_operations usb_ops = {
 	.read_resources = pci_ehci_read_resources,
 	.set_resources = pci_dev_set_resources,
 	.enable_resources = pci_dev_enable_resources,
-	.init = 0,
-	.scan_bus = 0,
 	.ops_pci = &lops_pci,
 };
 
 /*
- * The pci id of usb ctrl 0 and 1 are the same.
+ * The pci id of USB ctrl 0 and 1 are the same.
  */
 static const struct pci_driver usb_ohci123_driver __pci_driver = {
 	.ops = &usb_ops,
@@ -239,8 +223,6 @@ static struct device_operations azalia_ops = {
 	.read_resources = pci_dev_read_resources,
 	.set_resources = pci_dev_set_resources,
 	.enable_resources = pci_dev_enable_resources,
-	.init = 0,
-	.scan_bus = 0,
 	.ops_pci = &lops_pci,
 };
 
@@ -255,8 +237,6 @@ static struct device_operations gec_ops = {
 	.read_resources = pci_dev_read_resources,
 	.set_resources = pci_dev_set_resources,
 	.enable_resources = pci_dev_enable_resources,
-	.init = 0,
-	.scan_bus = 0,
 	.ops_pci = &lops_pci,
 };
 

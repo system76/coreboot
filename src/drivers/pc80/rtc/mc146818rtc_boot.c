@@ -1,17 +1,8 @@
-/*
- * This file is part of the coreboot project.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <stdint.h>
+#include <console/console.h>
 #include <option.h>
 #include <pc80/mc146818rtc.h>
 #include <fallback.h>
@@ -45,9 +36,8 @@ int do_normal_boot(void)
 	unsigned char byte;
 
 	if (cmos_error() || (CONFIG(USE_OPTION_TABLE) && !cmos_lb_cks_valid())) {
-		/* Invalid CMOS checksum detected!
-		 * Force fallback boot...
-		 */
+		printk(BIOS_WARNING,
+		       "Invalid CMOS checksum detected! Force fallback boot...\n");
 		byte = cmos_read(RTC_BOOT_BYTE);
 		byte &= boot_set_fallback(byte) & 0x0f;
 		byte |= 0xf << 4;

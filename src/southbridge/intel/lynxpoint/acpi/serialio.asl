@@ -1,18 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright 2013 Google Inc.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; version 2 of
- * the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 // Intel LynxPoint Serial IO Devices in ACPI Mode
 
@@ -551,8 +538,9 @@ Device (GPIO)
 			,            // ResourceSourceIndex
 			,            // ResourceSource
 			BAR0)
-		Interrupt (ResourceConsumer,
-			Level, ActiveHigh, Shared, , ,) {14}
+		// Disabled due to IRQ storm: http://crosbug.com/p/29548
+		//Interrupt (ResourceConsumer,
+		//	Level, ActiveHigh, Shared, , , ) {14}
 	})
 
 	Method (_CRS, 0, NotSerialized)

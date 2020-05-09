@@ -1,19 +1,8 @@
-/*
- * This file is part of the coreboot project.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
+/* This file is part of the coreboot project. */
 
-#include <arch/acpi.h>
-#include <arch/acpigen.h>
+#include <acpi/acpi.h>
+#include <acpi/acpigen.h>
 #include <string.h>
 #include "i915.h"
 
@@ -22,46 +11,49 @@ drivers_intel_gma_displays_ssdt_generate(const struct i915_gpu_controller_info *
 {
 	size_t i;
 	const char *names[] = { "UNK", "VGA", "TV", "DVI", "LCD" };
-	int counters[ARRAY_SIZE(names)];
+	int counters[ARRAY_SIZE(names)] = { 0 };
 
-	memset(counters, 0, sizeof(counters));
+	if (!conf->ndid)
+		return;
 
 	acpigen_write_scope("\\_SB.PCI0.GFX0");
 
 	/*
-	Method (_DOD, 0)
-	{
+	  Method (_DOD, 0)
+	  {
 		Return (Package() {
 				0x5a5a5a5a,
 				0x5a5a5a5a,
 				0x5a5a5a5a
 			})
-	}
+	  }
 	*/
 	acpigen_write_method("_DOD", 0);
-	acpigen_emit_byte(0xa4); /* ReturnOp.  */
-	acpigen_write_package(conf->ndid);
 
+	acpigen_emit_byte(RETURN_OP);
+	acpigen_write_package(conf->ndid);
 	for (i = 0; i < conf->ndid; i++) {
 		acpigen_write_dword (conf->did[i] | 0x80010000);
 	}
 	acpigen_pop_len(); /* End Package. */
+
 	acpigen_pop_len(); /* End Method. */
 
 	for (i = 0; i < conf->ndid; i++) {
-		char name[10];
-		char *ptr;
+		char name[5];
 		int kind;
+
 		kind = (conf->did[i] >> 8) & 0xf;
 		if (kind >= ARRAY_SIZE(names)) {
 			kind = 0;
 		}
-		strcpy(name, names[kind]);
-		for (ptr = name; *ptr; ptr++);
-		*ptr++ = counters[kind] + '0';
-		*ptr++ = '\0';
+
+		snprintf(name, sizeof(name), "%s%d", names[kind], counters[kind]);
 		counters[kind]++;
+
+		/* Device (LCD0) */
 		acpigen_write_device(name);
+
 		/* Name (_ADR, 0x0410) */
 		acpigen_write_name_dword("_ADR", conf->did[i] & 0xffff);
 
@@ -74,7 +66,7 @@ drivers_intel_gma_displays_ssdt_generate(const struct i915_gpu_controller_info *
 			  }
 			*/
 			acpigen_write_method("_BCL", 0);
-			acpigen_emit_byte(0xa4); /* ReturnOp.  */
+			acpigen_emit_byte(RETURN_OP);
 			acpigen_emit_namestring("^^XBCL");
 			acpigen_pop_len();
 
@@ -86,7 +78,7 @@ drivers_intel_gma_displays_ssdt_generate(const struct i915_gpu_controller_info *
 			*/
 			acpigen_write_method("_BCM", 1);
 			acpigen_emit_namestring("^^XBCM");
-			acpigen_emit_byte(0x68); /* Arg0Op.  */
+			acpigen_emit_byte(ARG0_OP);
 			acpigen_pop_len();
 
 			/*
@@ -96,49 +88,48 @@ drivers_intel_gma_displays_ssdt_generate(const struct i915_gpu_controller_info *
 			  }
 			*/
 			acpigen_write_method("_BQC", 0);
-			acpigen_emit_byte(0xa4); /* ReturnOp.  */
+			acpigen_emit_byte(RETURN_OP);
 			acpigen_emit_namestring("^^XBQC");
 			acpigen_pop_len();
 		}
 
 		/*
-		Method(_DCS, 0)
-		{
-			Return (^^XDCS(<device number>))
-		}
+		 * _DCS, _DGS and _DSS are required by specification. However,
+		 * we never implemented them properly, and no OS driver com-
+		 * plained yet. So we stub them out and keep the traditional
+		 * behavior in case an OS driver checks for their existence.
+		 */
+
+		/*
+		  Method(_DCS, 0)
+		  {
+			Return (0x1d)
+		  }
 		*/
 		acpigen_write_method("_DCS", 0);
-		acpigen_emit_byte(0xa4); /* ReturnOp.  */
-		acpigen_emit_namestring("^^XDCS");
-		acpigen_write_byte(i);
+		acpigen_write_return_integer(0x1d);
 		acpigen_pop_len();
 
 		/*
-		Method(_DGS, 0)
-		{
-			Return (^^XDGS(<device number>))
-		}
+		  Method(_DGS, 0)
+		  {
+			Return (0)
+		  }
 		*/
 		acpigen_write_method("_DGS", 0);
-		acpigen_emit_byte(0xa4); /* ReturnOp.  */
-		acpigen_emit_namestring("^^XDGS");
-		acpigen_write_byte(i);
+		acpigen_write_return_integer(0);
 		acpigen_pop_len();
 
 		/*
-		Method(_DSS, 1)
-		{
-			^^XDSS(0x5a, Arg0)
-		}
+		  Method(_DSS, 1)
+		  {
+		  }
 		*/
 		acpigen_write_method("_DSS", 1);
-		acpigen_emit_namestring("^^XDSS");
-		acpigen_write_byte(i);
-		acpigen_emit_byte(0x68); /* Arg0Op.  */
 		acpigen_pop_len();
 
-		acpigen_pop_len();
+		acpigen_pop_len(); /* End Device. */
 	}
 
-	acpigen_pop_len();
+	acpigen_pop_len(); /* End Scope. */
 }

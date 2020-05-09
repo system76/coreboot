@@ -1,4 +1,4 @@
-ifeq ($(CONFIG_SOC_INTEL_TIGERLAKE_BASE),y)
+ifeq ($(CONFIG_SOC_INTEL_TIGERLAKE),y)
 
 subdirs-y += romstage
 subdirs-y += ../../../cpu/intel/microcode
@@ -24,8 +24,8 @@ bootblock-y += gpio.c
 bootblock-y += p2sb.c
 
 romstage-y += espi.c
+romstage-y += meminit.c
 romstage-y += gpio.c
-romstage-$(CONFIG_SOC_INTEL_TIGERLAKE) += meminit_tgl.c
 romstage-y += reset.c
 
 ramstage-y += acpi.c
@@ -34,8 +34,7 @@ ramstage-y += cpu.c
 ramstage-y += elog.c
 ramstage-y += espi.c
 ramstage-y += finalize.c
-ramstage-$(CONFIG_SOC_INTEL_TIGERLAKE) += fsp_params_tgl.c
-ramstage-$(CONFIG_SOC_INTEL_JASPERLAKE) += fsp_params_jsl.c
+ramstage-y += fsp_params.c
 ramstage-y += gpio.c
 ramstage-y += graphics.c
 ramstage-y += lockdown.c
@@ -44,7 +43,7 @@ ramstage-y += pmc.c
 ramstage-y += reset.c
 ramstage-y += smmrelocate.c
 ramstage-y += systemagent.c
-ramstage-y += sd.c
+ramstage-y += me.c
 
 smm-y += gpio.c
 smm-y += p2sb.c
@@ -53,6 +52,7 @@ smm-y += pmutil.c
 smm-y += smihandler.c
 smm-y += uart.c
 
+verstage-y += gpio.c
 
 CPPFLAGS_common += -I$(src)/soc/intel/tigerlake
 CPPFLAGS_common += -I$(src)/soc/intel/tigerlake/include

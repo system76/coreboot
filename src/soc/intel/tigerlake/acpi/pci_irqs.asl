@@ -1,25 +1,13 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2020 Intel Corp.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* This file is part of the coreboot project. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #include <soc/irq.h>
 
 Name (PICP, Package () {
-	/* D31:HSA, SMBUS, TraceHUB */
+	/* D31:HDA, SMBUS, TraceHUB */
 	Package(){0x001FFFFF, 3, 0, HDA_IRQ },
 	Package(){0x001FFFFF, 4, 0, SMBUS_IRQ },
+	Package(){0x001FFFFF, 6, 0, GBE_IRQ },
 	Package(){0x001FFFFF, 7, 0, TRACEHUB_IRQ },
 	/* D30: UART0, UART1, SPI0, SPI1 */
 	Package(){0x001EFFFF, 0, 0, LPSS_UART0_IRQ },
@@ -65,8 +53,7 @@ Name (PICP, Package () {
 	/* D18: ISH, SPI2 */
 	Package(){0x0012FFFF, 0, 0, ISH_IRQ },
 	Package(){0x0012FFFF, 6, 0, LPSS_SPI2_IRQ },
-	/* D16: CNVI_BT, TCH0, TCH1 */
-	Package(){0x0010FFFF, 2, 0, CNVI_BT_IRQ },
+	/* D16: TCH0, TCH1 */
 	Package(){0x0010FFFF, 6, 0, THC0_IRQ },
 	Package(){0x0010FFFF, 7, 0, THC1_IRQ },
 	/* D13: xHCI, xDCI */
@@ -90,7 +77,7 @@ Name (PICP, Package () {
 })
 
 Name (PICN, Package () {
-	/* D31:HSA, SMBUS, TraceHUB*/
+	/* D31:HDA, SMBUS, TraceHUB*/
 	Package () { 0x001FFFFF, 3, 0, 11 },
 	Package () { 0x001FFFFF, 4, 0, 11 },
 	Package () { 0x001FFFFF, 7, 0, 11 },

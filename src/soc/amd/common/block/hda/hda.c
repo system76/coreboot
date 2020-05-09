@@ -1,18 +1,8 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2010-2019 Advanced Micro Devices, Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
+#include <acpi/acpigen.h>
+#include <amdblocks/hda.h>
 #include <device/device.h>
 #include <device/pci.h>
 #include <device/pci_ids.h>
@@ -22,24 +12,37 @@
 static const unsigned short pci_device_ids[] = {
 	PCI_DEVICE_ID_AMD_SB900_HDA,
 	PCI_DEVICE_ID_AMD_CZ_HDA,
-	PCI_DEVICE_ID_AMD_PCO_HDA1,
+	PCI_DEVICE_ID_AMD_FAM17H_HDA1,
 	0
 };
 
-static struct pci_operations lops_pci = {
-	.set_subsystem = pci_dev_set_subsystem,
-};
+static const char *hda_acpi_name(const struct device *dev)
+{
+	return "AZHD";
+}
+
+__weak void hda_soc_ssdt_quirks(const struct device *dev)
+{
+}
+
+static void hda_fill_ssdt(const struct device *dev)
+{
+	acpi_device_write_pci_dev(dev);
+	hda_soc_ssdt_quirks(dev);
+}
 
 static struct device_operations hda_audio_ops = {
-	.read_resources = pci_dev_read_resources,
-	.set_resources = pci_dev_set_resources,
-	.enable_resources = pci_dev_enable_resources,
-	.ops_pci = &lops_pci,
+	.read_resources		= pci_dev_read_resources,
+	.set_resources		= pci_dev_set_resources,
+	.enable_resources	= pci_dev_enable_resources,
+	.ops_pci		= &pci_dev_ops_pci,
+	.acpi_name		= hda_acpi_name,
+	.acpi_fill_ssdt		= hda_fill_ssdt,
 };
 
 static const struct pci_driver hdaaudio_driver __pci_driver = {
-	.ops = CONFIG(AZALIA_PLUGIN_SUPPORT) ?
-			&default_azalia_audio_ops : &hda_audio_ops,
-	.vendor = PCI_VENDOR_ID_AMD,
-	.devices = pci_device_ids,
+	.ops			= CONFIG(AZALIA_PLUGIN_SUPPORT) ?
+				&default_azalia_audio_ops : &hda_audio_ops,
+	.vendor			= PCI_VENDOR_ID_AMD,
+	.devices		= pci_device_ids,
 };

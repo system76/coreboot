@@ -1,18 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2015  Damien Zammit <damien@zamaudio.com>
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* This file is part of the coreboot project. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #ifndef NORTHBRIDGE_INTEL_PINEVIEW_H
 #define NORTHBRIDGE_INTEL_PINEVIEW_H
@@ -31,6 +18,7 @@
 #define SYSINFO_DIMM_X8DDS		0x06
 
 /* Device 0:0.0 PCI configuration space (Host Bridge) */
+#define HOST_BRIDGE	PCI_DEV(0, 0, 0)
 
 #define EPBAR		0x40
 #define MCHBAR		0x48
@@ -38,9 +26,9 @@
 #define DMIBAR		0x68
 #define PMIOBAR		0x78
 
-#define GGC		0x52			/* GMCH Graphics Control */
+#define GGC		0x52	/* GMCH Graphics Control */
 
-#define DEVEN		0x54			/* Device Enable */
+#define DEVEN		0x54	/* Device Enable */
 #define  DEVEN_D0F0 (1 << 0)
 #define  DEVEN_D1F0 (1 << 1)
 #define  DEVEN_D2F0 (1 << 3)
@@ -84,9 +72,10 @@
 
 /* Device 0:1.0 PCI configuration space (PCI Express) */
 
-#define PEGSTS		0x214	/* 32bit */
+#define PEGSTS		0x214	/* 32 bits */
 
-/* Device 0:2.0 PCI configuration space (Graphics Device) */
+/* Device 0:2.0 PCI configuration space (Integrated Graphics Device) */
+#define GMCH_IGD	PCI_DEV(0, 2, 0)
 
 #define GMADR		0x18
 #define GTTADR		0x1c
@@ -98,15 +87,28 @@
  * MCHBAR
  */
 
-#define MCHBAR8(x) *((volatile u8 *)(DEFAULT_MCHBAR + x))
-#define MCHBAR16(x) *((volatile u16 *)(DEFAULT_MCHBAR + x))
-#define MCHBAR32(x) *((volatile u32 *)(DEFAULT_MCHBAR + x))
+#define MCHBAR8(x)  (*((volatile u8  *)(DEFAULT_MCHBAR + (x))))
+#define MCHBAR16(x) (*((volatile u16 *)(DEFAULT_MCHBAR + (x))))
+#define MCHBAR32(x) (*((volatile u32 *)(DEFAULT_MCHBAR +  x)))	/* FIXME: causes changes */
+#define MCHBAR8_AND(x,  and) (MCHBAR8(x)  = MCHBAR8(x)  & (and))
+#define MCHBAR16_AND(x, and) (MCHBAR16(x) = MCHBAR16(x) & (and))
+#define MCHBAR32_AND(x, and) (MCHBAR32(x) = MCHBAR32(x) & (and))
+#define MCHBAR8_OR(x,   or)  (MCHBAR8(x)  = MCHBAR8(x)  | (or))
+#define MCHBAR16_OR(x,  or)  (MCHBAR16(x) = MCHBAR16(x) | (or))
+#define MCHBAR32_OR(x,  or)  (MCHBAR32(x) = MCHBAR32(x) | (or))
+#define MCHBAR8_AND_OR(x,  and, or) (MCHBAR8(x)  = (MCHBAR8(x)  & (and)) | (or))
+#define MCHBAR16_AND_OR(x, and, or) (MCHBAR16(x) = (MCHBAR16(x) & (and)) | (or))
+#define MCHBAR32_AND_OR(x, and, or) (MCHBAR32(x) = (MCHBAR32(x) & (and)) | (or))
+
+/* As there are many registers, define them on a separate file */
+
+#include "mchbar_regs.h"
 
 /*
  * EPBAR - Egress Port Root Complex Register Block
  */
 
-#define EPBAR8(x) *((volatile u8 *)(DEFAULT_EPBAR + x))
+#define EPBAR8(x)  *((volatile u8  *)(DEFAULT_EPBAR + x))
 #define EPBAR16(x) *((volatile u16 *)(DEFAULT_EPBAR + x))
 #define EPBAR32(x) *((volatile u32 *)(DEFAULT_EPBAR + x))
 
@@ -114,7 +116,7 @@
  * DMIBAR
  */
 
-#define DMIBAR8(x) *((volatile u8 *)(DEFAULT_DMIBAR + x))
+#define DMIBAR8(x)  *((volatile u8  *)(DEFAULT_DMIBAR + x))
 #define DMIBAR16(x) *((volatile u16 *)(DEFAULT_DMIBAR + x))
 #define DMIBAR32(x) *((volatile u32 *)(DEFAULT_DMIBAR + x))
 
@@ -229,7 +231,7 @@ struct sysinfo {
 	u8 mvco4x;		/* 0 (8x) or 1 (4x) */
 };
 
-void pineview_early_initialization(void);
+void pineview_early_init(void);
 u32 decode_igd_memory_size(const u32 gms);
 u32 decode_igd_gtt_size(const u32 gsm);
 u8 decode_pciebar(u32 *const base, u32 *const len);

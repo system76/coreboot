@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2011 Advanced Micro Devices, Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 /**
  * @file
@@ -88,7 +76,7 @@
 #define BLDOPT_REMOVE_SRAT						FALSE
 #define BLDOPT_REMOVE_SLIT						FALSE
 #define BLDOPT_REMOVE_WHEA						FALSE
-#define BLDOPT_REMOVE_DMI						TRUE
+#define BLDOPT_REMOVE_DMI						FALSE
 #define BLDOPT_REMOVE_HT_ASSIST					TRUE
 #define BLDOPT_REMOVE_ATM_MODE					TRUE
 //#define BLDOPT_REMOVE_MSG_BASED_C1E			TRUE

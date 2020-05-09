@@ -1,15 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <stddef.h>
 #include <console/console.h>
@@ -65,7 +55,7 @@ static inline struct ehci_debug_info *dbgp_ehci_info(void)
 {
 	if (glob_dbg_info_p == NULL) {
 		struct ehci_debug_info *info;
-		if (ENV_BOOTBLOCK || ENV_VERSTAGE || ENV_ROMSTAGE) {
+		if (ENV_BOOTBLOCK || ENV_SEPARATE_VERSTAGE || ENV_ROMSTAGE) {
 			/* The message likely does not show if we hit this. */
 			if (sizeof(*info) > _car_ehci_dbg_info_size)
 				die("BUG: Increase ehci_dbg_info reserve in CAR");
@@ -91,7 +81,7 @@ static int dbgp_wait_until_complete(struct ehci_dbg_port *ehci_debug)
 	} while (++loop < DBGP_MICROFRAME_TIMEOUT_LOOPS);
 
 	if (! (ctrl & DBGP_DONE)) {
-		dprintk(BIOS_ERR, "dbgp_wait_until_complete: retry timeout.\n");
+		dprintk(BIOS_ERR, "%s: retry timeout.\n", __func__);
 		return -DBGP_ERR_SIGNAL;
 	}
 
@@ -382,7 +372,7 @@ static int ehci_reset_port(struct ehci_regs *ehci_regs, int port)
 	u32 portsc;
 	int loop;
 
-	/* Reset the usb debug port */
+	/* Reset the USB debug port */
 	portsc = read32(&ehci_regs->port_status[port - 1]);
 	portsc &= ~PORT_PE;
 	portsc |= PORT_RESET;

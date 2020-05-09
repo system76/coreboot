@@ -3,7 +3,7 @@
 
 #include <device/device.h>
 #include <device/pnp.h>
-#include <arch/acpigen.h>
+#include <acpi/acpigen.h>
 #include <console/console.h>
 
 static void generic_set_resources(struct device *dev)
@@ -31,14 +31,13 @@ static void generic_read_resources(struct device *dev)
 }
 
 #if CONFIG(HAVE_ACPI_TABLES)
-static void generic_ssdt(struct device *dev)
+static void generic_ssdt(const struct device *dev)
 {
 	const char *scope = acpi_device_scope(dev);
 	const char *name = acpi_device_name(dev);
 
 	if (!scope || !name) {
-		printk(BIOS_ERR, "%s: Missing ACPI path/scope\n",
-		       dev_path(dev));
+		printk(BIOS_ERR, "%s: Missing ACPI path/scope\n", dev_path(dev));
 		return;
 	}
 
@@ -298,11 +297,10 @@ static const char *generic_acpi_name(const struct device *dev)
 static struct device_operations ops = {
 	.read_resources   = generic_read_resources,
 	.set_resources    = generic_set_resources,
-	.enable_resources = DEVICE_NOOP,
 	.scan_bus	  = scan_static_bus,
 #if CONFIG(HAVE_ACPI_TABLES)
-	.acpi_fill_ssdt_generator = generic_ssdt,
-	.acpi_name = generic_acpi_name,
+	.acpi_fill_ssdt	  = generic_ssdt,
+	.acpi_name	  = generic_acpi_name,
 #endif
 };
 

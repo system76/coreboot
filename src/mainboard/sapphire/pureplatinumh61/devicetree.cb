@@ -1,7 +1,6 @@
 #
 # This file is part of the coreboot project.
 #
-# Copyright (C) 2017 Nicola Corna <nicola@corna.info>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,8 +14,6 @@
 #
 
 chip northbridge/intel/sandybridge
-	register "gfx.did" = "{ 0x80000100, 0x80000240, 0x80000410, 0x80000410, 0x00000005 }"
-	register "gfx.ndid" = "3"
 	device cpu_cluster 0x0 on
 		chip cpu/intel/model_206ax
 			register "c1_acpower" = "1"

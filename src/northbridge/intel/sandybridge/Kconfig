@@ -1,18 +1,5 @@
-##
+## SPDX-License-Identifier: GPL-2.0-only
 ## This file is part of the coreboot project.
-##
-## Copyright (C) 2010 Google Inc.
-##
-## This program is free software; you can redistribute it and/or modify
-## it under the terms of the GNU General Public License as published by
-## the Free Software Foundation; version 2 of the License.
-##
-## This program is distributed in the hope that it will be useful,
-## but WITHOUT ANY WARRANTY; without even the implied warranty of
-## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-## GNU General Public License for more details.
-##
-
 
 config NORTHBRIDGE_INTEL_SANDYBRIDGE
 	bool
@@ -23,8 +10,32 @@ config NORTHBRIDGE_INTEL_SANDYBRIDGE
 
 if NORTHBRIDGE_INTEL_SANDYBRIDGE
 
+config SANDYBRIDGE_VBOOT_IN_ROMSTAGE
+	bool
+	default n
+	help
+	  Selected by boards to force VBOOT_STARTS_IN_ROMSTAGE.
+
+config SANDYBRIDGE_VBOOT_IN_BOOTBLOCK
+	depends on VBOOT
+	depends on !SANDYBRIDGE_VBOOT_IN_ROMSTAGE
+	bool "Start verstage in bootblock"
+	default y
+	select VBOOT_STARTS_IN_BOOTBLOCK
+	select VBOOT_SEPARATE_VERSTAGE
+	help
+	  Sandy Bridge can either start verstage in a separate stage
+	  right after the bootblock has run or it can start it
+	  after romstage for compatibility reasons.
+	  Sandy Bridge however uses a mrc.bin to initialize memory which
+	  needs to be located at a fixed offset. Therefore even with
+	  a separate verstage starting after the bootblock that same
+	  binary is used meaning a jump is made from RW to the RO region
+	  and back to the RW region after the binary is done.
+
 config VBOOT
-	select VBOOT_STARTS_IN_ROMSTAGE
+	select VBOOT_MUST_REQUEST_DISPLAY
+	select VBOOT_STARTS_IN_ROMSTAGE if !SANDYBRIDGE_VBOOT_IN_BOOTBLOCK
 
 config USE_NATIVE_RAMINIT
 	bool "Use native raminit"
@@ -89,6 +100,12 @@ config DCACHE_RAM_MRC_VAR_SIZE
 	hex
 	default 0x0
 
+config RAMINIT_ENABLE_ECC
+	bool "Enable ECC if supported"
+	default y
+	help
+	  Enable ECC if supported by both, host and RAM.
+
 endif # USE_NATIVE_RAMINIT
 
 if !USE_NATIVE_RAMINIT
@@ -109,5 +126,8 @@ config MRC_FILE
 	  binary.
 
 endif # !USE_NATIVE_RAMINIT
+
+config INTEL_GMA_BCLV_OFFSET
+	default 0x48254
 
 endif

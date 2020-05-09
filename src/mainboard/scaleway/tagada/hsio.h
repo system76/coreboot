@@ -1,19 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2016-2017 Intel Corporation.
- * Copyright (C) 2017 - 2018 Online SAS.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #ifndef _MAINBOARD_HSIO_H
 #define _MAINBOARD_HSIO_H
@@ -38,7 +24,7 @@ const BL_HSIO_INFORMATION tagada_hsio_config[] = {
 	 *    Lane[19]->USB3 rear I/O panel connector
 	 */
 
-	/* SKU HSIO 20 (pcie [12-15] sata [8-11,12,14] usb [19]) */
+	/* SKU HSIO 20 (pcie [12-15] sata [8-11,12,14] USB [19]) */
 	{BL_SKU_HSIO_20,
 	{PCIE_BIF_CTRL_x4x4, PCIE_BIF_CTRL_x2x2x2x2},
 	{/* ME_FIA_MUX_CONFIG */
@@ -155,7 +141,7 @@ const BL_HSIO_INFORMATION tagada_hsio_config[] = {
 		    BL_ME_FIA_PCIE_ROOT_PORT_LINK_WIDTH_BICTRL,
 		    BL_FIA_PCIE_ROOT_PORT_7)} } },
 
-	/* SKU HSIO 12 (pcie [12-15] sata [8-11,12,14] usb [19]) */
+	/* SKU HSIO 12 (pcie [12-15] sata [8-11,12,14] USB [19]) */
 	{BL_SKU_HSIO_12,
 	{PCIE_BIF_CTRL_x4x4, PCIE_BIF_CTRL_x2x2x2x2},
 	{/* ME_FIA_MUX_CONFIG */
@@ -273,7 +259,7 @@ const BL_HSIO_INFORMATION tagada_hsio_config[] = {
 		    BL_ME_FIA_PCIE_ROOT_PORT_LINK_WIDTH_BICTRL,
 		    BL_FIA_PCIE_ROOT_PORT_7)} } },
 
-	/* SKU HSIO 10 (pcie [12-15] sata [8-11,12,14] usb [19]) */
+	/* SKU HSIO 10 (pcie [12-15] sata [8-11,12,14] USB [19]) */
 	{BL_SKU_HSIO_10,
 	{PCIE_BIF_CTRL_x4x4, PCIE_BIF_CTRL_x2x2x2x2},
 	{/* ME_FIA_MUX_CONFIG */
@@ -391,7 +377,7 @@ const BL_HSIO_INFORMATION tagada_hsio_config[] = {
 		    BL_ME_FIA_PCIE_ROOT_PORT_LINK_WIDTH_BICTRL,
 		    BL_FIA_PCIE_ROOT_PORT_7)} } },
 
-	/* SKU HSIO 8 (pcie [12-14] sata [8-11,12,14] usb [19]) */
+	/* SKU HSIO 8 (pcie [12-14] sata [8-11,12,14] USB [19]) */
 	{BL_SKU_HSIO_08,
 	{PCIE_BIF_CTRL_x4x4, PCIE_BIF_CTRL_x2x2x2x2},
 	{/* ME_FIA_MUX_CONFIG */
@@ -509,7 +495,7 @@ const BL_HSIO_INFORMATION tagada_hsio_config[] = {
 		    BL_ME_FIA_PCIE_ROOT_PORT_LINK_WIDTH_BICTRL,
 		    BL_FIA_PCIE_ROOT_PORT_7)} } },
 
-	/* SKU HSIO 6 (pcie [12,14] sata [8-11,12,14] usb []) */
+	/* SKU HSIO 6 (pcie [12,14] sata [8-11,12,14] USB []) */
 	{BL_SKU_HSIO_06,
 	{PCIE_BIF_CTRL_x4x4, PCIE_BIF_CTRL_x2x2x2x2},
 	{/* ME_FIA_MUX_CONFIG */

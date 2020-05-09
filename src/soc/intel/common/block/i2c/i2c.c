@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright 2017-2018 Intel Corporation.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <device/pci_ops.h>
 #include <console/console.h>
@@ -26,7 +14,7 @@
 #include <soc/iomap.h>
 #include <soc/pci_devs.h>
 
-int dw_i2c_soc_dev_to_bus(struct device *dev)
+int dw_i2c_soc_dev_to_bus(const struct device *dev)
 {
 	pci_devfn_t devfn = dev->path.pci.devfn;
 	return dw_i2c_soc_devfn_to_bus(devfn);
@@ -81,7 +69,7 @@ static int lpss_i2c_early_init_bus(unsigned int bus)
 	/* Prepare early base address for access before memory */
 	base = dw_i2c_get_soc_early_base(bus);
 	pci_write_config32(dev, PCI_BASE_ADDRESS_0, base);
-	pci_write_config32(dev, PCI_COMMAND,
+	pci_write_config16(dev, PCI_COMMAND,
 			   PCI_COMMAND_MEMORY | PCI_COMMAND_MASTER);
 
 	/* Take device out of reset */
@@ -176,15 +164,15 @@ static void dw_i2c_device_init(struct device *dev)
 }
 
 static struct device_operations i2c_dev_ops = {
-	.read_resources			= pci_dev_read_resources,
-	.set_resources			= pci_dev_set_resources,
-	.enable_resources		= pci_dev_enable_resources,
-	.scan_bus			= scan_smbus,
-	.ops_i2c_bus			= &dw_i2c_bus_ops,
-	.ops_pci			= &pci_dev_ops_pci,
-	.init				= dw_i2c_device_init,
+	.read_resources		= pci_dev_read_resources,
+	.set_resources		= pci_dev_set_resources,
+	.enable_resources	= pci_dev_enable_resources,
+	.scan_bus		= scan_smbus,
+	.ops_i2c_bus		= &dw_i2c_bus_ops,
+	.ops_pci		= &pci_dev_ops_pci,
+	.init			= dw_i2c_device_init,
 #if CONFIG(HAVE_ACPI_TABLES)
-	.acpi_fill_ssdt_generator	= dw_i2c_acpi_fill_ssdt,
+	.acpi_fill_ssdt		= dw_i2c_acpi_fill_ssdt,
 #endif
 };
 
@@ -249,12 +237,6 @@ static const unsigned short pci_device_ids[] = {
 	PCI_DEVICE_ID_INTEL_TGP_I2C5,
 	PCI_DEVICE_ID_INTEL_TGP_I2C6,
 	PCI_DEVICE_ID_INTEL_TGP_I2C7,
-	PCI_DEVICE_ID_INTEL_JSP_PRE_PROD_I2C0,
-	PCI_DEVICE_ID_INTEL_JSP_PRE_PROD_I2C1,
-	PCI_DEVICE_ID_INTEL_JSP_PRE_PROD_I2C2,
-	PCI_DEVICE_ID_INTEL_JSP_PRE_PROD_I2C3,
-	PCI_DEVICE_ID_INTEL_JSP_PRE_PROD_I2C4,
-	PCI_DEVICE_ID_INTEL_JSP_PRE_PROD_I2C5,
 	PCI_DEVICE_ID_INTEL_MCC_I2C0,
 	PCI_DEVICE_ID_INTEL_MCC_I2C1,
 	PCI_DEVICE_ID_INTEL_MCC_I2C2,
@@ -263,6 +245,12 @@ static const unsigned short pci_device_ids[] = {
 	PCI_DEVICE_ID_INTEL_MCC_I2C5,
 	PCI_DEVICE_ID_INTEL_MCC_I2C6,
 	PCI_DEVICE_ID_INTEL_MCC_I2C7,
+	PCI_DEVICE_ID_INTEL_JSP_I2C0,
+	PCI_DEVICE_ID_INTEL_JSP_I2C1,
+	PCI_DEVICE_ID_INTEL_JSP_I2C2,
+	PCI_DEVICE_ID_INTEL_JSP_I2C3,
+	PCI_DEVICE_ID_INTEL_JSP_I2C4,
+	PCI_DEVICE_ID_INTEL_JSP_I2C5,
 	0,
 };
 

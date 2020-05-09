@@ -1,7 +1,6 @@
 subdirs-y += pae
 subdirs-$(CONFIG_PARALLEL_MP) += name
 ramstage-$(CONFIG_PARALLEL_MP) += mp_init.c
-ramstage-$(CONFIG_MIRROR_PAYLOAD_TO_RAM_BEFORE_LOADING) += mirror_payload.c
 ramstage-y += backup_default_smm.c
 
 subdirs-$(CONFIG_CPU_INTEL_COMMON_SMM) += ../intel/smm
@@ -27,7 +26,7 @@ endif
 rmodules_$(ARCH-$(TARGET_STAGE)-y)-$(CONFIG_PARALLEL_MP) += sipi_vector.S
 
 $(SIPI_DOTO): $(call src-to-obj,rmodules_$(ARCH-$(TARGET_STAGE)-y),src/cpu/x86/sipi_vector.S)
-	$(CC_rmodules_$(ARCH-$(TARGET_STAGE)-y)) $(CFLAGS_rmodules_$(ARCH-$(TARGET_STAGE)-y)) -nostdlib -r -o $@ $^
+	$(LD_rmodules_$(ARCH-$(TARGET_STAGE)-y)) -nostdlib -r -o $@ $^
 
 $(eval $(call rmodule_link,$(SIPI_ELF), $(SIPI_DOTO), 0,$(ARCH-$(TARGET_STAGE)-y)))
 

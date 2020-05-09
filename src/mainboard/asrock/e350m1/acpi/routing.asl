@@ -1,20 +1,8 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2011 Advanced Micro Devices, Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 /*
-#include <arch/acpi.h>
+#include <acpi/acpi.h>
 DefinitionBlock ("DSDT.AML", "DSDT", 0x01, OEM_ID, ACPI_TABLE_CREATOR, 0x00010001
 		)
 	{
@@ -199,7 +187,7 @@ Scope(\_SB) {
 		/* Package(){0x00140005, 1, 0, 17 }, */
 		/* Package(){0x00140006, 1, 0, 17 }, */
 
-		/* TODO: pcie */
+		/* TODO: PCIe */
 		Package(){0x0015FFFF, 0, 0, 16 },
 		Package(){0x0015FFFF, 1, 0, 17 },
 		Package(){0x0015FFFF, 2, 0, 18 },

@@ -126,7 +126,7 @@ enum {
 	 * MSC commands can be
 	 *   successful,
 	 *   fail with proper response or
-	 *   fail totally, which results in detaching of the usb device
+	 *   fail totally, which results in detaching of the USB device
 	 *   and immediate cleanup of the usbdev_t structure.
 	 * In the latter case the caller has to make sure, that he won't
 	 * use the device any more.
@@ -538,7 +538,7 @@ usb_msc_test_unit_ready (usbdev_t *dev)
 	time_t start_time_secs;
 	struct timeval tv;
 	/* SCSI/ATA specs say we have to wait up to 30s, but most devices
-	 * are ready much sooner. Use a 5 sec timeout to better accomodate
+	 * are ready much sooner. Use a 5 sec timeout to better accommodate
 	 * devices which fail to respond. */
 	const int timeout_secs = 5;
 
@@ -569,7 +569,7 @@ usb_msc_test_unit_ready (usbdev_t *dev)
 		MSC_INST (dev)->ready = USB_MSC_NOT_READY;
 	}
 
-	/* Don't bother spinning up the stroage device if the device is not
+	/* Don't bother spinning up the storage device if the device is not
 	 * ready. This can happen when empty card readers are present.
 	 * Polling will pick it back up if readiness changes. */
 	if (!MSC_INST (dev)->ready)
@@ -703,14 +703,14 @@ usb_msc_poll (usbdev_t *dev)
 		return;
 
 	if (!prev_ready && msc->ready) {
-		usb_debug ("usb msc: not ready -> ready (lun %d)\n", msc->lun);
+		usb_debug ("USB msc: not ready -> ready (lun %d)\n", msc->lun);
 		usb_msc_create_disk (dev);
 	} else if (prev_ready && !msc->ready) {
-		usb_debug ("usb msc: ready -> not ready (lun %d)\n", msc->lun);
+		usb_debug ("USB msc: ready -> not ready (lun %d)\n", msc->lun);
 		usb_msc_remove_disk (dev);
 	} else if (!prev_ready && !msc->ready) {
 		u8 new_lun = (msc->lun + 1) % msc->num_luns;
-		usb_debug("usb msc: not ready (lun %d) -> lun %d\n", msc->lun,
+		usb_debug("USB msc: not ready (lun %d) -> lun %d\n", msc->lun,
 			  new_lun);
 		msc->lun = new_lun;
 	}

@@ -1,19 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2013 Google Inc.
- * Copyright (C) 2015 Intel Corp.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; version 2 of
- * the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <arch/io.h>
 #include <device/mmio.h>
@@ -77,6 +63,7 @@ static void smm_southcluster_route_gpios(void)
 	for (i = 0; i < 16; i++) {
 		if ((route_reg & ROUTE_MASK) == ROUTE_SMI)
 			alt_gpio_reg |= (1 << i);
+
 		route_reg >>= 2;
 	}
 	printk(BIOS_DEBUG, "ALT_GPIO_SMI = %08x\n", alt_gpio_reg);
@@ -91,6 +78,7 @@ void smm_southbridge_enable_smi(void)
 	printk(BIOS_DEBUG, "Enabling SMIs.\n");
 	if (!smm_save_params[SMM_SAVE_PARAM_PCIE_WAKE_ENABLE])
 		pm1_events |= PCIEXPWAK_DIS;
+
 	enable_pm1(pm1_events);
 	disable_gpe(PME_B0_EN);
 

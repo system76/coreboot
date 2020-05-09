@@ -29,6 +29,22 @@ config INTEL_GMA_ACPI
 	bool
 	default n
 
+config INTEL_GMA_BCLV_OFFSET
+	hex
+	default 0xc8254
+
+config INTEL_GMA_BCLV_WIDTH
+	int
+	default 16
+
+config INTEL_GMA_BCLM_OFFSET
+	hex
+	default 0xc8256
+
+config INTEL_GMA_BCLM_WIDTH
+	int
+	default 16
+
 config INTEL_GMA_SSC_ALTERNATE_REF
 	bool
 	default n
@@ -39,7 +55,7 @@ config INTEL_GMA_SSC_ALTERNATE_REF
 	  To be set by northbridge or mainboard Kconfig.  For most platforms,
 	  there is no choice, i.e. for i945 and gm45 the SSC reference always
 	  differs from the display reference clock (i945: 66Mhz SSC vs. 48MHz
-	  DREF; gm45: 100MHz SSC vs. 96Mhz DREF), for Nehalem and newer, it's
+	  DREF; gm45: 100MHz SSC vs. 96Mhz DREF), for Arrandale and newer, it's
 	  the same frequency for SSC/non-SSC (120MHz).  The only, currently
 	  supported platform with a choice seems to be Pineview, where the
 	  alternative is 100MHz vs. the default 96MHz.
@@ -66,7 +82,7 @@ config GFX_GMA_ANALOG_I2C_HDMI_D
 config GFX_GMA
 	def_bool y
 	depends on NORTHBRIDGE_INTEL_GM45 || NORTHBRIDGE_INTEL_X4X \
-		|| NORTHBRIDGE_INTEL_NEHALEM || NORTHBRIDGE_INTEL_SANDYBRIDGE \
+		|| NORTHBRIDGE_INTEL_IRONLAKE || NORTHBRIDGE_INTEL_SANDYBRIDGE \
 		|| NORTHBRIDGE_INTEL_HASWELL \
 		|| SOC_INTEL_BROADWELL || SOC_INTEL_SKYLAKE || SOC_INTEL_APOLLOLAKE \
 		|| SOC_INTEL_KABYLAKE || SOC_INTEL_COFFEELAKE \
@@ -74,16 +90,16 @@ config GFX_GMA
 	depends on MAINBOARD_USE_LIBGFXINIT || INTEL_GMA_LIBGFXINIT_EDID
 	select RAMSTAGE_LIBHWBASE
 
-config GFX_GMA_INTERNAL_IS_EDP
+config GFX_GMA_PANEL_1_ON_EDP
 	bool
 	depends on GFX_GMA || MAINBOARD_HAS_LIBGFXINIT
-	default n if GFX_GMA_INTERNAL_IS_LVDS
+	default n if GFX_GMA_PANEL_1_ON_LVDS
 	default y
 
-config GFX_GMA_INTERNAL_IS_LVDS
+config GFX_GMA_PANEL_1_ON_LVDS
 	bool
 	depends on GFX_GMA || MAINBOARD_HAS_LIBGFXINIT
-	default y if NORTHBRIDGE_INTEL_GM45 || NORTHBRIDGE_INTEL_NEHALEM
+	default y if NORTHBRIDGE_INTEL_GM45 || NORTHBRIDGE_INTEL_IRONLAKE
 	default n
 
 if GFX_GMA
@@ -99,13 +115,17 @@ config GFX_GMA_GENERATION
 	default "Skylake" if SOC_INTEL_SKYLAKE || SOC_INTEL_KABYLAKE || \
 				SOC_INTEL_COFFEELAKE || SOC_INTEL_WHISKEYLAKE
 	default "Haswell" if NORTHBRIDGE_INTEL_HASWELL || SOC_INTEL_BROADWELL
-	default "Ironlake" if NORTHBRIDGE_INTEL_NEHALEM || NORTHBRIDGE_INTEL_SANDYBRIDGE
+	default "Ironlake" if NORTHBRIDGE_INTEL_IRONLAKE || NORTHBRIDGE_INTEL_SANDYBRIDGE
 	default "G45" if NORTHBRIDGE_INTEL_GM45 || NORTHBRIDGE_INTEL_X4X
 
-config GFX_GMA_INTERNAL_PORT
+config GFX_GMA_PANEL_1_PORT
 	string
-	default "DP" if GFX_GMA_INTERNAL_IS_EDP
+	default "eDP" if GFX_GMA_PANEL_1_ON_EDP
 	default "LVDS"
+
+config GFX_GMA_PANEL_2_PORT
+	string
+	default "Disabled"
 
 config GFX_GMA_ANALOG_I2C_PORT
 	string

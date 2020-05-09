@@ -1,23 +1,11 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2012 Google Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #ifndef ONBOARD_H
 #define ONBOARD_H
 
 #define BOARD_LIGHTSENSOR_NAME		"lightsensor"
-#define BOARD_LIGHTSENSOR_IRQ		51	/* PIRQT */
+#define BOARD_LIGHTSENSOR_IRQ		35	/* PIRQT */
 #define BOARD_LIGHTSENSOR_I2C_BUS	2	/* I2C1 */
 #define BOARD_LIGHTSENSOR_I2C_ADDR	0x44
 

@@ -36,6 +36,8 @@
 #include <security/vboot/tpm_common.h>
 #include <string.h>
 #include <security/tpm/tspi.h>
+#include <security/tpm/tss.h>
+#include <security/tpm/tss/tcg-1.2/tss_structures.h>
 #include <vb2_api.h>
 #include <console/console.h>
 
@@ -56,28 +58,50 @@
 		}							\
 	} while (0)
 
-#define TPM_PCR_GBB_FLAGS_NAME "GBB flags"
-#define TPM_PCR_GBB_HWID_NAME "GBB HWID"
-
 static uint32_t safe_write(uint32_t index, const void *data, uint32_t length);
 
 static uint32_t read_space_firmware(struct vb2_context *ctx)
 {
-	int attempts = 3;
+	RETURN_ON_FAILURE(tlcl_read(FIRMWARE_NV_INDEX,
+				    ctx->secdata_firmware,
+				    VB2_SECDATA_FIRMWARE_SIZE));
+	return TPM_SUCCESS;
+}
 
-	while (attempts--) {
-		RETURN_ON_FAILURE(tlcl_read(FIRMWARE_NV_INDEX,
-					    ctx->secdata_firmware,
-					    VB2_SECDATA_FIRMWARE_SIZE));
+uint32_t antirollback_read_space_kernel(struct vb2_context *ctx)
+{
+	if (!CONFIG(TPM2)) {
+		/*
+		 * Before reading the kernel space, verify its permissions. If
+		 * the kernel space has the wrong permission, we give up. This
+		 * will need to be fixed by the recovery kernel. We will have
+		 * to worry about this because at any time (even with PP turned
+		 * off) the TPM owner can remove and redefine a PP-protected
+		 * space (but not write to it).
+		 */
+		uint32_t perms;
 
-		if (vb2api_secdata_firmware_check(ctx) == VB2_SUCCESS)
-			return TPM_SUCCESS;
-
-		VBDEBUG("TPM: %s() - bad CRC\n", __func__);
+		RETURN_ON_FAILURE(tlcl_get_permissions(KERNEL_NV_INDEX,
+						       &perms));
+		if (perms != TPM_NV_PER_PPWRITE) {
+			printk(BIOS_ERR,
+			       "TPM: invalid secdata_kernel permissions\n");
+			return TPM_E_CORRUPTED_STATE;
+		}
 	}
 
-	VBDEBUG("TPM: %s() - too many bad CRCs, giving up\n", __func__);
-	return TPM_E_CORRUPTED_STATE;
+	uint8_t size = VB2_SECDATA_KERNEL_MIN_SIZE;
+
+	RETURN_ON_FAILURE(tlcl_read(KERNEL_NV_INDEX, ctx->secdata_kernel,
+				    size));
+
+	if (vb2api_secdata_kernel_check(ctx, &size)
+	    == VB2_ERROR_SECDATA_KERNEL_INCOMPLETE)
+		/* Re-read. vboot will run the check and handle errors. */
+		RETURN_ON_FAILURE(tlcl_read(KERNEL_NV_INDEX,
+					    ctx->secdata_kernel, size));
+
+	return TPM_SUCCESS;
 }
 
 static uint32_t read_space_rec_hash(uint8_t *data)
@@ -85,39 +109,6 @@ static uint32_t read_space_rec_hash(uint8_t *data)
 	RETURN_ON_FAILURE(tlcl_read(REC_HASH_NV_INDEX, data,
 				    REC_HASH_NV_SIZE));
 	return TPM_SUCCESS;
-}
-
-static uint32_t write_secdata(uint32_t index,
-			      const uint8_t *secdata,
-			      uint32_t len)
-{
-	uint8_t sd[32];
-	uint32_t rv;
-	int attempts = 3;
-
-	if (len > sizeof(sd)) {
-		VBDEBUG("TPM: %s() - data is too large\n", __func__);
-		return TPM_E_WRITE_FAILURE;
-	}
-
-	while (attempts--) {
-		rv = safe_write(index, secdata, len);
-		/* Can't write, not gonna try again */
-		if (rv != TPM_SUCCESS)
-			return rv;
-
-		/* Read it back to be sure it got the right values. */
-		rv = tlcl_read(index, sd, len);
-		if (rv == TPM_SUCCESS && memcmp(secdata, sd, len) == 0)
-			return rv;
-
-		VBDEBUG("TPM: %s() failed. trying again\n", __func__);
-		/* Try writing it again. Maybe it was garbled on the way out. */
-	}
-
-	VBDEBUG("TPM: %s() - too many failures, giving up\n", __func__);
-
-	return TPM_E_CORRUPTED_STATE;
 }
 
 /*
@@ -188,7 +179,7 @@ static uint32_t set_space(const char *name, uint32_t index, const void *data,
 	if (rv != TPM_SUCCESS)
 		return rv;
 
-	return write_secdata(index, data, length);
+	return safe_write(index, data, length);
 }
 
 static uint32_t set_firmware_space(const void *firmware_blob)
@@ -214,6 +205,8 @@ static uint32_t set_rec_hash_space(const uint8_t *data)
 
 static uint32_t _factory_initialize_tpm(struct vb2_context *ctx)
 {
+	vb2api_secdata_kernel_create(ctx);
+
 	RETURN_ON_FAILURE(tlcl_force_clear());
 
 	/*
@@ -285,8 +278,8 @@ static uint32_t set_rec_hash_space(const uint8_t *data)
 					    TPM_NV_PER_GLOBALLOCK |
 					    TPM_NV_PER_PPWRITE,
 					    REC_HASH_NV_SIZE));
-	RETURN_ON_FAILURE(write_secdata(REC_HASH_NV_INDEX, data,
-					REC_HASH_NV_SIZE));
+	RETURN_ON_FAILURE(safe_write(REC_HASH_NV_INDEX, data,
+				     REC_HASH_NV_SIZE));
 
 	return TPM_SUCCESS;
 }
@@ -295,6 +288,8 @@ static uint32_t _factory_initialize_tpm(struct vb2_context *ctx)
 {
 	TPM_PERMANENT_FLAGS pflags;
 	uint32_t result;
+
+	vb2api_secdata_kernel_create_v0(ctx);
 
 	result = tlcl_get_permanent_flags(&pflags);
 	if (result != TPM_SUCCESS)
@@ -329,18 +324,18 @@ static uint32_t _factory_initialize_tpm(struct vb2_context *ctx)
 	/* Define and write secdata_kernel space. */
 	RETURN_ON_FAILURE(safe_define_space(KERNEL_NV_INDEX,
 					    TPM_NV_PER_PPWRITE,
-					    VB2_SECDATA_KERNEL_SIZE));
-	RETURN_ON_FAILURE(write_secdata(KERNEL_NV_INDEX,
-					ctx->secdata_kernel,
-					VB2_SECDATA_KERNEL_SIZE));
+					    VB2_SECDATA_KERNEL_SIZE_V02));
+	RETURN_ON_FAILURE(safe_write(KERNEL_NV_INDEX,
+				     ctx->secdata_kernel,
+				     VB2_SECDATA_KERNEL_SIZE_V02));
 
 	/* Define and write secdata_firmware space. */
 	RETURN_ON_FAILURE(safe_define_space(FIRMWARE_NV_INDEX,
 					    TPM_NV_PER_GLOBALLOCK |
 					    TPM_NV_PER_PPWRITE,
 					    VB2_SECDATA_FIRMWARE_SIZE));
-	RETURN_ON_FAILURE(write_secdata(FIRMWARE_NV_INDEX,
-					ctx->secdata_firmware,
+	RETURN_ON_FAILURE(safe_write(FIRMWARE_NV_INDEX,
+				     ctx->secdata_firmware,
 					VB2_SECDATA_FIRMWARE_SIZE));
 
 	/* Define and set rec hash space, if available. */
@@ -376,9 +371,11 @@ static uint32_t factory_initialize_tpm(struct vb2_context *ctx)
 {
 	uint32_t result;
 
-	/* Set initial values of secdata_firmware and secdata_kernel spaces. */
+	/*
+	 * Set initial values of secdata_firmware space.
+	 * kernel space is created in _factory_initialize_tpm().
+	 */
 	vb2api_secdata_firmware_create(ctx);
-	vb2api_secdata_kernel_create(ctx);
 
 	VBDEBUG("TPM: factory initialization\n");
 
@@ -430,8 +427,17 @@ uint32_t antirollback_write_space_firmware(struct vb2_context *ctx)
 {
 	if (CONFIG(CR50_IMMEDIATELY_COMMIT_FW_SECDATA))
 		tlcl_cr50_enable_nvcommits();
-	return write_secdata(FIRMWARE_NV_INDEX, ctx->secdata_firmware,
-			     VB2_SECDATA_FIRMWARE_SIZE);
+	return safe_write(FIRMWARE_NV_INDEX, ctx->secdata_firmware,
+			  VB2_SECDATA_FIRMWARE_SIZE);
+}
+
+uint32_t antirollback_write_space_kernel(struct vb2_context *ctx)
+{
+	/* Learn the expected size. */
+	uint8_t size = VB2_SECDATA_KERNEL_MIN_SIZE;
+	vb2api_secdata_kernel_check(ctx, &size);
+
+	return safe_write(KERNEL_NV_INDEX, ctx->secdata_kernel, size);
 }
 
 uint32_t antirollback_read_space_rec_hash(uint8_t *data, uint32_t size)
@@ -470,7 +476,7 @@ uint32_t antirollback_write_space_rec_hash(const uint8_t *data, uint32_t size)
 	if (rv != TPM_SUCCESS)
 		return rv;
 
-	return write_secdata(REC_HASH_NV_INDEX, data, size);
+	return safe_write(REC_HASH_NV_INDEX, data, size);
 }
 
 vb2_error_t vb2ex_tpm_clear_owner(struct vb2_context *ctx)

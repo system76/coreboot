@@ -46,15 +46,18 @@ chip soc/intel/cannonlake
 		},
 		.i2c[0] = {
 			.speed = I2C_SPEED_FAST,
+			.rise_time_ns = 30,
+			.fall_time_ns = 15,
 		},
 		.i2c[1] = {
 			.speed = I2C_SPEED_FAST,
-		},
-		.i2c[3] = {
-			.speed = I2C_SPEED_FAST,
+			.rise_time_ns = 20,
+			.fall_time_ns = 25,
 		},
 		.i2c[4] = {
 			.speed = I2C_SPEED_FAST,
+			.rise_time_ns = 40,
+			.fall_time_ns = 60,
 		},
 	}"
 
@@ -65,6 +68,17 @@ chip soc/intel/cannonlake
 	register "ScsEmmcHs400Enabled" = "1"
 
 	device domain 0 on
+		device pci 02.0 on
+			chip drivers/gfx/generic
+				register "device_count" = "1"
+				register "device[0].name" = ""LCD""
+				# Internal panel on the first port of the graphics chip
+				register "device[0].addr" = "0x80010400"
+				register "device[0].privacy.enabled" = "1"
+				register "device[0].privacy.gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_E0)"
+				device generic 0 on end
+			end
+		end # Integrated Graphics Device
 		device pci 15.0 on
 			chip drivers/i2c/generic
 				register "hid" = ""ELAN0000""
@@ -167,6 +181,7 @@ chip soc/intel/cannonlake
 		end # GSPI #1
 		device pci 1f.3 on
 			chip drivers/generic/max98357a
+				register "hid" = ""MX98357A""
 				register "sdmode_gpio" =  "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_H3)"
 				register "sdmode_delay" = "5"
 				device generic 0 on end

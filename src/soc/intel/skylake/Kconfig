@@ -39,12 +39,11 @@ config CPU_SPECIFIC_OPTIONS
 	select INTEL_CAR_NEM_ENHANCED
 	select INTEL_GMA_ACPI
 	select INTEL_GMA_ADD_VBT if RUN_FSP_GOP
+	select HAVE_INTEL_FSP_REPO
 	select IOAPIC
 	select MRC_SETTINGS_PROTECT
-	select NO_FIXED_XIP_ROM_SIZE
 	select PARALLEL_MP
 	select PARALLEL_MP_AP_WORK
-	select PLATFORM_SUPPORTS_STM
 	select PLATFORM_USES_FSP2_0
 	select REG_SCRIPT
 	select SA_ENABLE_DPR
@@ -63,6 +62,7 @@ config CPU_SPECIFIC_OPTIONS
 	select SOC_INTEL_COMMON_BLOCK_GSPI
 	select SOC_INTEL_COMMON_BLOCK_HDA
 	select SOC_INTEL_COMMON_BLOCK_SA
+	select SOC_INTEL_COMMON_BLOCK_SCS
 	select SOC_INTEL_COMMON_BLOCK_SGX
 	select SOC_INTEL_COMMON_BLOCK_SGX_LOCK_MEMORY
 	select SOC_INTEL_COMMON_BLOCK_SMM
@@ -94,7 +94,6 @@ config CHROMEOS
 config VBOOT
 	select VBOOT_SEPARATE_VERSTAGE
 	select VBOOT_MUST_REQUEST_DISPLAY
-	select VBOOT_SAVE_RECOVERY_REASON_ON_REBOOT
 	select VBOOT_STARTS_IN_BOOTBLOCK
 	select VBOOT_VBNV_CMOS
 	select VBOOT_VBNV_CMOS_BACKUP_TO_FLASH
@@ -224,14 +223,11 @@ config NHLT_DA7219
 	  Include DSP firmware settings for DA7219 headset codec.
 
 config FSP_HEADER_PATH
-	string "Location of FSP headers"
 	# Use KabylakeFsp for both Skylake and Kabylake as it supports both.
 	# SkylakeFsp is FSP 1.1 and therefore incompatible.
 	default "3rdparty/fsp/KabylakeFspBinPkg/Include/"
 
 config FSP_FD_PATH
-	string
-	depends on FSP_USE_REPO
 	default "3rdparty/fsp/KabylakeFspBinPkg/Fsp.fd"
 
 config MAX_ROOT_PORTS

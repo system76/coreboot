@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2017 Advanced Micro Devices, Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #ifndef __AMDBLOCK_GPIO_BANKS_H__
 #define __AMDBLOCK_GPIO_BANKS_H__
@@ -303,7 +291,7 @@ uintptr_t gpio_get_address(gpio_t gpio_num);
 void program_gpios(const struct soc_amd_gpio *gpio_list_ptr, size_t size);
 /* Return the interrupt status and clear if set. */
 int gpio_interrupt_status(gpio_t gpio);
-/* Implemented by soc, provides table of avaialable GPIO mapping to Gevents */
+/* Implemented by soc, provides table of available GPIO mapping to Gevents */
 void soc_get_gpio_event_table(const struct soc_amd_event **table, size_t *items);
 /* May be implemented by soc to handle special cases */
 void soc_gpio_hook(uint8_t gpio, uint8_t mux);

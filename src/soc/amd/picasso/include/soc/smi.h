@@ -1,19 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2017-2019 Advanced Micro Devices, Inc.
- * Copyright (C) 2014 Alexandru Gagniuc <mr.nuke.me@gmail.com>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License, or (at your
- * option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
+/* This file is part of the coreboot project. */
 
 #ifndef __SOUTHBRIDGE_AMD_PI_PICASSO_SMI_H__
 #define __SOUTHBRIDGE_AMD_PI_PICASSO_SMI_H__
@@ -88,6 +74,7 @@
 #define SMITYPE_NB_GPP_HOT_PLUG		30
 /* 31 Reserved */
 #define SMITYPE_WAKE_L2			32
+#define SMITYPE_PSP			33
 /* 33 - 38 Reserved */
 #define SMITYPE_AZPME			39
 #define SMITYPE_USB_PD_I2C4		40
@@ -187,6 +174,8 @@
 #define SMI_REG_CONTROL7		0xbc
 #define SMI_REG_CONTROL8		0xc0
 #define SMI_REG_CONTROL9		0xc4
+
+#define SMI_MODE_MASK			0x03
 
 enum smi_mode {
 	SMI_MODE_DISABLE = 0,

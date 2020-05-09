@@ -1,18 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2008-2009 coresystems GmbH
- * Copyright (C) 2014 Google Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <console/console.h>
 #include <device/device.h>
@@ -24,7 +11,7 @@
 #include <arch/io.h>
 #include <device/pci_ops.h>
 #include <arch/ioapic.h>
-#include <arch/acpi.h>
+#include <acpi/acpi.h>
 #include <cpu/x86/smm.h>
 #include <cbmem.h>
 #include <reg_script.h>
@@ -40,7 +27,7 @@
 #include <soc/ramstage.h>
 #include <soc/rcba.h>
 #include <soc/intel/broadwell/chip.h>
-#include <arch/acpigen.h>
+#include <acpi/acpigen.h>
 #include <southbridge/intel/common/rtc.h>
 
 static void pch_enable_ioapic(struct device *dev)
@@ -586,7 +573,7 @@ static void pch_lpc_read_resources(struct device *dev)
 		memset(gnvs, 0, sizeof(global_nvs_t));
 }
 
-static void southcluster_inject_dsdt(struct device *device)
+static void southcluster_inject_dsdt(const struct device *device)
 {
 	global_nvs_t *gnvs;
 
@@ -609,7 +596,7 @@ static void southcluster_inject_dsdt(struct device *device)
 	}
 }
 
-static unsigned long broadwell_write_acpi_tables(struct device *device,
+static unsigned long broadwell_write_acpi_tables(const struct device *device,
 						 unsigned long current,
 						 struct acpi_rsdp *rsdp)
 {
@@ -625,7 +612,7 @@ static struct device_operations device_ops = {
 	.read_resources		= &pch_lpc_read_resources,
 	.set_resources		= &pci_dev_set_resources,
 	.enable_resources	= &pci_dev_enable_resources,
-	.acpi_inject_dsdt_generator = southcluster_inject_dsdt,
+	.acpi_inject_dsdt	= southcluster_inject_dsdt,
 	.write_acpi_tables      = broadwell_write_acpi_tables,
 	.init			= &lpc_init,
 	.scan_bus		= &scan_static_bus,

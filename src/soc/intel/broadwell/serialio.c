@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2014 Google Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <device/mmio.h>
 #include <device/pci_ops.h>
@@ -172,14 +160,11 @@ static void serialio_init(struct device *dev)
 	config_t *config = config_of(dev);
 	struct resource *bar0, *bar1;
 	int sio_index = -1;
-	u32 reg32;
 
 	printk(BIOS_DEBUG, "Initializing Serial IO device\n");
 
 	/* Ensure memory and bus master are enabled */
-	reg32 = pci_read_config32(dev, PCI_COMMAND);
-	reg32 |= PCI_COMMAND_MASTER | PCI_COMMAND_MEMORY;
-	pci_write_config32(dev, PCI_COMMAND, reg32);
+	pci_or_config16(dev, PCI_COMMAND, PCI_COMMAND_MASTER | PCI_COMMAND_MEMORY);
 
 	/* Find BAR0 and BAR1 */
 	bar0 = find_resource(dev, PCI_BASE_ADDRESS_0);

@@ -1,19 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2008-2009 coresystems GmbH
- * Copyright (C) 2013 Vladimir Serbinenko
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; version 2 of
- * the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <device/mmio.h>
 #include <device/pci_ops.h>
@@ -22,7 +8,7 @@
 #include <device/pci.h>
 #include <device/pci_ids.h>
 #include <option.h>
-#include <acpi/sata.h>
+#include <acpi/acpi_sata.h>
 #include <types.h>
 
 #include "chip.h"
@@ -226,7 +212,7 @@ static void sata_enable(struct device *dev)
 	pci_write_config16(dev, 0x90, map);
 }
 
-static void sata_fill_ssdt(struct device *dev)
+static void sata_fill_ssdt(const struct device *dev)
 {
 	config_t *config = dev->chip_info;
 	generate_sata_ssdt_ports("\\_SB_.PCI0.SATA", config->sata_port_map);
@@ -242,12 +228,16 @@ static struct device_operations sata_ops = {
 	.enable_resources = pci_dev_enable_resources,
 	.init = sata_init,
 	.enable = sata_enable,
-	.acpi_fill_ssdt_generator = sata_fill_ssdt,
-	.scan_bus = 0,
+	.acpi_fill_ssdt = sata_fill_ssdt,
 	.ops_pci = &sata_pci_ops,
 };
 
-static const unsigned short pci_device_ids[] = { 0x3b28, 0x3b29, 0x3b2e, 0 };
+static const unsigned short pci_device_ids[] = {
+	PCI_DID_INTEL_IBEXPEAK_MOBILE_SATA_IDE_1,
+	PCI_DID_INTEL_IBEXPEAK_MOBILE_SATA_AHCI,
+	PCI_DID_INTEL_IBEXPEAK_MOBILE_SATA_IDE_2,
+	0
+};
 
 static const struct pci_driver pch_sata __pci_driver = {
 	.ops = &sata_ops,

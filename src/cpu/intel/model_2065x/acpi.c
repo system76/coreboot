@@ -1,21 +1,10 @@
-/*
- * This file is part of the coreboot project.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; version 2 of
- * the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <types.h>
 #include <console/console.h>
-#include <arch/acpi.h>
-#include <arch/acpigen.h>
+#include <acpi/acpi.h>
+#include <acpi/acpigen.h>
 #include <arch/cpu.h>
 #include <cpu/x86/msr.h>
 #include <cpu/intel/speedstep.h>
@@ -216,7 +205,7 @@ static void generate_P_state_entries(int core, int cores_per_package)
 		/* Max Non-Turbo Ratio */
 		ratio_max = (msr.lo >> 8) & 0xff;
 	}
-	clock_max = ratio_max * NEHALEM_BCLK + ratio_max / 3;
+	clock_max = ratio_max * IRONLAKE_BCLK + ratio_max / 3;
 
 	/* Calculate CPU TDP in mW */
 	power_max = 25000;
@@ -277,7 +266,7 @@ static void generate_P_state_entries(int core, int cores_per_package)
 
 		/* Calculate power at this ratio */
 		power = calculate_power(power_max, ratio_max, ratio);
-		clock = ratio * NEHALEM_BCLK + ratio / 3;
+		clock = ratio * IRONLAKE_BCLK + ratio / 3;
 
 		acpigen_write_PSS_package(
 			clock,			/*MHz*/
@@ -292,7 +281,7 @@ static void generate_P_state_entries(int core, int cores_per_package)
 	acpigen_pop_len();
 }
 
-void generate_cpu_entries(struct device *device)
+void generate_cpu_entries(const struct device *device)
 {
 	int coreID, cpuID, pcontrol_blk = PMB0_BASE, plen = 6;
 	int totalcores = dev_count_cpu();
@@ -309,7 +298,7 @@ void generate_cpu_entries(struct device *device)
 				plen = 0;
 			}
 
-			/* Generate processor \_PR.CPUx */
+			/* Generate processor \_SB.CPUx */
 			acpigen_write_processor(
 				(cpuID-1)*cores_per_package+coreID-1,
 				pcontrol_blk, plen);
@@ -338,5 +327,5 @@ void generate_cpu_entries(struct device *device)
 }
 
 struct chip_operations cpu_intel_model_2065x_ops = {
-	CHIP_NAME("Intel Nehalem CPU")
+	CHIP_NAME("Intel Arrandale CPU")
 };

@@ -1,15 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <memlayout.h>
 #include <arch/header.ld>
@@ -19,7 +9,7 @@
 #if ENV_CACHE_AS_RAM
 #define EARLY_MEMLAYOUT	"car.ld"
 #else
-#error "Early DRAM environment for x86 is work-in-progress. */
+#define EARLY_MEMLAYOUT	"early_ram.ld"
 #endif
 #endif
 
@@ -42,7 +32,7 @@ SECTIONS
 	ROMSTAGE(CONFIG_ROMSTAGE_ADDR, 1M)
 
 	#include EARLY_MEMLAYOUT
-#elif ENV_VERSTAGE
+#elif ENV_SEPARATE_VERSTAGE
 	/* The 1M size is not allocated. It's just for basic size checking.
 	 * Link at 32MiB address and rely on cbfstool to relocate to XIP. */
 	VERSTAGE(CONFIG_VERSTAGE_ADDR, 1M)
@@ -63,7 +53,9 @@ SECTIONS
 /* Bootblock specific scripts which provide more SECTION directives. */
 #include <cpu/x86/16bit/entry16.ld>
 #include <cpu/x86/16bit/reset16.ld>
+#if !CONFIG(RESET_VECTOR_IN_RAM)
 #include <arch/x86/id.ld>
+#endif
 #if CONFIG(CPU_INTEL_FIRMWARE_INTERFACE_TABLE)
 #include <cpu/intel/fit/fit.ld>
 #endif

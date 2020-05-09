@@ -1,19 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2008-2009 coresystems GmbH
- * Copyright (C) 2014 Google Inc.
- * Copyright (C) 2016-2017 Intel Corporation.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #ifndef _SKYLAKE_ME_H_
 #define _SKYLAKE_ME_H_
@@ -147,7 +133,7 @@ union me_hfsts1 {
 	} __packed fields;
 };
 
-union me_hfs2 {
+union me_hfsts2 {
 	u32 data;
 	struct {
 	u32 reserved1: 3;
@@ -168,7 +154,7 @@ union me_hfs2 {
 	} __packed fields;
 };
 
-union me_hfs3 {
+union me_hfsts3 {
 	u32 data;
 	struct {
 	u32 reserved1: 4;
@@ -184,17 +170,13 @@ union me_hfs3 {
 #define ME_HFS6_FPF_NOT_COMMITTED	0x0
 #define ME_HFS6_FPF_ERROR		0x2
 
-union me_hfs6 {
+union me_hfsts6 {
 	u32 data;
 	struct {
 		u32 reserved1: 30;
 		u32 fpf_nvars: 2;
 	} __packed fields;
 };
-
-#define MKHI_GEN_GROUP_ID	0xff
-
-#define MKHI_GET_FW_VERSION	0x02
 
 void intel_me_status(void);
 int send_global_reset(void);

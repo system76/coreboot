@@ -17,9 +17,28 @@ config BOARD_SPECIFIC_OPTIONS
 	select MAINBOARD_HAS_LPC_TPM
 	select MAINBOARD_HAS_TPM1
 	select MAINBOARD_HAS_LIBGFXINIT
-	select GFX_GMA_INTERNAL_IS_LVDS
+	select GFX_GMA_PANEL_1_ON_LVDS
 	select SERIRQ_CONTINUOUS_MODE
 	select INTEL_GMA_HAVE_VBT
+
+config VBOOT
+	select VBOOT_VBNV_CMOS
+	select GBB_FLAG_DISABLE_LID_SHUTDOWN
+	select GBB_FLAG_DISABLE_PD_SOFTWARE_SYNC
+	select GBB_FLAG_DISABLE_EC_SOFTWARE_SYNC
+	select GBB_FLAG_DISABLE_FWMP
+	select HAS_RECOVERY_MRC_CACHE
+
+config VBOOT_SLOTS_RW_AB
+	default y
+
+config VBOOT_VBNV_OFFSET
+	hex
+	default 0x2a
+
+config FMDFILE
+	string
+	default "src/mainboard/$(CONFIG_MAINBOARD_DIR)/vboot-rwab.fmd" if VBOOT
 
 config MAINBOARD_DIR
 	string
@@ -36,5 +55,11 @@ config MAX_CPUS
 config USBDEBUG_HCD_INDEX
 	int
 	default 2
+
+config PS2K_EISAID
+	default "MSF0001"
+
+config PS2M_EISAID
+	default "LEN0026"
 
 endif # BOARD_LENOVO_X131E

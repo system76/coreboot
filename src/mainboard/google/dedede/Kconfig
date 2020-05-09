@@ -1,11 +1,21 @@
 config BOARD_GOOGLE_BASEBOARD_DEDEDE
 	def_bool n
+	select DRIVERS_I2C_GENERIC
+	select DRIVERS_I2C_HID
+	select DRIVERS_SPI_ACPI
+	select DRIVERS_USB_ACPI
 	select EC_GOOGLE_CHROMEEC
 	select EC_GOOGLE_CHROMEEC_BOARDID
 	select EC_GOOGLE_CHROMEEC_ESPI
+	select EC_GOOGLE_CHROMEEC_SKUID
+	select GENERIC_SPD_BIN
+	select GOOGLE_SMBIOS_MAINBOARD_VERSION
 	select HAVE_ACPI_RESUME
 	select HAVE_ACPI_TABLES
+	select INTEL_LPSS_UART_FOR_CONSOLE
 	select MAINBOARD_HAS_CHROMEOS
+	select MAINBOARD_HAS_SPI_TPM_CR50
+	select MAINBOARD_HAS_TPM2
 	select SOC_INTEL_JASPERLAKE
 
 if BOARD_GOOGLE_BASEBOARD_DEDEDE
@@ -25,6 +35,13 @@ config DEVICETREE
 	string
 	default "variants/baseboard/devicetree.cb"
 
+config DIMM_SPD_SIZE
+	int
+	default 512
+
+config DRIVER_TPM_SPI_BUS
+	default 0x1
+
 config MAINBOARD_DIR
 	string
 	default "google/dedede"
@@ -35,11 +52,22 @@ config MAINBOARD_FAMILY
 
 config MAINBOARD_PART_NUMBER
 	string
-	default "dedede" if BOARD_GOOGLE_DEDEDE
+	default "Dedede" if BOARD_GOOGLE_DEDEDE
+	default "Waddledoo" if BOARD_GOOGLE_WADDLEDOO
+	default "Waddledee" if BOARD_GOOGLE_WADDLEDEE
+	default "Wheelie" if BOARD_GOOGLE_WHEELIE
 
 config MAX_CPUS
 	int
 	default 4
+
+config OVERRIDE_DEVICETREE
+	string
+	default "variants/$(CONFIG_VARIANT_DIR)/overridetree.cb" if !BOARD_GOOGLE_DEDEDE
+
+config TPM_TIS_ACPI_INTERRUPT
+	int
+	default 4  # GPE0_DW0_4 (GPP_B4)
 
 config UART_FOR_CONSOLE
 	int
@@ -48,5 +76,14 @@ config UART_FOR_CONSOLE
 config VARIANT_DIR
 	string
 	default "dedede" if BOARD_GOOGLE_DEDEDE
+	default "waddledoo" if BOARD_GOOGLE_WADDLEDOO
+	default "waddledee" if BOARD_GOOGLE_WADDLEDEE
+	default "wheelie" if BOARD_GOOGLE_WHEELIE
+
+config VARIANT_HAS_CAMERA_ACPI
+	bool
+	default n
+	help
+	  Select this option to enable camera ACPI support on the variant.
 
 endif #BOARD_GOOGLE_BASEBOARD_DEDEDE

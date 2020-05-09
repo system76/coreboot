@@ -24,6 +24,7 @@ config SOC_INTEL_COFFEELAKE
 	bool
 	select SOC_INTEL_CANNONLAKE_BASE
 	select FSP_USES_CB_STACK
+	select HAVE_INTEL_FSP_REPO
 	help
 	  Intel Coffeelake support
 
@@ -31,14 +32,15 @@ config SOC_INTEL_WHISKEYLAKE
 	bool
 	select SOC_INTEL_CANNONLAKE_BASE
 	select FSP_USES_CB_STACK
+	select HAVE_INTEL_FSP_REPO
 	help
 	  Intel Whiskeylake support
 
 config SOC_INTEL_COMETLAKE
 	bool
 	select SOC_INTEL_CANNONLAKE_BASE
-	select MICROCODE_BLOB_UNDISCLOSED
 	select FSP_USES_CB_STACK
+	select HAVE_INTEL_FSP_REPO
 	help
 	  Intel Cometlake support
 
@@ -74,7 +76,6 @@ config CPU_SPECIFIC_OPTIONS
 	select INTEL_GMA_ADD_VBT if RUN_FSP_GOP
 	select IOAPIC
 	select MRC_SETTINGS_PROTECT
-	select NO_FIXED_XIP_ROM_SIZE
 	select PARALLEL_MP
 	select PARALLEL_MP_AP_WORK
 	select PLATFORM_USES_FSP2_0
@@ -93,6 +94,7 @@ config CPU_SPECIFIC_OPTIONS
 	select SOC_INTEL_COMMON_BLOCK_GSPI_VERSION_2
 	select SOC_INTEL_COMMON_BLOCK_HDA
 	select SOC_INTEL_COMMON_BLOCK_SA
+	select SOC_INTEL_COMMON_BLOCK_SCS
 	select SOC_INTEL_COMMON_BLOCK_XHCI
 	select SOC_INTEL_COMMON_BLOCK_XHCI_ELOG
 	select SOC_INTEL_COMMON_BLOCK_SMM
@@ -260,7 +262,6 @@ config CHROMEOS
 config VBOOT
 	select VBOOT_SEPARATE_VERSTAGE
 	select VBOOT_MUST_REQUEST_DISPLAY
-	select VBOOT_SAVE_RECOVERY_REASON_ON_REBOOT
 	select VBOOT_STARTS_IN_BOOTBLOCK
 	select VBOOT_VBNV_CMOS
 	select VBOOT_VBNV_CMOS_BACKUP_TO_FLASH
@@ -309,15 +310,13 @@ config USE_CANNONLAKE_FSP_CAR
 endchoice
 
 config FSP_HEADER_PATH
-	string "Location of FSP headers"
 	default "3rdparty/fsp/CoffeeLakeFspBinPkg/Include/" if SOC_INTEL_COFFEELAKE || SOC_INTEL_WHISKEYLAKE
-	default "src/vendorcode/intel/fsp/fsp2_0/cometlake/" if SOC_INTEL_COMETLAKE
+	default "3rdparty/fsp/CometLakeFspBinPkg/CometLake1/Include/" if SOC_INTEL_COMETLAKE
 	default "src/vendorcode/intel/fsp/fsp2_0/cannonlake/" if SOC_INTEL_CANNONLAKE
 
 config FSP_FD_PATH
-	string
-	depends on FSP_USE_REPO
 	default "3rdparty/fsp/CoffeeLakeFspBinPkg/Fsp.fd" if SOC_INTEL_COFFEELAKE || SOC_INTEL_WHISKEYLAKE
+	default "3rdparty/fsp/CometLakeFspBinPkg/CometLake1/FSP.fd" if SOC_INTEL_COMETLAKE
 
 config SOC_INTEL_CANNONLAKE_DEBUG_CONSENT
 	int "Debug Consent for CNL"

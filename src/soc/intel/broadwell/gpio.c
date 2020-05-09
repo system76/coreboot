@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2014 Google Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <stdint.h>
 #include <arch/io.h>
@@ -47,54 +35,6 @@ static int gpio_to_pirq(int gpio)
 	case 55: return 15;	/* PIRQX */
 	default: return -1;
 	};
-}
-
-void init_one_gpio(int gpio_num, struct gpio_config *config)
-{
-	u32 owner, route, irqen, reset;
-	int set, bit;
-
-	if (gpio_num > MAX_GPIO_NUMBER || !config)
-		return;
-
-	outl(config->conf0, GPIO_BASE_ADDRESS + GPIO_CONFIG0(gpio_num));
-	outl(config->conf1, GPIO_BASE_ADDRESS + GPIO_CONFIG1(gpio_num));
-
-	/* Determine set and bit based on GPIO number */
-	set = gpio_num >> 5;
-	bit = gpio_num % 32;
-
-	/* Save settings from current GPIO config */
-	owner = inl(GPIO_BASE_ADDRESS + GPIO_OWNER(set));
-	route = inl(GPIO_BASE_ADDRESS + GPIO_ROUTE(set));
-	irqen = inl(GPIO_BASE_ADDRESS + GPIO_IRQ_IE(set));
-	reset = inl(GPIO_BASE_ADDRESS + GPIO_RESET(set));
-
-	owner |= config->owner << bit;
-	route |= config->route << bit;
-	irqen |= config->irqen << bit;
-	reset |= config->reset << bit;
-
-	outl(owner, GPIO_BASE_ADDRESS + GPIO_OWNER(set));
-	outl(route, GPIO_BASE_ADDRESS + GPIO_ROUTE(set));
-	outl(irqen, GPIO_BASE_ADDRESS + GPIO_IRQ_IE(set));
-	outl(reset, GPIO_BASE_ADDRESS + GPIO_RESET(set));
-
-	if (set == 0) {
-		u32 blink = inl(GPIO_BASE_ADDRESS + GPIO_BLINK);
-		blink |= config->blink << bit;
-		outl(blink, GPIO_BASE_ADDRESS + GPIO_BLINK);
-	}
-
-	/* PIRQ to IO-APIC map */
-	if (config->pirq == GPIO_PIRQ_APIC_ROUTE) {
-		u32 pirq2apic = inl(GPIO_BASE_ADDRESS + GPIO_PIRQ_APIC_EN);
-		set = gpio_to_pirq(gpio_num);
-		if (set >= 0) {
-			pirq2apic |= 1 << set;
-			outl(pirq2apic, GPIO_BASE_ADDRESS + GPIO_PIRQ_APIC_EN);
-		}
-	}
 }
 
 void init_gpios(const struct gpio_config config[])

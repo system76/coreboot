@@ -1,26 +1,14 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2018 Patrick Rudolph <patrick.rudolph@9elements.com>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <stdint.h>
-#include <arch/acpi.h>
+#include <acpi/acpi.h>
 #include <arch/io.h>
+#include <bootmode.h>
 #include <device/pci_ops.h>
 #include <device/device.h>
 #include <device/pci.h>
 #include <assert.h>
-#include <security/vboot/vboot_common.h>
 
 #include "pmbase.h"
 #include "pmutil.h"
@@ -95,7 +83,7 @@ u8 read_pmbase8(const u8 addr)
 	return inb(lpc_get_pmbase() + addr);
 }
 
-int vboot_platform_is_resuming(void)
+int platform_is_resuming(void)
 {
 	u16 reg16 = read_pmbase16(PM1_STS);
 

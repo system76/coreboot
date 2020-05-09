@@ -1,8 +1,6 @@
 ##
 ## This file is part of the coreboot project.
 ##
-## Copyright (C) 2010 Google Inc.
-## Copyright (C) 2013-2014 Sage Electronic Engineering, LLC.
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -55,8 +53,8 @@ ifeq ($(CONFIG_HAVE_ME_BIN),y)
 	$(objutil)/ifdtool/ifdtool \
 		$(IFDTOOL_USE_CHIPSET) \
 		-i ME:$(CONFIG_ME_BIN_PATH) \
+		-O $(obj)/coreboot.pre \
 		$(obj)/coreboot.pre
-	mv $(obj)/coreboot.pre.new $(obj)/coreboot.pre
 endif
 ifeq ($(CONFIG_CHECK_ME),y)
 	util/me_cleaner/me_cleaner.py -c $(obj)/coreboot.pre > /dev/null
@@ -72,36 +70,39 @@ ifeq ($(CONFIG_HAVE_GBE_BIN),y)
 	$(objutil)/ifdtool/ifdtool \
 		$(IFDTOOL_USE_CHIPSET) \
 		-i GbE:$(CONFIG_GBE_BIN_PATH) \
+		-O $(obj)/coreboot.pre \
 		$(obj)/coreboot.pre
-	mv $(obj)/coreboot.pre.new $(obj)/coreboot.pre
 endif
 ifeq ($(CONFIG_HAVE_EC_BIN),y)
 	printf "    IFDTOOL    ec.bin -> coreboot.pre\n"
 	$(objutil)/ifdtool/ifdtool \
 		$(IFDTOOL_USE_CHIPSET) \
 		-i EC:$(CONFIG_EC_BIN_PATH) \
+		-O $(obj)/coreboot.pre \
 		$(obj)/coreboot.pre
-	mv $(obj)/coreboot.pre.new $(obj)/coreboot.pre
 endif
 
 ifeq ($(CONFIG_LOCK_MANAGEMENT_ENGINE),y)
 	printf "    IFDTOOL    Locking Management Engine\n"
 	$(objutil)/ifdtool/ifdtool \
-		$(IFDTOOL_USE_CHIPSET) -l $(obj)/coreboot.pre
-	mv $(obj)/coreboot.pre.new $(obj)/coreboot.pre
+		$(IFDTOOL_USE_CHIPSET) -l \
+		-O $(obj)/coreboot.pre \
+		$(obj)/coreboot.pre
 endif
 ifeq ($(CONFIG_UNLOCK_FLASH_REGIONS),y)
 	printf "    IFDTOOL    Unlocking Management Engine\n"
 	$(objutil)/ifdtool/ifdtool \
-	$(IFDTOOL_USE_CHIPSET) -u $(obj)/coreboot.pre
-	mv $(obj)/coreboot.pre.new $(obj)/coreboot.pre
+	$(IFDTOOL_USE_CHIPSET) -u \
+	-O $(obj)/coreboot.pre \
+	$(obj)/coreboot.pre
 endif
 
 ifeq ($(CONFIG_EM100),y)
 	printf "    IFDTOOL    Setting EM100 mode\n"
 	$(objutil)/ifdtool/ifdtool \
-		$(IFDTOOL_USE_CHIPSET) --em100 $(obj)/coreboot.pre
-	mv $(obj)/coreboot.pre.new $(obj)/coreboot.pre
+		$(IFDTOOL_USE_CHIPSET) --em100 \
+		-O $(obj)/coreboot.pre \
+		$(obj)/coreboot.pre
 endif
 
 warn_intel_firmware:

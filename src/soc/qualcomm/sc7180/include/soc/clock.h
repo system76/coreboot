@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright 2019 Qualcomm Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 and
- * only version 2 as published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* This file is part of the coreboot project. */
+/* SPDX-License-Identifier: GPL-2.0-only */
 
 #include <soc/addressmap.h>
 #include <types.h>
@@ -33,6 +21,7 @@
 #define SRC_XO_HZ			(19200 * KHz)
 #define GPLL0_EVEN_HZ			(300 * MHz)
 #define GPLL0_MAIN_HZ			(600 * MHz)
+#define QUPV3_UART_SRC_HZ		7372800
 
 #define SRC_XO_19_2MHZ			0
 #define SRC_GPLL0_MAIN_600MHZ		1

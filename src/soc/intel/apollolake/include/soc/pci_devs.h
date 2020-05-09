@@ -1,16 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* This file is part of the coreboot project. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #ifndef _SOC_APOLLOLAKE_PCI_DEVS_H_
 #define _SOC_APOLLOLAKE_PCI_DEVS_H_
@@ -45,6 +34,10 @@
 #define SA_DEV_SLOT_IPU		0x03
 #define  SA_DEVFN_IPU		PCI_DEVFN(SA_DEV_SLOT_IPU, 0)
 #define  SA_DEV_IPU		PCI_DEV(0, SA_DEV_SLOT_IPU, 0)
+
+#define SA_GLK_DEV_SLOT_GMM		0x03
+#define SA_GLK_DEVFN_GMM		PCI_DEVFN(SA_GLK_DEV_SLOT_GMM, 0)
+#define SA_GLK_DEV_GMM		PCI_DEV(0, SA_GLK_DEV_SLOT_GMM, 0)
 
 /* PCH Devices */
 

@@ -1,19 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2007-2009 coresystems GmbH
- * Copyright (C) 2014 Google Inc.
- * Copyright (C) 2015-2020 Intel Corporation.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 /* Global Variables */
 
@@ -78,8 +64,8 @@ Field (GNVS, ByteAcc, NoLock, Preserve)
 	Offset (0xb4),
 	ASLB,	32,	// 0xb4 - IGD OpRegion Base Address
 	IBTT,	 8,	// 0xb8 - IGD boot panel device
-	IPAT,	 8,	// 0xb9 - IGD panel type cmos option
-	ITVF,	 8,	// 0xba - IGD TV format cmos option
+	IPAT,	 8,	// 0xb9 - IGD panel type CMOS option
+	ITVF,	 8,	// 0xba - IGD TV format CMOS option
 	ITVM,	 8,	// 0xbb - IGD TV minor format option
 	IPSC,	 8,	// 0xbc - IGD panel scaling
 	IBLC,	 8,	// 0xbd - IGD BLC config
@@ -106,7 +92,7 @@ Field (GNVS, ByteAcc, NoLock, Preserve)
 	PAVP,	 8,	// 0xe9 - IGD PAVP data
 	Offset (0xeb),
 	OSCC,	 8,	// 0xeb - PCIe OSC control
-	NPCE,	 8,	// 0xec - native pcie support
+	NPCE,	 8,	// 0xec - native PCIe support
 	PLFL,	 8,	// 0xed - platform flavor
 	BREV,	 8,	// 0xee - board revision
 	DPBM,	 8,	// 0xef - digital port b mode

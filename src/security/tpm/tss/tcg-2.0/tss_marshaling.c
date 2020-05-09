@@ -335,6 +335,9 @@ static int marshal_cr50_vendor_command(struct obuf *ob, void *command_body)
 		 */
 		rc |= obuf_write_be16(ob, *sub_command);
 		break;
+	case TPM2_CR50_SUB_CMD_GET_BOOT_MODE:
+		rc |= obuf_write_be16(ob, *sub_command);
+		break;
 	default:
 		/* Unsupported subcommand. */
 		printk(BIOS_WARNING, "Unsupported cr50 subcommand: 0x%04x\n",
@@ -560,6 +563,8 @@ static int unmarshal_vendor_command(struct ibuf *ib,
 		return ibuf_read_be8(ib, &vcr->recovery_button_state);
 	case TPM2_CR50_SUB_CMD_TPM_MODE:
 		return ibuf_read_be8(ib, &vcr->tpm_mode);
+	case TPM2_CR50_SUB_CMD_GET_BOOT_MODE:
+		return ibuf_read_be8(ib, &vcr->boot_mode);
 	default:
 		printk(BIOS_ERR,
 		       "%s:%d - unsupported vendor command %#04x!\n",
@@ -582,17 +587,23 @@ struct tpm2_response *tpm_unmarshal_response(TPM_CC command, struct ibuf *ib)
 	if (rc != 0)
 		return NULL;
 
-	if (ibuf_remaining(ib) == 0) {
-		if (tpm2_static_resp.hdr.tpm_size != ibuf_nr_read(ib))
-			printk(BIOS_ERR,
-			       "%s: size mismatch in response to command %#x\n",
-			       __func__, command);
-		return &tpm2_static_resp;
+	if (ibuf_capacity(ib) != tpm2_static_resp.hdr.tpm_size) {
+		printk(BIOS_ERR,
+		       "%s: size mismatch in response to command %#x\n",
+		       __func__, command);
+		return NULL;
 	}
+
+	/* On errors, we're not sure what the TPM is returning. None of the
+	   commands we use actually expect useful data payloads for errors, so
+	   just ignore any data after the header. */
+	if (tpm2_static_resp.hdr.tpm_code != TPM2_RC_SUCCESS)
+		return &tpm2_static_resp;
 
 	switch (command) {
 	case TPM2_Startup:
 	case TPM2_Shutdown:
+	case TPM2_SelfTest:
 		break;
 
 	case TPM2_GetCapability:

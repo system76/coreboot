@@ -1,33 +1,20 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2011 secunet Security Networks AG
- * Copyright 2015 Google Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <assert.h>
-#include <console/console.h>
-#include <string.h>
-#include <stdlib.h>
 #include <boot_device.h>
 #include <cbfs.h>
 #include <commonlib/bsd/compression.h>
+#include <console/console.h>
 #include <endian.h>
+#include <fmap.h>
 #include <lib.h>
+#include <security/tpm/tspi/crtm.h>
+#include <security/vboot/vboot_common.h>
+#include <stdlib.h>
+#include <string.h>
 #include <symbols.h>
 #include <timestamp.h>
-#include <fmap.h>
-#include <security/vboot/vboot_crtm.h>
-#include <security/vboot/vboot_common.h>
 
 #define ERROR(x...) printk(BIOS_ERR, "CBFS: " x)
 #define LOG(x...) printk(BIOS_INFO, "CBFS: " x)
@@ -58,11 +45,14 @@ int cbfs_boot_locate(struct cbfsf *fh, const char *name, uint32_t *type)
 		 * Files can be added to the RO_REGION_ONLY config option to use this feature.
 		 */
 		printk(BIOS_DEBUG, "Fall back to RO region for %s\n", name);
-		ret = cbfs_locate_file_in_region(fh, "COREBOOT", name, type);
+		if (fmap_locate_area_as_rdev("COREBOOT", &rdev))
+			ERROR("RO region not found\n");
+		else
+			ret = cbfs_locate(fh, &rdev, name, type);
 	}
 
 	if (!ret)
-		if (vboot_measure_cbfs_hook(fh, name))
+		if (tspi_measure_cbfs_hook(fh, name))
 			return -1;
 
 	return ret;
@@ -88,14 +78,18 @@ int cbfs_locate_file_in_region(struct cbfsf *fh, const char *region_name,
 			       const char *name, uint32_t *type)
 {
 	struct region_device rdev;
-
+	int ret = 0;
 	if (fmap_locate_area_as_rdev(region_name, &rdev)) {
 		LOG("%s region not found while looking for %s\n",
 		    region_name, name);
 		return -1;
 	}
 
-	return cbfs_locate(fh, &rdev, name, type);
+	ret = cbfs_locate(fh, &rdev, name, type);
+	if (!ret)
+		if (tspi_measure_cbfs_hook(fh, name))
+			return -1;
+	return ret;
 }
 
 size_t cbfs_load_and_decompress(const struct region_device *rdev, size_t offset,
@@ -112,7 +106,7 @@ size_t cbfs_load_and_decompress(const struct region_device *rdev, size_t offset,
 		return in_size;
 
 	case CBFS_COMPRESS_LZ4:
-		if ((ENV_BOOTBLOCK || ENV_VERSTAGE) &&
+		if ((ENV_BOOTBLOCK || ENV_SEPARATE_VERSTAGE) &&
 			!CONFIG(COMPRESS_PRERAM_STAGES))
 			return 0;
 
@@ -131,7 +125,7 @@ size_t cbfs_load_and_decompress(const struct region_device *rdev, size_t offset,
 
 	case CBFS_COMPRESS_LZMA:
 		/* We assume here romstage and postcar are never compressed. */
-		if (ENV_BOOTBLOCK || ENV_VERSTAGE)
+		if (ENV_BOOTBLOCK || ENV_SEPARATE_VERSTAGE)
 			return 0;
 		if (ENV_ROMSTAGE && CONFIG(POSTCAR_STAGE))
 			return 0;
@@ -161,6 +155,12 @@ static inline int tohex4(unsigned int c)
 	return (c <= 9) ? (c + '0') : (c - 10 + 'a');
 }
 
+static void tohex8(unsigned int val, char *dest)
+{
+	dest[0] = tohex4((val >> 4) & 0xf);
+	dest[1] = tohex4(val & 0xf);
+}
+
 static void tohex16(unsigned int val, char *dest)
 {
 	dest[0] = tohex4(val >> 12);
@@ -179,22 +179,15 @@ void *cbfs_boot_map_optionrom(uint16_t vendor, uint16_t device)
 	return cbfs_boot_map_with_leak(name, CBFS_TYPE_OPTIONROM, NULL);
 }
 
-void *cbfs_boot_load_stage_by_name(const char *name)
+void *cbfs_boot_map_optionrom_revision(uint16_t vendor, uint16_t device, uint8_t rev)
 {
-	struct cbfsf fh;
-	struct prog stage = PROG_INIT(PROG_UNKNOWN, name);
-	uint32_t type = CBFS_TYPE_STAGE;
+	char name[20] = "pciXXXX,XXXX,XX.rom";
 
-	if (cbfs_boot_locate(&fh, name, &type))
-		return NULL;
+	tohex16(vendor, name + 3);
+	tohex16(device, name + 8);
+	tohex8(rev, name + 13);
 
-	/* Chain data portion in the prog. */
-	cbfs_file_data(prog_rdev(&stage), &fh);
-
-	if (cbfs_prog_stage_load(&stage))
-		return NULL;
-
-	return prog_entry(&stage);
+	return cbfs_boot_map_with_leak(name, CBFS_TYPE_OPTIONROM, NULL);
 }
 
 size_t cbfs_boot_load_file(const char *name, void *buf, size_t buf_size,
@@ -215,18 +208,6 @@ size_t cbfs_boot_load_file(const char *name, void *buf, size_t buf_size,
 
 	return cbfs_load_and_decompress(&fh.data, 0, region_device_sz(&fh.data),
 					buf, buf_size, compression_algo);
-}
-
-size_t cbfs_prog_stage_section(struct prog *pstage, uintptr_t *base)
-{
-	struct cbfs_stage stage;
-	const struct region_device *fh = prog_rdev(pstage);
-
-	if (rdev_readat(fh, &stage, 0, sizeof(stage)) != sizeof(stage))
-		return 0;
-
-	*base = (uintptr_t)stage.load;
-	return stage.memlen;
 }
 
 int cbfs_prog_stage_load(struct prog *pstage)
@@ -255,8 +236,8 @@ int cbfs_prog_stage_load(struct prog *pstage)
 
 	/* Hacky way to not load programs over read only media. The stages
 	 * that would hit this path initialize themselves. */
-	if ((ENV_BOOTBLOCK || ENV_VERSTAGE) && !CONFIG(NO_XIP_EARLY_STAGES) &&
-		CONFIG(BOOT_DEVICE_MEMORY_MAPPED)) {
+	if ((ENV_BOOTBLOCK || ENV_SEPARATE_VERSTAGE) &&
+	    !CONFIG(NO_XIP_EARLY_STAGES) && CONFIG(BOOT_DEVICE_MEMORY_MAPPED)) {
 		void *mapping = rdev_mmap(fh, foffset, fsize);
 		rdev_munmap(fh, mapping);
 		if (mapping == load)

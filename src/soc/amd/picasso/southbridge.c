@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2010-2017 Advanced Micro Devices, Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <console/console.h>
 #include <device/mmio.h>
@@ -35,6 +23,7 @@
 #include <soc/pci_devs.h>
 #include <soc/nvs.h>
 #include <types.h>
+#include "chip.h"
 
 #define FCH_AOAC_UART_FOR_CONSOLE \
 		(CONFIG_UART_FOR_CONSOLE == 0 ? FCH_AOAC_DEV_UART0 \
@@ -226,11 +215,8 @@ static uintptr_t sb_init_spi_base(void)
 void sb_set_spi100(u16 norm, u16 fast, u16 alt, u16 tpm)
 {
 	uintptr_t base = sb_init_spi_base();
-	write16((void *)(base + SPI100_SPEED_CONFIG),
-				(norm << SPI_NORM_SPEED_NEW_SH) |
-				(fast << SPI_FAST_SPEED_NEW_SH) |
-				(alt << SPI_ALT_SPEED_NEW_SH) |
-				(tpm << SPI_TPM_SPEED_NEW_SH));
+
+	write16((void *)(base + SPI100_SPEED_CONFIG), SPI_SPEED_CFG(norm, fast, alt, tpm));
 	write16((void *)(base + SPI100_ENABLE), SPI_USE_SPI100);
 }
 
@@ -245,9 +231,40 @@ void sb_disable_4dw_burst(void)
 void sb_read_mode(u32 mode)
 {
 	uintptr_t base = sb_init_spi_base();
-	write32((void *)(base + SPI_CNTRL0),
-			(read32((void *)(base + SPI_CNTRL0))
-					& ~SPI_READ_MODE_MASK) | mode);
+	uint32_t val = (read32((void *)(base + SPI_CNTRL0)) & ~SPI_READ_MODE_MASK);
+
+	write32((void *)(base + SPI_CNTRL0), val | SPI_READ_MODE(mode));
+}
+
+static void sb_spi_config_mb_modes(void)
+{
+	const struct soc_amd_picasso_config *cfg = config_of_soc();
+
+	sb_read_mode(cfg->spi_read_mode);
+	sb_set_spi100(cfg->spi_normal_speed, cfg->spi_fast_speed, cfg->spi_altio_speed,
+		      cfg->spi_tpm_speed);
+}
+
+static void sb_spi_config_em100_modes(void)
+{
+	sb_read_mode(SPI_READ_MODE_NORMAL33M);
+	sb_set_spi100(SPI_SPEED_16M, SPI_SPEED_16M, SPI_SPEED_16M, SPI_SPEED_16M);
+}
+
+static void sb_spi_config_modes(void)
+{
+	if (CONFIG(EM100))
+		sb_spi_config_em100_modes();
+	else
+		sb_spi_config_mb_modes();
+}
+
+static void sb_spi_init(void)
+{
+	lpc_enable_spi_prefetch();
+	sb_init_spi_base();
+	sb_disable_4dw_burst();
+	sb_spi_config_modes();
 }
 
 static void fch_smbus_init(void)
@@ -275,11 +292,7 @@ void fch_pre_init(void)
 	if (CONFIG(POST_IO) && (CONFIG_POST_IO_PORT == 0x80)
 					&& CONFIG(PICASSO_LPC_IOMUX))
 		lpc_enable_port80();
-	lpc_enable_spi_prefetch();
-	sb_init_spi_base();
-	sb_disable_4dw_burst();
-	sb_set_spi100(SPI_SPEED_33M, SPI_SPEED_33M,
-			SPI_SPEED_16M, SPI_SPEED_16M);
+	sb_spi_init();
 	enable_acpimmio_decode_pm04();
 	fch_smbus_init();
 	sb_enable_cf9_io();
@@ -347,6 +360,9 @@ void fch_early_init(void)
 {
 	sb_print_pmxc0_status();
 	i2c_soc_early_init();
+
+	if (CONFIG(DISABLE_SPI_FLASH_ROM_SHARING))
+		lpc_disable_spi_rom_sharing();
 }
 
 void sb_enable(struct device *dev)
@@ -368,7 +384,7 @@ static void sb_init_acpi_ports(void)
 	pm_write16(PM_TMR_BLK, ACPI_PM_TMR_BLK);
 	pm_write16(PM_GPE0_BLK, ACPI_GPE0_BLK);
 
-	/* CpuControl is in \_PR.CP00, 6 bytes */
+	/* CpuControl is in \_SB.CP00, 6 bytes */
 	cst_addr.hi = 0;
 	cst_addr.lo = ACPI_CPU_CONTROL;
 	wrmsr(CSTATE_BASE_REG, cst_addr);
@@ -454,6 +470,7 @@ BOOT_STATE_INIT_ENTRY(BS_OS_RESUME, BS_ON_ENTRY, set_nvs_sws, NULL);
 
 void southbridge_init(void *chip_info)
 {
+	i2c_soc_init();
 	sb_init_acpi_ports();
 	acpi_clear_pm1_status();
 }

@@ -1,26 +1,12 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2014 The ChromiumOS Authors.  All rights reserved.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #ifndef __VBOOT_MISC_H__
 #define __VBOOT_MISC_H__
 
 #include <assert.h>
 #include <security/vboot/vboot_common.h>
-
-struct vb2_context;
-struct vb2_shared_data;
+#include <vb2_api.h>
 
 /*
  * Source: security/vboot/common.c
@@ -52,11 +38,6 @@ static inline bool vboot_is_gbb_flag_set(enum vb2_gbb_flag flag)
 int vboot_locate_firmware(struct vb2_context *ctx, struct region_device *fw);
 
 /*
- * Source: security/vboot/bootmode.c
- */
-void vboot_save_recovery_reason_vbnv(void);
-
-/*
  * The stage loading code is compiled and entered from multiple stages. The
  * helper functions below attempt to provide more clarity on when certain
  * code should be called. They are implemented inline for better compile-time
@@ -66,7 +47,7 @@ void vboot_save_recovery_reason_vbnv(void);
 static inline int verification_should_run(void)
 {
 	if (CONFIG(VBOOT_SEPARATE_VERSTAGE))
-		return ENV_VERSTAGE;
+		return ENV_SEPARATE_VERSTAGE;
 	else if (CONFIG(VBOOT_STARTS_IN_ROMSTAGE))
 		return ENV_ROMSTAGE;
 	else if (CONFIG(VBOOT_STARTS_IN_BOOTBLOCK))

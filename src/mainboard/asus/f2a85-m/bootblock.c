@@ -1,18 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2012 Advanced Micro Devices, Inc.
- * Copyright (C) 2012 Rudolf Marek <r.marek@assembler.cz>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <bootblock_common.h>
 #include <device/pnp_type.h>
@@ -37,8 +24,8 @@ static void sbxxx_enable_48mhzout(void)
 
 static void superio_init_m(void)
 {
-	pnp_devfn_t uart = PNP_DEV(0x2e, IT8728F_SP1);
-	pnp_devfn_t gpio = PNP_DEV(0x2e, IT8728F_GPIO);
+	const pnp_devfn_t uart = PNP_DEV(0x2e, IT8728F_SP1);
+	const pnp_devfn_t gpio = PNP_DEV(0x2e, IT8728F_GPIO);
 
 	ite_kill_watchdog(gpio);
 	ite_enable_serial(uart, CONFIG_TTYS0_BASE);
@@ -47,7 +34,7 @@ static void superio_init_m(void)
 
 static void superio_init_m_pro(void)
 {
-	pnp_devfn_t uart = PNP_DEV(0x2e, NCT6779D_SP1);
+	const pnp_devfn_t uart = PNP_DEV(0x2e, NCT6779D_SP1);
 
 	nuvoton_enable_serial(uart, CONFIG_TTYS0_BASE);
 }

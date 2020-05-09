@@ -1,18 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2014 Google Inc.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; version 2 of
- * the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <stdint.h>
 #include <soc/gpio.h>
@@ -32,7 +19,7 @@ void mainboard_fill_pei_data(struct pei_data *pei_data)
 	/* P2: Rear USB3.0 port, USB3R2 */
 	pei_data_usb2_port(pei_data, 2, 0x0080, 1, 1,
 			   USB_PORT_INTERNAL);
-	/* P3: Card Rearder, CRS1 */
+	/* P3: Card Reader, CRS1 */
 	pei_data_usb2_port(pei_data, 3, 0x0040, 1, USB_OC_PIN_SKIP,
 			   USB_PORT_INTERNAL);
 	/* P4: Rear USB2.0 port, USB2R1 */
@@ -54,6 +41,6 @@ void mainboard_fill_pei_data(struct pei_data *pei_data)
 	pei_data_usb3_port(pei_data, 1, 1, 0, 0);
 	/* P3: Rear USB3.0 port, USB3R2 */
 	pei_data_usb3_port(pei_data, 2, 1, 1, 0);
-	/* P4: Card Rearder, CRS1 */
+	/* P4: Card Reader, CRS1 */
 	pei_data_usb3_port(pei_data, 3, 1, USB_OC_PIN_SKIP, 0);
 }

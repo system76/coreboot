@@ -60,9 +60,9 @@ config VARIANT_DIR
 	default "lars" if BOARD_GOOGLE_LARS
 	default "sentry" if BOARD_GOOGLE_SENTRY
 
-config DEVICETREE
+config OVERRIDE_DEVICETREE
 	string
-	default "variants/$(CONFIG_VARIANT_DIR)/devicetree.cb"
+	default "variants/$(CONFIG_VARIANT_DIR)/overridetree.cb"
 
 config MAX_CPUS
 	int
@@ -77,20 +77,12 @@ config INCLUDE_NHLT_BLOBS
 	select NHLT_DMIC_2CH
 	select NHLT_NAU88L25
 
-config EC_GOOGLE_CHROMEEC_BOARDNAME
-	string
-	default "chell" if BOARD_GOOGLE_CHELL
-	default "glados" if BOARD_GOOGLE_GLADOS
-	default ""
-
-config EC_GOOGLE_CHROMEEC_PD_BOARDNAME
-	string
-	default "chell_pd" if BOARD_GOOGLE_CHELL
-	default "glados_pd" if BOARD_GOOGLE_GLADOS
-	default ""
-
 config UART_FOR_CONSOLE
 	int
 	default 2
+
+config CONSOLE_SERIAL
+	bool
+	default n
 
 endif

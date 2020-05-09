@@ -1,18 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2013 Google Inc.
- * Copyright (C) 2015 Intel Corp.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #ifndef _SOC_GPIO_H_
 #define _SOC_GPIO_H_
@@ -134,6 +121,8 @@
 #define GP_NORTH_COUNT			59
 #define GP_EAST_COUNT			24
 #define GP_SOUTHEAST_COUNT		55
+
+#define MAX_GPIO_CNT (GP_SOUTHWEST_COUNT + GP_NORTH_COUNT + GP_EAST_COUNT + GP_SOUTHEAST_COUNT)
 
 /* General */
 #define GPIO_REGS_SIZE			8

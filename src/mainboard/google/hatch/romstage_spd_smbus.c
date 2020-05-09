@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright 2019 Google LLC
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <baseboard/variants.h>
 #include <soc/cnl_memcfg_init.h>
@@ -30,15 +18,24 @@ void mainboard_memory_init_params(FSPM_UPD *memupd)
 
 	/* Access memory info through SMBUS. */
 	get_spd_smbus(&blk);
-	memcfg.spd[0].read_type = READ_SPD_MEMPTR;
-	memcfg.spd[0].spd_spec.spd_data_ptr_info.spd_data_len = blk.len;
-	memcfg.spd[0].spd_spec.spd_data_ptr_info.spd_data_ptr = (uintptr_t)blk.spd_array[0];
+
+	if (blk.spd_array[0] == NULL) {
+		memcfg.spd[0].read_type = NOT_EXISTING;
+	} else {
+		memcfg.spd[0].read_type = READ_SPD_MEMPTR;
+		memcfg.spd[0].spd_spec.spd_data_ptr_info.spd_data_len = blk.len;
+		memcfg.spd[0].spd_spec.spd_data_ptr_info.spd_data_ptr = (uintptr_t)blk.spd_array[0];
+	}
 
 	memcfg.spd[1].read_type = NOT_EXISTING;
 
-	memcfg.spd[2].read_type = READ_SPD_MEMPTR;
-	memcfg.spd[2].spd_spec.spd_data_ptr_info.spd_data_len = blk.len;
-	memcfg.spd[2].spd_spec.spd_data_ptr_info.spd_data_ptr = (uintptr_t)blk.spd_array[1];
+	if (blk.spd_array[1] == NULL) {
+		memcfg.spd[2].read_type = NOT_EXISTING;
+	} else {
+		memcfg.spd[2].read_type = READ_SPD_MEMPTR;
+		memcfg.spd[2].spd_spec.spd_data_ptr_info.spd_data_len = blk.len;
+		memcfg.spd[2].spd_spec.spd_data_ptr_info.spd_data_ptr = (uintptr_t)blk.spd_array[1];
+	}
 
 	memcfg.spd[3].read_type = NOT_EXISTING;
 	dump_spd_info(&blk);

@@ -1,7 +1,6 @@
 /*
  * This file is part of the coreboot project.
  *
- * Copyright 2020 The coreboot project Authors.
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
@@ -15,7 +14,6 @@
 void fill_lb_gpios(struct lb_gpios *gpios)
 {
 	struct lb_gpio chromeos_gpios[] = {
-		{-1, ACTIVE_HIGH, get_write_protect_state(), "write protect"},
 		{-1, ACTIVE_HIGH, get_lid_switch(), "lid"},
 		{-1, ACTIVE_HIGH, 0, "power"},
 		{-1, ACTIVE_HIGH, gfx_get_init_done(), "oprom"},
@@ -25,8 +23,7 @@ void fill_lb_gpios(struct lb_gpios *gpios)
 
 int get_write_protect_state(void)
 {
-	/* No write protect */
-	return 0;
+	return gpio_get(GPIO_PCH_WP);
 }
 
 void mainboard_chromeos_acpi_generate(void)

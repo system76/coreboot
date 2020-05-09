@@ -1,28 +1,19 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright 2019 Google LLC
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
-#include <arch/acpi.h>
+#include <acpi/acpi.h>
 #include <boardid.h>
 #include <sar.h>
 #include <baseboard/variants.h>
 #include <delay.h>
 #include <gpio.h>
+#include <ec/google/chromeec/ec.h>
 
 enum {
 	SKU_1_LTE  = 1, /* Wifi + LTE */
 	SKU_2_WIFI = 2, /* Wifi */
+	SKU_3_LTE_2CAM = 3, /* Wifi + LTE + dual camera */
+	SKU_4_WIFI_2CAM = 4, /* Wifi + dual camera */
 };
 
 struct gpio_with_delay {
@@ -61,8 +52,9 @@ void variant_smi_sleep(u8 slp_typ)
 	if (slp_typ != ACPI_S5)
 		return;
 
-	switch (get_board_sku()) {
+	switch (google_chromeec_get_board_sku()) {
 	case SKU_1_LTE:
+	case SKU_3_LTE_2CAM:
 		power_off_lte_module(slp_typ);
 		return;
 	default:

@@ -1,23 +1,9 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2004 Stefan Reinauer <stepan@openbios.org>
- * Copyright (C) 2005 Nick Barker <nick.barker9@btinternet.com>
- * Copyright (C) 2007 Rudolf Marek <r.marek@assembler.cz>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <console/console.h>
-#include <arch/acpi.h>
-#include <arch/acpigen.h>
+#include <acpi/acpi.h>
+#include <acpi/acpigen.h>
 #include <arch/smp/mpspec.h>
 #include <device/device.h>
 #include "i82371eb.h"
@@ -39,7 +25,7 @@ static int determine_total_number_of_cores(void)
 	return count;
 }
 
-void generate_cpu_entries(struct device *device)
+void generate_cpu_entries(const struct device *device)
 {
 	int cpu, pcontrol_blk=DEFAULT_PMBASE+PCNTRL, plen=6;
 	int numcpus = determine_total_number_of_cores();
@@ -47,7 +33,7 @@ void generate_cpu_entries(struct device *device)
 
 	/* without the outer scope, furhter ssdt addition will end up
 	 * within the processor statement */
-	acpigen_write_scope("\\_PR");
+	acpigen_write_scope("\\_SB");
 	for (cpu=0; cpu < numcpus; cpu++) {
 		acpigen_write_processor(cpu, pcontrol_blk, plen);
 		acpigen_pop_len();

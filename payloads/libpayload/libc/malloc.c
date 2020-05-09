@@ -310,15 +310,16 @@ void *realloc(void *ptr, size_t size)
 	if (ret == NULL || ret == ptr)
 		return ret;
 
-	/* Copy the memory to the new location. */
-	memcpy(ret, ptr, osize > size ? size : osize);
+	/* Move the memory to the new location. Might be before the old location
+	   and overlap since the free() above includes a _consolidate(). */
+	memmove(ret, ptr, osize > size ? size : osize);
 
 	return ret;
 }
 
 struct align_region_t
 {
-	/* If alignment is 0 then the region reqpresents a large region which
+	/* If alignment is 0 then the region represents a large region which
 	 * has no metadata for tracking subelements. */
 	int alignment;
 	/* start in memory, and size in bytes */

@@ -1,18 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright 2016 Rockchip Inc.
- * Copyright 2017-present Facebook, Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <memlayout.h>
 #include <soc/addressmap.h>
@@ -36,7 +23,7 @@ SECTIONS
 	PRERAM_CBMEM_CONSOLE(BOOTROM_OFFSET + 0x8000, 8K)
 	BOOTBLOCK(BOOTROM_OFFSET + 0x20000, 64K)
 	VBOOT2_WORK(BOOTROM_OFFSET + 0x30000, 12K)
-	VBOOT2_TPM_LOG(BOOTROM_OFFSET + 0x33000, 2K)
+	TPM_TCPA_LOG(BOOTROM_OFFSET + 0x33000, 2K)
 	VERSTAGE(BOOTROM_OFFSET + 0x33800, 50K)
 	ROMSTAGE(BOOTROM_OFFSET + 0x40000, 256K)
 

@@ -1,6 +1,5 @@
+/* This file is part of the coreboot project. */
 /*
- * This file is part of the coreboot project.
- *
  * Copyright (C) 2015 - 2016 Advanced Micro Devices, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
@@ -364,11 +363,33 @@ static amd_bios_entry amd_bios_table[] = {
 	{ .type = AMD_BIOS_APCB, .inst = 2, .level = BDT_BOTH },
 	{ .type = AMD_BIOS_APCB, .inst = 3, .level = BDT_BOTH },
 	{ .type = AMD_BIOS_APCB, .inst = 4, .level = BDT_BOTH },
+	{ .type = AMD_BIOS_APCB, .inst = 5, .level = BDT_BOTH },
+	{ .type = AMD_BIOS_APCB, .inst = 6, .level = BDT_BOTH },
+	{ .type = AMD_BIOS_APCB, .inst = 7, .level = BDT_BOTH },
+	{ .type = AMD_BIOS_APCB, .inst = 8, .level = BDT_BOTH },
+	{ .type = AMD_BIOS_APCB, .inst = 9, .level = BDT_BOTH },
+	{ .type = AMD_BIOS_APCB, .inst = 10, .level = BDT_BOTH },
+	{ .type = AMD_BIOS_APCB, .inst = 11, .level = BDT_BOTH },
+	{ .type = AMD_BIOS_APCB, .inst = 12, .level = BDT_BOTH },
+	{ .type = AMD_BIOS_APCB, .inst = 13, .level = BDT_BOTH },
+	{ .type = AMD_BIOS_APCB, .inst = 14, .level = BDT_BOTH },
+	{ .type = AMD_BIOS_APCB, .inst = 15, .level = BDT_BOTH },
 	{ .type = AMD_BIOS_APCB_BK, .inst = 0, .level = BDT_BOTH },
 	{ .type = AMD_BIOS_APCB_BK, .inst = 1, .level = BDT_BOTH },
 	{ .type = AMD_BIOS_APCB_BK, .inst = 2, .level = BDT_BOTH },
 	{ .type = AMD_BIOS_APCB_BK, .inst = 3, .level = BDT_BOTH },
 	{ .type = AMD_BIOS_APCB_BK, .inst = 4, .level = BDT_BOTH },
+	{ .type = AMD_BIOS_APCB_BK, .inst = 5, .level = BDT_BOTH },
+	{ .type = AMD_BIOS_APCB_BK, .inst = 6, .level = BDT_BOTH },
+	{ .type = AMD_BIOS_APCB_BK, .inst = 7, .level = BDT_BOTH },
+	{ .type = AMD_BIOS_APCB_BK, .inst = 8, .level = BDT_BOTH },
+	{ .type = AMD_BIOS_APCB_BK, .inst = 9, .level = BDT_BOTH },
+	{ .type = AMD_BIOS_APCB_BK, .inst = 10, .level = BDT_BOTH },
+	{ .type = AMD_BIOS_APCB_BK, .inst = 11, .level = BDT_BOTH },
+	{ .type = AMD_BIOS_APCB_BK, .inst = 12, .level = BDT_BOTH },
+	{ .type = AMD_BIOS_APCB_BK, .inst = 13, .level = BDT_BOTH },
+	{ .type = AMD_BIOS_APCB_BK, .inst = 14, .level = BDT_BOTH },
+	{ .type = AMD_BIOS_APCB_BK, .inst = 15, .level = BDT_BOTH },
 	{ .type = AMD_BIOS_APOB, .level = BDT_BOTH },
 	{ .type = AMD_BIOS_BIN,
 			.reset = 1, .copy = 1, .zlib = 1, .level = BDT_BOTH },
@@ -470,7 +491,7 @@ typedef struct _bios_directory_table {
 	bios_directory_entry entries[];
 } bios_directory_table;
 
-#define MAX_BIOS_ENTRIES 0x1f
+#define MAX_BIOS_ENTRIES 0x22
 
 typedef struct _context {
 	char *rom;		/* target buffer, size of flash device */
@@ -575,7 +596,8 @@ static ssize_t copy_blob(void *dest, const char *src_file, size_t room)
 
 	fd = open(src_file, O_RDONLY);
 	if (fd < 0) {
-		printf("Error: %s\n", strerror(errno));
+		printf("Error opening file: %s: %s\n",
+		       src_file, strerror(errno));
 		return -1;
 	}
 
@@ -808,6 +830,17 @@ static int have_bios_tables(amd_bios_entry *table)
 	return 0;
 }
 
+static int find_bios_entry(amd_bios_type type)
+{
+	int i;
+
+	for (i = 0; amd_bios_table[i].type != AMD_BIOS_INVALID; i++) {
+		if (amd_bios_table[i].type == type)
+			return i;
+	}
+	return -1;
+}
+
 static void integrate_bios_firmwares(context *ctx,
 					bios_directory_table *biosdir,
 					bios_directory_table *biosdir2,
@@ -817,6 +850,7 @@ static void integrate_bios_firmwares(context *ctx,
 	ssize_t bytes;
 	unsigned int i, count;
 	int level;
+	int apob_idx;
 
 	/* This function can create a primary table, a secondary table, or a
 	 * flattened table which contains all applicable types.  These if-else
@@ -843,9 +877,6 @@ static void integrate_bios_firmwares(context *ctx,
 				fw_table[i].type != AMD_BIOS_L2_PTR &&
 				fw_table[i].type != AMD_BIOS_BIN))
 			continue;
-		/* APOB_NV needs a size, else no S3 and skip item */
-		if (fw_table[i].type == AMD_BIOS_APOB_NV && !fw_table[i].size)
-			continue;
 
 		/* BIOS Directory items may have additional requirements */
 
@@ -853,6 +884,19 @@ static void integrate_bios_firmwares(context *ctx,
 		if (fw_table[i].type == AMD_BIOS_APOB_NV && fw_table[i].src) {
 			if (!fw_table[i].size) {
 				printf("Error: APOB NV address provided, but no size\n");
+				free(ctx->rom);
+				exit(1);
+			}
+		}
+		/* APOB_NV needs a size, else no choice but to skip the item */
+		if (fw_table[i].type == AMD_BIOS_APOB_NV && !fw_table[i].size) {
+			/* Attempt to determine whether this is an error */
+			apob_idx = find_bios_entry(AMD_BIOS_APOB);
+			if (apob_idx < 0 || !fw_table[apob_idx].dest) {
+				/* APOV NV not expected to be used */
+				continue;
+			} else {
+				printf("Error: APOB NV must have a size\n");
 				free(ctx->rom);
 				exit(1);
 			}
@@ -981,7 +1025,8 @@ static void integrate_bios_firmwares(context *ctx,
 	}
 
 	if (count > MAX_BIOS_ENTRIES) {
-		printf("Error: BIOS entries exceeds max allowed items\n");
+		printf("Error: BIOS entries (%d) exceeds max allowed items "
+			"(%d)\n", count, MAX_BIOS_ENTRIES);
 		free(ctx->rom);
 		exit(1);
 	}
@@ -1439,7 +1484,7 @@ int main(int argc, char **argv)
 
 	integrate_firmwares(&ctx, amd_romsig, amd_fw_table);
 
-	ctx.current = ALIGN(ctx.current, 0x10000U); /* todo: is necessary? */
+	ctx.current = ALIGN(ctx.current, 0x10000U); /* TODO: is it necessary? */
 
 	if (multi) {
 		/* Do 2nd PSP directory followed by 1st */

@@ -1,16 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* This file is part of the coreboot project. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #include <console/console.h>
 #include <commonlib/helpers.h>
@@ -168,6 +157,14 @@ static const struct spi_flash_part_id flash_table[] = {
 	{
 		/* W25Q64DW */
 		.id[0]				= 0x6017,
+		.nr_sectors_shift		= 11,
+		.fast_read_dual_output_support	= 1,
+		.protection_granularity_shift	= 17,
+		.bp_bits			= 3,
+	},
+	{
+		/* W25Q64JW */
+		.id[0]				= 0x8017,
 		.nr_sectors_shift		= 11,
 		.fast_read_dual_output_support	= 1,
 		.protection_granularity_shift	= 17,

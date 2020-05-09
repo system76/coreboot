@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2018, The Linux Foundation.  All rights reserved.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 and
- * only version 2 as published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* This file is part of the coreboot project. */
+/* SPDX-License-Identifier: GPL-2.0-only */
 
 #include <boot/coreboot_tables.h>
 #include <bootmode.h>
@@ -38,8 +26,6 @@ void fill_lb_gpios(struct lb_gpios *gpios)
 			"EC in RW"},
 		{GPIO_AP_EC_INT.addr, ACTIVE_LOW, gpio_get(GPIO_AP_EC_INT),
 			"EC interrupt"},
-		{GPIO_WP_STATE.addr, ACTIVE_LOW, !get_write_protect_state(),
-			"write protect"},
 		{GPIO_H1_AP_INT.addr, ACTIVE_LOW, gpio_get(GPIO_H1_AP_INT),
 			"TPM interrupt"},
 	};

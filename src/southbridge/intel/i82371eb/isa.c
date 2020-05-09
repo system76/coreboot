@@ -1,18 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2007 Uwe Hermann <uwe@hermann-uwe.de>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* This file is part of the coreboot project. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #include <stdint.h>
 #include <console/console.h>
@@ -24,45 +11,16 @@
 #include <pc80/mc146818rtc.h>
 #include <arch/ioapic.h>
 #if CONFIG(HAVE_ACPI_TABLES)
-#include <arch/acpi.h>
-#include <arch/acpigen.h>
+#include <acpi/acpi.h>
+#include <acpi/acpigen.h>
 #endif
 #include "i82371eb.h"
-
-#if CONFIG(IOAPIC)
-static void enable_intel_82093aa_ioapic(void)
-{
-	u16 reg16;
-	u32 reg32;
-	u8 ioapic_id = 2;
-	volatile u32 *ioapic_index = (volatile u32 *)(IO_APIC_ADDR);
-	volatile u32 *ioapic_data = (volatile u32 *)(IO_APIC_ADDR + 0x10);
-	struct device *dev;
-
-	dev = dev_find_device(PCI_VENDOR_ID_INTEL,
-			      PCI_DEVICE_ID_INTEL_82371AB_ISA, 0);
-
-	/* Enable IOAPIC. */
-	reg16 = pci_read_config16(dev, XBCS);
-	reg16 |= (1 << 8); /* APIC Chip Select */
-	pci_write_config16(dev, XBCS, reg16);
-
-	/* Set the IOAPIC ID. */
-	*ioapic_index = 0;
-	*ioapic_data = ioapic_id << 24;
-
-	/* Read back and verify the IOAPIC ID. */
-	*ioapic_index = 0;
-	reg32 = (*ioapic_data >> 24) & 0x0f;
-	printk(BIOS_DEBUG, "IOAPIC ID = %x\n", reg32);
-	if (reg32 != ioapic_id)
-		die("IOAPIC error!\n");
-}
-#endif
+#include "chip.h"
 
 static void isa_init(struct device *dev)
 {
 	u32 reg32;
+	struct southbridge_intel_i82371eb_config *sb = dev->chip_info;
 
 	/* Initialize the real time clock (RTC). */
 	cmos_init(0);
@@ -80,12 +38,14 @@ static void isa_init(struct device *dev)
 	 */
 	reg32 = pci_read_config32(dev, GENCFG);
 	reg32 |= ISA;	/* Select ISA, not EIO. */
-	pci_write_config16(dev, GENCFG, reg32);
+
+	/* Some boards use GPO22/23. Select it if configured. */
+	reg32 = ONOFF(sb->gpo22_enable, reg32, GPO2223);
+	pci_write_config32(dev, GENCFG, reg32);
 
 	/* Initialize ISA DMA. */
 	isa_dma_init();
 
-#if CONFIG(IOAPIC)
 	/*
 	 * Unlike most other southbridges the 82371EB doesn't have a built-in
 	 * IOAPIC. Instead, 82371EB-based boards that support multiple CPUs
@@ -94,8 +54,28 @@ static void isa_init(struct device *dev)
 	 * Thus, we can/must only enable the IOAPIC if it actually exists,
 	 * i.e. the respective mainboard does "select IOAPIC".
 	 */
-	enable_intel_82093aa_ioapic();
-#endif
+	if (CONFIG(IOAPIC)) {
+		u16 reg16;
+		u8 ioapic_id = 2;
+		volatile u32 *ioapic_index = (volatile u32 *)(IO_APIC_ADDR);
+		volatile u32 *ioapic_data = (volatile u32 *)(IO_APIC_ADDR + 0x10);
+
+		/* Enable IOAPIC. */
+		reg16 = pci_read_config16(dev, XBCS);
+		reg16 |= (1 << 8); /* APIC Chip Select */
+		pci_write_config16(dev, XBCS, reg16);
+
+		/* Set the IOAPIC ID. */
+		*ioapic_index = 0;
+		*ioapic_data = ioapic_id << 24;
+
+		/* Read back and verify the IOAPIC ID. */
+		*ioapic_index = 0;
+		reg32 = (*ioapic_data >> 24) & 0x0f;
+		printk(BIOS_DEBUG, "IOAPIC ID = %x\n", reg32);
+		if (reg32 != ioapic_id)
+			die("IOAPIC error!\n");
+	}
 }
 
 static void sb_read_resources(struct device *dev)
@@ -126,7 +106,7 @@ static void sb_read_resources(struct device *dev)
 }
 
 #if CONFIG(HAVE_ACPI_TABLES)
-static void southbridge_acpi_fill_ssdt_generator(struct device *device)
+static void southbridge_acpi_fill_ssdt_generator(const struct device *device)
 {
 	acpigen_write_mainboard_resources("\\_SB.PCI0.MBRS", "_CRS");
 	generate_cpu_entries(device);
@@ -138,12 +118,11 @@ static const struct device_operations isa_ops = {
 	.set_resources		= pci_dev_set_resources,
 	.enable_resources	= pci_dev_enable_resources,
 #if CONFIG(HAVE_ACPI_TABLES)
-	.write_acpi_tables      = acpi_write_hpet,
-	.acpi_fill_ssdt_generator = southbridge_acpi_fill_ssdt_generator,
+	.write_acpi_tables	= acpi_write_hpet,
+	.acpi_fill_ssdt		= southbridge_acpi_fill_ssdt_generator,
 #endif
 	.init			= isa_init,
 	.scan_bus		= scan_static_bus,
-	.enable			= 0,
 	.ops_pci		= 0, /* No subsystem IDs on 82371EB! */
 };
 

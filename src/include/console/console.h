@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2003 Eric Biederman
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #ifndef CONSOLE_CONSOLE_H_
 #define CONSOLE_CONSOLE_H_
@@ -19,6 +7,7 @@
 #include <stdint.h>
 #include <arch/cpu.h>
 #include <console/post_codes.h>
+#include <console/vtxprintf.h>
 
 /* console.h is supposed to provide the log levels defined in here: */
 #include <commonlib/loglevel.h>
@@ -26,21 +15,10 @@
 #define RAM_DEBUG (CONFIG(DEBUG_RAM_SETUP) ? BIOS_DEBUG : BIOS_NEVER)
 #define RAM_SPEW  (CONFIG(DEBUG_RAM_SETUP) ? BIOS_SPEW  : BIOS_NEVER)
 
-#include <console/vtxprintf.h>
-
 void post_code(u8 value);
-void arch_post_code(u8 value);
-void cmos_post_code(u8 value);
-#if CONFIG(CMOS_POST_EXTRA)
-struct device;
-void post_log_path(const struct device *dev);
-void post_log_clear(void);
-#else
-#define post_log_path(x) do {} while (0)
-#define post_log_clear() do {} while (0)
-#endif
-/* this function is weak and can be overridden by a mainboard function. */
 void mainboard_post(u8 value);
+void arch_post_code(u8 value);
+
 void __noreturn die(const char *fmt, ...);
 #define die_with_post_code(value, fmt, ...) \
 	do { post_code(value); die(fmt, ##__VA_ARGS__); } while (0)
@@ -53,9 +31,9 @@ void die_notify(void);
 
 #define __CONSOLE_ENABLE__ \
 	((ENV_BOOTBLOCK && CONFIG(BOOTBLOCK_CONSOLE)) || \
-	(ENV_POSTCAR && CONFIG(POSTCAR_CONSOLE)) || \
-	ENV_VERSTAGE || ENV_ROMSTAGE || ENV_RAMSTAGE || ENV_LIBAGESA || \
-	(ENV_SMM && CONFIG(DEBUG_SMI)))
+	 (ENV_POSTCAR && CONFIG(POSTCAR_CONSOLE)) || \
+	 ENV_SEPARATE_VERSTAGE || ENV_ROMSTAGE || ENV_RAMSTAGE || \
+	 ENV_LIBAGESA || (ENV_SMM && CONFIG(DEBUG_SMI)))
 
 #if __CONSOLE_ENABLE__
 asmlinkage void console_init(void);

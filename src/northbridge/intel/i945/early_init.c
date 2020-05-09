@@ -1,27 +1,15 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2007-2010 coresystems GmbH
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
+#include <arch/io.h>
+#include <cbmem.h>
 #include <cf9_reset.h>
 #include <console/console.h>
-#include <arch/io.h>
-#include <device/pci.h>
-#include <device/pci_ops.h>
 #include <device/pci_def.h>
-#include <cbmem.h>
-#include <romstage_handoff.h>
+#include <device/pci_ops.h>
+#include <device/pci.h>
 #include <option.h>
+#include <romstage_handoff.h>
 #include <types.h>
 
 #include "i945.h"
@@ -53,8 +41,8 @@ static void i945m_detect_chipset(void)
 	case 6:
 		printk(BIOS_INFO, "Mobile Intel(R) 82943/82940GML Express");
 		break;
-	default:
-		printk(BIOS_INFO, "Unknown (%02x)", reg8);	/* Others reserved. */
+	default: /* Others reserved. */
+		printk(BIOS_INFO, "Unknown (%02x)", reg8);
 	}
 	printk(BIOS_INFO, " Chipset\n");
 
@@ -87,8 +75,8 @@ static void i945m_detect_chipset(void)
 	case 4:
 		printk(BIOS_DEBUG, "DDR2-400");
 		break;
-	default:
-		printk(BIOS_INFO, "unknown max. RAM clock (%02x).", reg8);	/* Others reserved. */
+	default: /* Others reserved. */
+		printk(BIOS_INFO, "unknown max. RAM clock (%02x).", reg8);
 	}
 	printk(BIOS_DEBUG, "\n");
 
@@ -102,7 +90,8 @@ static void i945_detect_chipset(void)
 
 	printk(BIOS_INFO, "\nIntel(R) ");
 
-	reg8 = ((pci_read_config8(PCI_DEV(0, 0x00, 0), 0xe7) >> 5) & 4) | ((pci_read_config8(PCI_DEV(0, 0x00, 0), 0xe4) >> 4) & 3);
+	reg8 = ((pci_read_config8(PCI_DEV(0, 0x00, 0), 0xe7) >> 5) & 4)
+	     | ((pci_read_config8(PCI_DEV(0, 0x00, 0), 0xe4) >> 4) & 3);
 	switch (reg8) {
 	case 0:
 	case 1:
@@ -137,8 +126,8 @@ static void i945_detect_chipset(void)
 	case 3:
 		printk(BIOS_DEBUG, "up to DDR2-533");
 		break;
-	default:
-		printk(BIOS_INFO, "unknown max. RAM clock (%02x).", reg8);	/* Others reserved. */
+	default: /* Others reserved. */
+		printk(BIOS_INFO, "unknown max. RAM clock (%02x).", reg8);
 	}
 	printk(BIOS_DEBUG, "\n");
 
@@ -161,7 +150,7 @@ static void i945_setup_bars(void)
 	pci_write_config32(PCI_DEV(0, 0x00, 0), DMIBAR, (uintptr_t)DEFAULT_DMIBAR | 1);
 	pci_write_config32(PCI_DEV(0, 0x00, 0), X60BAR, DEFAULT_X60BAR | 1);
 
-	/* vram size from cmos option */
+	/* vram size from CMOS option */
 	if (get_option(&gfxsize, "gfx_uma_size") != CB_SUCCESS)
 		gfxsize = 2;	/* 2 for 8MB */
 	/* make sure no invalid setting is used */
@@ -415,9 +404,9 @@ static void i945_setup_dmi_rcrb(void)
 	reg32 = DMIBAR32(0x204);
 	reg32 &= ~0x3ff;
 #if 1
-	reg32 |= 0x13f;		/* for x4 DMI only */
+	reg32 |= 0x13f;	/* for x4 DMI only */
 #else
-	reg32 |= 0x1e4; /* for x2 DMI only */
+	reg32 |= 0x1e4;	/* for x2 DMI only */
 #endif
 	DMIBAR32(0x204) = reg32;
 
@@ -510,10 +499,10 @@ static void i945_setup_pci_express_x16(void)
 	u32 timeout;
 	u32 reg32;
 	u16 reg16;
-	pci_devfn_t p2peg = PCI_DEV(0, 0x01, 0);
+	const pci_devfn_t p2peg = PCI_DEV(0, 0x01, 0);
 
 	u8 tmp_secondary = 0x0a;
-	pci_devfn_t peg_plugin = PCI_DEV(tmp_secondary, 0, 0);
+	const pci_devfn_t peg_plugin = PCI_DEV(tmp_secondary, 0, 0);
 
 	printk(BIOS_DEBUG, "Enabling PCI Express x16 Link\n");
 
@@ -555,8 +544,7 @@ static void i945_setup_pci_express_x16(void)
 	pci_write_config16(p2peg, PEG_CAP, reg16);
 
 	/* Setup SLOTCAP */
-	/* TODO: These values are mainboard dependent and should
-	 * be set from devicetree.cb.
+	/* TODO: These values are mainboard dependent and should be set from devicetree.cb.
 	 */
 	/* NOTE: SLOTCAP becomes RO after the first write! */
 	reg32 = pci_read_config32(p2peg, SLOTCAP);
@@ -713,9 +701,8 @@ static void i945_setup_pci_express_x16(void)
 
 	if (i945_silicon_revision() >= 3) {
 		static const u32 reglist[] = {
-			0xec0, 0xed4, 0xee8, 0xefc, 0xf10, 0xf24,
-			0xf38, 0xf4c, 0xf60, 0xf74, 0xf88, 0xf9c,
-			0xfb0, 0xfc4, 0xfd8, 0xfec
+			0xec0, 0xed4, 0xee8, 0xefc, 0xf10, 0xf24, 0xf38, 0xf4c,
+			0xf60, 0xf74, 0xf88, 0xf9c, 0xfb0, 0xfc4, 0xfd8, 0xfec
 		};
 
 		int i;
@@ -773,7 +760,7 @@ disable_pciexpress_x16_link:
 static void i945_setup_root_complex_topology(void)
 {
 	u32 reg32;
-	pci_devfn_t p2peg = PCI_DEV(0, 0x01, 0);
+	const pci_devfn_t p2peg = PCI_DEV(0, 0x01, 0);
 
 	printk(BIOS_DEBUG, "Setting up Root Complex Topology\n");
 	/* Egress Port Root Topology */

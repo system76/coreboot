@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2018 Intel Corporation.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #ifndef __BASEBOARD_EC_H__
 #define __BASEBOARD_EC_H__
@@ -32,8 +20,7 @@
 	 EC_HOST_EVENT_MASK(EC_HOST_EVENT_THROTTLE_START)    |\
 	 EC_HOST_EVENT_MASK(EC_HOST_EVENT_THROTTLE_STOP)     |\
 	 EC_HOST_EVENT_MASK(EC_HOST_EVENT_PD_MCU)            |\
-	 EC_HOST_EVENT_MASK(EC_HOST_EVENT_MODE_CHANGE)       |\
-	 EC_HOST_EVENT_MASK(EC_HOST_EVENT_MKBP))
+	 EC_HOST_EVENT_MASK(EC_HOST_EVENT_MODE_CHANGE))
 
 #define MAINBOARD_EC_SMI_EVENTS \
 	(EC_HOST_EVENT_MASK(EC_HOST_EVENT_LID_CLOSED))
@@ -50,6 +37,7 @@
 #define MAINBOARD_EC_S3_WAKE_EVENTS \
 	(MAINBOARD_EC_S5_WAKE_EVENTS |\
 	 EC_HOST_EVENT_MASK(EC_HOST_EVENT_KEY_PRESSED) |\
+	 EC_HOST_EVENT_MASK(EC_HOST_EVENT_MKBP)        |\
 	 EC_HOST_EVENT_MASK(EC_HOST_EVENT_MODE_CHANGE))
 
 #define MAINBOARD_EC_S0IX_WAKE_EVENTS \

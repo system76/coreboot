@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2017 Arthur Heymans <arthur@aheymans.xyz>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #ifndef INTEL_COMMON_ACPI_PIRQ_GEN_H
 #define INTEL_COMMON_ACPI_PIRQ_GEN_H
@@ -36,7 +24,7 @@ enum pirq {
 	PIRQ_H,
 };
 
-void intel_acpi_gen_def_acpi_pirq(struct device *dev);
+void intel_acpi_gen_def_acpi_pirq(const struct device *dev);
 enum pirq intel_common_map_pirq(const struct device *dev,
 				const enum pci_pin pci_pin);
 

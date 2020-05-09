@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2010-2017 Advanced Micro Devices, Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <console/console.h>
 #include <device/mmio.h>
@@ -489,7 +477,7 @@ static void sb_init_acpi_ports(void)
 	pm_write16(PM1_CNT_BLK, ACPI_PM1_CNT_BLK);
 	pm_write16(PM_TMR_BLK, ACPI_PM_TMR_BLK);
 	pm_write16(PM_GPE0_BLK, ACPI_GPE0_BLK);
-	/* CpuControl is in \_PR.CP00, 6 bytes */
+	/* CpuControl is in \_SB.CP00, 6 bytes */
 	pm_write16(PM_CPU_CTRL, ACPI_CPU_CONTROL);
 
 	if (CONFIG(HAVE_SMI_HANDLER)) {

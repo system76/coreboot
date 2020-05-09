@@ -100,6 +100,11 @@ config EC_GOOGLE_CHROMEEC_SPI_CHIP
 	hex
 	default 0x0
 
+config EC_GOOGLE_CHROMEEC_SKUID
+	def_bool n
+	help
+	  Provides common routine for reporting the skuid to ChromeOS.
+
 config EC_GOOGLE_CHROMEEC_BOARDNAME
 	depends on EC_GOOGLE_CHROMEEC
 	string "Chrome EC board name for EC"
@@ -191,3 +196,9 @@ config EC_GOOGLE_CHROMEEC_SWITCHES
 	help
 	  Enable support for Chrome OS mode switches provided by the Chrome OS
 	  EC.
+
+if EC_GOOGLE_CHROMEEC
+
+source "src/ec/google/chromeec/*/Kconfig"
+
+endif

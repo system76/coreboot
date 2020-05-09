@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2014 Google Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <assert.h>
 #include <cbfs.h>
@@ -48,7 +36,8 @@ void raminit(struct pei_data *pei_data)
 
 	broadwell_fill_pei_data(pei_data);
 
-	if (vboot_recovery_mode_enabled()) {
+	if (CONFIG(BROADWELL_VBOOT_IN_BOOTBLOCK) &&
+	    vboot_recovery_mode_enabled()) {
 		/* Recovery mode does not use MRC cache */
 		printk(BIOS_DEBUG, "Recovery mode: not using MRC cache.\n");
 	} else if (!mrc_cache_get_current(MRC_TRAINING_DATA, 0, &rdev)) {

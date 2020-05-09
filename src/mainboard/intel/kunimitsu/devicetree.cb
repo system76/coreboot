@@ -34,7 +34,7 @@ chip soc/intel/skylake
 	register "SkipExtGfxScan" = "1"
 	register "Device4Enable" = "1"
 	register "HeciEnabled" = "0"
-	register "SaGv" = "3"
+	register "SaGv" = "SaGv_Enabled"
 	register "PmTimerDisabled" = "1"
 
 	register "pirqa_routing" = "PCH_IRQ11"
@@ -289,6 +289,7 @@ chip soc/intel/skylake
 		device pci 1f.2 on  end # Power Management Controller
 		device pci 1f.3 on
 			chip drivers/generic/max98357a
+				register "hid" = ""MX98357A""
 				register "sdmode_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_E3)"
 				register "device_present_gpio" = "GPP_E3"
 				register "device_present_gpio_invert" = "1"

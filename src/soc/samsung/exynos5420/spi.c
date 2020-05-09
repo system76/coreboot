@@ -1,18 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2011 Samsung Electronics
- * Copyright 2013 Google Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <device/mmio.h>
 #include <assert.h>
@@ -101,7 +88,7 @@ static void exynos_spi_init(struct exynos_spi *regs)
 	// CPOL: Active high.
 	clrbits32(&regs->ch_cfg, SPI_CH_CPOL_L);
 
-	// Clear rx and tx channel if set priveously.
+	// Clear rx and tx channel if set previously.
 	clrbits32(&regs->ch_cfg, SPI_RX_CH_ON | SPI_TX_CH_ON);
 
 	setbits32(&regs->swap_cfg,

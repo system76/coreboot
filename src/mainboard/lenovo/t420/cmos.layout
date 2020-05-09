@@ -1,8 +1,6 @@
 ##
 ## This file is part of the coreboot project.
 ##
-## Copyright (C) 2007-2008 coresystems GmbH
-## Copyright (C) 2014 Vladimir Serbinenko
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -76,8 +74,8 @@ entries
 
 # coreboot config options: northbridge
 432          3       e       11       gfx_uma_size
-435          2        e       12       hybrid_graphics_mode
-#437         3        r       0        unused
+435          2       e       12       hybrid_graphics_mode
+#437         3       r       0        unused
 
 440          8       h       0        volume
 

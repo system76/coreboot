@@ -1,22 +1,11 @@
-/*
- * This file is part of the coreboot project.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; version 2 of
- * the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
-External (\_PR.CP00._TSS, MethodObj)
-External (\_PR.CP00._TPC, MethodObj)
-External (\_PR.CP00._PTC, PkgObj)
-External (\_PR.CP00._TSD, PkgObj)
-External (\_PR.CP00._PSS, MethodObj)
+External (\_SB.CP00._TSS, MethodObj)
+External (\_SB.CP00._TPC, MethodObj)
+External (\_SB.CP00._PTC, PkgObj)
+External (\_SB.CP00._TSD, PkgObj)
+External (\_SB.CP00._PSS, MethodObj)
 
 Device (TCPU)
 {
@@ -38,8 +27,8 @@ Device (TCPU)
 
 	Method (_TSS)
 	{
-		If (CondRefOf (\_PR.CP00._TSS)) {
-			Return (\_PR.CP00._TSS)
+		If (CondRefOf (\_SB.CP00._TSS)) {
+			Return (\_SB.CP00._TSS)
 		} Else {
 			Return (Package ()
 			{
@@ -50,8 +39,8 @@ Device (TCPU)
 
 	Method (_TPC)
 	{
-		If (CondRefOf (\_PR.CP00._TPC)) {
-			Return (\_PR.CP00._TPC)
+		If (CondRefOf (\_SB.CP00._TPC)) {
+			Return (\_SB.CP00._TPC)
 		} Else {
 			Return (0)
 		}
@@ -59,8 +48,8 @@ Device (TCPU)
 
 	Method (_PTC)
 	{
-		If (CondRefOf (\_PR.CP00._PTC)) {
-			Return (\_PR.CP00._PTC)
+		If (CondRefOf (\_SB.CP00._PTC)) {
+			Return (\_SB.CP00._PTC)
 		} Else {
 			Return (Package ()
 			{
@@ -72,8 +61,8 @@ Device (TCPU)
 
 	Method (_TSD)
 	{
-		If (CondRefOf (\_PR.CP00._TSD)) {
-			Return (\_PR.CP00._TSD)
+		If (CondRefOf (\_SB.CP00._TSD)) {
+			Return (\_SB.CP00._TSD)
 		} Else {
 			Return (Package ()
 			{
@@ -84,8 +73,8 @@ Device (TCPU)
 
 	Method (_TDL)
 	{
-		If (CondRefOf (\_PR.CP00._TSS)) {
-			Store (SizeOf (\_PR.CP00._TSS ()), Local0)
+		If (CondRefOf (\_SB.CP00._TSS)) {
+			Store (SizeOf (\_SB.CP00._TSS ()), Local0)
 			Decrement (Local0)
 			Return (Local0)
 		} Else {
@@ -112,8 +101,8 @@ Device (TCPU)
 
 	Method (_PSS)
 	{
-		If (CondRefOf (\_PR.CP00._PSS)) {
-			Return (\_PR.CP00._PSS)
+		If (CondRefOf (\_SB.CP00._PSS)) {
+			Return (\_SB.CP00._PSS)
 		} Else {
 			Return (Package ()
 			{
@@ -127,8 +116,8 @@ Device (TCPU)
 		/* Check for mainboard specific _PDL override */
 		If (CondRefOf (\_SB.MPDL)) {
 			Return (\_SB.MPDL)
-		} ElseIf (CondRefOf (\_PR.CP00._PSS)) {
-			Store (SizeOf (\_PR.CP00._PSS ()), Local0)
+		} ElseIf (CondRefOf (\_SB.CP00._PSS)) {
+			Store (SizeOf (\_SB.CP00._PSS ()), Local0)
 			Decrement (Local0)
 			Return (Local0)
 		} Else {

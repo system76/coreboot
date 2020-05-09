@@ -12,6 +12,8 @@ Google's verified boot support consists of:
 
 Google's vboot verifies the firmware and places measurements within the TPM.
 
+- [List of supported Devices](list_vboot.md)
+
 ***
 
 ## Root of Trust
@@ -194,7 +196,7 @@ not into the read/write coreboot file systems in *FW_MAIN_A* and *FW_MAIN_B*.
 **VBOOT_ENABLE_CBFS_FALLBACK**  
 
 Normally coreboot will use the active read/write coreboot file system for all
-of it's file access when VBOOT is active and is not in recovery mode.
+of it's file access when vboot is active and is not in recovery mode.
 
 When the `VBOOT_ENABLE_CBFS_FALLBACK` option is enabled the cbfs file system will
 first try to locate a file in the active read/write file system. If the file
@@ -229,7 +231,7 @@ More details are available in `3rdparty/vboot/README`.
 #  The keys were made using the following command
 #
 #        3rdparty/vboot/scripts/keygeneration/create_new_keys.sh  \
-#                --4k --4k-root --output $PWD/keys
+#                --output $PWD/keys
 #
 #
 #  The "magic" numbers below are derived from the GBB section in

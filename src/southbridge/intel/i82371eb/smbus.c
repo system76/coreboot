@@ -1,21 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2007 Uwe Hermann <uwe@hermann-uwe.de>
- * Copyright (C) 2010 Keith Hui <buurin@gmail.com>
- * Copyright (C) 2010 Idwer Vollering <vidwer@gmail.com>
- * Copyright (C) 2010 Tobias Diedrich <ranma+coreboot@gmail.com>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* This file is part of the coreboot project. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #include <arch/io.h>
 #include <device/pci_ops.h>
@@ -117,7 +101,6 @@ static const struct device_operations smbus_ops = {
 	.read_resources		= pwrmgt_read_resources,
 	.set_resources		= pci_dev_set_resources,
 	.enable_resources	= pci_dev_enable_resources,
-	.init			= 0,
 	.scan_bus		= scan_smbus,
 	.enable			= pwrmgt_enable,
 	.ops_pci		= 0, /* No subsystem IDs on 82371EB! */

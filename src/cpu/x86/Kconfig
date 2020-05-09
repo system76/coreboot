@@ -140,7 +140,7 @@ config SMM_LAPIC_REMAP_MITIGATION
 	bool
 	default y if NORTHBRIDGE_INTEL_I945
 	default y if NORTHBRIDGE_INTEL_GM45
-	default y if NORTHBRIDGE_INTEL_NEHALEM
+	default y if NORTHBRIDGE_INTEL_IRONLAKE
 	default n
 
 config SERIALIZED_SMM_INITIALIZATION
@@ -168,15 +168,6 @@ config X86_AMD_INIT_SIPI
 	  This option limits the number of SIPI signals sent during during the
 	  common AP setup.  Intel documentation specifies an INIT SIPI SIPI
 	  sequence, however this doesn't work on some AMD platforms.
-
-config MIRROR_PAYLOAD_TO_RAM_BEFORE_LOADING
-	def_bool n
-	help
-	  On certain platforms a boot speed gain can be realized if mirroring
-	  the payload data stored in non-volatile storage. On x86 systems the
-	  payload would typically live in a memory-mapped SPI part. Copying
-	  the SPI contents to RAM before performing the load can speed up
-	  the boot process.
 
 config SOC_SETS_MSRS
 	bool

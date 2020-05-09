@@ -1,24 +1,11 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2015-2016 Advanced Micro Devices, Inc.
- * Copyright (C) 2015 Intel Corp.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <amdblocks/biosram.h>
 #include <device/pci_ops.h>
 #include <arch/cpu.h>
 #include <arch/romstage.h>
-#include <arch/acpi.h>
+#include <acpi/acpi.h>
 #include <cpu/x86/msr.h>
 #include <cpu/x86/mtrr.h>
 #include <cpu/x86/smm.h>
@@ -33,6 +20,7 @@
 #include <amdblocks/agesawrapper.h>
 #include <amdblocks/agesawrapper_call.h>
 #include <soc/northbridge.h>
+#include <soc/pci_devs.h>
 #include <soc/romstage.h>
 #include <soc/southbridge.h>
 #include <amdblocks/psp.h>
@@ -42,28 +30,6 @@
 void __weak mainboard_romstage_entry_s3(int s3_resume)
 {
 	/* By default, don't do anything */
-}
-
-static void load_smu_fw1(void)
-{
-	u32 base, limit, cmd;
-
-	/* Open a posted hole from 0x80000000 : 0xfed00000-1 */
-	base = (0x80000000 >> 8) | MMIO_WE | MMIO_RE;
-	limit = (ALIGN_DOWN(HPET_BASE_ADDRESS - 1, 64 * KiB) >> 8);
-	pci_write_config32(SOC_ADDR_DEV, D18F1_MMIO_LIMIT0_LO, limit);
-	pci_write_config32(SOC_ADDR_DEV, D18F1_MMIO_BASE0_LO, base);
-
-	/* Preload a value into "BAR3" and enable it */
-	pci_write_config32(SOC_PSP_DEV, PSP_MAILBOX_BAR, PSP_MAILBOX_BAR3_BASE);
-	pci_write_config32(SOC_PSP_DEV, PSP_BAR_ENABLES, PSP_MAILBOX_BAR_EN);
-
-	/* Enable memory access and master */
-	cmd = pci_read_config32(SOC_PSP_DEV, PCI_COMMAND);
-	cmd |= PCI_COMMAND_MEMORY | PCI_COMMAND_MASTER;
-	pci_write_config32(SOC_PSP_DEV, PCI_COMMAND, cmd);
-
-	psp_load_named_blob(MBOX_BIOS_CMD_SMU_FW, "smu_fw");
 }
 
 static void agesa_call(void)
@@ -94,8 +60,9 @@ asmlinkage void car_stage_entry(void)
 
 	console_init();
 
+	soc_enable_psp_early();
 	if (CONFIG(SOC_AMD_PSP_SELECTABLE_SMU_FW))
-		load_smu_fw1();
+		psp_load_named_blob(BLOB_SMU_FW, "smu_fw");
 
 	mainboard_romstage_entry_s3(s3_resume);
 	elog_boot_notify(s3_resume);

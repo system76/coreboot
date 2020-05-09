@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2017 Advanced Micro Devices, Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <bootstate.h>
 #include <console/console.h>
@@ -36,11 +24,10 @@ extern struct device_operations stoneyridge_i2c_mmio_ops;
 extern const char *i2c_acpi_name(const struct device *dev);
 
 struct device_operations cpu_bus_ops = {
-	.read_resources	  = DEVICE_NOOP,
-	.set_resources	  = DEVICE_NOOP,
-	.enable_resources = DEVICE_NOOP,
+	.read_resources	  = noop_read_resources,
+	.set_resources	  = noop_set_resources,
 	.init		  = stoney_init_cpus,
-	.acpi_fill_ssdt_generator = generate_cpu_entries,
+	.acpi_fill_ssdt   = generate_cpu_entries,
 };
 
 const char *soc_acpi_name(const struct device *dev)
@@ -94,14 +81,10 @@ const char *soc_acpi_name(const struct device *dev)
 		return "PBR7";
 	case PCIE4_DEVFN:
 		return "PBR8";
-	case HDA1_DEVFN:
-		return "AZHD";
 	case EHCI1_DEVFN:
 		return "EHC0";
 	case LPC_DEVFN:
 		return "LPCB";
-	case SATA_DEVFN:
-		return "STCR";
 	case SD_DEVFN:
 		return "SDCN";
 	case SMBUS_DEVFN:
@@ -161,7 +144,7 @@ static void earliest_ramstage(void *unused)
 	if (!s3_resume) {
 		post_code(0x46);
 		if (CONFIG(SOC_AMD_PSP_SELECTABLE_SMU_FW))
-			psp_load_named_blob(MBOX_BIOS_CMD_SMU_FW2, "smu_fw2");
+			psp_load_named_blob(BLOB_SMU_FW2, "smu_fw2");
 
 		post_code(0x47);
 		do_agesawrapper(AMD_INIT_ENV, "amdinitenv");

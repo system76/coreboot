@@ -1,17 +1,5 @@
-## This file is part of the coreboot project.
-##
-## Copyright (c) 2013 The Chromium OS Authors. All rights reserved.
-## Copyright (C) 2018 Facebook Inc.
-##
-## This program is free software; you can redistribute it and/or modify
-## it under the terms of the GNU General Public License as published by
-## the Free Software Foundation; version 2 of the License.
-##
-## This program is distributed in the hope that it will be useful,
-## but WITHOUT ANY WARRANTY; without even the implied warranty of
-## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-## GNU General Public License for more details.
-##
+# This file is part of the coreboot project.
+# SPDX-License-Identifier: GPL-2.0-only
 
 source "src/security/tpm/tss/vendor/cr50/Kconfig"
 
@@ -20,15 +8,19 @@ menu "Trusted Platform Module"
 config TPM1
 	bool
 	default y if MAINBOARD_HAS_TPM1 || USER_TPM1
-	depends on MAINBOARD_HAS_LPC_TPM || MAINBOARD_HAS_I2C_TPM_GENERIC \
-						 || MAINBOARD_HAS_I2C_TPM_ATMEL
+	depends on MAINBOARD_HAS_LPC_TPM || \
+		   MAINBOARD_HAS_I2C_TPM_GENERIC || \
+		   MAINBOARD_HAS_I2C_TPM_ATMEL
 
 config TPM2
 	bool
 	default y if MAINBOARD_HAS_TPM2 || USER_TPM2
-	depends on MAINBOARD_HAS_I2C_TPM_GENERIC || MAINBOARD_HAS_LPC_TPM \
-						 || MAINBOARD_HAS_I2C_TPM_ATMEL || MAINBOARD_HAS_I2C_TPM_CR50 \
-						 || MAINBOARD_HAS_SPI_TPM_CR50 || MAINBOARD_HAS_CRB_TPM
+	depends on MAINBOARD_HAS_I2C_TPM_GENERIC || \
+		   MAINBOARD_HAS_LPC_TPM || \
+		   MAINBOARD_HAS_I2C_TPM_ATMEL || \
+		   MAINBOARD_HAS_I2C_TPM_CR50 || \
+		   MAINBOARD_HAS_SPI_TPM || \
+		   MAINBOARD_HAS_CRB_TPM
 
 config MAINBOARD_HAS_TPM1
 	bool
@@ -47,8 +39,9 @@ config USER_NO_TPM
 
 config USER_TPM1
 	bool "1.2"
-	depends on MAINBOARD_HAS_LPC_TPM || MAINBOARD_HAS_I2C_TPM_GENERIC \
-						 || MAINBOARD_HAS_I2C_TPM_ATMEL
+	depends on MAINBOARD_HAS_LPC_TPM || \
+		   MAINBOARD_HAS_I2C_TPM_GENERIC || \
+		   MAINBOARD_HAS_I2C_TPM_ATMEL
 	help
 		Enable this option to enable TPM 1.0 - 1.2 support in coreboot.
 
@@ -56,9 +49,12 @@ config USER_TPM1
 
 config USER_TPM2
 	bool "2.0"
-	depends on MAINBOARD_HAS_I2C_TPM_GENERIC || MAINBOARD_HAS_LPC_TPM \
-						 || MAINBOARD_HAS_I2C_TPM_ATMEL || MAINBOARD_HAS_I2C_TPM_CR50 \
-						 || MAINBOARD_HAS_SPI_TPM_CR50 || MAINBOARD_HAS_CRB_TPM
+	depends on MAINBOARD_HAS_I2C_TPM_GENERIC || \
+		   MAINBOARD_HAS_LPC_TPM || \
+		   MAINBOARD_HAS_I2C_TPM_ATMEL || \
+		   MAINBOARD_HAS_I2C_TPM_CR50 || \
+		   MAINBOARD_HAS_SPI_TPM || \
+		   MAINBOARD_HAS_CRB_TPM
 	help
 		Enable this option to enable TPM 2.0 support in coreboot.
 
@@ -99,7 +95,24 @@ config TPM_STARTUP_IGNORE_POSTINIT
 	  Select this to ignore POSTINIT INVALID return codes on TPM
 	  startup. This is useful on platforms where a previous stage
 	  issued a TPM startup. Examples of use cases are Intel TXT
-	  or VBOOT on the Intel Nehalem northbridge which issues a
+	  or VBOOT on the Intel Arrandale processor, which issues a
 	  CPU-only reset during the romstage.
+
+config TPM_MEASURED_BOOT
+	bool "Enable Measured Boot"
+	default n
+	select VBOOT_LIB
+	depends on TPM1 || TPM2
+	depends on !VBOOT_RETURN_FROM_VERSTAGE
+	help
+	  Enables measured boot (experimental)
+
+config TPM_MEASURED_BOOT_RUNTIME_DATA
+	string "Runtime data whitelist"
+	default ""
+	depends on TPM_MEASURED_BOOT
+	help
+	  Runtime data whitelist of cbfs filenames. Needs to be a
+	  comma separated list
 
 endmenu # Trusted Platform Module (tpm)

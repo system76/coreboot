@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright 2018 Philipp Hug <philipp@hug.cx>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <device/mmio.h>
 #include <console/console.h>
@@ -104,7 +92,7 @@ static void configure_pll(u32 *reg, const struct pll_settings *s)
  * Set coreclk according to the SiFive FU540-C000 Manual
  * https://www.sifive.com/documentation/chips/freedom-u540-c000-manual/
  *
- * Section 7.1 recommends a frequency of 1.0 GHz (up to 1.5 Ghz is possible)
+ * Section 7.1 recommends a frequency of 1.0 GHz (up to 1.5 GHz is possible)
  *
  * Section 7.4.2 provides the necessary values:
  * For example, to setup COREPLL for 1 GHz operation, program divr = 0 (x1),

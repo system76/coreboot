@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright 2017 Google, Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #ifndef __AMDBLOCKS_ACPI_H__
 #define __AMDBLOCKS_ACPI_H__
@@ -22,7 +10,7 @@
 #define MMIO_ACPI_PM1_STS		0x00
 #define MMIO_ACPI_PM1_EN		0x02
 #define MMIO_ACPI_PM1_CNT_BLK		0x04
-	  /* sleep types defined in arch/x86/include/arch/acpi.h */
+	  /* sleep types defined in arch/x86/include/acpi/acpi.h */
 #define   ACPI_PM1_CNT_SCIEN		BIT(0)
 #define MMIO_ACPI_PM_TMR_BLK		0x08
 #define MMIO_ACPI_CPU_CONTROL		0x0c

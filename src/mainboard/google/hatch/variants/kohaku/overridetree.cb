@@ -207,6 +207,7 @@ chip soc/intel/cannonlake
 				register "generic.enable_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_C15)"
 				register "generic.reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_A19)"
 				register "generic.reset_delay_ms" = "100"
+				register "generic.enable_delay_ms" = "20"
 				register "generic.has_power_resource" = "1"
 				register "hid_desc_reg_offset" = "0x1"
 				device i2c 0x09 on end
@@ -261,6 +262,7 @@ chip soc/intel/cannonlake
 		end # GSPI #1
 		device pci 1f.3 on
 			chip drivers/generic/max98357a
+				register "hid" = ""MX98357A""
 				register "sdmode_gpio" =  "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_H3)"
 				register "sdmode_delay" = "5"
 				device generic 0 on end

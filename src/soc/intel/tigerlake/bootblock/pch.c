@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2019 Intel Corp.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 /*
  * This file is created based on Intel Tiger Lake Processor PCH Datasheet
@@ -40,8 +28,7 @@
 #include <soc/pcr_ids.h>
 #include <soc/pm.h>
 
-#define PCR_PSF3_TO_SHDW_PMC_REG_BASE_TGP	0x1100
-#define PCR_PSF3_TO_SHDW_PMC_REG_BASE_JSP	0x0980
+#define PCR_PSF3_TO_SHDW_PMC_REG_BASE	0x1100
 #define PCR_PSFX_TO_SHDW_BAR0	0
 #define PCR_PSFX_TO_SHDW_BAR1	0x4
 #define PCR_PSFX_TO_SHDW_BAR2	0x8
@@ -60,20 +47,6 @@
 
 #define PCR_DMI_LPCIOD		0x2770
 #define PCR_DMI_LPCIOE		0x2774
-
-static uint32_t get_pmc_reg_base(void)
-{
-	uint8_t pch_series;
-
-	pch_series = get_pch_series();
-
-	if (pch_series == PCH_TGP)
-		return PCR_PSF3_TO_SHDW_PMC_REG_BASE_TGP;
-	else if (pch_series == PCH_JSP)
-		return PCR_PSF3_TO_SHDW_PMC_REG_BASE_JSP;
-	else
-		return 0;
-}
 
 static void soc_config_pwrmbase(void)
 {
@@ -117,11 +90,7 @@ void bootblock_pch_early_init(void)
 static void soc_config_acpibase(void)
 {
 	uint32_t pmc_reg_value;
-	uint32_t pmc_base_reg;
-
-	pmc_base_reg = get_pmc_reg_base();
-	if (!pmc_base_reg)
-		die_with_post_code(POST_HW_INIT_FAILURE, "Invalid PMC base address\n");
+	uint32_t pmc_base_reg = PCR_PSF3_TO_SHDW_PMC_REG_BASE;
 
 	pmc_reg_value = pcr_read32(PID_PSF3, pmc_base_reg + PCR_PSFX_TO_SHDW_BAR4);
 
@@ -165,10 +134,15 @@ void pch_early_iorange_init(void)
 	if (pch_check_decode_enable() == 0) {
 		io_enables = lpc_enable_fixed_io_ranges(io_enables);
 		/*
-		 * Set up ESPI IO Enables PCR[DMI] + 2774h [15:0] to the same
-		 * value program in ESPI PCI offset 82h.
+		 * Set ESPI IO Enables PCR[DMI] + 2774h [15:0] to the same
+		 * value programmed in ESPI PCI offset 82h.
 		 */
 		pcr_write16(PID_DMI, PCR_DMI_LPCIOE, io_enables);
+		/*
+		 * Set LPC IO Decode Ranges PCR[DMI] + 2770h [15:0] to the same
+		 * value programmed in LPC PCI offset 80h.
+		 */
+		pcr_write16(PID_DMI, PCR_DMI_LPCIOD, lpc_get_fixed_io_decode());
 	}
 
 	/* Program generic IO Decode Range */

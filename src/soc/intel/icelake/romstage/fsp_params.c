@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2018 Intel Corp.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <assert.h>
 #include <console/console.h>
@@ -30,10 +18,7 @@ static void soc_memory_init_params(FSP_M_CONFIG *m_cfg,
 	uint32_t mask = 0;
 
 	if (!dev || !dev->enabled) {
-		/*
-		 * Skip IGD initialization in FSP if device
-		 * is disable in devicetree.cb.
-		 */
+		/* Skip IGD initialization in FSP if device is disabled in devicetree.cb. */
 		m_cfg->InternalGfx = 0;
 		m_cfg->IgdDvmt50PreAlloc = 0;
 	} else {
@@ -87,7 +72,7 @@ void platform_fsp_memory_init_params_cb(FSPM_UPD *mupd, uint32_t version)
 	/* Enable SMBus controller based on config */
 	m_cfg->SmbusEnable = config->SmbusEnable;
 	/* Set debug probe type */
-	m_cfg->PlatformDebugConsent = config->DebugConsent;
+	m_cfg->PlatformDebugConsent = CONFIG_SOC_INTEL_ICELAKE_DEBUG_CONSENT;
 
 	/* Vt-D config */
 	m_cfg->VtdDisable = 0;

@@ -1,19 +1,9 @@
-/*
- * This file is part of the coreboot project.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <console/console.h>
 #include <string.h>
-#include <arch/acpi.h>
+#include <acpi/acpi.h>
 #include <arch/cpu.h>
 #include <cbmem.h>
 #include <commonlib/helpers.h>
@@ -33,10 +23,10 @@ static void acpi_handoff_wakeup(void)
 {
 	if (acpi_slp_type < 0) {
 		if (romstage_handoff_is_resume()) {
-			printk(BIOS_DEBUG, "S3 Resume.\n");
+			printk(BIOS_DEBUG, "S3 Resume\n");
 			acpi_slp_type = ACPI_S3;
 		} else {
-			printk(BIOS_DEBUG, "Normal boot.\n");
+			printk(BIOS_DEBUG, "Normal boot\n");
 			acpi_slp_type = ACPI_S0;
 		}
 	}

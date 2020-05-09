@@ -1,15 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #ifndef _CBMEM_ID_H_
 #define _CBMEM_ID_H_
@@ -72,7 +62,7 @@
 #define CBMEM_ID_VBOOT_WORKBUF	0x78007343
 #define CBMEM_ID_VPD		0x56504420
 #define CBMEM_ID_WIFI_CALIBRATION 0x57494649
-#define CBMEM_ID_EC_HOSTEVENT	0x63ccbbc3
+#define CBMEM_ID_EC_HOSTEVENT	0x63ccbbc3  /* deprecated */
 #define CBMEM_ID_EXT_VBT	0x69866684
 #define CBMEM_ID_ROM0		0x524f4d30
 #define CBMEM_ID_ROM1		0x524f4d31

@@ -1,6 +1,5 @@
 ## This file is part of the coreboot project.
 ##
-## Copyright 2019 Google LLC
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -13,6 +12,7 @@
 ##
 
 SPD_SOURCES = LP_8G_2133		# 0b000
+SPD_SOURCES += LP_16G_2133		# 0b001
 
 romstage-y += memory.c
 

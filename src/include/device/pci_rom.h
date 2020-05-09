@@ -2,7 +2,7 @@
 #define PCI_ROM_H
 #include <endian.h>
 #include <stddef.h>
-#include <arch/acpi.h>
+#include <acpi/acpi.h>
 
 #define PCI_ROM_HDR 0xAA55
 #define PCI_DATA_HDR ((uint32_t) (('R' << 24) | ('I' << 16) | ('C' << 8) | 'P'))
@@ -34,17 +34,18 @@ struct  pci_data {
 	uint16_t	reserved_2;
 };
 
-struct rom_header *pci_rom_probe(struct device *dev);
+struct rom_header *pci_rom_probe(const struct device *dev);
 struct rom_header *pci_rom_load(struct device *dev,
 	struct rom_header *rom_header);
 
 unsigned long
-pci_rom_write_acpi_tables(struct device *device,
+pci_rom_write_acpi_tables(const struct device *device,
 						  unsigned long current,
 						  struct acpi_rsdp *rsdp);
 
-void pci_rom_ssdt(struct device *device);
+void pci_rom_ssdt(const struct device *device);
 
+void map_oprom_vendev_rev(u32 *vendev, u8 *rev);
 u32 map_oprom_vendev(u32 vendev);
 
 int verified_boot_should_run_oprom(struct rom_header *rom_header);

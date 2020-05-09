@@ -1,21 +1,10 @@
-/*
- * This file is part of the coreboot project.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; version 2 of
- * the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <assert.h>
 #include <console/console.h>
 #include <device/device.h>
-#include <arch/acpi.h>
+#include <acpi/acpi.h>
 #include <cpu/cpu.h>
 #include <cpu/x86/mtrr.h>
 #include <cpu/x86/msr.h>
@@ -197,7 +186,7 @@ static void set_max_ratio(void)
 	wrmsr(IA32_PERF_CTL, perf_ctl);
 
 	printk(BIOS_DEBUG, "model_x06ax: frequency set to %d\n",
-	       ((perf_ctl.lo >> 8) & 0xff) * NEHALEM_BCLK);
+	       ((perf_ctl.lo >> 8) & 0xff) * IRONLAKE_BCLK);
 }
 
 static void set_energy_perf_bias(u8 policy)
@@ -342,9 +331,13 @@ static struct device_operations cpu_dev_ops = {
 	.init     = model_2065x_init,
 };
 
+/* Arrandale / Clarkdale CPU IDs */
 static const struct cpu_device_id cpu_table[] = {
-	{ X86_VENDOR_INTEL, 0x20652 }, /* Intel Nehalem */
-	{ X86_VENDOR_INTEL, 0x20655 }, /* Intel Nehalem */
+	{ X86_VENDOR_INTEL, 0x20650 },
+	{ X86_VENDOR_INTEL, 0x20651 },
+	{ X86_VENDOR_INTEL, 0x20652 },
+	{ X86_VENDOR_INTEL, 0x20654 },
+	{ X86_VENDOR_INTEL, 0x20655 },
 	{ 0, 0 },
 };
 

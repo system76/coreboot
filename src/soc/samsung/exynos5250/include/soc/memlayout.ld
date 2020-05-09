@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright 2014 Google Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <memlayout.h>
 
@@ -33,7 +21,7 @@ SECTIONS
 	TTB(0x2058000, 16K)
 	PRERAM_CBFS_CACHE(0x205C000, 76K)
 	FMAP_CACHE(0x206F000, 2K)
-	VBOOT2_TPM_LOG(0x206F800, 2K)
+	TPM_TCPA_LOG(0x206F800, 2K)
 	VBOOT2_WORK(0x2070000, 12K)
 	STACK(0x2074000, 16K)
 	SRAM_END(0x2078000)

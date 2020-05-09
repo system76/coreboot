@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright 2019 Google LLC
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #define DPTF_CPU_PASSIVE	0
 #define DPTF_CPU_CRITICAL	105
@@ -25,9 +13,12 @@
 #define DPTF_TSR1_SENSOR_NAME	"5V Regulator"
 #define DPTF_TSR1_PASSIVE	0
 #define DPTF_TSR1_CRITICAL	70
-#define DPTF_TSR1_ACTIVE_AC0	42
-#define DPTF_TSR1_ACTIVE_AC1	41
-#define DPTF_TSR1_ACTIVE_AC2	39
+#define DPTF_TSR1_ACTIVE_AC0	43
+#define DPTF_TSR1_ACTIVE_AC1	42
+#define DPTF_TSR1_ACTIVE_AC2	41
+#define DPTF_TSR1_ACTIVE_AC3	40
+#define DPTF_TSR1_ACTIVE_AC4	39
+#define DPTF_TSR1_ACTIVE_AC5	38
 
 #define DPTF_TSR2_SENSOR_ID	2
 #define DPTF_TSR2_SENSOR_NAME	"Ambient"
@@ -85,7 +76,7 @@ Name (DART, Package () {
 			0, 0, 0
 	},
 	Package () {
-		\_SB.DPTF.TFN1, \_SB.DPTF.TSR1, 100, 90, 70, 50, 0, 0, 0, 0,
+		\_SB.DPTF.TFN1, \_SB.DPTF.TSR1, 100, 90, 70, 60, 50, 40, 30, 0,
 			0, 0, 0
 	},
 	Package () {

@@ -1,12 +1,11 @@
 /*
  * This file is part of the coreboot project.
  *
- * Copyright 2020 The coreboot project Authors.
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-#include <arch/acpi.h>
+#include <acpi/acpi.h>
 #include <variant/ec.h>
 #include <variant/gpio.h>
 
@@ -19,8 +18,7 @@ DefinitionBlock(
 	0x20110725	/* OEM revision */
 )
 {
-	/* Some generic macros */
-	#include <soc/intel/tigerlake/acpi/platform.asl>
+	#include <soc/intel/jasperlake/acpi/platform.asl>
 
 	/* global NVS and variables */
 	#include <soc/intel/common/block/acpi/acpi/globalnvs.asl>
@@ -32,14 +30,18 @@ DefinitionBlock(
 		Device (PCI0)
 		{
 			#include <soc/intel/common/block/acpi/acpi/northbridge.asl>
-			#include <soc/intel/tigerlake/acpi/southbridge.asl>
+			#include <soc/intel/jasperlake/acpi/southbridge.asl>
 		}
 	}
+
+#if CONFIG(VARIANT_HAS_CAMERA_ACPI)
+	/* Camera */
+	#include <variant/acpi/camera.asl>
+#endif
 
 	/* Chrome OS specific */
 	#include <vendorcode/google/chromeos/acpi/chromeos.asl>
 
-	/* Chipset specific sleep states */
 	#include <southbridge/intel/common/acpi/sleepstates.asl>
 
 	/* Chrome OS Embedded Controller */

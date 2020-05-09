@@ -6,7 +6,7 @@
 #include <superio/conf_mode.h>
 #include <pc80/keyboard.h>
 #include <superio/common/ssdt.h>
-#include <arch/acpi.h>
+#include <acpi/acpi.h>
 #include "ast2400.h"
 #include "chip.h"
 
@@ -66,7 +66,7 @@ static struct device_operations ops = {
 	.init = ast2400_init,
 	.ops_pnp_mode = &pnp_conf_mode_a5a5_aa,
 #if CONFIG(HAVE_ACPI_TABLES)
-	.acpi_fill_ssdt_generator = superio_common_fill_ssdt_generator,
+	.acpi_fill_ssdt = superio_common_fill_ssdt_generator,
 	.acpi_name = superio_common_ldn_acpi_name,
 	.acpi_hid = ast2400_acpi_hid,
 #endif
@@ -75,17 +75,14 @@ static struct device_operations ops = {
 static struct pnp_info pnp_dev_info[] = {
 	{ NULL, AST2400_SUART1,   PNP_IO0 | PNP_IRQ0 | PNP_MSC0, 0xfff8, },
 	{ NULL, AST2400_SUART2,   PNP_IO0 | PNP_IRQ0 | PNP_MSC0, 0xfff8, },
-	{ NULL, AST2400_SWAK,     PNP_IO0 | PNP_IO1 | PNP_IO2 | PNP_IO3
+	{ NULL, AST2400_SWC,      PNP_IO0 | PNP_IO1 | PNP_IO2 | PNP_IO3
 		| PNP_IRQ0, 0xfff8, 0xfff8, 0xfff8, 0xfff8, },
 	{ NULL, AST2400_KBC,      PNP_IO0 | PNP_IO1 | PNP_IRQ0 | PNP_IRQ1
 		| PNP_MSC0, 0xffff, 0xffff, },
 	{ NULL, AST2400_GPIO,     PNP_IRQ0, }, // GPIO LDN has no IO Region
 	{ NULL, AST2400_SUART3,   PNP_IO0 | PNP_IRQ0 | PNP_MSC0, 0xfff8, },
 	{ NULL, AST2400_SUART4,   PNP_IO0 | PNP_IRQ0 | PNP_MSC0, 0xfff8, },
-	{ NULL, AST2400_ILPC2AHB, PNP_IRQ0 | PNP_MSC0 | PNP_MSC1 | PNP_MSC2
-		| PNP_MSC3 | PNP_MSC4 | PNP_MSC5 | PNP_MSC6 | PNP_MSC7
-		| PNP_MSC8 | PNP_MSC9 | PNP_MSCA | PNP_MSCB | PNP_MSCC
-		| PNP_MSCD | PNP_MSCE, },
+	{ NULL, AST2400_ILPC2AHB, PNP_IRQ0 },
 	{ NULL, AST2400_MAILBOX,  PNP_IO0 | PNP_IRQ0, 0xfffe, },
 };
 

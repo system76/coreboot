@@ -11,6 +11,7 @@ config BOARD_GOOGLE_BASEBOARD_HATCH
 	select DRIVERS_USB_ACPI
 	select EC_GOOGLE_CHROMEEC
 	select EC_GOOGLE_CHROMEEC_BOARDID
+	select EC_GOOGLE_CHROMEEC_SKUID
 	select EC_GOOGLE_CHROMEEC_ESPI
 	select GOOGLE_SMBIOS_MAINBOARD_VERSION
 	select HAVE_ACPI_RESUME
@@ -21,9 +22,13 @@ config BOARD_GOOGLE_BASEBOARD_HATCH
 	select MAINBOARD_HAS_TPM2
 	select MB_HAS_ACTIVE_HIGH_SD_PWR_ENABLE
 	select SOC_INTEL_COMETLAKE
-	select SYSTEM_TYPE_LAPTOP
 	select RT8168_GET_MAC_FROM_VPD
 	select RT8168_SET_LED_MODE
+
+config BOARD_GOOGLE_BASEBOARD_HATCH_LAPTOP
+	select BOARD_GOOGLE_BASEBOARD_HATCH
+	select SYSTEM_TYPE_LAPTOP
+	def_bool n
 
 if BOARD_GOOGLE_BASEBOARD_HATCH
 
@@ -91,15 +96,20 @@ config MAINBOARD_PART_NUMBER
 	string
 	default "Akemi" if BOARD_GOOGLE_AKEMI
 	default "Dratini" if BOARD_GOOGLE_DRATINI
+	default "Duffy" if BOARD_GOOGLE_DUFFY
 	default "Hatch" if BOARD_GOOGLE_HATCH
 	default "Helios" if BOARD_GOOGLE_HELIOS
 	default "Helios_Diskswap" if BOARD_GOOGLE_HELIOS_DISKSWAP
 	default "Jinlon" if BOARD_GOOGLE_JINLON
+	default "Kaisa" if BOARD_GOOGLE_KAISA
 	default "Kindred" if BOARD_GOOGLE_KINDRED
 	default "Kohaku" if BOARD_GOOGLE_KOHAKU
 	default "Mushu" if BOARD_GOOGLE_MUSHU
+	default "Palkia" if BOARD_GOOGLE_PALKIA
+	default "Nightfury" if BOARD_GOOGLE_NIGHTFURY
 	default "Puff" if BOARD_GOOGLE_PUFF
 	default "Stryke" if BOARD_GOOGLE_STRYKE
+	default "Sushi" if BOARD_GOOGLE_SUSHI
 
 config OVERRIDE_DEVICETREE
 	string
@@ -114,20 +124,31 @@ config VARIANT_DIR
 	string
 	default "akemi" if BOARD_GOOGLE_AKEMI
 	default "dratini" if BOARD_GOOGLE_DRATINI
+	default "duffy" if BOARD_GOOGLE_DUFFY
 	default "hatch" if BOARD_GOOGLE_HATCH
 	default "helios" if BOARD_GOOGLE_HELIOS
 	default "helios" if BOARD_GOOGLE_HELIOS_DISKSWAP
 	default "jinlon" if BOARD_GOOGLE_JINLON
+	default "kaisa" if BOARD_GOOGLE_KAISA
 	default "kindred" if BOARD_GOOGLE_KINDRED
 	default "kohaku" if BOARD_GOOGLE_KOHAKU
 	default "mushu" if BOARD_GOOGLE_MUSHU
+	default "palkia" if BOARD_GOOGLE_PALKIA
+	default "nightfury" if BOARD_GOOGLE_NIGHTFURY
 	default "puff" if BOARD_GOOGLE_PUFF
 	default "stryke" if BOARD_GOOGLE_STRYKE
+	default "sushi" if BOARD_GOOGLE_SUSHI
 
 config VBOOT
 	select HAS_RECOVERY_MRC_CACHE
 	select MRC_CLEAR_NORMAL_CACHE_ON_RECOVERY_RETRAIN
 	select VBOOT_EARLY_EC_SYNC
-	select VBOOT_LID_SWITCH
 
 endif # BOARD_GOOGLE_BASEBOARD_HATCH
+
+if BOARD_GOOGLE_BASEBOARD_HATCH_LAPTOP
+
+config VBOOT
+	select VBOOT_LID_SWITCH
+
+endif # BOARD_GOOGLE_BASEBOARD_HATCH_LAPTOP

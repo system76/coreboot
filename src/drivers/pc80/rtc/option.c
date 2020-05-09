@@ -1,15 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <console/console.h>
 #include <string.h>
@@ -26,7 +16,7 @@
 
 /*
  * This routine returns the value of the requested bits.
- * input bit = bit count from the beginning of the cmos image
+ * input bit = bit count from the beginning of the CMOS image
  * length = number of bits to include in the value
  * ret = a character pointer to where the value is to be returned
  * returns CB_SUCCESS = successful, cb_err code if an error occurred
@@ -239,25 +229,25 @@ int cmos_lb_cks_valid(void)
 	return cmos_checksum_valid(LB_CKS_RANGE_START, LB_CKS_RANGE_END, LB_CKS_LOC);
 }
 
-static void cmos_load_defaults(void)
-{
-	size_t length = 128;
-	size_t i;
-
-	const unsigned char *cmos_default =
-		cbfs_boot_map_with_leak("cmos.default",
-				CBFS_COMPONENT_CMOS_DEFAULT, &length);
-	if (!cmos_default)
-		return;
-
-	u8 control_state = cmos_disable_rtc();
-	for (i = 14; i < MIN(128, length); i++)
-		cmos_write_inner(cmos_default[i], i);
-	cmos_restore_rtc(control_state);
-}
 
 void sanitize_cmos(void)
 {
-	if (cmos_error() || !cmos_lb_cks_valid() || CONFIG(STATIC_OPTION_TABLE))
-		cmos_load_defaults();
+	const unsigned char *cmos_default;
+	const bool cmos_need_reset =
+		CONFIG(STATIC_OPTION_TABLE) || cmos_error() || !cmos_lb_cks_valid();
+	size_t length = 128;
+	size_t i;
+
+	if (CONFIG(TPM_MEASURED_BOOT) || cmos_need_reset) {
+		cmos_default = cbfs_boot_map_with_leak("cmos.default",
+			CBFS_COMPONENT_CMOS_DEFAULT, &length);
+
+		if (!cmos_default || !cmos_need_reset)
+			return;
+
+		u8 control_state = cmos_disable_rtc();
+		for (i = 14; i < MIN(128, length); i++)
+			cmos_write_inner(cmos_default[i], i);
+		cmos_restore_rtc(control_state);
+	}
 }

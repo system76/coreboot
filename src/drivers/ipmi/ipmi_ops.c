@@ -1,18 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2019 Wiwynn Corp.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; version 2 of
- * the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <console/console.h>
 #include "ipmi_ops.h"
@@ -129,5 +116,27 @@ enum cb_err ipmi_get_system_guid(const int port, uint8_t *uuid)
 	}
 
 	memcpy(uuid, rsp.data, 16);
+	return CB_SUCCESS;
+}
+
+enum cb_err ipmi_add_sel(const int port, struct sel_event_record *sel)
+{
+	int ret;
+	struct ipmi_add_sel_rsp rsp;
+
+	if (sel == NULL) {
+		printk(BIOS_ERR, "%s failed, system evnt log is not present.\n", __func__);
+		return CB_ERR;
+	}
+
+	ret = ipmi_kcs_message(port, IPMI_NETFN_STORAGE, 0x0,
+			IPMI_ADD_SEL_ENTRY, (const unsigned char *) sel,
+			16, (unsigned char *) &rsp, sizeof(rsp));
+
+	if (ret < sizeof(struct ipmi_rsp) || rsp.resp.completion_code) {
+		printk(BIOS_ERR, "IPMI: %s command failed (ret=%d resp=0x%x)\n",
+			 __func__, ret, rsp.resp.completion_code);
+		return CB_ERR;
+	}
 	return CB_SUCCESS;
 }

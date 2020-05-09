@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2016 Intel Corporation.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #ifndef SOC_INTEL_COMMON_BLOCK_SMI_HANDLER_H
 #define SOC_INTEL_COMMON_BLOCK_SMI_HANDLER_H
@@ -155,15 +143,6 @@ void smihandler_soc_at_finalize(void);
  * needs to be done for the specified device on S5 entry
  */
 int smihandler_soc_disable_busmaster(pci_devfn_t dev);
-
-/* SMI handlers that should be serviced in SCI mode too. */
-uint32_t smihandler_soc_get_sci_mask(void);
-
-/*
- * SoC needs to implement the mechanism to know if an illegal attempt
- * has been made to write to the BIOS area.
- */
-void smihandler_soc_check_illegal_access(uint32_t tco_sts);
 
 /* Mainboard overrides. */
 

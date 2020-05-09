@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright 2018 Google LLC
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <variant/gpio.h>
 #include <variant/variant.h>
@@ -184,9 +172,9 @@ static const struct pad_config gpio_table[] = {
 /* SD_DATA0 */		PAD_NC(GPP_G1, NONE), /* ANT_CONFIG (nostuff) */
 /* SD_DATA1 */		PAD_NC(GPP_G2, NONE),
 /* SD_DATA2 */		PAD_NC(GPP_G3, NONE),
-/* SD_DATA3 */		PAD_CFG_GPI(GPP_G4, NONE, PLTRST), /* CTLESS_DET# */
+/* SD_DATA3 */		PAD_NC(GPP_G4, NONE), /* CTLESS_DET# */
 /* SD_CD# */		PAD_CFG_GPO(GPP_G5, 1, PLTRST), /* HOST_SD_WP# */
-/* SD_CLK */		PAD_CFG_GPO(GPP_G6, 1, PLTRST), /* AUD_PWR_EN */
+/* SD_CLK */		PAD_NC(GPP_G6, NONE), /* AUD_PWR_EN */
 /* SD_WP */		PAD_CFG_GPI(GPP_G7, NONE, PLTRST), /* SPK_DET# */
 
 /* I2S2_SCLK */		PAD_NC(GPP_H0, NONE),

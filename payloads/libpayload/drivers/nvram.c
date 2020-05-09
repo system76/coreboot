@@ -2,6 +2,7 @@
  * This file is part of the libpayload project.
  *
  * Copyright (C) 2008 Uwe Hermann <uwe@hermann-uwe.de>
+ * Copyright (C) 2017 Patrick Rudolph <siro@das-labor.org>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -111,23 +112,107 @@ int nvram_updating(void)
  */
 void rtc_read_clock(struct tm *time)
 {
+	u16 timeout = 10000;
+	u8 statusB;
+	u8 reg8;
+
 	memset(time, 0, sizeof(*time));
 
-	while(nvram_updating());
+	while (nvram_updating())
+		if (!timeout--)
+			return;
 
-	time->tm_mon = bcd2dec(nvram_read(NVRAM_RTC_MONTH)) - 1;
-	time->tm_sec = bcd2dec(nvram_read(NVRAM_RTC_SECONDS));
-	time->tm_min = bcd2dec(nvram_read(NVRAM_RTC_MINUTES));
-	time->tm_mday = bcd2dec(nvram_read(NVRAM_RTC_DAY));
-	time->tm_hour = bcd2dec(nvram_read(NVRAM_RTC_HOURS));
+	statusB = nvram_read(NVRAM_RTC_STATUSB);
+
+	if (!(statusB & NVRAM_RTC_FORMAT_BINARY)) {
+		time->tm_mon = bcd2dec(nvram_read(NVRAM_RTC_MONTH)) - 1;
+		time->tm_sec = bcd2dec(nvram_read(NVRAM_RTC_SECONDS));
+		time->tm_min = bcd2dec(nvram_read(NVRAM_RTC_MINUTES));
+		time->tm_mday = bcd2dec(nvram_read(NVRAM_RTC_DAY));
+
+		if (!(statusB & NVRAM_RTC_FORMAT_24HOUR)) {
+			reg8 = nvram_read(NVRAM_RTC_HOURS);
+			time->tm_hour = bcd2dec(reg8 & 0x7f);
+			time->tm_hour += (reg8 & 0x80) ? 12 : 0;
+			time->tm_hour %= 24;
+		} else {
+			time->tm_hour = bcd2dec(nvram_read(NVRAM_RTC_HOURS));
+		}
+		time->tm_year = bcd2dec(nvram_read(NVRAM_RTC_YEAR));
+	} else {
+		time->tm_mon = nvram_read(NVRAM_RTC_MONTH) - 1;
+		time->tm_sec = nvram_read(NVRAM_RTC_SECONDS);
+		time->tm_min = nvram_read(NVRAM_RTC_MINUTES);
+		time->tm_mday = nvram_read(NVRAM_RTC_DAY);
+		if (!(statusB & NVRAM_RTC_FORMAT_24HOUR)) {
+			reg8 = nvram_read(NVRAM_RTC_HOURS);
+			time->tm_hour = reg8 & 0x7f;
+			time->tm_hour += (reg8 & 0x80) ? 12 : 0;
+			time->tm_hour %= 24;
+		} else {
+			time->tm_hour = nvram_read(NVRAM_RTC_HOURS);
+		}
+		time->tm_year = nvram_read(NVRAM_RTC_YEAR);
+	}
 
 	/* Instead of finding the century register,
 	   we just make an assumption that if the year value is
 	   less then 80, then it is 2000+
 	*/
-
-	time->tm_year = bcd2dec(nvram_read(NVRAM_RTC_YEAR));
-
 	if (time->tm_year < 80)
 		time->tm_year += 100;
+}
+
+/**
+ * Write the current time and date to the RTC
+ *
+ * @param time A pointer to a broken-down time structure
+ */
+void rtc_write_clock(const struct tm *time)
+{
+	u16 timeout = 10000;
+	u8 statusB;
+	u8 reg8, year;
+
+	while (nvram_updating())
+		if (!timeout--)
+			return;
+
+	statusB = nvram_read(NVRAM_RTC_STATUSB);
+
+	year = time->tm_year;
+	if (year > 100)
+		year -= 100;
+
+	if (!(statusB & NVRAM_RTC_FORMAT_BINARY)) {
+		nvram_write(dec2bcd(time->tm_mon + 1), NVRAM_RTC_MONTH);
+		nvram_write(dec2bcd(time->tm_sec), NVRAM_RTC_SECONDS);
+		nvram_write(dec2bcd(time->tm_min), NVRAM_RTC_MINUTES);
+		nvram_write(dec2bcd(time->tm_mday), NVRAM_RTC_DAY);
+		if (!(statusB & NVRAM_RTC_FORMAT_24HOUR)) {
+			if (time->tm_hour > 12)
+				reg8 = dec2bcd(time->tm_hour - 12) | 0x80;
+			else
+				reg8 = dec2bcd(time->tm_hour);
+		} else {
+			reg8 = dec2bcd(time->tm_hour);
+		}
+		nvram_write(reg8, NVRAM_RTC_HOURS);
+		nvram_write(dec2bcd(year), NVRAM_RTC_YEAR);
+	} else {
+		nvram_write(time->tm_mon + 1, NVRAM_RTC_MONTH);
+		nvram_write(time->tm_sec, NVRAM_RTC_SECONDS);
+		nvram_write(time->tm_min, NVRAM_RTC_MINUTES);
+		nvram_write(time->tm_mday, NVRAM_RTC_DAY);
+		if (!(statusB & NVRAM_RTC_FORMAT_24HOUR)) {
+			if (time->tm_hour > 12)
+				reg8 = (time->tm_hour - 12) | 0x80;
+			else
+				reg8 = time->tm_hour;
+		} else {
+			reg8 = time->tm_hour;
+		}
+		nvram_write(reg8, NVRAM_RTC_HOURS);
+		nvram_write(year, NVRAM_RTC_YEAR);
+	}
 }

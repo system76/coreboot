@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright 2017-2018 Intel Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <assert.h>
 #include <commonlib/helpers.h>
@@ -68,6 +56,9 @@
 #define MEI_HDR_CSE_ADDR_START	0
 #define MEI_HDR_CSE_ADDR	(((1 << 8) - 1) << MEI_HDR_CSE_ADDR_START)
 
+/* Wait up to 5 seconds for CSE to boot from RO(BP1) */
+#define CSE_DELAY_BOOT_TO_RO (5 * 1000)
+
 static struct cse_device {
 	uintptr_t sec_bar;
 } cse;
@@ -84,7 +75,7 @@ void heci_init(uintptr_t tempbar)
 #else
 	struct device *dev = PCH_DEV_CSE;
 #endif
-	u8 pcireg;
+	u16 pcireg;
 
 	/* Assume it is already initialized, nothing else to do */
 	if (cse.sec_bar)
@@ -96,18 +87,16 @@ void heci_init(uintptr_t tempbar)
 
 	/* Assign Resources to HECI1 */
 	/* Clear BIT 1-2 of Command Register */
-	pcireg = pci_read_config8(dev, PCI_COMMAND);
+	pcireg = pci_read_config16(dev, PCI_COMMAND);
 	pcireg &= ~(PCI_COMMAND_MASTER | PCI_COMMAND_MEMORY);
-	pci_write_config8(dev, PCI_COMMAND, pcireg);
+	pci_write_config16(dev, PCI_COMMAND, pcireg);
 
 	/* Program Temporary BAR for HECI1 */
 	pci_write_config32(dev, PCI_BASE_ADDRESS_0, tempbar);
 	pci_write_config32(dev, PCI_BASE_ADDRESS_1, 0x0);
 
 	/* Enable Bus Master and MMIO Space */
-	pcireg = pci_read_config8(dev, PCI_COMMAND);
-	pcireg |= PCI_COMMAND_MASTER | PCI_COMMAND_MEMORY;
-	pci_write_config8(dev, PCI_COMMAND, pcireg);
+	pci_or_config16(dev, PCI_COMMAND, PCI_COMMAND_MASTER | PCI_COMMAND_MEMORY);
 
 	cse.sec_bar = tempbar;
 }
@@ -270,6 +259,13 @@ bool cse_is_hfs1_com_soft_temp_disable(void)
 	return cse_check_hfs1_com(ME_HFS1_COM_SOFT_TEMP_DISABLE);
 }
 
+bool cse_is_hfs3_fw_sku_custom(void)
+{
+	union me_hfsts3 hfs3;
+	hfs3.data = me_read_config32(PCI_ME_HFSTS3);
+	return hfs3.fields.fw_sku == ME_HFS3_FW_SKU_CUSTOM;
+}
+
 /* Makes the host ready to communicate with CSE */
 void cse_set_host_ready(void)
 {
@@ -293,6 +289,26 @@ uint8_t cse_wait_sec_override_mode(void)
 		}
 	}
 	printk(BIOS_DEBUG, "HECI: CSE took %lu ms to enter security override mode\n",
+			stopwatch_duration_msecs(&sw));
+	return 1;
+}
+
+/*
+ * Polls for CSE's current operation mode 'Soft Temporary Disable'.
+ * The CSE enters the current operation mode when it boots from RO(BP1).
+ */
+uint8_t cse_wait_com_soft_temp_disable(void)
+{
+	struct stopwatch sw;
+	stopwatch_init_msecs_expire(&sw, CSE_DELAY_BOOT_TO_RO);
+	while (!cse_is_hfs1_com_soft_temp_disable()) {
+		udelay(HECI_DELAY);
+		if (stopwatch_expired(&sw)) {
+			printk(BIOS_ERR, "HECI: Timed out waiting for CSE to boot from RO!\n");
+			return 0;
+		}
+	}
+	printk(BIOS_SPEW, "HECI: CSE took %lu ms to boot from RO\n",
 			stopwatch_duration_msecs(&sw));
 	return 1;
 }
@@ -578,9 +594,30 @@ uint32_t me_read_config32(int offset)
 	return pci_read_config32(PCH_DEV_CSE, offset);
 }
 
+static bool cse_is_global_reset_allowed(void)
+{
+	/*
+	 * Allow sending GLOBAL_RESET command only if:
+	 *  - CSE's current working state is Normal and current operation mode is Normal.
+	 *  - (or) CSE's current working state is normal and current operation mode can
+	 *    be Soft Temp Disable or Security Override Mode if CSE's Firmware SKU is
+	 *    Custom.
+	 */
+	if (!cse_is_hfs1_cws_normal())
+		return false;
+
+	if (cse_is_hfs1_com_normal())
+		return true;
+
+	if (cse_is_hfs3_fw_sku_custom()) {
+		if (cse_is_hfs1_com_soft_temp_disable() || cse_is_hfs1_com_secover_mei_msg())
+			return true;
+	}
+	return false;
+}
+
 /*
- * Sends GLOBAL_RESET_REQ cmd to CSE.The reset type can be GLOBAL_RESET/
- * HOST_RESET_ONLY/CSE_RESET_ONLY.
+ * Sends GLOBAL_RESET_REQ cmd to CSE.The reset type can be GLOBAL_RESET/CSE_RESET_ONLY.
  */
 int cse_request_global_reset(enum rst_req_type rst_type)
 {
@@ -602,9 +639,14 @@ int cse_request_global_reset(enum rst_req_type rst_type)
 	size_t reply_size;
 
 	printk(BIOS_DEBUG, "HECI: Global Reset(Type:%d) Command\n", rst_type);
-	if (!((rst_type == GLOBAL_RESET) ||
-		(rst_type == HOST_RESET_ONLY) || (rst_type == CSE_RESET_ONLY))) {
+
+	if (!(rst_type == GLOBAL_RESET || rst_type == CSE_RESET_ONLY)) {
 		printk(BIOS_ERR, "HECI: Unsupported reset type is requested\n");
+		return 0;
+	}
+
+	if (!cse_is_global_reset_allowed()) {
+		printk(BIOS_ERR, "HECI: CSE does not meet required prerequisites\n");
 		return 0;
 	}
 
@@ -620,6 +662,26 @@ int cse_request_global_reset(enum rst_req_type rst_type)
 
 	printk(BIOS_DEBUG, "HECI: Global Reset %s!\n", status ? "success" : "failure");
 	return status;
+}
+
+static bool cse_is_hmrfpo_enable_allowed(void)
+{
+	/*
+	 * Allow sending HMRFPO ENABLE command only if:
+	 *  - CSE's current working state is Normal and current operation mode is Normal
+	 *  - (or) cse's current working state is normal and current operation mode is
+	 *    Soft Temp Disable if CSE's Firmware SKU is Custom
+	 */
+	if (!cse_is_hfs1_cws_normal())
+		return false;
+
+	if (cse_is_hfs1_com_normal())
+		return true;
+
+	if (cse_is_hfs3_fw_sku_custom() && cse_is_hfs1_com_soft_temp_disable())
+		return true;
+
+	return false;
 }
 
 /* Sends HMRFPO Enable command to CSE */
@@ -647,36 +709,34 @@ int cse_hmrfpo_enable(void)
 		/* Length of factory data area, not relevant for client SKUs */
 		uint32_t fct_limit;
 		uint8_t status;
-		uint8_t padding[3];
+		uint8_t reserved[3];
 	} __packed;
 
 	struct hmrfpo_enable_resp resp;
 	size_t resp_size = sizeof(struct hmrfpo_enable_resp);
 
 	printk(BIOS_DEBUG, "HECI: Send HMRFPO Enable Command\n");
-	/*
-	 * This command can be run only if:
-	 * - Working state is normal and
-	 * - Operation mode is normal or temporary disable mode.
-	 */
-	if (!cse_is_hfs1_cws_normal() ||
-		(!cse_is_hfs1_com_normal() && !cse_is_hfs1_com_soft_temp_disable())) {
-		printk(BIOS_ERR, "HECI: ME not in required Mode\n");
-		goto failed;
+
+	if (!cse_is_hmrfpo_enable_allowed()) {
+		printk(BIOS_ERR, "HECI: CSE does not meet required prerequisites\n");
+		return 0;
 	}
 
 	if (!heci_send_receive(&msg, sizeof(struct hmrfpo_enable_msg),
 				&resp, &resp_size))
-		goto failed;
+		return 0;
 
 	if (resp.hdr.result) {
 		printk(BIOS_ERR, "HECI: Resp Failed:%d\n", resp.hdr.result);
-		goto failed;
+		return 0;
 	}
-	return 1;
 
-failed:
-	return 0;
+	if (resp.status) {
+		printk(BIOS_ERR, "HECI: HMRFPO_Enable Failed (resp status: %d)\n", resp.status);
+		return 0;
+	}
+
+	return 1;
 }
 
 /*
@@ -706,6 +766,11 @@ int cse_hmrfpo_get_status(void)
 
 	printk(BIOS_INFO, "HECI: Sending Get HMRFPO Status Command\n");
 
+	if (!cse_is_hfs1_cws_normal()) {
+		printk(BIOS_ERR, "HECI: CSE's current working state is not Normal\n");
+		return -1;
+	}
+
 	if (!heci_send_receive(&msg, sizeof(struct hmrfpo_get_status_msg),
 				&resp, &resp_size)) {
 		printk(BIOS_ERR, "HECI: HMRFPO send/receive fail\n");
@@ -719,6 +784,71 @@ int cse_hmrfpo_get_status(void)
 	}
 
 	return resp.status;
+}
+
+void print_me_fw_version(void *unused)
+{
+	struct version {
+		uint16_t minor;
+		uint16_t major;
+		uint16_t build;
+		uint16_t hotfix;
+	} __packed;
+
+	struct fw_ver_resp {
+		struct mkhi_hdr hdr;
+		struct version code;
+		struct version rec;
+		struct version fitc;
+	} __packed;
+
+	const struct mkhi_hdr fw_ver_msg = {
+		.group_id = MKHI_GROUP_ID_GEN,
+		.command = MKHI_GEN_GET_FW_VERSION,
+	};
+
+	struct fw_ver_resp resp;
+	size_t resp_size = sizeof(resp);
+
+	/* Ignore if UART debugging is disabled */
+	if (!CONFIG(CONSOLE_SERIAL))
+		return;
+
+	/* Ignore if CSE is disabled */
+	if (!is_cse_enabled())
+		return;
+
+	/*
+	 * Ignore if ME Firmware SKU type is custom since
+	 * print_boot_partition_info() logs RO(BP1) and RW(BP2) versions.
+	 */
+	if (cse_is_hfs3_fw_sku_custom())
+		return;
+
+	/*
+	 * Prerequisites:
+	 * 1) HFSTS1 Current Working State is Normal
+	 * 2) HFSTS1 Current Operation Mode is Normal
+	 * 3) It's after DRAM INIT DONE message (taken care of by calling it
+	 *    during ramstage
+	 */
+	if (!cse_is_hfs1_cws_normal() || !cse_is_hfs1_com_normal())
+		goto fail;
+
+	heci_reset();
+
+	if (!heci_send_receive(&fw_ver_msg, sizeof(fw_ver_msg), &resp, &resp_size))
+		goto fail;
+
+	if (resp.hdr.result)
+		goto fail;
+
+	printk(BIOS_DEBUG, "ME: Version: %d.%d.%d.%d\n", resp.code.major,
+			resp.code.minor, resp.code.hotfix, resp.code.build);
+	return;
+
+fail:
+	printk(BIOS_DEBUG, "ME: Version: Unavailable\n");
 }
 
 #if ENV_RAMSTAGE
@@ -756,11 +886,14 @@ static const unsigned short pci_device_ids[] = {
 	PCI_DEVICE_ID_INTEL_CMP_CSE0,
 	PCI_DEVICE_ID_INTEL_CMP_H_CSE0,
 	PCI_DEVICE_ID_INTEL_TGL_CSE0,
-	PCI_DEVICE_ID_INTEL_JSP_PRE_PROD_CSE0,
 	PCI_DEVICE_ID_INTEL_MCC_CSE0,
 	PCI_DEVICE_ID_INTEL_MCC_CSE1,
 	PCI_DEVICE_ID_INTEL_MCC_CSE2,
 	PCI_DEVICE_ID_INTEL_MCC_CSE3,
+	PCI_DEVICE_ID_INTEL_JSP_CSE0,
+	PCI_DEVICE_ID_INTEL_JSP_CSE1,
+	PCI_DEVICE_ID_INTEL_JSP_CSE2,
+	PCI_DEVICE_ID_INTEL_JSP_CSE3,
 	0,
 };
 

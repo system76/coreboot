@@ -1,16 +1,7 @@
-/*
- * This file is part of the coreboot project.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
+#include <assert.h>
 #include <console/console.h>
 #include <device/device.h>
 #include <device/path.h>
@@ -79,6 +70,19 @@ DEVTREE_CONST struct device *dev_find_path(
 	return result;
 }
 
+DEVTREE_CONST struct device *dev_find_matching_device_on_bus(const struct bus *bus,
+							match_device_fn fn)
+{
+	DEVTREE_CONST struct device *child = NULL;
+
+	while ((child = dev_bus_each_child(bus, child)) != NULL) {
+		if (fn(child))
+			break;
+	}
+
+	return child;
+}
+
 /**
  * Given a device pointer, find the next PCI device.
  *
@@ -95,6 +99,13 @@ static int path_eq(const struct device_path *path1,
 		const struct device_path *path2)
 {
 	int equal = 0;
+
+	if (!path1 || !path2) {
+		assert(path1);
+		assert(path2);
+		/* Return 0 in case assert is considered non-fatal. */
+		return 0;
+	}
 
 	if (path1->type != path2->type)
 		return 0;
@@ -166,6 +177,13 @@ DEVTREE_CONST struct device *find_dev_path(
 	const struct bus *parent, const struct device_path *path)
 {
 	DEVTREE_CONST struct device *child;
+
+	if (!parent) {
+		assert(0);
+		/* Return NULL in case asserts are considered non-fatal. */
+		return NULL;
+	}
+
 	for (child = parent->children; child; child = child->sibling) {
 		if (path_eq(path, &child->path))
 			break;
@@ -225,6 +243,19 @@ DEVTREE_CONST struct device *pcidev_path_on_root(pci_devfn_t devfn)
 DEVTREE_CONST struct device *pcidev_on_root(uint8_t dev, uint8_t fn)
 {
 	return pcidev_path_on_root(PCI_DEVFN(dev, fn));
+}
+
+DEVTREE_CONST struct device *pcidev_path_behind_pci2pci_bridge(
+							const struct device *bridge,
+							pci_devfn_t devfn)
+{
+	if (!bridge || (bridge->path.type != DEVICE_PATH_PCI)) {
+		assert(0);
+		/* Return NULL in case asserts are non-fatal. */
+		return NULL;
+	}
+
+	return pcidev_path_behind(bridge->link_list, devfn);
 }
 
 DEVTREE_CONST struct device *pcidev_path_on_root_debug(pci_devfn_t devfn, const char *func)

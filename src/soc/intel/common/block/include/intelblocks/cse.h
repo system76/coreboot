@@ -1,27 +1,17 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2017 Intel Corp.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* This file is part of the coreboot project. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #ifndef SOC_INTEL_COMMON_CSE_H
 #define SOC_INTEL_COMMON_CSE_H
 
 #include <stdint.h>
+#include <types.h>
 
 /* MKHI Command groups */
 #define MKHI_GROUP_ID_CBM	0x0
 #define MKHI_GROUP_ID_HMRFPO	0x5
+#define MKHI_GROUP_ID_GEN	0xff
+#define MKHI_GROUP_ID_BUP_COMMON	0xf0
 
 /* Global Reset Command ID */
 #define MKHI_CBM_GLOBAL_RESET_REQ	0xb
@@ -32,6 +22,13 @@
 /* HMRFPO Command Ids */
 #define MKHI_HMRFPO_ENABLE	0x1
 #define MKHI_HMRFPO_GET_STATUS	0x3
+
+/* Get Firmware Version Command Id */
+#define MKHI_GEN_GET_FW_VERSION	0x2
+
+/* Boot partition info and set boot partition info command ids */
+#define MKHI_BUP_COMMON_GET_BOOT_PARTITION_INFO	0x1c
+#define MKHI_BUP_COMMON_SET_BOOT_PARTITION_INFO	0x1d
 
 /* ME Current Working States */
 #define ME_HFS1_CWS_NORMAL	0x5
@@ -97,6 +94,8 @@ int heci_send_receive(const void *snd_msg, size_t snd_sz, void *rcv_msg, size_t 
  * Returns 0 on failure and 1 on success.
  */
 int heci_reset(void);
+/* Disable HECI using Sideband interface communication */
+void heci_disable(void);
 
 /* Reads config value from a specified offset in the CSE PCI Config space. */
 uint32_t me_read_config32(int offset);
@@ -119,7 +118,6 @@ uint8_t cse_wait_sec_override_mode(void);
 
 enum rst_req_type {
 	GLOBAL_RESET = 1,
-	HOST_RESET_ONLY = 2,
 	CSE_RESET_ONLY = 3,
 };
 
@@ -131,8 +129,20 @@ enum rst_req_type {
 int cse_request_global_reset(enum rst_req_type rst_type);
 
 /*
- * Send HMRFPO_ENABLE command.
- * returns 0 on failure and 1 on success.
+ * Sends HMRFPO_ENABLE command.
+ * HMRFPO - Host ME Region Flash Protection Override.
+ * For CSE Firmware SKU Custom, procedure to place CSE in HMRFPO (SECOVER_MEI_MSG) mode:
+ *	1. Ensure CSE boots from BP1(RO).
+ *		- Send set_next_boot_partition(BP1)
+ *		- Issue CSE Only Reset
+ *	2. Send HMRFPO_ENABLE command to CSE. Further, no reset is required.
+ *
+ * The HMRFPO mode prevents CSE to execute SPI I/O cycles to CSE region, and unlocks
+ * the CSE region to perform updates to it.
+ * This command is only valid before EOP.
+ *
+ * Returns 0 on failure to send HECI command and to enable HMRFPO mode, and 1 on success.
+ *
  */
 int cse_hmrfpo_enable(void);
 
@@ -163,6 +173,11 @@ int cse_hmrfpo_get_status(void);
 #define MKHI_HMRFPO_ENABLED	2
 
 /*
+ * Queries and logs ME firmware version
+ */
+void print_me_fw_version(void *unused);
+
+/*
  * Checks current working operation state is normal or not.
  * Returns true if CSE's current working state is normal, otherwise false.
  */
@@ -186,4 +201,24 @@ bool cse_is_hfs1_com_secover_mei_msg(void);
  */
 bool cse_is_hfs1_com_soft_temp_disable(void);
 
+/*
+ * Checks CSE's Firmware SKU is Custom or not.
+ * Returns true if CSE's Firmware SKU is Custom, otherwise false
+ */
+bool cse_is_hfs3_fw_sku_custom(void);
+
+/*
+ * Polls for CSE's current operation mode 'Soft Temp Disable'.
+ * Returns 0 on failure and 1 on success.
+ */
+uint8_t cse_wait_com_soft_temp_disable(void);
+
+/*
+ * The CSE Custom SKU supports notion of RO and RW boot partitions. The function will set
+ * CSE's boot partition as per Chrome OS boot modes. In normal mode, the function allows CSE to
+ * boot from RW and triggers recovery mode if CSE fails to jump to RW.
+ * In software triggered recovery mode, the function allows CSE to boot from whatever is
+ * currently selected partition.
+ */
+void cse_fw_sync(void *unused);
 #endif // SOC_INTEL_COMMON_CSE_H

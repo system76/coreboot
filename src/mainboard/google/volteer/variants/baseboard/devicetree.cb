@@ -43,25 +43,29 @@ chip soc/intel/tigerlake
 
 	# Enable NVMe PCIE 9 using clk 0
 	register "PcieRpEnable[8]" = "1"
+	register "PcieRpLtrEnable[8]" = "1"
 	register "PcieClkSrcUsage[0]" = "8"
 	register "PcieClkSrcClkReq[0]" = "0"
 
+	# Enable Optane PCIE 11 using clk 0
+	register "PcieRpEnable[10]" = "1"
+	register "PcieRpLtrEnable[10]" = "1"
+	register "HybridStorageMode" = "1"
+
 	# Enable SD Card PCIE 8 using clk 3
 	register "PcieRpEnable[7]" = "1"
+	register "PcieRpLtrEnable[7]" = "1"
 	register "PcieClkSrcUsage[3]" = "7"
 	register "PcieClkSrcClkReq[3]" = "3"
 
 	# Enable WLAN PCIE 7 using clk 1
 	register "PcieRpEnable[6]" = "1"
+	register "PcieRpLtrEnable[6]" = "1"
 	register "PcieClkSrcUsage[1]" = "6"
 	register "PcieClkSrcClkReq[1]" = "1"
 
-	# Enable WWAN PCIE 6 using clk 2
-	register "PcieRpEnable[5]" = "1"
-	register "PcieClkSrcUsage[2]" = "5"
-	register "PcieClkSrcClkReq[2]" = "2"
-
 	# Mark SRCCLKREQ pins as unused that are routed for a Non-Clkreq functionality
+	register "PcieClkSrcUsage[2]" = "0xFF"
 	register "PcieClkSrcUsage[4]" = "0xFF"
 	register "PcieClkSrcUsage[5]" = "0xFF"
 	register "PcieClkSrcUsage[6]" = "0xFF"
@@ -73,6 +77,7 @@ chip soc/intel/tigerlake
 	register "SataPortsEnable[0]" = "0"
 	register "SataPortsEnable[1]" = "1"
 	register "SataPortsDevSlp[0]" = "0"
+	register "SataPortsDevSlp[1]" = "1"
 
 	register "SerialIoI2cMode" = "{
 		[PchSerialIoIndexI2C0]  = PchSerialIoPci,
@@ -109,6 +114,18 @@ chip soc/intel/tigerlake
 		[PchSerialIoIndexUART1] = PchSerialIoDisabled,
 		[PchSerialIoIndexUART2] = PchSerialIoDisabled,
 	}"
+
+	# HD Audio
+	register "PchHdaDspEnable" = "1"
+	register "PchHdaAudioLinkHdaEnable" = "0"
+	register "PchHdaAudioLinkDmicEnable[0]" = "1"
+	register "PchHdaAudioLinkDmicEnable[1]" = "1"
+	register "PchHdaAudioLinkSspEnable[0]" = "1"
+	register "PchHdaAudioLinkSspEnable[1]" = "1"
+
+	# TCSS USB3
+	register "TcssXhciEn" = "1"
+	register "TcssAuxOri" = "0"
 
 	# DP port
 	register "DdiPortAConfig" = "1"	# eDP
@@ -153,7 +170,7 @@ chip soc/intel/tigerlake
 	#|                   | required to set up a BAR  |
 	#|                   | for TPM communication     |
 	#|                   | before memory is up       |
-	#| GSPI1             | Fingerprint MCU
+	#| GSPI1             | Fingerprint MCU           |
 	#| I2C0              | Audio                     |
 	#| I2C1              | Touchscreen               |
 	#| I2C2              | WLAN, SAR0                |
@@ -204,29 +221,22 @@ chip soc/intel/tigerlake
 		device pci 0e.0 off end # VMD				0x9A0B
 
 		# From PCH EDS(576591)
-		device pci 10.0 on  end # I2C6				0xA0D8
-		device pci 10.1 off end # I2C7				0xA0D9
 		device pci 10.2 on  end # CNVi: BT			0xA0F5 - A0F7
 		device pci 10.6 off end # THC0				0xA0D0
 		device pci 10.7 off end # THC1				0xA0D1
-
-		device pci 11.0 off end # UART3				0xA0DA
-		device pci 11.1 off end # UART4				0xA0DB
-		device pci 11.2 off end # UART5				0xA0DC
-		device pci 11.3 off end # UART6				0xA0DD
 
 		device pci 12.0 off end # SensorHUB			0xA0FC
 		device pci 12.6 off end # GSPI2				0x34FB
 
 		device pci 13.0 off end # GSPI3				0xA0FD
-		device pci 13.1 off end # GSPI4				0xA0FE
-		device pci 13.2 off end # GSPI5				0xA0DE
-		device pci 13.3 off end # GSPI6				0xA0DF
 
 		device pci 14.0 on  end # USB3.1 xHCI			0xA0ED
 		device pci 14.1 off end # USB3.1 xDCI			0xA0EE
 		device pci 14.2 on  end # Shared RAM			0xA0EF
-		device pci 14.3 on  end # CNVi: WiFi			0xA0F0 - A0F3
+		chip drivers/intel/wifi
+			register "wake" = "GPE0_PME_B0"
+			device pci 14.3 on end # CNVi: WiFi		0xA0F0 - A0F3
+		end
 
 		device pci 15.0 on
 			chip drivers/i2c/generic
@@ -242,7 +252,37 @@ chip soc/intel/tigerlake
 				device i2c 1a on end
 			end
 		end # I2C #0			0xA0E8
-		device pci 15.1 on  end # I2C1				0xA0E9
+		device pci 15.1 on
+			chip drivers/i2c/hid
+				register "generic.hid" = ""GDIX0000""
+				register "generic.desc" = ""Goodix Touchscreen""
+				register "generic.irq" = "ACPI_IRQ_EDGE_LOW(GPP_E7_IRQ)"
+				register "generic.probed" = "1"
+				register "generic.reset_gpio" =
+							"ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_C10)"
+				register "generic.reset_delay_ms" = "120"
+				register "generic.reset_off_delay_ms" = "3"
+				register "generic.enable_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_A8)"
+				register "generic.enable_delay_ms" = "12"
+				register "generic.has_power_resource" = "1"
+				register "hid_desc_reg_offset" = "0x01"
+				device i2c 14 on end
+			end
+			chip drivers/i2c/hid
+				register "generic.hid" = ""ELAN90FC""
+				register "generic.desc" = ""ELAN Touchscreen""
+				register "generic.irq" = "ACPI_IRQ_EDGE_LOW(GPP_E7_IRQ)"
+				register "generic.probed" = "1"
+				register "generic.reset_gpio" =
+							"ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_C10)"
+				register "generic.enable_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_A8)"
+				register "generic.reset_delay_ms" = "20"
+				register "generic.has_power_resource" = "1"
+				register "generic.disable_gpio_export_in_crs" = "1"
+				register "hid_desc_reg_offset" = "0x01"
+				device i2c 10 on end
+			end
+		end # I2C1				0xA0E9
 		device pci 15.2 on
 			chip drivers/i2c/sx9310
 				register "desc" = ""SAR0 Proximity Sensor""
@@ -303,18 +343,14 @@ chip soc/intel/tigerlake
 		device pci 1c.2 off end # RP3				0xA0BA
 		device pci 1c.3 off end # RP4				0xA0BB
 		device pci 1c.4 off end # RP5				0xA0BC
-		device pci 1c.5 on  end # WWAN RP6			0xA0BD
+		device pci 1c.5 off end # WWAN RP6			0xA0BD
 		device pci 1c.6 on  end # RP7				0xA0BE
 		device pci 1c.7 on  end # SD Card RP8			0xA0BF
 
 		device pci 1d.0 on  end # RP9				0xA0B0
 		device pci 1d.1 off end # RP10				0xA0B1
-		device pci 1d.2 off end # RP11				0xA0B2
+		device pci 1d.2 on  end # RP11				0xA0B2
 		device pci 1d.3 off end # RP12				0xA0B3
-		device pci 1d.4 off end # RP13				0xA0B4
-		device pci 1d.5 off end # RP14				0xA0B5
-		device pci 1d.6 off end # RP15				0xA0B6
-		device pci 1d.7 off end # RP16				0xA0B7
 
 		device pci 1e.0 on  end # UART0				0xA0A8
 		device pci 1e.1 off end # UART1				0xA0A9
@@ -326,13 +362,26 @@ chip soc/intel/tigerlake
 				device spi 0 on end
 			end
 		end # GSPI0				0xA0AA
-		device pci 1e.3 on  end # GSPI1				0xA0AB
-
-		device pci 1f.0 on  end # eSPI				0xA080 - A09F
+		device pci 1e.3 on
+			chip drivers/spi/acpi
+				register "name" = ""CRFP""
+				register "hid" = "ACPI_DT_NAMESPACE_HID"
+				register "uid" = "1"
+				register "compat_string" = ""google,cros-ec-spi""
+				register "irq_gpio" = "ACPI_GPIO_IRQ_LEVEL_LOW_WAKE(GPP_C20)"
+				device spi 0 on end
+			end # FPMCU
+		end # GSPI1				0xA0AB
+		device pci 1f.0 on
+			chip ec/google/chromeec
+				device pnp 0c09.0 on end
+			end
+		end # eSPI				0xA080 - A09F
 		device pci 1f.1 off end # P2SB				0xA0A0
 		device pci 1f.2 on  end # PMC				0xA0A1
 		device pci 1f.3 on
 			chip drivers/generic/max98357a
+				register "hid" = ""MX98357A""
 				register "sdmode_gpio" =  "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_A10)"
 				register "sdmode_delay" = "5"
 				device generic 0 on end

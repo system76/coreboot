@@ -1,8 +1,6 @@
 ##
 ## This file is part of the coreboot project.
 ##
-## Copyright 2018 Google LLC
-## Copyright 2019 The Linux Foundation.  All rights reserved.
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -15,24 +13,26 @@
 ##
 
 bootblock-y += memlayout.ld
-bootblock-y += reset.c
 bootblock-y += boardid.c
 bootblock-y += chromeos.c
 bootblock-y += bootblock.c
 
 verstage-y += memlayout.ld
+ifneq ($(CONFIG_BOARD_GOOGLE_BUBS),y)
 verstage-y += reset.c
+endif
 verstage-y += boardid.c
 verstage-y += chromeos.c
 
 romstage-y += memlayout.ld
 romstage-y += romstage.c
-romstage-y += reset.c
 romstage-y += boardid.c
 romstage-y += chromeos.c
 
 ramstage-y += memlayout.ld
 ramstage-y += mainboard.c
+ifneq ($(CONFIG_BOARD_GOOGLE_BUBS),y)
 ramstage-y += reset.c
+endif
 ramstage-y += chromeos.c
 ramstage-y += boardid.c

@@ -1,15 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 /****************************************************************
  * CPU hotplug
@@ -22,13 +12,13 @@ Scope(\_SB) {
 
     /* Methods called by run-time generated SSDT Processor objects */
     Method(CPMA, 1, NotSerialized) {
-        // _MAT method - create an madt apic buffer
+        // _MAT method - create an madt APIC buffer
         // Arg0 = Processor ID = Local APIC ID
         // Local0 = CPON flag for this cpu
         Store(DerefOf(Index(CPON, Arg0)), Local0)
-        // Local1 = Buffer (in madt apic form) to return
+        // Local1 = Buffer (in madt APIC form) to return
         Store(Buffer(8) {0x00, 0x08, 0x00, 0x00, 0x00, 0, 0, 0}, Local1)
-        // Update the processor id, lapic id, and enable/disable status
+        // Update the processor id, Local APIC id, and enable/disable status
         Store(Arg0, Index(Local1, 2))
         Store(Arg0, Index(Local1, 3))
         Store(Local0, Index(Local1, 4))

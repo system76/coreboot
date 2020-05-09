@@ -1,18 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2011 The Chromium OS Authors. All rights reserved.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; version 2 of
- * the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 /*
  * This is a ramstage driver for the Intel Management Engine found in the
@@ -22,7 +9,7 @@
  * not used unless the console loglevel is high enough.
  */
 
-#include <arch/acpi.h>
+#include <acpi/acpi.h>
 #include <console/console.h>
 #include <device/device.h>
 #include <device/mmio.h>
@@ -371,6 +358,7 @@ static void intel_me7_finalize_smm(void)
 {
 	struct me_hfs hfs;
 	u32 reg32;
+	u16 reg16;
 
 	mei_base_address = (u32 *)
 		(pci_read_config32(PCH_ME_DEV, PCI_BASE_ADDRESS_0) & ~0xf);
@@ -393,10 +381,10 @@ static void intel_me7_finalize_smm(void)
 	mkhi_end_of_post();
 
 	/* Make sure IO is disabled */
-	reg32 = pci_read_config32(PCH_ME_DEV, PCI_COMMAND);
-	reg32 &= ~(PCI_COMMAND_MASTER |
+	reg16 = pci_read_config16(PCH_ME_DEV, PCI_COMMAND);
+	reg16 &= ~(PCI_COMMAND_MASTER |
 		   PCI_COMMAND_MEMORY | PCI_COMMAND_IO);
-	pci_write_config32(PCH_ME_DEV, PCI_COMMAND, reg32);
+	pci_write_config16(PCH_ME_DEV, PCI_COMMAND, reg16);
 
 	/* Hide the PCI device */
 	RCBA32_OR(FD2, PCH_DISABLE_MEI1);
@@ -488,7 +476,7 @@ static int intel_mei_setup(struct device *dev)
 {
 	struct resource *res;
 	struct mei_csr host;
-	u32 reg32;
+	u16 reg16;
 
 	/* Find the MMIO base for the ME interface */
 	res = find_resource(dev, PCI_BASE_ADDRESS_0);
@@ -499,9 +487,9 @@ static int intel_mei_setup(struct device *dev)
 	mei_base_address = (u32 *)(uintptr_t)res->base;
 
 	/* Ensure Memory and Bus Master bits are set */
-	reg32 = pci_read_config32(dev, PCI_COMMAND);
-	reg32 |= PCI_COMMAND_MASTER | PCI_COMMAND_MEMORY;
-	pci_write_config32(dev, PCI_COMMAND, reg32);
+	reg16 = pci_read_config16(dev, PCI_COMMAND);
+	reg16 |= PCI_COMMAND_MASTER | PCI_COMMAND_MEMORY;
+	pci_write_config16(dev, PCI_COMMAND, reg16);
 
 	/* Clean up status for next message */
 	read_host_csr(&host);
@@ -615,8 +603,11 @@ static struct device_operations device_ops = {
 	.ops_pci		= &pci_ops,
 };
 
-static const unsigned short pci_device_ids[] = { 0x1c3a, 0x3b64,
-						 0 };
+static const unsigned short pci_device_ids[] = {
+	0x1c3a,
+	PCI_DID_INTEL_IBEXPEAK_HECI1,
+	0
+};
 
 
 static const struct pci_driver intel_me __pci_driver = {

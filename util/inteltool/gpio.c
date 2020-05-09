@@ -1047,6 +1047,7 @@ int print_gpios(struct pci_dev *sb, int show_all, int show_diffs)
 	case PCI_DEVICE_ID_INTEL_SUNRISEPOINT_LP_U_IHDCP_BASE:
 	case PCI_DEVICE_ID_INTEL_SUNRISEPOINT_LP_U_IHDCP_PREM:
 	case PCI_DEVICE_ID_INTEL_SUNRISEPOINT_LP_Y_IHDCP_PREM:
+	case PCI_DEVICE_ID_INTEL_CANNONPOINT_LP_U_PREM:
 	case PCI_DEVICE_ID_INTEL_C621:
 	case PCI_DEVICE_ID_INTEL_C622:
 	case PCI_DEVICE_ID_INTEL_C624:
@@ -1075,9 +1076,6 @@ int print_gpios(struct pci_dev *sb, int show_all, int show_diffs)
 		return 0;
 	case PCI_DEVICE_ID_INTEL_82371XX:
 		printf("This southbridge has GPIOs in the PM unit.\n");
-		return 1;
-	case 0x1234: // Dummy for non-existent functionality
-		printf("This southbridge does not have GPIOBASE.\n");
 		return 1;
 	default:
 		printf("Error: Dumping GPIOs on this southbridge is not (yet) supported.\n");

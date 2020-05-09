@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2019 Intel Corporation.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #ifndef _SOC_TIGERLAKE_PCI_DEVS_H_
 #define _SOC_TIGERLAKE_PCI_DEVS_H_
@@ -53,6 +41,10 @@
 #define  SA_DEV_TBT2		PCI_DEV(0, SA_DEV_SLOT_TBT, 2)
 #define  SA_DEV_TBT3		PCI_DEV(0, SA_DEV_SLOT_TBT, 3)
 
+#define SA_DEV_SLOT_IPU		0x05
+#define  SA_DEVFN_IPU		PCI_DEVFN(SA_DEV_SLOT_IPU, 0)
+#define  SA_DEV_IPU		PCI_DEV(0, SA_DEV_SLOT_IPU, 0)
+
 /* PCH Devices */
 #define PCH_DEV_SLOT_SIO0	0x10
 #define  PCH_DEVFN_CNVI_BT	_PCH_DEVFN(SIO0, 2)
@@ -64,7 +56,7 @@
 
 #define PCH_DEV_SLOT_SIO1	0x11
 #define  PCH_DEVFN_UART3	_PCH_DEVFN(SIO1, 0)
-#define  PCH_DEV_UART3          _PCH_DEVFN(SIO1, 0)
+#define  PCH_DEV_UART3          _PCH_DEV(SIO1, 0)
 
 #define PCH_DEV_SLOT_ISH	0x12
 #define  PCH_DEVFN_ISH		_PCH_DEVFN(ISH, 0)

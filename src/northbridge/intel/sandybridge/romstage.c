@@ -1,19 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2007-2010 coresystems GmbH
- * Copyright (C) 2011 The ChromiumOS Authors.  All rights reserved.
- * Copyright (C) 2014 Vladimir Serbinenko
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <stdint.h>
 #include <console/console.h>
@@ -42,20 +28,18 @@ static void early_pch_reset_pmcon(void)
 {
 	u8 reg8;
 
-	// reset rtc power status
+	/* Reset RTC power status */
 	reg8 = pci_read_config8(PCH_LPC_DEV, GEN_PMCON_3);
 	reg8 &= ~(1 << 2);
 	pci_write_config8(PCH_LPC_DEV, GEN_PMCON_3, reg8);
 }
 
-/* Platform has no romstage entry point under mainboard directory,
- * so this one is named with prefix mainboard.
- */
+/* The romstage entry point for this platform is not mainboard-specific, hence the name */
 void mainboard_romstage_entry(void)
 {
 	int s3resume = 0;
 
-	if (MCHBAR16(SSKPD) == 0xCAFE)
+	if (MCHBAR16(SSKPD_HI) == 0xCAFE)
 		system_reset();
 
 	enable_lapic();
@@ -63,14 +47,12 @@ void mainboard_romstage_entry(void)
 	/* Init LPC, GPIO, BARs, disable watchdog ... */
 	early_pch_init();
 
-	/* USB is initialized in MRC if MRC is used.  */
+	/* When using MRC, USB is initialized by MRC */
 	if (CONFIG(USE_NATIVE_RAMINIT)) {
 		early_usb_init(mainboard_usb_ports);
 	}
 
-	/* Perform some early chipset initialization required
-	 * before RAM initialization can work
-	 */
+	/* Perform some early chipset init needed before RAM initialization can work */
 	systemagent_early_init();
 	printk(BIOS_DEBUG, "Back from systemagent_early_init()\n");
 

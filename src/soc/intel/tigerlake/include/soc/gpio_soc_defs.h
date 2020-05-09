@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2020 Intel Corporation.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 #ifndef _SOC_TIGERLAKE_GPIO_SOC_DEFS_H_
 #define _SOC_TIGERLAKE_GPIO_SOC_DEFS_H_
 /*
@@ -116,6 +104,8 @@
 #define GPP_A23			65
 #define GPP_A24			66 /* ESPI_CLK_LOOPBK */
 
+#define GPIO_COM0_START		GPP_B0
+#define GPIO_COM0_END		GPP_A24
 #define NUM_GPIO_COM0_PADS	(GPP_A24 - GPP_B0 + 1)
 
 /* Group S */
@@ -232,6 +222,8 @@
 #define vI2S2_TXD		169
 #define vI2S2_RXD		170
 
+#define GPIO_COM1_START		GPP_S0
+#define GPIO_COM1_END		vI2S2_RXD
 #define NUM_GPIO_COM1_PADS	(vI2S2_RXD - GPP_S0 + 1)
 
 /* Group GPD  */
@@ -253,6 +245,8 @@
 #define GPD_WAKEB		186
 #define GPD_DRAM_RESETB		187
 
+#define GPIO_COM2_START		GPD0
+#define GPIO_COM2_END		GPD_DRAM_RESETB
 #define NUM_GPIO_COM2_PADS	(GPD_DRAM_RESETB - GPD0 + 1)
 
 /* Group C */
@@ -354,6 +348,8 @@
 #define GPP_JTAG_TCK		275
 #define GPP_DBG_PMODE		276
 
+#define GPIO_COM4_START		GPP_C0
+#define GPIO_COM4_END		GPP_DBG_PMODE
 #define NUM_GPIO_COM4_PADS	(GPP_DBG_PMODE - GPP_C0 + 1)
 
 /* Group R */
@@ -377,6 +373,8 @@
 #define GPP_SPI_CLK		292
 #define GPP_CLK_LOOPBK		293
 
+#define GPIO_COM5_START		GPP_R0
+#define GPIO_COM5_END		GPP_CLK_LOOPBK
 #define NUM_GPIO_COM5_PADS	(GPP_CLK_LOOPBK - GPP_R0 + 1)
 
 #define TOTAL_GPIO_COMM		(COMM_5 + 1)

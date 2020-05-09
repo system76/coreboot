@@ -1,0 +1,108 @@
+# This file is part of the coreboot project.
+# SPDX-License-Identifier: GPL-2.0-or-later
+
+source "src/soc/intel/xeon_sp/skx/Kconfig"
+source "src/soc/intel/xeon_sp/cpx/Kconfig"
+
+config XEON_SP_COMMON_BASE
+	bool
+
+config SOC_INTEL_SKYLAKE_SP
+	bool
+	select XEON_SP_COMMON_BASE
+	help
+	  Intel Skylake-SP support
+
+config SOC_INTEL_COOPERLAKE_SP
+	bool
+	select XEON_SP_COMMON_BASE
+	help
+	  Intel Cooperlake-SP support
+
+if XEON_SP_COMMON_BASE
+
+config	CPU_SPECIFIC_OPTIONS
+	def_bool y
+	select ARCH_BOOTBLOCK_X86_32
+	select ARCH_RAMSTAGE_X86_32
+	select ARCH_ROMSTAGE_X86_32
+	select ARCH_VERSTAGE_X86_32
+	select BOOT_DEVICE_SPI_FLASH_RW_NOMMAP_EARLY if BOOT_DEVICE_SPI_FLASH
+	select BOOT_DEVICE_SUPPORTS_WRITES
+	select POSTCAR_CONSOLE
+	select SOC_INTEL_COMMON
+	select SOC_INTEL_COMMON_RESET
+	select PLATFORM_USES_FSP2_0
+	select FSP_PLATFORM_MEMORY_SETTINGS_VERSIONS
+	select FSP_T_XIP
+	select FSP_M_XIP
+	select POSTCAR_STAGE
+	select IOAPIC
+	select PARALLEL_MP
+	select SMP
+	select INTEL_DESCRIPTOR_MODE_CAPABLE
+	select COMMON_FADT
+	select SOC_INTEL_COMMON_BLOCK
+	select SOC_INTEL_COMMON_BLOCK_CPU
+	select SOC_INTEL_COMMON_BLOCK_TIMER
+	select SOC_INTEL_COMMON_BLOCK_LPC
+	select SOC_INTEL_COMMON_BLOCK_RTC
+	select SOC_INTEL_COMMON_BLOCK_SPI
+	select SOC_INTEL_COMMON_BLOCK_FAST_SPI
+	select SOC_INTEL_COMMON_BLOCK_GPIO
+	select SOC_INTEL_COMMON_BLOCK_GPIO_DUAL_ROUTE_SUPPORT
+	select SOC_INTEL_COMMON_BLOCK_GPIO_LEGACY_MACROS
+	select SOC_INTEL_COMMON_BLOCK_GPIO_PADCFG_PADTOL
+	select SOC_INTEL_COMMON_BLOCK_PCR
+	select TSC_MONOTONIC_TIMER
+	select UDELAY_TSC
+	select SUPPORT_CPU_UCODE_IN_CBFS
+	select MICROCODE_BLOB_NOT_HOOKED_UP
+	select CPU_INTEL_FIRMWARE_INTERFACE_TABLE
+	select FSP_CAR
+
+config MAINBOARD_USES_FSP2_0
+	  bool
+	  default y
+
+config USE_FSP2_0_DRIVER
+	  def_bool y
+	  depends on MAINBOARD_USES_FSP2_0
+	  select PLATFORM_USES_FSP2_0
+	  select UDK_2015_BINDING
+	  select POSTCAR_CONSOLE
+	  select POSTCAR_STAGE
+
+config MAX_SOCKET
+	int
+	default 2
+
+# For 2S config, the number of cpus could be as high as
+# 2 threads * 20 cores * 2 sockets
+config MAX_CPUS
+	int
+	default 80
+
+config PCR_BASE_ADDRESS
+	hex
+	default 0xfd000000
+	help
+	  This option allows you to select MMIO Base Address of sideband bus.
+
+config DCACHE_BSP_STACK_SIZE
+	hex
+	default 0x10000
+
+config MMCONF_BASE_ADDRESS
+	hex
+	default 0x80000000
+
+config C_ENV_BOOTBLOCK_SIZE
+	hex
+	default 0xC000
+
+config HEAP_SIZE
+	hex
+	default 0x80000
+
+endif ## SOC_INTEL_XEON_SP

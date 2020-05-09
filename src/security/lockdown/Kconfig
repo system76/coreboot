@@ -1,0 +1,84 @@
+
+
+choice
+	prompt "Boot media protection mechanism"
+	default BOOTMEDIA_LOCK_NONE
+
+config BOOTMEDIA_LOCK_NONE
+	bool "Don't lock boot media sections"
+
+config BOOTMEDIA_LOCK_CONTROLLER
+	bool "Lock boot media using the controller"
+	help
+	  Select this if you want the controller to lock specific regions.
+	  This only works on some platforms, please check the code or boot log.
+	  On Intel platforms for e.g. this will make use of the SPIBAR PRRs.
+
+config BOOTMEDIA_LOCK_CHIP
+	bool "Lock boot media using the chip"
+	help
+	  Select this if you want the chip to lock specific regions.
+	  This only works on some chips, please check the code or boot log.
+
+endchoice
+
+choice
+	prompt "Boot media protected regions"
+	depends on !BOOTMEDIA_LOCK_NONE
+	default BOOTMEDIA_LOCK_WHOLE_RO
+
+config BOOTMEDIA_LOCK_WHOLE_RO
+	bool "Write-protect the whole boot medium"
+	help
+	  Select this if you want to write-protect the whole firmware boot
+	  medium.
+
+	  The locking will take place during the chipset lockdown.
+	  Chipset lockdown is platform specific und might be done unconditionally,
+	  when INTEL_CHIPSET_LOCKDOWN is set or has to be triggered later
+	  (e.g. by the payload or the OS).
+
+	  NOTE: If you trigger the chipset lockdown unconditionally,
+	  you won't be able to write to the whole flash chip using the
+	  internal controller any more.
+
+config BOOTMEDIA_LOCK_WHOLE_NO_ACCESS
+	depends on BOOTMEDIA_LOCK_CONTROLLER
+	bool "Read- and write-protect the whole boot medium"
+	help
+	  Select this if you want to protect the firmware boot medium against
+	  all further accesses. On platforms that memory map a part of the
+	  boot medium the corresponding region is still readable.
+
+	  The locking will take place during the chipset lockdown.
+	  Chipset lockdown is platform specific und might be done unconditionally,
+	  when INTEL_CHIPSET_LOCKDOWN is set or has to be triggered later
+	  (e.g. by the payload or the OS).
+
+	  NOTE: If you trigger the chipset lockdown unconditionally,
+	  you won't be able to write to the whole flash chip using the
+	  internal controller any more.
+
+config BOOTMEDIA_LOCK_WPRO_VBOOT_RO
+	bool "Write-protect WP_RO FMAP region in boot medium"
+	depends on VBOOT
+	help
+	  Select this if you want to write-protect the WP_RO region as specified
+	  in the VBOOT FMAP. You will be able to write every region outside
+	  of WP_RO using the internal controller (eg. FW_MAIN_A/FW_MAIN_B).
+	  In case of BOOTMEDIA_LOCK_IN_VERSTAGE the locking will take place
+	  early, preventing locking of facilities used in ramstage, like the
+	  MRC cache. If not using BOOTMEDIA_LOCK_IN_VERSTAGE the chipset lockdown
+	  is either triggered by coreboot (when INTEL_CHIPSET_LOCKDOWN is set) or
+	  has to be triggered later (e.g. by the payload or the OS).
+
+endchoice
+
+config BOOTMEDIA_LOCK_IN_VERSTAGE
+	depends on BOOTMEDIA_LOCK_WPRO_VBOOT_RO
+	bool "Lock boot media down in verstage"
+	help
+	  Select this if you want to write-protect the WP_RO region as soon as
+	  possible. This option prevents using write protecting facilities in
+	  ramstage, like the MRC cache for example.
+	  Use this option if you don't trust code running after verstage.

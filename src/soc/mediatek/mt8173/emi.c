@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright 2015 MediaTek Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <device/mmio.h>
 #include <boardid.h>
@@ -148,7 +136,7 @@ size_t sdram_size(void)
 		       9;
 
 	/* check if row address */
-	/*00 is 13 bits, 01 is 14 bits, 10 is 15bits, 11 is 16 bits */
+	/* 00 is 13 bits, 01 is 14 bits, 10 is 15bits, 11 is 16 bits */
 	bit_counter += ((value & ROW_ADDR_BITS_MASK) >> ROW_ADDR_BITS_SHIFT) +
 		       13;
 
@@ -159,7 +147,7 @@ size_t sdram_size(void)
 	/* add bank address bit, LPDDR3 is 8 banks =2^3 */
 	bit_counter += 3;
 
-	/*transfor bits to bytes */
+	/* transform bits to bytes */
 	return ((size_t)1 << (bit_counter - 3));
 }
 

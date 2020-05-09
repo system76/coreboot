@@ -1,18 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2012 Advanced Micro Devices, Inc.
- * Copyright (C) 2015 Sergej Ivanov <getinaks@gmail.com>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <device/azalia.h>
 #include <AGESA.h>
@@ -108,7 +95,8 @@ void board_FCH_InitEnv(struct sysinfo *cb_NA, FCH_DATA_BLOCK *FchParams_env)
 	FchParams_env->Hwm.HwmFchtsiAutoPoll = FALSE;/* 1 enable, 0 disable TSI Auto Polling */
 
 	FchParams_env->Sata.SataClass = CONFIG_HUDSON_SATA_MODE;
-	switch ((SATA_CLASS)CONFIG_HUDSON_SATA_MODE) { // code from olivehillplus (ft3b) - only one place where sata is configured
+
+	switch ((SATA_CLASS)CONFIG_HUDSON_SATA_MODE) {
 	case SataLegacyIde:
 	case SataRaid:
 	case SataAhci:

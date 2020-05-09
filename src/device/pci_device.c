@@ -1,22 +1,12 @@
-/*
- * This file is part of the coreboot project.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 /*
  * Originally based on the Linux kernel (drivers/pci/pci.c).
  * PCI Bus Services, see include/linux/pci.h for further explanation.
  */
 
-#include <arch/acpi.h>
+#include <acpi/acpi.h>
 #include <device/pci_ops.h>
 #include <bootmode.h>
 #include <console/console.h>
@@ -768,11 +758,9 @@ struct device_operations default_pci_ops_dev = {
 	.enable_resources = pci_dev_enable_resources,
 #if CONFIG(HAVE_ACPI_TABLES)
 	.write_acpi_tables = pci_rom_write_acpi_tables,
-	.acpi_fill_ssdt_generator = pci_rom_ssdt,
+	.acpi_fill_ssdt    = pci_rom_ssdt,
 #endif
 	.init             = pci_dev_init,
-	.scan_bus         = 0,
-	.enable           = 0,
 	.ops_pci          = &pci_dev_ops_pci,
 };
 
@@ -785,9 +773,7 @@ struct device_operations default_pci_ops_bus = {
 	.read_resources   = pci_bus_read_resources,
 	.set_resources    = pci_dev_set_resources,
 	.enable_resources = pci_bus_enable_resources,
-	.init             = 0,
 	.scan_bus         = pci_scan_bridge,
-	.enable           = 0,
 	.reset_bus        = pci_bus_reset,
 	.ops_pci          = &pci_bus_ops_pci,
 };

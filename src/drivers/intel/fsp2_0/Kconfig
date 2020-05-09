@@ -31,11 +31,42 @@ config PLATFORM_USES_FSP2_1
 
 if PLATFORM_USES_FSP2_0
 
-config ADD_FSP_BINARIES
-	bool "Add Intel FSP 2.0 binaries to CBFS"
+config HAVE_INTEL_FSP_REPO
+	bool
 	help
-	  Add the FSP-M and FSP-S binaries to CBFS. Currently coreboot does not
-	  use the FSP-T binary and it is not added.
+	  Select this, if the FSP binaries for the platform are public
+	  and available in 3rdparty/fsp/. When selecting this option, the
+	  platform must also set FSP_HEADER_PATH and FSP_FD_PATH correctly.
+
+config FSP_USE_REPO
+	bool "Use binaries of the Intel FSP repository on GitHub"
+	depends on HAVE_INTEL_FSP_REPO
+	default y
+	help
+	  Select this option to use the default FSP headers and binaries
+	  found in the IntelFsp GitHub repository at
+
+	    https://github.com/IntelFsp/FSP/
+
+	  If unsure, say Y.
+
+config FSP_HEADER_PATH
+	string "Location of FSP headers" if !FSP_USE_REPO
+	help
+	  Include directory with the FSP ABI header files.
+
+config FSP_FD_PATH
+	string
+	depends on FSP_USE_REPO
+	help
+	  Path to the FSP FD file that contains the individual FSP-T, FSP-M
+	  and FSP-S binaries.
+
+config ADD_FSP_BINARIES
+	bool "Add Intel FSP 2.0 binaries to CBFS" if !FSP_USE_REPO
+	default y if FSP_USE_REPO
+	help
+	  Add the FSP-M and FSP-S binaries to CBFS.
 
 config FSP_T_CBFS
 	string "Name of FSP-T in CBFS"
@@ -50,32 +81,23 @@ config FSP_M_CBFS
 	string "Name of FSP-M in CBFS"
 	default "fspm.bin"
 
-config FSP_USE_REPO
-	bool "Use the IntelFSP based binaries"
-	depends on ADD_FSP_BINARIES
-	depends on SOC_INTEL_APOLLOLAKE || SOC_INTEL_SKYLAKE || \
-		SOC_INTEL_KABYLAKE || SOC_INTEL_COFFEELAKE || \
-		SOC_INTEL_ICELAKE  || SOC_INTEL_WHISKEYLAKE
-	help
-	  When selecting this option, the SoC must set FSP_HEADER_PATH
-	  and FSP_FD_PATH correctly so FSP splitting works.
-
 config FSP_T_FILE
-	string "Intel FSP-T (temp ram init) binary path and filename"
+	string "Intel FSP-T (temp RAM init) binary path and filename" if !FSP_USE_REPO
+	depends on ADD_FSP_BINARIES
 	depends on FSP_CAR
 	default "$(obj)/Fsp_T.fd" if FSP_USE_REPO
 	help
-	  The path and filename of the Intel FSP-M binary for this platform.
+	  The path and filename of the Intel FSP-T binary for this platform.
 
 config FSP_M_FILE
-	string "Intel FSP-M (memory init) binary path and filename"
+	string "Intel FSP-M (memory init) binary path and filename" if !FSP_USE_REPO
 	depends on ADD_FSP_BINARIES
 	default "$(obj)/Fsp_M.fd" if FSP_USE_REPO
 	help
 	  The path and filename of the Intel FSP-M binary for this platform.
 
 config FSP_S_FILE
-	string "Intel FSP-S (silicon init) binary path and filename"
+	string "Intel FSP-S (silicon init) binary path and filename" if !FSP_USE_REPO
 	depends on ADD_FSP_BINARIES
 	default "$(obj)/Fsp_S.fd" if FSP_USE_REPO
 	help

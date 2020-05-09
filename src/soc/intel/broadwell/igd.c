@@ -1,19 +1,7 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2014 Google Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
-#include <arch/acpi.h>
+#include <acpi/acpi.h>
 #include <device/mmio.h>
 #include <device/pci_ops.h>
 #include <bootmode.h>
@@ -25,6 +13,7 @@
 #include <string.h>
 #include <reg_script.h>
 #include <cbmem.h>
+#include <drivers/intel/gma/i915.h>
 #include <drivers/intel/gma/i915_reg.h>
 #include <drivers/intel/gma/libgfxinit.h>
 #include <drivers/intel/gma/opregion.h>
@@ -259,7 +248,7 @@ u32 map_oprom_vendev(u32 vendev)
 
 static struct resource *gtt_res = NULL;
 
-static unsigned long gtt_read(unsigned long reg)
+u32 gtt_read(u32 reg)
 {
 	u32 val;
 	val = read32(res2mmio(gtt_res, reg, 0));
@@ -267,7 +256,7 @@ static unsigned long gtt_read(unsigned long reg)
 
 }
 
-static void gtt_write(unsigned long reg, unsigned long data)
+void gtt_write(u32 reg, u32 data)
 {
 	write32(res2mmio(gtt_res, reg, 0), data);
 }
@@ -280,9 +269,8 @@ static inline void gtt_rmw(u32 reg, u32 andmask, u32 ormask)
 	gtt_write(reg, val);
 }
 
-static int gtt_poll(u32 reg, u32 mask, u32 value)
-{
-	unsigned int try = GT_RETRY;
+int gtt_poll(u32 reg, u32 mask, u32 value)
+{	unsigned int try = GT_RETRY;
 	u32 data;
 
 	while (try--) {
@@ -349,10 +337,10 @@ static void igd_setup_panel(struct device *dev)
 		south_chicken2 = gtt_read(SOUTH_CHICKEN2);
 		if (conf->gpu_pch_backlight_pwm_hz > hz_limit) {
 			pwm_increment = 16;
-			south_chicken2 &= ~(1 << 5);
+			south_chicken2 |= 1 << 5;
 		} else {
 			pwm_increment = 128;
-			south_chicken2 |= 1 << 5;
+			south_chicken2 &= ~(1 << 5);
 		}
 		gtt_write(SOUTH_CHICKEN2, south_chicken2);
 
@@ -604,7 +592,7 @@ static void igd_init(struct device *dev)
 }
 
 static unsigned long
-gma_write_acpi_tables(struct device *const dev, unsigned long current,
+gma_write_acpi_tables(const struct device *const dev, unsigned long current,
 		struct acpi_rsdp *const rsdp)
 {
 	igd_opregion_t *opregion = (igd_opregion_t *)current;
@@ -628,6 +616,13 @@ gma_write_acpi_tables(struct device *const dev, unsigned long current,
 	return current;
 }
 
+static void gma_generate_ssdt(const struct device *dev)
+{
+	const struct soc_intel_broadwell_config *chip = dev->chip_info;
+
+	drivers_intel_gma_displays_ssdt_generate(&chip->gfx);
+}
+
 static struct device_operations igd_ops = {
 	.read_resources		= &pci_dev_read_resources,
 	.set_resources		= &pci_dev_set_resources,
@@ -635,6 +630,7 @@ static struct device_operations igd_ops = {
 	.init			= &igd_init,
 	.ops_pci		= &broadwell_pci_ops,
 	.write_acpi_tables	= gma_write_acpi_tables,
+	.acpi_fill_ssdt		= gma_generate_ssdt,
 };
 
 static const unsigned short pci_device_ids[] = {

@@ -1,17 +1,8 @@
-/*
- * This file is part of the coreboot project.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <southbridge/intel/common/gpio.h>
+
 static const struct pch_gpio_set1 pch_gpio_set1_mode = {
 	.gpio0  = GPIO_MODE_GPIO,   // -USB30_SMIB - input
 	.gpio1  = GPIO_MODE_GPIO,   // -EC_SCI - input
@@ -79,7 +70,7 @@ static const struct pch_gpio_set1 pch_gpio_set1_direction = {
 	.gpio28 = GPIO_DIR_OUTPUT,
 	.gpio29 = GPIO_DIR_OUTPUT,
 	.gpio30 = GPIO_DIR_OUTPUT,
-	.gpio31 = GPIO_DIR_INPUT
+	.gpio31 = GPIO_DIR_INPUT,
 };
 
 static const struct pch_gpio_set1 pch_gpio_set1_level = {
@@ -118,8 +109,8 @@ static const struct pch_gpio_set1 pch_gpio_set1_level = {
 };
 
 static const struct pch_gpio_set1 pch_gpio_set1_invert = {
-	.gpio0 = GPIO_INVERT,
-	.gpio1 = GPIO_INVERT,
+	.gpio0  = GPIO_INVERT,
+	.gpio1  = GPIO_INVERT,
 	.gpio13 = GPIO_INVERT,
 };
 

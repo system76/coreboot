@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2011 The ChromiumOS Authors.  All rights reserved.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <bootstate.h>
 #include <console/console.h>
@@ -81,13 +69,13 @@ void save_vbnv_cmos(const uint8_t *vbnv_copy)
 
 void vbnv_init_cmos(uint8_t *vbnv_copy)
 {
-	/* If no cmos failure just defer to the normal read path for checking
+	/* If no CMOS failure just defer to the normal read path for checking
 	   vbnv contents' integrity. */
 	if (!vbnv_cmos_failed())
 		return;
 
-	/* In the case of cmos failure force the backup. If backup wasn't used
-	   force the vbnv cmos to be reset. */
+	/* In the case of CMOS failure force the backup. If backup wasn't used
+	   force the vbnv CMOS to be reset. */
 	if (!restore_from_backup(vbnv_copy)) {
 		vbnv_reset(vbnv_copy);
 		/* This parallels the vboot_reference implementation. */

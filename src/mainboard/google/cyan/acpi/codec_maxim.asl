@@ -1,19 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2012 Google Inc.
- * Copyright (C) 2015 Intel Corp.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; version 2 of
- * the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 Scope (\_SB.PCI0.I2C2)
 {
@@ -46,7 +32,7 @@ Scope (\_SB.PCI0.I2C2)
 					"\\_SB.PCI0.I2C2",	/* ResourceSource: I2C bus controller name */
 				)
 
-				GpioInt (Edge, ActiveLow, ExclusiveAndWake, PullDefault,,
+				GpioInt (Edge, ActiveHigh, ExclusiveAndWake, PullDefault,,
 					"\\_SB.GPSE") { BOARD_JACK_MAXIM_GPIO_INDEX }
 			} )
 			Return (SBUF)
@@ -89,7 +75,7 @@ Scope (\_SB.PCI0.I2C2)
 					"\\_SB.PCI0.I2C2",	/* ResourceSource: I2C bus controller name */
 				)
 
-				GpioInt (Edge, ActiveLow, ExclusiveAndWake, PullDefault,,
+				GpioInt (Edge, ActiveHigh, ExclusiveAndWake, PullDefault,,
 					"\\_SB.GPSW") { BOARD_JACK_TI_GPIO_INDEX }
 
 			} )
@@ -109,7 +95,7 @@ Scope (\_SB.PCI0.LPEA)
 	Name (GBUF, ResourceTemplate ()
 	{
 		/* Jack Detect (index 0) */
-		GpioInt (Edge, ActiveLow, ExclusiveAndWake, PullDefault,,
+		GpioInt (Edge, ActiveBoth, ExclusiveAndWake, PullDefault,,
 			"\\_SB.GPSE") { BOARD_JACK_MAXIM_GPIO_INDEX }
 	})
 }

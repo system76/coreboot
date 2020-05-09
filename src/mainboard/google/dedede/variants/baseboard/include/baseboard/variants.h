@@ -1,7 +1,6 @@
 /*
  * This file is part of the coreboot project.
  *
- * Copyright 2020 The coreboot project Authors.
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
@@ -27,5 +26,18 @@ const struct cros_gpio *variant_cros_gpios(size_t *num);
  * @return 0 on success or negative integer for errors.
  */
 int board_info_get_fw_config(uint32_t *fw_config);
+
+/* Return memory configuration structure. */
+const struct mb_cfg *variant_memcfg_config(void);
+
+/* Return memory SKU for the variant */
+int variant_memory_sku(void);
+
+/**
+ * Get data whether memory channel is half-populated or not
+ *
+ * @return false on boards where memory channel is half-populated, true otherwise.
+ */
+bool variant_mem_is_half_populated(void);
 
 #endif /*__BASEBOARD_VARIANTS_H__ */

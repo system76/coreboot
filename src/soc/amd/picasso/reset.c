@@ -1,18 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2010 Advanced Micro Devices, Inc.
- * Copyright (C) 2017 Google, Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <arch/io.h>
 #include <reset.h>
@@ -22,6 +9,8 @@
 #include <soc/southbridge.h>
 #include <amdblocks/acpimmio.h>
 #include <amdblocks/reset.h>
+#include <fsp/util.h>
+#include <assert.h>
 
 void set_warm_reset_flag(void)
 {
@@ -54,5 +43,13 @@ void do_warm_reset(void)
 void do_board_reset(void)
 {
 	/* TODO: Would a warm_reset() suffice? */
+	do_cold_reset();
+}
+
+void chipset_handle_reset(uint32_t status)
+{
+	printk(BIOS_ERR, "Error: unexpected call to %s(0x%08x).  Doing cold reset.\n",
+			__func__, status);
+	assert(0);
 	do_cold_reset();
 }

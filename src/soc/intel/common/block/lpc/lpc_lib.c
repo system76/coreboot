@@ -1,19 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2016-2018 Intel Corp.
- * (Written by Alexandru Gagniuc <alexandrux.gagniuc@intel.com> for Intel Corp.)
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* This file is part of the coreboot project. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #define __SIMPLE_DEVICE__
 
@@ -40,6 +26,17 @@ uint16_t lpc_enable_fixed_io_ranges(uint16_t io_enables)
 uint16_t lpc_get_fixed_io_decode(void)
 {
 	return pci_read_config16(PCH_DEV_LPC, LPC_IO_DECODE);
+}
+
+uint16_t lpc_set_fixed_io_ranges(uint16_t io_ranges, uint16_t mask)
+{
+	uint16_t reg_io_ranges;
+
+	reg_io_ranges = lpc_get_fixed_io_decode() & ~mask;
+	io_ranges |= reg_io_ranges & mask;
+	pci_write_config16(PCH_DEV_LPC, LPC_IO_DECODE, io_ranges);
+
+	return io_ranges;
 }
 
 /*
@@ -270,17 +267,6 @@ static void lpc_set_gen_decode_range(
 			gen_io_dec[i]);
 }
 
-static void pch_lpc_interrupt_init(void)
-{
-	const struct device *dev;
-
-	dev = pcidev_on_root(PCH_DEV_SLOT_LPC, 0);
-	if (!dev)
-		return;
-
-	soc_pch_pirq_init(dev);
-}
-
 void pch_enable_lpc(void)
 {
 	/* Lookup device tree in romstage */
@@ -295,7 +281,7 @@ void pch_enable_lpc(void)
 	lpc_set_gen_decode_range(gen_io_dec);
 	soc_setup_dmi_pcr_io_dec(gen_io_dec);
 	if (ENV_PAYLOAD_LOADER)
-		pch_lpc_interrupt_init();
+		soc_pch_pirq_init(dev);
 }
 
 void lpc_enable_pci_clk_cntl(void)

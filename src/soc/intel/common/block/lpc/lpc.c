@@ -1,18 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2017-2018 Intel Corp.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* This file is part of the coreboot project. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #include <device/device.h>
 #include <device/pci.h>
@@ -109,16 +96,16 @@ static void pch_lpc_set_resources(struct device *dev)
 }
 
 static struct device_operations device_ops = {
-	.read_resources			= pch_lpc_read_resources,
-	.set_resources			= pch_lpc_set_resources,
-	.enable_resources		= pci_dev_enable_resources,
+	.read_resources		= pch_lpc_read_resources,
+	.set_resources		= pch_lpc_set_resources,
+	.enable_resources	= pci_dev_enable_resources,
 #if CONFIG(HAVE_ACPI_TABLES)
-	.write_acpi_tables		= southbridge_write_acpi_tables,
-	.acpi_inject_dsdt_generator	= southbridge_inject_dsdt,
+	.write_acpi_tables	= southbridge_write_acpi_tables,
+	.acpi_inject_dsdt	= southbridge_inject_dsdt,
 #endif
-	.init				= lpc_soc_init,
-	.scan_bus			= scan_static_bus,
-	.ops_pci			= &pci_dev_ops_pci,
+	.init			= lpc_soc_init,
+	.scan_bus		= scan_static_bus,
+	.ops_pci		= &pci_dev_ops_pci,
 };
 
 static const unsigned short pci_device_ids[] = {
@@ -148,11 +135,17 @@ static const unsigned short pci_device_ids[] = {
 	PCI_DEVICE_ID_INTEL_LWB_C627,
 	PCI_DEVICE_ID_INTEL_LWB_C628,
 	PCI_DEVICE_ID_INTEL_LWB_C629,
+	PCI_DEVICE_ID_INTEL_LWB_C621A,
+	PCI_DEVICE_ID_INTEL_LWB_C627A,
+	PCI_DEVICE_ID_INTEL_LWB_C629A,
 	PCI_DEVICE_ID_INTEL_LWB_C624_SUPER,
 	PCI_DEVICE_ID_INTEL_LWB_C627_SUPER_1,
 	PCI_DEVICE_ID_INTEL_LWB_C621_SUPER,
 	PCI_DEVICE_ID_INTEL_LWB_C627_SUPER_2,
 	PCI_DEVICE_ID_INTEL_LWB_C628_SUPER,
+	PCI_DEVICE_ID_INTEL_LWB_C621A_SUPER,
+	PCI_DEVICE_ID_INTEL_LWB_C627A_SUPER,
+	PCI_DEVICE_ID_INTEL_LWB_C629A_SUPER,
 	PCI_DEVICE_ID_INTEL_KBP_H_Q270,
 	PCI_DEVICE_ID_INTEL_KBP_H_H270,
 	PCI_DEVICE_ID_INTEL_KBP_H_Z270,
@@ -231,8 +224,6 @@ static const unsigned short pci_device_ids[] = {
 	PCI_DEVICE_ID_INTEL_TGP_ESPI_24,
 	PCI_DEVICE_ID_INTEL_TGP_ESPI_25,
 	PCI_DEVICE_ID_INTEL_TGP_ESPI_26,
-	PCI_DEVICE_ID_INTEL_JSP_PRE_PROD_ESPI_1,
-	PCI_DEVICE_ID_INTEL_JSP_PRE_PROD_ESPI_2,
 	PCI_DEVICE_ID_INTEL_MCC_ESPI_0,
 	PCI_DEVICE_ID_INTEL_MCC_ESPI_1,
 	PCI_DEVICE_ID_INTEL_MCC_BASE_ESPI,
@@ -241,6 +232,7 @@ static const unsigned short pci_device_ids[] = {
 	PCI_DEVICE_ID_INTEL_MCC_ESPI_2,
 	PCI_DEVICE_ID_INTEL_MCC_ESPI_3,
 	PCI_DEVICE_ID_INTEL_MCC_ESPI_4,
+	PCI_DEVICE_ID_INTEL_JSP_SUPER_ESPI,
 	0
 };
 

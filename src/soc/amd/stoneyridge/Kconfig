@@ -1,17 +1,5 @@
-##
-## This file is part of the coreboot project.
-##
-## Copyright (C) 2017 Advanced Micro Devices, Inc.
-##
-## This program is free software; you can redistribute it and/or modify
-## it under the terms of the GNU General Public License as published by
-## the Free Software Foundation; version 2 of the License.
-##
-## This program is distributed in the hope that it will be useful,
-## but WITHOUT ANY WARRANTY; without even the implied warranty of
-## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-## GNU General Public License for more details.
-##
+# SPDX-License-Identifier: GPL-2.0-only
+# This file is part of the coreboot project.
 
 config SOC_AMD_STONEYRIDGE
 	bool
@@ -48,7 +36,7 @@ config CPU_SPECIFIC_OPTIONS
 	select SOC_AMD_COMMON_BLOCK_HDA
 	select SOC_AMD_COMMON_BLOCK_SATA
 	select SOC_AMD_COMMON_BLOCK_PI
-	select SOC_AMD_COMMON_BLOCK_PSP
+	select SOC_AMD_COMMON_BLOCK_PSP_GEN1
 	select SOC_AMD_COMMON_BLOCK_CAR
 	select SOC_AMD_COMMON_BLOCK_S3
 	select SOC_AMD_COMMON_BLOCK_SMBUS
@@ -93,7 +81,6 @@ config AMD_SOC_PACKAGE
 config VBOOT
 	select VBOOT_SEPARATE_VERSTAGE
 	select VBOOT_STARTS_IN_BOOTBLOCK
-	select VBOOT_SAVE_RECOVERY_REASON_ON_REBOOT
 	select VBOOT_VBNV_CMOS
 	select VBOOT_VBNV_CMOS_BACKUP_TO_FLASH
 

@@ -1,15 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <console/console.h>
 #include <cpu/cpu.h>
@@ -129,6 +119,12 @@ static void cpu_pci_domain_read_resources(struct device *dev)
 				   "debugcon");
 	}
 
+	/* A segment is legacy VGA region */
+	mmio_resource(dev, idx++, 0xa0000 / KiB, (0xc0000 - 0xa0000) / KiB);
+
+	/* C segment to 1MB is reserved RAM (low tables) */
+	reserved_ram_resource(dev, idx++, 0xc0000 / KiB, (1 * MiB - 0xc0000) / KiB);
+
 	if (q35 && ((tomk * 1024) < 0xb0000000)) {
 		/*
 		 * Reserve the region between top-of-ram and the
@@ -223,14 +219,29 @@ static int qemu_get_smbios_data(struct device *dev, int *handle, unsigned long *
 	return len;
 }
 #endif
+
+#if CONFIG(HAVE_ACPI_TABLES)
+static const char *qemu_acpi_name(const struct device *dev)
+{
+	if (dev->path.type == DEVICE_PATH_DOMAIN)
+		return "PCI0";
+
+	if (dev->path.type != DEVICE_PATH_PCI || dev->bus->secondary != 0)
+		return NULL;
+
+	return NULL;
+}
+#endif
+
 static struct device_operations pci_domain_ops = {
 	.read_resources		= cpu_pci_domain_read_resources,
 	.set_resources		= cpu_pci_domain_set_resources,
-	.enable_resources	= NULL,
-	.init			= NULL,
 	.scan_bus		= pci_domain_scan_bus,
 #if CONFIG(GENERATE_SMBIOS_TABLES)
 	.get_smbios_data	= qemu_get_smbios_data,
+#endif
+#if CONFIG(HAVE_ACPI_TABLES)
+	.acpi_name		= qemu_acpi_name,
 #endif
 };
 
@@ -262,9 +273,8 @@ static void cpu_bus_scan(struct device *bus)
 }
 
 static struct device_operations cpu_bus_ops = {
-	.read_resources   = DEVICE_NOOP,
-	.set_resources    = DEVICE_NOOP,
-	.enable_resources = DEVICE_NOOP,
+	.read_resources   = noop_read_resources,
+	.set_resources    = noop_set_resources,
 	.init             = cpu_bus_init,
 	.scan_bus         = cpu_bus_scan,
 };

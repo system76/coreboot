@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright 2019 Google LLC
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <device/mmio.h>
 #include <device/pci_ops.h>
@@ -84,7 +72,7 @@ static bool pch_xhci_port_wake_check(uintptr_t base, uint8_t num, uint8_t event)
 		/*
 		 * Check if CSC bit is set and port is capable of wake on
 		 * connect/disconnect to identify if the port caused wake
-		 * event for usb attach/detach.
+		 * event for USB attach/detach.
 		 */
 		if (pch_xhci_csc_set(port_status) &&
 		    pch_xhci_wake_capable(port_status)) {
@@ -95,7 +83,7 @@ static bool pch_xhci_port_wake_check(uintptr_t base, uint8_t num, uint8_t event)
 
 		/*
 		 * Check if PLC is set and PLS indicates resume to identify if
-		 * the port caused wake event for usb activity.
+		 * the port caused wake event for USB activity.
 		 */
 		if (pch_xhci_plc_set(port_status) &&
 		    pch_xhci_resume(port_status)) {

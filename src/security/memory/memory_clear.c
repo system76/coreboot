@@ -1,18 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2019 9elements Agency GmbH
- * Copyright (C) 2019 Facebook Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #if CONFIG(ARCH_X86)
 #include <cpu/x86/pae.h>
@@ -33,7 +20,7 @@
 #include <string.h>
 #include <security/memory/memory.h>
 #include <cbmem.h>
-#include <arch/acpi.h>
+#include <acpi/acpi.h>
 
 /* Helper to find free space for memset_pae. */
 static uintptr_t get_free_memory_range(struct memranges *mem,

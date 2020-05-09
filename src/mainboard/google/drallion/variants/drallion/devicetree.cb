@@ -65,6 +65,9 @@ chip soc/intel/cannonlake
 	register "PchHdaIDispCodecDisconnect" = "1"
 	register "PchHdaAudioLinkHda" = "1"
 
+	# Select CPU PL2/PL4 config
+	register "cpu_pl2_4_cfg" = "baseline"
+
 	# VR Settings Configuration for 2/4 Domains
 	#+----------------+-------+-------+-------+-------+
 	#| Domain/Setting |  SA   |  IA   | GTUS  |  GTS  |
@@ -154,9 +157,9 @@ chip soc/intel/cannonlake
 	register "usb2_ports[9]" = "USB2_PORT_MID(OC_SKIP)"	# Bluetooth
 
 	register "usb3_ports[0]" = "USB3_PORT_DEFAULT(OC_SKIP)"	# Left Type-C Port
-	register "usb3_ports[1]" = "USB3_PORT_DEFAULT(OC_SKIP)"	# Left Type-C Port 2
-	register "usb3_ports[2]" = "USB3_PORT_DEFAULT(OC0)"	# Right Type-A Port 1
-	register "usb3_ports[3]" = "USB3_PORT_DEFAULT(OC1)"	# Right Type-A Port 2
+	register "usb3_ports[1]" = "USB3_PORT_DEFAULT(OC0)"	# Right Type-A Port 1
+	register "usb3_ports[2]" = "USB3_PORT_DEFAULT(OC1)"	# Right Type-A Port 2
+	register "usb3_ports[3]" = "USB3_PORT_DEFAULT(OC_SKIP)"	# Left Type-C Port 2
 	register "usb3_ports[4]" = "USB3_PORT_DEFAULT(OC_SKIP)"	# WWAN
 	register "usb3_ports[5]" = "USB3_PORT_EMPTY"
 
@@ -171,6 +174,9 @@ chip soc/intel/cannonlake
 	#+-------------------+---------------------------+
 
 	register "tcc_offset" = "1"
+
+	# PCH Thermal Trip Temperature in deg C
+	register "common_soc_config.pch_thermal_trip" = "77"
 
 	register "common_soc_config" = "{
 		.chipset_lockdown = CHIPSET_LOCKDOWN_COREBOOT,
@@ -223,7 +229,7 @@ chip soc/intel/cannonlake
 	device domain 0 on
 		device pci 00.0 on  end # Host Bridge
 		device pci 02.0 on
-			chip drivers/generic/gfx
+			chip drivers/gfx/generic
 				register "device_count" = "1"
 				register "device[0].name" = ""LCD""
 				# Address is set following the ACPI spec section A.3.2
@@ -383,7 +389,7 @@ chip soc/intel/cannonlake
 				register "reset_delay_ms" = "10"
 				register "reset_off_delay_ms" = "5"
 				register "stop_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_E7)"
-				register "stop_delay_ms" = "10"
+				register "stop_delay_ms" = "115"
 				register "enable_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_B21)"
 				register "enable_delay_ms" = "55"
 				register "has_power_resource" = "1"

@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2018-2019 Intel Corporation.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <cbmem.h>
 #include <console/console.h>
@@ -261,7 +249,7 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 
 	/* Legacy 8254 timer support */
 	params->Enable8254ClockGating = !CONFIG_USE_LEGACY_8254_TIMER;
-	params->Enable8254ClockGatingOnS3 = 1;
+	params->Enable8254ClockGatingOnS3 = !CONFIG_USE_LEGACY_8254_TIMER;
 
 	/* USB */
 	for (i = 0; i < ARRAY_SIZE(config->usb2_ports); i++) {
@@ -374,6 +362,9 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 #endif
 	params->Device4Enable = config->Device4Enable;
 
+	/* Teton Glacier hybrid storage support */
+	params->TetonGlacierMode = config->TetonGlacierMode;
+
 	/* VrConfig Settings for 5 domains
 	 * 0 = System Agent, 1 = IA Core, 2 = Ring,
 	 * 3 = GT unsliced,  4 = GT sliced */
@@ -412,6 +403,10 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 
 	/* Unlock all GPIO pads */
 	tconfig->PchUnlockGpioPads = config->PchUnlockGpioPads;
+
+	/* Set correct Sirq mode based on config */
+	params->PchSirqEnable = config->serirq_mode != SERIRQ_OFF;
+	params->PchSirqMode = config->serirq_mode == SERIRQ_CONTINUOUS;
 
 	/*
 	 * GSPI Chip Select parameters

@@ -50,7 +50,7 @@ Device(SUPERIO_DEV) {
 	Field (CREG, ByteAcc, NoLock, Preserve)
 	{
 		PNP_ADDR_REG,	8,
-		PNP_DATA_REG,   8
+		PNP_DATA_REG,	8
 	}
 	IndexField (PNP_ADDR_REG, PNP_DATA_REG, ByteAcc, NoLock, Preserve)
 	{
@@ -109,31 +109,31 @@ Device(SUPERIO_DEV) {
 	#define PNP_EXIT_MAGIC_1ST	0xaa
 	#include <superio/acpi/pnp_config.asl>
 
-	/* PM: indicate IPD (Immediate Power Down) bit state as D0/D2 */
+	/* PM: indicate IPD (Immediate Power Down) bit state as D0/D3 */
 	Method (_PSC) {
 		ENTER_CONFIG_MODE (PNP_NO_LDN_CHANGE)
 		  Store (IPD, Local0)
 		EXIT_CONFIG_MODE ()
-		If (Local0) { Return (2) }
+		If (Local0) { Return (3) }
 		Else { Return (0) }
 	}
 
-	/* PM: Switch to D0 by setting IPD low  */
+	/* PM: Switch to D0 by setting IPD low */
 	Method (_PS0) {
 		ENTER_CONFIG_MODE (PNP_NO_LDN_CHANGE)
 		  Store (Zero, IPD)
 		EXIT_CONFIG_MODE ()
 	}
 
-	/* PM: Switch to D2 by setting IPD high  */
-	Method (_PS2) {
+	/* PM: Switch to D3 by setting IPD high */
+	Method (_PS3) {
 		ENTER_CONFIG_MODE (PNP_NO_LDN_CHANGE)
 		  Store (One, IPD)
 		EXIT_CONFIG_MODE ()
 	}
 
 	/* Suspend LED: Write given three-bit value into appropriate register.
-	                From the datasheet:
+			From the datasheet:
 			000 - drive pin constantly high
 			001 - drive 0.5Hz pulses
 			010 - drive pin constantly low

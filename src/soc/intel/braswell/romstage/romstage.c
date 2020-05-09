@@ -1,19 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2013 Google Inc.
- * Copyright (C) 2015 Intel Corp.
- * Copyright (C) 2018 Eltan B.V.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <cbmem.h>
 #include <stddef.h>
@@ -45,13 +31,14 @@ ROMSTAGE_CBMEM_INIT_HOOK(migrate_power_state);
 
 struct chipset_power_state *fill_power_state(void)
 {
-	power_state.pm1_sts = inw(ACPI_BASE_ADDRESS + PM1_STS);
-	power_state.pm1_en = inw(ACPI_BASE_ADDRESS + PM1_EN);
-	power_state.pm1_cnt = inl(ACPI_BASE_ADDRESS + PM1_CNT);
+	power_state.pm1_sts  = inw(ACPI_BASE_ADDRESS + PM1_STS);
+	power_state.pm1_en   = inw(ACPI_BASE_ADDRESS + PM1_EN);
+	power_state.pm1_cnt  = inl(ACPI_BASE_ADDRESS + PM1_CNT);
 	power_state.gpe0_sts = inl(ACPI_BASE_ADDRESS + GPE0_STS);
-	power_state.gpe0_en = inl(ACPI_BASE_ADDRESS + GPE0_EN);
-	power_state.tco_sts = inl(ACPI_BASE_ADDRESS + TCO_STS);
-	power_state.prsts = read32((void *)(PMC_BASE_ADDRESS + PRSTS));
+	power_state.gpe0_en  = inl(ACPI_BASE_ADDRESS + GPE0_EN);
+	power_state.tco_sts  = inl(ACPI_BASE_ADDRESS + TCO_STS);
+
+	power_state.prsts      = read32((void *)(PMC_BASE_ADDRESS + PRSTS));
 	power_state.gen_pmcon1 = read32((void *)(PMC_BASE_ADDRESS + GEN_PMCON1));
 	power_state.gen_pmcon2 = read32((void *)(PMC_BASE_ADDRESS + GEN_PMCON2));
 
@@ -59,10 +46,13 @@ struct chipset_power_state *fill_power_state(void)
 
 	printk(BIOS_DEBUG, "pm1_sts: %04x pm1_en: %04x pm1_cnt: %08x\n",
 		power_state.pm1_sts, power_state.pm1_en, power_state.pm1_cnt);
+
 	printk(BIOS_DEBUG, "gpe0_sts: %08x gpe0_en: %08x tco_sts: %08x\n",
 		power_state.gpe0_sts, power_state.gpe0_en, power_state.tco_sts);
+
 	printk(BIOS_DEBUG, "prsts: %08x gen_pmcon1: %08x gen_pmcon2: %08x\n",
 		power_state.prsts, power_state.gen_pmcon1, power_state.gen_pmcon2);
+
 	printk(BIOS_DEBUG, "prev_sleep_state %d\n", power_state.prev_sleep_state);
 	return &power_state;
 }
@@ -108,8 +98,7 @@ void soc_after_ram_init(struct romstage_params *params)
 }
 
 /* Initialize the UPD parameters for MemoryInit */
-void soc_memory_init_params(struct romstage_params *params,
-			    MEMORY_INIT_UPD *upd)
+void soc_memory_init_params(struct romstage_params *params, MEMORY_INIT_UPD *upd)
 {
 	const struct device *dev;
 	const struct soc_intel_braswell_config *config;
@@ -119,24 +108,24 @@ void soc_memory_init_params(struct romstage_params *params,
 
 	if (!dev) {
 		printk(BIOS_ERR,
-			"Error! Device (PCI:0:%02x.%01x) not found, "
-			"soc_memory_init_params!\n", LPC_DEV, LPC_FUNC);
+			"Error! Device (PCI:0:%02x.%01x) not found, soc_memory_init_params!\n",
+			LPC_DEV, LPC_FUNC);
 		return;
 	}
 
 	config = config_of(dev);
 	printk(BIOS_DEBUG, "Updating UPD values for MemoryInit\n");
-	upd->PcdMrcInitTsegSize = CONFIG(HAVE_SMI_HANDLER) ?
-		config->PcdMrcInitTsegSize : 0;
-	upd->PcdMrcInitMmioSize = config->PcdMrcInitMmioSize;
-	upd->PcdMrcInitSpdAddr1 = config->PcdMrcInitSpdAddr1;
-	upd->PcdMrcInitSpdAddr2 = config->PcdMrcInitSpdAddr2;
+
+	upd->PcdMrcInitTsegSize   = CONFIG(HAVE_SMI_HANDLER) ? config->PcdMrcInitTsegSize : 0;
+	upd->PcdMrcInitMmioSize   = config->PcdMrcInitMmioSize;
+	upd->PcdMrcInitSpdAddr1   = config->PcdMrcInitSpdAddr1;
+	upd->PcdMrcInitSpdAddr2   = config->PcdMrcInitSpdAddr2;
 	upd->PcdIgdDvmt50PreAlloc = config->PcdIgdDvmt50PreAlloc;
-	upd->PcdApertureSize = config->PcdApertureSize;
-	upd->PcdGttSize = config->PcdGttSize;
-	upd->PcdLegacySegDecode = config->PcdLegacySegDecode;
-	upd->PcdDvfsEnable = config->PcdDvfsEnable;
-	upd->PcdCaMirrorEn = config->PcdCaMirrorEn;
+	upd->PcdApertureSize      = config->PcdApertureSize;
+	upd->PcdGttSize           = config->PcdGttSize;
+	upd->PcdLegacySegDecode   = config->PcdLegacySegDecode;
+	upd->PcdDvfsEnable        = config->PcdDvfsEnable;
+	upd->PcdCaMirrorEn        = config->PcdCaMirrorEn;
 }
 
 void soc_display_memory_init_params(const MEMORY_INIT_UPD *old,
@@ -145,27 +134,39 @@ void soc_display_memory_init_params(const MEMORY_INIT_UPD *old,
 	/* Display the parameters for MemoryInit */
 	printk(BIOS_SPEW, "UPD values for MemoryInit:\n");
 	fsp_display_upd_value("PcdMrcInitTsegSize", 2,
-		old->PcdMrcInitTsegSize, new->PcdMrcInitTsegSize);
+			  old->PcdMrcInitTsegSize,
+			  new->PcdMrcInitTsegSize);
 	fsp_display_upd_value("PcdMrcInitMmioSize", 2,
-		old->PcdMrcInitMmioSize, new->PcdMrcInitMmioSize);
+			  old->PcdMrcInitMmioSize,
+			  new->PcdMrcInitMmioSize);
 	fsp_display_upd_value("PcdMrcInitSpdAddr1", 1,
-		old->PcdMrcInitSpdAddr1, new->PcdMrcInitSpdAddr1);
+			  old->PcdMrcInitSpdAddr1,
+			  new->PcdMrcInitSpdAddr1);
 	fsp_display_upd_value("PcdMrcInitSpdAddr2", 1,
-		old->PcdMrcInitSpdAddr2, new->PcdMrcInitSpdAddr2);
+			  old->PcdMrcInitSpdAddr2,
+			  new->PcdMrcInitSpdAddr2);
 	fsp_display_upd_value("PcdMemChannel0Config", 1,
-		old->PcdMemChannel0Config, new->PcdMemChannel0Config);
+			  old->PcdMemChannel0Config,
+			  new->PcdMemChannel0Config);
 	fsp_display_upd_value("PcdMemChannel1Config", 1,
-		old->PcdMemChannel1Config, new->PcdMemChannel1Config);
+			  old->PcdMemChannel1Config,
+			  new->PcdMemChannel1Config);
 	fsp_display_upd_value("PcdMemorySpdPtr", 4,
-		old->PcdMemorySpdPtr, new->PcdMemorySpdPtr);
+			  old->PcdMemorySpdPtr,
+			  new->PcdMemorySpdPtr);
 	fsp_display_upd_value("PcdIgdDvmt50PreAlloc", 1,
-		old->PcdIgdDvmt50PreAlloc, new->PcdIgdDvmt50PreAlloc);
+			  old->PcdIgdDvmt50PreAlloc,
+			  new->PcdIgdDvmt50PreAlloc);
 	fsp_display_upd_value("PcdApertureSize", 1,
-		old->PcdApertureSize, new->PcdApertureSize);
+			  old->PcdApertureSize,
+			  new->PcdApertureSize);
 	fsp_display_upd_value("PcdGttSize", 1,
-		old->PcdGttSize, new->PcdGttSize);
+			  old->PcdGttSize,
+			  new->PcdGttSize);
 	fsp_display_upd_value("PcdLegacySegDecode", 1,
-		old->PcdLegacySegDecode, new->PcdLegacySegDecode);
+			  old->PcdLegacySegDecode,
+			  new->PcdLegacySegDecode);
 	fsp_display_upd_value("PcdDvfsEnable", 1,
-		old->PcdDvfsEnable, new->PcdDvfsEnable);
+			  old->PcdDvfsEnable,
+			  new->PcdDvfsEnable);
 }

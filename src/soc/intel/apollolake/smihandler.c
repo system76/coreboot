@@ -1,18 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2013 Google Inc.
- * Copyright (C) 2015-2016 Intel Corp.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <cpu/x86/smm.h>
 #include <cpu/intel/em64t100_save_state.h>
@@ -34,23 +21,15 @@ const struct smm_save_state_ops *get_smm_save_state_ops(void)
 	return &em64t100_smm_ops;
 }
 
-/* SMI handlers that should be serviced in SCI mode too. */
-uint32_t smihandler_soc_get_sci_mask(void)
-{
-	uint32_t sci_mask =
-		SMI_HANDLER_SCI_EN(APM_SMI_STS) |
-		SMI_HANDLER_SCI_EN(SLP_SMI_STS);
-
-	return sci_mask;
-}
-
 const smi_handler_t southbridge_smi[32] = {
-	[SLP_SMI_STS] = smihandler_southbridge_sleep,
-	[APM_SMI_STS] = smihandler_southbridge_apmc,
-	[FAKE_PM1_SMI_STS] = smihandler_southbridge_pm1,
-	[GPIO_SMI_STS] = smihandler_southbridge_gpi,
-	[TCO_SMI_STS] = smihandler_southbridge_tco,
-	[PERIODIC_SMI_STS] = smihandler_southbridge_periodic,
+	[SMI_ON_SLP_EN_STS_BIT] = smihandler_southbridge_sleep,
+	[APM_STS_BIT] = smihandler_southbridge_apmc,
+	[PM1_STS_BIT] = smihandler_southbridge_pm1,
+	[GPIO_STS_BIT] = smihandler_southbridge_gpi,
+#if CONFIG(SOC_INTEL_COMMON_BLOCK_SMM_TCO_ENABLE)
+	[TCO_STS_BIT] = smihandler_southbridge_tco,
+#endif
+	[PERIODIC_STS_BIT] = smihandler_southbridge_periodic,
 #if CONFIG(SOC_ESPI)
 	[ESPI_SMI_STS_BIT] = smihandler_southbridge_espi,
 #endif

@@ -1,23 +1,13 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2015-2016 Advanced Micro Devices, Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
+#include <assert.h>
 #include <amdblocks/biosram.h>
+#include <amdblocks/hda.h>
 #include <device/pci_ops.h>
 #include <arch/ioapic.h>
-#include <arch/acpi.h>
-#include <arch/acpigen.h>
+#include <acpi/acpi.h>
+#include <acpi/acpigen.h>
 #include <cbmem.h>
 #include <console/console.h>
 #include <cpu/amd/mtrr.h>
@@ -207,7 +197,7 @@ static unsigned long acpi_fill_hest(acpi_hest_t *hest)
 	return (unsigned long)current;
 }
 
-static void northbridge_fill_ssdt_generator(struct device *device)
+static void northbridge_fill_ssdt_generator(const struct device *device)
 {
 	msr_t msr;
 	char pscope[] = "\\_SB.PCI0";
@@ -228,7 +218,23 @@ static void northbridge_fill_ssdt_generator(struct device *device)
 	acpigen_pop_len();
 }
 
-static unsigned long agesa_write_acpi_tables(struct device *device,
+static void patch_ssdt_processor_scope(acpi_header_t *ssdt)
+{
+	unsigned int len = ssdt->length - sizeof(acpi_header_t);
+	unsigned int i;
+
+	for (i = sizeof(acpi_header_t); i < len; i++) {
+		/* Search for _PR_ scope and replace it with _SB_ */
+		if (*(uint32_t *)((unsigned long)ssdt + i) == 0x5f52505f)
+			*(uint32_t *)((unsigned long)ssdt + i) = 0x5f42535f;
+	}
+	/* Recalculate checksum */
+	ssdt->checksum = 0;
+	ssdt->checksum = acpi_checksum((void *)ssdt, ssdt->length);
+}
+
+
+static unsigned long agesa_write_acpi_tables(const struct device *device,
 					     unsigned long current,
 					     acpi_rsdp_t *rsdp)
 {
@@ -323,6 +329,7 @@ static unsigned long agesa_write_acpi_tables(struct device *device,
 	printk(BIOS_DEBUG, "ACPI:    * SSDT at %lx\n", current);
 	ssdt = (acpi_header_t *)agesawrapper_getlateinitptr(PICK_PSTATE);
 	if (ssdt != NULL) {
+		patch_ssdt_processor_scope(ssdt);
 		memcpy((void *)current, ssdt, ssdt->length);
 		ssdt = (acpi_header_t *)current;
 		current += ssdt->length;
@@ -340,10 +347,8 @@ static struct device_operations northbridge_operations = {
 	.set_resources	  = set_resources,
 	.enable_resources = pci_dev_enable_resources,
 	.init		  = northbridge_init,
-	.acpi_fill_ssdt_generator = northbridge_fill_ssdt_generator,
+	.acpi_fill_ssdt   = northbridge_fill_ssdt_generator,
 	.write_acpi_tables = agesa_write_acpi_tables,
-	.enable		  = 0,
-	.ops_pci	  = 0,
 };
 
 static const unsigned short pci_device_ids[] = {
@@ -497,4 +502,56 @@ void SetNbMidParams(GNB_MID_CONFIGURATION *params)
 	/* 0=Primary and decode all VGA resources, 1=Secondary - decode none */
 	params->iGpuVgaMode = 0;
 	params->GnbIoapicAddress = IO_APIC2_ADDR;
+}
+
+void hda_soc_ssdt_quirks(const struct device *dev)
+{
+	const char *scope = acpi_device_path(dev);
+	static const struct fieldlist list[] = {
+		FIELDLIST_OFFSET(0x42),
+		FIELDLIST_NAMESTR("NSDI", 1),
+		FIELDLIST_NAMESTR("NSDO", 1),
+		FIELDLIST_NAMESTR("NSEN", 1),
+	};
+	struct opregion opreg = OPREGION("AZPD", PCI_CONFIG, 0x0, 0x100);
+
+	assert(scope);
+
+	acpigen_write_scope(scope);
+
+	/*
+	 * OperationRegion(AZPD, PCI_Config, 0x00, 0x100)
+	 * Field (AZPD, AnyAcc, NoLock, Preserve) {
+	 *	Offset (0x42),
+	 *	NSDI, 1,
+	 *	NSDO, 1,
+	 *	NSEN, 1,
+	 * }
+	 */
+	acpigen_write_opregion(&opreg);
+	acpigen_write_field(opreg.name, list, ARRAY_SIZE(list),
+			    FIELD_ANYACC | FIELD_NOLOCK | FIELD_PRESERVE);
+
+	/*
+	 * Method (_INI, 0, NotSerialized) {
+	 *	If (LEqual (OSVR, 0x03)) {
+	 *		Store (Zero, NSEN)
+	 *		Store (One, NSDO)
+	 *		Store (One, NSDI)
+	 *	}
+	 * }
+	 */
+	acpigen_write_method("_INI", 0);
+
+	acpigen_write_if_lequal_namestr_int("OSVR", 0x03);
+
+	acpigen_write_store_op_to_namestr(ONE_OP, "NSEN");
+	acpigen_write_store_op_to_namestr(ZERO_OP, "NSDO");
+	acpigen_write_store_op_to_namestr(ZERO_OP, "NSDI");
+
+	acpigen_pop_len(); /* If */
+
+	acpigen_pop_len(); /* Method _INI */
+
+	acpigen_pop_len(); /* Scope */
 }

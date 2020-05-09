@@ -1,23 +1,11 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2016-2017 Intel Corporation.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <bootmode.h>
 #include <bootstate.h>
 #include <cbmem.h>
 #include <fsp/api.h>
-#include <arch/acpi.h>
+#include <acpi/acpi.h>
 #include <console/console.h>
 #include <device/device.h>
 #include <device/pci_ids.h>
@@ -107,12 +95,10 @@ static struct device_operations pci_domain_ops = {
 };
 
 static struct device_operations cpu_bus_ops = {
-	.read_resources   = DEVICE_NOOP,
-	.set_resources    = DEVICE_NOOP,
-	.enable_resources = DEVICE_NOOP,
-	.init             = DEVICE_NOOP,
+	.read_resources   = noop_read_resources,
+	.set_resources    = noop_set_resources,
 #if CONFIG(HAVE_ACPI_TABLES)
-	.acpi_fill_ssdt_generator = generate_cpu_entries,
+	.acpi_fill_ssdt   = generate_cpu_entries,
 #endif
 };
 
@@ -272,8 +258,14 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 	params->SataEnable = config->EnableSata;
 	params->SataMode = config->SataMode;
 	params->SataSpeedLimit = config->SataSpeedLimit;
-	params->SataPwrOptEnable = config->SataPwrOptEnable;
 	params->EnableTcoTimer = !config->PmTimerDisabled;
+
+	/*
+	 * For unknown reasons FSP skips writing some essential SATA init registers (SIR) when
+	 * SataPwrOptEnable=0. This results in link errors, "unaligned write" errors and others.
+	 * Enabling this option solves these problems.
+	 */
+	params->SataPwrOptEnable = 1;
 
 	tconfig->PchLockDownGlobalSmi = config->LockDownConfigGlobalSmi;
 	tconfig->PchLockDownRtcLock = config->LockDownConfigRtcLock;

@@ -61,45 +61,42 @@ static const u32 vga_colors[] = {
 	(0xFF << 16) | (0xFF << 8) | 0xFF,
 };
 
-/* Addresses for the various components */
-static unsigned long fbinfo;
-static unsigned long fbaddr;
-static unsigned long chars;
+struct cb_framebuffer fbinfo;
+static unsigned short *chars;
 
-#define FI ((struct cb_framebuffer *) phys_to_virt(fbinfo))
-#define FB ((unsigned char *) phys_to_virt(fbaddr))
-#define CHARS ((unsigned short *) phys_to_virt(chars))
+/* Shorthand for up-to-date virtual framebuffer address */
+#define FB ((unsigned char *)phys_to_virt(fbinfo.physical_address))
 
 static void corebootfb_scroll_up(void)
 {
 	unsigned char *dst = FB;
-	unsigned char *src = FB + (FI->bytes_per_line * font_height);
+	unsigned char *src = FB + (fbinfo.bytes_per_line * font_height);
 	int y;
 
 	/* Scroll all lines up */
-	for(y = 0; y < FI->y_resolution - font_height; y++) {
-		memcpy(dst, src, FI->x_resolution * (FI->bits_per_pixel >> 3));
+	for (y = 0; y < fbinfo.y_resolution - font_height; y++) {
+		memcpy(dst, src, fbinfo.x_resolution * (fbinfo.bits_per_pixel >> 3));
 
-		dst += FI->bytes_per_line;
-		src += FI->bytes_per_line;
+		dst += fbinfo.bytes_per_line;
+		src += fbinfo.bytes_per_line;
 	}
 
 	/* Erase last line */
-	dst = FB + (FI->y_resolution - font_height) * FI->bytes_per_line;
+	dst = FB + (fbinfo.y_resolution - font_height) * fbinfo.bytes_per_line;
 
-	for(; y < FI->y_resolution; y++) {
-		memset(dst, 0, FI->x_resolution * (FI->bits_per_pixel >> 3));
-		dst += FI->bytes_per_line;
+	for (; y < fbinfo.y_resolution; y++) {
+		memset(dst, 0, fbinfo.x_resolution * (fbinfo.bits_per_pixel >> 3));
+		dst += fbinfo.bytes_per_line;
 	}
 
 	/* And update the char buffer */
-	dst = (unsigned char *) CHARS;
-	src = (unsigned char *) (CHARS + coreboot_video_console.columns);
+	dst = (unsigned char *)chars;
+	src = (unsigned char *)(chars + coreboot_video_console.columns);
 	memcpy(dst, src, coreboot_video_console.columns *
 			(coreboot_video_console.rows - 1) * 2);
 	int column;
 	for (column = 0; column < coreboot_video_console.columns; column++)
-		CHARS[(coreboot_video_console.rows - 1) * coreboot_video_console.columns + column] = (VGA_COLOR_DEFAULT << 8);
+		chars[(coreboot_video_console.rows - 1) * coreboot_video_console.columns + column] = (VGA_COLOR_DEFAULT << 8);
 
 	cursor_y--;
 }
@@ -110,15 +107,15 @@ static void corebootfb_clear(void)
 	unsigned char *ptr = FB;
 
 	/* Clear the screen */
-	for(row = 0; row < FI->y_resolution; row++) {
-		memset(ptr, 0, FI->x_resolution * (FI->bits_per_pixel >> 3));
-		ptr += FI->bytes_per_line;
+	for (row = 0; row < fbinfo.y_resolution; row++) {
+		memset(ptr, 0, fbinfo.x_resolution * (fbinfo.bits_per_pixel >> 3));
+		ptr += fbinfo.bytes_per_line;
 	}
 
 	/* And update the char buffer */
 	for(row = 0; row < coreboot_video_console.rows; row++)
 		for (column = 0; column < coreboot_video_console.columns; column++)
-			CHARS[row * coreboot_video_console.columns + column] = (VGA_COLOR_DEFAULT << 8);
+			chars[row * coreboot_video_console.columns + column] = (VGA_COLOR_DEFAULT << 8);
 }
 
 static void corebootfb_putchar(u8 row, u8 col, unsigned int ch)
@@ -133,55 +130,55 @@ static void corebootfb_putchar(u8 row, u8 col, unsigned int ch)
 
 	int x, y;
 
-	if (FI->bits_per_pixel > 8) {
-		bgval = ((((vga_colors[bg] >> 0) & 0xff) >> (8 - FI->blue_mask_size)) << FI->blue_mask_pos) |
-			((((vga_colors[bg] >> 8) & 0xff) >> (8 - FI->green_mask_size)) << FI->green_mask_pos) |
-			((((vga_colors[bg] >> 16) & 0xff) >> (8 - FI->red_mask_size)) << FI->red_mask_pos);
-		fgval = ((((vga_colors[fg] >> 0) & 0xff) >> (8 - FI->blue_mask_size)) << FI->blue_mask_pos) |
-			((((vga_colors[fg] >> 8) & 0xff) >> (8 - FI->green_mask_size)) << FI->green_mask_pos) |
-			((((vga_colors[fg] >> 16) & 0xff) >> (8 - FI->red_mask_size)) << FI->red_mask_pos);
+	if (fbinfo.bits_per_pixel > 8) {
+		bgval = ((((vga_colors[bg] >> 0) & 0xff) >> (8 - fbinfo.blue_mask_size)) << fbinfo.blue_mask_pos) |
+			((((vga_colors[bg] >> 8) & 0xff) >> (8 - fbinfo.green_mask_size)) << fbinfo.green_mask_pos) |
+			((((vga_colors[bg] >> 16) & 0xff) >> (8 - fbinfo.red_mask_size)) << fbinfo.red_mask_pos);
+		fgval = ((((vga_colors[fg] >> 0) & 0xff) >> (8 - fbinfo.blue_mask_size)) << fbinfo.blue_mask_pos) |
+			((((vga_colors[fg] >> 8) & 0xff) >> (8 - fbinfo.green_mask_size)) << fbinfo.green_mask_pos) |
+			((((vga_colors[fg] >> 16) & 0xff) >> (8 - fbinfo.red_mask_size)) << fbinfo.red_mask_pos);
 	}
 
 
-	dst = FB + ((row * font_height) * FI->bytes_per_line);
-	dst += (col * font_width * (FI->bits_per_pixel >> 3));
+	dst = FB + ((row * font_height) * fbinfo.bytes_per_line);
+	dst += (col * font_width * (fbinfo.bits_per_pixel >> 3));
 
 	for(y = 0; y < font_height; y++) {
 		for(x = font_width - 1; x >= 0; x--) {
 
-			switch (FI->bits_per_pixel) {
+			switch (fbinfo.bits_per_pixel) {
 			case 8: /* Indexed */
-				dst[(font_width - x) * (FI->bits_per_pixel >> 3)] = font_glyph_filled(ch, x, y) ?  fg : bg;
+				dst[(font_width - x) * (fbinfo.bits_per_pixel >> 3)] = font_glyph_filled(ch, x, y) ?  fg : bg;
 				break;
 			case 16: /* 16 bpp */
-				dst16 = (u16 *)(dst + (font_width - x) * (FI->bits_per_pixel >> 3));
+				dst16 = (u16 *)(dst + (font_width - x) * (fbinfo.bits_per_pixel >> 3));
 				*dst16 = font_glyph_filled(ch, x, y) ? fgval : bgval;
 				break;
 			case 24: /* 24 bpp */
 				if (font_glyph_filled(ch, x, y)) {
-					dst[(font_width - x) * (FI->bits_per_pixel >> 3) + 0] = fgval & 0xff;
-					dst[(font_width - x) * (FI->bits_per_pixel >> 3) + 1] = (fgval >> 8) & 0xff;
-					dst[(font_width - x) * (FI->bits_per_pixel >> 3) + 2] = (fgval >> 16) & 0xff;
+					dst[(font_width - x) * (fbinfo.bits_per_pixel >> 3) + 0] = fgval & 0xff;
+					dst[(font_width - x) * (fbinfo.bits_per_pixel >> 3) + 1] = (fgval >> 8) & 0xff;
+					dst[(font_width - x) * (fbinfo.bits_per_pixel >> 3) + 2] = (fgval >> 16) & 0xff;
 				} else {
-					dst[(font_width - x) * (FI->bits_per_pixel >> 3) + 0] = bgval & 0xff;
-					dst[(font_width - x) * (FI->bits_per_pixel >> 3) + 1] = (bgval >> 8) & 0xff;
-					dst[(font_width - x) * (FI->bits_per_pixel >> 3) + 2] = (bgval >> 16) & 0xff;
+					dst[(font_width - x) * (fbinfo.bits_per_pixel >> 3) + 0] = bgval & 0xff;
+					dst[(font_width - x) * (fbinfo.bits_per_pixel >> 3) + 1] = (bgval >> 8) & 0xff;
+					dst[(font_width - x) * (fbinfo.bits_per_pixel >> 3) + 2] = (bgval >> 16) & 0xff;
 				}
 				break;
 			case 32: /* 32 bpp */
-				dst32 = (u32 *)(dst + (font_width - x) * (FI->bits_per_pixel >> 3));
+				dst32 = (u32 *)(dst + (font_width - x) * (fbinfo.bits_per_pixel >> 3));
 				*dst32 = font_glyph_filled(ch, x, y) ? fgval : bgval;
 				break;
 			}
 		}
 
-		dst += FI->bytes_per_line;
+		dst += fbinfo.bytes_per_line;
 	}
 }
 
 static void corebootfb_putc(u8 row, u8 col, unsigned int ch)
 {
-	CHARS[row * coreboot_video_console.columns + col] = ch;
+	chars[row * coreboot_video_console.columns + col] = ch;
 	corebootfb_putchar(row, col, ch);
 }
 
@@ -189,10 +186,10 @@ static void corebootfb_update_cursor(void)
 {
 	int ch, paint;
 	if(cursor_en) {
-		ch = CHARS[cursor_y * coreboot_video_console.columns + cursor_x];
+		ch = chars[cursor_y * coreboot_video_console.columns + cursor_x];
 		paint = (ch & 0xff) | ((ch << 4) & 0xf000) | ((ch >> 4) & 0x0f00);
 	} else {
-		paint = CHARS[cursor_y * coreboot_video_console.columns + cursor_x];
+		paint = chars[cursor_y * coreboot_video_console.columns + cursor_x];
 	}
 
 	if (cursor_y < coreboot_video_console.rows)
@@ -230,25 +227,42 @@ static int corebootfb_init(void)
 	if (lib_sysinfo.framebuffer == NULL)
 		return -1;
 
-	/* We might have been called before relocation (like FILO does). So
-	   just keep the physical address which won't break on relocation. */
-	fbinfo = virt_to_phys(lib_sysinfo.framebuffer);
+	fbinfo = *lib_sysinfo.framebuffer;
 
-	fbaddr = FI->physical_address;
-	if (fbaddr == 0)
+	if (fbinfo.physical_address == 0)
 		return -1;
 
-	font_init(FI->x_resolution);
+	font_init(fbinfo.x_resolution);
 
-	coreboot_video_console.columns = FI->x_resolution / font_width;
-	coreboot_video_console.rows = FI->y_resolution / font_height;
+	/* Draw centered on the framebuffer if requested and feasible, */
+	const int center =
+		IS_ENABLED(CONFIG_LP_COREBOOT_VIDEO_CENTERED)
+		&& coreboot_video_console.columns * font_width <= fbinfo.x_resolution
+		&& coreboot_video_console.rows * font_height <= fbinfo.y_resolution;
+	/* adapt to the framebuffer size, otherwise. */
+	if (!center) {
+		coreboot_video_console.columns = fbinfo.x_resolution / font_width;
+		coreboot_video_console.rows = fbinfo.y_resolution / font_height;
+	}
 
-	/* See setting of fbinfo above. */
-	chars = virt_to_phys(malloc(coreboot_video_console.rows *
-				    coreboot_video_console.columns * 2));
+	chars = malloc(coreboot_video_console.rows *
+		       coreboot_video_console.columns * 2);
+	if (!chars)
+		return -1;
 
 	// clear boot splash screen if there is one.
 	corebootfb_clear();
+
+	if (center) {
+		fbinfo.physical_address +=
+			(fbinfo.x_resolution - coreboot_video_console.columns * font_width)
+				/ 2 * fbinfo.bits_per_pixel / 8
+			+ (fbinfo.y_resolution - coreboot_video_console.rows * font_height)
+				/ 2 * fbinfo.bytes_per_line;
+		fbinfo.x_resolution = coreboot_video_console.columns * font_width;
+		fbinfo.y_resolution = coreboot_video_console.rows * font_height;
+	}
+
 	return 0;
 }
 

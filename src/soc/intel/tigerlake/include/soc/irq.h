@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2020 Intel Corporation.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #ifndef _SOC_IRQ_H_
 #define _SOC_IRQ_H_
@@ -23,20 +11,21 @@
 #define PCH_IRQ11	11
 
 #define LPSS_I2C0_IRQ	27
-#define LPSS_I2C1_IRQ	28
+#define LPSS_I2C1_IRQ	40
 #define LPSS_I2C2_IRQ	29
 #define LPSS_I2C3_IRQ	30
 #define LPSS_I2C4_IRQ	31
 #define LPSS_I2C5_IRQ	32
 #define LPSS_SPI0_IRQ	36
 #define LPSS_SPI1_IRQ	37
-#define LPSS_SPI2_IRQ	18
-#define LPSS_SPI3_IRQ	23
-#define LPSS_UART0_IRQ	34
-#define LPSS_UART1_IRQ	35
+#define LPSS_SPI2_IRQ	34
+#define LPSS_SPI3_IRQ	43
+#define LPSS_UART0_IRQ	16
+#define LPSS_UART1_IRQ	17
 #define LPSS_UART2_IRQ	33
 
 #define HDA_IRQ		16
+#define GBE_IRQ		16
 #define SMBUS_IRQ	16
 #define TRACEHUB_IRQ	16
 
@@ -61,8 +50,8 @@
 
 #define CNVI_BT_IRQ	18
 
-#define THC0_IRQ	16
-#define THC1_IRQ	17
+#define THC0_IRQ	23
+#define THC1_IRQ	22
 
 #define ISH_IRQ		16
 

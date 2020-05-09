@@ -73,14 +73,16 @@ struct pei_data
 	uint32_t epbar;
 	uint32_t pciexbar;
 	uint16_t smbusbar;
-	uint32_t wdbbar;
-	uint32_t wdbsize;
+	/* Unused by HSW MRC, but changes to the memory layout of this struct break the ABI */
+	uint32_t _unused_wdbbar;
+	uint32_t _unused_wdbsize;
 	uint32_t hpet_address;
 	uint32_t rcba;
 	uint32_t pmbase;
 	uint32_t gpiobase;
 	uint32_t temp_mmio_base;
-	uint32_t system_type; // 0 Mobile, 1 Desktop/Server
+	/* System type: 0 => Mobile, 1 => Desktop/Server, 5 => ULT, Others => Reserved */
+	uint32_t system_type;
 	uint32_t tseg_size;
 	uint8_t spd_addresses[4];
 	int boot_mode;
@@ -101,10 +103,7 @@ struct pei_data
 	/* Data from MRC that should be saved to flash */
 	unsigned char *mrc_output;
 	unsigned int mrc_output_len;
-	/*
-	 * Max frequency DDR3 could be ran at. Could be one of four values: 800,
-	 * 1067, 1333, 1600
-	 */
+	/* Max frequency to run DDR3 at. Can be one of four values: 800, 1067, 1333, 1600 */
 	uint32_t max_ddr3_freq;
 	/* Route all USB ports to XHCI controller in resume path */
 	int usb_xhci_on_resume;

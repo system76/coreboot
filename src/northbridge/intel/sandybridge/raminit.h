@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2010 Google Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #ifndef RAMINIT_H
 #define RAMINIT_H
@@ -30,4 +18,4 @@ void save_mrc_data(struct pei_data *pei_data);
 void mainboard_fill_pei_data(struct pei_data *pei_data);
 int fixup_sandybridge_errata(void);
 
-#endif				/* RAMINIT_H */
+#endif /* RAMINIT_H */

@@ -130,6 +130,10 @@ static const struct {
 	  "6th generation (Skylake-S family) Core Processor (Desktop)" },
 	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_CORE_6TH_GEN_E,
 	  "6th generation (Skylake family) Core Processor Xeon E (Server)" },
+	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_CORE_6TH_GEN_U,
+	  "6th generation (Skylake family) Core Processor (Mobile)" },
+	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_CORE_6TH_GEN_Y,
+	  "6th generation (Skylake family) Core Processor (Mobile)" },
 	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_BAYTRAIL, "Bay Trail" },
 	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_CORE_7TH_GEN_U,
 	  "7th generation (Kaby Lake family) Core Processor (Mobile)" },
@@ -139,6 +143,10 @@ static const struct {
 	  "7th generation (Kaby Lake family) Core Processor (Mobile)" },
 	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_CORE_7TH_GEN_E3,
 	  "7th generation (Kaby Lake family) Core Processor Xeon E3-1200" },
+	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_CORE_8TH_GEN_U_1,
+	  "8th generation (Coffee Lake family) Core Processor (Mobile)" },
+	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_CORE_8TH_GEN_U_2,
+	  "8th generation (Whiskey Lake family) Core Processor (Mobile)" },
 	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_CORE_10TH_GEN_U,
 	  "10th generation (Icelake family) Core Processor (Mobile)" },
 	/* Southbridges (LPC controllers) */
@@ -226,8 +234,10 @@ static const struct {
 	  "Lynx Point Low Power Premium SKU" },
 	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_LYNXPOINT_LP_BASE,
 	  "Lynx Point Low Power Base SKU" },
+	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_WILDCATPOINT_LP_PREM,
+	  "Wildcat Point Low Power Premium SKU" },
 	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_WILDCATPOINT_LP,
-	  "Wildcat Point Low Power SKU" },
+	  "Wildcat Point Low Power Base SKU" },
 	{ PCI_VENDOR_ID_INTEL, 0x2310, "DH89xxCC" },
 	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_BAYTRAIL_LPC, "Bay Trail" },
 	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_SUNRISEPOINT_PRE,
@@ -252,6 +262,8 @@ static const struct {
 	  "Sunrise Point-LP U iHDCP 2.2 Premium/Kabylake" },
 	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_SUNRISEPOINT_LP_Y_IHDCP_PREM,
 	  "Sunrise Point-LP Y iHDCP 2.2 Premium/Kabylake" },
+	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_CANNONPOINT_LP_U_PREM,
+	  "Cannon Point-LP U Premium/CoffeeLake/Whiskeylake" },
 	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_H110, "H110" },
 	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_H170, "H170" },
 	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_Z170, "Z170" },
@@ -482,7 +494,7 @@ static void print_version(void)
 
 static void print_usage(const char *name)
 {
-	printf("usage: %s [-vh?gGrpmedPMaAsfSRx]\n", name);
+	printf("usage: %s [-vh?gGrplmedPMaAsfSRx]\n", name);
 	printf("\n"
 	     "   -v | --version:                   print the version\n"
 	     "   -h | --help:                      print this help\n\n"
@@ -493,6 +505,7 @@ static void print_usage(const char *name)
 	     "   -G | --gpio-diffs:                show GPIO differences from defaults\n"
 	     "   -r | --rcba:                      dump southbridge RCBA registers\n"
 	     "   -p | --pmbase:                    dump southbridge Power Management registers\n\n"
+	     "   -l | --lpc:                       dump southbridge LPC/eSPI Interface registers\n\n"
 	     "   -m | --mchbar:                    dump northbridge Memory Controller registers\n"
 	     "   -S FILE | --spd=FILE:             create a file storing current timings (implies -m)\n"
 	     "   -e | --epbar:                     dump northbridge EPBAR registers\n"
@@ -562,6 +575,7 @@ int main(int argc, char *argv[])
 	int dump_pmbase = 0, dump_epbar = 0, dump_dmibar = 0;
 	int dump_pciexbar = 0, dump_coremsrs = 0, dump_ambs = 0;
 	int dump_spi = 0, dump_gfx = 0, dump_ahci = 0, dump_sgx = 0;
+	int dump_lpc = 0;
 	int show_gpio_diffs = 0;
 	size_t pcr_count = 0;
 	uint8_t dump_pcr[MAX_PCR_PORTS];
@@ -574,6 +588,7 @@ int main(int argc, char *argv[])
 		{"mchbar", 0, 0, 'm'},
 		{"rcba", 0, 0, 'r'},
 		{"pmbase", 0, 0, 'p'},
+		{"lpc", 0, 0, 'l'},
 		{"epbar", 0, 0, 'e'},
 		{"dmibar", 0, 0, 'd'},
 		{"pciexpress", 0, 0, 'P'},
@@ -589,7 +604,7 @@ int main(int argc, char *argv[])
 		{0, 0, 0, 0}
 	};
 
-	while ((opt = getopt_long(argc, argv, "vh?gGrpmedPMaAsfRS:x",
+	while ((opt = getopt_long(argc, argv, "vh?gGrplmedPMaAsfRS:x",
                                   long_options, &option_index)) != EOF) {
 		switch (opt) {
 		case 'v':
@@ -621,6 +636,9 @@ int main(int argc, char *argv[])
 		case 'p':
 			dump_pmbase = 1;
 			break;
+		case 'l':
+			dump_lpc = 1;
+			break;
 		case 'e':
 			dump_epbar = 1;
 			break;
@@ -639,6 +657,7 @@ int main(int argc, char *argv[])
 			dump_mchbar = 1;
 			dump_rcba = 1;
 			dump_pmbase = 1;
+			dump_lpc = 1;
 			dump_epbar = 1;
 			dump_dmibar = 1;
 			dump_pciexbar = 1;
@@ -801,6 +820,11 @@ int main(int argc, char *argv[])
 
 	if (dump_pmbase) {
 		print_pmbase(sb, pacc);
+		printf("\n\n");
+	}
+
+	if (dump_lpc) {
+		print_lpc(sb, pacc);
 		printf("\n\n");
 	}
 

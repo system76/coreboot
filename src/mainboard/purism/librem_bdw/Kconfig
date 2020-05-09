@@ -8,6 +8,7 @@ config BOARD_PURISM_BASEBOARD_LIBREM_BDW
 	select INTEL_GMA_HAVE_VBT
 	select INTEL_INT15
 	select MAINBOARD_HAS_LIBGFXINIT
+	select MAINBOARD_HAS_TPM1
 	select SOC_INTEL_BROADWELL
 
 if BOARD_PURISM_BASEBOARD_LIBREM_BDW
@@ -17,14 +18,9 @@ config VARIANT_DIR
 	default "librem13v1" if BOARD_PURISM_LIBREM13_V1
 	default "librem15v2" if BOARD_PURISM_LIBREM15_V2
 
-config DEVICETREE
+config OVERRIDE_DEVICETREE
 	string
-	default "variants/$(CONFIG_VARIANT_DIR)/devicetree.cb"
-
-config DRIVERS_PS2_KEYBOARD
-	def_bool y
-	help
-	  Default PS/2 Keyboard to enabled on this board.
+	default "variants/$(CONFIG_VARIANT_DIR)/overridetree.cb"
 
 config DRIVERS_UART_8250IO
 	def_bool n

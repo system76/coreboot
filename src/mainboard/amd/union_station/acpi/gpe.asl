@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2011 Advanced Micro Devices, Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 Scope(\_GPE) {	/* Start Scope GPE */
 
@@ -63,7 +51,7 @@ Scope(\_GPE) {	/* Start Scope GPE */
 		/* DBGO("\\_GPE\\_L1B\n") */
 		Notify(\_SB.PCI0.AZHD, 0x02) /* NOTIFY_DEVICE_WAKE */
 	}
-} 	/* End Scope GPE */
+}	/* End Scope GPE */
 
 /* Contains the GPEs for USB overcurrent */
 #include "usb_oc.asl"

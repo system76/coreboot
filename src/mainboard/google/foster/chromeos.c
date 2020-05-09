@@ -1,18 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright 2014 Google Inc.
- * Copyright (c) 2015, NVIDIA CORPORATION.  All rights reserved.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <boot/coreboot_tables.h>
 #include <ec/google/chromeec/ec.h>
@@ -24,9 +11,6 @@ void fill_lb_gpios(struct lb_gpios *gpios)
 {
 	/* TBD(twarren@nvidia.com): Any analogs for these on Foster-FFD? */
 	struct lb_gpio chromeos_gpios[] = {
-		/* Write Protect: active low */
-		{-1, ACTIVE_LOW, !get_write_protect_state(), "write protect"},
-
 		/* TODO: Power: active low / high depending on board id */
 		{GPIO(X5), ACTIVE_LOW, -1, "power"},
 

@@ -1,14 +1,6 @@
 ##
+## SPDX-License-Identifier: GPL-2.0-only
 ## This file is part of the coreboot project.
-##
-## This program is free software; you can redistribute it and/or modify
-## it under the terms of the GNU General Public License as published by
-## the Free Software Foundation; version 2 of the License.
-##
-## This program is distributed in the hope that it will be useful,
-## but WITHOUT ANY WARRANTY; without even the implied warranty of
-## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-## GNU General Public License for more details.
 ##
 
 ifeq ($(CONFIG_POSTCAR_STAGE),y)
@@ -41,6 +33,11 @@ stripped_vgabios_id = $(call strip_quotes,$(CONFIG_VGA_BIOS_ID))
 cbfs-files-$(CONFIG_VGA_BIOS) += pci$(stripped_vgabios_id).rom
 pci$(stripped_vgabios_id).rom-file := $(call strip_quotes,$(CONFIG_VGA_BIOS_FILE))
 pci$(stripped_vgabios_id).rom-type := optionrom
+
+stripped_second_vbios_id = $(call strip_quotes,$(CONFIG_VGA_BIOS_SECOND_ID))
+cbfs-files-$(CONFIG_VGA_BIOS_SECOND) += pci$(stripped_second_vbios_id).rom
+pci$(stripped_second_vbios_id).rom-file := $(call strip_quotes,$(CONFIG_VGA_BIOS_SECOND_FILE))
+pci$(stripped_second_vbios_id).rom-type := optionrom
 
 stripped_vgabios_dgpu_id = $(call strip_quotes,$(CONFIG_VGA_BIOS_DGPU_ID))
 cbfs-files-$(CONFIG_VGA_BIOS_DGPU) += pci$(stripped_vgabios_dgpu_id).rom
@@ -233,11 +230,6 @@ $(CONFIG_CBFS_PREFIX)/postcar-compression := none
 
 ifeq ($(CONFIG_ARCH_RAMSTAGE_X86_32)$(CONFIG_ARCH_RAMSTAGE_X86_64),y)
 
-ramstage-$(CONFIG_HAVE_ACPI_TABLES) += acpi.c
-ramstage-$(CONFIG_HAVE_ACPI_TABLES) += acpigen.c
-ramstage-$(CONFIG_HAVE_ACPI_TABLES) += acpigen_dsm.c
-ramstage-$(CONFIG_HAVE_ACPI_TABLES) += acpi_device.c
-ramstage-$(CONFIG_HAVE_ACPI_TABLES) += acpi_pld.c
 ramstage-$(CONFIG_HAVE_ACPI_RESUME) += acpi_s3.c
 ramstage-$(CONFIG_ACPI_BERT) += acpi_bert_storage.c
 ramstage-y += c_start.S
@@ -289,15 +281,6 @@ endif
 ifneq ($(wildcard src/mainboard/$(MAINBOARDDIR)/reset.c),)
 ramstage-srcs += src/mainboard/$(MAINBOARDDIR)/reset.c
 endif
-ifeq ($(CONFIG_HAVE_ACPI_TABLES),y)
-ifneq ($(wildcard src/mainboard/$(MAINBOARDDIR)/acpi_tables.c),)
-ramstage-srcs += src/mainboard/$(MAINBOARDDIR)/acpi_tables.c
-endif
-$(eval $(call asl_template,dsdt))
-ifneq ($(wildcard src/mainboard/$(MAINBOARDDIR)/fadt.c),)
-ramstage-srcs += src/mainboard/$(MAINBOARDDIR)/fadt.c
-endif
-endif # CONFIG_GENERATE_ACPI_TABLES
 
 ramstage-libs ?=
 

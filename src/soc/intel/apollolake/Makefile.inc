@@ -24,6 +24,7 @@ bootblock-y += uart.c
 romstage-y += car.c
 romstage-y += ../../../cpu/intel/car/romstage.c
 romstage-y += romstage.c
+romstage-y += report_platform.c
 romstage-y += gspi.c
 romstage-y += heci.c
 romstage-y += i2c.c
@@ -77,7 +78,7 @@ postcar-y += i2c.c
 postcar-y += heci.c
 postcar-y += reset.c
 postcar-y += uart.c
-postcar-$(CONFIG_VBOOT_MEASURED_BOOT) += gspi.c
+postcar-y += gspi.c
 
 verstage-y += car.c
 verstage-y += i2c.c

@@ -1,16 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; version 2, or (at your option)
- * any later version of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* This file is part of the coreboot project. */
+/* SPDX-License-Identifier: GPL-2.0-only */
 
 #include <device/mmio.h>
 #include <console/console.h>
@@ -103,7 +92,7 @@ void intel_gmbus_read_edid(u8 *mmio, u8 bus, u8 slave, u8 *edid, u32 edid_size)
 
 	printk (BIOS_SPEW, "EDID:\n");
 	for (i = 0; i < 128; i++) {
-		printk (BIOS_SPEW, "%02x ", edid[i]);
+		printk(BIOS_SPEW, " %02x", edid[i]);
 		if ((i & 0xf) == 0xf)
 			printk (BIOS_SPEW, "\n");
 	}

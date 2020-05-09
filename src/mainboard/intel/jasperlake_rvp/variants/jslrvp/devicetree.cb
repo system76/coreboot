@@ -1,4 +1,4 @@
-chip soc/intel/tigerlake
+chip soc/intel/jasperlake
 
 	device cpu_cluster 0 on
 		device lapic 0 on end
@@ -9,7 +9,7 @@ chip soc/intel/tigerlake
 	# route. i.e. If this route changes then the affected GPE
 	# offset bits also need to be changed.
 	register "pmc_gpe0_dw0" = "GPP_B"
-	register "pmc_gpe0_dw1" = "GPP_D"
+	register "pmc_gpe0_dw1" = "GPP_H"
 	register "pmc_gpe0_dw2" = "GPP_E"
 
 	# FSP configuration
@@ -18,22 +18,32 @@ chip soc/intel/tigerlake
 	register "ScsEmmcHs400Enabled" = "1"
 	register "SdCardPowerEnableActiveHigh" = "1"
 
-	register "usb2_ports[0]" = "USB2_PORT_MID(OC0)"	# USB3/2 Type A port1
-	register "usb2_ports[1]" = "USB2_PORT_MID(OC_SKIP)"	# USB2 WWAN
-	register "usb2_ports[2]" = "USB2_PORT_MID(OC_SKIP)"	# USB2 Bluetooth
-	register "usb2_ports[3]" = "USB2_PORT_MID(OC0)"	# Type-C Port1
-	register "usb2_ports[4]" = "USB2_PORT_MID(OC0)"	# Type-C Port2
-	register "usb2_ports[5]" = "USB2_PORT_MID(OC3)"	# Type-C Port3
-	register "usb2_ports[6]" = "USB2_PORT_MID(OC3)"	# Type-C Port4
-	register "usb2_ports[7]" = "USB2_PORT_MID(OC0)"	# USB3/2 Type A port2
-	register "usb2_ports[8]" = "USB2_PORT_MID(OC3)"	# USB2 Type A port1
-	register "usb2_ports[9]" = "USB2_PORT_MID(OC3)"	# USB2 Type A port2
+	# Display related UPDs
+	# Select eDP for port A (1 = eDP, 2 = MIPI)
+	register "DdiPortAConfig" = "1"
 
-	register "usb3_ports[0]" = "USB3_PORT_DEFAULT(OC0)"	# USB3/2 Type A port1
-	register "usb3_ports[1]" = "USB3_PORT_DEFAULT(OC0)"	# USB3/2 Type A port2
-	register "usb3_ports[2]" = "USB3_PORT_DEFAULT(OC_SKIP)"	# USB3 WLAN
-	register "usb3_ports[3]" = "USB3_PORT_DEFAULT(OC_SKIP)"	# UNUSED
-	register "usb3_ports[4]" = "USB3_PORT_DEFAULT(OC_SKIP)"	# UNUSED
+	# Enable HPD for DDI ports B/C
+	register "DdiPortBHpd" = "1"
+	register "DdiPortCHpd" = "1"
+
+	# Enable DDC for DDI ports B/C
+	register "DdiPortBDdc" = "1"
+	register "DdiPortCDdc" = "1"
+
+	register "usb2_ports[0]" = "USB2_PORT_MID(OC_SKIP)"	# Type-C Port1
+	register "usb2_ports[1]" = "USB2_PORT_MID(OC2)"		# USB2 Type A port1
+	register "usb2_ports[2]" = "USB2_PORT_MID(OC_SKIP)"	# Type-C Port2
+	register "usb2_ports[3]" = "USB2_PORT_MID(OC0)"		# USB2 Type A port2
+	register "usb2_ports[4]" = "USB2_PORT_MID(OC_SKIP)"	# USB2 Bluetooth
+	register "usb2_ports[5]" = "USB2_PORT_MID(OC_SKIP)"	# USB2 WWAN
+	register "usb2_ports[6]" = "USB2_PORT_MID(OC2)"		# USB2 Type A port3
+	register "usb2_ports[7]" = "USB2_PORT_MID(OC3)"		# USB2 Type A port4
+
+	register "usb3_ports[0]" = "USB3_PORT_DEFAULT(OC_SKIP)"	# Type-C Port1
+	register "usb3_ports[1]" = "USB3_PORT_DEFAULT(OC_SKIP)"	# Type-C Port2
+	register "usb3_ports[2]" = "USB3_PORT_DEFAULT(OC_SKIP)"	# USB3/2 Type A port1
+	register "usb3_ports[3]" = "USB3_PORT_DEFAULT(OC2)"	# USB3 WWAN
+	register "usb3_ports[4]" = "USB3_PORT_DEFAULT(OC2)"	# UNUSED
 	register "usb3_ports[5]" = "USB3_PORT_DEFAULT(OC_SKIP)"	# UNUSED
 
 	# Enable Pch iSCLK
@@ -46,78 +56,37 @@ chip soc/intel/tigerlake
 	register "gen3_dec" = "0x00fc0901"
 
 	register "PchHdaDspEnable" = "1"
-	register "PchHdaAudioLinkHda" = "1"
+	register "PchHdaAudioLinkHdaEnable" = "0"
+	register "PchHdaAudioLinkSspEnable[0]" = "1"
+	register "PchHdaAudioLinkSspEnable[1]" = "1"
+	register "PchHdaAudioLinkDmicEnable[0]" = "1"
+	register "PchHdaAudioLinkDmicEnable[1]" = "1"
 
-	register "PcieRpEnable[0]" = "1"
-	register "PcieRpEnable[1]" = "0"
-	register "PcieRpEnable[2]" = "0"
-	register "PcieRpEnable[3]" = "0"
+	# PCIe port 1 for M.2 E-key WLAN
+	# Enable Root Port 4(x4) for NVMe
+	register "PcieRpEnable[1]" = "1"
 	register "PcieRpEnable[4]" = "1"
-	register "PcieRpEnable[5]" = "0"
-	register "PcieRpEnable[6]" = "0"
-	register "PcieRpEnable[7]" = "0"
-	register "PcieRpEnable[8]" = "1"
-	register "PcieRpEnable[9]" = "0"
-	register "PcieRpEnable[10]" = "0"
-	register "PcieRpEnable[11]" = "0"
-	register "PcieRpEnable[12]" = "0"
-	register "PcieRpEnable[13]" = "0"
-	register "PcieRpEnable[14]" = "0"
-	register "PcieRpEnable[15]" = "0"
 
-	register "PcieClkSrcUsage[0]" = "2"
-	register "PcieClkSrcUsage[1]" = "8"
-	register "PcieClkSrcUsage[2]" = "0xC"
-	register "PcieClkSrcUsage[3]" = "0x70"
-	register "PcieClkSrcUsage[4]" = "4"
-	register "PcieClkSrcUsage[5]" = "0xE"
-	register "PcieClkSrcUsage[6]" = "0x80"
-	register "PcieClkSrcUsage[7]" = "0x80"
-	register "PcieClkSrcUsage[8]" = "0x80"
-	register "PcieClkSrcUsage[9]" = "0x80"
-	register "PcieClkSrcUsage[10]" = "0x80"
-	register "PcieClkSrcUsage[11]" = "0x80"
-	register "PcieClkSrcUsage[12]" = "0x80"
-	register "PcieClkSrcUsage[13]" = "0x80"
-	register "PcieClkSrcUsage[14]" = "0x80"
-	register "PcieClkSrcUsage[15]" = "0x80"
+	# Enable ClkReqDetect 1 for WLAN
+	# Enable ClkReqDetect 4 for NVMe
+	register "PcieRpClkReqDetect[1]" = "1"
+	register "PcieRpClkReqDetect[4]" = "1"
 
-	register "PcieClkSrcClkReq[0]" = "0"
-	register "PcieClkSrcClkReq[1]" = "1"
-	register "PcieClkSrcClkReq[2]" = "2"
-	register "PcieClkSrcClkReq[3]" = "3"
-	register "PcieClkSrcClkReq[4]" = "4"
-	register "PcieClkSrcClkReq[5]" = "5"
-	register "PcieClkSrcClkReq[6]" = "6"
-	register "PcieClkSrcClkReq[7]" = "7"
-	register "PcieClkSrcClkReq[8]" = "8"
-	register "PcieClkSrcClkReq[9]" = "9"
-	register "PcieClkSrcClkReq[10]" = "10"
-	register "PcieClkSrcClkReq[11]" = "11"
-	register "PcieClkSrcClkReq[12]" = "12"
-	register "PcieClkSrcClkReq[13]" = "13"
-	register "PcieClkSrcClkReq[14]" = "14"
-	register "PcieClkSrcClkReq[15]" = "15"
+	register "PcieClkSrcUsage[0]" = "0x04"
+	register "PcieClkSrcUsage[1]" = "0x01"
+	register "PcieClkSrcUsage[2]" = "0xFF"
+	register "PcieClkSrcUsage[3]" = "0xFF"
+	register "PcieClkSrcUsage[4]" = "0xFF"
+	register "PcieClkSrcUsage[5]" = "0xFF"
 
-	register "SataEnable" = "1"
-	register "SataSalpSupport" = "1"
-	register "SataPortsEnable[0]" = "1"
-	register "SataPortsEnable[1]" = "1"
-	register "SataPortsEnable[2]" = "1"
-	register "SataPortsEnable[3]" = "1"
-	register "SataPortsEnable[4]" = "1"
-	register "SataPortsEnable[5]" = "1"
-	register "SataPortsEnable[6]" = "1"
-	register "SataPortsEnable[7]" = "1"
+	register "PcieClkSrcClkReq[0]" = "0x00"
+	register "PcieClkSrcClkReq[1]" = "0x01"
+	register "PcieClkSrcClkReq[2]" = "0x02"
+	register "PcieClkSrcClkReq[3]" = "0x03"
+	register "PcieClkSrcClkReq[4]" = "0x04"
+	register "PcieClkSrcClkReq[5]" = "0x05"
 
-	register "SataPortsDevSlp[0]" = "1"
-	register "SataPortsDevSlp[1]" = "1"
-	register "SataPortsDevSlp[2]" = "1"
-	register "SataPortsDevSlp[3]" = "1"
-	register "SataPortsDevSlp[4]" = "1"
-	register "SataPortsDevSlp[5]" = "1"
-	register "SataPortsDevSlp[6]" = "1"
-	register "SataPortsDevSlp[7]" = "1"
+	register "SataEnable" = "0"
 
 	register "SerialIoI2cMode" = "{
 		[PchSerialIoIndexI2C0]  = PchSerialIoPci,
@@ -159,13 +128,25 @@ chip soc/intel/tigerlake
 	register "dptf_enable" = "1"
 
 	# Enable S0ix
-	register "s0ix_enable" = "0"
+	register "s0ix_enable" = "1"
+
+	# GPIO for SD card detect
+	register "sdcard_cd_gpio" = "VGPIO_39"
 
 	register "common_soc_config" = "{
 		.chipset_lockdown = CHIPSET_LOCKDOWN_COREBOOT,
 		.gspi[1] = {
 			.speed_mhz = 1,
 			.early_init = 1,
+		},
+			.i2c[0] = {
+			.speed = I2C_SPEED_FAST,
+			.speed_config[0] = {
+				.speed = I2C_SPEED_FAST,
+				.scl_lcnt = 176,
+				.scl_hcnt = 95,
+				.sda_hold = 36,
+			}
 		},
 	}"
 
@@ -222,16 +203,6 @@ chip soc/intel/tigerlake
 						device usb 2.7 on end
 					end
 					chip drivers/usb/acpi
-						register "desc" = ""USB2 Type-A Right Lower""
-						register "type" = "UPC_TYPE_A"
-						device usb 2.8 on end
-					end
-					chip drivers/usb/acpi
-						register "desc" = ""USB2 Type-A Right Upper""
-						register "type" = "UPC_TYPE_A"
-						device usb 2.9 on end
-					end
-					chip drivers/usb/acpi
 						register "desc" = ""USB3/2 Type-A Left Lower""
 						register "type" = "UPC_TYPE_A"
 						device usb 3.0 on end
@@ -272,14 +243,40 @@ chip soc/intel/tigerlake
 		end
 		device pci 14.5 on  end # SDCard
 		device pci 15.0 on
-			chip drivers/i2c/hid
-				register "generic.hid" = ""ALPS0000""
-				register "generic.desc" = ""Touchpad""
-				register "generic.irq" = "ACPI_IRQ_LEVEL_LOW(GPP_C8_IRQ)"
-				register "hid_desc_reg_offset" = "0x20"
-				device i2c 2c on end
-			end
-		end # I2C 0
+                       chip drivers/i2c/max98373
+                                register "vmon_slot_no" = "4"
+                                register "imon_slot_no" = "5"
+                                register "uid" = "0"
+                                register "desc" = ""RIGHT SPEAKER AMP""
+                                register "name" = ""MAXR""
+                                device i2c 31 on end
+                        end
+                        chip drivers/i2c/max98373
+                                register "vmon_slot_no" = "6"
+                                register "imon_slot_no" = "7"
+                                register "uid" = "1"
+                                register "desc" = ""LEFT SPEAKER AMP""
+                                register "name" = ""MAXL""
+                                device i2c 32 on end
+                        end
+                        chip drivers/i2c/da7219
+                                register "irq" = "ACPI_IRQ_LEVEL_LOW(GPP_H16_IRQ)"
+                                register "btn_cfg" = "50"
+                                register "mic_det_thr" = "500"
+                                register "jack_ins_deb" = "20"
+                                register "jack_det_rate" = ""32ms_64ms""
+                                register "jack_rem_deb" = "1"
+                                register "a_d_btn_thr" = "0xa"
+                                register "d_b_btn_thr" = "0x16"
+                                register "b_c_btn_thr" = "0x21"
+                                register "c_mic_btn_thr" = "0x3e"
+                                register "btn_avg" = "4"
+                                register "adc_1bit_rpt" = "1"
+                                register "micbias_lvl" = "2600"
+                                register "mic_amp_in_sel" = ""diff""
+                                device i2c 1a on end
+                        end
+		end # I2C 0 Audio
 		device pci 15.1 on end # I2C #1
 		device pci 15.2 on end # I2C #2
 		device pci 15.3 on end # I2C #3
@@ -289,29 +286,19 @@ chip soc/intel/tigerlake
 		device pci 16.3 off end # Management Engine KT Redirection
 		device pci 16.4 off end # Management Engine Interface 3
 		device pci 16.5 off end # Management Engine Interface 4
-		device pci 17.0 on  end # SATA
+		device pci 17.0 off end # SATA
 		device pci 19.0 on  end # I2C #4
 		device pci 19.1 off end # I2C #5
 		device pci 19.2 on  end # UART #2
 		device pci 1a.0 on  end # eMMC
-		device pci 1c.0 on
-			chip drivers/intel/wifi
-				register "wake" = "GPE0_PCI_EXP"
-				device pci 00.0 on end
-			end
-		end # PCI Express Port 1 x4 SLOT1
-		device pci 1c.4 on  end # PCI Express Port 5 x1 SLOT2/LAN
-		device pci 1c.5 off end # PCI Express Port 6
-		device pci 1c.6 off end # PCI Express Port 7
-		device pci 1c.7 off end # PCI Express Port 8
-		device pci 1d.0 on  end # PCI Express Port 9
-		device pci 1d.1 off end # PCI Express Port 10
-		device pci 1d.2 off end # PCI Express Port 11
-		device pci 1d.3 off end # PCI Express Port 12
-		device pci 1d.4 off end # PCI Express Port 13
-		device pci 1d.5 off end # PCI Express Port 14
-		device pci 1d.6 off end # PCI Express Port 15
-		device pci 1d.7 off end # PCI Express Port 16
+	        device pci 1c.0 on  end # PCI Express Port 1
+	        device pci 1c.1 off end # PCI Express Port 2
+	        device pci 1c.2 off end # PCI Express Port 3
+	        device pci 1c.3 off end # PCI Express Port 4
+	        device pci 1c.4 off end # PCI Express Port 5
+	        device pci 1c.5 on  end # PCI Express Port 6
+	        device pci 1c.6 off end # PCI Express Port 7
+	        device pci 1c.7 off end # PCI Express Port 8
 		device pci 1e.0 on  end # UART #0
 		device pci 1e.1 off end # UART #1
 		device pci 1e.2 off end # GSPI #0
@@ -319,7 +306,7 @@ chip soc/intel/tigerlake
 			chip drivers/spi/acpi
 				register "hid" = "ACPI_DT_NAMESPACE_HID"
 				register "compat_string" = ""google,cr50""
-				register "irq" = "ACPI_IRQ_EDGE_LOW(GPP_D16_IRQ)"
+				register "irq" = "ACPI_IRQ_EDGE_LOW(GPP_H13_IRQ)"
 				device spi 0 on end
 			end
 		end # GSPI #1

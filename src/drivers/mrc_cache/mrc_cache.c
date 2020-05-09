@@ -1,15 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <string.h>
 #include <boot_device.h>
@@ -105,7 +95,7 @@ static const struct cache_region *lookup_region_type(int type)
 	int i;
 	int flags;
 
-	if (vboot_recovery_mode_enabled())
+	if (CONFIG(VBOOT_STARTS_IN_BOOTBLOCK) && vboot_recovery_mode_enabled())
 		flags = RECOVERY_FLAG;
 	else
 		flags = NORMAL_FLAG;
@@ -521,7 +511,7 @@ static void invalidate_normal_cache(void)
 	/* Invalidate only on recovery mode with retraining enabled. */
 	if (!vboot_recovery_mode_enabled())
 		return;
-	if (!vboot_recovery_mode_memory_retrain())
+	if (!get_recovery_mode_retrain_switch())
 		return;
 
 	if (fmap_locate_area_as_rdev_rw(name, &rdev) < 0) {

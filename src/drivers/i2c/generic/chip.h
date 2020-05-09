@@ -1,20 +1,10 @@
-/*
- * This file is part of the coreboot project.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #ifndef __I2C_GENERIC_CHIP_H__
 #define __I2C_GENERIC_CHIP_H__
 
-#include <arch/acpi_device.h>
+#include <acpi/acpi_device.h>
 #include <device/i2c_simple.h>
 
 #define MAX_GENERIC_PROPERTY_LIST 10
@@ -86,8 +76,8 @@ struct drivers_i2c_generic_config {
  * callback: Callback to fill in device-specific information
  * config: Pointer to drivers_i2c_generic_config structure
  */
-void i2c_generic_fill_ssdt(struct device *dev,
-			void (*callback)(struct device *dev),
+void i2c_generic_fill_ssdt(const struct device *dev,
+			void (*callback)(const struct device *dev),
 			struct drivers_i2c_generic_config *config);
 
 #endif /* __I2C_GENERIC_CHIP_H__ */

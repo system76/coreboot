@@ -1,27 +1,14 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2007-2008 coresystems GmbH
- * Copyright (C) 2014 Google Inc.
- * Copyright (C) 2015-2018 Intel Corporation.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 
 #ifndef _SOC_CHIP_H_
 #define _SOC_CHIP_H_
 
-#include <arch/acpi_device.h>
+#include <acpi/acpi_device.h>
 #include <device/i2c_simple.h>
 #include <drivers/i2c/designware/dw_i2c.h>
+#include <drivers/intel/gma/i915.h>
 #include <intelblocks/cfg.h>
 #include <intelblocks/gspi.h>
 #include <intelblocks/lpc_lib.h>
@@ -34,7 +21,6 @@
 #include <soc/serialio.h>
 #include <soc/usb.h>
 #include <soc/vr_config.h>
-#include <smbios.h>
 
 #define MAX_PEG_PORTS	3
 
@@ -78,6 +64,10 @@ struct soc_intel_skylake_config {
 	uint8_t gpe0_dw0; /* GPE0_31_0 STS/EN */
 	uint8_t gpe0_dw1; /* GPE0_63_32 STS/EN */
 	uint8_t gpe0_dw2; /* GPE0_95_64 STS/EN */
+
+	/* LPC fixed enables and ranges */
+	uint16_t lpc_iod;
+	uint16_t lpc_ioe;
 
 	/* Generic IO decode ranges */
 	uint32_t gen1_dec;
@@ -226,7 +216,7 @@ struct soc_intel_skylake_config {
 	u8 PchDciEn;
 
 	/*
-	 * Pcie Root Port configuration:
+	 * PCIe Root Port configuration:
 	 * each element of array corresponds to
 	 * respective PCIe root port.
 	 */
@@ -577,11 +567,11 @@ struct soc_intel_skylake_config {
 	 */
 	u8 IslVrCmd;
 
-	/* Enable/Disable Sata power optimization */
-	u8 SataPwrOptEnable;
-
 	/* Enable/Disable Sata test mode */
 	u8 SataTestMode;
+
+	/* i915 struct for GMA backlight control */
+	struct i915_gpu_controller_info gfx;
 };
 
 typedef struct soc_intel_skylake_config config_t;

@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2016 Intel Corporation.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #ifndef SPD_BIN_H
 #define SPD_BIN_H
@@ -28,6 +16,10 @@
 #define  SPD_DRAM_LPDDR3_INTEL	0xF1
 #define  SPD_DRAM_LPDDR3_JEDEC	0x0F
 #define  SPD_DRAM_DDR4		0x0C
+#define  SPD_DRAM_LPDDR4	0x10
+#define  SPD_DRAM_LPDDR4X	0x11
+#define  SPD_DRAM_DDR5		0x12
+#define  SPD_DRAM_LPDDR5	0x13
 #define SPD_DENSITY_BANKS	4
 #define SPD_ADDRESSING		5
 #define DDR3_ORGANIZATION	7
@@ -40,8 +32,6 @@
 #define LPDDR3_SPD_PART_LEN	18
 #define DDR4_SPD_PART_OFF	329
 #define DDR4_SPD_PART_LEN	20
-#define LPDDR4_SPD_PART_OFF	329
-#define LPDDR4_SPD_PART_LEN	20
 
 struct spd_block {
 	u8 addr_map[CONFIG_DIMM_MAX]; /* 7 bit I2C addresses */

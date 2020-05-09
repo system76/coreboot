@@ -136,6 +136,7 @@ chip soc/intel/apollolake
 		device pci 0d.3 on  end	# - Shared SRAM
 		device pci 0e.0 on	# - Audio
 			chip drivers/generic/max98357a
+				register "hid" = ""MX98357A""
 				register "sdmode_gpio" =  "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPIO_76)"
 				register "sdmode_delay" = "5"
 				device generic 0 on end
@@ -242,6 +243,20 @@ chip soc/intel/apollolake
 				register "generic.disable_gpio_export_in_crs" = "1"
 				register "hid_desc_reg_offset" = "0x20"
 				device i2c 2c on end
+			end
+			chip drivers/i2c/hid
+				register "generic.hid" = ""GTCH7503""
+				register "generic.desc" = ""G2TOUCH Touchscreen""
+				register "generic.irq" = "ACPI_IRQ_EDGE_LOW(GPIO_21_IRQ)"
+				register "generic.probed" = "1"
+				register "generic.reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPIO_36)"
+				register "generic.reset_delay_ms" = "50"
+				register "generic.enable_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPIO_152)"
+				register "generic.enable_delay_ms" = "1"
+				register "generic.has_power_resource" = "1"
+				register "generic.disable_gpio_export_in_crs" = "1"
+				register "hid_desc_reg_offset" = "0x01"
+				device i2c 40 on end
 			end
 		end	# - I2C 3
 		device pci 17.0 on

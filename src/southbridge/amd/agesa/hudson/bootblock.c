@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2010 Advanced Micro Devices, Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <stdint.h>
 #include <arch/bootblock.h>
@@ -31,9 +19,7 @@
 static void hudson_enable_rom(void)
 {
 	u8 reg8;
-	pci_devfn_t dev;
-
-	dev = PCI_DEV(0, 0x14, 3);
+	const pci_devfn_t dev = PCI_DEV(0, 0x14, 3);
 
 	/* Decode variable LPC ROM address ranges 1 and 2. */
 	reg8 = pci_s_read_config8(dev, 0x48);
@@ -61,7 +47,6 @@ static void hudson_enable_rom(void)
 
 void bootblock_early_southbridge_init(void)
 {
-	pci_devfn_t dev;
 	u32 data;
 
 	hudson_enable_rom();
@@ -73,7 +58,7 @@ void bootblock_early_southbridge_init(void)
 	else if (CONFIG(POST_DEVICE_LPC))
 		hudson_lpc_port80();
 
-	dev = PCI_DEV(0, 0x14, 3);
+	const pci_devfn_t dev = PCI_DEV(0, 0x14, 3);
 	data = pci_read_config32(dev, LPC_IO_OR_MEM_DECODE_ENABLE);
 	/* enable 0x2e/0x4e IO decoding for SuperIO */
 	pci_write_config32(dev, LPC_IO_OR_MEM_DECODE_ENABLE, data | 3);

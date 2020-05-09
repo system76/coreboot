@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2019 Intel Corporation.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <boardid.h>
 #include <ec/acpi/ec.h>
@@ -30,7 +18,10 @@ static uint32_t get_board_id_via_ext_ec(void)
 	return id;
 }
 
-/* Get Board ID via EC I/O port write/read */
+/*
+ * Get Board ID via EC I/O port write/read
+ * Board id is 5 bit, so mask other bits while returning board id.
+ */
 int get_board_id(void)
 {
 	MAYBE_STATIC_NONZERO int id = -1;
@@ -48,5 +39,6 @@ int get_board_id(void)
 			}
 		}
 	}
-	return id;
+
+	return (id & 0x1f);
 }

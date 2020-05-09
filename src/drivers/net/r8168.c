@@ -1,15 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 /*
  * This driver resets the 10ec:8168 NIC then tries to read
@@ -19,8 +9,8 @@
  */
 
 #include <cbfs.h>
-#include <arch/acpi_device.h>
-#include <arch/acpigen.h>
+#include <acpi/acpi_device.h>
+#include <acpi/acpigen.h>
 #include <string.h>
 #include <arch/io.h>
 #include <console/console.h>
@@ -92,25 +82,13 @@ static u8 get_hex_digit(const u8 c)
 
 #define MACLEN 17
 
-static enum cb_err fetch_mac_string_vpd(u8 *macstrbuf, const u8 device_index)
+/* Returns MAC address based on the key that is passed in. */
+static enum cb_err fetch_mac_vpd_key(u8 *macstrbuf, const char *vpd_key)
 {
 	struct region_device rdev;
 	void *search_address;
 	size_t search_length;
 	size_t offset;
-	char key[] = "ethernet_mac "; /* Leave a space at tail to stuff an index */
-
-	/*
-	 * The device_index 0 is treated as an special case matching to
-	 * "ethernet_mac" with single NIC on DUT. When there are mulitple
-	 * NICs on DUT, they are mapping to "ethernet_macN", where
-	 * N is [0-9].
-	 */
-	if (device_index == 0)
-		key[DEVICE_INDEX_BYTE] = '\0';
-	else
-		/* Translate index number from integer to ascii */
-		key[DEVICE_INDEX_BYTE] = (device_index - 1) + '0';
 
 	if (fmap_locate_area_as_rdev("RO_VPD", &rdev)) {
 		printk(BIOS_ERR, "Error: Couldn't find RO_VPD region.");
@@ -123,24 +101,68 @@ static enum cb_err fetch_mac_string_vpd(u8 *macstrbuf, const u8 device_index)
 	}
 
 	search_length = region_device_sz(&rdev);
-	offset = search(key, search_address, strlen(key),
+	offset = search(vpd_key, search_address, strlen(vpd_key),
 			search_length);
 
 	if (offset == search_length) {
 		printk(BIOS_ERR,
-		       "Error: Could not locate '%s' in VPD\n", key);
+		       "Error: Could not locate '%s' in VPD\n", vpd_key);
+		rdev_munmap(&rdev, search_address);
 		return CB_ERR;
 	}
-	printk(BIOS_DEBUG, "Located '%s' in VPD\n", key);
+	printk(BIOS_DEBUG, "Located '%s' in VPD\n", vpd_key);
 
-	offset += strlen(key) + 1;	/* move to next character */
+	offset += strlen(vpd_key) + 1;	/* move to next character */
 
 	if (offset + MACLEN > search_length) {
+		rdev_munmap(&rdev, search_address);
 		printk(BIOS_ERR, "Search result too small!\n");
 		return CB_ERR;
 	}
 	memcpy(macstrbuf, search_address + offset, MACLEN);
+	rdev_munmap(&rdev, search_address);
+
 	return CB_SUCCESS;
+}
+
+/* Prepares vpd_key by concatenating ethernet_mac with device_index */
+static enum cb_err fetch_mac_vpd_dev_idx(u8 *macstrbuf, u8 device_index)
+{
+	char key[] = "ethernet_mac "; /* Leave a space at tail to stuff an index */
+
+	/*
+	 * Map each NIC on the DUT to "ethernet_macN", where N is [0-9].
+	 * Translate index number from integer to ascii by adding '0' char.
+	 */
+	key[DEVICE_INDEX_BYTE] = device_index + '0';
+
+	return fetch_mac_vpd_key(macstrbuf, key);
+}
+
+static void fetch_mac_string_vpd(struct drivers_net_config *config, u8 *macstrbuf)
+{
+	if (!config)
+		return;
+
+	/* Current implementation is up to 10 NIC cards */
+	if (config->device_index > MAX_DEVICE_SUPPORT) {
+		printk(BIOS_ERR, "r8168: the maximum device_index should be less then %d\n."
+					" Using default 00:e0:4c:00:c0:b0\n", MAX_DEVICE_SUPPORT);
+		return;
+	}
+
+	if (fetch_mac_vpd_dev_idx(macstrbuf, config->device_index) == CB_SUCCESS)
+		return;
+
+	if (!CONFIG(RT8168_SUPPORT_LEGACY_VPD_MAC)) {
+		printk(BIOS_ERR, "r8168: mac address not found in VPD,"
+						 " using default 00:e0:4c:00:c0:b0\n");
+		return;
+	}
+
+	if (fetch_mac_vpd_key(macstrbuf, "ethernet_mac") != CB_SUCCESS)
+		printk(BIOS_ERR, "r8168: mac address not found in VPD,"
+					 " using default 00:e0:4c:00:c0:b0\n");
 }
 
 static enum cb_err fetch_mac_string_cbfs(u8 *macstrbuf)
@@ -186,25 +208,10 @@ static void program_mac_address(struct device *dev, u16 io_base)
 	/* Default MAC Address of 00:E0:4C:00:C0:B0 */
 	u8 mac[6] = { 0x00, 0xe0, 0x4c, 0x00, 0xc0, 0xb0 };
 	struct drivers_net_config *config = dev->chip_info;
-	bool mac_found = false;
 
 	/* check the VPD for the mac address */
 	if (CONFIG(RT8168_GET_MAC_FROM_VPD)) {
-		/* Current implementation is up to 10 NIC cards */
-		if (config && config->device_index <= MAX_DEVICE_SUPPORT) {
-			/* check "ethernet_mac" first when the device index is 1 */
-			if (config->device_index == 1 &&
-				fetch_mac_string_vpd(macstrbuf, 0) == CB_SUCCESS)
-				mac_found = true;
-			if (!mac_found && fetch_mac_string_vpd(macstrbuf,
-				config->device_index) != CB_SUCCESS)
-				printk(BIOS_ERR, "r8168: mac address not found in VPD,"
-								 " using default 00:e0:4c:00:c0:b0\n");
-		} else {
-			printk(BIOS_ERR, "r8168: the maximum device_index should be"
-						" less then %d\n. Using default 00:e0:4c:00:c0:b0\n",
-						MAX_DEVICE_SUPPORT);
-		}
+		fetch_mac_string_vpd(config, macstrbuf);
 	} else {
 		if (fetch_mac_string_cbfs(macstrbuf) != CB_SUCCESS)
 			printk(BIOS_ERR, "r8168: Error reading MAC from CBFS,"
@@ -299,7 +306,7 @@ static void r8168_init(struct device *dev)
 
 #if CONFIG(HAVE_ACPI_TABLES)
 #define R8168_ACPI_HID "R8168"
-static void r8168_net_fill_ssdt(struct device *dev)
+static void r8168_net_fill_ssdt(const struct device *dev)
 {
 	struct drivers_net_config *config = dev->chip_info;
 	const char *path = acpi_device_path(dev->bus->dev);
@@ -355,10 +362,9 @@ static struct device_operations r8168_ops  = {
 	.set_resources    = pci_dev_set_resources,
 	.enable_resources = pci_dev_enable_resources,
 	.init             = r8168_init,
-	.scan_bus         = 0,
 #if CONFIG(HAVE_ACPI_TABLES)
-	.acpi_name                = r8168_net_acpi_name,
-	.acpi_fill_ssdt_generator = r8168_net_fill_ssdt,
+	.acpi_name        = r8168_net_acpi_name,
+	.acpi_fill_ssdt   = r8168_net_fill_ssdt,
 #endif
 };
 

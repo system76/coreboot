@@ -1,8 +1,6 @@
 #
 # This file is part of the coreboot project.
 #
-# Copyright (C) 2011 Advanced Micro Devices, Inc.
-# Copyright (C) 2014 Kyösti Mälkki <kyosti.malkki@gmail.com>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -71,10 +69,6 @@ config VGA_BIOS_ID
 	default "1002,9802"
 
 config SB800_AHCI_ROM
-	bool
-	default n
-
-config DRIVERS_PS2_KEYBOARD
 	bool
 	default n
 

@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright 2015 MediaTek Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <device/mmio.h>
 #include <console/console.h>
@@ -971,9 +959,9 @@ void perbit_window_cal(u32 channel, u8 type)
 		dqdqs_perbit_dly[i].best_last_dqsdly_pass = -2;
 	}
 
-	/* 1. delay DQ,find the pass widnow (left boundary)
+	/* 1. delay DQ,find the pass window (left boundary)
 	 * 2. delay DQS find the pass window (right boundary)
-	 * 3. find the best DQ / DQS to satify the middle value
+	 * 3. find the best DQ / DQS to satisfy the middle value
 	 *    of the overall pass window per bit
 	 * 4. set DQS delay to the max per byte, delay DQ to de-skew
 	 */

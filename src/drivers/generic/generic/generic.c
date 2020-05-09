@@ -1,18 +1,8 @@
-/*
- * This file is part of the coreboot project.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
-#include <arch/acpi_device.h>
-#include <arch/acpigen.h>
+#include <acpi/acpi_device.h>
+#include <acpi/acpigen.h>
 #include <console/console.h>
 #include <device/device.h>
 #include <device/path.h>
@@ -20,7 +10,7 @@
 #include <string.h>
 #include "chip.h"
 
-static void generic_dev_fill_ssdt_generator(struct device *dev)
+static void generic_dev_fill_ssdt_generator(const struct device *dev)
 {
 	struct acpi_dp *dsd;
 	struct drivers_generic_generic_config *config = dev->chip_info;
@@ -78,11 +68,10 @@ static const char *generic_dev_acpi_name(const struct device *dev)
 }
 
 static struct device_operations generic_dev_ops = {
-	.read_resources			= DEVICE_NOOP,
-	.set_resources			= DEVICE_NOOP,
-	.enable_resources		= DEVICE_NOOP,
-	.acpi_name			= generic_dev_acpi_name,
-	.acpi_fill_ssdt_generator	= generic_dev_fill_ssdt_generator,
+	.read_resources		= noop_read_resources,
+	.set_resources		= noop_set_resources,
+	.acpi_name		= generic_dev_acpi_name,
+	.acpi_fill_ssdt		= generic_dev_fill_ssdt_generator,
 };
 
 static void generic_dev_enable(struct device *dev)

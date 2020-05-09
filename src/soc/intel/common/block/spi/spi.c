@@ -1,18 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright 2017 Intel Corporation
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* This file is part of the coreboot project. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #include <device/device.h>
 #include <device/pci.h>
@@ -93,14 +80,14 @@ static const unsigned short pci_device_ids[] = {
 	PCI_DEVICE_ID_INTEL_TGP_GSPI4,
 	PCI_DEVICE_ID_INTEL_TGP_GSPI5,
 	PCI_DEVICE_ID_INTEL_TGP_GSPI6,
-	PCI_DEVICE_ID_INTEL_JSP_PRE_PROD_SPI0,
-	PCI_DEVICE_ID_INTEL_JSP_PRE_PROD_SPI1,
-	PCI_DEVICE_ID_INTEL_JSP_PRE_PROD_SPI2,
-	PCI_DEVICE_ID_INTEL_JSP_PRE_PROD_HWSEQ_SPI,
 	PCI_DEVICE_ID_INTEL_MCC_SPI0,
 	PCI_DEVICE_ID_INTEL_MCC_GSPI0,
 	PCI_DEVICE_ID_INTEL_MCC_GSPI1,
 	PCI_DEVICE_ID_INTEL_MCC_GSPI2,
+	PCI_DEVICE_ID_INTEL_JSP_SPI0,
+	PCI_DEVICE_ID_INTEL_JSP_SPI1,
+	PCI_DEVICE_ID_INTEL_JSP_SPI2,
+	PCI_DEVICE_ID_INTEL_JSP_HWSEQ_SPI,
 	0
 };
 

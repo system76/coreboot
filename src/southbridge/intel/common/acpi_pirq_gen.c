@@ -1,19 +1,7 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2017 Arthur Heymans <arthur@aheymans.xyz>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
-#include <arch/acpigen.h>
+#include <acpi/acpigen.h>
 #include <console/console.h>
 #include <device/pci_def.h>
 #include <device/pci_ops.h>
@@ -83,7 +71,7 @@ static void gen_pirq_route(const enum emit_type emit, const char *lpcb_path,
 	}
 }
 
-void intel_acpi_gen_def_acpi_pirq(struct device *dev)
+void intel_acpi_gen_def_acpi_pirq(const struct device *dev)
 {
 	const char *lpcb_path = acpi_device_path(dev);
 	char pci_int_mapping[32][4];

@@ -1,19 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2015 Damien Zammit <damien@zamaudio.com>
- * Copyright (C) 2017 Arthur Heymans <arthur@aheymans.xyz>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* This file is part of the coreboot project. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #include <bootblock_common.h>
 #include <cf9_reset.h>
@@ -114,7 +100,7 @@ static int setup_sio_gpio(void)
 		need_reset = (reg != old_reg);
 		pnp_write_config(GPIO_DEV, 0x30, 0x05);
 		pnp_write_config(GPIO_DEV, 0xf6, 0x08); /* invert GPIO43 */
-		pnp_write_config(GPIO_DEV, 0xf4, 0x00); /* GPIO4 direction */
+		pnp_write_config(GPIO_DEV, 0xf4, 0xa4); /* GPIO4 direction */
 
 		const int gpio43 = (bsel & 2) >> 1;
 		const int gpio44 = (bsel & 4) >> 2;

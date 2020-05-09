@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2019 Felix Singer <felix.singer@9elements.com>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <string.h>
 #include <soc/romstage.h>
@@ -169,7 +157,6 @@ void mainboard_memory_init_params(FSPM_UPD *memupd)
 	config->RmtCheckRun = 0x3;		// 0x0
 	config->RmtMarginCheckScaleHighThreshold = 0xC8;	// 0x0
 	config->EnhancePort8xhDecoding = 0x0;	// 0x1
-	config->NpkEn = 0x0;			// 0x3
 	config->PrimaryVideoAdaptor = 0x2;	// 0x0
 
 	config->Ch0_DeviceWidth = 0x1;		// 0x0

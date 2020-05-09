@@ -1,17 +1,5 @@
-#
 # This file is part of the coreboot project.
-#
-# Copyright (C) 2011 - 2012 Advanced Micro Devices, Inc.
-#
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; version 2 of the License.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
+# SPDX-License-Identifier: GPL-2.0-only
 
 config NORTHBRIDGE_AMD_AGESA
 	bool
@@ -19,6 +7,17 @@ config NORTHBRIDGE_AMD_AGESA
 	select CBMEM_TOP_BACKUP
 
 if NORTHBRIDGE_AMD_AGESA
+
+config BOTTOMIO_POSITION
+	hex "Bottom of 32-bit IO space"
+	default 0x80000000
+	help
+	  If PCI peripherals with big BARs are connected to the system
+	  the bottom of the IO must be decreased to allocate such devices.
+
+	  Declare the beginning of the 128MB-aligned MMIO region.  This
+	  option is useful when PCI peripherals requesting large address
+	  ranges are present, for example, graphic cards.
 
 config CONSOLE_VGA_MULTI
 	bool

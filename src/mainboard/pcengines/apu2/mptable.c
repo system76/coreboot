@@ -1,22 +1,10 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2012 Advanced Micro Devices, Inc.
- * Copyright (C) 2014 Sage Electronic Engineering, LLC.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <arch/smp/mpspec.h>
 #include <arch/ioapic.h>
 #include <stdint.h>
+#include <northbridge/amd/pi/nb_common.h>
 #include <southbridge/amd/common/amd_pci_util.h>
 
 static void *smp_write_config_table(void *v)
@@ -51,6 +39,11 @@ static void *smp_write_config_table(void *v)
 	u8 ioapic_ver = (io_apic_read(VIO_APIC_VADDR, 0x01) & 0xFF);
 
 	smp_write_ioapic(mc, ioapic_id, ioapic_ver, VIO_APIC_VADDR);
+
+	ioapic_id = (io_apic_read((void *)IO_APIC2_ADDR, 0x00) >> 24);
+	ioapic_ver = (io_apic_read((void *)IO_APIC2_ADDR, 0x01) & 0xFF);
+
+	smp_write_ioapic(mc, ioapic_id, ioapic_ver, (void *)IO_APIC2_ADDR);
 
 	/* I/O Ints:    Type    Polarity    Trigger     Bus ID   IRQ    APIC ID PIN# */
 #define IO_LOCAL_INT(type, intr, apicid, pin)				\

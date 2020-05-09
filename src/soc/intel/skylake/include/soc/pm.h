@@ -1,23 +1,10 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2014 Google Inc.
- * Copyright (C) 2015-2016 Intel Corporation.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #ifndef _SOC_PM_H_
 #define _SOC_PM_H_
 
-#include <arch/acpi.h>
+#include <acpi/acpi.h>
 #include <device/mmio.h>
 #include <soc/gpe.h>
 #include <soc/iomap.h>
@@ -142,8 +129,8 @@
  *  - on writes to GBL_RLS (bios commands)
  *  - on eSPI events (does nothing on LPC systems)
  * No SMIs:
+ *  - on TCO events, unless enabled in common code
  *  - on microcontroller writes (io 0x62/0x66)
- *  - on TCO events
  */
 #define ENABLE_SMI_PARAMS \
 	(APMC_EN | SLP_SMI_EN | GBL_SMI_EN | ESPI_SMI_EN | EOS)

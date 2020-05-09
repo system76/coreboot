@@ -1,18 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2014 Google Inc.
- * Copyright (C) 2015-2019 Intel Corporation.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 #include <device/pci_ops.h>
 #include <device/device.h>
 #include <device/pci_def.h>
@@ -127,19 +114,32 @@ void pch_early_iorange_init(void)
 	uint16_t io_enables = LPC_IOE_SUPERIO_2E_2F | LPC_IOE_KBC_60_64 |
 			LPC_IOE_EC_62_66;
 
-	/* IO Decode Range */
-	if (CONFIG(DRIVERS_UART_8250IO))
-		lpc_io_setup_comm_a_b();
+	const config_t *config = config_of_soc();
+
+	if (config->lpc_ioe) {
+		io_enables = config->lpc_ioe & 0x3f0f;
+		lpc_set_fixed_io_ranges(config->lpc_iod, 0x1377);
+	} else {
+		/* IO Decode Range */
+		if (CONFIG(DRIVERS_UART_8250IO))
+			lpc_io_setup_comm_a_b();
+	}
 
 	/* IO Decode Enable */
 	if (pch_check_decode_enable() == 0) {
 		io_enables = lpc_enable_fixed_io_ranges(io_enables);
 		/*
-		 * As per PCH BWG 2.5.16.
-		 * Set up LPC IO Enables PCR[DMI] + 2774h [15:0] to the same
-		 * value program in LPC PCI offset 82h.
+		 * As per PCH BWG 2.5.1.6.
+		 * Set LPC IO Enables PCR[DMI] + 2774h [15:0] to the same
+		 * value programmed in LPC PCI offset 82h.
 		 */
 		pcr_write16(PID_DMI, PCR_DMI_LPCIOE, io_enables);
+		/*
+		 * As per PCH BWG 2.5.1.5.
+		 * Set LPC IO Decode Ranges PCR[DMI] + 2770h [15:0] to the same
+		 * value programmed in LPC PCI offset 80h.
+		 */
+		pcr_write16(PID_DMI, PCR_DMI_LPCIOD, lpc_get_fixed_io_decode());
 	}
 
 	/* Program generic IO Decode Range */

@@ -1,16 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; version 2 of
- * the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <console/console.h>
 #include <stddef.h>
@@ -747,20 +736,15 @@ static void asmlinkage smm_do_relocation(void *arg)
 	mp_state.ops.relocation_handler(cpu, curr_smbase, perm_smbase);
 
 	if (CONFIG(STM)) {
-		if (is_smm_enabled()) {
-			uintptr_t mseg;
+		uintptr_t mseg;
 
-			mseg = mp_state.perm_smbase +
-				(mp_state.perm_smsize - CONFIG_MSEG_SIZE);
+		mseg = mp_state.perm_smbase +
+			(mp_state.perm_smsize - CONFIG_MSEG_SIZE);
 
-			stm_setup(mseg, p->cpu, runtime->num_cpus,
-					perm_smbase,
-					mp_state.perm_smbase,
-					runtime->start32_offset);
-		} else {
-			printk(BIOS_DEBUG,
-				"STM not loaded because SMM is not enabled!\n");
-		}
+		stm_setup(mseg, p->cpu,
+				perm_smbase,
+				mp_state.perm_smbase,
+				runtime->start32_offset);
 	}
 }
 
@@ -932,7 +916,7 @@ static int run_ap_work(struct mp_callback *val, long expire_us)
 			return 0;
 	} while (expire_us <= 0 || !stopwatch_expired(&sw));
 
-	printk(BIOS_CRIT, "CIRTICAL ERROR: AP call expired. %d/%d CPUs accepted.\n",
+	printk(BIOS_CRIT, "CRITICAL ERROR: AP call expired. %d/%d CPUs accepted.\n",
 		cpus_accepted, global_num_aps);
 	return -1;
 }
@@ -1046,19 +1030,7 @@ static void fill_mp_state(struct mp_state *state, const struct mp_ops *ops)
 	 */
 	if (CONFIG(STM)) {
 		state->smm_save_state_size +=
-			sizeof(TXT_PROCESSOR_SMM_DESCRIPTOR);
-
-		/* Currently, the CPU SMM save state size is based on a simplistic
-		 * algorithm. (align on 4K)
-		 * note: In the future, this will need to handle newer x86 processors
-		 * that require alignment of the save state on 32K boundaries.
-		 * The alignment is done here because coreboot has a hard coded
-		 * value of 0x400 for this value.
-		 * Also, this alignment only works on CPUs less than 5 threads
-		 */
-		if (CONFIG(STM))
-			state->smm_save_state_size =
-				ALIGN_UP(state->smm_save_state_size, 0x1000);
+			ALIGN_UP(sizeof(TXT_PROCESSOR_SMM_DESCRIPTOR), 0x100);
 	}
 
 	/*

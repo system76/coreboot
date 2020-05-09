@@ -1,24 +1,9 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2007-2009 coresystems GmbH
- * Copyright (C) 2012 The Chromium OS Authors
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; version 2 of
- * the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 /* Global Variables */
 
 Name(\PICM, 0)		// IOAPIC/8259
-Name(\DSEN, 1)		// Display Output Switching Enable
 
 /* Global ACPI memory region. This region is used for passing information
  * between coreboot (aka "the system bios"), ACPI, and the SMI handler.
@@ -91,16 +76,6 @@ Field (GNVS, ByteAcc, NoLock, Preserve)
 	TLST,	 8,	// 0x3d - Display Toggle List pointer
 	CADL,	 8,	// 0x3e - Currently Attached Devices List
 	PADL,	 8,	// 0x3f - Previously Attached Devices List
-	CSTE,	16,	// 0x40 - Current display state
-	NSTE,	16,	// 0x42 - Next display state
-	SSTE,	16,	// 0x44 - Set display state
-	Offset (0x46),
-	NDID,	 8,	// 0x46 - Number of Device IDs
-	DID1,	32,	// 0x47 - Device ID 1
-	DID2,	32,	// 0x4b - Device ID 2
-	DID3,	32,	// 0x4f - Device ID 3
-	DID4,	32,	// 0x53 - Device ID 4
-	DID5,	32,	// 0x57 - Device ID 5
 
 	/* TPM support */
 	Offset (0x5b),
@@ -133,8 +108,8 @@ Field (GNVS, ByteAcc, NoLock, Preserve)
 	Offset (0xb4),
 	ASLB,	32,	// 0xb4 - IGD OpRegion Base Address
 	IBTT,	 8,	// 0xb8 - IGD boot panel device
-	IPAT,	 8,	// 0xb9 - IGD panel type cmos option
-	ITVF,	 8,	// 0xba - IGD TV format cmos option
+	IPAT,	 8,	// 0xb9 - IGD panel type CMOS option
+	ITVF,	 8,	// 0xba - IGD TV format CMOS option
 	ITVM,	 8,	// 0xbb - IGD TV minor format option
 	IPSC,	 8,	// 0xbc - IGD panel scaling
 	IBLC,	 8,	// 0xbd - IGD BLC config
@@ -161,7 +136,7 @@ Field (GNVS, ByteAcc, NoLock, Preserve)
 	PAVP,	 8,	// 0xe9 - IGD PAVP data
 	Offset (0xeb),
 	OSCC,	 8,	// 0xeb - PCIe OSC control
-	NPCE,	 8,	// 0xec - native pcie support
+	NPCE,	 8,	// 0xec - native PCIe support
 	PLFL,	 8,	// 0xed - platform flavor
 	BREV,	 8,	// 0xee - board revision
 	DPBM,	 8,	// 0xef - digital port b mode

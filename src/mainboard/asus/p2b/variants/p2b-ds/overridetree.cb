@@ -1,0 +1,23 @@
+chip northbridge/intel/i440bx		# Northbridge
+  device cpu_cluster 0 on		# (L)APIC cluster
+    chip cpu/intel/slot_1		# CPU socket 0
+      device lapic 0 on end		# Local APIC of CPU 0
+    end
+    chip cpu/intel/slot_1		# CPU socket 1
+      device lapic 1 on end		# Local APIC of CPU 1
+    end
+  end
+  device domain 0 on		# PCI domain
+    chip southbridge/intel/i82371eb	# Southbridge
+      device pci 4.0 on			# ISA bridge
+        chip superio/winbond/w83977tf	# Super I/O
+          device pnp 3f0.9 on		# GPIO 3
+          end
+          device pnp 3f0.a on		# ACPI
+          end
+        end
+      end
+      device pci 6.0 on end		# Onboard SCSI
+    end
+  end
+end

@@ -1,18 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2019 Intel Corp.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* This file is part of the coreboot project. */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 /*
  * This file is created based on Intel Tiger Lake Processor SA Datasheet
@@ -20,13 +7,12 @@
  * Chapter number: 4
  */
 
-#include <arch/acpi.h>
+#include <acpi/acpi.h>
 #include <console/console.h>
 #include <fsp/util.h>
 #include <device/device.h>
 #include <device/pci.h>
 #include <device/pci_ops.h>
-#include <drivers/intel/gma/i915_reg.h>
 #include <drivers/intel/gma/opregion.h>
 #include <intelblocks/graphics.h>
 #include <types.h>
@@ -38,24 +24,6 @@ uintptr_t fsp_soc_get_igd_bar(void)
 
 void graphics_soc_init(struct device *dev)
 {
-	uint32_t ddi_buf_ctl;
-
-	/* Skip IGD GT programming */
-	if (CONFIG(SKIP_GRAPHICS_ENABLING))
-		return;
-
-	/*
-	 * Enable DDI-A (eDP) 4-lane operation if the link is not up yet.
-	 * This will allow the kernel to use 4-lane eDP links properly
-	 * if the VBIOS or GOP driver do not execute.
-	 */
-	ddi_buf_ctl = graphics_gtt_read(DDI_BUF_CTL_A);
-	if (!acpi_is_wakeup_s3() && !(ddi_buf_ctl & DDI_BUF_CTL_ENABLE)) {
-		ddi_buf_ctl |= (DDI_A_4_LANES | DDI_INIT_DISPLAY_DETECTED |
-				DDI_BUF_IS_IDLE);
-		graphics_gtt_write(DDI_BUF_CTL_A, ddi_buf_ctl);
-	}
-
 	/*
 	 * GFX PEIM module inside FSP binary is taking care of graphics
 	 * initialization based on RUN_FSP_GOP Kconfig
@@ -77,7 +45,7 @@ void graphics_soc_init(struct device *dev)
 	pci_dev_init(dev);
 }
 
-uintptr_t graphics_soc_write_acpi_opregion(struct device *device,
+uintptr_t graphics_soc_write_acpi_opregion(const struct device *device,
 		uintptr_t current, struct acpi_rsdp *rsdp)
 {
 	igd_opregion_t *opregion;

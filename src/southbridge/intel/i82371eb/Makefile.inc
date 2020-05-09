@@ -1,7 +1,6 @@
 ##
 ## This file is part of the coreboot project.
 ##
-## Copyright (C) 2007 Uwe Hermann <uwe@hermann-uwe.de>
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -25,8 +24,8 @@ ramstage-y +=  usb.c
 ramstage-y +=  smbus.c
 ramstage-$(CONFIG_HAVE_ACPI_TABLES) += fadt.c
 ramstage-$(CONFIG_HAVE_ACPI_TABLES) += acpi_tables.c
-ramstage-$(CONFIG_HAVE_ACPI_RESUME) += wakeup.c
 
+romstage-$(CONFIG_HAVE_ACPI_RESUME) += wakeup.c
 romstage-y += early_pm.c
 romstage-y += early_smbus.c
 

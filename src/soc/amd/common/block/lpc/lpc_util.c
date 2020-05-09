@@ -1,18 +1,7 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2010-2017 Advanced Micro Devices, Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
+#include <assert.h>
 #include <stdint.h>
 #include <device/device.h>
 #include <device/pci_ops.h>
@@ -310,6 +299,19 @@ void lpc_enable_spi_prefetch(void)
 	dword = pci_read_config32(_LPCB_DEV, LPC_ROM_DMA_EC_HOST_CONTROL);
 	dword |= SPI_FROM_HOST_PREFETCH_EN | SPI_FROM_USB_PREFETCH_EN;
 	pci_write_config32(_LPCB_DEV, LPC_ROM_DMA_EC_HOST_CONTROL, dword);
+}
+
+void lpc_disable_spi_rom_sharing(void)
+{
+	u8 byte;
+
+	if (!CONFIG(PROVIDES_ROM_SHARING))
+		dead_code();
+
+	byte = pci_read_config8(_LPCB_DEV, LPC_PCI_CONTROL);
+	byte &= ~VW_ROM_SHARING_EN;
+	byte &= ~EXT_ROM_SHARING_EN;
+	pci_write_config8(_LPCB_DEV, LPC_PCI_CONTROL, byte);
 }
 
 uintptr_t lpc_get_spibase(void)

@@ -1,15 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <cpu/x86/mtrr.h>
 #include <cpu/amd/msr.h>
@@ -100,7 +90,7 @@ void amd_initenv(void)
 	PciValue |= 0x80000000;
 	LibAmdPciWrite(AccessWidth32, PciAddress, &PciValue, &AmdParamStruct.StdHeader);
 
-	/* Initialize GMM Base Address for Pcie Mode
+	/* Initialize GMM Base Address for PCIe Mode
 	 *      Modify B0D1F0x18
 	 */
 	PciAddress.Address.Bus = 0;
@@ -112,7 +102,7 @@ void amd_initenv(void)
 	PciValue |= 0x96000000;
 	LibAmdPciWrite(AccessWidth32, PciAddress, &PciValue, &AmdParamStruct.StdHeader);
 
-	/* Initialize FB Base Address for Pcie Mode
+	/* Initialize FB Base Address for PCIe Mode
 	 *      Modify B0D1F0x10
 	 */
 	PciAddress.Address.Register = 0x10;

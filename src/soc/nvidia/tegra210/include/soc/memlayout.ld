@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright 2014 Google Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <memlayout.h>
 #include <rules.h>
@@ -32,7 +20,7 @@ SECTIONS
 	FMAP_CACHE(0x40000800, 2K)
 	PRERAM_CBFS_CACHE(0x40001000, 28K)
 	VBOOT2_WORK(0x40008000, 12K)
-	VBOOT2_TPM_LOG(0x4000B000, 2K)
+	TPM_TCPA_LOG(0x4000B000, 2K)
 #if ENV_ARM64
 	STACK(0x4000B800, 3K)
 #else	/* AVP gets a separate stack to avoid any chance of handoff races. */

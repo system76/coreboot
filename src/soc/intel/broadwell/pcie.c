@@ -1,18 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2008-2009 coresystems GmbH
- * Copyright (C) 2014 Google Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <console/console.h>
 #include <device/device.h>
@@ -587,19 +574,14 @@ static void pch_pcie_early(struct device *dev)
 static void pch_pcie_init(struct device *dev)
 {
 	u16 reg16;
-	u32 reg32;
 
 	printk(BIOS_DEBUG, "Initializing PCH PCIe bridge.\n");
 
 	/* Enable SERR */
-	reg32 = pci_read_config32(dev, PCI_COMMAND);
-	reg32 |= PCI_COMMAND_SERR;
-	pci_write_config32(dev, PCI_COMMAND, reg32);
+	pci_or_config16(dev, PCI_COMMAND, PCI_COMMAND_SERR);
 
 	/* Enable Bus Master */
-	reg32 = pci_read_config32(dev, PCI_COMMAND);
-	reg32 |= PCI_COMMAND_MASTER;
-	pci_write_config32(dev, PCI_COMMAND, reg32);
+	pci_or_config16(dev, PCI_COMMAND, PCI_COMMAND_MASTER);
 
 	/* Set Cache Line Size to 0x10 */
 	pci_write_config8(dev, 0x0c, 0x10);
@@ -610,6 +592,7 @@ static void pch_pcie_init(struct device *dev)
 	pci_write_config16(dev, PCI_BRIDGE_CONTROL, reg16);
 
 #ifdef EVEN_MORE_DEBUG
+	u32 reg32;
 	reg32 = pci_read_config32(dev, 0x20);
 	printk(BIOS_SPEW, "    MBL    = 0x%08x\n", reg32);
 	reg32 = pci_read_config32(dev, 0x24);

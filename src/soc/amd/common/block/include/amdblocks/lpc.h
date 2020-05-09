@@ -1,17 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright 2017 Google, Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #ifndef __AMDBLOCKS_LPC_H__
 #define __AMDBLOCKS_LPC_H__
@@ -22,6 +10,8 @@
 /* PCI registers for D14F3 */
 #define LPC_PCI_CONTROL			0x40
 #define   LEGACY_DMA_EN			BIT(2)
+#define   VW_ROM_SHARING_EN		BIT(3)
+#define   EXT_ROM_SHARING_EN		BIT(4)
 
 #define LPC_IO_PORT_DECODE_ENABLE	0x44
 #define   DECODE_ENABLE_PARALLEL_PORT0	BIT(0)
@@ -103,7 +93,7 @@
 #define LPC_MEM_PORT0			0x60
 
 /* Register 0x64 is 32-bit, composed by two 16-bit sub-registers.
-   For ease of access, each sub-register is declared separetely. */
+   For ease of access, each sub-register is declared separately. */
 #define LPC_WIDEIO_GENERIC_PORT		0x64
 #define LPC_WIDEIO1_GENERIC_PORT	0x66
 #define ROM_ADDRESS_RANGE1_START	0x68
@@ -160,6 +150,7 @@ void lpc_tpm_decode(void);
 void lpc_tpm_decode_spi(void);
 void lpc_enable_rom(void);
 void lpc_enable_spi_prefetch(void);
+void lpc_disable_spi_rom_sharing(void);
 
 /**
  * @brief Find the size of a particular wide IO

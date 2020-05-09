@@ -1,8 +1,6 @@
 ##
 ## This file is part of the coreboot project.
 ##
-## Copyright (C) 2007-2009 coresystems GmbH
-## Copyright (C) 2011 Sven Schnelle <svens@stackframe.org>
 ##
 ## This program is free software; you can redistribute it and/or
 ## modify it under the terms of the GNU General Public License as
@@ -15,10 +13,9 @@
 ## GNU General Public License for more details.
 ##
 
-chip northbridge/intel/nehalem
+chip northbridge/intel/ironlake
 	# IGD Displays
-	register "gfx.ndid" = "3"
-	register "gfx.did" = "{ 0x80000100, 0x80000240, 0x80000410, 0x80000410, 0x00000005 }"
+	register "gfx" = "GMA_STATIC_DISPLAYS(0)"
 
 	register "gpu_dp_b_hotplug" = "0x04"
 	register "gpu_dp_c_hotplug" = "0x04"
@@ -33,8 +30,6 @@ chip northbridge/intel/nehalem
 	register "gpu_panel_power_backlight_off_delay" = "3000"
 	register "gpu_cpu_backlight" = "0x58d"
 	register "gpu_pch_backlight" = "0x061a061a"
-	register "gfx.use_spread_spectrum_clock" = "0"
-	register "gfx.link_frequency_270_mhz" = "1"
 
 	device cpu_cluster 0 on
 		chip cpu/intel/model_2065x

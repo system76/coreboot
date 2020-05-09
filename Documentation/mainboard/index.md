@@ -2,6 +2,10 @@
 
 This section contains documentation about coreboot on specific mainboards.
 
+## 51NB
+
+- [X210](51nb/x210.md)
+
 ## AMD
 - [padmelon](amd/padmelon/padmelon.md)
 
@@ -54,7 +58,7 @@ The boards in this section are not real mainboards, but emulators.
 
 ### EliteBook series
 
-- [EliteBook common](hp/elitebook_series.md)
+- [HP Laptops with KBC1126 EC](hp/hp_kbc1126_laptops.md)
 - [EliteBook 8760w](hp/8760w.md)
 
 ## Intel
@@ -70,33 +74,39 @@ The boards in this section are not real mainboards, but emulators.
 - [R60](lenovo/r60.md)
 - [T4xx common](lenovo/t4xx_series.md)
 - [X2xx common](lenovo/x2xx_series.md)
+- [vboot](lenovo/vboot.md)
 
-### Nehalem series
+### Arrandale series
 
 - [T410](lenovo/t410.md)
 
 ### GM45 series
 
+- [X200 / T400 / T500 / X301 common](lenovo/montevina_series.md)
 - [X301](lenovo/x301.md)
 
 ### Sandy Bridge series
 
 - [T420](lenovo/t420.md)
-- [T420 / T520 / X220 / T420s / W520 common](lenovo/xx20_series.md)
-- [x1](lenovo/x1.md)
+- [T420 / T520 / X220 / T420s / W520 common](lenovo/Sandy_Bridge_series.md)
+- [X1](lenovo/x1.md)
 
 ### Ivy Bridge series
 
 - [T430](lenovo/t430.md)
 - [T530](lenovo/w530.md)
 - [W530](lenovo/w530.md)
-- [T430 / T530 / X230 / W530 common](lenovo/xx30_series.md)
+- [T430 / T530 / X230 / W530 common](lenovo/Ivy_Bridge_series.md)
 - [T431s](lenovo/t431s.md)
 - [Internal flashing](lenovo/ivb_internal_flashing.md)
 
 ### Haswell series
 
 - [T440p](lenovo/t440p.md)
+
+## Libretrend
+
+- [LT1000](libretrend/lt1000.md)
 
 ## MSI
 
@@ -116,6 +126,11 @@ The boards in this section are not real mainboards, but emulators.
 
 - [PQ7-M107](portwell/pq7-m107.md)
 
+## Protectli
+
+- [FW2B / FW4B](protectli/fw2b_fw4b.md)
+- [FW6A / FW6B / FW6C](protectli/fw6.md)
+
 ## Roda
 
 - [RK9 Flash Header](roda/rk9/flash_header.md)
@@ -129,6 +144,10 @@ The boards in this section are not real mainboards, but emulators.
 - [X10SLM+-F](supermicro/x10slm-f.md)
 - [X11 LGA1151 series](supermicro/x11-lga1151-series/x11-lga1151-series.md)
 - [Flashing using the BMC](supermicro/flashing_on_vendorbmc.md)
+
+## System76
+
+- [Lemur Pro](system76/lemp9.md)
 
 ## UP
 

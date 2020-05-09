@@ -78,7 +78,7 @@ etc/grub.cfg-required := the GRUB runtime configuration file ($(CONFIG_GRUB2_RUN
 # SeaBIOS
 
 SEABIOS_CC_OFFSET=$(if $(filter %ccache,$(HOSTCC)),2,1)
-payloads/external/SeaBIOS/seabios/out/bios.bin.elf seabios: $(DOTCONFIG)
+payloads/external/SeaBIOS/seabios/out/bios.bin.elf: $(DOTCONFIG)
 	$(MAKE) -C payloads/external/SeaBIOS \
 			HOSTCC="$(HOSTCC)" \
 			CC=$(word $(SEABIOS_CC_OFFSET),$(CC_x86_32)) \
@@ -102,9 +102,10 @@ payloads/external/SeaBIOS/seabios/out/bios.bin.elf seabios: $(DOTCONFIG)
 			CONFIG_SEABIOS_DEBUG_LEVEL=$(CONFIG_SEABIOS_DEBUG_LEVEL) \
 			CONFIG_DRIVERS_UART_8250MEM_32=$(CONFIG_DRIVERS_UART_8250MEM_32) \
 			CONFIG_ENABLE_HSUART=$(CONFIG_ENABLE_HSUART) \
-			CONFIG_CONSOLE_UART_BASE_ADDRESS=$(CONFIG_CONSOLE_UART_BASE_ADDRESS)
+			CONFIG_CONSOLE_UART_BASE_ADDRESS=$(CONFIG_CONSOLE_UART_BASE_ADDRESS) \
+			CONFIG_SEABIOS_HARDWARE_IRQ=$(CONFIG_SEABIOS_HARDWARE_IRQ)
 
-payloads/external/SeaBIOS/seabios/out/vgabios.bin: seabios
+payloads/external/SeaBIOS/seabios/out/vgabios.bin: payloads/external/SeaBIOS/seabios/out/bios.bin.elf
 payloads/external/SeaBIOS/seabios/.config: payloads/external/SeaBIOS/seabios/out/bios.bin.elf
 payloads/external/SeaBIOS/seabios/out/autoversion.h: payloads/external/SeaBIOS/seabios/out/bios.bin.elf
 
@@ -263,6 +264,7 @@ payloads/external/iPXE/ipxe/ipxe.rom ipxe: $(DOTCONFIG) $(PXE_CONFIG_SCRIPT)
 	CONFIG_SCRIPT=$(PXE_CONFIG_SCRIPT) \
 	CONFIG_HAS_SCRIPT=$(CONFIG_PXE_ADD_SCRIPT) \
 	CONFIG_PXE_NO_PROMT=$(CONFIG_PXE_NO_PROMT) \
+	CONFIG_PXE_HAS_HTTPS=$(CONFIG_PXE_HAS_HTTPS) \
 	MFLAGS= MAKEFLAGS=
 
 # LinuxBoot

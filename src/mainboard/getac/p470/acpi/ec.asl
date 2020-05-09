@@ -1,18 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2007-2009 coresystems GmbH
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; version 2 of
- * the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 Device(EC0)
 {
@@ -100,7 +87,7 @@ Device(EC0)
 	// EC Query methods, called upon SCI interrupts.
 	Method (_Q01, 0)
 	{
-		Notify (\_PR.CP00, 0x80)
+		Notify (\_SB.CP00, 0x80)
 		If(ADP) {
 			Store(1, \_SB.AC.ACST)
 			TRAP(0xe3)

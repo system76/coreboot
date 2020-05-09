@@ -1,15 +1,5 @@
-/*
- * This file is part of the coreboot project.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* This file is part of the coreboot project. */
 
 #include <console/console.h>
 #include <device/device.h>
@@ -43,8 +33,8 @@ static void p64h2_ioapic_init(struct device *dev)
 	uint32_t memoryBase;
 	int apic_index, apic_id;
 
-	volatile uint32_t *pIndexRegister;    /* io apic io memory space command address */
-	volatile uint32_t *pWindowRegister;    /* io apic io memory space data address */
+	volatile uint32_t *pIndexRegister;    /* io APIC io memory space command address */
+	volatile uint32_t *pWindowRegister;    /* io APIC io memory space data address */
 
 	apic_index = num_p64h2_ioapics;
 	num_p64h2_ioapics++;
@@ -97,7 +87,6 @@ static struct device_operations ioapic_ops = {
 	.set_resources    = pci_dev_set_resources,
 	.enable_resources = pci_dev_enable_resources,
 	.init     = p64h2_ioapic_init,
-	.scan_bus = 0,
 	.enable   = p64h2_ioapic_enable,
 };
 

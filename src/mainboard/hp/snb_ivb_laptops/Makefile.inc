@@ -1,7 +1,6 @@
 ##
 ## This file is part of the coreboot project.
 ##
-## Copyright (C) 2011 The ChromiumOS Authors.  All rights reserved.
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -20,5 +19,5 @@ romstage-y  += variants/$(VARIANT_DIR)/gpio.c
 ramstage-y  += variants/$(VARIANT_DIR)/hda_verb.c
 ramstage-$(CONFIG_MAINBOARD_USE_LIBGFXINIT) += variants/$(VARIANT_DIR)/gma-mainboard.ads
 
-# FIXME: Other variants with same size onboard ram may exist.
+# FIXME: Other variants with same size onboard RAM may exist.
 SPD_SOURCES = hynix_4g
