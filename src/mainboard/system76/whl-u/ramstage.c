@@ -14,8 +14,8 @@
  */
 
 #include <string.h>
-#include <arch/acpi.h>
-#include <arch/acpigen.h>
+#include <acpi/acpi.h>
+#include <acpi/acpigen.h>
 #include <arch/io.h>
 #include <console/console.h>
 #include <device/device.h>
@@ -194,14 +194,14 @@ static void pcie_hotplug_generator(int port_number)
 	acpigen_pop_len();
 }
 
-static void fill_ssdt(struct device *device) {
+static void fill_ssdt(const struct device *device) {
 	printk(BIOS_INFO, "system76: fill_ssdt\n");
 	pcie_hotplug_generator(CONFIG_MAX_ROOT_PORTS);
 }
 
 static void mainboard_enable(struct device *dev) {
 	dev->ops->init = mainboard_init;
-	dev->ops->acpi_fill_ssdt_generator = fill_ssdt;
+	dev->ops->acpi_fill_ssdt = fill_ssdt;
 
 	// Configure pad for DisplayPort
 	uint32_t config = 0x44000200;

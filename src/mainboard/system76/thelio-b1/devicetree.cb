@@ -144,7 +144,7 @@ chip soc/intel/cannonlake
     register "tcc_offset" = "12"
 
     # Serial IRQ Continuous
-    register "SerialIrqConfigSirqMode" = "1"
+    register "serirq_mode" = "SERIRQ_CONTINUOUS"
 
 # LPC (soc/intel/cannonlake/lpc.c)
     # LPC configuration from lspci -xxx
