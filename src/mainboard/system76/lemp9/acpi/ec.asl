@@ -115,13 +115,21 @@ Device (EC0)
 	Method (_Q11, 0, NotSerialized) // Brightness Down
 	{
 		Debug = "EC: Brightness Down"
-		^^^^HIDD.HPEM (20)
+		if (^^^^HIDD.HRDY) {
+			^^^^HIDD.HPEM (20)
+		} Else {
+			\_SB.PCI0.GFX0.DECB ()
+		}
 	}
 
 	Method (_Q12, 0, NotSerialized) // Brightness Up
 	{
 		Debug = "EC: Brightness Up"
-		^^^^HIDD.HPEM (19)
+		if (^^^^HIDD.HRDY) {
+			^^^^HIDD.HPEM (19)
+		} Else {
+			\_SB.PCI0.GFX0.INCB ()
+		}
 	}
 
 	Method (_Q13, 0, NotSerialized) // Camera Toggle
@@ -132,10 +140,10 @@ Device (EC0)
 	Method (_Q14, 0, NotSerialized) // Airplane Mode
 	{
 		Debug = "EC: Airplane Mode"
-		// Only send HIDD message when hardware airplane mode not in use
-		If (ECOS == 2) {
+		if (^^^^HIDD.HRDY) {
 			^^^^HIDD.HPEM (8)
 		}
+		// TODO: hardware airplane mode
 	}
 
 	Method (_Q15, 0, NotSerialized) // Suspend Button
