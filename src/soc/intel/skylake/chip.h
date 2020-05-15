@@ -1,5 +1,4 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
-/* This file is part of the coreboot project. */
 
 
 #ifndef _SOC_CHIP_H_
@@ -283,6 +282,12 @@ struct soc_intel_skylake_config {
 
 	/* Enable/Disable HotPlug support for Root Port */
 	u8 PcieRpHotPlug[CONFIG_MAX_ROOT_PORTS];
+
+	/* PCIE RP Max Payload, Max Payload Size supported */
+	enum {
+		RpMaxPayload_128,
+		RpMaxPayload_256,
+	} PcieRpMaxPayload[CONFIG_MAX_ROOT_PORTS];
 
 	/* USB related */
 	struct usb2_port_config usb2_ports[16];

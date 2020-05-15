@@ -1,5 +1,4 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
-/* This file is part of the coreboot project. */
 
 #include <device/device.h>
 #include <device/pnp.h>
@@ -37,7 +36,9 @@ static struct pnp_info pnp_dev_info[] = {
 	{ NULL, W83977TF_SP2,  PNP_IO0 | PNP_IRQ0, 0x07f8, },
 	{ NULL, W83977TF_KBC,  PNP_IO0 | PNP_IO1 | PNP_IRQ0 | PNP_IRQ1,
 		0x07ff, 0x07ff, },
+#if CONFIG(W83977TF_HAVE_SEPARATE_IR_DEVICE)
 	{ NULL, W83977TF_CIR,  PNP_IO0 | PNP_IRQ0, 0x07f8, },
+#endif
 	{ NULL, W83977TF_GAME_MIDI_GPIO1, PNP_IO0 | PNP_IO1 | PNP_IRQ0,
 		0x07ff, 0x07fe, },
 	{ NULL, W83977TF_ACPI, PNP_IRQ0, },

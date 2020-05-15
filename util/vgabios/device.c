@@ -1,16 +1,4 @@
-/******************************************************************************
- * Copyright (c) 2004, 2008 IBM Corporation
- * Copyright (c) 2008, 2009 Pattrick Hueper <phueper@hueper.net>
- * All rights reserved.
- * This program and the accompanying materials
- * are made available under the terms of the BSD License
- * which accompanies this distribution, and is available at
- * http://www.opensource.org/licenses/bsd-license.php
- *
- * Contributors:
- *     IBM Corporation - initial implementation
- *****************************************************************************/
-
+/* SPDX-License-Identifier: BSD-2-Clause */
 
 #include <stdtypes.h>
 

@@ -1,5 +1,4 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
-/* This file is part of the coreboot project. */
 
 #include <bootmode.h>
 #include <bootstate.h>
@@ -188,6 +187,8 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 	       sizeof(params->PcieRpLtrEnable));
 	memcpy(params->PcieRpHotPlug, config->PcieRpHotPlug,
 	       sizeof(params->PcieRpHotPlug));
+	for (i = 0; i < CONFIG_MAX_ROOT_PORTS; i++)
+		params->PcieRpMaxPayload[i] = config->PcieRpMaxPayload[i];
 
 	/*
 	 * PcieRpClkSrcNumber UPD is set to clock source number(0-6) for

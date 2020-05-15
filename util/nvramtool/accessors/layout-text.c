@@ -1,34 +1,4 @@
-/*****************************************************************************\
- * layout-text.c
- *****************************************************************************
- *  Copyright (C) 2012, Vikram Narayanan
- *  	Unified build_opt_tbl and nvramtool
- *  	build_opt_tbl.c
- *  	Copyright (C) 2003 Eric Biederman (ebiederm@xmission.com)
- *  	Copyright (C) 2007-2010 coresystems GmbH
- *
- *  Copyright (C) 2002-2005 The Regents of the University of California.
- *  Produced at the Lawrence Livermore National Laboratory.
- *  Written by Dave Peterson <dsp@llnl.gov> <dave_peterson@pobox.com>.
- *  UCRL-CODE-2003-012
- *  All rights reserved.
- *
- *  This file is part of nvramtool, a utility for reading/writing coreboot
- *  parameters and displaying information from the coreboot table.
- *  For details, see https://coreboot.org/nvramtool.
- *
- *  Please also read the file DISCLAIMER which is included in this software
- *  distribution.
- *
- *  This program is free software; you can redistribute it and/or modify it
- *  under the terms of the GNU General Public License (as published by the
- *  Free Software Foundation) version 2, dated June 1991.
- *
- *  This program is distributed in the hope that it will be useful, but
- *  WITHOUT ANY WARRANTY; without even the IMPLIED WARRANTY OF
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the terms and
- *  conditions of the GNU General Public License for more details.
-\*****************************************************************************/
+/* SPDX-License-Identifier: GPL-2.0-only */
 
 #include "common.h"
 #include "layout-text.h"

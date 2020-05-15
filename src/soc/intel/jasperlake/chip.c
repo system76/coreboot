@@ -1,5 +1,4 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
-/* This file is part of the coreboot project. */
 
 #include <device/device.h>
 #include <device/pci.h>
@@ -87,6 +86,8 @@ const char *soc_acpi_name(const struct device *dev)
 	case PCH_DEVFN_GSPI1:	return "SPI1";
 	case PCH_DEVFN_GSPI2:	return "SPI2";
 	case PCH_DEVFN_GSPI3:   return "SPI3";
+	case PCH_DEVFN_EMMC:	return "EMMC";
+	case PCH_DEVFN_SDCARD:	return "SDXC";
 	/* Keeping ACPI device name coherent with ec.asl */
 	case PCH_DEVFN_ESPI:	return "LPCB";
 	case PCH_DEVFN_HDA:	return "HDAS";

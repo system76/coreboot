@@ -1,4 +1,3 @@
-/* This file is part of the coreboot project. */
 /* SPDX-License-Identifier: GPL-2.0-only */
 
 #ifndef _SOC_QUALCOMM_SC7180_ADDRESS_MAP_H_
@@ -12,6 +11,8 @@
 #define TLMM_NORTH_TILE_BASE		0x03900000
 #define TLMM_SOUTH_TILE_BASE		0x03D00000
 #define TLMM_WEST_TILE_BASE		0x03500000
+#define SILVER_PLL_BASE			0x18280000
+#define L3_PLL_BASE			0x18284000
 
 /*
  * QUP SERIAL ENGINE BASE ADDRESSES

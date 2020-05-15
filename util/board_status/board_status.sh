@@ -1,9 +1,5 @@
 #!/bin/sh
 #
-# This file is part of the coreboot project.
-#
-# Copyright (C) 2013 Google Inc.
-# Copyright (C) 2014 Sage Electronic Engineering, LLC.
 #
 
 EXIT_SUCCESS=0
