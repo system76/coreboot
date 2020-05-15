@@ -17,12 +17,6 @@
 #include <soc/nvs.h>
 #include "chip.h"
 
-uintptr_t gma_get_gnvs_aslb(const void *gnvs)
-{
-	const global_nvs_t *gnvs_ptr = gnvs;
-	return (uintptr_t)(gnvs_ptr ? gnvs_ptr->aslb : 0);
-}
-
 uintptr_t fsp_soc_get_igd_bar(void)
 {
 	return graphics_get_memory_base();
@@ -30,12 +24,12 @@ uintptr_t fsp_soc_get_igd_bar(void)
 
 void graphics_soc_init(struct device *dev)
 {
-	uint32_t ddi_buf_ctl;
+	u32 ddi_buf_ctl;
 
 	/*
 	 * Enable DDI-A (eDP) 4-lane operation if the link is not up yet.
 	 * This will allow the kernel to use 4-lane eDP links properly
-	 * if the VBIOS or GOP driver do not execute.
+	 * if the VBIOS or GOP driver does not execute.
 	 */
 	ddi_buf_ctl = graphics_gtt_read(DDI_BUF_CTL_A);
 	if (!acpi_is_wakeup_s3() && !(ddi_buf_ctl & DDI_BUF_CTL_ENABLE)) {
@@ -45,8 +39,9 @@ void graphics_soc_init(struct device *dev)
 	}
 
 	/* IGD needs to Bus Master */
-	pci_or_config16(dev, PCI_COMMAND, PCI_COMMAND_MASTER | PCI_COMMAND_MEMORY |
-			PCI_COMMAND_IO);
+	u32 reg32 = pci_read_config32(dev, PCI_COMMAND);
+	reg32 |= PCI_COMMAND_MASTER | PCI_COMMAND_MEMORY | PCI_COMMAND_IO;
+	pci_write_config32(dev, PCI_COMMAND, reg32);
 
 	/*
 	 * GFX PEIM module inside FSP binary is taking care of graphics
@@ -68,7 +63,27 @@ void graphics_soc_init(struct device *dev)
 		/* Initialize PCI device, load/execute BIOS Option ROM */
 		pci_dev_init(dev);
 	}
+
 	intel_gma_restore_opregion();
+}
+
+uintptr_t gma_get_gnvs_aslb(const void *gnvs)
+{
+	const global_nvs_t *gnvs_ptr = gnvs;
+	return (uintptr_t)(gnvs_ptr ? gnvs_ptr->aslb : 0);
+}
+
+void gma_set_gnvs_aslb(void *gnvs, uintptr_t aslb)
+{
+	global_nvs_t *gnvs_ptr = gnvs;
+	if (gnvs_ptr)
+		gnvs_ptr->aslb = aslb;
+}
+
+/* Initialize IGD OpRegion, called from ACPI code */
+static void update_igd_opregion(igd_opregion_t *opregion)
+{
+	/* FIXME: Add platform specific mailbox initialization */
 }
 
 uintptr_t graphics_soc_write_acpi_opregion(const struct device *device,
@@ -77,18 +92,27 @@ uintptr_t graphics_soc_write_acpi_opregion(const struct device *device,
 	igd_opregion_t *opregion;
 	global_nvs_t *gnvs = cbmem_find(CBMEM_ID_ACPI_GNVS);
 
-	printk(BIOS_DEBUG, "ACPI:    * IGD OpRegion\n");
+	/* If GOP is not used, exit here */
+	if (!CONFIG(INTEL_GMA_ADD_VBT))
+		return current;
+
+	/* If IGD is disabled, exit here */
+	if (pci_read_config16(device, PCI_VENDOR_ID) == 0xFFFF)
+		return current;
+
+	printk(BIOS_DEBUG, "ACPI: * IGD OpRegion\n");
 	opregion = (igd_opregion_t *)current;
 
 	if (intel_gma_init_igd_opregion(opregion) != CB_SUCCESS)
 		return current;
-
 	if (gnvs)
 		gnvs->aslb = (u32)(uintptr_t)opregion;
-
+	update_igd_opregion(opregion);
 	current += sizeof(igd_opregion_t);
+	current = acpi_align_current(current);
 
-	return acpi_align_current(current);
+	printk(BIOS_DEBUG, "current = %lx\n", current);
+	return current;
 }
 
 const struct i915_gpu_controller_info *
