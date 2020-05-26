@@ -1,0 +1,2 @@
+config BOARD_SYSTEM76_ADDW2
+	bool "addw2"
