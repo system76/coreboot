@@ -1,5 +1,3 @@
-#
-#
 # SPDX-License-Identifier: GPL-2.0-only
 
 ifeq ($(CONFIG_PLATFORM_USES_FSP2_0),y)
@@ -54,10 +52,22 @@ $(FSP_M_CBFS)-type := fsp
 ifeq ($(CONFIG_FSP_M_XIP),y)
 $(FSP_M_CBFS)-options := --xip $(TXTIBB)
 endif
+ifeq ($(CONFIG_FSP_COMPRESS_FSP_M_LZMA),y)
+$(FSP_M_CBFS)-compression := LZMA
+endif
+ifeq ($(CONFIG_FSP_COMPRESS_FSP_M_LZ4),y)
+$(FSP_M_CBFS)-compression := LZ4
+endif
 
 cbfs-files-$(CONFIG_ADD_FSP_BINARIES) += $(FSP_S_CBFS)
 $(FSP_S_CBFS)-file := $(call strip_quotes,$(CONFIG_FSP_S_FILE))
 $(FSP_S_CBFS)-type := fsp
+ifeq ($(CONFIG_FSP_COMPRESS_FSP_S_LZMA),y)
+$(FSP_S_CBFS)-compression := LZMA
+endif
+ifeq ($(CONFIG_FSP_COMPRESS_FSP_S_LZ4),y)
+$(FSP_S_CBFS)-compression := LZ4
+endif
 
 ifeq ($(CONFIG_FSP_USE_REPO),y)
 $(obj)/Fsp_M.fd: $(call strip_quotes,$(CONFIG_FSP_FD_PATH))

@@ -7,6 +7,7 @@
 #include <intelblocks/lpss.h>
 #include <intelblocks/mp_init.h>
 #include <intelblocks/xdci.h>
+#include <intelpch/lockdown.h>
 #include <soc/intel/common/vbt.h>
 #include <soc/pci_devs.h>
 #include <soc/ramstage.h>
@@ -105,8 +106,18 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 		params->SkipMpInit = !CONFIG_USE_INTEL_FSP_MP_INIT;
 	}
 
-	/* Unlock upper 8 bytes of RTC RAM */
-	params->RtcMemoryLock = 0;
+	/* Chipset Lockdown */
+	if (get_lockdown_config() == CHIPSET_LOCKDOWN_COREBOOT) {
+		params->PchLockDownGlobalSmi = 0;
+		params->PchLockDownBiosInterface = 0;
+		params->PchUnlockGpioPads = 1;
+		params->RtcMemoryLock = 0;
+	} else {
+		params->PchLockDownGlobalSmi = 1;
+		params->PchLockDownBiosInterface = 1;
+		params->PchUnlockGpioPads = 0;
+		params->RtcMemoryLock = 1;
+	}
 
 	/* Enable End of Post in PEI phase */
 	params->EndOfPostMessage = EOP_PEI;
@@ -148,6 +159,26 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 		}
 	}
 
+	/* SATA */
+	dev = pcidev_path_on_root(PCH_DEVFN_SATA);
+	if (dev) {
+		params->SataEnable = dev->enabled;
+		params->SataMode = config->SataMode;
+		params->SataSalpSupport = config->SataSalpSupport;
+
+		_Static_assert(ARRAY_SIZE(params->SataPortsEnable) >=
+				ARRAY_SIZE(config->SataPortsEnable), "copy buffer overflow!");
+		memcpy(params->SataPortsEnable, config->SataPortsEnable,
+				sizeof(params->SataPortsEnable));
+
+		_Static_assert(ARRAY_SIZE(params->SataPortsDevSlp) >=
+				ARRAY_SIZE(config->SataPortsDevSlp), "copy buffer overflow!");
+		memcpy(params->SataPortsDevSlp, config->SataPortsDevSlp,
+				sizeof(params->SataPortsDevSlp));
+	} else {
+		params->SataEnable = 0;
+	}
+
 	/* SDCard related configuration */
 	dev = pcidev_path_on_root(PCH_DEVFN_SDCARD);
 	if (!dev) {
@@ -178,6 +209,9 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 	} else {
 		params->XdciEnable = 0;
 	}
+
+	/* Disable Pavp */
+	params->PavpEnable = 0;
 
 	/* Provide correct UART number for FSP debug logs */
 	params->SerialIoDebugUartNumber = CONFIG_UART_FOR_CONSOLE;

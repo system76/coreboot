@@ -36,7 +36,6 @@ ramstage-y += espi.c
 ramstage-y += finalize.c
 ramstage-y += fsp_params.c
 ramstage-y += gpio.c
-ramstage-y += graphics.c
 ramstage-y += lockdown.c
 ramstage-y += p2sb.c
 ramstage-y += pmc.c
@@ -44,6 +43,7 @@ ramstage-y += reset.c
 ramstage-y += smmrelocate.c
 ramstage-y += systemagent.c
 ramstage-y += sd.c
+ramstage-y += me.c
 
 smm-y += gpio.c
 smm-y += p2sb.c

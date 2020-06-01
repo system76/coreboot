@@ -17,6 +17,11 @@
 #include <soc/soc_chip.h>
 #include <string.h>
 
+/* THC assignment definition */
+#define THC_NONE	0
+#define THC_0		1
+#define THC_1		2
+
 /*
  * Chip config parameter PcieRpL1Substates uses (UPD value + 1)
  * because UPD value of 0 for PcieRpL1Substates means disabled for FSP.
@@ -101,9 +106,13 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 		params->SkipMpInit = !CONFIG_USE_INTEL_FSP_MP_INIT;
 	}
 
+	/* D3Hot and D3Cold for TCSS */
+	params->D3HotEnable = config->TcssD3HotEnable;
+	params->D3ColdEnable = config->TcssD3ColdEnable;
+
 	params->TcssAuxOri = config->TcssAuxOri;
 	for (i = 0; i < 8; i++)
-		params->IomTypeCPortPadCfg[i] = 0x09000000;
+		params->IomTypeCPortPadCfg[i] = config->IomTypeCPortPadCfg[i];
 
 	/* Chipset Lockdown */
 	if (get_lockdown_config() == CHIPSET_LOCKDOWN_COREBOOT) {
@@ -184,6 +193,18 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 			sizeof(params->SataPortsDevSlp));
 	}
 
+	/*
+	 * Power Optimizer for DMI and SATA.
+	 * DmiPwrOptimizeDisable and SataPwrOptimizeDisable is default to 0.
+	 * Boards not needing the optimizers explicitly disables them by setting
+	 * these disable variables to 1 in devicetree overrides.
+	 */
+	params->PchPwrOptEnable = !(config->DmiPwrOptimizeDisable);
+	params->SataPwrOptEnable = !(config->SataPwrOptimizeDisable);
+
+	/* Enable TCPU for processor thermal control */
+	params->Device4Enable = config->Device4Enable;
+
 	/* LAN */
 	dev = pcidev_path_on_root(PCH_DEVFN_GBE);
 	if (!dev)
@@ -197,6 +218,26 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 		params->CnviMode = dev->enabled;
 	else
 		params->CnviMode = 0;
+
+	/* VMD */
+	dev = pcidev_path_on_root(SA_DEVFN_VMD);
+	if (dev)
+		params->VmdEnable = dev->enabled;
+	else
+		params->VmdEnable = 0;
+
+	/* THC */
+	dev = pcidev_path_on_root(PCH_DEVFN_THC0);
+	if (!dev)
+		params->ThcPort0Assignment = 0;
+	else
+		params->ThcPort0Assignment = dev->enabled ? THC_0 : THC_NONE;
+
+	dev =  pcidev_path_on_root(PCH_DEVFN_THC1);
+	if (!dev)
+		params->ThcPort1Assignment = 0;
+	else
+		params->ThcPort1Assignment = dev->enabled ? THC_1 : THC_NONE;
 
 	/* Legacy 8254 timer support */
 	params->Enable8254ClockGating = !CONFIG_USE_LEGACY_8254_TIMER;

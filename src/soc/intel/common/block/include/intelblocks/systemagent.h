@@ -31,13 +31,13 @@ void bootblock_systemagent_early_init(void);
  *   INDEX = Either PCI configuration space registers or MMIO offsets
  *   mapped from REG.
  *   BASE = 64 bit Address.
- *   SIZE = base length
+ *   SIZE = 64 bit base length
  *   DESCRIPTION = Name of the register/offset.
  */
 struct sa_mmio_descriptor {
 	unsigned int index;
 	uint64_t base;
-	size_t size;
+	uint64_t size;
 	const char *description;
 };
 
@@ -90,4 +90,8 @@ void soc_add_fixed_mmio_resources(struct device *dev, int *resource_cnt);
 /* SoC specific APIs to get UNCORE PRMRR base and mask values
  * returns 0, if able to get base and mask values; otherwise returns -1 */
 int soc_get_uncore_prmmr_base_and_mask(uint64_t *base, uint64_t *mask);
+
+/* Returns the maximum supported capacity of a channel as encoded by DDRSZ in MiB */
+uint32_t soc_systemagent_max_chan_capacity_mib(u8 capid0_a_ddrsz);
+
 #endif	/* SOC_INTEL_COMMON_BLOCK_SA_H */

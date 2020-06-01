@@ -1,6 +1,13 @@
 # SPDX-License-Identifier: GPL-2.0-only
 
+testsrc = $(top)/tests
 testobj = $(obj)/tests
+cmockasrc = 3rdparty/cmocka
+cmockaobj = $(objutil)/cmocka
+
+CMOCKA_LIB := $(cmockaobj)/src/libcmocka.so
+
+CMAKE:= cmake
 
 TEST_DEFAULT_CONFIG = $(top)/configs/config.emulation_qemu_x86_i440fx
 TEST_DOTCONFIG = $(testobj)/.config
@@ -10,12 +17,12 @@ TEST_KCONFIG_DEPENDENCIES := $(testobj)/auto.conf.cmd
 TEST_KCONFIG_SPLITCONFIG := $(testobj)/config
 TEST_KCONFIG_TRISTATE := $(testobj)/tristate.conf
 
-TEST_CFLAGS = -include$(src)/include/kconfig.h \
-	-include$(src)/commonlib/bsd/include/commonlib/bsd/compiler.h \
-	-include $(src)/include/rules.h \
+TEST_CFLAGS = -include $(src)/include/kconfig.h \
+	-include $(src)/commonlib/bsd/include/commonlib/bsd/compiler.h \
+	-include $(src)/include/rules.h
 
 # Include generic test mock headers, before original ones
-TEST_CFLAGS += -Itests/include/mocks
+TEST_CFLAGS += -I$(testsrc)/include/mocks -I$(testsrc)/include
 
 TEST_CFLAGS += -I$(src)/include -I$(src)/commonlib/include \
 	-I$(src)/commonlib/bsd/include -I$(src)/arch/x86/include \
@@ -23,11 +30,16 @@ TEST_CFLAGS += -I$(src)/include -I$(src)/commonlib/include \
 # Path for Kconfig autoheader
 TEST_CFLAGS += -I$(dir $(TEST_KCONFIG_AUTOHEADER))
 
-TEST_CFLAGS += -std=gnu11 -Os -ffunction-sections -fdata-sections \
-	-Wl,--gc-sections -fno-builtin
+TEST_CFLAGS += -std=gnu11 -Os -ffunction-sections -fdata-sections -fno-builtin
+
+# Checkout Cmocka repository
+forgetthis:=$(shell git submodule update --init --checkout 3rdparty/cmocka)
+
+TEST_CFLAGS += -I$(cmockasrc)/include
 
 # Link against Cmocka
-TEST_LDFLAGS = -lcmocka
+TEST_LDFLAGS = -L$(cmockaobj)/src -lcmocka -Wl,-rpath=$(cmockaobj)/src
+TEST_LDFLAGS += -Wl,--gc-sections
 
 # Extra attributes for unit tests, declared per test
 attributes:= srcs cflags mocks stage
@@ -69,7 +81,7 @@ $($(1)-objs): $(obj)/$(1)/%.o: $$$$*.c $(TEST_KCONFIG_AUTOHEADER)
 		-MT $$@ -c $$< -o $$@
 
 $($(1)-bin): TEST_LDFLAGS+= $$(foreach mock,$$($(1)-mocks),-Wl,--wrap=$$(mock))
-$($(1)-bin): $($(1)-objs)
+$($(1)-bin): $($(1)-objs) $(CMOCKA_LIB)
 	$(HOSTCC) $$^ $($(1)-cflags) $$(TEST_LDFLAGS) -o $$@
 
 endef
@@ -89,6 +101,13 @@ $(foreach test, $(alltests), \
 
 DEPENDENCIES += $(addsuffix .d,$(basename $(all-test-objs)))
 -include $(DEPENDENCIES)
+
+# Build cmocka
+$(CMOCKA_LIB):
+	echo "*** Building CMOCKA ***"
+	mkdir -p $(cmockaobj)
+	cd $(cmockaobj) && $(CMAKE) $(abspath $(cmockasrc))
+	$(MAKE) -C $(cmockaobj)
 
 # Kconfig targets
 $(TEST_DOTCONFIG):
@@ -116,17 +135,31 @@ $(TEST_KCONFIG_AUTOCONFIG): $(TEST_KCONFIG_AUTOHEADER)
 .PHONY: $(alltests) $(addprefix clean-,$(alltests))
 .PHONY: unit-tests build-unit-tests run-unit-tests clean-unit-tests
 
+ifeq ($(JUNIT_OUTPUT),y)
+$(alltests): export CMOCKA_MESSAGE_OUTPUT=xml
+$(alltests): export CMOCKA_XML_FILE=$(testobj)/junit-$(subst /,_,$^).xml
+endif
+
 $(alltests): $$($$(@)-bin)
-	./$^
+	rm -f $(testobj)/junit-$(subst /,_,$^).xml $(testobj)/$(subst /,_,$^).failed
+	-./$^ || echo failed > $(testobj)/$(subst /,_,$^).failed
 
 unit-tests: build-unit-tests run-unit-tests
 
 build-unit-tests: $(test-bins)
 
 run-unit-tests: $(alltests)
-	echo "**********************"
-	echo "   ALL TESTS PASSED"
-	echo "**********************"
+	if [ `find $(testobj) -name '*.failed' | wc -l` -gt 0 ]; then \
+		echo "**********************"; \
+		echo "     TESTS FAILED"; \
+		echo "**********************"; \
+		exit 1; \
+	else \
+		echo "**********************"; \
+		echo "   ALL TESTS PASSED"; \
+		echo "**********************"; \
+		exit 0; \
+	fi
 
 $(addprefix clean-,$(alltests)): clean-%:
 	rm -rf $(obj)/$*

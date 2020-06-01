@@ -1,6 +1,3 @@
-##
-##
-##
 ## SPDX-License-Identifier: GPL-2.0-only
 
 chip soc/intel/skylake
@@ -187,8 +184,6 @@ chip soc/intel/skylake
 	register "pirqg_routing" = "0x0b"
 	register "pirqh_routing" = "0x0b"
 
-	register "PmTimerDisabled" = "0"
-
 	register "EnableSata" = "1"
 	register "SataSalpSupport" = "1"
 	register "SataPortsEnable" = "{ \
@@ -216,7 +211,9 @@ chip soc/intel/skylake
 	}"
 
 	# PL2 override 25W
-	register "tdp_pl2_override" = "25"
+	register "power_limits_config" = "{
+		.tdp_pl2_override = 25,
+	}"
 
 	# Send an extra VR mailbox command for the PS4 exit issue
 	register "SendVrMbxCmd" = "2"

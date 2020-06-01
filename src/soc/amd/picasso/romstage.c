@@ -1,7 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
 #include <arch/cpu.h>
-#include <arch/romstage.h>
 #include <acpi/acpi.h>
 #include <cpu/x86/cache.h>
 #include <cpu/x86/msr.h>
@@ -15,6 +14,7 @@
 #include <elog.h>
 #include <soc/romstage.h>
 #include <soc/mtrr.h>
+#include <types.h>
 #include "chip.h"
 #include <fsp/api.h>
 
@@ -73,6 +73,10 @@ void platform_fsp_memory_init_params_cb(FSPM_UPD *mupd, uint32_t version)
 	mcfg->core_dldo_bypass = config->core_dldo_bypass;
 	mcfg->min_soc_vid_offset = config->min_soc_vid_offset;
 	mcfg->aclk_dpm0_freq_400MHz = config->aclk_dpm0_freq_400MHz;
+	mcfg->telemetry_vddcr_vdd_slope = config->telemetry_vddcr_vdd_slope;
+	mcfg->telemetry_vddcr_vdd_offset = config->telemetry_vddcr_vdd_offset;
+	mcfg->telemetry_vddcr_soc_slope = config->telemetry_vddcr_soc_slope;
+	mcfg->telemetry_vddcr_soc_offset = config->telemetry_vddcr_soc_offset;
 }
 
 asmlinkage void car_stage_entry(void)

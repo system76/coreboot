@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+#include <console/console.h>
 #include <device/device.h>
 #include <device/pci.h>
 #include <fsp/api.h>
@@ -57,41 +58,49 @@ const char *soc_acpi_name(const struct device *dev)
 		return NULL;
 
 	switch (dev->path.pci.devfn) {
-	case SA_DEVFN_ROOT:	return "MCHC";
-	case PCH_DEVFN_ISH:	return "ISHB";
-	case PCH_DEVFN_XHCI:	return "XHCI";
-	case PCH_DEVFN_I2C0:	return "I2C0";
-	case PCH_DEVFN_I2C1:	return "I2C1";
-	case PCH_DEVFN_I2C2:	return "I2C2";
-	case PCH_DEVFN_I2C3:	return "I2C3";
-	case PCH_DEVFN_I2C4:	return "I2C4";
-	case PCH_DEVFN_I2C5:	return "I2C5";
-	case PCH_DEVFN_SATA:	return "SATA";
-	case PCH_DEVFN_PCIE1:	return "RP01";
-	case PCH_DEVFN_PCIE2:	return "RP02";
-	case PCH_DEVFN_PCIE3:	return "RP03";
-	case PCH_DEVFN_PCIE4:	return "RP04";
-	case PCH_DEVFN_PCIE5:	return "RP05";
-	case PCH_DEVFN_PCIE6:	return "RP06";
-	case PCH_DEVFN_PCIE7:	return "RP07";
-	case PCH_DEVFN_PCIE8:	return "RP08";
-	case PCH_DEVFN_PCIE9:	return "RP09";
-	case PCH_DEVFN_PCIE10:	return "RP10";
-	case PCH_DEVFN_PCIE11:	return "RP11";
-	case PCH_DEVFN_PCIE12:	return "RP12";
-	case PCH_DEVFN_PMC:	return "PMC";
-	case PCH_DEVFN_UART0:	return "UAR0";
-	case PCH_DEVFN_UART1:	return "UAR1";
-	case PCH_DEVFN_UART2:	return "UAR2";
-	case PCH_DEVFN_GSPI0:	return "SPI0";
-	case PCH_DEVFN_GSPI1:	return "SPI1";
-	case PCH_DEVFN_GSPI2:	return "SPI2";
-	case PCH_DEVFN_GSPI3:   return "SPI3";
+	case SA_DEVFN_ROOT:		return "MCHC";
+	case SA_DEVFN_TCSS_XHCI:	return "TXHC";
+	case SA_DEVFN_TCSS_XDCI:	return "TXDC";
+	case SA_DEVFN_TCSS_DMA0:	return "TDM0";
+	case SA_DEVFN_TCSS_DMA1:	return "TDM1";
+	case SA_DEVFN_TBT0:		return "TRP0";
+	case SA_DEVFN_TBT1:		return "TRP1";
+	case SA_DEVFN_TBT2:		return "TRP2";
+	case SA_DEVFN_TBT3:		return "TRP3";
+	case PCH_DEVFN_ISH:		return "ISHB";
+	case PCH_DEVFN_XHCI:		return "XHCI";
+	case PCH_DEVFN_I2C0:		return "I2C0";
+	case PCH_DEVFN_I2C1:		return "I2C1";
+	case PCH_DEVFN_I2C2:		return "I2C2";
+	case PCH_DEVFN_I2C3:		return "I2C3";
+	case PCH_DEVFN_I2C4:		return "I2C4";
+	case PCH_DEVFN_I2C5:		return "I2C5";
+	case PCH_DEVFN_SATA:		return "SATA";
+	case PCH_DEVFN_PCIE1:		return "RP01";
+	case PCH_DEVFN_PCIE2:		return "RP02";
+	case PCH_DEVFN_PCIE3:		return "RP03";
+	case PCH_DEVFN_PCIE4:		return "RP04";
+	case PCH_DEVFN_PCIE5:		return "RP05";
+	case PCH_DEVFN_PCIE6:		return "RP06";
+	case PCH_DEVFN_PCIE7:		return "RP07";
+	case PCH_DEVFN_PCIE8:		return "RP08";
+	case PCH_DEVFN_PCIE9:		return "RP09";
+	case PCH_DEVFN_PCIE10:		return "RP10";
+	case PCH_DEVFN_PCIE11:		return "RP11";
+	case PCH_DEVFN_PCIE12:		return "RP12";
+	case PCH_DEVFN_PMC:		return "PMC";
+	case PCH_DEVFN_UART0:		return "UAR0";
+	case PCH_DEVFN_UART1:		return "UAR1";
+	case PCH_DEVFN_UART2:		return "UAR2";
+	case PCH_DEVFN_GSPI0:		return "SPI0";
+	case PCH_DEVFN_GSPI1:		return "SPI1";
+	case PCH_DEVFN_GSPI2:		return "SPI2";
+	case PCH_DEVFN_GSPI3:		return "SPI3";
 	/* Keeping ACPI device name coherent with ec.asl */
-	case PCH_DEVFN_ESPI:	return "LPCB";
-	case PCH_DEVFN_HDA:	return "HDAS";
-	case PCH_DEVFN_SMBUS:	return "SBUS";
-	case PCH_DEVFN_GBE:	return "GLAN";
+	case PCH_DEVFN_ESPI:		return "LPCB";
+	case PCH_DEVFN_HDA:		return "HDAS";
+	case PCH_DEVFN_SMBUS:		return "SBUS";
+	case PCH_DEVFN_GBE:		return "GLAN";
 	}
 
 	return NULL;
@@ -132,11 +141,6 @@ void soc_init_pre_device(void *chip_info)
 	soc_fill_gpio_pm_configuration();
 }
 
-static void pci_domain_set_resources(struct device *dev)
-{
-	assign_resources(dev->link_list);
-}
-
 static struct device_operations pci_domain_ops = {
 	.read_resources   = &pci_domain_read_resources,
 	.set_resources    = &pci_domain_set_resources,
@@ -156,11 +160,17 @@ static struct device_operations cpu_bus_ops = {
 
 static void soc_enable(struct device *dev)
 {
-	/* Set the operations if it is a special bus type */
+	/*
+	 * Set the operations if it is a special bus type or a hidden PCI
+	 * device.
+	 */
 	if (dev->path.type == DEVICE_PATH_DOMAIN)
 		dev->ops = &pci_domain_ops;
 	else if (dev->path.type == DEVICE_PATH_CPU_CLUSTER)
 		dev->ops = &cpu_bus_ops;
+	else if (dev->path.type == DEVICE_PATH_PCI &&
+		 dev->path.pci.devfn == PCH_DEVFN_PMC)
+		dev->ops = &pmc_ops;
 }
 
 struct chip_operations soc_intel_tigerlake_ops = {

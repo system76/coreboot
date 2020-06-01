@@ -5,14 +5,17 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <amdblocks/chip.h>
 #include <commonlib/helpers.h>
 #include <drivers/i2c/designware/dw_i2c.h>
 #include <soc/i2c.h>
 #include <soc/iomap.h>
 #include <soc/southbridge.h>
 #include <acpi/acpi_device.h>
+#include <arch/smp/mpspec.h>
 
 struct soc_amd_picasso_config {
+	struct soc_amd_common_config common_config;
 	/*
 	 * If sb_reset_i2c_slaves() is called, this devicetree register
 	 * defines which I2C SCL will be toggled 9 times at 100 KHz.
@@ -31,6 +34,17 @@ struct soc_amd_picasso_config {
 		I2S_PINS_I2S_TDM = 4,
 		I2S_PINS_UNCONF = 7,	/* All pads will be input mode */
 	} acp_pin_cfg;
+
+	/**
+	 * IRQ 0 - 15 have a default trigger of edge and default polarity of high.
+	 * If you have a device that requires a different configuration you can override the
+	 * settings here.
+	 */
+	struct {
+		uint8_t irq;
+		/* See MP_IRQ_* from mpspec.h */
+		uint8_t flags;
+	} irq_override[16];
 
 	/* Options for these are in src/arch/x86/include/acpi/acpi.h */
 	uint8_t  fadt_pm_profile;
@@ -70,21 +84,10 @@ struct soc_amd_picasso_config {
 	uint8_t core_dldo_bypass;
 	uint8_t min_soc_vid_offset;
 	uint8_t aclk_dpm0_freq_400MHz;
-
-	/*
-	 * SPI config
-	 * Default values if not overridden by mainboard:
-	 * Read mode - Normal 33MHz
-	 * Normal speed - 66MHz
-	 * Fast speed - 66MHz
-	 * Alt speed - 66MHz
-	 * TPM speed - 66MHz
-	 */
-	enum spi_read_mode spi_read_mode;
-	enum spi100_speed spi_normal_speed;
-	enum spi100_speed spi_fast_speed;
-	enum spi100_speed spi_altio_speed;
-	enum spi100_speed spi_tpm_speed;
+	uint32_t telemetry_vddcr_vdd_slope;
+	uint32_t telemetry_vddcr_vdd_offset;
+	uint32_t telemetry_vddcr_soc_slope;
+	uint32_t telemetry_vddcr_soc_offset;
 
 	enum {
 		SD_EMMC_DISABLE,

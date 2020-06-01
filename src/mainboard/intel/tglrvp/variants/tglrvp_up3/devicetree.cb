@@ -109,6 +109,10 @@ chip soc/intel/tigerlake
 		[PchSerialIoIndexUART2] = PchSerialIoPci,
 	}"
 
+	# D3Hot and D3Cold for TCSS
+	register "TcssD3HotEnable" = "1"
+	register "TcssD3ColdEnable" = "1"
+
 	# TCSS USB3
 	register "TcssAuxOri" = "0"
 
@@ -160,7 +164,7 @@ chip soc/intel/tigerlake
 		device pci 0d.1 on  end # USB xDCI (OTG)	0x9A15
 		device pci 0d.2 off end # TBT DMA0		0x9A1B
 		device pci 0d.3 off end # TBT DMA1		0x9A1D
-		device pci 0e.0 on  end # VMD			0x9A0B
+		device pci 0e.0 off end # VMD			0x9A0B
 
 		# From PCH EDS(576591)
 		device pci 10.2 on end # CNVi: BT		0xA0F5 - A0F7
@@ -243,7 +247,7 @@ chip soc/intel/tigerlake
 		device pci 1e.3 off end # GSPI1			0xA0AB
 		device pci 1f.0 on  end # eSPI			0xA080 - A09F
 		device pci 1f.1 on  end # P2SB			0xA0A0
-		device pci 1f.2 on  end # PMC			0xA0A1
+		device pci 1f.2 hidden end # PMC		0xA0A1
 		device pci 1f.3 on  end # Intel HD audio	0xA0C8-A0CF
 		device pci 1f.4 on  end # SMBus			0xA0A3
 		device pci 1f.5 on  end # SPI			0xA0A4

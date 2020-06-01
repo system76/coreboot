@@ -220,7 +220,7 @@ static const struct pad_config gpio_table[] = {
 	/* E14 : DDPC_HPDA ==> SOC_EDP_HPD */
 	PAD_CFG_NF(GPP_E14, NONE, DEEP, NF1),
 	/* E15 : ISH_GP6 ==> TRACKPAD_INT_ODL */
-	PAD_CFG_GPI_APIC(GPP_E15, NONE, PLTRST, LEVEL, INVERT),
+	PAD_CFG_GPI_IRQ_WAKE(GPP_E15, NONE, DEEP, LEVEL, INVERT),
 	/* E16 : ISH_GP7 ==> NOT USED */
 	PAD_NC(GPP_E16, NONE),
 	/* E17 : THC0_SPI1_INT# ==> NOT USED */
@@ -255,7 +255,7 @@ static const struct pad_config gpio_table[] = {
 	/* F7  : GPPF7_STRAP */
 	PAD_NC(GPP_F7, NONE),
 	/* F8  : I2S_MCLK2_INOUT ==> HP_INT_L */
-	PAD_CFG_GPI_APIC(GPP_F8, UP_20K, DEEP, EDGE_BOTH, INVERT),
+	PAD_CFG_GPI_INT(GPP_F8, NONE, PLTRST, EDGE_BOTH),
 	/* F9  : Reserved ==> NC */
 	/* F10 : GPPF10_STRAP */
 	PAD_NC(GPP_F10, DN_20K),

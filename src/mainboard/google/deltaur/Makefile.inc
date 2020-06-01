@@ -1,7 +1,4 @@
-##
-##
 ## SPDX-License-Identifier: GPL-2.0-or-later
-##
 
 bootblock-y += bootblock.c
 bootblock-$(CONFIG_CHROMEOS) += chromeos.c
@@ -14,6 +11,7 @@ romstage-y += ec.c
 ramstage-$(CONFIG_CHROMEOS) += chromeos.c
 ramstage-y += ec.c
 ramstage-y += mainboard.c
+ramstage-$(CONFIG_SOC_INTEL_COMMON_BLOCK_HDA_VERB) += hda_verb.c
 
 verstage-$(CONFIG_CHROMEOS) += chromeos.c
 verstage-y += ec.c

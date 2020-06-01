@@ -24,6 +24,8 @@
 #define IORESOURCE_SUBTRACTIVE  0x00040000
 /* The IO resource has a bus below it. */
 #define IORESOURCE_BRIDGE	0x00080000
+/* This is a request to allocate resource about 4G boundary. */
+#define IORESOURCE_ABOVE_4G	0x00100000
 /* The resource needs to be reserved in the coreboot table */
 #define IORESOURCE_RESERVE	0x10000000
 /* The IO resource assignment has been stored in the device */
@@ -90,5 +92,25 @@ static inline void *res2mmio(struct resource *res, unsigned long offset,
 {
 	return (void *)(uintptr_t)((res->base + offset) & ~mask);
 }
+
+/*
+ * Pick largest resource on the bus using the given mask and type.
+ * Params:
+ * bus = Bus from which the resource needs to picked from.
+ * result_res = If NULL, there was no previous resource picked on this bus, else it points to
+ *              the last picked resource.
+ * type_mask = Mask to be applied when searching for resource
+ * type = Expected type for the resource
+ *
+ * Returns:
+ * If resource is found, returns the device and sets result_rest to point to the resource. Else
+ * returns NULL.
+ */
+const struct device *largest_resource(struct bus *bus, struct resource **result_res,
+				      unsigned long type_mask, unsigned long type);
+
+
+/* Compute and allocate resources. This is the main resource allocator entry point. */
+void allocate_resources(const struct device *root);
 
 #endif /* DEVICE_RESOURCE_H */

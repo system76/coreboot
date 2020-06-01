@@ -9,6 +9,7 @@
 #include <device/pci_ops.h>
 #include <bootmode.h>
 #include <console/console.h>
+#include <cpu/cpu.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
@@ -433,21 +434,92 @@ void pci_domain_read_resources(struct device *dev)
 
 	/* Initialize the system-wide memory resources constraints. */
 	res = new_resource(dev, IOINDEX_SUBTRACTIVE(1, 0));
-	res->limit = 0xffffffffULL;
+	res->limit = (1ULL << cpu_phys_address_size()) - 1;
 	res->flags = IORESOURCE_MEM | IORESOURCE_SUBTRACTIVE |
 		     IORESOURCE_ASSIGNED;
 }
 
-static void pci_set_resource(struct device *dev, struct resource *resource)
+void pci_domain_set_resources(struct device *dev)
+{
+	assign_resources(dev->link_list);
+}
+
+static void pci_store_resource(const struct device *const dev,
+			       const struct resource *const resource)
+{
+	unsigned long base_lo, base_hi;
+
+	base_lo = resource->base & 0xffffffff;
+	base_hi = (resource->base >> 32) & 0xffffffff;
+
+	/*
+	 * Some chipsets allow us to set/clear the I/O bit
+	 * (e.g. VIA 82C686A). So set it to be safe.
+	 */
+	if (resource->flags & IORESOURCE_IO)
+		base_lo |= PCI_BASE_ADDRESS_SPACE_IO;
+
+	pci_write_config32(dev, resource->index, base_lo);
+	if (resource->flags & IORESOURCE_PCI64)
+		pci_write_config32(dev, resource->index + 4, base_hi);
+}
+
+static void pci_store_bridge_resource(const struct device *const dev,
+				      struct resource *const resource)
 {
 	resource_t base, end;
 
+	/*
+	 * PCI bridges have no enable bit. They are disabled if the base of
+	 * the range is greater than the limit. If the size is zero, disable
+	 * by setting the base = limit and end = limit - 2^gran.
+	 */
+	if (resource->size == 0) {
+		base = resource->limit;
+		end = resource->limit - (1 << resource->gran);
+		resource->base = base;
+	} else {
+		base = resource->base;
+		end = resource_end(resource);
+	}
+
+	if (resource->index == PCI_IO_BASE) {
+		/* Set the I/O ranges. */
+		pci_write_config8(dev, PCI_IO_BASE, base >> 8);
+		pci_write_config16(dev, PCI_IO_BASE_UPPER16, base >> 16);
+		pci_write_config8(dev, PCI_IO_LIMIT, end >> 8);
+		pci_write_config16(dev, PCI_IO_LIMIT_UPPER16, end >> 16);
+	} else if (resource->index == PCI_MEMORY_BASE) {
+		/* Set the memory range. */
+		pci_write_config16(dev, PCI_MEMORY_BASE, base >> 16);
+		pci_write_config16(dev, PCI_MEMORY_LIMIT, end >> 16);
+	} else if (resource->index == PCI_PREF_MEMORY_BASE) {
+		/* Set the prefetchable memory range. */
+		pci_write_config16(dev, PCI_PREF_MEMORY_BASE, base >> 16);
+		pci_write_config32(dev, PCI_PREF_BASE_UPPER32, base >> 32);
+		pci_write_config16(dev, PCI_PREF_MEMORY_LIMIT, end >> 16);
+		pci_write_config32(dev, PCI_PREF_LIMIT_UPPER32, end >> 32);
+	} else {
+		/* Don't let me think I stored the resource. */
+		resource->flags &= ~IORESOURCE_STORED;
+		printk(BIOS_ERR, "ERROR: invalid resource->index %lx\n", resource->index);
+	}
+}
+
+static void pci_set_resource(struct device *dev, struct resource *resource)
+{
 	/* Make certain the resource has actually been assigned a value. */
 	if (!(resource->flags & IORESOURCE_ASSIGNED)) {
-		printk(BIOS_ERR, "ERROR: %s %02lx %s size: 0x%010llx not "
-		       "assigned\n", dev_path(dev), resource->index,
-		       resource_type(resource), resource->size);
-		return;
+		if (resource->flags & IORESOURCE_BRIDGE) {
+			/* If a bridge resource has no value assigned,
+			   we can treat it like an empty resource. */
+			resource->size = 0;
+		} else {
+			printk(BIOS_ERR, "ERROR: %s %02lx %s size: 0x%010llx not "
+			       "assigned\n", dev_path(dev), resource->index,
+			       resource_type(resource), resource->size);
+			return;
+		}
 	}
 
 	/* If this resource is fixed don't worry about it. */
@@ -476,62 +548,13 @@ static void pci_set_resource(struct device *dev, struct resource *resource)
 			dev->command |= PCI_COMMAND_MASTER;
 	}
 
-	/* Get the base address. */
-	base = resource->base;
-
-	/* Get the end. */
-	end = resource_end(resource);
-
 	/* Now store the resource. */
 	resource->flags |= IORESOURCE_STORED;
 
-	/*
-	 * PCI bridges have no enable bit. They are disabled if the base of
-	 * the range is greater than the limit. If the size is zero, disable
-	 * by setting the base = limit and end = limit - 2^gran.
-	 */
-	if (resource->size == 0 && (resource->flags & IORESOURCE_PCI_BRIDGE)) {
-		base = resource->limit;
-		end = resource->limit - (1 << resource->gran);
-		resource->base = base;
-	}
-
-	if (!(resource->flags & IORESOURCE_PCI_BRIDGE)) {
-		unsigned long base_lo, base_hi;
-
-		/*
-		 * Some chipsets allow us to set/clear the I/O bit
-		 * (e.g. VIA 82C686A). So set it to be safe.
-		 */
-		base_lo = base & 0xffffffff;
-		base_hi = (base >> 32) & 0xffffffff;
-		if (resource->flags & IORESOURCE_IO)
-			base_lo |= PCI_BASE_ADDRESS_SPACE_IO;
-		pci_write_config32(dev, resource->index, base_lo);
-		if (resource->flags & IORESOURCE_PCI64)
-			pci_write_config32(dev, resource->index + 4, base_hi);
-	} else if (resource->index == PCI_IO_BASE) {
-		/* Set the I/O ranges. */
-		pci_write_config8(dev, PCI_IO_BASE, base >> 8);
-		pci_write_config16(dev, PCI_IO_BASE_UPPER16, base >> 16);
-		pci_write_config8(dev, PCI_IO_LIMIT, end >> 8);
-		pci_write_config16(dev, PCI_IO_LIMIT_UPPER16, end >> 16);
-	} else if (resource->index == PCI_MEMORY_BASE) {
-		/* Set the memory range. */
-		pci_write_config16(dev, PCI_MEMORY_BASE, base >> 16);
-		pci_write_config16(dev, PCI_MEMORY_LIMIT, end >> 16);
-	} else if (resource->index == PCI_PREF_MEMORY_BASE) {
-		/* Set the prefetchable memory range. */
-		pci_write_config16(dev, PCI_PREF_MEMORY_BASE, base >> 16);
-		pci_write_config32(dev, PCI_PREF_BASE_UPPER32, base >> 32);
-		pci_write_config16(dev, PCI_PREF_MEMORY_LIMIT, end >> 16);
-		pci_write_config32(dev, PCI_PREF_LIMIT_UPPER32, end >> 32);
-	} else {
-		/* Don't let me think I stored the resource. */
-		resource->flags &= ~IORESOURCE_STORED;
-		printk(BIOS_ERR, "ERROR: invalid resource->index %lx\n",
-		       resource->index);
-	}
+	if (resource->flags & IORESOURCE_PCI_BRIDGE)
+		pci_store_bridge_resource(dev, resource);
+	else
+		pci_store_resource(dev, resource);
 
 	report_resource_stored(dev, resource, "");
 }
@@ -764,17 +787,19 @@ struct device_operations default_pci_ops_dev = {
 };
 
 /** Default device operations for PCI bridges */
-static struct pci_operations pci_bus_ops_pci = {
-	.set_subsystem = 0,
-};
-
 struct device_operations default_pci_ops_bus = {
 	.read_resources   = pci_bus_read_resources,
 	.set_resources    = pci_dev_set_resources,
 	.enable_resources = pci_bus_enable_resources,
 	.scan_bus         = pci_scan_bridge,
 	.reset_bus        = pci_bus_reset,
-	.ops_pci          = &pci_bus_ops_pci,
+};
+
+/** Default device operations for PCI devices marked 'hidden' */
+static struct device_operations default_hidden_pci_ops_dev = {
+	.read_resources   = noop_read_resources,
+	.set_resources    = noop_set_resources,
+	.scan_bus         = scan_static_bus,
 };
 
 /**
@@ -1146,6 +1171,46 @@ unsigned int pci_match_simple_dev(struct device *dev, pci_devfn_t sdev)
 }
 
 /**
+ * PCI devices that are marked as "hidden" do not get probed. However, the same
+ * initialization logic is still performed as if it were. This is useful when
+ * devices would like to be described in the devicetree.cb file, and/or present
+ * static PCI resources to the allocator, but the platform firmware hides the
+ * device (makes the device invisible to PCI enumeration) before PCI enumeration
+ * takes place.
+ *
+ * The expected semantics of PCI devices marked as 'hidden':
+ * 1) The device is actually present under the specified BDF
+ * 2) The device config space can still be accessed somehow, but the Vendor ID
+ *     indicates there is no device there (it reads as 0xffffffff).
+ * 3) The device may still consume PCI resources. Typically, these would have
+ *     been hardcoded elsewhere.
+ *
+ * @param dev Pointer to the device structure.
+ */
+static void pci_scan_hidden_device(struct device *dev)
+{
+	if (dev->chip_ops && dev->chip_ops->enable_dev)
+		dev->chip_ops->enable_dev(dev);
+
+	/*
+	 * If chip_ops->enable_dev did not set dev->ops, then set to a default
+	 * .ops, because PCI enumeration is effectively being skipped, therefore
+	 * no PCI driver will bind to this device. However, children may want to
+	 * be enumerated, so this provides scan_static_bus for the .scan_bus
+	 * callback.
+	 */
+	if (dev->ops == NULL)
+		dev->ops = &default_hidden_pci_ops_dev;
+
+	if (dev->ops->enable)
+		dev->ops->enable(dev);
+
+	/* Display the device almost as if it were probed normally */
+	printk(BIOS_DEBUG, "%s [0000/%04x] hidden%s\n", dev_path(dev),
+	       dev->device, dev->ops ? "" : " No operations");
+}
+
+/**
  * Scan a PCI bus.
  *
  * Determine the existence of devices and bridges on a PCI bus. If there are
@@ -1189,6 +1254,14 @@ void pci_scan_bus(struct bus *bus, unsigned int min_devfn,
 		/* First thing setup the device structure. */
 		dev = pci_scan_get_dev(bus, devfn);
 
+		/* Devices marked 'hidden' do not get probed */
+		if (dev && dev->hidden) {
+			pci_scan_hidden_device(dev);
+
+			/* Skip pci_probe_dev, go to next devfn */
+			continue;
+		}
+
 		/* See if a device is present and setup the device structure. */
 		dev = pci_probe_dev(dev, bus, devfn);
 
@@ -1212,8 +1285,12 @@ void pci_scan_bus(struct bus *bus, unsigned int min_devfn,
 
 	prev = &bus->children;
 	for (dev = bus->children; dev; dev = dev->sibling) {
-		/* If we read valid vendor id, it is not leftover device. */
-		if (dev->vendor != 0) {
+		/*
+		 * The device is only considered leftover if it is not hidden
+		 * and it has a Vendor ID of 0 (the default for a device that
+		 * could not be probed).
+		 */
+		if (dev->vendor != 0 || dev->hidden) {
 			prev = &dev->sibling;
 			continue;
 		}

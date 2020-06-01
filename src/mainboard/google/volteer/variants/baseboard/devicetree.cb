@@ -32,9 +32,6 @@ chip soc/intel/tigerlake
 	register "usb3_ports[2]" = "USB3_PORT_DEFAULT(OC_SKIP)"	# M.2 WWAN
 	register "usb3_ports[3]" = "USB3_PORT_DEFAULT(OC_SKIP)"	# M.2 Camera
 
-	# Enable Pch iSCLK
-	register "pch_isclk" = "1"
-
 	# EC host command ranges are in 0x800-0x8ff & 0x200-0x20f
 	register "gen1_dec" = "0x00fc0801"
 	register "gen2_dec" = "0x000c0201"
@@ -125,7 +122,20 @@ chip soc/intel/tigerlake
 
 	# TCSS USB3
 	register "TcssXhciEn" = "1"
-	register "TcssAuxOri" = "0"
+	register "TcssAuxOri" = "1"
+	register "IomTypeCPortPadCfg[0]" = "0x090E000A"
+	register "IomTypeCPortPadCfg[1]" = "0x090E000D"
+	register "IomTypeCPortPadCfg[2]" = "0x0"
+	register "IomTypeCPortPadCfg[3]" = "0x0"
+	register "IomTypeCPortPadCfg[4]" = "0x0"
+	register "IomTypeCPortPadCfg[5]" = "0x0"
+	register "IomTypeCPortPadCfg[6]" = "0x0"
+	register "IomTypeCPortPadCfg[7]" = "0x0"
+
+
+	# D3Hot and D3Cold for TCSS
+	register "TcssD3HotEnable" = "1"
+	register "TcssD3ColdEnable" = "1"
 
 	# DP port
 	register "DdiPortAConfig" = "1"	# eDP
@@ -160,6 +170,16 @@ chip soc/intel/tigerlake
 
 	# Enable S0ix
 	register "s0ix_enable" = "1"
+
+	# Enable DPTF
+	register "dptf_enable" = "1"
+
+	register "power_limits_config" = "{
+		.tdp_pl1_override = 15,
+		.tdp_pl2_override = 60,
+	}"
+
+	register "Device4Enable" = "1"
 
 	# Intel Common SoC Config
 	#+-------------------+---------------------------+
@@ -243,7 +263,7 @@ chip soc/intel/tigerlake
 				register "hid" = ""10EC5682""
 				register "name" = ""RT58""
 				register "desc" = ""Realtek RT5682""
-				register "irq" = "ACPI_IRQ_EDGE_HIGH(GPP_F8_IRQ)"
+				register "irq_gpio" = "ACPI_GPIO_IRQ_EDGE_BOTH(GPP_F8)"
 				# Set the jd_src to RT5668_JD1 for jack detection
 				register "property_count" = "1"
 				register "property_list[0].type" = "ACPI_DP_TYPE_INTEGER"
@@ -331,7 +351,8 @@ chip soc/intel/tigerlake
 			chip drivers/i2c/generic
 				register "hid" = ""ELAN0000""
 				register "desc" = ""ELAN Touchpad""
-				register "irq" = "ACPI_IRQ_LEVEL_LOW(GPP_E15_IRQ)"
+				register "irq" = "ACPI_IRQ_WAKE_LEVEL_LOW(GPP_E15_IRQ)"
+				register "wake" = "GPE0_DW2_15"
 				register "probed" = "1"
 				device i2c 15 on end
 			end
@@ -361,7 +382,7 @@ chip soc/intel/tigerlake
 				register "irq" = "ACPI_IRQ_EDGE_LOW(GPP_C21_IRQ)"
 				device spi 0 on end
 			end
-		end # GSPI0				0xA0AA
+		end # GSPI0						0xA0AA
 		device pci 1e.3 on
 			chip drivers/spi/acpi
 				register "name" = ""CRFP""
@@ -371,14 +392,14 @@ chip soc/intel/tigerlake
 				register "irq_gpio" = "ACPI_GPIO_IRQ_LEVEL_LOW_WAKE(GPP_C20)"
 				device spi 0 on end
 			end # FPMCU
-		end # GSPI1				0xA0AB
+		end # GSPI1						0xA0AB
 		device pci 1f.0 on
 			chip ec/google/chromeec
 				device pnp 0c09.0 on end
 			end
-		end # eSPI				0xA080 - A09F
+		end # eSPI						0xA080 - A09F
 		device pci 1f.1 off end # P2SB				0xA0A0
-		device pci 1f.2 on  end # PMC				0xA0A1
+		device pci 1f.2 hidden end # PMC			0xA0A1
 		device pci 1f.3 on
 			chip drivers/generic/max98357a
 				register "hid" = ""MX98357A""
@@ -386,7 +407,7 @@ chip soc/intel/tigerlake
 				register "sdmode_delay" = "5"
 				device generic 0 on end
 			end
-		end # Intel HD audio		0xA0C8-A0CF
+		end # Intel HD audio					0xA0C8-A0CF
 		device pci 1f.4 off end # SMBus				0xA0A3
 		device pci 1f.5 on  end # SPI				0xA0A4
 		device pci 1f.6 off end # GbE				0x15E1/0x15E2

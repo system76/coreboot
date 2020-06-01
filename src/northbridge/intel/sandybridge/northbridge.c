@@ -71,156 +71,6 @@ static int get_pcie_bar(u32 *base)
 	return 0;
 }
 
-static void add_fixed_resources(struct device *dev, int index)
-{
-	mmio_resource(dev, index++, uma_memory_base >> 10, uma_memory_size >> 10);
-
-	mmio_resource(dev, index++, legacy_hole_base_k, (0xc0000 >> 10) - legacy_hole_base_k);
-
-	reserved_ram_resource(dev, index++, 0xc0000 >> 10, (0x100000 - 0xc0000) >> 10);
-
-#if CONFIG(CHROMEOS_RAMOOPS)
-	reserved_ram_resource(dev, index++,
-			CONFIG_CHROMEOS_RAMOOPS_RAM_START >> 10,
-			CONFIG_CHROMEOS_RAMOOPS_RAM_SIZE  >> 10);
-#endif
-
-	if ((bridge_silicon_revision() & BASE_REV_MASK) == BASE_REV_SNB) {
-		/* Required for SandyBridge sighting 3715511 */
-		bad_ram_resource(dev, index++, 0x20000000 >> 10, 0x00200000 >> 10);
-		bad_ram_resource(dev, index++, 0x40000000 >> 10, 0x00200000 >> 10);
-	}
-
-	/* Reserve IOMMU BARs */
-	const u32 capid0_a = pci_read_config32(dev, CAPID0_A);
-	if (!(capid0_a & (1 << 23))) {
-		mmio_resource(dev, index++, GFXVT_BASE >> 10, 4);
-		mmio_resource(dev, index++, VTVC0_BASE >> 10, 4);
-	}
-}
-
-static void pci_domain_set_resources(struct device *dev)
-{
-	uint64_t tom, me_base, touud;
-	uint32_t tseg_base, uma_size, tolud;
-	uint16_t ggc;
-	unsigned long long tomk;
-
-	/* Total Memory 2GB example:
-	 *
-	 *  00000000  0000MB-1992MB  1992MB  RAM     (writeback)
-	 *  7c800000  1992MB-2000MB     8MB  TSEG    (SMRR)
-	 *  7d000000  2000MB-2002MB     2MB  GFX GTT (uncached)
-	 *  7d200000  2002MB-2034MB    32MB  GFX UMA (uncached)
-	 *  7f200000   2034MB TOLUD
-	 *  7f800000   2040MB MEBASE
-	 *  7f800000  2040MB-2048MB     8MB  ME UMA  (uncached)
-	 *  80000000   2048MB TOM
-	 * 100000000  4096MB-4102MB     6MB  RAM     (writeback)
-	 *
-	 * Total Memory 4GB example:
-	 *
-	 *  00000000  0000MB-2768MB  2768MB  RAM     (writeback)
-	 *  ad000000  2768MB-2776MB     8MB  TSEG    (SMRR)
-	 *  ad800000  2776MB-2778MB     2MB  GFX GTT (uncached)
-	 *  ada00000  2778MB-2810MB    32MB  GFX UMA (uncached)
-	 *  afa00000   2810MB TOLUD
-	 *  ff800000   4088MB MEBASE
-	 *  ff800000  4088MB-4096MB     8MB  ME UMA  (uncached)
-	 * 100000000   4096MB TOM
-	 * 100000000  4096MB-5374MB  1278MB  RAM     (writeback)
-	 * 14fe00000   5368MB TOUUD
-	 */
-
-	struct device *mch = pcidev_on_root(0, 0);
-
-	/* Top of Upper Usable DRAM, including remap */
-	touud  = pci_read_config32(mch, TOUUD + 4);
-	touud <<= 32;
-	touud |= pci_read_config32(mch, TOUUD);
-
-	/* Top of Lower Usable DRAM */
-	tolud = pci_read_config32(mch, TOLUD);
-
-	/* Top of Memory - does not account for any UMA */
-	tom  = pci_read_config32(mch, TOM + 4);
-	tom <<= 32;
-	tom |= pci_read_config32(mch, TOM);
-
-	printk(BIOS_DEBUG, "TOUUD 0x%llx TOLUD 0x%08x TOM 0x%llx\n",
-	       touud, tolud, tom);
-
-	/* ME UMA needs excluding if total memory < 4GB */
-	me_base  = pci_read_config32(mch, MESEG_BASE + 4);
-	me_base <<= 32;
-	me_base |= pci_read_config32(mch, MESEG_BASE);
-
-	printk(BIOS_DEBUG, "MEBASE 0x%llx\n", me_base);
-
-	uma_memory_base = tolud;
-	tomk = tolud >> 10;
-	if (me_base == tolud) {
-		/* ME is from MEBASE-TOM */
-		uma_size = (tom - me_base) >> 10;
-		/* Increment TOLUD to account for ME as RAM */
-		tolud += uma_size << 10;
-		/* UMA starts at old TOLUD */
-		uma_memory_base = tomk * 1024ULL;
-		uma_memory_size = uma_size * 1024ULL;
-		printk(BIOS_DEBUG, "ME UMA base 0x%llx size %uM\n",
-		       me_base, uma_size >> 10);
-	}
-
-	/* Graphics memory comes next */
-	ggc = pci_read_config16(mch, GGC);
-	if (!(ggc & 2)) {
-		printk(BIOS_DEBUG, "IGD decoded, subtracting ");
-
-		/* Graphics memory */
-		uma_size = ((ggc >> 3) & 0x1f) * 32 * 1024ULL;
-		printk(BIOS_DEBUG, "%uM UMA", uma_size >> 10);
-		tomk -= uma_size;
-		uma_memory_base = tomk * 1024ULL;
-		uma_memory_size += uma_size * 1024ULL;
-
-		/* GTT Graphics Stolen Memory Size (GGMS) */
-		uma_size = ((ggc >> 8) & 0x3) * 1024ULL;
-		tomk -= uma_size;
-		uma_memory_base = tomk * 1024ULL;
-		uma_memory_size += uma_size * 1024ULL;
-		printk(BIOS_DEBUG, " and %uM GTT\n", uma_size >> 10);
-	}
-
-	/* Calculate TSEG size from its base which must be below GTT */
-	tseg_base = pci_read_config32(mch, TSEGMB);
-	uma_size = (uma_memory_base - tseg_base) >> 10;
-	tomk -= uma_size;
-	uma_memory_base = tomk * 1024ULL;
-	uma_memory_size += uma_size * 1024ULL;
-	printk(BIOS_DEBUG, "TSEG base 0x%08x size %uM\n", tseg_base, uma_size >> 10);
-
-	printk(BIOS_INFO, "Available memory below 4GB: %lluM\n", tomk >> 10);
-
-	/* Report the memory regions */
-	ram_resource(dev, 3, 0, legacy_hole_base_k);
-	ram_resource(dev, 4, legacy_hole_base_k + legacy_hole_size_k,
-		    (tomk - (legacy_hole_base_k + legacy_hole_size_k)));
-
-	/*
-	 * If >= 4GB installed, then memory from TOLUD to 4GB is remapped above TOM.
-	 * TOUUD will account for both memory chunks.
-	 */
-	touud >>= 10; /* Convert to KB */
-	if (touud > 4096 * 1024) {
-		ram_resource(dev, 5, 4096 * 1024, touud - (4096 * 1024));
-		printk(BIOS_INFO, "Available memory above 4GB: %lluM\n", (touud >> 10) - 4096);
-	}
-
-	add_fixed_resources(dev, 6);
-
-	assign_resources(dev->link_list);
-}
-
 static const char *northbridge_acpi_name(const struct device *dev)
 {
 	if (dev->path.type == DEVICE_PATH_DOMAIN)
@@ -249,10 +99,43 @@ static struct device_operations pci_domain_ops = {
 	.acpi_name         = northbridge_acpi_name,
 };
 
+static void add_fixed_resources(struct device *dev, int index)
+{
+	mmio_resource(dev, index++, uma_memory_base >> 10, uma_memory_size >> 10);
+
+	mmio_resource(dev, index++, legacy_hole_base_k, (0xc0000 >> 10) - legacy_hole_base_k);
+
+	reserved_ram_resource(dev, index++, 0xc0000 >> 10, (0x100000 - 0xc0000) >> 10);
+
+#if CONFIG(CHROMEOS_RAMOOPS)
+	reserved_ram_resource(dev, index++,
+			CONFIG_CHROMEOS_RAMOOPS_RAM_START >> 10,
+			CONFIG_CHROMEOS_RAMOOPS_RAM_SIZE  >> 10);
+#endif
+
+	if ((bridge_silicon_revision() & BASE_REV_MASK) == BASE_REV_SNB) {
+		/* Required for SandyBridge sighting 3715511 */
+		bad_ram_resource(dev, index++, 0x20000000 >> 10, 0x00200000 >> 10);
+		bad_ram_resource(dev, index++, 0x40000000 >> 10, 0x00200000 >> 10);
+	}
+
+	/* Reserve IOMMU BARs */
+	const u32 capid0_a = pci_read_config32(dev, CAPID0_A);
+	if (!(capid0_a & (1 << 23))) {
+		mmio_resource(dev, index++, GFXVT_BASE >> 10, 4);
+		mmio_resource(dev, index++, VTVC0_BASE >> 10, 4);
+	}
+}
+
 static void mc_read_resources(struct device *dev)
 {
 	u32 pcie_config_base;
 	int buses;
+	uint64_t tom, me_base, touud;
+	uint32_t tseg_base, uma_size, tolud;
+	uint16_t ggc;
+	unsigned long long tomk;
+	unsigned long index = 3;
 
 	pci_dev_read_resources(dev);
 
@@ -261,6 +144,116 @@ static void mc_read_resources(struct device *dev)
 		struct resource *resource = new_resource(dev, PCIEXBAR);
 		mmconf_resource_init(resource, pcie_config_base, buses);
 	}
+
+	/* Total Memory 2GB example:
+	 *
+	 *  00000000  0000MB-1992MB  1992MB  RAM     (writeback)
+	 *  7c800000  1992MB-2000MB     8MB  TSEG    (SMRR)
+	 *  7d000000  2000MB-2002MB     2MB  GFX GTT (uncached)
+	 *  7d200000  2002MB-2034MB    32MB  GFX UMA (uncached)
+	 *  7f200000   2034MB TOLUD
+	 *  7f800000   2040MB MEBASE
+	 *  7f800000  2040MB-2048MB     8MB  ME UMA  (uncached)
+	 *  80000000   2048MB TOM
+	 * 100000000  4096MB-4102MB     6MB  RAM     (writeback)
+	 *
+	 * Total Memory 4GB example:
+	 *
+	 *  00000000  0000MB-2768MB  2768MB  RAM     (writeback)
+	 *  ad000000  2768MB-2776MB     8MB  TSEG    (SMRR)
+	 *  ad800000  2776MB-2778MB     2MB  GFX GTT (uncached)
+	 *  ada00000  2778MB-2810MB    32MB  GFX UMA (uncached)
+	 *  afa00000   2810MB TOLUD
+	 *  ff800000   4088MB MEBASE
+	 *  ff800000  4088MB-4096MB     8MB  ME UMA  (uncached)
+	 * 100000000   4096MB TOM
+	 * 100000000  4096MB-5374MB  1278MB  RAM     (writeback)
+	 * 14fe00000   5368MB TOUUD
+	 */
+
+	/* Top of Upper Usable DRAM, including remap */
+	touud  = pci_read_config32(dev, TOUUD + 4);
+	touud <<= 32;
+	touud |= pci_read_config32(dev, TOUUD);
+
+	/* Top of Lower Usable DRAM */
+	tolud = pci_read_config32(dev, TOLUD);
+
+	/* Top of Memory - does not account for any UMA */
+	tom  = pci_read_config32(dev, TOM + 4);
+	tom <<= 32;
+	tom |= pci_read_config32(dev, TOM);
+
+	printk(BIOS_DEBUG, "TOUUD 0x%llx TOLUD 0x%08x TOM 0x%llx\n",
+	       touud, tolud, tom);
+
+	/* ME UMA needs excluding if total memory < 4GB */
+	me_base  = pci_read_config32(dev, MESEG_BASE + 4);
+	me_base <<= 32;
+	me_base |= pci_read_config32(dev, MESEG_BASE);
+
+	printk(BIOS_DEBUG, "MEBASE 0x%llx\n", me_base);
+
+	uma_memory_base = tolud;
+	tomk = tolud >> 10;
+	if (me_base == tolud) {
+		/* ME is from MEBASE-TOM */
+		uma_size = (tom - me_base) >> 10;
+		/* Increment TOLUD to account for ME as RAM */
+		tolud += uma_size << 10;
+		/* UMA starts at old TOLUD */
+		uma_memory_base = tomk * 1024ULL;
+		uma_memory_size = uma_size * 1024ULL;
+		printk(BIOS_DEBUG, "ME UMA base 0x%llx size %uM\n",
+		       me_base, uma_size >> 10);
+	}
+
+	/* Graphics memory comes next */
+	ggc = pci_read_config16(dev, GGC);
+	if (!(ggc & 2)) {
+		printk(BIOS_DEBUG, "IGD decoded, subtracting ");
+
+		/* Graphics memory */
+		uma_size = ((ggc >> 3) & 0x1f) * 32 * 1024ULL;
+		printk(BIOS_DEBUG, "%uM UMA", uma_size >> 10);
+		tomk -= uma_size;
+		uma_memory_base = tomk * 1024ULL;
+		uma_memory_size += uma_size * 1024ULL;
+
+		/* GTT Graphics Stolen Memory Size (GGMS) */
+		uma_size = ((ggc >> 8) & 0x3) * 1024ULL;
+		tomk -= uma_size;
+		uma_memory_base = tomk * 1024ULL;
+		uma_memory_size += uma_size * 1024ULL;
+		printk(BIOS_DEBUG, " and %uM GTT\n", uma_size >> 10);
+	}
+
+	/* Calculate TSEG size from its base which must be below GTT */
+	tseg_base = pci_read_config32(dev, TSEGMB);
+	uma_size = (uma_memory_base - tseg_base) >> 10;
+	tomk -= uma_size;
+	uma_memory_base = tomk * 1024ULL;
+	uma_memory_size += uma_size * 1024ULL;
+	printk(BIOS_DEBUG, "TSEG base 0x%08x size %uM\n", tseg_base, uma_size >> 10);
+
+	printk(BIOS_INFO, "Available memory below 4GB: %lluM\n", tomk >> 10);
+
+	/* Report the memory regions */
+	ram_resource(dev, index++, 0, legacy_hole_base_k);
+	ram_resource(dev, index++, legacy_hole_base_k + legacy_hole_size_k,
+			  (tomk - (legacy_hole_base_k + legacy_hole_size_k)));
+
+	/*
+	 * If >= 4GB installed, then memory from TOLUD to 4GB is remapped above TOM.
+	 * TOUUD will account for both memory chunks.
+	 */
+	touud >>= 10; /* Convert to KB */
+	if (touud > 4096 * 1024) {
+		ram_resource(dev, index++, 4096 * 1024, touud - (4096 * 1024));
+		printk(BIOS_INFO, "Available memory above 4GB: %lluM\n", (touud >> 10) - 4096);
+	}
+
+	add_fixed_resources(dev, index++);
 }
 
 static void northbridge_dmi_init(struct device *dev)

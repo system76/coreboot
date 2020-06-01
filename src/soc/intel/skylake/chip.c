@@ -14,6 +14,7 @@
 #include <intelblocks/lpc_lib.h>
 #include <intelblocks/mp_init.h>
 #include <intelblocks/pcie_rp.h>
+#include <intelblocks/power_limit.h>
 #include <intelblocks/xdci.h>
 #include <intelblocks/p2sb.h>
 #include <intelpch/lockdown.h>
@@ -78,11 +79,6 @@ void soc_fsp_load(void)
 	fsps_load(romstage_handoff_is_resume());
 }
 
-static void pci_domain_set_resources(struct device *dev)
-{
-	assign_resources(dev->link_list);
-}
-
 static struct device_operations pci_domain_ops = {
 	.read_resources   = &pci_domain_read_resources,
 	.set_resources    = &pci_domain_set_resources,
@@ -129,10 +125,14 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 	config = config_of_soc();
 
 	mainboard_silicon_init_params(params);
+
+	struct soc_power_limits_config *soc_confg;
+	config_t *confg = config_of_soc();
+	soc_confg = &confg->power_limits_config;
 	/* Set PsysPmax if it is available from DT */
-	if (config->psys_pmax) {
+	if (soc_confg->psys_pmax) {
 		/* PsysPmax is in unit of 1/8 Watt */
-		tconfig->PsysPmax = config->psys_pmax * 8;
+		tconfig->PsysPmax = soc_confg->psys_pmax * 8;
 		printk(BIOS_DEBUG, "psys_pmax = %d\n", tconfig->PsysPmax);
 	}
 
@@ -187,8 +187,11 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 	       sizeof(params->PcieRpLtrEnable));
 	memcpy(params->PcieRpHotPlug, config->PcieRpHotPlug,
 	       sizeof(params->PcieRpHotPlug));
-	for (i = 0; i < CONFIG_MAX_ROOT_PORTS; i++)
+	for (i = 0; i < CONFIG_MAX_ROOT_PORTS; i++) {
 		params->PcieRpMaxPayload[i] = config->PcieRpMaxPayload[i];
+		if (config->PcieRpAspm[i])
+			params->PcieRpAspm[i] = config->PcieRpAspm[i] - 1;
+	}
 
 	/*
 	 * PcieRpClkSrcNumber UPD is set to clock source number(0-6) for

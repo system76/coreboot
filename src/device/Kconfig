@@ -1,5 +1,3 @@
-##
-##
 ## SPDX-License-Identifier: GPL-2.0-only
 
 menu "Devices"
@@ -585,6 +583,22 @@ config PCIEXP_HOTPLUG_PREFETCH_MEM
 	  child devices. This size should be page-aligned. The default is
 	  256 MiB.
 
+config PCIEXP_HOTPLUG_PREFETCH_MEM_ABOVE_4G
+	bool
+	depends on RESOURCE_ALLOCATOR_V4
+	default y if !PCIEXP_HOTPLUG_PREFETCH_MEM_BELOW_4G
+	default n
+	help
+	  This enables prefetch memory allocation above 4G boundary for the
+	  hotplug resources.
+
+config PCIEXP_HOTPLUG_PREFETCH_MEM_BELOW_4G
+	bool "PCI Express Hotplug Prefetch Memory Allocation below 4G boundary"
+	default n
+	help
+	  This enables prefetch memory allocation below 4G boundary for the
+	  hotplug resources.
+
 config PCIEXP_HOTPLUG_IO
 	hex "PCI Express Hotplug I/O Space"
 	default 0x2000
@@ -778,5 +792,23 @@ config SOFTWARE_I2C
 	  be useful for debugging or on platforms where a driver for the real
 	  I2C controller is not (yet) available. The platform code needs to
 	  provide bindings to manually toggle I2C lines.
+
+config RESOURCE_ALLOCATOR_V3
+	bool
+	default n
+	help
+	  This config option enables resource allocator v3 which performs
+	  top down allocation of resources in a single MMIO window. This is the
+	  old resource allocator meant to be used only until the broken AMD
+	  chipsets are fixed. DO NOT USE THIS FOR ANY NEW CHIPSETS!
+
+config RESOURCE_ALLOCATOR_V4
+	bool
+	default n if RESOURCE_ALLOCATOR_V3
+	default y if !RESOURCE_ALLOCATOR_V3
+	help
+	  This config option enables resource allocator v4 which uses multiple
+	  ranges for allocating resources. This allows allocation of resources
+	  above 4G boundary as well.
 
 endmenu

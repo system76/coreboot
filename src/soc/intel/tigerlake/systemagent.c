@@ -7,10 +7,13 @@
  */
 
 #include <device/device.h>
+#include <delay.h>
 #include <device/pci.h>
 #include <device/pci_ops.h>
+#include <intelblocks/power_limit.h>
 #include <intelblocks/systemagent.h>
 #include <soc/iomap.h>
+#include <soc/soc_chip.h>
 #include <soc/systemagent.h>
 
 /*
@@ -29,17 +32,6 @@ void soc_add_fixed_mmio_resources(struct device *dev, int *index)
 		{ EPBAR, EP_BASE_ADDRESS, EP_BASE_SIZE, "EPBAR" },
 		{ REGBAR, REG_BASE_ADDRESS, REG_BASE_SIZE, "REGBAR" },
 		{ EDRAMBAR, EDRAM_BASE_ADDRESS, EDRAM_BASE_SIZE, "EDRAMBAR" },
-		/*
-		 * PMC pci device gets hidden from PCI bus due to Silicon
-		 * policy hence binding PMCBAR aka PWRMBASE (offset 0x10) with
-		 * SA resources to ensure that PMCBAR falls under PCI reserved
-		 * memory range.
-		 *
-		 * Note: Don't add any more resource with same offset 0x10
-		 * under this device space.
-		 */
-		{ PCI_BASE_ADDRESS_0, PCH_PWRM_BASE_ADDRESS, PCH_PWRM_BASE_SIZE,
-				"PMCBAR" },
 	};
 
 	sa_add_fixed_mmio_resources(dev, index, soc_fixed_resources,
@@ -60,9 +52,32 @@ void soc_add_fixed_mmio_resources(struct device *dev, int *index)
  */
 void soc_systemagent_init(struct device *dev)
 {
+	struct soc_power_limits_config *soc_config;
+	config_t *config;
+
 	/* Enable Power Aware Interrupt Routing */
 	enable_power_aware_intr();
 
 	/* Enable BIOS Reset CPL */
 	enable_bios_reset_cpl();
+
+	/* Configure turbo power limits 1ms after reset complete bit */
+	mdelay(1);
+	config = config_of_soc();
+	soc_config = &config->power_limits_config;
+	set_power_limits(MOBILE_SKU_PL1_TIME_SEC, soc_config);
+}
+
+uint32_t soc_systemagent_max_chan_capacity_mib(u8 capid0_a_ddrsz)
+{
+	switch (capid0_a_ddrsz) {
+	case 1:
+		return 8192;
+	case 2:
+		return 4096;
+	case 3:
+		return 2048;
+	default:
+		return 65536;
+	}
 }

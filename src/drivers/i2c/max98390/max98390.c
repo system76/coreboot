@@ -1,9 +1,8 @@
-/* This file is part of the coreboot project. */
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 
-#include <arch/acpi.h>
-#include <arch/acpi_device.h>
-#include <arch/acpigen.h>
+#include <acpi/acpi.h>
+#include <acpi/acpi_device.h>
+#include <acpi/acpigen.h>
 #include <console/console.h>
 #include <device/i2c.h>
 #include <device/device.h>
@@ -16,7 +15,7 @@
 
 #define MAX98390_DP_INT(key, val) acpi_dp_add_integer(dp, "maxim," key, (val))
 
-static void max98390_fill_ssdt(struct device *dev)
+static void max98390_fill_ssdt(const struct device *dev)
 {
 	struct drivers_i2c_max98390_config *config = dev->chip_info;
 	const char *scope = acpi_device_scope(dev);
@@ -87,7 +86,7 @@ static struct device_operations max98390_ops = {
 	.read_resources = noop_read_resources,
 	.set_resources = noop_set_resources,
 	.acpi_name = max98390_acpi_name,
-	.acpi_fill_ssdt_generator = max98390_fill_ssdt,
+	.acpi_fill_ssdt = max98390_fill_ssdt,
 };
 
 static void max98390_enable(struct device *dev)

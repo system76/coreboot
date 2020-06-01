@@ -1,6 +1,3 @@
-#
-#
-#
 # SPDX-License-Identifier: GPL-2.0-only
 
 subdirs-y += gnat
@@ -161,6 +158,11 @@ ramstage-y += hexdump.c
 romstage-y += hexdump.c
 verstage-y += hexdump.c
 smm-y += hexdump.c
+
+bootblock-$(CONFIG_ESPI_DEBUG) += espi_debug.c
+verstage-$(CONFIG_ESPI_DEBUG) += espi_debug.c
+romstage-$(CONFIG_ESPI_DEBUG) += espi_debug.c
+ramstage-$(CONFIG_ESPI_DEBUG) += espi_debug.c
 
 bootblock-$(CONFIG_REG_SCRIPT) += reg_script.c
 verstage-$(CONFIG_REG_SCRIPT) += reg_script.c
@@ -340,3 +342,5 @@ spd.bin-type := spd
 endif
 
 ramstage-y += uuid.c
+
+romstage-$(CONFIG_ROMSTAGE_SPD_SMBUS) += spd_cache.c

@@ -156,6 +156,12 @@ static int path_eq(const struct device_path *path1,
 	case DEVICE_PATH_MMIO:
 		equal = (path1->mmio.addr == path2->mmio.addr);
 		break;
+	case DEVICE_PATH_ESPI:
+		equal = (path1->espi.addr == path2->espi.addr);
+		break;
+	case DEVICE_PATH_LPC:
+		equal = (path1->lpc.addr == path2->lpc.addr);
+		break;
 	default:
 		printk(BIOS_ERR, "Unknown device type: %d\n", path1->type);
 		break;
@@ -221,7 +227,7 @@ DEVTREE_CONST struct device *pcidev_path_on_bus(unsigned int bus, pci_devfn_t de
 DEVTREE_CONST struct bus *pci_root_bus(void)
 {
 	DEVTREE_CONST struct device *pci_domain;
-	MAYBE_STATIC_BSS DEVTREE_CONST struct bus *pci_root = NULL;
+	static DEVTREE_CONST struct bus *pci_root;
 
 	if (pci_root)
 		return pci_root;

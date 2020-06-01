@@ -147,18 +147,22 @@ Method (_CRS, 0, Serialized)
 
 	// Fix up PCI memory region
 	// Start with Top of Lower Usable DRAM
-	Store (^MCHC.TLUD, Local0)
-	Store (^MCHC.MEBA, Local1)
+	// Lower 20 bits of TOLUD register need to be masked since they contain lock and
+	// reserved bits.
+	Local0 = ^MCHC.TLUD & (0xfff << 20)
+	Local1 = ^MCHC.MEBA
 
 	// Check if ME base is equal
-	If (LEqual (Local0, Local1)) {
+	If (Local0 == Local1) {
 		// Use Top Of Memory instead
-		Store (^MCHC.TOM, Local0)
+		// Lower 20 bits of TOM register need to be masked since they contain lock and
+		// reserved bits.
+		Local0 = ^MCHC.TOM & (0x7ffff << 20)
 	}
 
-	Store (Local0, PMIN)
-	Store (Subtract(CONFIG_MMCONF_BASE_ADDRESS, 1), PMAX)
-	Add(Subtract(PMAX, PMIN), 1, PLEN)
+	PMIN = Local0
+	PMAX = CONFIG_MMCONF_BASE_ADDRESS - 1
+	PLEN = (PMAX - PMIN) + 1
 
 	Return (MCRS)
 }

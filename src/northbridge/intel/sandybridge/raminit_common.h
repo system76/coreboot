@@ -25,15 +25,78 @@
 #define NUM_SLOTS	2
 #define NUM_LANES	9
 
-#define NO_RANKSEL		(~(1 << 16))
-#define IOSAV_MRS		(0x1f000)
-#define IOSAV_PRE		(0x1f002)
-#define IOSAV_ZQCS		(0x1f003)
-#define IOSAV_ACT		(0x1f006)
-#define IOSAV_RD		(0x1f105)
-#define IOSAV_NOP_ALT		(0x1f107)
-#define IOSAV_WR		(0x1f201)
-#define IOSAV_NOP		(0x1f207)
+/* IOSAV_n_SP_CMD_CTRL DRAM commands */
+#define IOSAV_MRS		(0xf000)
+#define IOSAV_PRE		(0xf002)
+#define IOSAV_ZQCS		(0xf003)
+#define IOSAV_ACT		(0xf006)
+#define IOSAV_RD		(0xf105)
+#define IOSAV_NOP_ALT		(0xf107)
+#define IOSAV_WR		(0xf201)
+#define IOSAV_NOP		(0xf207)
+
+/* IOSAV_n_SUBSEQ_CTRL data direction */
+#define SSQ_NA			0 /* Non-data */
+#define SSQ_RD			1 /* Read */
+#define SSQ_WR			2 /* Write */
+#define SSQ_RW			3 /* Read and write */
+
+struct iosav_ssq {
+	/* IOSAV_n_SP_CMD_CTRL */
+	union {
+		struct {
+			u32 command    : 16;
+			u32 ranksel_ap :  2;
+			u32            : 14;
+		};
+		u32 raw;
+	} sp_cmd_ctrl;
+
+	/* IOSAV_n_SUBSEQ_CTRL */
+	union {
+		struct {
+			u32 cmd_executions : 9;
+			u32                : 1;
+			u32 cmd_delay_gap  : 5;
+			u32                : 1;
+			u32 post_ssq_wait  : 9;
+			u32                : 1;
+			u32 data_direction : 2;
+			u32                : 4;
+		};
+		u32 raw;
+	} subseq_ctrl;
+
+	/* IOSAV_n_SP_CMD_ADDR */
+	union {
+		struct {
+			u32 address : 16;
+			u32 rowbits :  3;
+			u32         :  1;
+			u32 bank    :  3;
+			u32         :  1;
+			u32 rank    :  2;
+			u32         :  6;
+		};
+		u32 raw;
+	} sp_cmd_addr;
+
+	/* IOSAV_n_ADDR_UPDATE */
+	union {
+		struct {
+			u32 inc_addr_1 :  1;
+			u32 inc_addr_8 :  1;
+			u32 inc_bank   :  1;
+			u32 inc_rank   :  2;
+			u32 addr_wrap  :  5;
+			u32 lfsr_upd   :  2;
+			u32 upd_rate   :  4;
+			u32 lfsr_xors  :  2;
+			u32            : 14;
+		};
+		u32 raw;
+	} addr_update;
+};
 
 /* FIXME: Vendor BIOS uses 64 but our algorithms are less
    performant and even 1 seems to be enough in practice.  */

@@ -5,6 +5,7 @@
 #include <device/device.h>
 #include <device/pci_ops.h>
 #include <device/pci_def.h>
+#include <amdblocks/acpimmio.h>
 #include <amdblocks/lpc.h>
 #include <soc/iomap.h>
 #include <soc/southbridge.h>
@@ -182,6 +183,7 @@ void lpc_disable_decodes(void)
 	reg = pci_read_config32(_LPCB_DEV, LPC_IO_OR_MEM_DECODE_ENABLE);
 	reg &= LPC_SYNC_TIMEOUT_COUNT_MASK | LPC_SYNC_TIMEOUT_COUNT_ENABLE;
 	pci_write_config32(_LPCB_DEV, LPC_IO_OR_MEM_DECODE_ENABLE, reg);
+	pci_write_config32(_LPCB_DEV, LPC_IO_PORT_DECODE_ENABLE, 0);
 
 	/* D14F3x48 enables ranges configured in additional registers */
 	pci_write_config32(_LPCB_DEV, LPC_MEM_PORT1, 0);
@@ -322,19 +324,46 @@ uintptr_t lpc_get_spibase(void)
 	return (uintptr_t)base;
 }
 
-void lpc_set_spibase(u32 base, u32 enable)
+void lpc_set_spibase(uint32_t base)
 {
-	u32 reg32;
+	uint32_t reg32;
+
+	reg32 = pci_read_config32(_LPCB_DEV, SPIROM_BASE_ADDRESS_REGISTER);
+
+	reg32 &= SPI_BASE_ALIGNMENT - 1; /* preserve only reserved, enables */
+	reg32 |= ALIGN_DOWN(base, SPI_BASE_ALIGNMENT);
+
+	pci_write_config32(_LPCB_DEV, SPIROM_BASE_ADDRESS_REGISTER, reg32);
+}
+
+void lpc_enable_spi_rom(uint32_t enable)
+{
+	uint32_t reg32;
 
 	/* only two types of CS# enables are allowed */
 	enable &= SPI_ROM_ENABLE | SPI_ROM_ALT_ENABLE;
 
 	reg32 = pci_read_config32(_LPCB_DEV, SPIROM_BASE_ADDRESS_REGISTER);
 
-	reg32 &= SPI_BASE_ALIGNMENT - 1; /* preserve only reserved, enables */
 	reg32 &= ~(SPI_ROM_ENABLE | SPI_ROM_ALT_ENABLE);
 	reg32 |= enable;
-	reg32 |= ALIGN_DOWN(base, SPI_BASE_ALIGNMENT);
 
 	pci_write_config32(_LPCB_DEV, SPIROM_BASE_ADDRESS_REGISTER, reg32);
+}
+
+static void lpc_enable_controller(void)
+{
+	u8 byte;
+
+	/* Enable LPC controller */
+	byte = pm_io_read8(PM_LPC_GATING);
+	byte |= PM_LPC_ENABLE;
+	pm_io_write8(PM_LPC_GATING, byte);
+}
+
+void lpc_early_init(void)
+{
+	lpc_enable_controller();
+	lpc_disable_decodes();
+	lpc_set_spibase(SPI_BASE_ADDRESS);
 }

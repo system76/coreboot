@@ -6,9 +6,11 @@ ramstage-y += acpi.c
 ramstage-y += acpigen.c
 ramstage-y += acpigen_dsm.c
 ramstage-y += acpigen_ps2_keybd.c
+ramstage-y += acpigen_usb.c
 ramstage-y += device.c
 ramstage-y += pld.c
 ramstage-y += sata.c
+ramstage-y += soundwire.c
 
 ifneq ($(wildcard src/mainboard/$(MAINBOARDDIR)/acpi_tables.c),)
 ramstage-srcs += src/mainboard/$(MAINBOARDDIR)/acpi_tables.c

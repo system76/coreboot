@@ -215,17 +215,17 @@ static const struct pad_config gpio_table[] = {
 	/* E9  : USB2_OC0# ==> USB_C1_OC_ODL */
 	PAD_CFG_NF(GPP_E9, NONE, DEEP, NF1),
 	/* E10 : SPI1_CS# ==> USB_C0_AUXP_DC */
-	PAD_CFG_GPO(GPP_E10, 0, DEEP),
+	PAD_CFG_NF(GPP_E10, NONE, DEEP, NF6),
 	/* E11 : SPI1_CLK ==> SD_PE_WAKE_ODL */
 	PAD_CFG_GPI(GPP_E11, NONE, DEEP),
 	/* E12 : SPI1_MISO_IO1 ==> NOT USED */
 	PAD_NC(GPP_E12, NONE),
 	/* E13 : SPI1_MOSI_IO0 ==> USB_C0_AUXN_DC */
-	PAD_CFG_GPO(GPP_E13, 0, DEEP),
+	PAD_CFG_NF(GPP_E13, NONE, DEEP, NF6),
 	/* E14 : DDPC_HPDA ==> SOC_EDP_HPD */
 	PAD_CFG_NF(GPP_E14, NONE, DEEP, NF1),
 	/* E15 : ISH_GP6 ==> TRACKPAD_INT_ODL */
-	PAD_CFG_GPI_APIC(GPP_E15, NONE, PLTRST, LEVEL, INVERT),
+	PAD_CFG_GPI_IRQ_WAKE(GPP_E15, NONE, DEEP, LEVEL, INVERT),
 	/* E16 : ISH_GP7 ==> WWAN_SIM1_DET_OD */
 	PAD_CFG_GPI(GPP_E16, NONE, DEEP),
 	/* E17 : THC0_SPI1_INT# ==> WWAN_PERST_L */
@@ -260,15 +260,13 @@ static const struct pad_config gpio_table[] = {
 	/* F7  : GPPF7_STRAP */
 	PAD_NC(GPP_F7, NONE),
 	/* F8  : I2S_MCLK2_INOUT ==> HP_INT_L */
-	PAD_CFG_GPI_APIC(GPP_F8, UP_20K, DEEP, EDGE_BOTH, INVERT),
+	PAD_CFG_GPI_INT(GPP_F8, NONE, PLTRST, EDGE_BOTH),
 	/* F9  : Reserved ==> NC */
 	PAD_NC(GPP_F9, NONE),
 	/* F10 : GPPF10_STRAP */
 	PAD_NC(GPP_F10, DN_20K),
-	/* F11 : THC1_SPI2_CLK ==> EN_PP3300_WWAN */
-	PAD_CFG_GPO(GPP_F11, 1, DEEP),
 	/* F12 : GSXDOUT ==> WWAN_RST_ODL */
-	PAD_CFG_GPO(GPP_F12, 1, DEEP),
+	PAD_CFG_GPI(GPP_F12, NONE, DEEP),
 	/* F13 : GSXDOUT ==> WiFi_DISABLE_L */
 	PAD_CFG_GPO(GPP_F13, 1, DEEP),
 	/* F14 : GSXDIN ==> SAR0_INT_L */
@@ -434,6 +432,14 @@ static const struct pad_config early_gpio_table[] = {
 
 	/* E12 : SPI1_MISO_IO1 ==> EN_PP3300_SSD */
 	PAD_CFG_GPO(GPP_E12, 1, DEEP),
+
+	/* F11 : THC1_SPI2_CLK ==> EN_PP3300_WWAN */
+	PAD_CFG_GPO(GPP_F11, 1, DEEP),
+
+	/* F12 : GSXDOUT ==> WWAN_RST_ODL
+	   To meet timing constrains - drive reset low.
+	   Deasserted in ramstage. */
+	PAD_CFG_GPO(GPP_F12, 0, DEEP),
 
 	/* H11 : SRCCLKREQ5# ==> WLAN_PERST_L */
 	PAD_CFG_GPO(GPP_H11, 1, DEEP),

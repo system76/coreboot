@@ -6,10 +6,12 @@
  * Chapter number: 4
  */
 
+#include <acpi/acpigen.h>
 #include <bootstate.h>
 #include <console/console.h>
 #include <device/mmio.h>
 #include <device/device.h>
+#include <drivers/intel/pmc_mux/chip.h>
 #include <intelblocks/pmc.h>
 #include <intelblocks/pmclib.h>
 #include <intelblocks/rtc.h>
@@ -17,21 +19,13 @@
 #include <soc/pm.h>
 #include <soc/soc_chip.h>
 
-/*
- * Set which power state system will be after reapplying
- * the power (from G3 State)
- */
-void pmc_soc_set_afterg3_en(const bool on)
+#define PMC_HID		"INTC1026"
+
+enum pch_pmc_xtal pmc_get_xtal_freq(void)
 {
-	uint8_t reg8;
 	uint8_t *const pmcbase = pmc_mmio_regs();
 
-	reg8 = read8(pmcbase + GEN_PMCON_A);
-	if (on)
-		reg8 &= ~SLEEP_AFTER_POWER_FAIL;
-	else
-		reg8 |= SLEEP_AFTER_POWER_FAIL;
-	write8(pmcbase + GEN_PMCON_A, reg8);
+	return PCH_EPOC_XTAL_FREQ(read32(pmcbase + PCH_PMC_EPOC));
 }
 
 static void config_deep_sX(uint32_t offset, uint32_t mask, int sx, int enable)
@@ -75,7 +69,7 @@ static void config_deep_sx(uint32_t deepsx_config)
 	write32(pmcbase + DSX_CFG, reg);
 }
 
-static void pmc_init(void *unused)
+static void pmc_init(struct device *dev)
 {
 	const config_t *config = config_of_soc();
 
@@ -91,11 +85,70 @@ static void pmc_init(void *unused)
 	config_deep_sx(config->deep_sx_config);
 }
 
-/*
-* Initialize PMC controller.
-*
-* PMC controller gets hidden from PCI bus during FSP-Silicon init call.
-* Hence PCI enumeration can't be used to initialize bus device and
-* allocate resources.
-*/
-BOOT_STATE_INIT_ENTRY(BS_DEV_INIT_CHIPS, BS_ON_EXIT, pmc_init, NULL);
+static void soc_pmc_read_resources(struct device *dev)
+{
+	struct resource *res;
+
+	/* Add the fixed MMIO resource */
+	mmio_resource(dev, 0, PCH_PWRM_BASE_ADDRESS / KiB, PCH_PWRM_BASE_SIZE / KiB);
+
+	/* Add the fixed I/O resource */
+	res = new_resource(dev, 1);
+	res->base = (resource_t)ACPI_BASE_ADDRESS;
+	res->size = (resource_t)ACPI_BASE_SIZE;
+	res->limit = res->base + res->size - 1;
+	res->flags = IORESOURCE_IO | IORESOURCE_ASSIGNED | IORESOURCE_FIXED;
+}
+
+static void soc_pmc_fill_ssdt(const struct device *dev)
+{
+	acpigen_write_scope(acpi_device_scope(dev));
+	acpigen_write_device(acpi_device_name(dev));
+
+	acpigen_write_name_string("_HID", PMC_HID);
+	acpigen_write_name_string("_DDN", "Intel(R) Tiger Lake IPC Controller");
+
+	/*
+	 * Part of the PCH's reserved 32 MB MMIO range (0xFC800000 - 0xFE7FFFFF).
+	 * The PMC gets 0xFE000000 - 0xFE00FFFF.
+	 */
+	acpigen_write_name("_CRS");
+	acpigen_write_resourcetemplate_header();
+	acpigen_write_mem32fixed(1, PCH_PWRM_BASE_ADDRESS, PCH_PWRM_BASE_SIZE);
+	acpigen_write_resourcetemplate_footer();
+
+	acpigen_pop_len(); /* PMC Device */
+	acpigen_pop_len(); /* Scope */
+
+	printk(BIOS_INFO, "%s: %s at %s\n", acpi_device_path(dev), dev->chip_ops->name,
+	       dev_path(dev));
+}
+
+/* By default, TGL uses the PMC MUX for all ports, so port_number is unused */
+const struct device *soc_get_pmc_mux_device(int port_number)
+{
+	const struct device *pmc;
+	struct device *child;
+
+	child = NULL;
+	pmc = pcidev_path_on_root(PCH_DEVFN_PMC);
+	if (!pmc || !pmc->link_list)
+		return NULL;
+
+	while ((child = dev_bus_each_child(pmc->link_list, child)) != NULL)
+		if (child->chip_ops == &drivers_intel_pmc_mux_ops)
+			break;
+
+	/* child will either be the correct device or NULL if not found */
+	return child;
+}
+
+struct device_operations pmc_ops = {
+	.read_resources	  = soc_pmc_read_resources,
+	.set_resources	  = noop_set_resources,
+	.enable		  = pmc_init,
+#if CONFIG(HAVE_ACPI_TABLES)
+	.acpi_fill_ssdt	  = soc_pmc_fill_ssdt,
+#endif
+	.scan_bus	  = scan_static_bus,
+};

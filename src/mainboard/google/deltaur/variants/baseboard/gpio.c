@@ -1,7 +1,4 @@
-/*
- *
- * SPDX-License-Identifier: GPL-2.0-or-later
- */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #include <acpi/acpi.h>
 #include <baseboard/variants.h>
@@ -76,7 +73,7 @@ static const struct pad_config gpio_table[] = {
 	/* B10 : GPP_B10 ===> NC */
 	PAD_NC(GPP_B10, NONE),
 	/* B11 : GPP_B11 ==> TBT_I2C_INT# */
-	PAD_CFG_GPI_APIC(GPP_B11, NONE, PLTRST, LEVEL, INVERT),
+	PAD_CFG_NF(GPP_B11, NONE, DEEP, NF1),
 	/* B12 : GPP_B12 ==> SIO_SLP_S0# */
 	PAD_CFG_NF(GPP_B12, NONE, DEEP, NF1),
 	/* B13 : PLTRST# ==> PCH_PLTRST# */

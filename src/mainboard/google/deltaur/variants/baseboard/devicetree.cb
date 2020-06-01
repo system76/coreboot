@@ -51,11 +51,6 @@ chip soc/intel/tigerlake
 	register "usb3_ports[2]" = "USB3_PORT_EMPTY"
 	register "usb3_ports[3]" = "USB3_PORT_DEFAULT(OC_SKIP)"	# WWAN
 
-	# PCIe root port 6 (WLAN), clock 1
-	register "PcieRpEnable[5]" = "1"
-	register "PcieClkSrcUsage[1]" = "5"
-	register "PcieClkSrcClkReq[1]" = "1"
-
 	# PCIe root port 7 (Card Reader), clock 4
 	register "PcieRpEnable[6]" = "1"
 	register "PcieClkSrcUsage[4]" = "6"
@@ -125,12 +120,8 @@ chip soc/intel/tigerlake
 	}"
 
 	# HD Audio
-	register "PchHdaDspEnable" = "1"
-	register "PchHdaAudioLinkHdaEnable" = "0"
-	register "PchHdaAudioLinkDmicEnable[0]" = "1"
-	register "PchHdaAudioLinkDmicEnable[1]" = "1"
-	register "PchHdaAudioLinkSspEnable[0]" = "1"
-	register "PchHdaAudioLinkSspEnable[1]" = "1"
+	register "PchHdaAudioLinkHdaEnable" = "1"
+	register "PchHdaIDispCodecDisconnect" = "1"
 
 	# TCSS USB3
 	register "TcssXhciEn" = "1"
@@ -290,14 +281,9 @@ chip soc/intel/tigerlake
 		device pci 1c.2 off end # PCIe Root Port #3 ()
 		device pci 1c.3 off  end # PCIe Root Port #4 (WWAN)
 		device pci 1c.4 on  end # PCIe Root Port #5 (LTE)
-		device pci 1c.5 on  end # PCIe Root Port #6 (WiFi)
+		device pci 1c.5 off end # PCIe Root Port #6 (WiFi)
 		device pci 1c.6 on  end # PCIe Root Port #7 (Card reader)
-		device pci 1c.7 on
-			chip drivers/net
-				register "wake" = "GPE0_PME_B0"
-				device pci 00.0 on end
-			end
-		end # PCIe Root Port #8 (LAN)
+		device pci 1c.7 on  end # PCIe Root Port #8 (LAN)
 		device pci 1d.0 on  end # PCIe Root Port #9 (NVMe)
 		device pci 1d.1 off end # PCIe Root Port #10 (NVMe)
 		device pci 1d.2 off end # PCIe Root Port #11 (NVMe)
@@ -314,7 +300,7 @@ chip soc/intel/tigerlake
 			end
 		end # eSPI
 		device pci 1f.1 off end # P2SB
-		device pci 1f.2 on  end # PMC
+		device pci 1f.2 hidden end # PMC
 		device pci 1f.3 on  end # Intel HDA
 		device pci 1f.4 on  end # SMBus
 		device pci 1f.5 on  end # PCH SPI Flash Controller

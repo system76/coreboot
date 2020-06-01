@@ -441,7 +441,7 @@ static void pch_fixups(struct device *dev)
 
 static void lpc_init(struct device *dev)
 {
-	printk(BIOS_DEBUG, "pch: lpc_init\n");
+	printk(BIOS_DEBUG, "pch: %s\n", __func__);
 
 	/* Set the value for PCI command register. */
 	pci_write_config16(dev, PCI_COMMAND, 0x000f);
@@ -620,12 +620,12 @@ void acpi_fill_fadt(acpi_fadt_t *fadt)
 	}
 	fadt->p_lvl2_lat = c2_latency;
 	fadt->p_lvl3_lat = 87;
-	fadt->flush_size = 1024;
-	fadt->flush_stride = 16;
+	/* flush_* is ignored if ACPI_FADT_WBINVD is set */
+	fadt->flush_size = 0;
+	fadt->flush_stride = 0;
 	/* P_CNT not supported */
 	fadt->duty_offset = 0;
 	fadt->duty_width = 0;
-
 	fadt->day_alrm = 0xd;
 	fadt->mon_alrm = 0x00;
 	fadt->century = 0x32;

@@ -562,6 +562,8 @@ $(AMDFWTOOL): $(top)/util/amdfwtool/amdfwtool.c
 	@printf "    HOSTCC     $(subst $(obj)/,,$(@))\n"
 	$(HOSTCC) $(HOSTCFLAGS) -DCONFIG_ROM_SIZE=$(CONFIG_ROM_SIZE) -o $@ $<
 
+APCB_EDIT_TOOL:=$(top)/util/apcb/apcb_edit.py
+
 CBOOTIMAGE:=$(objutil)/cbootimage/cbootimage
 
 FUTILITY?=$(objutil)/futility/futility
@@ -595,6 +597,17 @@ verstage-y+=$(DEVICETREE_STATIC_C)
 bootblock-y+=$(DEVICETREE_STATIC_C)
 postcar-y+=$(DEVICETREE_STATIC_C)
 smm-y+=$(DEVICETREE_STATIC_C)
+
+# Ensure static.c and static.h are created before any objects are compiled
+ramstage-c-deps+=$(DEVICETREE_STATIC_C)
+romstage-c-deps+=$(DEVICETREE_STATIC_C)
+verstage-c-deps+=$(DEVICETREE_STATIC_C)
+bootblock-c-deps+=$(DEVICETREE_STATIC_C)
+postcar-c-deps+=$(DEVICETREE_STATIC_C)
+smm-c-deps+=$(DEVICETREE_STATIC_C)
+
+.PHONY: devicetree
+devicetree: $(DEVICETREE_STATIC_C)
 
 #######################################################################
 # Clean up rules

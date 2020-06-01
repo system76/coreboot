@@ -7,6 +7,7 @@
 #include <intelblocks/cfg.h>
 #include <intelblocks/gpio.h>
 #include <intelblocks/gspi.h>
+#include <intelblocks/power_limit.h>
 #include <soc/gpe.h>
 #include <soc/gpio.h>
 #include <soc/gpio_defs.h>
@@ -26,6 +27,9 @@ struct soc_intel_tigerlake_config {
 	/* Common struct containing soc config data required by common code */
 	struct soc_intel_common_config common_soc_config;
 
+	/* Common struct containing power limits configuration information */
+	struct soc_power_limits_config power_limits_config;
+
 	/* Gpio group routed to each dword of the GPE0 block. Values are
 	 * of the form PMC_GPP_[A:U] or GPD. */
 	uint8_t pmc_gpe0_dw0; /* GPE0_31_0 STS/EN */
@@ -40,6 +44,11 @@ struct soc_intel_tigerlake_config {
 
 	/* Enable S0iX support */
 	int s0ix_enable;
+	/* Support for TCSS xhci, xdci, TBT PCIe root ports and DMA controllers */
+	uint8_t TcssD3HotEnable;
+	/* Support for TBT PCIe root ports and DMA controllers with D3Hot->D3Cold */
+	uint8_t TcssD3ColdEnable;
+
 	/* Enable DPTF support */
 	int dptf_enable;
 
@@ -95,6 +104,7 @@ struct soc_intel_tigerlake_config {
 	uint8_t PchHdaAudioLinkDmicEnable[MAX_HD_AUDIO_DMIC_LINKS];
 	uint8_t PchHdaAudioLinkSspEnable[MAX_HD_AUDIO_SSP_LINKS];
 	uint8_t PchHdaAudioLinkSndwEnable[MAX_HD_AUDIO_SNDW_LINKS];
+	uint8_t PchHdaIDispCodecDisconnect;
 
 	/* PCIe Root Ports */
 	uint8_t PcieRpEnable[CONFIG_MAX_ROOT_PORTS];
@@ -126,12 +136,6 @@ struct soc_intel_tigerlake_config {
 	/* SMBus */
 	uint8_t SmbusEnable;
 
-	/* Integrated Sensor */
-	uint8_t PchIshEnable;
-
-	/* Heci related */
-	uint8_t Heci3Enabled;
-
 	/* Gfx related */
 	uint8_t IgdDvmt50PreAlloc;
 	uint8_t InternalGfx;
@@ -143,8 +147,7 @@ struct soc_intel_tigerlake_config {
 	/* HeciEnabled decides the state of Heci1 at end of boot
 	 * Setting to 0 (default) disables Heci1 and hides the device from OS */
 	uint8_t HeciEnabled;
-	/* PL2 Override value in Watts */
-	uint32_t tdp_pl2_override;
+
 	/* Intel Speed Shift Technology */
 	uint8_t speed_shift_enable;
 
@@ -203,18 +206,28 @@ struct soc_intel_tigerlake_config {
 		DEBUG_INTERFACE_TRACEHUB = (1 << 5),
 	} debug_interface_flag;
 
-	/* Enable Pch iSCLK */
-	uint8_t pch_isclk;
-
 	/* CNVi BT Audio Offload: Enable/Disable BT Audio Offload. */
 	enum {
 		FORCE_DISABLE,
 		FORCE_ENABLE,
 	} CnviBtAudioOffload;
 
-	/* Tcss */
+	/* TCSS USB */
 	uint8_t TcssXhciEn;
 	uint8_t TcssXdciEn;
+
+	/*
+	 * IOM Port Config
+	 * If a port orientation needs to be controlled by the SOC this setting must be
+	 * updated to reflect the correct GPIOs being used for the SOC port flipping.
+	 * There are 4 ports each with a pair of GPIOs for Pull Up and Pull Down
+	 * 0,1 are pull up and pull down for port 0
+	 * 2,3 are pull up and pull down for port 1
+	 * 4,5 are pull up and pull down for port 2
+	 * 6,7 are pull up and pull down for port 3
+	 * values to be programmed correspond to the GPIO family and offsets
+	 */
+	uint32_t IomTypeCPortPadCfg[8];
 
 	/*
 	 * SOC Aux orientation override:
@@ -288,6 +301,18 @@ struct soc_intel_tigerlake_config {
 
 	/* HyperThreadingDisable : Yes (1) / No (0) */
 	uint8_t HyperThreadingDisable;
+
+	/*
+	 * Enable(0)/Disable(1) DMI Power Optimizer on PCH side.
+	 * Default 0. Setting this to 1 disables the DMI Power Optimizer.
+	 */
+	uint8_t DmiPwrOptimizeDisable;
+
+	/*
+	 * Enable(0)/Disable(1) SATA Power Optimizer on PCH side.
+	 * Default 0. Setting this to 1 disables the SATA Power Optimizer.
+	 */
+	uint8_t SataPwrOptimizeDisable;
 };
 
 typedef struct soc_intel_tigerlake_config config_t;

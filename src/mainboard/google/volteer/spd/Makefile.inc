@@ -1,13 +1,10 @@
-##
-##
-##
 ## SPDX-License-Identifier: GPL-2.0-or-later
 ##
 
 ifneq ($(SPD_SOURCES),)
 SPD_BIN = $(obj)/spd.bin
 
-SPD_DEPS := $(foreach f, $(SPD_SOURCES), src/mainboard/$(MAINBOARDDIR)/spd/$(f).spd.hex)
+SPD_DEPS := $(foreach f, $(SPD_SOURCES), src/mainboard/$(MAINBOARDDIR)/variants/$(VARIANT_DIR)/spd/$(f).spd.hex)
 
 # Include spd ROM data
 $(SPD_BIN): $(SPD_DEPS)

@@ -12,7 +12,7 @@
 #include <device/pci_ops.h>
 #include <soc/pci_devs.h>
 #include <soc/cpu.h>
-#include <soc/northbridge.h>
+#include <soc/reset.h>
 #include <soc/smi.h>
 #include <soc/iomap.h>
 #include <console/console.h>
@@ -115,9 +115,10 @@ static struct device_operations cpu_dev_ops = {
 };
 
 static struct cpu_device_id cpu_table[] = {
-	{ X86_VENDOR_AMD, 0x810f80 },
-	{ X86_VENDOR_AMD, PICASSO_CPUID },
-	{ X86_VENDOR_AMD, RAVEN2_CPUID },
+	{ X86_VENDOR_AMD, PICASSO_B0_CPUID },
+	{ X86_VENDOR_AMD, PICASSO_B1_CPUID },
+	{ X86_VENDOR_AMD, RAVEN2_A0_CPUID },
+	{ X86_VENDOR_AMD, RAVEN2_A1_CPUID },
 	{ 0, 0 },
 };
 
