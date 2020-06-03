@@ -1,42 +1,42 @@
 [submodule "3rdparty/blobs"]
 	path = 3rdparty/blobs
-	url = https://github.com/coreboot/blobs.git
+	url = https://review.coreboot.org/blobs.git
 	update = none
 	ignore = dirty
 [submodule "util/nvidia-cbootimage"]
 	path = util/nvidia/cbootimage
-	url = https://github.com/coreboot/nvidia-cbootimage.git
+	url = https://review.coreboot.org/nvidia-cbootimage.git
 [submodule "vboot"]
 	path = 3rdparty/vboot
-	url = https://github.com/coreboot/vboot.git
+	url = https://review.coreboot.org/vboot.git
 [submodule "arm-trusted-firmware"]
 	path = 3rdparty/arm-trusted-firmware
-	url = https://github.com/coreboot/arm-trusted-firmware.git
+	url = https://review.coreboot.org/arm-trusted-firmware.git
 [submodule "3rdparty/chromeec"]
 	path = 3rdparty/chromeec
-	url = https://github.com/coreboot/chrome-ec.git
+	url = https://review.coreboot.org/chrome-ec.git
 [submodule "libhwbase"]
 	path = 3rdparty/libhwbase
-	url = https://github.com/coreboot/libhwbase.git
+	url = https://review.coreboot.org/libhwbase.git
 [submodule "libgfxinit"]
 	path = 3rdparty/libgfxinit
-	url = https://github.com/coreboot/libgfxinit.git
+	url = https://review.coreboot.org/libgfxinit.git
 [submodule "3rdparty/fsp"]
 	path = 3rdparty/fsp
-	url = https://github.com/coreboot/fsp.git
+	url = https://review.coreboot.org/fsp.git
 	update = none
 	ignore = dirty
 [submodule "opensbi"]
 	path = 3rdparty/opensbi
-	url = https://github.com/coreboot/opensbi.git
+	url = https://review.coreboot.org/opensbi.git
 [submodule "intel-microcode"]
 	path = 3rdparty/intel-microcode
-	url = https://github.com/coreboot/intel-microcode.git
+	url = https://review.coreboot.org/intel-microcode.git
 	update = none
 	ignore = dirty
 [submodule "3rdparty/ffs"]
 	path = 3rdparty/ffs
-	url = https://github.com/coreboot/ffs.git
+	url = https://review.coreboot.org/ffs.git
 [submodule "3rdparty/amd_blobs"]
 	path = 3rdparty/amd_blobs
 	url = https://review.coreboot.org/amd_blobs.git
@@ -44,5 +44,5 @@
 	ignore = dirty
 [submodule "3rdparty/cmocka"]
 	path = 3rdparty/cmocka
-	url = ../cmocka.git
+	url = https://review.coreboot.org/cmocka.git
 	update = none
