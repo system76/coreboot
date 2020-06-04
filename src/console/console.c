@@ -22,6 +22,7 @@ void console_hw_init(void)
 	__usbdebug_init();
 	__spiconsole_init();
 	__flashconsole_init();
+	__system76_ec_init();
 }
 
 void console_tx_byte(unsigned char byte)
@@ -52,6 +53,7 @@ void console_tx_flush(void)
 	__ne2k_tx_flush();
 	__usb_tx_flush();
 	__flashconsole_tx_flush();
+	__system76_ec_tx_flush();
 }
 
 void console_write_line(uint8_t *buffer, size_t number_of_bytes)
