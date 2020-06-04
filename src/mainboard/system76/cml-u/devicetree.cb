@@ -13,8 +13,8 @@ chip soc/intel/cannonlake
 	register "SendVrMbxCmd" = "2"
 
 # ACPI (soc/intel/cannonlake/acpi.c)
-	# Disable s0ix
-	register "s0ix_enable" = "0"
+	# Enable s0ix
+	register "s0ix_enable" = "1"
 
 	# PM Timer Enabled
 	register "PmTimerDisabled" = "0"
@@ -37,7 +37,7 @@ chip soc/intel/cannonlake
 
 # FSP Memory (soc/intel/cannonlake/romstage/fsp_params.c)
 	register "SaGv" = "SaGv_Enabled"
-	#register "enable_c6dram" = "1"
+	register "enable_c6dram" = "1"
 
 # FSP Silicon (soc/intel/cannonlake/fsp_params.c)
 	# Serial I/O
@@ -227,7 +227,7 @@ chip soc/intel/cannonlake
 				register "hid_desc_reg_offset" = "0x20"
 				device i2c 2c on end
 			end
-		end # I2C #0 
+		end # I2C #0
 		device pci 15.1 off end # I2C #1
 		device pci 15.2 off end # I2C #2
 		device pci 15.3 off end # I2C #3
