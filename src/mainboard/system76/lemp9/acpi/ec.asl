@@ -116,8 +116,6 @@ Device (EC0)
 		Debug = "EC: Brightness Down"
 		if (^^^^HIDD.HRDY) {
 			^^^^HIDD.HPEM (20)
-		} Else {
-			\_SB.PCI0.GFX0.DECB ()
 		}
 	}
 
@@ -126,8 +124,6 @@ Device (EC0)
 		Debug = "EC: Brightness Up"
 		if (^^^^HIDD.HRDY) {
 			^^^^HIDD.HPEM (19)
-		} Else {
-			\_SB.PCI0.GFX0.INCB ()
 		}
 	}
 
