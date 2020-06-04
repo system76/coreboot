@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-2.0-only */
 
 #if defined(CONFIG_BOARD_SYSTEM76_DARP6)
 	#define COLOR_KEYBOARD 1
@@ -6,7 +7,6 @@
 #else
 	#error Unknown Mainboard
 #endif
-/* SPDX-License-Identifier: GPL-2.0-only */
 
 Scope (\_SB) {
 	#include "ac.asl"
