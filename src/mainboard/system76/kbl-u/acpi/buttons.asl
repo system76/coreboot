@@ -1,26 +1,13 @@
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2019 System76
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
 
 Device (PWRB)
 {
-    Name (_HID, EisaId ("PNP0C0C"))
-    Name (_PRW, Package () { 0x13 /* GPP_C19 */, 3 })
+	Name (_HID, EisaId ("PNP0C0C"))
+	Name (_PRW, Package () { 0x13 /* GPP_C19 */, 3 })
 }
 
 Device (SLPB)
 {
-    Name (_HID, EisaId ("PNP0C0E"))
-    Name (_PRW, Package () { 0x13 /* GPP_C19 */, 3 })
+	Name (_HID, EisaId ("PNP0C0E"))
+	Name (_PRW, Package () { 0x13 /* GPP_C19 */, 3 })
 }
