@@ -250,8 +250,8 @@ static const struct pad_config gpio_table[] = {
 		PAD_CFG_NF(GPP_C21, NONE, DEEP, NF1),
 		// NC
 		PAD_CFG_NC(GPP_C22),
-		// TP_ATTN#
-		PAD_CFG_GPI_APIC(GPP_C23, NONE, PLTRST, EDGE_SINGLE, INVERT),
+		// NC
+		PAD_CFG_NC(GPP_C23),
 
 // GPP_D
 	// SPI1
