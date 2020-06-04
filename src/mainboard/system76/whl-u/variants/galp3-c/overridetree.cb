@@ -1,0 +1,7 @@
+chip soc/intel/cannonlake
+	device domain 0 on
+		device pci 15.0 on
+			# I2C HID not supported on galp3-c
+		end # I2C #0
+	end
+end

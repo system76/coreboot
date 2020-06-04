@@ -34,6 +34,10 @@ config VARIANT_DIR
 	default "galp4" if BOARD_SYSTEM76_GALP4
 	default "darp6" if BOARD_SYSTEM76_DARP6
 
+config OVERRIDE_DEVICETREE
+	string
+	default "variants/$(CONFIG_VARIANT_DIR)/overridetree.cb"
+
 config MAINBOARD_PART_NUMBER
 	string
 	default "galp4" if BOARD_SYSTEM76_GALP4
