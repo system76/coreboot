@@ -46,7 +46,7 @@ chip soc/intel/cannonlake
 	# Serial I/O
 	register "SerialIoDevMode" = "{
 		[PchSerialIoIndexI2C0] = PchSerialIoPci, // Touchpad I2C bus
-		[PchSerialIoIndexI2C1] = PchSerialIoPci, // USB-C and Thunderbolt
+		[PchSerialIoIndexI2C1] = PchSerialIoPci, // USB-C
 		[PchSerialIoIndexI2C2] = PchSerialIoDisabled,
 		[PchSerialIoIndexI2C3] = PchSerialIoDisabled,
 		[PchSerialIoIndexI2C4] = PchSerialIoDisabled,
@@ -63,11 +63,11 @@ chip soc/intel/cannonlake
 	register "SataMode" = "Sata_AHCI"
 	register "SataSalpSupport" = "0"
 
-	register "SataPortsEnable[0]" = "1" # HDD (SATA0B)
-	register "SataPortsEnable[1]" = "1" # SSD1 (SATA1A)
+	register "SataPortsEnable[0]" = "0"
+	register "SataPortsEnable[1]" = "1" # SSD (SATA1A)
 	register "SataPortsEnable[2]" = "0"
 	register "SataPortsEnable[3]" = "0"
-	register "SataPortsEnable[4]" = "0"
+	register "SataPortsEnable[4]" = "1" # HDD (SATA4)
 	register "SataPortsEnable[5]" = "0"
 	register "SataPortsEnable[6]" = "0"
 	register "SataPortsEnable[7]" = "0"
@@ -98,15 +98,15 @@ chip soc/intel/cannonlake
 	register "SsicPortEnable" = "0"
 
 	# USB2
-	register "usb2_ports[0]" = "USB2_PORT_TYPE_C(OC_SKIP)" # USB 3.1 Gen 2 TYPE-C and DisplayPort
-	register "usb2_ports[1]" = "USB2_PORT_TYPE_C(OC_SKIP)" # USB 3.1 Gen 2 TYPE-C
-	register "usb2_ports[2]" = "USB2_PORT_MID(OC_SKIP)" # USB 3.1 Gen 2
+	register "usb2_ports[0]" = "USB2_PORT_MID(OC_SKIP)" # USB 3 Right
+	register "usb2_ports[1]" = "USB2_PORT_EMPTY"
+	register "usb2_ports[2]" = "USB2_PORT_TYPE_C(OC_SKIP)" # Type-C
 	register "usb2_ports[3]" = "USB2_PORT_EMPTY"
-	register "usb2_ports[4]" = "USB2_PORT_MID(OC_SKIP)" # USB 3.1 Gen 1 audio
-	register "usb2_ports[5]" = "USB2_PORT_MID(OC_SKIP)" # USB 3.1 Gen 1 back
-	register "usb2_ports[6]" = "USB2_PORT_MID(OC_SKIP)" # Fingerprint
-	register "usb2_ports[7]" = "USB2_PORT_MID(OC_SKIP)" # Per-Key RGB keyboard
-	register "usb2_ports[8]" = "USB2_PORT_MID(OC_SKIP)" # Camera
+	register "usb2_ports[4]" = "USB2_PORT_MID(OC_SKIP)" # USB 3 Left
+	register "usb2_ports[5]" = "USB2_PORT_MID(OC_SKIP)" # USB 2 Left
+	register "usb2_ports[6]" = "USB2_PORT_MID(OC_SKIP)" # 3G/LTE
+	register "usb2_ports[7]" = "USB2_PORT_MID(OC_SKIP)" # Camera
+	register "usb2_ports[8]" = "USB2_PORT_EMPTY"
 	register "usb2_ports[9]" = "USB2_PORT_EMPTY"
 	register "usb2_ports[10]" = "USB2_PORT_EMPTY"
 	register "usb2_ports[11]" = "USB2_PORT_EMPTY"
@@ -116,50 +116,39 @@ chip soc/intel/cannonlake
 	register "usb2_ports[15]" = "USB2_PORT_EMPTY"
 
 	# USB3
-	register "usb3_ports[0]" = "USB3_PORT_DEFAULT(OC_SKIP)" # USB 3.1 Gen 2 TYPE-C and DisplayPort
-	register "usb3_ports[1]" = "USB3_PORT_DEFAULT(OC_SKIP)" # USB 3.1 Gen 2 right
-	register "usb3_ports[2]" = "USB3_PORT_DEFAULT(OC_SKIP)" # USB 3.1 Gen 2 TYPE-C (without TBT)
-	register "usb3_ports[3]" = "USB3_PORT_DEFAULT(OC_SKIP)" # USB 3.1 Gen 2 TYPE-C (without TBT)
-	register "usb3_ports[4]" = "USB3_PORT_DEFAULT(OC_SKIP)" # USB 3.1 Gen 1 audio
-	register "usb3_ports[5]" = "USB3_PORT_DEFAULT(OC_SKIP)" # USB 3.1 Gen 1 back
-	register "usb3_ports[6]" = "USB3_PORT_EMPTY"
+	register "usb3_ports[0]" = "USB3_PORT_DEFAULT(OC_SKIP)" # USB 3 Right
+	register "usb3_ports[1]" = "USB3_PORT_EMPTY"
+	register "usb3_ports[2]" = "USB3_PORT_DEFAULT(OC_SKIP)" # Type-C
+	register "usb3_ports[3]" = "USB3_PORT_DEFAULT(OC_SKIP)" # Type-C
+	register "usb3_ports[4]" = "USB3_PORT_DEFAULT(OC_SKIP)" # USB 3 Left
+	register "usb3_ports[5]" = "USB3_PORT_EMPTY"
+	register "usb3_ports[6]" = "USB3_PORT_DEFAULT(OC_SKIP)" # 3G/LTE
 	register "usb3_ports[7]" = "USB3_PORT_EMPTY"
 	register "usb3_ports[8]" = "USB3_PORT_EMPTY"
 	register "usb3_ports[9]" = "USB3_PORT_EMPTY"
 
-	# PCI Express Graphics #0 x16, Clock  (NVIDIA GPU)
+	# PCI Express Graphics #0 x16, Clock 8 (NVIDIA GPU)
 	register "PcieClkSrcUsage[8]" = "0x40"
 
-	# PCI Express root port #9 x4, Clock 9 (SSD1)
+	# PCI Express root port #9 x4, Clock 10 (SSD)
 	register "PcieRpEnable[8]" = "1"
 	register "PcieRpLtrEnable[8]" = "1"
-	register "PcieClkSrcUsage[9]" = "8"
+	register "PcieClkSrcUsage[10]" = "8"
 
-	# PCI Express root port #14 x1, Clock 5 (GLAN)
+	# PCI Express root port #14 x1, Clock 6 (WLAN)
 	register "PcieRpEnable[13]" = "1"
 	register "PcieRpLtrEnable[13]" = "1"
-	register "PcieClkSrcUsage[5]" = "13"
+	register "PcieClkSrcUsage[6]" = "13"
 
-	# PCI Express root port #15 x1, Clock 7 (Card Reader)
+	# PCI Express root port #15 x1, Clock 5 (LAN)
 	register "PcieRpEnable[14]" = "1"
 	register "PcieRpLtrEnable[14]" = "1"
-	register "PcieClkSrcUsage[7]" = "14"
+	register "PcieClkSrcUsage[5]" = "14"
 
-	# PCI Express root port #16 x1, Clock 6 (WLAN)
-	register "PcieRpEnable[15]" = "1"
-	register "PcieRpLtrEnable[15]" = "1"
-	register "PcieClkSrcUsage[6]" = "15"
-
-	# PCI Express root port #17 x4, Clock 0 (Thunderbolt)
-	register "PcieRpEnable[16]" = "1"
-	register "PcieRpLtrEnable[16]" = "1"
-	register "PcieRpHotPlug[16]" = "1"
-	register "PcieClkSrcUsage[0]" = "16"
-
-	# PCI Express root port #21 x4, Clock 10 (SSD2)
+	# PCI Express root port #21 x4, Clock 11 (SSD2)
 	register "PcieRpEnable[20]" = "1"
 	register "PcieRpLtrEnable[20]" = "1"
-	register "PcieClkSrcUsage[10]" = "20"
+	register "PcieClkSrcUsage[11]" = "20"
 
     # Set all clocks sources to the same clock request
 	register "PcieClkSrcClkReq[0]" = "0"
@@ -255,7 +244,7 @@ chip soc/intel/cannonlake
 			chip drivers/i2c/hid
 				register "generic.hid" = ""PNP0C50""
 				register "generic.desc" = ""Synaptics Touchpad""
-				register "generic.irq" = "ACPI_IRQ_EDGE_LOW(GPP_A14_IRQ)"
+				register "generic.irq" = "ACPI_IRQ_EDGE_LOW(GPP_E7_IRQ)"
 				register "generic.probed" = "1"
 				register "hid_desc_reg_offset" = "0x20"
 				device i2c 2c on end
@@ -275,7 +264,7 @@ chip soc/intel/cannonlake
 		device pci 19.1 off end # I2C #5
 		device pci 19.2 on  end # UART #2
 		device pci 1a.0 off end # eMMC
-		device pci 1b.0 on  end # PCI Express Port 17
+		device pci 1b.0 off end # PCI Express Port 17
 		device pci 1b.1 off end # PCI Express Port 18
 		device pci 1b.2 off end # PCI Express Port 19
 		device pci 1b.3 off end # PCI Express Port 20
@@ -298,7 +287,7 @@ chip soc/intel/cannonlake
 		device pci 1d.4 off end # PCI Express Port 13
 		device pci 1d.5 on  end # PCI Express Port 14
 		device pci 1d.6 on  end # PCI Express Port 15
-		device pci 1d.7 on  end # PCI Express Port 16
+		device pci 1d.7 off end # PCI Express Port 16
 		device pci 1e.0 off end # UART #0
 		device pci 1e.1 off end # UART #1
 		device pci 1e.2 off end # GSPI #0
