@@ -1,4 +1,4 @@
-if BOARD_SYSTEM76_ADDW2
+if BOARD_SYSTEM76_GAZE15
 
 config BOARD_SPECIFIC_OPTIONS
 	def_bool y
@@ -14,7 +14,6 @@ config BOARD_SPECIFIC_OPTIONS
 	select MAINBOARD_HAS_LPC_TPM
 	select MAINBOARD_HAS_TPM2
 	select NO_UART_ON_SUPERIO
-	select PCIEXP_HOTPLUG
 	select SOC_INTEL_CANNONLAKE_PCH_H
 	select SOC_INTEL_COMETLAKE
 	select SOC_INTEL_COMMON_BLOCK_HDA
@@ -25,19 +24,19 @@ config BOARD_SPECIFIC_OPTIONS
 
 config MAINBOARD_DIR
 	string
-	default system76/addw2
+	default system76/gaze15
 
 config MAINBOARD_PART_NUMBER
 	string
-	default "addw2"
+	default "gaze15"
 
 config MAINBOARD_SMBIOS_PRODUCT_NAME
 	string
-	default "Adder WS"
+	default "Gazelle"
 
 config MAINBOARD_VERSION
 	string
-	default "addw2"
+	default "gaze15"
 
 config CBFS_SIZE
 	hex
@@ -49,7 +48,7 @@ config SUBSYSTEM_VENDOR_ID
 
 config SUBSYSTEM_DEVICE_ID
 	hex
-	default 0x65e1
+	default 0x8520
 
 config CONSOLE_POST
 	bool

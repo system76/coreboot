@@ -1,4 +1,4 @@
-if BOARD_SYSTEM76_ADDW2
+if BOARD_SYSTEM76_ORYP6
 
 config BOARD_SPECIFIC_OPTIONS
 	def_bool y
@@ -25,19 +25,19 @@ config BOARD_SPECIFIC_OPTIONS
 
 config MAINBOARD_DIR
 	string
-	default system76/addw2
+	default system76/oryp6
 
 config MAINBOARD_PART_NUMBER
 	string
-	default "addw2"
+	default "oryp6"
 
 config MAINBOARD_SMBIOS_PRODUCT_NAME
 	string
-	default "Adder WS"
+	default "Oryx Pro"
 
 config MAINBOARD_VERSION
 	string
-	default "addw2"
+	default "oryp6"
 
 config CBFS_SIZE
 	hex
@@ -49,7 +49,7 @@ config SUBSYSTEM_VENDOR_ID
 
 config SUBSYSTEM_DEVICE_ID
 	hex
-	default 0x65e1
+	default 0x50d3
 
 config CONSOLE_POST
 	bool
