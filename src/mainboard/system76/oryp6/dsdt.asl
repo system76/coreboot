@@ -18,6 +18,7 @@ DefinitionBlock(
 	{
 		#include <soc/intel/common/block/acpi/acpi/northbridge.asl>
 		#include <soc/intel/cannonlake/acpi/southbridge.asl>
+		#include "acpi/backlight.asl"
 		#include "acpi/pegp.asl"
 		#include "acpi/dgpu.asl"
 	}

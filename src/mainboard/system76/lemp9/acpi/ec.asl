@@ -39,6 +39,10 @@ Device (EC0)
 			^^^^BAT0.UPBI()
 			^^^^BAT0.UPBS()
 
+			// Notify of changes
+			Notify(^^^^AC, Zero)
+			Notify(^^^^BAT0, Zero)
+
 			PNOT ()
 
 			// EC is now available
