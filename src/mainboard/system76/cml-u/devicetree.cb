@@ -169,6 +169,9 @@ chip soc/intel/cannonlake
 	# Serial IRQ Continuous
 	register "serirq_mode" = "SERIRQ_CONTINUOUS"
 
+# Graphics (soc/intel/cannonlake/graphics.c)
+    register "gfx" = "GMA_STATIC_DISPLAYS(0)"
+
 # LPC (soc/intel/cannonlake/lpc.c)
 	# LPC configuration from lspci -s 1f.0 -xxx
 	# Address 0x84: Decode 0x80 - 0x8F (Port 80)
