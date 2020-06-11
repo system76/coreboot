@@ -15,7 +15,7 @@ chip soc/intel/cannonlake
 
 # ACPI (soc/intel/cannonlake/acpi.c)
 	# Enable s0ix
-	register "s0ix_enable" = "1"
+	register "s0ix_enable" = "0"
 
 	# PM Timer Enabled
 	register "PmTimerDisabled" = "0"
