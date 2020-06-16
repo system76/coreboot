@@ -24,6 +24,7 @@
 
 #define DGPU_RST_N GPP_F22
 #define DGPU_PWR_EN GPP_F23
+#define DGPU_GC6 GPP_K21
 
 Device (\_SB.PCI0.PEGP.DEV0)
 {
@@ -90,6 +91,15 @@ Device (\_SB.PCI0.PEGP.DEV0)
 		Debug = "PEGP.DEV0._ON"
 
 		If (_STA != 0xF) {
+			Debug = "  If DGPU_PWR_EN low"
+			If (! GTXS (DGPU_PWR_EN)) {
+				Debug = "  DGPU_PWR_EN high"
+				STXS (DGPU_PWR_EN)
+
+				Debug = "  Sleep 16"
+				Sleep (16)
+			}
+
 			Debug = "  DGPU_RST_N high"
 			STXS(DGPU_RST_N)
 
@@ -104,10 +114,9 @@ Device (\_SB.PCI0.PEGP.DEV0)
 
 			Debug = "  While Q0L0"
 			Local0 = 0
-			While (Q0L0)
-			{
-				If ((Local0 > 4))
-				{
+			While (Q0L0) {
+				If ((Local0 > 4)) {
+					Debug = "  While Q0L0 timeout"
 					Break
 				}
 
@@ -121,7 +130,7 @@ Device (\_SB.PCI0.PEGP.DEV0)
 			Debug = "  P0AP = 0"
 			P0AP = 0
 
-			Debug = "  LREN = LTRE"
+			Debug = Concatenate("  LREN = ", ToHexString(LTRE))
 			LREN = LTRE
 
 			Debug = "  CEDR = 1"
@@ -142,7 +151,7 @@ Device (\_SB.PCI0.PEGP.DEV0)
 		Debug = "PEGP.DEV0._OFF"
 
 		If (_STA != 0x5) {
-			Debug = "  LTRE = LREN"
+			Debug = Concatenate("  LTRE = ", ToHexString(LREN))
 			LTRE = LREN
 
 			Debug = "  Q0L2 = 1"
@@ -153,10 +162,9 @@ Device (\_SB.PCI0.PEGP.DEV0)
 
 			Debug = "  While Q0L2"
 			Local0 = Zero
-			While (Q0L2)
-			{
-				If ((Local0 > 4))
-				{
+			While (Q0L2) {
+				If ((Local0 > 4)) {
+					Debug = "  While Q0L2 timeout"
 					Break
 				}
 
@@ -175,6 +183,21 @@ Device (\_SB.PCI0.PEGP.DEV0)
 
 			Debug = "  DGPU_RST_N low"
 			CTXS(DGPU_RST_N)
+
+			Debug = "  While DGPU_GC6 low"
+			Local0 = Zero
+			While (! GRXS(DGPU_GC6)) {
+				If ((Local0 > 4)) {
+					Debug = "  While DGPU_GC6 low timeout"
+
+					Debug = "  DGPU_PWR_EN low"
+					CTXS (DGPU_PWR_EN)
+					Break
+				}
+
+				Sleep (16)
+				Local0++
+			}
 
 			Debug = "  _STA = 0x5"
 			_STA = 0x5
