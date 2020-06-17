@@ -29,7 +29,7 @@ chip soc/intel/cannonlake
 		// /sys/class/powercap/intel-rapl:0/constraint_0_power_limit_uw
 		.tdp_pl1_override = 45,
 		// /sys/class/powercap/intel-rapl:0/constraint_1_power_limit_uw
-		.tdp_pl2_override = 68,
+		.tdp_pl2_override = 90,
 	}"
 
 	# Enable "Intel Speed Shift Technology"
