@@ -188,9 +188,17 @@ chip soc/intel/cannonlake
 	#register "satapwroptimize" = "1"
 
 	# Power
+	# sudo devmem2 0xfe001020 (pmc_bar + GEN_PMCON_A), bits 11:10
+	# WARNING: must then be mapped from FSP value to PCH value
 	register "PchPmSlpS3MinAssert" = "3" # 50ms
+	# sudo devmem2 0xfe001020 (pmc_bar + GEN_PMCON_A), bits 5:4
+	# WARNING: must then be mapped from FSP value to PCH value
 	register "PchPmSlpS4MinAssert" = "1" # 1s
-	register "PchPmSlpSusMinAssert" = "2" # 500ms
+	# sudo devmem2 0xfe001818 (pmc_bar + PM_CFG), bits 19:18
+	# WARNING: must then be mapped from FSP value to PCH value
+	register "PchPmSlpSusMinAssert" = "4" # 4s
+	# sudo devmem2 0xfe001818 (pmc_bar + PM_CFG), bits 17:16
+	# WARNING: must then be mapped from FSP value to PCH value
 	register "PchPmSlpAMinAssert" = "4" # 2s
 
 	# Thermal
