@@ -1105,8 +1105,7 @@ static int tas5825m_setup(struct device *dev) {
 		amp_write_at(0x78, 0x80);
 	}
 
-	//TODO: smaller delay?
-	mdelay(2000);
+	mdelay(100);
 
 	{
 		// Page 0
