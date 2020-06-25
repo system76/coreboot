@@ -84,8 +84,8 @@ chip soc/intel/cannonlake
 	# Audio
 	register "PchHdaDspEnable" = "0"
 	register "PchHdaAudioLinkHda" = "1"
-	register "PchHdaAudioLinkDmic0" = "1"
-	register "PchHdaAudioLinkDmic1" = "1"
+	register "PchHdaAudioLinkDmic0" = "0"
+	register "PchHdaAudioLinkDmic1" = "0"
 	register "PchHdaAudioLinkSsp0" = "0"
 	register "PchHdaAudioLinkSsp1" = "0"
 	register "PchHdaAudioLinkSsp2" = "0"
