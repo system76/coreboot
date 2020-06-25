@@ -19,6 +19,7 @@ static const struct pad_config early_gpio_table[] = {
 		PAD_CFG_TERM_GPO(GPP_F23, 0, NONE, DEEP), // DGPU_PWR_EN
 		PAD_CFG_TERM_GPO(GPP_K8, 1, NONE, DEEP), // SATA_M2_PWR_EN1
 		PAD_CFG_TERM_GPO(GPP_K9, 1, NONE, DEEP), // SATA_M2_PWR_EN2
+		PAD_CFG_TERM_GPO(GPP_K11, 1, NONE, DEEP), // GPIO_LANRTD3
 };
 
 /* Pad configuration in ramstage. */
