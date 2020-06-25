@@ -22,23 +22,6 @@ const u32 cim_verb_data[] = {
 	AZALIA_PIN_CFG(0, 0x1b, 0x411111f0),
 	AZALIA_PIN_CFG(0, 0x1d, 0x41738205),
 	AZALIA_PIN_CFG(0, 0x1e, 0x411111f0),
-	/* Intel, KabylakeHDMI */
-	0x8086280b, /* Vendor ID */
-	0x80860101, /* Subsystem ID */
-	4, /* Number of entries */
-	AZALIA_SUBVENDOR(2, 0x80860101),
-	AZALIA_PIN_CFG(2, 0x05, 0x18560010),
-	AZALIA_PIN_CFG(2, 0x06, 0x18560010),
-	AZALIA_PIN_CFG(2, 0x07, 0x18560010),
-	/* Nvidia, GPU99HDMI/DP */
-	0x10de0099, /* Vendor ID */
-	0x10de0000, /* Subsystem ID */
-	5, /* Number of entries */
-	AZALIA_SUBVENDOR(0, 0x10de0000),
-	AZALIA_PIN_CFG(0, 0x04, 0x185600f0),
-	AZALIA_PIN_CFG(0, 0x05, 0x185600f0),
-	AZALIA_PIN_CFG(0, 0x06, 0x585600f0),
-	AZALIA_PIN_CFG(0, 0x07, 0x585600f0),
 };
 
 const u32 pc_beep_verbs[] = {};
