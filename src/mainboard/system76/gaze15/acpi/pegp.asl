@@ -4,7 +4,6 @@
 Device (PEGP)
 {
 	Name (_ADR, 0x00010000)
-	Name (_STA, 0xF)
 
 	PowerResource (PWRR, 0, 0)
 	{
@@ -14,7 +13,7 @@ Device (PEGP)
 		{
 			Debug = "PEGP.PWRR._ON"
 			If (_STA != 1) {
-				\_SB.PCI0.PEGP._ON ()
+				\_SB.PCI0.PEGP.DEV0._ON ()
 				_STA = 1
 			}
 		}
@@ -23,50 +22,13 @@ Device (PEGP)
 		{
 			Debug = "PEGP.PWRR._OFF"
 			If (_STA != 0) {
-				\_SB.PCI0.PEGP._OFF ()
+				\_SB.PCI0.PEGP.DEV0._OFF ()
 				_STA = 0
 			}
 		}
 	}
 
-	/* Depend on the CLK to be active. _PR3 is also searched by nouveau to
-	 * detect "Windows 8 compatible Optimus _DSM handler".
-	 */
-	Name (_PRE, Package () { \_SB.PCI0.PEGP.PWRR })
 	Name (_PR0, Package () { \_SB.PCI0.PEGP.PWRR })
+	Name (_PR2, Package () { \_SB.PCI0.PEGP.PWRR })
 	Name (_PR3, Package () { \_SB.PCI0.PEGP.PWRR })
-
-	Name (_PSC, 0)
-
-	Method (_PS0)
-	{
-		Debug = "PEGP._PS0"
-		_PSC = 0
-	}
-
-	Method (_PS3)
-	{
-		Debug = "PEGP._PS3"
-		_PSC = 3
-	}
-
-	Method (_ON)
-	{
-		Debug = "PEGP._ON"
-		If (_STA != 0xF)
-		{
-			^DEV0._ON ()
-			_STA = 0xF
-		}
-	}
-
-	Method (_OFF)
-	{
-		Debug = "PEGP._OFF"
-		If (_STA != 0x5)
-		{
-			^DEV0._OFF ()
-			_STA = 0x5
-		}
-	}
 }
