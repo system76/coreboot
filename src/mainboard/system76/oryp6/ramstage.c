@@ -38,10 +38,21 @@ static void dgpu_read_resources(struct device *dev) {
 	}
 }
 
+static void dgpu_enable_resources(struct device *dev) {
+	printk(BIOS_INFO, "system76: dgpu_enable_resources %s\n", dev_path(dev));
+
+	dev->subsystem_vendor = CONFIG_SUBSYSTEM_VENDOR_ID;
+	dev->subsystem_device = CONFIG_SUBSYSTEM_DEVICE_ID;
+	printk(BIOS_INFO, "  subsystem <- %04x/%04x\n", dev->subsystem_vendor, dev->subsystem_device);
+	pci_write_config32(dev, 0x40, ((dev->subsystem_device & 0xffff) << 16) | (dev->subsystem_vendor & 0xffff));
+
+	pci_dev_enable_resources(dev);
+}
+
 static struct device_operations dgpu_pci_ops_dev = {
 	.read_resources   = dgpu_read_resources,
 	.set_resources    = pci_dev_set_resources,
-	.enable_resources = pci_dev_enable_resources,
+	.enable_resources = dgpu_enable_resources,
 #if CONFIG(HAVE_ACPI_TABLES)
 	.write_acpi_tables = pci_rom_write_acpi_tables,
 	.acpi_fill_ssdt    = pci_rom_ssdt,
