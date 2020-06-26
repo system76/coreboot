@@ -24,7 +24,11 @@ const u32 cim_verb_data[] = {
 	AZALIA_PIN_CFG(0, 0x1e, 0x04451150),
 };
 
-const u32 pc_beep_verbs[] = {};
+const u32 pc_beep_verbs[] = {
+    // Enable DMIC microphone on ALC1220
+    0x02050036,
+    0x02042a6a,
+};
 
 AZALIA_ARRAY_SIZES;
 
