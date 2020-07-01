@@ -29,6 +29,7 @@
 Device (\_SB.PCI0.PEGP.DEV0)
 {
 	Name(_ADR, 0x00000000)
+	Name (_STA, 0xF)
 	Name (LTRE, 0)
 
 	// Memory mapped PCI express registers
@@ -84,8 +85,6 @@ Device (\_SB.PCI0.PEGP.DEV0)
 		LREV,   1
 	}
 
-	Name (_STA, 0xF)
-
 	Method (_ON)
 	{
 		Debug = "PEGP.DEV0._ON"
@@ -93,10 +92,10 @@ Device (\_SB.PCI0.PEGP.DEV0)
 		If (_STA != 0xF) {
 			Debug = "  If DGPU_PWR_EN low"
 			If (! GTXS (DGPU_PWR_EN)) {
-				Debug = "  DGPU_PWR_EN high"
+				Debug = "    DGPU_PWR_EN high"
 				STXS (DGPU_PWR_EN)
 
-				Debug = "  Sleep 16"
+				Debug = "    Sleep 16"
 				Sleep (16)
 			}
 
@@ -116,7 +115,7 @@ Device (\_SB.PCI0.PEGP.DEV0)
 			Local0 = 0
 			While (Q0L0) {
 				If ((Local0 > 4)) {
-					Debug = "  While Q0L0 timeout"
+					Debug = "    While Q0L0 timeout"
 					Break
 				}
 
@@ -138,8 +137,6 @@ Device (\_SB.PCI0.PEGP.DEV0)
 
 			Debug = "  CMDR |= 7"
 			CMDR |= 7
-
-			//TODO: restore subsystem ID
 
 			Debug = "  _STA = 0xF"
 			_STA = 0xF
@@ -164,7 +161,7 @@ Device (\_SB.PCI0.PEGP.DEV0)
 			Local0 = Zero
 			While (Q0L2) {
 				If ((Local0 > 4)) {
-					Debug = "  While Q0L2 timeout"
+					Debug = "    While Q0L2 timeout"
 					Break
 				}
 
@@ -188,9 +185,9 @@ Device (\_SB.PCI0.PEGP.DEV0)
 			Local0 = Zero
 			While (! GRXS(DGPU_GC6)) {
 				If ((Local0 > 4)) {
-					Debug = "  While DGPU_GC6 low timeout"
+					Debug = "    While DGPU_GC6 low timeout"
 
-					Debug = "  DGPU_PWR_EN low"
+					Debug = "    DGPU_PWR_EN low"
 					CTXS (DGPU_PWR_EN)
 					Break
 				}
