@@ -23,9 +23,9 @@ void system76_ec_flush(void) {
     // Send command
     system76_ec_write(0, 4);
 
-    // Wait for command completion, for up to 1 second
+    // Wait for command completion, for up to 10 milliseconds
     int timeout;
-    for (timeout = 1000000; timeout > 0; timeout--) {
+    for (timeout = 10000; timeout > 0; timeout--) {
         if (system76_ec_read(0) == 0) break;
         udelay(1);
     }
