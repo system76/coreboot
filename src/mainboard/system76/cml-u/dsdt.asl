@@ -18,7 +18,6 @@ DefinitionBlock(
 	{
 		#include <soc/intel/common/block/acpi/acpi/northbridge.asl>
 		#include <soc/intel/cannonlake/acpi/southbridge.asl>
-		#include "acpi/backlight.asl"
 	}
 
 	#include <southbridge/intel/common/acpi/sleepstates.asl>
@@ -26,7 +25,6 @@ DefinitionBlock(
 	Scope (\_SB.PCI0.LPCB)
 	{
 		#include <drivers/pc80/pc/ps2_controller.asl>
-		#include "acpi/ec.asl"
 	}
 
 	#include "acpi/mainboard.asl"

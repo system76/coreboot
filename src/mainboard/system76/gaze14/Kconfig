@@ -1,10 +1,9 @@
-if BOARD_SYSTEM76_ADDW2
+if BOARD_SYSTEM76_GAZE14_1650_15 || BOARD_SYSTEM76_GAZE14_1650_17 || BOARD_SYSTEM76_GAZE14_1660TI_15 || BOARD_SYSTEM76_GAZE14_1660TI_17
 
 config BOARD_SPECIFIC_OPTIONS
 	def_bool y
 	select BOARD_ROMSIZE_KB_16384
 	select DRIVERS_I2C_HID
-	select DRIVERS_I2C_TAS5825M
 	select DRIVERS_SYSTEM76_EC
 	select EC_ACPI
 	select EC_SYSTEM76
@@ -16,9 +15,8 @@ config BOARD_SPECIFIC_OPTIONS
 	select MAINBOARD_HAS_LPC_TPM
 	select MAINBOARD_HAS_TPM2
 	select NO_UART_ON_SUPERIO
-	select PCIEXP_HOTPLUG
 	select SOC_INTEL_CANNONLAKE_PCH_H
-	select SOC_INTEL_COMETLAKE
+	select SOC_INTEL_COFFEELAKE
 	select SOC_INTEL_COMMON_BLOCK_HDA
 	select SOC_INTEL_COMMON_BLOCK_HDA_VERB
 	select SPD_READ_BY_WORD
@@ -27,31 +25,37 @@ config BOARD_SPECIFIC_OPTIONS
 
 config MAINBOARD_DIR
 	string
-	default system76/addw2
+	default system76/gaze14
 
-config MAINBOARD_PART_NUMBER
+config VARIANT_DIR
 	string
-	default "addw2"
+	default "gaze14_1650_15" if BOARD_SYSTEM76_GAZE14_1650_15
+	default "gaze14_1650_17" if BOARD_SYSTEM76_GAZE14_1650_17
+	default "gaze14_1660ti_15" if BOARD_SYSTEM76_GAZE14_1660TI_15
+	default "gaze14_1660ti_17" if BOARD_SYSTEM76_GAZE14_1660TI_17
 
 config MAINBOARD_SMBIOS_PRODUCT_NAME
 	string
-	default "Adder WS"
+	default "Gazelle"
 
 config MAINBOARD_VERSION
 	string
-	default "addw2"
+	default "gaze14"
 
 config CBFS_SIZE
 	hex
 	default 0xA00000
 
-config SUBSYSTEM_VENDOR_ID
+config MAINBOARD_PCI_SUBSYSTEM_VENDOR_ID
 	hex
 	default 0x1558
 
-config SUBSYSTEM_DEVICE_ID
+config MAINBOARD_PCI_SUBSYSTEM_DEVICE_ID
 	hex
-	default 0x65e1
+	default 0x8560 if BOARD_SYSTEM76_GAZE14_1650_15
+	default 0x8561 if BOARD_SYSTEM76_GAZE14_1650_17
+	default 0x8550 if BOARD_SYSTEM76_GAZE14_1660TI_15
+	default 0x8551 if BOARD_SYSTEM76_GAZE14_1660TI_17
 
 config CONSOLE_POST
 	bool
@@ -67,7 +71,7 @@ config UART_FOR_CONSOLE
 
 config MAX_CPUS
 	int
-	default 16
+	default 12
 
 config DIMM_MAX
 	int
@@ -77,13 +81,13 @@ config DIMM_SPD_SIZE
 	int
 	default 512
 
-config VGA_BIOS_FILE
-	string
-	default "pci8086,9bc4.rom"
+# config VGA_BIOS_FILE
+# 	string
+# 	default "pci8086,3ea0.rom"
 
-config VGA_BIOS_ID
-	string
-	default "8086,9bc4"
+# config VGA_BIOS_ID
+# 	string
+# 	default "8086,3ea0"
 
 config FSP_M_XIP
 	bool
