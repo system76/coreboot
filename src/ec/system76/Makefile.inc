@@ -1,4 +1,4 @@
-ifeq ($(CONFIG_DRIVERS_SYSTEM76_EC),y)
+ifeq ($(CONFIG_CONSOLE_SYSTEM76),y)
 
 bootblock-y += system76_ec.c
 verstage-y += system76_ec.c
