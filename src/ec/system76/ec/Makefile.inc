@@ -1,4 +1,4 @@
-ifeq ($(CONFIG_CONSOLE_SYSTEM76),y)
+ifeq ($(CONFIG_EC_SYSTEM76_EC),y)
 
 bootblock-y += system76_ec.c
 verstage-y += system76_ec.c

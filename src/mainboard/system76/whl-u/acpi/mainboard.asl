@@ -10,7 +10,7 @@
 #else
 	#error Unknown Mainboard
 #endif
-#include <ec/system76/acpi/ec.asl>
+#include <ec/system76/ec/acpi/ec.asl>
 
 Scope (\_SB) {
 	#include "sleep.asl"
