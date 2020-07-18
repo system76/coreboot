@@ -1,4 +1,4 @@
-if BOARD_SYSTEM76_LEMP9
+if BOARD_SYSTEM76_GAZE14_1650_15 || BOARD_SYSTEM76_GAZE14_1650_17 || BOARD_SYSTEM76_GAZE14_1660TI_15 || BOARD_SYSTEM76_GAZE14_1660TI_17
 
 config BOARD_SPECIFIC_OPTIONS
 	def_bool y
@@ -8,13 +8,13 @@ config BOARD_SPECIFIC_OPTIONS
 	select HAVE_ACPI_RESUME
 	select HAVE_ACPI_TABLES
 	select HAVE_SMI_HANDLER
-	select GENERIC_SPD_BIN
 	select INTEL_GMA_HAVE_VBT
 	select INTEL_LPSS_UART_FOR_CONSOLE
 	select MAINBOARD_HAS_LPC_TPM
 	select MAINBOARD_HAS_TPM2
 	select NO_UART_ON_SUPERIO
-	select SOC_INTEL_COMETLAKE
+	select SOC_INTEL_CANNONLAKE_PCH_H
+	select SOC_INTEL_COFFEELAKE
 	select SOC_INTEL_COMMON_BLOCK_HDA
 	select SOC_INTEL_COMMON_BLOCK_HDA_VERB
 	select SPD_READ_BY_WORD
@@ -23,31 +23,37 @@ config BOARD_SPECIFIC_OPTIONS
 
 config MAINBOARD_DIR
 	string
-	default system76/lemp9
+	default system76/gaze14
 
-config MAINBOARD_PART_NUMBER
+config VARIANT_DIR
 	string
-	default "lemp9"
+	default "gaze14_1650_15" if BOARD_SYSTEM76_GAZE14_1650_15
+	default "gaze14_1650_17" if BOARD_SYSTEM76_GAZE14_1650_17
+	default "gaze14_1660ti_15" if BOARD_SYSTEM76_GAZE14_1660TI_15
+	default "gaze14_1660ti_17" if BOARD_SYSTEM76_GAZE14_1660TI_17
 
 config MAINBOARD_SMBIOS_PRODUCT_NAME
 	string
-	default "Lemur Pro"
+	default "Gazelle"
 
 config MAINBOARD_VERSION
 	string
-	default "lemp9"
+	default "gaze14"
 
 config CBFS_SIZE
 	hex
 	default 0xA00000
 
-config SUBSYSTEM_VENDOR_ID
+config MAINBOARD_PCI_SUBSYSTEM_VENDOR_ID
 	hex
 	default 0x1558
 
-config SUBSYSTEM_DEVICE_ID
+config MAINBOARD_PCI_SUBSYSTEM_DEVICE_ID
 	hex
-	default 0x1401
+	default 0x8560 if BOARD_SYSTEM76_GAZE14_1650_15
+	default 0x8561 if BOARD_SYSTEM76_GAZE14_1650_17
+	default 0x8550 if BOARD_SYSTEM76_GAZE14_1660TI_15
+	default 0x8551 if BOARD_SYSTEM76_GAZE14_1660TI_17
 
 config CONSOLE_POST
 	bool
@@ -63,7 +69,7 @@ config UART_FOR_CONSOLE
 
 config MAX_CPUS
 	int
-	default 8
+	default 12
 
 config DIMM_MAX
 	int
@@ -73,13 +79,13 @@ config DIMM_SPD_SIZE
 	int
 	default 512
 
-config VGA_BIOS_FILE
-	string
-	default "pci8086,9b41.rom"
+# config VGA_BIOS_FILE
+# 	string
+# 	default "pci8086,3ea0.rom"
 
-config VGA_BIOS_ID
-	string
-	default "8086,9b41"
+# config VGA_BIOS_ID
+# 	string
+# 	default "8086,3ea0"
 
 config FSP_M_XIP
 	bool

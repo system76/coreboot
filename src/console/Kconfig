@@ -304,8 +304,8 @@ config SPI_CONSOLE
 
 config CONSOLE_SYSTEM76_EC
 	bool "System76 EC console output"
-	default y
-	depends on DRIVERS_SYSTEM76_EC
+	default n
+	depends on EC_SYSTEM76_EC
 	help
 	  Send coreboot debug output to a System76 embedded controller.
 

@@ -4,7 +4,6 @@ config BOARD_SPECIFIC_OPTIONS
 	def_bool y
 	select ADD_FSP_BINARIES
 	select BOARD_ROMSIZE_KB_16384
-	select EC_ACPI
 	select EXCLUDE_EMMC_INTERFACE
 	select FSP_USE_REPO
 	select HAVE_ACPI_RESUME
