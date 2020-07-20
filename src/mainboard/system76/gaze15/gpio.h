@@ -3,13 +3,14 @@
 #ifndef MAINBOARD_GPIO_H
 #define MAINBOARD_GPIO_H
 
-#include <soc/gpe.h>
-#include <soc/gpio.h>
-
 #define DGPU_RST_N GPP_F22
 #define DGPU_PWR_EN GPP_F23
+#define DGPU_GC6 GPP_K21
 
 #ifndef __ACPI__
+
+#include <soc/gpe.h>
+#include <soc/gpio.h>
 
 /* Pad configuration in romstage. */
 static const struct pad_config early_gpio_table[] = {

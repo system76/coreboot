@@ -14,16 +14,14 @@ DefinitionBlock(
 	#include <soc/intel/common/block/acpi/acpi/globalnvs.asl>
 	#include <cpu/intel/common/acpi/cpu.asl>
 
-	Device (\_SB.PCI0)
-	{
+	Device (\_SB.PCI0) {
 		#include <soc/intel/common/block/acpi/acpi/northbridge.asl>
 		#include <soc/intel/cannonlake/acpi/southbridge.asl>
 	}
 
 	#include <southbridge/intel/common/acpi/sleepstates.asl>
 
-	Scope (\_SB.PCI0.LPCB)
-	{
+	Scope (\_SB.PCI0.LPCB) {
 		#include <drivers/pc80/pc/ps2_controller.asl>
 	}
 

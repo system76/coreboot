@@ -1,33 +1,34 @@
-// From https://review.coreboot.org/c/coreboot/+/28380
-/*
- * This file is part of the coreboot project.
- *
- * Copyright (C) 2017-2018 Patrick Rudolph <siro@das-labor.org>
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; version 2 of
- * the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * Nvidia Optimus support methods.
- *
- * Methods defined here are known to work on Lenovo's Sandy Bridge
- * and Ivy Bridge series, which have GPIO21 pulled low on installed dGPU and
- * GPIO17 to detect dGPU "PowerGood". They use the same PMH7 functions to
- * enable dGPU power and handle dGPU reset.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
 
-#define DGPU_RST_N GPP_F22
-#define DGPU_PWR_EN GPP_F23
-#define DGPU_GC6 GPP_K21
+Device (\_SB.PCI0.PEGP) {
+	Name (_ADR, 0x00010000)
 
-Device (\_SB.PCI0.PEGP.DEV0)
-{
+	PowerResource (PWRR, 0, 0) {
+		Name (_STA, 1)
+
+		Method (_ON) {
+			Debug = "PEGP.PWRR._ON"
+			If (_STA != 1) {
+				\_SB.PCI0.PEGP.DEV0._ON ()
+				_STA = 1
+			}
+		}
+
+		Method (_OFF) {
+			Debug = "PEGP.PWRR._OFF"
+			If (_STA != 0) {
+				\_SB.PCI0.PEGP.DEV0._OFF ()
+				_STA = 0
+			}
+		}
+	}
+
+	Name (_PR0, Package () { \_SB.PCI0.PEGP.PWRR })
+	Name (_PR2, Package () { \_SB.PCI0.PEGP.PWRR })
+	Name (_PR3, Package () { \_SB.PCI0.PEGP.PWRR })
+}
+
+Device (\_SB.PCI0.PEGP.DEV0) {
 	Name(_ADR, 0x00000000)
 	Name (_STA, 0xF)
 	Name (LTRE, 0)
@@ -35,8 +36,7 @@ Device (\_SB.PCI0.PEGP.DEV0)
 	// Memory mapped PCI express registers
 	// Not sure what this stuff is, but it is used to get into GC6
 	OperationRegion (RPCX, SystemMemory, 0xE0008000, 0x1000)
-	Field (RPCX, ByteAcc, NoLock, Preserve)
-	{
+	Field (RPCX, ByteAcc, NoLock, Preserve) {
 		PVID,   16,
 		PDID,   16,
 		CMDR,   8,
@@ -85,8 +85,7 @@ Device (\_SB.PCI0.PEGP.DEV0)
 		LREV,   1
 	}
 
-	Method (_ON)
-	{
+	Method (_ON) {
 		Debug = "PEGP.DEV0._ON"
 
 		If (_STA != 0xF) {
@@ -143,8 +142,7 @@ Device (\_SB.PCI0.PEGP.DEV0)
 		}
 	}
 
-	Method (_OFF)
-	{
+	Method (_OFF) {
 		Debug = "PEGP.DEV0._OFF"
 
 		If (_STA != 0x5) {
