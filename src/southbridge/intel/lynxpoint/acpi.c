@@ -1,9 +1,8 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
 #include <acpi/acpi.h>
+#include <acpi/acpi_gnvs.h>
 #include <acpi/acpigen.h>
-#include <cbmem.h>
-#include <types.h>
 #include <string.h>
 #include <version.h>
 
@@ -41,7 +40,7 @@ void acpi_create_intel_hpet(acpi_hpet_t * hpet)
 	    acpi_checksum((void *) hpet, sizeof(acpi_hpet_t));
 }
 
-static void acpi_create_serialio_ssdt_entry(int id, global_nvs_t *gnvs)
+static void acpi_create_serialio_ssdt_entry(int id, struct global_nvs *gnvs)
 {
 	char sio_name[5] = {};
 	snprintf(sio_name, sizeof(sio_name), "S%1uEN", id);
@@ -51,7 +50,7 @@ static void acpi_create_serialio_ssdt_entry(int id, global_nvs_t *gnvs)
 void acpi_create_serialio_ssdt(acpi_header_t *ssdt)
 {
 	unsigned long current = (unsigned long)ssdt + sizeof(acpi_header_t);
-	global_nvs_t *gnvs = cbmem_find(CBMEM_ID_ACPI_GNVS);
+	struct global_nvs *gnvs = acpi_get_gnvs();
 	int id;
 
 	if (!gnvs)

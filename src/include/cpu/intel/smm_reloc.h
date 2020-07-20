@@ -43,8 +43,6 @@ void smm_relocate(void);
  * for clearing the state in the SMM registers. The other is for enabling
  * SMIs. They are split so that other work between the 2 actions. */
 void smm_southbridge_clear_state(void);
-void smm_southbridge_enable_smi(void);
-void smm_southbridge_enable(uint16_t pm1_events);
 
 /* To be removed. */
 void smm_initialize(void);

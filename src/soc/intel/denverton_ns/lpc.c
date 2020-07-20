@@ -514,24 +514,22 @@ static void pch_hide_devfn(uint32_t devfn) { /* TODO */ }
 
 void southcluster_enable_dev(struct device *dev)
 {
-	u32 reg32;
+	u16 reg16;
 
 	if (!dev->enabled) {
 		printk(BIOS_DEBUG, "%s: Disabling device\n", dev_path(dev));
 
 		/* Ensure memory, io, and bus master are all disabled */
-		reg32 = pci_read_config32(dev, PCI_COMMAND);
-		reg32 &= ~(PCI_COMMAND_MASTER | PCI_COMMAND_MEMORY |
+		reg16 = pci_read_config16(dev, PCI_COMMAND);
+		reg16 &= ~(PCI_COMMAND_MASTER | PCI_COMMAND_MEMORY |
 			   PCI_COMMAND_IO);
-		pci_write_config32(dev, PCI_COMMAND, reg32);
+		pci_write_config16(dev, PCI_COMMAND, reg16);
 
 		/* Hide this device if possible */
 		pch_hide_devfn(dev->path.pci.devfn);
 	} else {
 		/* Enable SERR */
-		reg32 = pci_read_config32(dev, PCI_COMMAND);
-		reg32 |= PCI_COMMAND_SERR;
-		pci_write_config32(dev, PCI_COMMAND, reg32);
+		pci_or_config16(dev, PCI_COMMAND, PCI_COMMAND_SERR);
 	}
 }
 
@@ -557,8 +555,7 @@ static const struct pci_driver lpc_driver __pci_driver = {
 
 static void finalize_chipset(void *unused)
 {
-	printk(BIOS_DEBUG, "Finalizing SMM.\n");
-	outb(APM_CNT_FINALIZE, APM_CNT);
+	apm_control(APM_CNT_FINALIZE);
 }
 
 BOOT_STATE_INIT_ENTRY(BS_OS_RESUME, BS_ON_ENTRY, finalize_chipset, NULL);

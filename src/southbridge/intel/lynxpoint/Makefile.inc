@@ -6,6 +6,7 @@ bootblock-y += bootblock.c
 
 ramstage-y += pch.c
 ramstage-y += azalia.c
+ramstage-y += fadt.c
 ramstage-y += lpc.c
 ramstage-y += pcie.c
 ramstage-y += sata.c
@@ -22,7 +23,6 @@ else
 ramstage-srcs += src/mainboard/$(MAINBOARDDIR)/hda_verb.c
 endif
 
-ramstage-y += rcba.c
 ramstage-y += me_status.c
 ramstage-y += acpi.c
 
@@ -34,7 +34,7 @@ smm-y += pmutil.c usb_ehci.c usb_xhci.c
 
 bootblock-y += early_pch.c
 romstage-y += early_usb.c early_smbus.c early_me.c me_status.c early_pch.c
-romstage-y += rcba.c pmutil.c
+romstage-y += pmutil.c
 
 ifeq ($(CONFIG_INTEL_LYNXPOINT_LP),y)
 romstage-y += lp_gpio.c

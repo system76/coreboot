@@ -14,7 +14,7 @@
 #include <soc/iomap.h>
 #include <soc/lpc.h>
 #include <soc/pci_devs.h>
-#include <soc/pmc.h>
+#include <soc/pm.h>
 #include <security/vboot/vbnv.h>
 
 #if defined(__SIMPLE_DEVICE__)
@@ -26,7 +26,8 @@ static inline pci_devfn_t get_pcu_dev(void)
 	return pcu_dev;
 }
 
-#else
+#else /* __SIMPLE_DEVICE__ */
+
 static struct device *pcu_dev;
 static struct device *get_pcu_dev(void)
 {
@@ -34,15 +35,14 @@ static struct device *get_pcu_dev(void)
 		pcu_dev = pcidev_on_root(PCU_DEV, 0);
 	return pcu_dev;
 }
-#endif
+#endif /* __SIMPLE_DEVICE__ */
 
 uint16_t get_pmbase(void)
 {
 	return pci_read_config16(get_pcu_dev(), ABASE) & 0xfff8;
 }
 
-static void print_num_status_bits(int num_bits, uint32_t status,
-				  const char *bit_names[])
+static void print_num_status_bits(int num_bits, uint32_t status, const char *const bit_names[])
 {
 	int i;
 
@@ -59,14 +59,9 @@ static void print_num_status_bits(int num_bits, uint32_t status,
 	}
 }
 
-static void print_status_bits(uint32_t status, const char *bit_names[])
-{
-	print_num_status_bits(32, status, bit_names);
-}
-
 static uint32_t print_smi_status(uint32_t smi_sts)
 {
-	static const char *smi_sts_bits[] = {
+	static const char *const smi_sts_bits[] = {
 		[2] = "BIOS",
 		[4] = "SLP_SMI",
 		[5] = "APM",
@@ -90,7 +85,7 @@ static uint32_t print_smi_status(uint32_t smi_sts)
 		return 0;
 
 	printk(BIOS_DEBUG, "SMI_STS: ");
-	print_status_bits(smi_sts, smi_sts_bits);
+	print_num_status_bits(30, smi_sts, smi_sts_bits);
 	printk(BIOS_DEBUG, "\n");
 
 	return smi_sts;
@@ -151,7 +146,7 @@ static uint16_t reset_pm1_status(void)
 
 static uint16_t print_pm1_status(uint16_t pm1_sts)
 {
-	static const char *pm1_sts_bits[] = {
+	static const char *const pm1_sts_bits[] = {
 		[0] = "TMROF",
 		[5] = "GBL",
 		[8] = "PWRBTN",
@@ -166,7 +161,7 @@ static uint16_t print_pm1_status(uint16_t pm1_sts)
 		return 0;
 
 	printk(BIOS_SPEW, "PM1_STS: ");
-	print_status_bits(pm1_sts, pm1_sts_bits);
+	print_num_status_bits(16, pm1_sts, pm1_sts_bits);
 	printk(BIOS_SPEW, "\n");
 
 	return pm1_sts;
@@ -184,7 +179,7 @@ void enable_pm1(uint16_t events)
 
 static uint32_t print_tco_status(uint32_t tco_sts)
 {
-	static const char *tco_sts_bits[] = {
+	static const char *const tco_sts_bits[] = {
 		[3] = "TIMEOUT",
 		[17] = "SECOND_TO",
 	};
@@ -193,7 +188,7 @@ static uint32_t print_tco_status(uint32_t tco_sts)
 		return 0;
 
 	printk(BIOS_DEBUG, "TCO_STS: ");
-	print_status_bits(tco_sts, tco_sts_bits);
+	print_num_status_bits(18, tco_sts, tco_sts_bits);
 	printk(BIOS_DEBUG, "\n");
 
 	return tco_sts;
@@ -246,7 +241,7 @@ static uint32_t reset_gpe_status(void)
 
 static uint32_t print_gpe_sts(uint32_t gpe_sts)
 {
-	static const char *gpe_sts_bits[] = {
+	static const char *const gpe_sts_bits[] = {
 		[1] = "HOTPLUG",
 		[2] = "SWGPE",
 		[3] = "PCIE_WAKE0",
@@ -280,7 +275,7 @@ static uint32_t print_gpe_sts(uint32_t gpe_sts)
 		return gpe_sts;
 
 	printk(BIOS_DEBUG, "GPE0a_STS: ");
-	print_status_bits(gpe_sts, gpe_sts_bits);
+	print_num_status_bits(32, gpe_sts, gpe_sts_bits);
 	printk(BIOS_DEBUG, "\n");
 
 	return gpe_sts;
@@ -302,17 +297,17 @@ static uint32_t reset_alt_status(void)
 static uint32_t print_alt_sts(uint32_t alt_gpio_smi)
 {
 	uint32_t alt_gpio_sts;
-	static const char *alt_gpio_smi_sts_bits[] = {
-		[0] = "SUS_GPIO_0",
-		[1] = "SUS_GPIO_1",
-		[2] = "SUS_GPIO_2",
-		[3] = "SUS_GPIO_3",
-		[4] = "SUS_GPIO_4",
-		[5] = "SUS_GPIO_5",
-		[6] = "SUS_GPIO_6",
-		[7] = "SUS_GPIO_7",
-		[8] = "CORE_GPIO_0",
-		[9] = "CORE_GPIO_1",
+	static const char *const alt_gpio_smi_sts_bits[] = {
+		[0]  = "SUS_GPIO_0",
+		[1]  = "SUS_GPIO_1",
+		[2]  = "SUS_GPIO_2",
+		[3]  = "SUS_GPIO_3",
+		[4]  = "SUS_GPIO_4",
+		[5]  = "SUS_GPIO_5",
+		[6]  = "SUS_GPIO_6",
+		[7]  = "SUS_GPIO_7",
+		[8]  = "CORE_GPIO_0",
+		[9]  = "CORE_GPIO_1",
 		[10] = "CORE_GPIO_2",
 		[11] = "CORE_GPIO_3",
 		[12] = "CORE_GPIO_4",
@@ -363,7 +358,6 @@ int rtc_failure(void)
 		gen_pmcon1 = read32((u32 *)(PMC_BASE_ADDRESS + GEN_PMCON1));
 
 	rtc_fail = !!(gen_pmcon1 & RPS);
-
 	if (rtc_fail)
 		printk(BIOS_DEBUG, "RTC failure.\n");
 

@@ -25,7 +25,11 @@ Method (ECQP, 0, Serialized)
 		}
 	}
 
-	If (EBIT (BTSC, Local1)) {
+	/*
+	 * Battery status is cleared when read so always use the value from
+	 * PWSR directly regardless of the previous value stored in ECPR.
+	 */
+	If (EBIT (BTSC, Local0)) {
 		Printf ("BAT0 Status Change")
 		Notify (BAT0, 0x80)
 	}
@@ -135,6 +139,12 @@ Method (_Q66, 0, Serialized)
 /* UCSI SCI uses a unique event code */
 Method (_Q79, 0, Serialized)
 {
-	Printf ("EC _Q79 UCSI Event")
-	Notify (^UCSI, 0x80)
+	If (ISSX == Zero) {
+		Printf ("EC _Q79 UCSI Event")
+		Notify (^UCSI, 0x80)
+		^UCEP = Zero
+	} Else {
+		Printf ("EC _Q79 UCSI Event Masked in S0ix")
+		^UCEP = One
+	}
 }

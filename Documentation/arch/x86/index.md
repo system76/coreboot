@@ -42,12 +42,22 @@ At the moment *$n* is 4, which results in identity mapping the lower 4 GiB.
 * Fix compilation errors - *DONE*
 * Fix linker errors - *TODO*
 * Add x86_64 rmodule support - *DONE*
-* Add x86_64 exception handlers - *TODO*
+* Add x86_64 exception handlers - *DONE*
 * Setup page tables for long mode - *DONE*
 * Add assembly code for long mode - *DONE*
+* Add assembly code for SMM - *DONE*
 * Add assembly code for postcar stage - *TODO*
 * Add assembly code to return to protected mode - *TODO*
 * Implement reference code for mainboard `emulation/qemu-q35` - *TODO*
+
+## Future work
+
+1. Fine grained page tables for SMM:
+   * Must not have execute and write permissions for the same page.
+   * Must allow only that TSEG pages can be marked executable
+   * Must reside in SMRAM
+2. Support 64bit PCI BARs above 4GiB
+3. Place and run code above 4GiB
 
 ## Porting other boards
 * Fix compilation errors

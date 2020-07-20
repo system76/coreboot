@@ -319,6 +319,7 @@ void acpigen_write_empty_PCT(void);
 void acpigen_write_empty_PTC(void);
 void acpigen_write_PRW(u32 wake, u32 level);
 void acpigen_write_STA(uint8_t status);
+void acpigen_write_STA_ext(const char *namestring);
 void acpigen_write_TPC(const char *gnvs_tpc_limit);
 void acpigen_write_PSS_package(u32 coreFreq, u32 power, u32 transLat,
 			u32 busmLat, u32 control, u32 status);
@@ -360,6 +361,7 @@ void acpigen_write_debug_integer(uint64_t val);
 void acpigen_write_debug_op(uint8_t op);
 void acpigen_write_if(void);
 void acpigen_write_if_and(uint8_t arg1, uint8_t arg2);
+void acpigen_write_if_lequal_op_op(uint8_t op, uint8_t val);
 void acpigen_write_if_lequal_op_int(uint8_t op, uint64_t val);
 void acpigen_write_if_lequal_namestr_int(const char *namestr, uint64_t val);
 void acpigen_write_else(void);
@@ -368,6 +370,7 @@ void acpigen_write_to_integer(uint8_t src, uint8_t dst);
 void acpigen_write_byte_buffer(uint8_t *arr, size_t size);
 void acpigen_write_return_byte_buffer(uint8_t *arr, size_t size);
 void acpigen_write_return_singleton_buffer(uint8_t arg);
+void acpigen_write_return_op(uint8_t arg);
 void acpigen_write_return_byte(uint8_t arg);
 void acpigen_write_upc(enum acpi_upc_type type);
 void acpigen_write_pld(const struct acpi_pld *pld);
@@ -439,6 +442,16 @@ void acpigen_write_indexfield(const char *idx, const char *data,
 int get_cst_entries(acpi_cstate_t **);
 
 /*
+ * Get element from package into specified destination op:
+ *   <dest_op> = DeRefOf (<package_op>[<element])
+ *
+ * Example:
+ *  acpigen_get_package_op_element(ARG0_OP, 0, LOCAL0_OP)
+ *  Local0 = DeRefOf (Arg0[0])
+ */
+void acpigen_get_package_op_element(uint8_t package_op, unsigned int element, uint8_t dest_op);
+
+/*
  * Soc-implemented functions for generating ACPI AML code for GPIO handling. All
  * these functions are expected to use only Local5, Local6 and Local7
  * variables. If the functions call into another ACPI method, then there is no
@@ -478,6 +491,14 @@ int acpigen_disable_tx_gpio(struct acpi_gpio *gpio);
  */
 void acpigen_get_rx_gpio(struct acpi_gpio *gpio);
 
+/*
+ *  Helper function for getting a TX GPIO value based on the GPIO polarity.
+ *  The return value is stored in Local0 variable.
+ *  This function ends up calling acpigen_soc_get_tx_gpio to make callbacks
+ *  into SoC acpigen code
+ */
+void acpigen_get_tx_gpio(struct acpi_gpio *gpio);
+
 /* refer to ACPI 6.4.3.5.3 Word Address Space Descriptor section for details */
 void acpigen_resource_word(u16 res_type, u16 gen_flags, u16 type_flags, u16 gran,
 	u16 range_min, u16 range_max, u16 translation, u16 length);
@@ -487,5 +508,8 @@ void acpigen_resource_dword(u16 res_type, u16 gen_flags, u16 type_flags,
 /* refer to ACPI 6.4.3.5.1 QWord Address Space Descriptor section for details */
 void acpigen_resource_qword(u16 res_type, u16 gen_flags, u16 type_flags,
 	u64 gran, u64 range_min, u64 range_max, u64 translation, u64 length);
+
+/* Emits Notify(namestr, value) */
+void acpigen_notify(const char *namestr, int value);
 
 #endif /* __ACPI_ACPIGEN_H__ */

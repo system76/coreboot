@@ -10,7 +10,7 @@ if SOC_AMD_PICASSO
 config CPU_SPECIFIC_OPTIONS
 	def_bool y
 	select ARCH_BOOTBLOCK_X86_32
-	select ARCH_VERSTAGE_X86_32
+	select ARCH_VERSTAGE_X86_32 if !VBOOT_STARTS_BEFORE_BOOTBLOCK
 	select ARCH_ROMSTAGE_X86_32
 	select ARCH_RAMSTAGE_X86_32
 	select RESET_VECTOR_IN_RAM
@@ -18,7 +18,9 @@ config CPU_SPECIFIC_OPTIONS
 	select X86_AMD_INIT_SIPI
 	select ACPI_AMD_HARDWARE_SLEEP_VALUES
 	select DRIVERS_I2C_DESIGNWARE
+	select DRIVERS_USB_PCI_XHCI
 	select GENERIC_GPIO_LIB
+	select IDT_IN_EVERY_STAGE
 	select IOAPIC
 	select HAVE_EM100_SUPPORT
 	select HAVE_USBDEBUG_OPTIONS
@@ -53,14 +55,129 @@ config CPU_SPECIFIC_OPTIONS
 	select FSP_COMPRESS_FSP_S_LZMA
 	select FSP_USES_CB_STACK
 	select UDK_2017_BINDING
-	select CACHE_MRC_SETTINGS
 	select HAVE_CF9_RESET
+	select SUPPORT_CPU_UCODE_IN_CBFS
+	select ACPI_NO_SMI_GNVS
+
+config MEMLAYOUT_LD_FILE
+	string
+	default "src/soc/amd/picasso/memlayout.ld"
+
+config EARLY_RESERVED_DRAM_BASE
+	hex
+	default 0x2000000
+	help
+	  This variable defines the base address of the DRAM which is reserved
+	  for usage by coreboot in early stages (i.e. before ramstage is up).
+	  This memory gets reserved in BIOS tables to ensure that the OS does
+	  not use it, thus preventing corruption of OS memory in case of S3
+	  resume.
+
+config EARLYRAM_BSP_STACK_SIZE
+	hex
+	default 0x1000
+
+config PSP_APOB_DRAM_ADDRESS
+	hex
+	default 0x2001000
+	help
+	  Location in DRAM where the PSP will copy the AGESA PSP Output
+	  Block.
+
+config PSP_SHAREDMEM_BASE
+	hex
+	default 0x2011000 if VBOOT
+	default 0x0
+	help
+	  This variable defines the base address in DRAM memory where PSP copies
+	  vboot workbuf to. This is used in linker script to have a static
+	  allocation for the buffer as well as for adding relevant entries in
+	  BIOS directory table for the PSP.
+
+config PSP_SHAREDMEM_SIZE
+	hex
+	default 0x8000 if VBOOT
+	default 0x0
+	help
+	  Sets the maximum size for the PSP to pass the vboot workbuf and
+	  any logs or timestamps back to coreboot.  This will be copied
+	  into main memory by the PSP and will be available when the x86 is
+	  started.  The workbuf's base depends on the address of the reset
+	  vector.
 
 config PRERAM_CBMEM_CONSOLE_SIZE
 	hex
 	default 0x1600
 	help
 	  Increase this value if preram cbmem console is getting truncated
+
+config BOOTBLOCK_ADDR
+	hex
+	default 0x2030000
+	help
+	  Sets the address in DRAM where bootblock should be loaded.
+
+config C_ENV_BOOTBLOCK_SIZE
+	hex
+	default 0x10000
+	help
+	  Sets the size of the bootblock stage that should be loaded in DRAM.
+	  This variable controls the DRAM allocation size in linker script
+	  for bootblock stage.
+
+config X86_RESET_VECTOR
+	hex
+	depends on ARCH_X86
+	default 0x203fff0
+	help
+	  Sets the reset vector within bootblock where x86 starts execution.
+	  Reset vector is supposed to live at offset -0x10 from end of
+	  bootblock i.e. BOOTBLOCK_ADDR + C_ENV_BOOTBLOCK_SIZE - 0x10.
+
+config ROMSTAGE_ADDR
+	hex
+	default 0x2040000
+	help
+	  Sets the address in DRAM where romstage should be loaded.
+
+config ROMSTAGE_SIZE
+	hex
+	default 0x80000
+	help
+	  Sets the size of DRAM allocation for romstage in linker script.
+
+config FSP_M_ADDR
+	hex
+	default 0x20C0000
+	help
+	  Sets the address in DRAM where FSP-M should be loaded. cbfstool
+	  performs relocation of FSP-M to this address.
+
+config FSP_M_SIZE
+	hex
+	default 0x80000
+	help
+	  Sets the size of DRAM allocation for FSP-M in linker script.
+
+config VERSTAGE_ADDR
+	hex
+	depends on VBOOT_SEPARATE_VERSTAGE
+	default 0x2140000
+	help
+	  Sets the address in DRAM where verstage should be loaded if running
+	  as a separate stage on x86.
+
+config VERSTAGE_SIZE
+	hex
+	depends on VBOOT_SEPARATE_VERSTAGE
+	default 0x80000
+	help
+	  Sets the size of DRAM allocation for verstage in linker script if
+	  running as a separate stage on x86.
+
+config RAMBASE
+	hex
+	default 0x10000000
 
 config CPU_ADDR_BITS
 	int
@@ -80,14 +197,40 @@ config VERSTAGE_ADDR
 
 config VGA_BIOS_ID
 	string
-	default "1002,15d8"
+	default "1002,15d8,c1"
 	help
 	  The default VGA BIOS PCI vendor/device ID should be set to the
-	  result of the map_oprom_vendev() function in northbridge.c.
+	  result of the map_oprom_vendev_rev() function in northbridge.c.
 
 config VGA_BIOS_FILE
 	string
 	default "3rdparty/amd_blobs/picasso/PicassoGenericVbios.bin"
+
+config VGA_BIOS_SECOND
+	def_bool y
+
+config VGA_BIOS_SECOND_ID
+	string
+	default "1002,15dd,c4"
+	help
+	  Because Dali and Picasso need different video BIOSes, but have the
+	  same vendor/device IDs, we need an alternate method to determine the
+	  correct video BIOS. In map_oprom_vendev_rev(), we look at the cpuid
+	  and decide which rom to load.
+
+	  Even though the hardware has the same vendor/device IDs, the vBIOS
+	  contains a *different* device ID, confusing the situation even more.
+
+config VGA_BIOS_SECOND_FILE
+	string
+	default "3rdparty/amd_blobs/picasso/Raven2GenericVbios.bin"
+
+config CHECK_REV_IN_OPROM_NAME
+	bool
+	default y
+	help
+	  Select this in the platform BIOS or chipset if the option rom has a
+	  revision that needs to be checked when searching CBFS.
 
 config S3_VGA_ROM_RUN
 	bool
@@ -114,8 +257,8 @@ config PICASSO_ACPI_IO_BASE
 	help
 	  Base address for the ACPI registers.
 
-config PICASSO_UART
-	bool "UART controller on Picasso"
+config PICASSO_CONSOLE_UART
+	bool "Use Picasso UART controller for console"
 	default n
 	select DRIVERS_UART_8250MEM
 	select DRIVERS_UART_8250MEM_32
@@ -130,7 +273,7 @@ config PICASSO_UART
 
 choice PICASSO_UART_CLOCK_SOURCE
 	prompt "UART Frequency"
-	depends on PICASSO_UART
+	depends on PICASSO_CONSOLE_UART
 	default PICASSO_UART_48MZ
 
 config PICASSO_UART_48MZ
@@ -148,7 +291,7 @@ endchoice
 
 config PICASSO_UART_LEGACY
 	bool "Decode legacy I/O range"
-	depends on PICASSO_UART
+	depends on PICASSO_CONSOLE_UART # TODO: shouldn't depend on this
 	help
 	  Assign I/O 3F8, 2F8, etc. to a Picasso UART.  Only a single UART may
 	  decode legacy addresses and this option enables the one used for the
@@ -156,7 +299,7 @@ config PICASSO_UART_LEGACY
 	  of MMIO.  The MMIO decode is still present when this option is used.
 
 config CONSOLE_UART_BASE_ADDRESS
-	depends on CONSOLE_SERIAL && PICASSO_UART
+	depends on CONSOLE_SERIAL && PICASSO_CONSOLE_UART
 	hex
 	default 0xfedc9000 if UART_FOR_CONSOLE = 0
 	default 0xfedca000 if UART_FOR_CONSOLE = 1
@@ -170,7 +313,7 @@ config SMM_TSEG_SIZE
 
 config SMM_RESERVED_SIZE
 	hex
-	default 0x150000
+	default 0x180000
 
 config SMM_MODULE_STACK_SIZE
 	hex
@@ -186,18 +329,20 @@ config ACPI_BERT
 	depends on HAVE_ACPI_TABLES
 	help
 	  Report Machine Check errors identified in POST to the OS in an
-	  ACPI Boot Error Record Table.  This option reserves an 8MB region
-	  for building the error structures.
+	  ACPI Boot Error Record Table.
 
 config ACPI_BERT_SIZE
 	hex
-	default 0x4000
+	default 0x4000 if ACPI_BERT
+	default 0x0
 	help
 	  Specify the amount of DRAM reserved for gathering the data used to
 	  generate the ACPI table.
 
 config CHROMEOS
 	select CHROMEOS_RAMOOPS_DYNAMIC
+	select ALWAYS_LOAD_OPROM
+	select ALWAYS_RUN_OPROM
 
 config RO_REGION_ONLY
 	string
@@ -229,18 +374,6 @@ config MAINBOARD_POWER_RESTORE
 	  after having been lost in S0.  Select this option to automatically
 	  return to S0.  Otherwise the system will remain in S5 once power
 	  is restored.
-
-config FSP_M_ADDR
-	hex
-	default 0x90000000
-
-config X86_RESET_VECTOR
-	hex
-	default 0x807fff0
-
-config EARLYRAM_BSP_STACK_SIZE
-	hex
-	default 0x800
 
 config FSP_TEMP_RAM_SIZE
 	hex
@@ -296,24 +429,6 @@ config AMD_PUBKEY_FILE
 	string
 	default "3rdparty/amd_blobs/picasso/PSP/AmdPubKeyRV.bin"
 
-config PSP_APOB_DRAM_ADDRESS
-	hex
-	default 0x9f00000
-	help
-	  Location in DRAM where the PSP will copy the AGESA PSP Output
-	  Block.
-
-# This value is currently the same as the default defined in
-# drivers/mrc_cache/Kconfig. We do this in in case the default
-# changes. The PSP requires this value to be 64KiB.
-config MRC_SETTINGS_CACHE_SIZE
-	hex
-	default 0x10000
-	help
-	  Size of flash area used to save APOB NV data which occupies the
-	  RW_MRC_CACHE region.  Make this granularity the flash device can
-	  erase.
-
 config USE_PSPSCUREOS
 	bool
 	default y
@@ -361,6 +476,16 @@ config PSP_BOOTLOADER_FILE
 	  Note that this option may conflict with the whitelist file if a
 	  different PSP bootloader binary is specified.
 
+config PSP_SHAREDMEM_SIZE
+	hex "Maximum size of shared memory area"
+	default 0x3000 if VBOOT
+	default 0x0
+	help
+	  Sets the maximum size for the PSP to pass the vboot workbuf and
+	  any logs or timestamps back to coreboot.  This will be copied
+	  into main memory by the PSP and will be available when the x86 is
+	  started.
+
 config PSP_UNLOCK_SECURE_DEBUG
 	bool "Unlock secure debug"
 	default n
@@ -368,5 +493,46 @@ config PSP_UNLOCK_SECURE_DEBUG
 	  Select this item to enable secure debug options in PSP.
 
 endmenu
+
+
+config VBOOT
+	select VBOOT_VBNV_CMOS
+	select VBOOT_VBNV_CMOS_BACKUP_TO_FLASH if ! VBOOT_STARTS_BEFORE_BOOTBLOCK
+
+config VBOOT_STARTS_BEFORE_BOOTBLOCK
+	def_bool n
+	depends on VBOOT
+	select ARCH_VERSTAGE_ARMV7
+	help
+	  Runs verstage on the PSP.  Only available on
+	  certain Chrome OS branded parts from AMD.
+
+if VBOOT_SLOTS_RW_AB && VBOOT_STARTS_BEFORE_BOOTBLOCK
+
+config RWA_REGION_ONLY
+	string
+	default "apu/amdfw_a"
+	help
+	  Add a space-delimited list of filenames that should only be in the
+	  RW-A section.
+
+config RWB_REGION_ONLY
+	string
+	default "apu/amdfw_b"
+	help
+	  Add a space-delimited list of filenames that should only be in the
+	  RW-B section.
+
+config PICASSO_FW_A_POSITION
+	hex
+	help
+	  Location of the AMD firmware in the RW_A region
+
+config PICASSO_FW_B_POSITION
+	hex
+	help
+	  Location of the AMD firmware in the RW_B region
+
+endif # VBOOT_SLOTS_RW_AB && VBOOT_STARTS_BEFORE_BOOTBLOCK
 
 endif # SOC_AMD_PICASSO

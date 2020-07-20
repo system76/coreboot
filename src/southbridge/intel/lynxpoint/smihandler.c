@@ -21,15 +21,6 @@
 
 static u8 smm_initialized = 0;
 
-/* GNVS needs to be updated by an 0xEA PM Trap (B2) after it has been located
- * by coreboot.
- */
-static global_nvs_t *gnvs;
-global_nvs_t *smm_get_gnvs(void)
-{
-	return gnvs;
-}
-
 int southbridge_io_trap_handler(int smif)
 {
 	switch (smif) {
@@ -325,12 +316,12 @@ static void southbridge_smi_apmc(void)
 		state = smi_apmc_find_state_save(reg8);
 		if (state) {
 			/* EBX in the state save contains the GNVS pointer */
-			gnvs = (global_nvs_t *)((u32)state->rbx);
+			gnvs = (struct global_nvs *)((u32)state->rbx);
 			smm_initialized = 1;
 			printk(BIOS_DEBUG, "SMI#: Setting GNVS to %p\n", gnvs);
 		}
 		break;
-	case 0xca:
+	case APM_CNT_ROUTE_ALL_XHCI:
 		usb_xhci_route_all();
 		break;
 	case APM_CNT_ELOG_GSMI:

@@ -13,6 +13,7 @@ CONFIG_CBFS_PREFIX:=$(call strip_quotes,$(CONFIG_CBFS_PREFIX))
 CONFIG_FMDFILE:=$(call strip_quotes,$(CONFIG_FMDFILE))
 CONFIG_DEVICETREE:=$(call strip_quotes, $(CONFIG_DEVICETREE))
 CONFIG_OVERRIDE_DEVICETREE:=$(call strip_quotes, $(CONFIG_OVERRIDE_DEVICETREE))
+CONFIG_MEMLAYOUT_LD_FILE:=$(call strip_quotes, $(CONFIG_MEMLAYOUT_LD_FILE))
 
 #######################################################################
 # misleadingly named, this is the coreboot version
@@ -97,6 +98,13 @@ classes-y := ramstage romstage bootblock decompressor postcar smm smmstub cpu_mi
 # Add a special 'all' class to add sources to all stages
 $(call add-special-class,all)
 all-handler = $(foreach class,bootblock verstage romstage postcar ramstage,$(eval $(class)-y += $(2)))
+
+$(call add-special-class,verstage_x86)
+ifeq ($(CONFIG_ARCH_VERSTAGE_X86_32)$(CONFIG_ARCH_VERSTAGE_X86_64),y)
+verstage_x86-handler = $(eval verstage-y += $(2))
+else
+verstage_x86-handler =
+endif
 
 # Add dynamic classes for rmodules
 $(foreach supported_arch,$(ARCH_SUPPORTED), \
@@ -188,11 +196,14 @@ ifeq ($(CONFIG_USE_BLOBS),y)
 # until expressly requested and enabled with --checkout
 forgetthis:=$(if $(GIT),$(shell git submodule update --init --checkout 3rdparty/blobs))
 forgetthis:=$(if $(GIT),$(shell git submodule update --init --checkout 3rdparty/intel-microcode))
-ifeq ($(CONFIG_PLATFORM_USES_FSP1_0)$(CONFIG_PLATFORM_USES_FSP1_1)$(CONFIG_PLATFORM_USES_FSP2_0),y)
+ifeq ($(CONFIG_FSP_USE_REPO),y)
 forgetthis:=$(if $(GIT),$(shell git submodule update --init --checkout 3rdparty/fsp))
 endif
 ifeq ($(CONFIG_USE_AMD_BLOBS),y)
 forgetthis:=$(if $(GIT),$(shell git submodule update --init --checkout 3rdparty/amd_blobs))
+endif
+ifeq ($(CONFIG_USE_QC_BLOBS),y)
+forgetthis:=$(if $(GIT),$(shell git submodule update --init --checkout 3rdparty/qc_blobs))
 endif
 endif
 UPDATED_SUBMODULES:=1
@@ -608,6 +619,13 @@ smm-c-deps+=$(DEVICETREE_STATIC_C)
 
 .PHONY: devicetree
 devicetree: $(DEVICETREE_STATIC_C)
+
+ramstage-y += $(CONFIG_MEMLAYOUT_LD_FILE)
+romstage-y += $(CONFIG_MEMLAYOUT_LD_FILE)
+bootblock-y += $(CONFIG_MEMLAYOUT_LD_FILE)
+verstage-y += $(CONFIG_MEMLAYOUT_LD_FILE)
+postcar-y += $(CONFIG_MEMLAYOUT_LD_FILE)
+decompressor-y += $(CONFIG_MEMLAYOUT_LD_FILE)
 
 #######################################################################
 # Clean up rules
@@ -1169,11 +1187,10 @@ $(CONFIG_CBFS_PREFIX)/romstage-options := -S ".car.data"
 ifneq ($(CONFIG_NO_XIP_EARLY_STAGES),y)
 $(CONFIG_CBFS_PREFIX)/romstage-options += --xip
 
-# If XIP_ROM_SIZE isn't being used don't overly constrain romstage by passing
-# -P with a default value.
-ifneq ($(CONFIG_NO_FIXED_XIP_ROM_SIZE),y)
-$(CONFIG_CBFS_PREFIX)/romstage-options += -P $(CONFIG_XIP_ROM_SIZE)
-endif    # CONFIG_NO_FIXED_XIP_ROM_SIZE
+# For efficient MTRR utilisation use natural alignment for romstage.
+ifeq ($(CONFIG_SETUP_XIP_CACHE),y)
+$(CONFIG_CBFS_PREFIX)/romstage-options += --pow2page
+endif    # CONFIG_SETUP_XIP_CACHE
 
 endif   # CONFIG_NO_XIP_EARLY_STAGES
 endif   # CONFIG_ARCH_ROMSTAGE_X86_32 / CONFIG_ARCH_ROMSTAGE_X86_64

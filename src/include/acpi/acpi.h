@@ -31,6 +31,14 @@
  #define  SLP_TYP_S5	5
 #endif
 
+/* ACPI Device Sleep States */
+#define ACPI_DEVICE_SLEEP_D0		0
+#define ACPI_DEVICE_SLEEP_D1		1
+#define ACPI_DEVICE_SLEEP_D2		2
+#define ACPI_DEVICE_SLEEP_D3		3
+#define ACPI_DEVICE_SLEEP_D3_HOT	ACPI_DEVICE_SLEEP_D3
+#define ACPI_DEVICE_SLEEP_D3_COLD	4
+
 #define ACPI_TABLE_CREATOR	"COREBOOT"  /* Must be exactly 8 bytes long! */
 #define OEM_ID			"COREv4"    /* Must be exactly 6 bytes long! */
 
@@ -43,6 +51,8 @@
 
 #define RSDP_SIG		"RSD PTR "  /* RSDT pointer signature */
 #define ASLC			"CORE"      /* Must be exactly 4 bytes long! */
+
+#define ACPI_NAME_BUFFER_SIZE	5 /* 4 chars + 1 NUL */
 
 /*
  * The assigned ACPI ID for the coreboot project is 'BOOT'
@@ -868,9 +878,11 @@ unsigned long acpi_fill_ivrs_ioapic(acpi_ivrs_t *ivrs, unsigned long current);
 void acpi_create_ssdt_generator(acpi_header_t *ssdt, const char *oem_table_id);
 void acpi_write_bert(acpi_bert_t *bert, uintptr_t region, size_t length);
 void acpi_create_fadt(acpi_fadt_t *fadt, acpi_facs_t *facs, void *dsdt);
-#if CONFIG(COMMON_FADT)
+
 void acpi_fill_fadt(acpi_fadt_t *fadt);
-#endif
+void arch_fill_fadt(acpi_fadt_t *fadt);
+void soc_fill_fadt(acpi_fadt_t *fadt);
+void mainboard_fill_fadt(acpi_fadt_t *fadt);
 
 void update_ssdt(void *ssdt);
 void update_ssdtx(void *ssdtx, int i);
@@ -1011,6 +1023,13 @@ int acpi_get_sleep_type(void);
 /* Read and clear GPE status */
 int acpi_get_gpe(int gpe);
 
+/* Once we enter payload, is SMI handler installed and capable of
+   responding to APM_CNT Advanced Power Management Control commands. */
+static inline int permanent_smi_handler(void)
+{
+	return CONFIG(HAVE_SMI_HANDLER);
+}
+
 static inline int acpi_s3_resume_allowed(void)
 {
 	return CONFIG(HAVE_ACPI_RESUME);
@@ -1046,6 +1065,6 @@ static inline uintptr_t acpi_align_current(uintptr_t current)
  * coreboot default ACPI spec version supported. */
 int get_acpi_table_revision(enum acpi_tables table);
 
-#endif  // !defined(__ASSEMBLER__) && !defined(__ACPI__) && !defined(__ROMC__)
+#endif  // !defined(__ASSEMBLER__) && !defined(__ACPI__)
 
 #endif  /* __ACPI_ACPI_H__ */

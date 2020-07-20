@@ -1,7 +1,4 @@
-/*
- *
- *               2012 secunet Security Networks AG SPDX-License-Identifier: GPL-2.0-only */
-
+/* SPDX-License-Identifier: GPL-2.0-only */
 
 #include <device/device.h>
 #include <device/pci.h>
@@ -72,15 +69,10 @@ static void aseg_smm_relocate(void)
 	 */
 
 	smi_en = 0; /* reset SMI enables */
-
 	smi_en |= TCO_EN;
 	smi_en |= APMC_EN;
-#if DEBUG_PERIODIC_SMIS
-	/* Set DEBUG_PERIODIC_SMIS in i82801ix.h to debug using
-	 * periodic SMIs.
-	 */
-	smi_en |= PERIODIC_EN;
-#endif
+	if (CONFIG(DEBUG_PERIODIC_SMI))
+		smi_en |= PERIODIC_EN;
 	smi_en |= BIOS_EN;
 
 	/* The following need to be on for SMIs to happen */
@@ -108,7 +100,7 @@ static void aseg_smm_relocate(void)
 
 	/* raise an SMI interrupt */
 	printk(BIOS_SPEW, "  ... raise SMI#\n");
-	outb(0x00, 0xb2);
+	apm_control(APM_CNT_NOOP_SMI);
 }
 
 static int smm_handler_copied = 0;

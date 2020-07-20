@@ -1219,7 +1219,10 @@ void acpi_write_bert(acpi_bert_t *bert, uintptr_t region, size_t length)
 	header->checksum = acpi_checksum((void *)bert, header->length);
 }
 
-#if CONFIG(COMMON_FADT)
+__weak void arch_fill_fadt(acpi_fadt_t *fadt) { }
+__weak void soc_fill_fadt(acpi_fadt_t *fadt) { }
+__weak void mainboard_fill_fadt(acpi_fadt_t *fadt) { }
+
 void acpi_create_fadt(acpi_fadt_t *fadt, acpi_facs_t *facs, void *dsdt)
 {
 	acpi_header_t *header = &(fadt->header);
@@ -1238,12 +1241,15 @@ void acpi_create_fadt(acpi_fadt_t *fadt, acpi_facs_t *facs, void *dsdt)
 	header->asl_compiler_revision = asl_revision;
 
 	fadt->firmware_ctrl = (unsigned long) facs;
-	fadt->dsdt = (unsigned long) dsdt;
-
 	fadt->x_firmware_ctl_l = (unsigned long)facs;
 	fadt->x_firmware_ctl_h = 0;
+
+	fadt->dsdt = (unsigned long) dsdt;
 	fadt->x_dsdt_l = (unsigned long)dsdt;
 	fadt->x_dsdt_h = 0;
+
+	/* should be 0 ACPI 3.0 */
+	fadt->reserved = 0;
 
 	if (CONFIG(SYSTEM_TYPE_CONVERTIBLE) ||
 	    CONFIG(SYSTEM_TYPE_LAPTOP))
@@ -1254,12 +1260,16 @@ void acpi_create_fadt(acpi_fadt_t *fadt, acpi_facs_t *facs, void *dsdt)
 	else
 		fadt->preferred_pm_profile = PM_DESKTOP;
 
+	arch_fill_fadt(fadt);
+
 	acpi_fill_fadt(fadt);
+
+	soc_fill_fadt(fadt);
+	mainboard_fill_fadt(fadt);
 
 	header->checksum =
 	    acpi_checksum((void *) fadt, header->length);
 }
-#endif
 
 unsigned long __weak fw_cfg_acpi_tables(unsigned long start)
 {

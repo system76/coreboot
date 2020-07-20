@@ -2,7 +2,7 @@
 
 #include <device/mmio.h>
 #include <device/pci_ops.h>
-#include <cbmem.h>
+#include <acpi/acpi_gnvs.h>
 #include <console/console.h>
 #include <device/device.h>
 #include <device/pci.h>
@@ -151,51 +151,51 @@ static void serialio_init(struct device *dev)
 		serialio_enable_clock(bar0);
 
 	switch (dev->path.pci.devfn) {
-	case PCI_DEVFN(21, 0): /* SDMA */
+	case PCH_DEVFN_SDMA: /* SDMA */
 		sio_index = SIO_ID_SDMA;
 		serialio_init_once(config->sio_acpi_mode);
 		serialio_d21_mode(sio_index, SIO_PIN_INTB,
 				  config->sio_acpi_mode);
 		break;
-	case PCI_DEVFN(21, 1): /* I2C0 */
+	case PCH_DEVFN_I2C0: /* I2C0 */
 		sio_index = SIO_ID_I2C0;
 		serialio_d21_ltr(bar0);
 		serialio_i2c_voltage_sel(bar0, config->sio_i2c0_voltage);
 		serialio_d21_mode(sio_index, SIO_PIN_INTC,
 				  config->sio_acpi_mode);
 		break;
-	case PCI_DEVFN(21, 2): /* I2C1 */
+	case PCH_DEVFN_I2C1: /* I2C1 */
 		sio_index = SIO_ID_I2C1;
 		serialio_d21_ltr(bar0);
 		serialio_i2c_voltage_sel(bar0, config->sio_i2c1_voltage);
 		serialio_d21_mode(sio_index, SIO_PIN_INTC,
 				  config->sio_acpi_mode);
 		break;
-	case PCI_DEVFN(21, 3): /* SPI0 */
+	case PCH_DEVFN_SPI0: /* SPI0 */
 		sio_index = SIO_ID_SPI0;
 		serialio_d21_ltr(bar0);
 		serialio_d21_mode(sio_index, SIO_PIN_INTC,
 				  config->sio_acpi_mode);
 		break;
-	case PCI_DEVFN(21, 4): /* SPI1 */
+	case PCH_DEVFN_SPI1: /* SPI1 */
 		sio_index = SIO_ID_SPI1;
 		serialio_d21_ltr(bar0);
 		serialio_d21_mode(sio_index, SIO_PIN_INTC,
 				  config->sio_acpi_mode);
 		break;
-	case PCI_DEVFN(21, 5): /* UART0 */
+	case PCH_DEVFN_UART0: /* UART0 */
 		sio_index = SIO_ID_UART0;
 		serialio_d21_ltr(bar0);
 		serialio_d21_mode(sio_index, SIO_PIN_INTD,
 				  config->sio_acpi_mode);
 		break;
-	case PCI_DEVFN(21, 6): /* UART1 */
+	case PCH_DEVFN_UART1: /* UART1 */
 		sio_index = SIO_ID_UART1;
 		serialio_d21_ltr(bar0);
 		serialio_d21_mode(sio_index, SIO_PIN_INTD,
 				  config->sio_acpi_mode);
 		break;
-	case PCI_DEVFN(23, 0): /* SDIO */
+	case PCH_DEVFN_SDIO: /* SDIO */
 		sio_index = SIO_ID_SDIO;
 		serialio_d23_ltr(bar0);
 		serialio_d23_mode(config->sio_acpi_mode);
@@ -205,14 +205,12 @@ static void serialio_init(struct device *dev)
 	}
 
 	if (config->sio_acpi_mode) {
-		global_nvs_t *gnvs;
+		struct global_nvs *gnvs;
 
 		/* Find ACPI NVS to update BARs */
-		gnvs = (global_nvs_t *)cbmem_find(CBMEM_ID_ACPI_GNVS);
-		if (!gnvs) {
-			printk(BIOS_ERR, "Unable to locate Global NVS\n");
+		gnvs = acpi_get_gnvs();
+		if (!gnvs)
 			return;
-		}
 
 		/* Save BAR0 and BAR1 to ACPI NVS */
 		gnvs->s0b[sio_index] = (u32)bar0->base;
@@ -220,16 +218,12 @@ static void serialio_init(struct device *dev)
 	}
 }
 
-static struct pci_operations pci_ops = {
-	.set_subsystem		= pci_dev_set_subsystem,
-};
-
 static struct device_operations device_ops = {
 	.read_resources		= pci_dev_read_resources,
 	.set_resources		= pci_dev_set_resources,
 	.enable_resources	= pci_dev_enable_resources,
 	.init			= serialio_init,
-	.ops_pci		= &pci_ops,
+	.ops_pci		= &pci_dev_ops_pci,
 };
 
 static const unsigned short pci_device_ids[] = {

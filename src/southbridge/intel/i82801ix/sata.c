@@ -205,8 +205,7 @@ static void sata_init(struct device *const dev)
 
 	if (is_mobile && config->sata_traffic_monitor) {
 		struct device *const lpc_dev = pcidev_on_root(0x1f, 0);
-		if (((pci_read_config8(lpc_dev, D31F0_CxSTATE_CNF)
-							>> 3) & 3) == 3) {
+		if (((pci_read_config8(lpc_dev, D31F0_CxSTATE_CNF) >> 3) & 3) == 3) {
 			u8 reg8 = pci_read_config8(dev, 0x9c);
 			reg8 &= ~(0x1f << 2);
 			reg8 |= 3 << 2;
@@ -247,17 +246,13 @@ static void sata_enable(struct device *dev)
 	pci_write_config16(dev, 0x90, map);
 }
 
-static struct pci_operations sata_pci_ops = {
-	.set_subsystem    = pci_dev_set_subsystem,
-};
-
 static struct device_operations sata_ops = {
 	.read_resources		= pci_dev_read_resources,
 	.set_resources		= pci_dev_set_resources,
 	.enable_resources	= pci_dev_enable_resources,
 	.init			= sata_init,
 	.enable			= sata_enable,
-	.ops_pci		= &sata_pci_ops,
+	.ops_pci		= &pci_dev_ops_pci,
 };
 
 static const unsigned short pci_device_ids[] = {

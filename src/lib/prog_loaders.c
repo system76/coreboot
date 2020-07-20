@@ -46,7 +46,7 @@ void run_romstage(void)
 
 	vboot_run_logic();
 
-	if (CONFIG(ARCH_X86) && CONFIG(BOOTBLOCK_NORMAL)) {
+	if (ENV_X86 && CONFIG(BOOTBLOCK_NORMAL)) {
 		if (legacy_romstage_selector(&romstage))
 			goto fail;
 	} else {
@@ -119,8 +119,7 @@ void run_ramstage(void)
 	 * Only x86 systems using ramstage stage cache currently take the same
 	 * firmware path on resume.
 	 */
-	if (CONFIG(ARCH_X86) &&
-	    !CONFIG(NO_STAGE_CACHE))
+	if (ENV_X86 && !CONFIG(NO_STAGE_CACHE))
 		run_ramstage_from_resume(&ramstage);
 
 	vboot_run_logic();
@@ -130,11 +129,13 @@ void run_ramstage(void)
 
 	timestamp_add_now(TS_START_COPYRAM);
 
-	if (CONFIG(RELOCATABLE_RAMSTAGE)) {
+	if (ENV_X86) {
 		if (load_relocatable_ramstage(&ramstage))
 			goto fail;
-	} else if (cbfs_prog_stage_load(&ramstage))
-		goto fail;
+	} else {
+		if (cbfs_prog_stage_load(&ramstage))
+			goto fail;
+	}
 
 	stage_cache_add(STAGE_RAMSTAGE, &ramstage);
 

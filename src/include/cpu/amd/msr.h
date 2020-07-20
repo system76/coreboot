@@ -17,6 +17,7 @@
 #define MC4_MISC2			0xC0000409
 #define FS_Base				0xC0000100
 #define HWCR_MSR                        0xC0010015
+#define  SMM_LOCK			(1 << 0)
 #define NB_CFG_MSR                      0xC001001f
 #define FidVidStatus			0xC0010042
 #define MC1_CTL_MASK			0xC0010045
@@ -53,7 +54,6 @@
 #define SMM_BASE_MSR			0xC0010111
 #define SMM_ADDR_MSR			0xC0010112
 #define SMM_MASK_MSR			0xC0010113
-#define  SMM_LOCK			(1 << 0)
 #define  SMM_TSEG_VALID			(1 << 1)
 #define  SMM_TSEG_WB			(6 << 12)
 
@@ -72,7 +72,9 @@
 #define EX_CFG_MSR			0xC001102C
 #define LS_CFG2_MSR			0xC001102D
 #define IBS_OP_DATA3_MSR		0xC0011037
+#define S3_RESUME_EIP_MSR		0xC00110E0
 
+#define MSR_PATCH_LEVEL			0x0000008B
 #define CORE_PERF_BOOST_CTRL		0x15c
 
 #endif /* CPU_AMD_MSR_H */

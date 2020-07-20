@@ -152,8 +152,7 @@ static void gma_func0_init(struct device *dev)
 
 		gma_gfxinit(&lightup_ok);
 		/* Linux relies on VBT for panel info. */
-		generate_fake_intel_oprom(&conf->gfx, dev,
-					  "$VBT IRONLAKE-MOBILE");
+		generate_fake_intel_oprom(&conf->gfx, dev, "$VBT IRONLAKE-MOBILE");
 	} else {
 		/* PCI Init, will run VBIOS */
 		pci_dev_init(dev);
@@ -191,17 +190,13 @@ static void gma_generate_ssdt(const struct device *device)
 	drivers_intel_gma_displays_ssdt_generate(&chip->gfx);
 }
 
-static struct pci_operations gma_pci_ops = {
-	.set_subsystem = pci_dev_set_subsystem,
-};
-
 static struct device_operations gma_func0_ops = {
 	.read_resources		= gma_read_resources,
 	.set_resources		= pci_dev_set_resources,
 	.enable_resources	= pci_dev_enable_resources,
 	.acpi_fill_ssdt		= gma_generate_ssdt,
 	.init			= gma_func0_init,
-	.ops_pci		= &gma_pci_ops,
+	.ops_pci		= &pci_dev_ops_pci,
 };
 
 static const unsigned short pci_device_ids[] = {
@@ -212,7 +207,7 @@ static const unsigned short pci_device_ids[] = {
 };
 
 static const struct pci_driver gma __pci_driver = {
-	.ops = &gma_func0_ops,
-	.vendor = PCI_VENDOR_ID_INTEL,
+	.ops	 = &gma_func0_ops,
+	.vendor	 = PCI_VENDOR_ID_INTEL,
 	.devices = pci_device_ids,
 };

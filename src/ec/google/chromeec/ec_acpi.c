@@ -7,6 +7,7 @@
 #include <acpi/acpigen_usb.h>
 #include <console/console.h>
 #include <drivers/usb/acpi/chip.h>
+#include <ec/google/common/dptf.h>
 
 #include "chip.h"
 #include "ec.h"
@@ -124,6 +125,22 @@ static void add_port_location(struct acpi_dp *dsd, int port_number)
 			   port_location_to_str(port_caps.port_location));
 }
 
+static int conn_id_to_match;
+
+/* A callback to match a port's connector for dev_find_matching_device_on_bus */
+static bool match_connector(DEVTREE_CONST struct device *dev)
+{
+	if (CONFIG(DRIVERS_INTEL_PMC)) {
+		extern struct chip_operations drivers_intel_pmc_mux_conn_ops;
+
+		return (dev->chip_ops == &drivers_intel_pmc_mux_conn_ops &&
+			dev->path.type == DEVICE_PATH_GENERIC &&
+			dev->path.generic.id == conn_id_to_match);
+	}
+
+	return false;
+}
+
 static void fill_ssdt_typec_device(const struct device *dev)
 {
 	int rv;
@@ -132,6 +149,7 @@ static void fill_ssdt_typec_device(const struct device *dev)
 	struct device *usb3_port;
 	struct device *usb4_port;
 	const struct device *mux;
+	const struct device *conn;
 
 	if (google_chromeec_get_num_pd_ports(&num_ports))
 		return;
@@ -147,7 +165,14 @@ static void fill_ssdt_typec_device(const struct device *dev)
 		if (rv)
 			continue;
 
+		/* Get the MUX device, and find the matching connector on its bus */
+		conn = NULL;
 		mux = soc_get_pmc_mux_device(i);
+		if (mux) {
+			conn_id_to_match = i;
+			conn = dev_find_matching_device_on_bus(mux->link_list, match_connector);
+		}
+
 		usb2_port = NULL;
 		usb3_port = NULL;
 		usb4_port = NULL;
@@ -160,9 +185,9 @@ static void fill_ssdt_typec_device(const struct device *dev)
 			.usb2_port = usb2_port,
 			.usb3_port = usb3_port,
 			.usb4_port = usb4_port,
-			.orientation_switch = mux,
-			.usb_role_switch = mux,
-			.mode_switch = mux,
+			.orientation_switch = conn,
+			.usb_role_switch = conn,
+			.mode_switch = conn,
 		};
 
 		acpigen_write_typec_connector(&config, i, add_port_location);
@@ -217,10 +242,31 @@ static void fill_ssdt_ps2_keyboard(const struct device *dev)
 				 !!(keybd.capabilities & KEYBD_CAP_SCRNLOCK_KEY));
 }
 
+static const char *ec_acpi_name(const struct device *dev)
+{
+	return "EC0";
+}
+
+static struct device_operations ec_ops = {
+	.acpi_name	= ec_acpi_name,
+};
+
 void google_chromeec_fill_ssdt_generator(const struct device *dev)
 {
+	struct device_path path;
+	struct device *ec;
+
 	if (!dev->enabled)
 		return;
+
+	/* Set up a minimal EC0 device to pass to the DPTF helpers */
+	path.type = DEVICE_PATH_GENERIC;
+	path.generic.id = 0;
+	ec = alloc_find_dev(dev->bus, &path);
+	ec->ops = &ec_ops;
+
+	if (CONFIG(DRIVERS_INTEL_DPTF))
+		ec_fill_dptf_helpers(ec);
 
 	fill_ssdt_typec_device(dev);
 	fill_ssdt_ps2_keyboard(dev);

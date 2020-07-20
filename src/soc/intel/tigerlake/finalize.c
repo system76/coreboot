@@ -17,7 +17,6 @@
 #include <intelblocks/pcr.h>
 #include <intelblocks/tco.h>
 #include <intelblocks/thermal.h>
-#include <reg_script.h>
 #include <spi-generic.h>
 #include <soc/p2sb.h>
 #include <soc/pci_devs.h>
@@ -68,14 +67,26 @@ static void pch_finalize(void)
 	pmc_clear_pmcon_sts();
 }
 
+static void tbt_finalize(void)
+{
+	int i;
+	const struct device *dev;
+
+	/* Disable Thunderbolt PCIe root ports bus master */
+	for (i = 0; i < NUM_TBT_FUNCTIONS; i++) {
+		dev = pcidev_path_on_root(SA_DEVFN_TBT(i));
+		if (dev)
+			pci_dev_disable_bus_master(dev);
+	}
+}
+
 static void soc_finalize(void *unused)
 {
 	printk(BIOS_DEBUG, "Finalizing chipset.\n");
 
 	pch_finalize();
-
-	printk(BIOS_DEBUG, "Finalizing SMM.\n");
-	outb(APM_CNT_FINALIZE, APM_CNT);
+	apm_control(APM_CNT_FINALIZE);
+	tbt_finalize();
 
 	/* Indicate finalize step with post code */
 	post_code(POST_OS_BOOT);

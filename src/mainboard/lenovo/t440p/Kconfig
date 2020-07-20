@@ -41,7 +41,7 @@ config VBOOT_VBNV_OFFSET
 
 config FMDFILE
 	string
-	default "src/mainboard/$(CONFIG_MAINBOARD_DIR)/vboot-rwab.fmd" if VBOOT
+	default "src/mainboard/\$(CONFIG_MAINBOARD_DIR)/vboot-rwab.fmd" if VBOOT
 
 config MAINBOARD_DIR
 	string
@@ -58,10 +58,6 @@ config VGA_BIOS_FILE
 config VGA_BIOS_ID
 	string
 	default "8086,0416"
-
-config MAX_CPUS
-	int
-	default 8
 
 config USBDEBUG_HCD_INDEX
 	int

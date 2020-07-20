@@ -48,6 +48,7 @@
 
 #include <fcntl.h>
 #include <errno.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -211,6 +212,9 @@ static void usage(void)
 		MIN_ROM_KB);
 	printf("                               and must a multiple of 1024\n");
 	printf("-l | --location                Location of Directory\n");
+	printf("-q | --anywhere                Use any 64-byte aligned addr for Directory\n");
+	printf("-R | --sharedmem               Location of PSP/FW shared memory\n");
+	printf("-P | --sharedmem-size          Maximum size of the PSP/FW shared memory area\n");
 	printf("-h | --help                    show this help\n");
 }
 
@@ -224,6 +228,7 @@ typedef enum _amd_bios_type {
 	AMD_BIOS_UCODE = 0x66,
 	AMD_BIOS_APCB_BK = 0x68,
 	AMD_BIOS_MP2_CFG = 0x6a,
+	AMD_BIOS_PSP_SHARED_MEM = 0x6b,
 	AMD_BIOS_L2_PTR =  0x70,
 	AMD_BIOS_INVALID,
 } amd_bios_type;
@@ -394,6 +399,7 @@ static amd_bios_entry amd_bios_table[] = {
 	{ .type = AMD_BIOS_UCODE, .inst = 1, .level = BDT_LVL2 },
 	{ .type = AMD_BIOS_UCODE, .inst = 2, .level = BDT_LVL2 },
 	{ .type = AMD_BIOS_MP2_CFG, .level = BDT_LVL2 },
+	{ .type = AMD_BIOS_PSP_SHARED_MEM, .inst = 0, .level = BDT_BOTH },
 	{ .type = AMD_BIOS_INVALID },
 };
 
@@ -479,7 +485,7 @@ typedef struct _bios_directory_table {
 	bios_directory_entry entries[];
 } bios_directory_table;
 
-#define MAX_BIOS_ENTRIES 0x2e
+#define MAX_BIOS_ENTRIES 0x2f
 
 typedef struct _context {
 	char *rom;		/* target buffer, size of flash device */
@@ -863,7 +869,8 @@ static void integrate_bios_firmwares(context *ctx,
 				fw_table[i].type != AMD_BIOS_APOB &&
 				fw_table[i].type != AMD_BIOS_APOB_NV &&
 				fw_table[i].type != AMD_BIOS_L2_PTR &&
-				fw_table[i].type != AMD_BIOS_BIN))
+				fw_table[i].type != AMD_BIOS_BIN &&
+				fw_table[i].type != AMD_BIOS_PSP_SHARED_MEM))
 			continue;
 
 		/* BIOS Directory items may have additional requirements */
@@ -912,6 +919,11 @@ static void integrate_bios_firmwares(context *ctx,
 				exit(1);
 			}
 		}
+
+		/* PSP_SHARED_MEM needs a destination and size */
+		if (fw_table[i].type == AMD_BIOS_PSP_SHARED_MEM &&
+				(!fw_table[i].dest || !fw_table[i].size))
+			continue;
 
 		biosdir->entries[count].type = fw_table[i].type;
 		biosdir->entries[count].region_type = fw_table[i].region_type;
@@ -972,6 +984,11 @@ static void integrate_bios_firmwares(context *ctx,
 
 			ctx->current = ALIGN(ctx->current + bytes, 0x100U);
 			break;
+		case AMD_BIOS_PSP_SHARED_MEM:
+			biosdir->entries[count].dest = fw_table[i].dest;
+			biosdir->entries[count].size = fw_table[i].size;
+			break;
+
 		default: /* everything else is copied from input */
 			if (fw_table[i].type == AMD_BIOS_APCB ||
 					fw_table[i].type == AMD_BIOS_APCB_BK)
@@ -1021,8 +1038,8 @@ static void integrate_bios_firmwares(context *ctx,
 
 	fill_dir_header(biosdir, count, cookie);
 }
-// Unused values: CDEPqR
-static const char *optstring  = "x:i:g:AMS:p:b:s:r:k:c:n:d:t:u:w:m:T:z:J:B:K:L:Y:N:UW:I:a:Q:V:e:v:j:y:G:O:X:F:H:o:f:l:hZ:";
+// Unused values: CDE
+static const char *optstring  = "x:i:g:AMS:p:b:s:r:k:c:n:d:t:u:w:m:T:z:J:B:K:L:Y:N:UW:I:a:Q:V:e:v:j:y:G:O:X:F:H:o:f:l:hZ:qR:P:";
 
 static struct option long_options[] = {
 	{"xhci",             required_argument, 0, 'x' },
@@ -1073,6 +1090,9 @@ static struct option long_options[] = {
 	{"output",           required_argument, 0, 'o' },
 	{"flashsize",        required_argument, 0, 'f' },
 	{"location",         required_argument, 0, 'l' },
+	{"anywhere",         no_argument,       0, 'q' },
+	{"sharedmem",        required_argument, 0, 'R' },
+	{"sharedmem-size",   required_argument, 0, 'P' },
 	{"help",             no_argument,       0, 'h' },
 	{NULL,               0,                 0,  0  }
 };
@@ -1177,6 +1197,7 @@ int main(int argc, char **argv)
 	uint8_t sub = 0, instance = 0;
 	int abl_image = 0;
 	uint32_t dir_location = 0;
+	bool any_location = 0;
 	uint32_t romsig_offset;
 	uint32_t rom_base_address;
 	int multi = 0;
@@ -1392,6 +1413,19 @@ int main(int argc, char **argv)
 				retval = 1;
 			}
 			break;
+		case 'q':
+			any_location = 1;
+			break;
+		case 'R':
+			/* shared memory destination */
+			register_fw_addr(AMD_BIOS_PSP_SHARED_MEM, 0, optarg, 0);
+			sub = instance = 0;
+			break;
+		case 'P':
+			/* shared memory size */
+			register_fw_addr(AMD_BIOS_PSP_SHARED_MEM, NULL, NULL, optarg);
+			sub = instance = 0;
+			break;
 
 		case 'h':
 			usage();
@@ -1434,20 +1468,28 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	switch (dir_location) {
-	case 0:          /* Fall through */
-	case 0xFFFA0000: /* Fall through */
-	case 0xFFF20000: /* Fall through */
-	case 0xFFE20000: /* Fall through */
-	case 0xFFC20000: /* Fall through */
-	case 0xFF820000: /* Fall through */
-	case 0xFF020000: /* Fall through */
-		break;
-	default:
-		printf("Error: Invalid Directory location.\n");
-		printf("  Valid locations are 0xFFFA0000, 0xFFF20000,\n");
-		printf("  0xFFE20000, 0xFFC20000, 0xFF820000, 0xFF020000\n");
-		return 1;
+	if (any_location) {
+		if (dir_location & 0x3f) {
+			printf("Error: Invalid Directory location.\n");
+			printf("  Valid locations are 64-byte aligned\n");
+			return 1;
+		}
+	} else {
+		switch (dir_location) {
+		case 0:          /* Fall through */
+		case 0xFFFA0000: /* Fall through */
+		case 0xFFF20000: /* Fall through */
+		case 0xFFE20000: /* Fall through */
+		case 0xFFC20000: /* Fall through */
+		case 0xFF820000: /* Fall through */
+		case 0xFF020000: /* Fall through */
+			break;
+		default:
+			printf("Error: Invalid Directory location.\n");
+			printf("  Valid locations are 0xFFFA0000, 0xFFF20000,\n");
+			printf("  0xFFE20000, 0xFFC20000, 0xFF820000, 0xFF020000\n");
+			return 1;
+		}
 	}
 
 	ctx.rom = malloc(ctx.rom_size);

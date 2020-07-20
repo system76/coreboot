@@ -8,7 +8,7 @@
 #include <cpu/x86/smm.h>
 #include <cpu/intel/smm_reloc.h>
 #include <soc/iomap.h>
-#include <soc/pmc.h>
+#include <soc/pm.h>
 #include <soc/smm.h>
 
 /* Save settings which will be committed in SMI functions. */
@@ -70,20 +70,21 @@ static void smm_southcluster_route_gpios(void)
 	outl(alt_gpio_reg, alt_gpio_smi);
 }
 
-void smm_southbridge_enable_smi(void)
+static void smm_southbridge_enable(uint16_t pm1_events)
 {
-	uint16_t pm1_events = PWRBTN_EN | GBL_EN;
 
 	printk(BIOS_DEBUG, "Enabling SMIs.\n");
 	if (!smm_save_params[SMM_SAVE_PARAM_PCIE_WAKE_ENABLE])
 		pm1_events |= PCIEXPWAK_DIS;
+
 	enable_pm1(pm1_events);
 	disable_gpe(PME_B0_EN);
 
 	/* Set up the GPIO route. */
 	smm_southcluster_route_gpios();
 
-	/* Enable SMI generation:
+	/*
+	 * Enable SMI generation:
 	 *  - on APMC writes (io 0xb2)
 	 *  - on writes to SLP_EN (sleep states)
 	 *  - on writes to GBL_RLS (bios commands)
@@ -94,21 +95,7 @@ void smm_southbridge_enable_smi(void)
 	enable_smi(APMC_EN | SLP_SMI_EN | GBL_SMI_EN | EOS);
 }
 
-void smm_setup_structures(void *gnvs, void *tcg, void *smi1)
+void global_smi_enable(void)
 {
-	/*
-	 * Issue SMI to set the gnvs pointer in SMM.
-	 * tcg and smi1 are unused.
-	 *
-	 * EAX = APM_CNT_GNVS_UPDATE
-	 * EBX = gnvs pointer
-	 * EDX = APM_CNT
-	 */
-	asm volatile (
-		"outb %%al, %%dx\n\t"
-		: /* ignore result */
-		: "a" (APM_CNT_GNVS_UPDATE),
-		  "b" ((uint32_t)gnvs),
-		  "d" (APM_CNT)
-	);
+	smm_southbridge_enable(PWRBTN_EN | GBL_EN);
 }

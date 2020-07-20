@@ -5,6 +5,41 @@
 #include <amdblocks/acpimmio_map.h>
 #include <amdblocks/acpimmio.h>
 
+#define ACPI_BANK_PTR(bank) \
+	(void *)(uintptr_t)(AMD_SB_ACPI_MMIO_ADDR + ACPIMMIO_ ## bank ## _BANK)
+
+#if CONSTANT_ACPIMMIO_BASE_ADDRESS
+#define DECLARE_ACPIMMIO(ptr, bank) \
+	uint8_t *const ptr = ACPI_BANK_PTR(bank)
+#else
+#define DECLARE_ACPIMMIO(ptr, bank) uint8_t *ptr
+#endif
+
+DECLARE_ACPIMMIO(acpimmio_sm_pci, SM_PCI);
+DECLARE_ACPIMMIO(acpimmio_gpio_100, GPIO_100);
+DECLARE_ACPIMMIO(acpimmio_smi, SMI);
+DECLARE_ACPIMMIO(acpimmio_pmio, PMIO);
+DECLARE_ACPIMMIO(acpimmio_pmio2, PMIO2);
+DECLARE_ACPIMMIO(acpimmio_biosram, BIOSRAM);
+DECLARE_ACPIMMIO(acpimmio_cmosram, CMOSRAM);
+DECLARE_ACPIMMIO(acpimmio_cmos, CMOS);
+DECLARE_ACPIMMIO(acpimmio_acpi, ACPI);
+DECLARE_ACPIMMIO(acpimmio_asf, ASF);
+DECLARE_ACPIMMIO(acpimmio_smbus, SMBUS);
+DECLARE_ACPIMMIO(acpimmio_wdt, WDT);
+DECLARE_ACPIMMIO(acpimmio_hpet, HPET);
+DECLARE_ACPIMMIO(acpimmio_iomux, IOMUX);
+DECLARE_ACPIMMIO(acpimmio_misc, MISC);
+DECLARE_ACPIMMIO(acpimmio_dpvga, DPVGA);
+DECLARE_ACPIMMIO(acpimmio_gpio0, GPIO0);
+DECLARE_ACPIMMIO(acpimmio_gpio1, GPIO1);
+DECLARE_ACPIMMIO(acpimmio_gpio2, GPIO2);
+DECLARE_ACPIMMIO(acpimmio_xhci_pm, XHCIPM);
+DECLARE_ACPIMMIO(acpimmio_acdc_tmr, ACDCTMR);
+DECLARE_ACPIMMIO(acpimmio_aoac, AOAC);
+
+#undef DECLARE_ACPIMMIO
+
 void enable_acpimmio_decode_pm24(void)
 {
 	uint32_t dw;

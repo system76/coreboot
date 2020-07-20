@@ -61,8 +61,6 @@ endif
 # Disable implicit/built-in rules to make Makefile errors fail fast.
 .SUFFIXES:
 
-HOSTCC := $(if $(shell type gcc 2>/dev/null),gcc,cc)
-HOSTCXX = g++
 HOSTCFLAGS := -g
 HOSTCXXFLAGS := -g
 
@@ -83,6 +81,8 @@ help_coreboot help::
 	@echo  '  distclean             - Remove build artifacts and config files'
 	@echo  '  doxygen               - Build doxygen documentation for coreboot'
 	@echo  '  doxyplatform          - Build doxygen documentation for the current platform'
+	@echo  '  sphinx                - Build sphinx documentation for coreboot'
+	@echo  '  sphinx-lint           - Build sphinx documenttion for coreboot with warnings as errors'
 	@echo  '  filelist              - Show files used in current build'
 	@echo  '  printall              - print makefile info for debugging'
 	@echo  '  gitconfig             - set up git to submit patches to coreboot'
@@ -103,7 +103,7 @@ ifeq ($(strip $(HAVE_DOTCONFIG)),)
 NOCOMPILE:=1
 endif
 ifneq ($(MAKECMDGOALS),)
-ifneq ($(filter %config %clean cross% clang iasl gnumake lint% help% what-jenkins-does,$(MAKECMDGOALS)),)
+ifneq ($(filter %config %clean cross% clang iasl lint% help% what-jenkins-does,$(MAKECMDGOALS)),)
 NOCOMPILE:=1
 endif
 ifneq ($(filter %clean lint% help% what-jenkins-does,$(MAKECMDGOALS)),)
@@ -126,6 +126,11 @@ endif
 	rm -f $@.tmp
 
 ifeq ($(NOCOMPILE),1)
+# We also don't use .xcompile in the no-compile situations, so
+# provide some reasonable defaults.
+HOSTCC ?= $(if $(shell type gcc 2>/dev/null),gcc,cc)
+HOSTCXX ?= g++
+
 include $(TOPLEVEL)/Makefile.inc
 include $(TOPLEVEL)/payloads/Makefile.inc
 include $(TOPLEVEL)/util/testing/Makefile.inc
@@ -419,6 +424,12 @@ cscope-project: clean-cscope $(obj)/project_filelist.txt
 cscope:
 	cscope -bR
 
+sphinx:
+	$(MAKE) -C Documentation -f Makefile.sphinx html
+
+sphinx-lint:
+	$(MAKE) SPHINXOPTS=-W -C Documentation -f Makefile.sphinx html
+
 doxy: doxygen
 doxygen:
 	$(DOXYGEN) Documentation/Doxyfile.coreboot
@@ -465,5 +476,5 @@ distclean: clean clean-ctags clean-cscope distclean-payloads distclean-utils
 	rm -rf coreboot-builds coreboot-builds-chromeos
 	rm -f abuild*.xml junit.xml* util/lint/junit.xml
 
-.PHONY: $(PHONY) clean clean-for-update clean-cscope cscope distclean doxygen doxy doxygen_simple
+.PHONY: $(PHONY) clean clean-for-update clean-cscope cscope distclean doxygen doxy doxygen_simple sphinx sphinx-lint
 .PHONY: ctags-project cscope-project clean-ctags

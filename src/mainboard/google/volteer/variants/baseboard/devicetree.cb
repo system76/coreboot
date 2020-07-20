@@ -1,3 +1,34 @@
+fw_config
+	field DB_USB 0 3
+		option USB_ABSENT 0
+		option USB4_GEN2 1
+		option USB3_ACTIVE 2
+		option USB4_GEN3 3
+		option USB3_PASSIVE 4
+		option USB3_NO_A 5
+	end
+	field THERMAL 4 7 end
+	field AUDIO 8 10
+		option NONE 0
+		option MAX98357_ALC5682I_I2S 1
+		option MAX98373_ALC5682I_I2S 2
+		option MAX98373_ALC5682_SNDW 3
+	end
+	field TABLETMODE 11
+		option TABLETMODE_DISABLED 0
+		option TABLETMODE_ENABLED 1
+	end
+	field DB_LTE 12 13
+		option LTE_ABSENT 0
+		option LTE_PRESENT 1
+	end
+	field DB_SD 16 19
+		option SD_ABSENT 0
+		option SD_GL9755S 1
+		option SD_RTS5261 2
+	end
+end
+
 chip soc/intel/tigerlake
 
 	device cpu_cluster 0 on
@@ -12,8 +43,11 @@ chip soc/intel/tigerlake
 	register "pmc_gpe0_dw1" = "GPP_D"
 	register "pmc_gpe0_dw2" = "GPP_E"
 
+	# Enable heci communication
+	register "HeciEnabled" = "1"
+
 	# FSP configuration
-	register "SaGv" = "SaGv_Disabled"
+	register "SaGv" = "SaGv_Enabled"
 	register "SmbusEnable" = "0"
 
 	register "usb2_ports[0]" = "USB2_PORT_MID(OC_SKIP)"	# Type-A Port A0
@@ -52,6 +86,7 @@ chip soc/intel/tigerlake
 	# Enable SD Card PCIE 8 using clk 3
 	register "PcieRpEnable[7]" = "1"
 	register "PcieRpLtrEnable[7]" = "1"
+	register "PcieRpHotPlug[7]" = "1"
 	register "PcieClkSrcUsage[3]" = "7"
 	register "PcieClkSrcClkReq[3]" = "3"
 
@@ -75,6 +110,7 @@ chip soc/intel/tigerlake
 	register "SataPortsEnable[1]" = "1"
 	register "SataPortsDevSlp[0]" = "0"
 	register "SataPortsDevSlp[1]" = "1"
+	register "SataPortsEnableDitoConfig[1]" = "1"
 
 	register "SerialIoI2cMode" = "{
 		[PchSerialIoIndexI2C0]  = PchSerialIoPci,
@@ -115,27 +151,28 @@ chip soc/intel/tigerlake
 	# HD Audio
 	register "PchHdaDspEnable" = "1"
 	register "PchHdaAudioLinkHdaEnable" = "0"
-	register "PchHdaAudioLinkDmicEnable[0]" = "1"
-	register "PchHdaAudioLinkDmicEnable[1]" = "1"
-	register "PchHdaAudioLinkSspEnable[0]" = "1"
-	register "PchHdaAudioLinkSspEnable[1]" = "1"
+	register "PchHdaAudioLinkDmicEnable[0]" = "0"
+	register "PchHdaAudioLinkDmicEnable[1]" = "0"
+	register "PchHdaAudioLinkSspEnable[0]" = "0"
+	register "PchHdaAudioLinkSspEnable[1]" = "0"
+	register "PchHdaAudioLinkSndwEnable[0]" = "0"
+	register "PchHdaAudioLinkSndwEnable[1]" = "0"
 
 	# TCSS USB3
 	register "TcssXhciEn" = "1"
 	register "TcssAuxOri" = "1"
 	register "IomTypeCPortPadCfg[0]" = "0x090E000A"
 	register "IomTypeCPortPadCfg[1]" = "0x090E000D"
-	register "IomTypeCPortPadCfg[2]" = "0x0"
-	register "IomTypeCPortPadCfg[3]" = "0x0"
-	register "IomTypeCPortPadCfg[4]" = "0x0"
-	register "IomTypeCPortPadCfg[5]" = "0x0"
-	register "IomTypeCPortPadCfg[6]" = "0x0"
-	register "IomTypeCPortPadCfg[7]" = "0x0"
-
+	register "IomTypeCPortPadCfg[2]" = "0x09000000"
+	register "IomTypeCPortPadCfg[3]" = "0x09000000"
+	register "IomTypeCPortPadCfg[4]" = "0x09000000"
+	register "IomTypeCPortPadCfg[5]" = "0x09000000"
+	register "IomTypeCPortPadCfg[6]" = "0x09000000"
+	register "IomTypeCPortPadCfg[7]" = "0x09000000"
 
 	# D3Hot and D3Cold for TCSS
 	register "TcssD3HotEnable" = "1"
-	register "TcssD3ColdEnable" = "1"
+	register "TcssD3ColdEnable" = "0"
 
 	# DP port
 	register "DdiPortAConfig" = "1"	# eDP
@@ -174,12 +211,20 @@ chip soc/intel/tigerlake
 	# Enable DPTF
 	register "dptf_enable" = "1"
 
-	register "power_limits_config" = "{
+	register "power_limits_config[POWER_LIMITS_U_4_CORE]" = "{
 		.tdp_pl1_override = 15,
 		.tdp_pl2_override = 60,
+		.tdp_pl4 = 105,
+	}"
+	register "power_limits_config[POWER_LIMITS_U_2_CORE]" = "{
+		.tdp_pl1_override = 15,
+		.tdp_pl2_override = 38,
+		.tdp_pl4 = 71,
 	}"
 
 	register "Device4Enable" = "1"
+
+	register "tcc_offset" = "10"     # TCC of 90
 
 	# Intel Common SoC Config
 	#+-------------------+---------------------------+
@@ -220,23 +265,126 @@ chip soc/intel/tigerlake
 		},
 	}"
 
+	register "ext_fivr_settings" = "{
+		.configure_ext_fivr = 1,
+		.v1p05_enable_bitmap = FIVR_ENABLE_ALL_SX,
+		.vnn_enable_bitmap = FIVR_ENABLE_ALL_SX,
+		.v1p05_supported_voltage_bitmap = FIVR_VOLTAGE_NORMAL |
+						  FIVR_VOLTAGE_MIN_ACTIVE |
+						  FIVR_VOLTAGE_MIN_RETENTION,
+		.vnn_supported_voltage_bitmap = FIVR_VOLTAGE_NORMAL |
+						FIVR_VOLTAGE_MIN_ACTIVE |
+						FIVR_VOLTAGE_MIN_RETENTION,
+		.v1p05_icc_max_ma = 500,
+		.vnn_sx_voltage_mv = 1250,
+	}"
+
 	device domain 0 on
 		#From EDS(575683)
 		device pci 00.0 on  end # Host Bridge			0x9A14:U/0x9A12:Y
 		device pci 02.0 on  end # Graphics
-		device pci 04.0 on  end # DPTF				0x9A03
+		device pci 04.0 on
+			# Default DPTF Policy for all Volteer boards if not overridden
+			chip drivers/intel/dptf
+				## Active Policy
+				register "policies.active[0]" = "{.target=DPTF_CPU,
+					.thresholds={TEMP_PCT(85, 90),
+						     TEMP_PCT(80, 69),
+						     TEMP_PCT(75, 56),
+						     TEMP_PCT(70, 46),
+						     TEMP_PCT(65, 36),}}"
+				register "policies.active[1]" = "{.target=DPTF_TEMP_SENSOR_0,
+					.thresholds={TEMP_PCT(50, 90),
+						     TEMP_PCT(47, 69),
+						     TEMP_PCT(45, 56),
+						     TEMP_PCT(42, 46),
+						     TEMP_PCT(39, 36),}}"
+				register "policies.active[2]" = "{.target=DPTF_TEMP_SENSOR_1,
+					.thresholds={TEMP_PCT(50, 90),
+						     TEMP_PCT(47, 69),
+						     TEMP_PCT(45, 56),
+						     TEMP_PCT(42, 46),
+						     TEMP_PCT(39, 36),}}"
+				register "policies.active[3]" = "{.target=DPTF_TEMP_SENSOR_2,
+					.thresholds={TEMP_PCT(50, 90),
+						     TEMP_PCT(47, 69),
+						     TEMP_PCT(45, 56),
+						     TEMP_PCT(42, 46),
+						     TEMP_PCT(39, 36),}}"
+				register "policies.active[4]" = "{.target=DPTF_TEMP_SENSOR_3,
+					.thresholds={TEMP_PCT(50, 90),
+						     TEMP_PCT(47, 69),
+						     TEMP_PCT(45, 56),
+						     TEMP_PCT(42, 46),
+						     TEMP_PCT(39, 36),}}"
+
+				## Passive Policy
+				register "policies.passive[0]" = "DPTF_PASSIVE(CPU,     CPU,           95, 5000)"
+				register "policies.passive[1]" = "DPTF_PASSIVE(CPU,     TEMP_SENSOR_1, 65, 6000)"
+				register "policies.passive[2]" = "DPTF_PASSIVE(CHARGER, TEMP_SENSOR_0, 65, 6000)"
+				register "policies.passive[3]" = "DPTF_PASSIVE(CPU,     TEMP_SENSOR_2, 65, 6000)"
+				register "policies.passive[4]" = "DPTF_PASSIVE(CPU,     TEMP_SENSOR_3, 65, 6000)"
+
+				## Critical Policy
+				register "policies.critical[0]" = "DPTF_CRITICAL(CPU,          105, SHUTDOWN)"
+				register "policies.critical[1]" = "DPTF_CRITICAL(TEMP_SENSOR_0, 75, SHUTDOWN)"
+				register "policies.critical[2]" = "DPTF_CRITICAL(TEMP_SENSOR_1, 75, SHUTDOWN)"
+				register "policies.critical[3]" = "DPTF_CRITICAL(TEMP_SENSOR_2, 75, SHUTDOWN)"
+				register "policies.critical[4]" = "DPTF_CRITICAL(TEMP_SENSOR_3, 75, SHUTDOWN)"
+
+				## Power Limits Control
+				# 10-15W PL1 in 200mW increments, avg over 28-32s interval
+				# PL2 is fixed at 64W, avg over 28-32s interval
+				register "controls.power_limits.pl1" = "{
+					.min_power = 3000,
+					.max_power = 15000,
+					.time_window_min = 28 * MSECS_PER_SEC,
+					.time_window_max = 32 * MSECS_PER_SEC,
+					.granularity = 200,}"
+				register "controls.power_limits.pl2" = "{
+					.min_power = 15000,
+					.max_power = 60000,
+					.time_window_min = 28 * MSECS_PER_SEC,
+					.time_window_max = 32 * MSECS_PER_SEC,
+					.granularity = 1000,}"
+
+				## Charger Performance Control (Control, mA)
+				register "controls.charger_perf[0]" = "{ 255, 1700 }"
+				register "controls.charger_perf[1]" = "{  24, 1500 }"
+				register "controls.charger_perf[2]" = "{  16, 1000 }"
+				register "controls.charger_perf[3]" = "{   8,  500 }"
+
+				## Fan Performance Control (Percent, Speed, Noise, Power)
+				register "controls.fan_perf[0]" = "{  90, 6700, 220, 2200, }"
+				register "controls.fan_perf[1]" = "{  80, 5800, 180, 1800, }"
+				register "controls.fan_perf[2]" = "{  70, 5000, 145, 1450, }"
+				register "controls.fan_perf[3]" = "{  60, 4900, 115, 1150, }"
+				register "controls.fan_perf[4]" = "{  50, 3838,  90,  900, }"
+				register "controls.fan_perf[5]" = "{  40, 2904,  55,  550, }"
+				register "controls.fan_perf[6]" = "{  30, 2337,  30,  300, }"
+				register "controls.fan_perf[7]" = "{  20, 1608,  15,  150, }"
+				register "controls.fan_perf[8]" = "{  10,  800,  10,  100, }"
+				register "controls.fan_perf[9]" = "{   0,    0,   0,   50, }"
+
+				# Fan options
+				register "options.fan.fine_grained_control" = "1"
+				register "options.fan.step_size" = "2"
+
+				device generic 0 on end
+			end
+		end # DPTF				0x9A03
 		device pci 05.0 off end # IPU				0x9A19
 		device pci 06.0 off end # PEG60				0x9A09
-		device pci 07.0 on end # TBT_PCIe0			0x9A23
-		device pci 07.1 on end # TBT_PCIe1			0x9A25
-		device pci 07.2 on end # TBT_PCIe2			0x9A27
-		device pci 07.3 on end # TBT_PCIe3			0x9A29
+		device pci 07.0 on  end # TBT_PCIe0			0x9A23
+		device pci 07.1 on  end # TBT_PCIe1			0x9A25
+		device pci 07.2 off end # TBT_PCIe2			0x9A27
+		device pci 07.3 off end # TBT_PCIe3			0x9A29
 		device pci 08.0 on  end # GNA				0x9A11
 		device pci 09.0 off end # NPK				0x9A33
 		device pci 0a.0 off end # Crash-log SRAM		0x9A0D
 		device pci 0d.0 on  end # USB xHCI			0x9A13
 		device pci 0d.1 off end # USB xDCI (OTG)		0x9A15
-		device pci 0d.2 off end # TBT DMA0			0x9A1B
+		device pci 0d.2 on  end # TBT DMA0			0x9A1B
 		device pci 0d.3 off end # TBT DMA1			0x9A1D
 		device pci 0e.0 off end # VMD				0x9A0B
 
@@ -257,84 +405,9 @@ chip soc/intel/tigerlake
 			register "wake" = "GPE0_PME_B0"
 			device pci 14.3 on end # CNVi: WiFi		0xA0F0 - A0F3
 		end
-
-		device pci 15.0 on
-			chip drivers/i2c/generic
-				register "hid" = ""10EC5682""
-				register "name" = ""RT58""
-				register "desc" = ""Realtek RT5682""
-				register "irq_gpio" = "ACPI_GPIO_IRQ_EDGE_BOTH(GPP_F8)"
-				# Set the jd_src to RT5668_JD1 for jack detection
-				register "property_count" = "1"
-				register "property_list[0].type" = "ACPI_DP_TYPE_INTEGER"
-				register "property_list[0].name" = ""realtek,jd-src""
-				register "property_list[0].integer" = "1"
-				device i2c 1a on end
-			end
-		end # I2C #0			0xA0E8
-		device pci 15.1 on
-			chip drivers/i2c/hid
-				register "generic.hid" = ""GDIX0000""
-				register "generic.desc" = ""Goodix Touchscreen""
-				register "generic.irq" = "ACPI_IRQ_EDGE_LOW(GPP_E7_IRQ)"
-				register "generic.probed" = "1"
-				register "generic.reset_gpio" =
-							"ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_C10)"
-				register "generic.reset_delay_ms" = "120"
-				register "generic.reset_off_delay_ms" = "3"
-				register "generic.enable_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_A8)"
-				register "generic.enable_delay_ms" = "12"
-				register "generic.has_power_resource" = "1"
-				register "hid_desc_reg_offset" = "0x01"
-				device i2c 14 on end
-			end
-			chip drivers/i2c/hid
-				register "generic.hid" = ""ELAN90FC""
-				register "generic.desc" = ""ELAN Touchscreen""
-				register "generic.irq" = "ACPI_IRQ_EDGE_LOW(GPP_E7_IRQ)"
-				register "generic.probed" = "1"
-				register "generic.reset_gpio" =
-							"ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_C10)"
-				register "generic.enable_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_A8)"
-				register "generic.reset_delay_ms" = "20"
-				register "generic.has_power_resource" = "1"
-				register "generic.disable_gpio_export_in_crs" = "1"
-				register "hid_desc_reg_offset" = "0x01"
-				device i2c 10 on end
-			end
-		end # I2C1				0xA0E9
-		device pci 15.2 on
-			chip drivers/i2c/sx9310
-				register "desc" = ""SAR0 Proximity Sensor""
-				register "irq" = "ACPI_IRQ_LEVEL_LOW(GPP_F14_IRQ)"
-				register "speed" = "I2C_SPEED_FAST"
-				register "uid" = "0"
-				register "reg_prox_ctrl0" = "0x10"
-				register "reg_prox_ctrl1" = "0x00"
-				register "reg_prox_ctrl2" = "0x84"
-				register "reg_prox_ctrl3" = "0x0e"
-				register "reg_prox_ctrl4" = "0x07"
-				register "reg_prox_ctrl5" = "0xc6"
-				register "reg_prox_ctrl6" = "0x20"
-				register "reg_prox_ctrl7" = "0x0d"
-				register "reg_prox_ctrl8" = "0x8d"
-				register "reg_prox_ctrl9" = "0x43"
-				register "reg_prox_ctrl10" = "0x1f"
-				register "reg_prox_ctrl11" = "0x00"
-				register "reg_prox_ctrl12" = "0x00"
-				register "reg_prox_ctrl13" = "0x00"
-				register "reg_prox_ctrl14" = "0x00"
-				register "reg_prox_ctrl15" = "0x00"
-				register "reg_prox_ctrl16" = "0x00"
-				register "reg_prox_ctrl17" = "0x00"
-				register "reg_prox_ctrl18" = "0x00"
-				register "reg_prox_ctrl19" = "0x00"
-				register "reg_sar_ctrl0" = "0x50"
-				register "reg_sar_ctrl1" = "0x8a"
-				register "reg_sar_ctrl2" = "0x3c"
-				device i2c 28 on end
-			end
-		end # I2C2				0xA0EA
+		device pci 15.0 on  end # I2C #0			0xA0E8
+		device pci 15.1 on  end # I2C1				0xA0E9
+		device pci 15.2 on  end # I2C2				0xA0EA
 		device pci 15.3 on  end # I2C3				0xA0EB
 
 		device pci 16.0 on  end # HECI1				0xA0E0
@@ -347,16 +420,7 @@ chip soc/intel/tigerlake
 		device pci 17.0 on  end # SATA				0xA0D3
 
 		device pci 19.0 on  end # I2C4				0xA0C5
-		device pci 19.1 on
-			chip drivers/i2c/generic
-				register "hid" = ""ELAN0000""
-				register "desc" = ""ELAN Touchpad""
-				register "irq" = "ACPI_IRQ_WAKE_LEVEL_LOW(GPP_E15_IRQ)"
-				register "wake" = "GPE0_DW2_15"
-				register "probed" = "1"
-				device i2c 15 on end
-			end
-		end # I2C5				0xA0C6
+		device pci 19.1 on  end # I2C5				0xA0C6
 		device pci 19.2 off end # UART2				0xA0C7
 
 		device pci 1c.0 on  end # RP1				0xA0B8
@@ -400,14 +464,7 @@ chip soc/intel/tigerlake
 		end # eSPI						0xA080 - A09F
 		device pci 1f.1 off end # P2SB				0xA0A0
 		device pci 1f.2 hidden end # PMC			0xA0A1
-		device pci 1f.3 on
-			chip drivers/generic/max98357a
-				register "hid" = ""MX98357A""
-				register "sdmode_gpio" =  "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_A10)"
-				register "sdmode_delay" = "5"
-				device generic 0 on end
-			end
-		end # Intel HD audio					0xA0C8-A0CF
+		device pci 1f.3 on  end # Intel HD audio		0xA0C8-A0CF
 		device pci 1f.4 off end # SMBus				0xA0A3
 		device pci 1f.5 on  end # SPI				0xA0A4
 		device pci 1f.6 off end # GbE				0x15E1/0x15E2

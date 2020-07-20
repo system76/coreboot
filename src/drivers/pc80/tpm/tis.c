@@ -44,7 +44,7 @@
 
 /* the macro accepts the locality value, but only locality 0 is operational */
 #define TIS_REG(LOCALITY, REG) \
-	(void *)(CONFIG_TPM_TIS_BASE_ADDRESS + (LOCALITY << 12) + REG)
+	(void *)(uintptr_t)(CONFIG_TPM_TIS_BASE_ADDRESS + (LOCALITY << 12) + REG)
 
 /* hardware registers' offsets */
 #define TIS_REG_ACCESS                 0x0
@@ -395,7 +395,7 @@ static u32 tis_probe(void)
 
 	didvid = tpm_read_did_vid(0);
 	if (!didvid || (didvid == 0xffffffff)) {
-		printf("%s: No TPM device found\n", __FUNCTION__);
+		printf("%s: No TPM device found\n", __func__);
 		return TPM_DRIVER_ERR;
 	}
 
@@ -993,8 +993,9 @@ static struct pnp_info pnp_dev_info[] = {
 
 static void enable_dev(struct device *dev)
 {
-	pnp_enable_devices(dev, &lpc_tpm_ops,
-			   ARRAY_SIZE(pnp_dev_info), pnp_dev_info);
+	if (CONFIG(TPM1) || CONFIG(TPM2))
+		pnp_enable_devices(dev, &lpc_tpm_ops,
+			ARRAY_SIZE(pnp_dev_info), pnp_dev_info);
 }
 
 struct chip_operations drivers_pc80_tpm_ops = {

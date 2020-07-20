@@ -8,6 +8,7 @@ romstage-y += romstage.c
 
 ramstage-$(CONFIG_CHROMEOS) += chromeos.c
 ramstage-y += ec.c
+ramstage-$(CONFIG_FW_CONFIG) += fw_config.c
 ramstage-y += mainboard.c
 
 smm-y += smihandler.c
@@ -19,7 +20,7 @@ CPPFLAGS_common += -I$(src)/mainboard/$(MAINBOARDDIR)/variants/baseboard/include
 
 VARIANT_DIR:=$(call strip_quotes,$(CONFIG_VARIANT_DIR))
 subdirs-y += variants/$(VARIANT_DIR)
-subdirs-y += variants/$(VARIANT_DIR)/spd
+subdirs-y += variants/$(VARIANT_DIR)/memory
 CPPFLAGS_common += -I$(src)/mainboard/$(MAINBOARDDIR)/variants/$(VARIANT_DIR)/include
 
 subdirs-y += spd

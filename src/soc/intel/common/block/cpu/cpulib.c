@@ -4,11 +4,11 @@
 #include <console/console.h>
 #include <cpu/intel/turbo.h>
 #include <cpu/x86/msr.h>
-#include <cpu/x86/mtrr.h>
 #include <arch/cpu.h>
 #include <intelblocks/cpulib.h>
 #include <intelblocks/fast_spi.h>
 #include <intelblocks/msr.h>
+#include <soc/soc_chip.h>
 #include <stdint.h>
 
 /*
@@ -253,6 +253,39 @@ uint32_t cpu_get_max_ratio(void)
 		ratio_max = (msr.lo >> 8) & 0xff;
 	}
 	return ratio_max;
+}
+
+void configure_tcc_thermal_target(void)
+{
+	const config_t *conf = config_of_soc();
+	msr_t msr;
+
+	if (!conf->tcc_offset)
+		return;
+
+	/* Set TCC activation offset */
+	msr = rdmsr(MSR_PLATFORM_INFO);
+	if ((msr.lo & BIT(30))) {
+		msr = rdmsr(MSR_TEMPERATURE_TARGET);
+		msr.lo &= ~(0xf << 24);
+		msr.lo |= (conf->tcc_offset & 0xf) << 24;
+		wrmsr(MSR_TEMPERATURE_TARGET, msr);
+	}
+
+	/*
+	 * SoCs prior to Comet Lake/Cannon Lake do not support the time window
+	 * bits, so return early.
+	 */
+	if (CONFIG(SOC_INTEL_APOLLOLAKE) || CONFIG(SOC_INTEL_SKYLAKE) ||
+	    CONFIG(SOC_INTEL_KABYLAKE) || CONFIG(SOC_INTEL_BRASWELL) ||
+	    CONFIG(SOC_INTEL_BROADWELL))
+		return;
+
+	/* Time Window Tau Bits [6:0] */
+	msr = rdmsr(MSR_TEMPERATURE_TARGET);
+	msr.lo &= ~0x7f;
+	msr.lo |= 0xe6; /* setting 100ms thermal time window */
+	wrmsr(MSR_TEMPERATURE_TARGET, msr);
 }
 
 uint32_t cpu_get_bus_clock(void)

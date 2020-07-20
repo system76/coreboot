@@ -59,8 +59,7 @@ static void minihd_init(struct device *dev)
 	printk(BIOS_DEBUG, "Mini-HD: base = %p\n", base);
 
 	/* Set Bus Master */
-	reg32 = pci_read_config32(dev, PCI_COMMAND);
-	pci_write_config32(dev, PCI_COMMAND, reg32 | PCI_COMMAND_MASTER);
+	pci_or_config16(dev, PCI_COMMAND, PCI_COMMAND_MASTER);
 
 	/* Mini-HD configuration */
 	reg32 = read32(base + 0x100c);
@@ -85,16 +84,12 @@ static void minihd_init(struct device *dev)
 	}
 }
 
-static struct pci_operations minihd_pci_ops = {
-	.set_subsystem = pci_dev_set_subsystem,
-};
-
 static struct device_operations minihd_ops = {
 	.read_resources		= pci_dev_read_resources,
 	.set_resources		= pci_dev_set_resources,
 	.enable_resources	= pci_dev_enable_resources,
 	.init			= minihd_init,
-	.ops_pci		= &minihd_pci_ops,
+	.ops_pci		= &pci_dev_ops_pci,
 };
 
 static const unsigned short pci_device_ids[] = { 0x0a0c, 0x0c0c, 0 };

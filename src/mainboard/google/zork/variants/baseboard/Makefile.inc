@@ -1,24 +1,35 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 
+bootblock-y += gpio_baseboard_common.c
+bootblock-y += helpers.c
 bootblock-$(CONFIG_BOARD_GOOGLE_BASEBOARD_TREMBYLE) += gpio_baseboard_trembyle.c
 bootblock-$(CONFIG_BOARD_GOOGLE_BASEBOARD_DALBOZ) += gpio_baseboard_dalboz.c
 
+verstage-y += gpio_baseboard_common.c
+verstage-y += helpers.c
 ifeq ($(CONFIG_VBOOT_STARTS_BEFORE_BOOTBLOCK),y)
 verstage-$(CONFIG_BOARD_GOOGLE_BASEBOARD_TREMBYLE) += gpio_baseboard_trembyle.c
 verstage-$(CONFIG_BOARD_GOOGLE_BASEBOARD_DALBOZ) += gpio_baseboard_dalboz.c
 endif
 verstage-y += tpm_tis.c
 
+romstage-y += gpio_baseboard_common.c
+romstage-y += helpers.c
 romstage-$(CONFIG_BOARD_GOOGLE_BASEBOARD_TREMBYLE) += gpio_baseboard_trembyle.c
 romstage-$(CONFIG_BOARD_GOOGLE_BASEBOARD_DALBOZ) += gpio_baseboard_dalboz.c
 romstage-y += tpm_tis.c
 
+ramstage-y += gpio_baseboard_common.c
 ramstage-$(CONFIG_BOARD_GOOGLE_BASEBOARD_TREMBYLE) += gpio_baseboard_trembyle.c
 ramstage-$(CONFIG_BOARD_GOOGLE_BASEBOARD_TREMBYLE) += fsps_baseboard_trembyle.c
 ramstage-$(CONFIG_BOARD_GOOGLE_BASEBOARD_DALBOZ) += gpio_baseboard_dalboz.c
 ramstage-$(CONFIG_BOARD_GOOGLE_BASEBOARD_DALBOZ) += fsps_baseboard_dalboz.c
 ramstage-y += helpers.c
 ramstage-y += tpm_tis.c
+ramstage-y += ramstage_common.c
+
+smm-$(CONFIG_BOARD_GOOGLE_BASEBOARD_TREMBYLE) += gpio_baseboard_trembyle.c
+smm-$(CONFIG_BOARD_GOOGLE_BASEBOARD_DALBOZ) += gpio_baseboard_dalboz.c
 
 # Add OEM ID table
 ifeq ($(CONFIG_USE_OEM_BIN),y)

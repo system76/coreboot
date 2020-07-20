@@ -13,12 +13,7 @@
 #include <soc/southbridge.h>
 #include "chip.h"
 
-/* Global to provide access to chip.c */
-const char *i2c_acpi_name(const struct device *dev);
-
-/*
- * We don't have addresses for I2C0-1.
- */
+#if ENV_X86
 static const uintptr_t i2c_bus_address[I2C_MASTER_DEV_COUNT + I2C_SLAVE_DEV_COUNT] = {
 	0,
 	0,
@@ -26,6 +21,9 @@ static const uintptr_t i2c_bus_address[I2C_MASTER_DEV_COUNT + I2C_SLAVE_DEV_COUN
 	APU_I2C3_BASE,
 	APU_I2C4_BASE, /* Can only be used in slave mode */
 };
+#else
+static uintptr_t i2c_bus_address[I2C_MASTER_DEV_COUNT + I2C_SLAVE_DEV_COUNT];
+#endif
 
 uintptr_t dw_i2c_base_address(unsigned int bus)
 {
@@ -34,6 +32,18 @@ uintptr_t dw_i2c_base_address(unsigned int bus)
 
 	return i2c_bus_address[bus];
 }
+
+#if !ENV_X86
+void i2c_set_bar(unsigned int bus, uintptr_t bar)
+{
+	if (bus >= ARRAY_SIZE(i2c_bus_address)) {
+		printk(BIOS_ERR, "Error: i2c index out of bounds: %u.", bus);
+		return;
+	}
+
+	i2c_bus_address[bus] = bar;
+}
+#endif
 
 const struct dw_i2c_bus_config *dw_i2c_get_soc_cfg(unsigned int bus)
 {
@@ -48,30 +58,25 @@ const struct dw_i2c_bus_config *dw_i2c_get_soc_cfg(unsigned int bus)
 	return &config->i2c[bus];
 }
 
-const char *i2c_acpi_name(const struct device *dev)
+static const char *i2c_acpi_name(const struct device *dev)
 {
-	switch (dev->path.mmio.addr) {
-	case APU_I2C2_BASE:
+	if ((uintptr_t)dev->path.mmio.addr == i2c_bus_address[2])
 		return "I2C2";
-	case APU_I2C3_BASE:
+	else if ((uintptr_t)dev->path.mmio.addr == i2c_bus_address[3])
 		return "I2C3";
-	case APU_I2C4_BASE:
+	else if ((uintptr_t)dev->path.mmio.addr == i2c_bus_address[4])
 		return "I2C4";
-	default:
-		return NULL;
-	}
+	return NULL;
 }
 
 int dw_i2c_soc_dev_to_bus(const struct device *dev)
 {
-	switch (dev->path.mmio.addr) {
-	case APU_I2C2_BASE:
+	if ((uintptr_t)dev->path.mmio.addr == i2c_bus_address[2])
 		return 2;
-	case APU_I2C3_BASE:
+	else if ((uintptr_t)dev->path.mmio.addr == i2c_bus_address[3])
 		return 3;
-	case APU_I2C4_BASE:
+	else if ((uintptr_t)dev->path.mmio.addr == i2c_bus_address[4])
 		return 4;
-	}
 	return -1;
 }
 
@@ -157,36 +162,26 @@ static const struct soc_amd_gpio i2c_2_gpi[] = {
 static void save_i2c_pin_registers(uint8_t gpio,
 					struct soc_amd_i2c_save *save_table)
 {
-	uint32_t *gpio_ptr;
-
-	gpio_ptr = (uint32_t *)gpio_get_address(gpio);
 	save_table->mux_value = iomux_read8(gpio);
-	save_table->control_value = read32(gpio_ptr);
+	save_table->control_value = gpio_read32(gpio);
 }
 
 static void restore_i2c_pin_registers(uint8_t gpio,
 					struct soc_amd_i2c_save *save_table)
 {
-	uint32_t *gpio_ptr;
-
-	gpio_ptr = (uint32_t *)gpio_get_address(gpio);
 	iomux_write8(gpio, save_table->mux_value);
 	iomux_read8(gpio);
-	write32(gpio_ptr, save_table->control_value);
-	read32(gpio_ptr);
+	gpio_write32_rb(gpio, save_table->control_value);
 }
 
 /* Slaves to be reset are controlled by devicetree register i2c_scl_reset */
 void sb_reset_i2c_slaves(void)
 {
 	const struct soc_amd_picasso_config *cfg;
-	const struct device *dev = pcidev_path_on_root(GNB_DEVFN);
 	struct soc_amd_i2c_save save_table[saved_pins_count];
 	uint8_t i, j, control;
 
-	if (!dev || !dev->chip_info)
-		return;
-	cfg = dev->chip_info;
+	cfg = config_of_soc();
 	control = cfg->i2c_scl_reset & GPIO_I2C_MASK;
 	if (control == 0)
 		return;
@@ -202,19 +197,19 @@ void sb_reset_i2c_slaves(void)
 	 */
 	for (j = 0; j < 9; j++) {
 		if (control & GPIO_I2C2_SCL)
-			write32((uint32_t *)GPIO_I2C2_ADDRESS, GPIO_SCL_LOW);
+			gpio_write32(I2C2_SCL_PIN, GPIO_OUTPUT_ENABLE);
 		if (control & GPIO_I2C3_SCL)
-			write32((uint32_t *)GPIO_I2C3_ADDRESS, GPIO_SCL_LOW);
+			gpio_write32(I2C3_SCL_PIN, GPIO_OUTPUT_ENABLE);
 
-		read32((uint32_t *)GPIO_I2C3_ADDRESS); /* Flush posted write */
+		gpio_read32(0); /* Flush posted write */
 		udelay(4); /* 4usec gets 85KHz for 1 pin, 70KHz for 4 pins */
 
 		if (control & GPIO_I2C2_SCL)
-			write32((uint32_t *)GPIO_I2C2_ADDRESS, GPIO_SCL_HIGH);
+			gpio_write32(I2C2_SCL_PIN, 0);
 		if (control & GPIO_I2C3_SCL)
-			write32((uint32_t *)GPIO_I2C3_ADDRESS, GPIO_SCL_HIGH);
+			gpio_write32(I2C3_SCL_PIN, 0);
 
-		read32((uint32_t *)GPIO_I2C3_ADDRESS); /* Flush posted write */
+		gpio_read32(0); /* Flush posted write */
 		udelay(4);
 	}
 

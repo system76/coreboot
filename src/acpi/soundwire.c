@@ -6,8 +6,7 @@
 #include <commonlib/helpers.h>
 #include <device/soundwire.h>
 #include <stdbool.h>
-#include <stdint.h>
-#include <string.h>
+#include <stddef.h>
 
 /* Specification-defined prefix for SoundWire properties. */
 #define SDW_PFX "mipi-sdw-"

@@ -50,7 +50,7 @@ pci$(stripped_vgabios_dgpu_id).rom-type := optionrom
 # into a single generated file.
 crt0s = $(cpu_incs-y)
 
-$(objgenerated)/assembly.inc: $$(crt0s)
+$(objgenerated)/assembly.inc: build-dirs $$(crt0s)
 	@printf "    GEN        $(subst $(obj)/,,$(@))\n"
 	printf '$(foreach crt0,$(crt0s),#include "$(crt0)"\n)' > $@
 
@@ -67,14 +67,13 @@ endef
 define early_x86_stage
 # $1 stage name
 # $2 oformat
-$(1)-y += memlayout.ld
 
 # The '.' include path is needed for the generated assembly.inc file.
 $(1)-S-ccopts += -I.
 
 $$(objcbfs)/$(1).debug: $$$$($(1)-libs) $$$$($(1)-objs)
 	@printf "    LINK       $$(subst $$(obj)/,,$$(@))\n"
-	$$(LD_$(1)) $$(LDFLAGS_$(1)) -o $$@ -L$$(obj) $$(COMPILER_RT_FLAGS_$(1)) --whole-archive --start-group $$(filter-out %.ld,$$($(1)-objs)) $$($(1)-libs) --no-whole-archive $$(COMPILER_RT_$(1)) --end-group -T $(call src-to-obj,$(1),$(dir)/memlayout.ld) --oformat $(2)
+	$$(LD_$(1)) $$(LDFLAGS_$(1)) -o $$@ -L$$(obj) $$(COMPILER_RT_FLAGS_$(1)) --whole-archive --start-group $$(filter-out %.ld,$$($(1)-objs)) $$($(1)-libs) --no-whole-archive $$(COMPILER_RT_$(1)) --end-group -T $(call src-to-obj,$(1),$(CONFIG_MEMLAYOUT_LD_FILE)) --oformat $(2)
 	-LANG=C LC_ALL= $$(OBJCOPY_$(1)) --only-section .illegal_globals $$(@) $$(objcbfs)/$(1)_null.offenders >/dev/null 2>&1
 	if [ -z "$$$$($$(NM_$(1)) $$(objcbfs)/$(1)_null.offenders 2>&1 | grep 'no symbols')" ];then \
 		echo "Forbidden global variables in $(1):"; \
@@ -83,32 +82,25 @@ $$(objcbfs)/$(1).debug: $$$$($(1)-libs) $$$$($(1)-objs)
 endef
 
 ###############################################################################
-# all (bootblock,verstage,romstage,postcar,ramstage)
-###############################################################################
-
-ifeq ($(CONFIG_ARCH_X86),y)
-
-all-$(CONFIG_HAVE_CF9_RESET) += cf9_reset.c
-all-y += boot.c
-all-y += memcpy.c
-all-y += memset.c
-all-y += cpu_common.c
-all-y += post.c
-
-endif
-
-###############################################################################
 # bootblock
 ###############################################################################
 
 ifeq ($(CONFIG_ARCH_BOOTBLOCK_X86_32)$(CONFIG_ARCH_BOOTBLOCK_X86_64),y)
 
+bootblock-y += boot.c
+bootblock-y += post.c
+bootblock-y += cpu_common.c
 bootblock-$(CONFIG_IDT_IN_EVERY_STAGE) += exception.c
 bootblock-$(CONFIG_IDT_IN_EVERY_STAGE) += idt.S
+bootblock-y += memcpy.c
+bootblock-y += memset.c
+bootblock-y += memmove.c
 bootblock-$(CONFIG_COLLECT_TIMESTAMPS_TSC) += timestamp.c
 bootblock-$(CONFIG_X86_TOP4G_BOOTMEDIA_MAP) += mmap_boot.c
 bootblock-$(CONFIG_BOOTBLOCK_NORMAL) += bootblock_normal.c
 bootblock-y += id.S
+bootblock-$(CONFIG_HAVE_CF9_RESET) += cf9_reset.c
+
 $(call src-to-obj,bootblock,$(dir)/id.S): $(obj)/build.h
 
 bootblock-y += bootblock_crt0.S
@@ -129,10 +121,16 @@ endif # CONFIG_ARCH_BOOTBLOCK_X86_32 / CONFIG_ARCH_BOOTBLOCK_X86_64
 
 ifeq ($(CONFIG_ARCH_VERSTAGE_X86_32)$(CONFIG_ARCH_VERSTAGE_X86_64),y)
 
+verstage-y += boot.c
+verstage-y += post.c
 verstage-$(CONFIG_VBOOT_SEPARATE_VERSTAGE) += gdt_init.S
 verstage-$(CONFIG_IDT_IN_EVERY_STAGE) += exception.c
 verstage-$(CONFIG_IDT_IN_EVERY_STAGE) += idt.S
+verstage-$(CONFIG_HAVE_CF9_RESET) += cf9_reset.c
 
+verstage-y += cpu_common.c
+verstage-y += memset.c
+verstage-y += memcpy.c
 verstage-y += memmove.c
 verstage-$(CONFIG_X86_TOP4G_BOOTMEDIA_MAP) += mmap_boot.c
 # If verstage is a separate stage it means there's no need
@@ -161,16 +159,21 @@ endif # CONFIG_ARCH_VERSTAGE_X86_32 / CONFIG_ARCH_VERSTAGE_X86_64
 ifeq ($(CONFIG_ARCH_ROMSTAGE_X86_32)$(CONFIG_ARCH_ROMSTAGE_X86_64),y)
 
 romstage-$(CONFIG_HAVE_ACPI_RESUME) += acpi_s3.c
+romstage-y += boot.c
+romstage-y += post.c
 # gdt_init.S is included by entry32.inc when romstage is the first C
 # environment.
 romstage-y += gdt_init.S
-romstage-y += cbmem.c
+romstage-y += cpu_common.c
 romstage-$(CONFIG_IDT_IN_EVERY_STAGE) += exception.c
 romstage-$(CONFIG_IDT_IN_EVERY_STAGE) += idt.S
+romstage-y += memcpy.c
 romstage-y += memmove.c
+romstage-y += memset.c
 romstage-$(CONFIG_X86_TOP4G_BOOTMEDIA_MAP) += mmap_boot.c
 romstage-y += postcar_loader.c
 romstage-$(CONFIG_COLLECT_TIMESTAMPS_TSC) += timestamp.c
+romstage-$(CONFIG_HAVE_CF9_RESET) += cf9_reset.c
 
 romstage-srcs += $(wildcard $(src)/mainboard/$(MAINBOARDDIR)/romstage.c)
 romstage-libs ?=
@@ -196,21 +199,26 @@ $(eval $(call create_class_compiler,postcar,x86_32))
 postcar-generic-ccopts += -D__POSTCAR__
 
 postcar-$(CONFIG_HAVE_ACPI_RESUME) += acpi_s3.c
+postcar-y += boot.c
+postcar-y += post.c
 postcar-y += gdt_init.S
+postcar-y += cpu_common.c
 postcar-$(CONFIG_IDT_IN_EVERY_STAGE) += exception.c
 postcar-$(CONFIG_IDT_IN_EVERY_STAGE) += idt.S
 postcar-y += exit_car.S
+postcar-y += memcpy.c
 postcar-y += memmove.c
-postcar-y += memlayout.ld
+postcar-y += memset.c
 postcar-$(CONFIG_X86_TOP4G_BOOTMEDIA_MAP) += mmap_boot.c
 postcar-y += postcar.c
 postcar-$(CONFIG_COLLECT_TIMESTAMPS_TSC) += timestamp.c
+postcar-$(CONFIG_HAVE_CF9_RESET) += cf9_reset.c
 
 LDFLAGS_postcar += -Map $(objcbfs)/postcar.map
 
 $(objcbfs)/postcar.debug: $$(postcar-objs)
 	@printf "    LINK       $(subst $(obj)/,,$(@))\n"
-	$(LD_postcar) $(LDFLAGS_postcar) -o $@ -L$(obj) $(COMPILER_RT_FLAGS_postcar) --whole-archive --start-group $(filter-out %.ld,$^) --no-whole-archive $(COMPILER_RT_postcar) --end-group -T $(call src-to-obj,postcar,src/arch/x86/memlayout.ld)
+	$(LD_postcar) $(LDFLAGS_postcar) -o $@ -L$(obj) $(COMPILER_RT_FLAGS_postcar) --whole-archive --start-group $(filter-out %.ld,$^) --no-whole-archive $(COMPILER_RT_postcar) --end-group -T $(call src-to-obj,postcar,$(CONFIG_MEMLAYOUT_LD_FILE))
 
 $(objcbfs)/postcar.elf: $(objcbfs)/postcar.debug.rmod
 	cp $< $@
@@ -227,17 +235,21 @@ $(CONFIG_CBFS_PREFIX)/postcar-compression := none
 
 ifeq ($(CONFIG_ARCH_RAMSTAGE_X86_32)$(CONFIG_ARCH_RAMSTAGE_X86_64),y)
 
+ramstage-y += acpi.c
 ramstage-$(CONFIG_HAVE_ACPI_RESUME) += acpi_s3.c
 ramstage-$(CONFIG_ACPI_BERT) += acpi_bert_storage.c
+ramstage-y += boot.c
+ramstage-y += post.c
 ramstage-y += c_start.S
 ramstage-y += cpu.c
+ramstage-y += cpu_common.c
 ramstage-y += ebda.c
 ramstage-y += exception.c
 ramstage-y += idt.S
-ramstage-y += gdt.c
 ramstage-$(CONFIG_IOAPIC) += ioapic.c
-ramstage-y += memlayout.ld
+ramstage-y += memcpy.c
 ramstage-y += memmove.c
+ramstage-y += memset.c
 ramstage-$(CONFIG_X86_TOP4G_BOOTMEDIA_MAP) += mmap_boot.c
 ramstage-$(CONFIG_GENERATE_MP_TABLE) += mpspec.c
 ramstage-$(CONFIG_GENERATE_PIRQ_TABLE) += pirq_routing.c
@@ -248,22 +260,23 @@ ramstage-$(CONFIG_COOP_MULTITASKING) += thread.c
 ramstage-$(CONFIG_COOP_MULTITASKING) += thread_switch.S
 ramstage-$(CONFIG_COLLECT_TIMESTAMPS_TSC) += timestamp.c
 ramstage-$(CONFIG_HAVE_ACPI_RESUME) += wakeup.S
+ramstage-$(CONFIG_HAVE_CF9_RESET) += cf9_reset.c
 
-ifeq ($(CONFIG_ARCH_RAMSTAGE_X86_32),y)
 rmodules_x86_32-y += memcpy.c
 rmodules_x86_32-y += memmove.c
 rmodules_x86_32-y += memset.c
-else
+
 rmodules_x86_64-y += memcpy.c
 rmodules_x86_64-y += memmove.c
 rmodules_x86_64-y += memset.c
-endif
 
 ifeq ($(CONFIG_ARCH_RAMSTAGE_X86_32),y)
 target-objcopy=-O elf32-i386 -B i386
+LD_MACHINE =-m elf_i386
 endif
 ifeq ($(CONFIG_ARCH_RAMSTAGE_X86_64),y)
 target-objcopy=-O elf64-x86-64 -B i386:x86-64
+LD_MACHINE =-m elf_x86_64
 endif
 
 ramstage-srcs += $(wildcard src/mainboard/$(MAINBOARDDIR)/mainboard.c)
@@ -275,31 +288,20 @@ endif
 ifeq ($(CONFIG_GENERATE_PIRQ_TABLE),y)
 ramstage-srcs += src/mainboard/$(MAINBOARDDIR)/irq_tables.c
 endif
-ifneq ($(wildcard src/mainboard/$(MAINBOARDDIR)/reset.c),)
-ramstage-srcs += src/mainboard/$(MAINBOARDDIR)/reset.c
-endif
 
 ramstage-libs ?=
-
-ifeq ($(CONFIG_RELOCATABLE_RAMSTAGE),y)
 
 # The rmodule_link definition creates an elf file with .rmod extension.
 $(objcbfs)/ramstage.elf: $(objcbfs)/ramstage.debug.rmod
 	cp $< $@
 
-endif
-
-$(objcbfs)/ramstage.debug: $(objgenerated)/ramstage.o $(call src-to-obj,ramstage,src/arch/x86/memlayout.ld)
+$(objcbfs)/ramstage.debug: $(objgenerated)/ramstage.o $(call src-to-obj,ramstage,$(CONFIG_MEMLAYOUT_LD_FILE))
 	@printf "    CC         $(subst $(obj)/,,$(@))\n"
-	$(LD_ramstage) $(CPPFLAGS) $(LDFLAGS_ramstage) -o $@ -L$(obj) $< -T $(call src-to-obj,ramstage,src/arch/x86/memlayout.ld)
+	$(LD_ramstage) $(CPPFLAGS) $(LDFLAGS_ramstage) -o $@ -L$(obj) $< -T $(call src-to-obj,ramstage,$(CONFIG_MEMLAYOUT_LD_FILE))
 
 $(objgenerated)/ramstage.o: $$(ramstage-objs) $(COMPILER_RT_ramstage) $$(ramstage-libs)
 	@printf "    CC         $(subst $(obj)/,,$(@))\n"
-ifeq ($(CONFIG_ARCH_RAMSTAGE_X86_32),y)
-	$(LD_ramstage) -m elf_i386 -r -o $@ $(COMPILER_RT_FLAGS_ramstage) --whole-archive --start-group $(filter-out %.ld,$(ramstage-objs)) $(ramstage-libs) --no-whole-archive $(COMPILER_RT_ramstage) --end-group
-else
-	$(LD_ramstage) -m elf_x86_64 -r -o $@ $(COMPILER_RT_FLAGS_ramstage) --whole-archive --start-group $(filter-out %.ld,$(ramstage-objs)) $(ramstage-libs) --no-whole-archive $(COMPILER_RT_ramstage) --end-group
-endif
+	$(LD_ramstage) $(LD_MACHINE) -r -o $@ $(COMPILER_RT_FLAGS_ramstage) --whole-archive --start-group $(filter-out %.ld,$(ramstage-objs)) $(ramstage-libs) --no-whole-archive $(COMPILER_RT_ramstage) --end-group
 
 endif # CONFIG_ARCH_RAMSTAGE_X86_32 / CONFIG_ARCH_RAMSTAGE_X86_64
 

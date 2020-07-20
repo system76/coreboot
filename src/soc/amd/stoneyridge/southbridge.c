@@ -8,6 +8,7 @@
 #include <device/pci.h>
 #include <device/pci_ops.h>
 #include <cbmem.h>
+#include <acpi/acpi_gnvs.h>
 #include <amdblocks/amd_pci_util.h>
 #include <amdblocks/agesawrapper.h>
 #include <amdblocks/reset.h>
@@ -536,13 +537,13 @@ static int get_index_bit(uint32_t value, uint16_t limit)
 static void set_nvs_sws(void *unused)
 {
 	struct soc_power_reg *sws;
-	struct global_nvs_t *gnvs;
+	struct global_nvs *gnvs;
 	int index;
 
 	sws = cbmem_find(CBMEM_ID_POWER_STATE);
 	if (sws == NULL)
 		return;
-	gnvs = cbmem_find(CBMEM_ID_ACPI_GNVS);
+	gnvs = acpi_get_gnvs();
 	if (gnvs == NULL)
 		return;
 
@@ -575,7 +576,7 @@ static void set_sb_final_nvs(void)
 	size_t fwsize;
 	const struct device *sd, *sata;
 
-	struct global_nvs_t *gnvs = cbmem_find(CBMEM_ID_ACPI_GNVS);
+	struct global_nvs *gnvs = acpi_get_gnvs();
 	if (gnvs == NULL)
 		return;
 

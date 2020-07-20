@@ -9,6 +9,7 @@
 #include <cpu/x86/mtrr.h>
 #include <intelblocks/lpc_lib.h>
 #include <soc/pci_devs.h>
+#include <soc/bootblock.h>
 
 const FSPT_UPD temp_ram_init_params = {
 	.FspUpdHeader = {
@@ -24,7 +25,7 @@ const FSPT_UPD temp_ram_init_params = {
 		.Reserved1 = {0},
 	},
 	.FsptConfig = {
-		.PcdFsptPort80RouteDisable = 0,
+		.FsptPort80RouteDisable = 0,
 		.ReservedTempRamInitUpd = {0},
 	},
 	.UnusedUpdSpace0 = {0},
@@ -53,4 +54,5 @@ void bootblock_soc_init(void)
 {
 	if (CONFIG(BOOTBLOCK_CONSOLE))
 		printk(BIOS_DEBUG, "FSP TempRamInit successful...\n");
+	bootblock_pch_init();
 }

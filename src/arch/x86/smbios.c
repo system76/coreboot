@@ -19,6 +19,8 @@
 #if CONFIG(CHROMEOS)
 #include <vendorcode/google/chromeos/gnvs.h>
 #endif
+#include <drivers/vpd/vpd.h>
+#include <stdlib.h>
 
 #define update_max(len, max_len, stmt)		\
 	do {					\
@@ -368,12 +370,64 @@ static int create_smbios_type17_for_dimm(struct dimm_info *dimm,
 	return t->length + smbios_string_table_len(t->eos);
 }
 
+#define VERSION_VPD "firmware_version"
+static const char *vpd_get_bios_version(void)
+{
+	int size;
+	const char *s;
+	char *version;
+
+	s = vpd_find(VERSION_VPD, &size, VPD_RO);
+	if (!s) {
+		printk(BIOS_ERR, "Find version from VPD %s failed\n", VERSION_VPD);
+		return NULL;
+	}
+
+	version = malloc(size + 1);
+	if (!version) {
+		printk(BIOS_ERR, "Failed to malloc %d bytes for VPD version\n", size + 1);
+		return NULL;
+	}
+	memcpy(version, s, size);
+	version[size] = '\0';
+	printk(BIOS_DEBUG, "Firmware version %s from VPD %s\n", version, VERSION_VPD);
+	return version;
+}
+
+static const char *get_bios_version(void)
+{
+	const char *s;
+
+#define SPACES \
+	"                                                                  "
+
+	if (CONFIG(CHROMEOS))
+		return SPACES;
+
+	if (CONFIG(VPD_SMBIOS_VERSION)) {
+		s = vpd_get_bios_version();
+		if (s != NULL)
+			return s;
+	}
+
+	s = smbios_mainboard_bios_version();
+	if (s != NULL)
+		return s;
+
+	if (strlen(CONFIG_LOCALVERSION) != 0) {
+		printk(BIOS_DEBUG, "BIOS version set to CONFIG_LOCALVERSION: '%s'\n",
+			CONFIG_LOCALVERSION);
+		return CONFIG_LOCALVERSION;
+	}
+
+	printk(BIOS_DEBUG, "SMBIOS firmware version is set to coreboot_version: '%s'\n",
+		coreboot_version);
+	return coreboot_version;
+}
+
 const char *__weak smbios_mainboard_bios_version(void)
 {
-	if (strlen(CONFIG_LOCALVERSION))
-		return CONFIG_LOCALVERSION;
-	else
-		return coreboot_version;
+	return NULL;
 }
 
 static int smbios_write_type0(unsigned long *current, int handle)
@@ -387,27 +441,14 @@ static int smbios_write_type0(unsigned long *current, int handle)
 	t->length = len - 2;
 
 	t->vendor = smbios_add_string(t->eos, "coreboot");
-#if !CONFIG(CHROMEOS)
 	t->bios_release_date = smbios_add_string(t->eos, coreboot_dmi_date);
 
-	t->bios_version = smbios_add_string(t->eos,
-		smbios_mainboard_bios_version());
-#else
-#define SPACES \
-	"                                                                  "
-	t->bios_release_date = smbios_add_string(t->eos, coreboot_dmi_date);
-#if CONFIG(HAVE_ACPI_TABLES)
+#if CONFIG(CHROMEOS) && CONFIG(HAVE_ACPI_TABLES)
 	u32 version_offset = (u32)smbios_string_table_len(t->eos);
-#endif
-	t->bios_version = smbios_add_string(t->eos, SPACES);
-
-#if CONFIG(HAVE_ACPI_TABLES)
 	/* SMBIOS offsets start at 1 rather than 0 */
-	chromeos_get_chromeos_acpi()->vbt10 =
-		(u32)t->eos + (version_offset - 1);
+	chromeos_get_chromeos_acpi()->vbt10 = (u32)t->eos + (version_offset - 1);
 #endif
-#endif /* CONFIG_CHROMEOS */
-
+	t->bios_version = smbios_add_string(t->eos, get_bios_version());
 	uint32_t rom_size = CONFIG_ROM_SIZE;
 	rom_size = MIN(CONFIG_ROM_SIZE, 16 * MiB);
 	t->bios_rom_size = (rom_size / 65535) - 1;
@@ -479,9 +520,24 @@ smbios_board_type __weak smbios_mainboard_board_type(void)
 	return SMBIOS_BOARD_TYPE_UNKNOWN;
 }
 
+/*
+ * System Enclosure or Chassis Types as defined in SMBIOS specification.
+ * The default value is SMBIOS_ENCLOSURE_DESKTOP (0x03) but laptop,
+ * convertible, or tablet enclosure will be used if the appropriate
+ * system type is selected.
+ */
 smbios_enclosure_type __weak smbios_mainboard_enclosure_type(void)
 {
-	return CONFIG_SMBIOS_ENCLOSURE_TYPE;
+	if (CONFIG(SYSTEM_TYPE_LAPTOP))
+		return SMBIOS_ENCLOSURE_LAPTOP;
+	else if (CONFIG(SYSTEM_TYPE_TABLET))
+		return SMBIOS_ENCLOSURE_TABLET;
+	else if (CONFIG(SYSTEM_TYPE_CONVERTIBLE))
+		return SMBIOS_ENCLOSURE_CONVERTIBLE;
+	else if (CONFIG(SYSTEM_TYPE_DETACHABLE))
+		return SMBIOS_ENCLOSURE_DETACHABLE;
+	else
+		return SMBIOS_ENCLOSURE_DESKTOP;
 }
 
 const char *__weak smbios_system_serial_number(void)
@@ -520,6 +576,21 @@ unsigned int __weak smbios_cpu_get_current_speed_mhz(void)
 }
 
 const char *__weak smbios_system_sku(void)
+{
+	return "";
+}
+
+const char * __weak smbios_chassis_version(void)
+{
+	return "";
+}
+
+const char * __weak smbios_chassis_serial_number(void)
+{
+	return "";
+}
+
+const char * __weak smbios_processor_serial_number(void)
 {
 	return "";
 }
@@ -606,6 +677,9 @@ static int smbios_write_type3(unsigned long *current, int handle)
 	t->thermal_state = SMBIOS_STATE_SAFE;
 	t->_type = smbios_mainboard_enclosure_type();
 	t->security_status = SMBIOS_STATE_SAFE;
+	t->asset_tag_number = smbios_add_string(t->eos, smbios_mainboard_asset_tag());
+	t->version = smbios_add_string(t->eos, smbios_chassis_version());
+	t->serial_number = smbios_add_string(t->eos, smbios_chassis_serial_number());
 	len = t->length + smbios_string_table_len(t->eos);
 	*current += len;
 	return len;
@@ -659,6 +733,7 @@ static int smbios_write_type4(unsigned long *current, int handle)
 	t->l1_cache_handle = 0xffff;
 	t->l2_cache_handle = 0xffff;
 	t->l3_cache_handle = 0xffff;
+	t->serial_number = smbios_add_string(t->eos, smbios_processor_serial_number());
 	t->processor_upgrade = get_socket_type();
 	len = t->length + smbios_string_table_len(t->eos);
 	if (cpu_have_cpuid() && cpuid_get_max_func() >= 0x16) {
@@ -889,6 +964,34 @@ static int smbios_write_type7_cache_parameters(unsigned long *current,
 
 	return len;
 }
+
+int smbios_write_type8(unsigned long *current, int *handle,
+				const struct port_information *port,
+				size_t num_ports)
+{
+	int len = sizeof(struct smbios_type8);
+	unsigned int totallen = 0, i;
+
+	for (i = 0; i < num_ports; i++, port++) {
+		struct smbios_type8 *t = (struct smbios_type8 *)*current;
+		memset(t, 0, sizeof(struct smbios_type8));
+		t->type = SMBIOS_PORT_CONNECTOR_INFORMATION;
+		t->handle = *handle;
+		t->length = len - 2;
+		t->internal_reference_designator =
+			smbios_add_string(t->eos, port->internal_reference_designator);
+		t->internal_connector_type = port->internal_connector_type;
+		t->external_reference_designator =
+			smbios_add_string(t->eos, port->external_reference_designator);
+		t->external_connector_type = port->external_connector_type;
+		t->port_type = port->port_type;
+		*handle += 1;
+		*current += t->length + smbios_string_table_len(t->eos);
+		totallen += t->length + smbios_string_table_len(t->eos);
+	}
+	return totallen;
+}
+
 int smbios_write_type9(unsigned long *current, int *handle,
 			const char *name, const enum misc_slot_type type,
 			const enum slot_data_bus_bandwidth bandwidth,

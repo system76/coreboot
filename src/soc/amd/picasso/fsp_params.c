@@ -56,36 +56,28 @@ static void fsps_update_emmc_config(FSP_S_CONFIG *scfg,
 }
 
 static void fill_pcie_descriptors(FSP_S_CONFIG *scfg,
-			const picasso_fsp_pcie_descriptor *descs, size_t num)
+			const fsp_pcie_descriptor *descs, size_t num)
 {
 	size_t i;
-	picasso_fsp_pcie_descriptor *fsp_pcie;
-
-	/* FIXME: this violates C rules. */
-	fsp_pcie = (picasso_fsp_pcie_descriptor *)(scfg->dxio_descriptor0);
 
 	for (i = 0; i < num; i++) {
-		fsp_pcie[i] = descs[i];
+		memcpy(scfg->dxio_descriptor[i], &descs[i], sizeof(scfg->dxio_descriptor[0]));
 	}
 }
 
 static void fill_ddi_descriptors(FSP_S_CONFIG *scfg,
-			const picasso_fsp_ddi_descriptor *descs, size_t num)
+			const fsp_ddi_descriptor *descs, size_t num)
 {
 	size_t i;
-	picasso_fsp_ddi_descriptor *fsp_ddi;
-
-	/* FIXME: this violates C rules. */
-	fsp_ddi = (picasso_fsp_ddi_descriptor *)&(scfg->ddi_descriptor0);
 
 	for (i = 0; i < num; i++) {
-		fsp_ddi[i] = descs[i];
+		memcpy(&scfg->ddi_descriptor[i], &descs[i], sizeof(scfg->ddi_descriptor[0]));
 	}
 }
 static void fsp_fill_pcie_ddi_descriptors(FSP_S_CONFIG *scfg)
 {
-	const picasso_fsp_pcie_descriptor *fsp_pcie;
-	const picasso_fsp_ddi_descriptor *fsp_ddi;
+	const fsp_pcie_descriptor *fsp_pcie;
+	const fsp_ddi_descriptor *fsp_ddi;
 	size_t num_pcie;
 	size_t num_ddi;
 
@@ -93,6 +85,21 @@ static void fsp_fill_pcie_ddi_descriptors(FSP_S_CONFIG *scfg)
 						&fsp_ddi, &num_ddi);
 	fill_pcie_descriptors(scfg, fsp_pcie, num_pcie);
 	fill_ddi_descriptors(scfg, fsp_ddi, num_ddi);
+}
+
+static void fsp_usb_oem_customization(FSP_S_CONFIG *scfg,
+			const struct soc_amd_picasso_config *cfg)
+{
+	size_t num = sizeof(struct usb2_phy_tune);
+
+	scfg->xhci0_force_gen1 = cfg->xhci0_force_gen1;
+
+	memcpy(scfg->fch_usb_2_port0_phy_tune, &cfg->usb_2_port_0_tune_params, num);
+	memcpy(scfg->fch_usb_2_port1_phy_tune, &cfg->usb_2_port_1_tune_params, num);
+	memcpy(scfg->fch_usb_2_port2_phy_tune, &cfg->usb_2_port_2_tune_params, num);
+	memcpy(scfg->fch_usb_2_port3_phy_tune, &cfg->usb_2_port_3_tune_params, num);
+	memcpy(scfg->fch_usb_2_port4_phy_tune, &cfg->usb_2_port_4_tune_params, num);
+	memcpy(scfg->fch_usb_2_port5_phy_tune, &cfg->usb_2_port_5_tune_params, num);
 }
 
 void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
@@ -103,4 +110,5 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 	cfg = config_of_soc();
 	fsps_update_emmc_config(scfg, cfg);
 	fsp_fill_pcie_ddi_descriptors(scfg);
+	fsp_usb_oem_customization(scfg, cfg);
 }

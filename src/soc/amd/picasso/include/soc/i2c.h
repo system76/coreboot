@@ -17,14 +17,12 @@ struct soc_amd_i2c_save {
 #define I2C2_SCL_PIN			GPIO_113
 #define I2C3_SCL_PIN			GPIO_19
 
-#define GPIO_I2C2_ADDRESS		GPIO_BANK1_CONTROL(I2C2_SCL_PIN)
-#define GPIO_I2C3_ADDRESS		GPIO_BANK0_CONTROL(I2C3_SCL_PIN)
-#define GPIO_SCL_HIGH			0
-#define GPIO_SCL_LOW			GPIO_OUTPUT_ENABLE
-
 #define I2C2_SCL_PIN_IOMUX_GPIOxx	GPIO_113_IOMUX_GPIOxx
 #define I2C3_SCL_PIN_IOMUX_GPIOxx	GPIO_19_IOMUX_GPIOxx
 
 void sb_reset_i2c_slaves(void);
+
+/* Sets the base address for the specific I2C bus. */
+void i2c_set_bar(unsigned int bus, uintptr_t bar);
 
 #endif /* __PICASSO_I2C_H__ */

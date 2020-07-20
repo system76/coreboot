@@ -25,11 +25,6 @@ config VGA_BIOS_ID
 	string
 	default "8086,2e22"
 
-
-config MMCONF_BASE_ADDRESS
-	hex
-	default 0xe0000000
-
 config MAINBOARD_DIR
 	string
 	default "intel/dg43gt"
@@ -37,9 +32,5 @@ config MAINBOARD_DIR
 config MAINBOARD_PART_NUMBER
 	string
 	default "DG43GT"
-
-config MAX_CPUS
-	int
-	default 4
 
 endif # BOARD_INTEL_DG43GT

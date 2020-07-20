@@ -453,18 +453,15 @@ static void gma_pm_init_pre_vbios(struct device *dev)
 	gtt_write(0xa06c, 0x000493e0); /* RP Down EI */
 	gtt_write(0xa070, 0x0000000a); /* RP Idle Hysteresis */
 
-	/* 11a: Enable Render Standby (RC6) */
-	if ((bridge_silicon_revision() & BASE_REV_MASK) == BASE_REV_IVB) {
-		/*
-		 * IvyBridge should also support DeepRenderStandby.
-		 *
-		 * Unfortunately it does not work reliably on all SKUs so
-		 * disable it here and it can be enabled by the kernel.
-		 */
-		gtt_write(0xa090, 0x88040000); /* HW RC Control */
-	} else {
-		gtt_write(0xa090, 0x88040000); /* HW RC Control */
-	}
+	/*
+	 * 11a: Enable Render Standby (RC6)
+	 *
+	 * IvyBridge should also support DeepRenderStandby.
+	 *
+	 * Unfortunately it does not work reliably on all SKUs so
+	 * disable it here and it can be enabled by the kernel.
+	 */
+	gtt_write(0xa090, 0x88040000); /* HW RC Control */
 
 	/* 12: Normal Frequency Request */
 	/* RPNFREQ_VAL comes from MCHBAR 0x5998 23:16 */
@@ -636,19 +633,11 @@ static const char *gma_acpi_name(const struct device *dev)
 /* Called by PCI set_vga_bridge function */
 static void gma_func0_disable(struct device *dev)
 {
-	u16 reg16;
-	struct device *dev_host = pcidev_on_root(0, 0);
-
-	reg16 = pci_read_config16(dev_host, GGC);
-	reg16 |= (1 << 1); /* Disable VGA decode */
-	pci_write_config16(dev_host, GGC, reg16);
+	/* Disable VGA decode */
+	pci_or_config16(pcidev_on_root(0, 0), GGC, 1 << 1);
 
 	dev->enabled = 0;
 }
-
-static struct pci_operations gma_pci_ops = {
-	.set_subsystem = pci_dev_set_subsystem,
-};
 
 static struct device_operations gma_func0_ops = {
 	.read_resources         = pci_dev_read_resources,
@@ -657,7 +646,7 @@ static struct device_operations gma_func0_ops = {
 	.acpi_fill_ssdt		= gma_generate_ssdt,
 	.init                   = gma_func0_init,
 	.disable                = gma_func0_disable,
-	.ops_pci                = &gma_pci_ops,
+	.ops_pci                = &pci_dev_ops_pci,
 	.acpi_name              = gma_acpi_name,
 };
 

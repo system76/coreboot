@@ -5,7 +5,7 @@
 #include <console/console.h>
 #include <gpio.h>
 #include <amdblocks/acpimmio.h>
-#include <amdblocks/acpimmio_map.h>
+#include <amdblocks/gpio_banks.h>
 #include <soc/gpio.h>
 #include <soc/smi.h>
 #include <assert.h>
@@ -22,140 +22,144 @@ static int get_gpio_gevent(uint8_t gpio, const struct soc_amd_event *table,
 	return -1;
 }
 
-static void mem_read_write32(uint32_t *address, uint32_t value, uint32_t mask)
+static void program_smi(uint32_t flags, int gevent_num)
 {
-	uint32_t reg32;
+	uint8_t level;
 
-	value &= mask;
-	reg32 = read32(address);
-	reg32 &= ~mask;
-	reg32 |= value;
-	write32(address, reg32);
-}
-
-static void program_smi(uint32_t flag, int gevent_num)
-{
-	uint32_t trigger;
-
-	trigger = flag & FLAGS_TRIGGER_MASK;
-	/*
-	 * Only level trigger is allowed for SMI. Trigger values are 0
-	 * through 3, with 0-1 being level trigger and 2-3 being edge
-	 * trigger. GPIO_TRIGGER_EDGE_LOW is 2, so trigger has to be
-	 * less than GPIO_TRIGGER_EDGE_LOW.
-	 */
-	assert(trigger < GPIO_TRIGGER_EDGE_LOW);
-
-	if (trigger == GPIO_TRIGGER_LEVEL_HIGH)
-		configure_gevent_smi(gevent_num, SMI_MODE_SMI,
-					SMI_SCI_LVL_HIGH);
-	if (trigger == GPIO_TRIGGER_LEVEL_LOW)
-		configure_gevent_smi(gevent_num, SMI_MODE_SMI,
-					SMI_SCI_LVL_LOW);
-}
-
-static void get_sci_config_bits(uint32_t flag, uint32_t *edge, uint32_t *level)
-{
-	uint32_t trigger;
-
-	trigger = flag & FLAGS_TRIGGER_MASK;
-	switch (trigger) {
-	case GPIO_TRIGGER_LEVEL_LOW:
-		*edge = SCI_TRIGGER_LEVEL;
-		*level = 0;
-		break;
-	case GPIO_TRIGGER_LEVEL_HIGH:
-		*edge = SCI_TRIGGER_LEVEL;
-		*level = 1;
-		break;
-	case GPIO_TRIGGER_EDGE_LOW:
-		*edge = SCI_TRIGGER_EDGE;
-		*level = 0;
-		break;
-	case GPIO_TRIGGER_EDGE_HIGH:
-		*edge = SCI_TRIGGER_EDGE;
-		*level = 1;
-		break;
-	default:
-		break;
+	if (!is_gpio_event_level_triggered(flags)) {
+		printk(BIOS_ERR, "ERROR: %s - Only level trigger allowed for SMI!\n", __func__);
+		assert(0);
+		return;
 	}
+
+	if (is_gpio_event_active_high(flags))
+		level = SMI_SCI_LVL_HIGH;
+	else
+		level = SMI_SCI_LVL_LOW;
+
+	configure_gevent_smi(gevent_num, SMI_MODE_SMI, level);
+}
+
+struct sci_trigger_regs {
+	uint32_t mask;
+	uint32_t polarity;
+	uint32_t level;
+};
+
+/*
+ * For each general purpose event, GPE, the choice of edge/level triggered
+ * event is represented as a single bit in SMI_SCI_LEVEL register.
+ *
+ * In a similar fashion, polarity (rising/falling, hi/lo) of each GPE is
+ * represented as a single bit in SMI_SCI_TRIG register.
+ */
+static void fill_sci_trigger(uint32_t flags, int gpe, struct sci_trigger_regs *regs)
+{
+	uint32_t mask = 1 << gpe;
+
+	regs->mask |= mask;
+
+	if (is_gpio_event_level_triggered(flags))
+		regs->level |= mask;
+	else
+		regs->level &= ~mask;
+
+	if (is_gpio_event_active_high(flags))
+		regs->polarity |= mask;
+	else
+		regs->polarity &= ~mask;
+}
+
+/* TODO: See configure_scimap() implementations. */
+static void set_sci_trigger(const struct sci_trigger_regs *regs)
+{
+	uint32_t value;
+
+	value = smi_read32(SMI_SCI_TRIG);
+	value &= ~regs->mask;
+	value |= regs->polarity;
+	smi_write32(SMI_SCI_TRIG, value);
+
+	value = smi_read32(SMI_SCI_LEVEL);
+	value &= ~regs->mask;
+	value |= regs->level;
+	smi_write32(SMI_SCI_LEVEL, value);
 }
 
 uintptr_t gpio_get_address(gpio_t gpio_num)
 {
-	uintptr_t gpio_address;
+	return (uintptr_t)gpio_ctrl_ptr(gpio_num);
+}
 
-	if (gpio_num < 64)
-		gpio_address = GPIO_BANK0_CONTROL(gpio_num);
-	else if (gpio_num < 128)
-		gpio_address = GPIO_BANK1_CONTROL(gpio_num);
-	else
-		gpio_address = GPIO_BANK2_CONTROL(gpio_num);
+static void __gpio_update32(gpio_t gpio_num, uint32_t mask, uint32_t or)
+{
+	uint32_t reg;
 
-	return gpio_address;
+	reg = gpio_read32(gpio_num);
+	reg &= mask;
+	reg |= or;
+	gpio_write32(gpio_num, reg);
+}
+
+/* Set specified bits of a register to match those of ctrl. */
+static void __gpio_setbits32(gpio_t gpio_num, uint32_t mask, uint32_t ctrl)
+{
+	__gpio_update32(gpio_num, ~mask, ctrl & mask);
+}
+
+static void __gpio_and32(gpio_t gpio_num, uint32_t mask)
+{
+	__gpio_update32(gpio_num, mask, 0);
+}
+
+static void __gpio_or32(gpio_t gpio_num, uint32_t or)
+{
+	__gpio_update32(gpio_num, -1UL, or);
+}
+
+static void master_switch_clr(uint32_t mask)
+{
+	const uint8_t master_reg = GPIO_MASTER_SWITCH / sizeof(uint32_t);
+	__gpio_and32(master_reg, ~mask);
+}
+
+static void master_switch_set(uint32_t or)
+{
+	const uint8_t master_reg = GPIO_MASTER_SWITCH / sizeof(uint32_t);
+	__gpio_or32(master_reg, or);
 }
 
 int gpio_get(gpio_t gpio_num)
 {
 	uint32_t reg;
-	uintptr_t gpio_address = gpio_get_address(gpio_num);
 
-	reg = read32((void *)gpio_address);
-
+	reg = gpio_read32(gpio_num);
 	return !!(reg & GPIO_PIN_STS);
 }
 
 void gpio_set(gpio_t gpio_num, int value)
 {
-	uint32_t reg;
-	uintptr_t gpio_address = gpio_get_address(gpio_num);
-
-	reg = read32((void *)gpio_address);
-	reg &= ~GPIO_OUTPUT_MASK;
-	reg |=  !!value << GPIO_OUTPUT_SHIFT;
-	write32((void *)gpio_address, reg);
+	__gpio_setbits32(gpio_num, GPIO_OUTPUT_VALUE, value ? GPIO_OUTPUT_VALUE : 0);
 }
 
 void gpio_input_pulldown(gpio_t gpio_num)
 {
-	uint32_t reg;
-	uintptr_t gpio_address = gpio_get_address(gpio_num);
-
-	reg = read32((void *)gpio_address);
-	reg &= ~GPIO_PULLUP_ENABLE;
-	reg |=  GPIO_PULLDOWN_ENABLE;
-	write32((void *)gpio_address, reg);
+	__gpio_setbits32(gpio_num, GPIO_PULL_MASK, GPIO_PULLDOWN_ENABLE);
 }
 
 void gpio_input_pullup(gpio_t gpio_num)
 {
-	uint32_t reg;
-	uintptr_t gpio_address = gpio_get_address(gpio_num);
-
-	reg = read32((void *)gpio_address);
-	reg &= ~GPIO_PULLDOWN_ENABLE;
-	reg |=  GPIO_PULLUP_ENABLE;
-	write32((void *)gpio_address, reg);
+	__gpio_setbits32(gpio_num, GPIO_PULL_MASK, GPIO_PULLUP_ENABLE);
 }
 
 void gpio_input(gpio_t gpio_num)
 {
-	uint32_t reg;
-	uintptr_t gpio_address = gpio_get_address(gpio_num);
-
-	reg = read32((void *)gpio_address);
-	reg &= ~GPIO_OUTPUT_ENABLE;
-	write32((void *)gpio_address, reg);
+	__gpio_and32(gpio_num, ~GPIO_OUTPUT_ENABLE);
 }
 
 void gpio_output(gpio_t gpio_num, int value)
 {
-	uint32_t reg;
-	uintptr_t gpio_address = gpio_get_address(gpio_num);
-
-	reg = read32((void *)gpio_address);
-	reg |=  GPIO_OUTPUT_ENABLE;
-	write32((void *)gpio_address, reg);
+	__gpio_or32(gpio_num, GPIO_OUTPUT_ENABLE);
 	gpio_set(gpio_num, value);
 }
 
@@ -173,19 +177,14 @@ __weak void soc_gpio_hook(uint8_t gpio, uint8_t mux) {}
 
 void program_gpios(const struct soc_amd_gpio *gpio_list_ptr, size_t size)
 {
-	uint32_t *gpio_ptr, *inter_master;
-	uint32_t control, control_flags, edge_level, direction;
-	uint32_t mask, bit_edge, bit_level;
+	uint32_t control, control_flags;
 	uint8_t mux, index, gpio;
 	int gevent_num;
 	const struct soc_amd_event *gev_tbl;
+	struct sci_trigger_regs sci_trigger_cfg = { 0 };
 	size_t gev_items;
-
-	inter_master = (uint32_t *)(uintptr_t)(ACPIMMIO_GPIO0_BASE
-					       + GPIO_MASTER_SWITCH);
-	direction = 0;
-	edge_level = 0;
-	mask = 0;
+	const bool can_set_smi_flags = !(CONFIG(VBOOT_STARTS_BEFORE_BOOTBLOCK) &&
+			ENV_SEPARATE_VERSTAGE);
 
 	/*
 	 * Disable blocking wake/interrupt status generation while updating
@@ -197,9 +196,10 @@ void program_gpios(const struct soc_amd_gpio *gpio_list_ptr, size_t size)
 	 * Additionally disable interrupt generation so we don't get any
 	 * spurious interrupts while updating the registers.
 	 */
-	mem_read_write32(inter_master, 0, GPIO_MASK_STS_EN | GPIO_INTERRUPT_EN);
+	master_switch_clr(GPIO_MASK_STS_EN | GPIO_INTERRUPT_EN);
 
-	soc_get_gpio_event_table(&gev_tbl, &gev_items);
+	if (can_set_smi_flags)
+		soc_get_gpio_event_table(&gev_tbl, &gev_items);
 
 	for (index = 0; index < size; index++) {
 		gpio = gpio_list_ptr[index].gpio;
@@ -212,51 +212,29 @@ void program_gpios(const struct soc_amd_gpio *gpio_list_ptr, size_t size)
 
 		soc_gpio_hook(gpio, mux);
 
-		gpio_ptr = (uint32_t *)gpio_get_address(gpio);
+		/* Clear interrupt and wake status (write 1-to-clear bits) */
+		control |= GPIO_INT_STATUS | GPIO_WAKE_STATUS;
+		__gpio_setbits32(gpio, PAD_CFG_MASK, control);
 
-		if (control_flags & GPIO_SPECIAL_FLAG) {
-			gevent_num = get_gpio_gevent(gpio, gev_tbl, gev_items);
-			if (gevent_num < 0) {
-				printk(BIOS_WARNING, "Warning: GPIO pin %d has"
-					" no associated gevent!\n", gpio);
-				continue;
-			}
-			switch (control_flags & GPIO_SPECIAL_MASK) {
-			case GPIO_DEBOUNCE_FLAG:
-				mem_read_write32(gpio_ptr, control,
-						GPIO_DEBOUNCE_MASK);
-				break;
-			case GPIO_WAKE_FLAG:
-				mem_read_write32(gpio_ptr, control,
-						INT_WAKE_MASK);
-				break;
-			case GPIO_INT_FLAG:
-				mem_read_write32(gpio_ptr, control,
-						AMD_GPIO_CONTROL_MASK);
-				break;
-			case GPIO_SMI_FLAG:
-				mem_read_write32(gpio_ptr, control,
-						INT_SCI_SMI_MASK);
-				program_smi(control_flags, gevent_num);
-				break;
-			case GPIO_SCI_FLAG:
-				mem_read_write32(gpio_ptr, control,
-						INT_SCI_SMI_MASK);
-				get_sci_config_bits(control_flags, &bit_edge,
-							&bit_level);
-				edge_level |= bit_edge << gevent_num;
-				direction |= bit_level << gevent_num;
-				mask |= (1 << gevent_num);
-				soc_route_sci(gevent_num);
-				break;
-			default:
-				printk(BIOS_WARNING, "Error, flags 0x%08x\n",
-							control_flags);
-				break;
-			}
-		} else {
-			mem_read_write32(gpio_ptr, control,
-						AMD_GPIO_CONTROL_MASK);
+		if (control_flags == 0)
+			continue;
+
+		/* Can't set SMI flags from PSP */
+		if (!can_set_smi_flags)
+			continue;
+
+		gevent_num = get_gpio_gevent(gpio, gev_tbl, gev_items);
+		if (gevent_num < 0) {
+			printk(BIOS_WARNING, "Warning: GPIO pin %d has no associated gevent!\n",
+			       gpio);
+			continue;
+		}
+
+		if (control_flags & GPIO_FLAG_SMI) {
+			program_smi(control_flags, gevent_num);
+		} else if (control_flags & GPIO_FLAG_SCI) {
+			fill_sci_trigger(control_flags, gevent_num, &sci_trigger_cfg);
+			soc_route_sci(gevent_num);
 		}
 	}
 
@@ -267,28 +245,21 @@ void program_gpios(const struct soc_amd_gpio *gpio_list_ptr, size_t size)
 	 * debounce registers while the drivers load. This will cause interrupts
 	 * to be missed during boot.
 	 */
-	mem_read_write32(inter_master, GPIO_INTERRUPT_EN, GPIO_INTERRUPT_EN);
+	master_switch_set(GPIO_INTERRUPT_EN);
 
-	/* Set all SCI trigger direction (high/low) */
-	mem_read_write32((uint32_t *)
-			(uintptr_t)(ACPIMMIO_SMI_BASE + SMI_SCI_TRIG),
-					direction, mask);
-
-	/* Set all SCI trigger level (edge/level) */
-	mem_read_write32((uint32_t *)
-			(uintptr_t)(ACPIMMIO_SMI_BASE + SMI_SCI_LEVEL),
-					edge_level, mask);
+	/* Set all SCI trigger polarity (high/low) and level (edge/level). */
+	if (can_set_smi_flags)
+		set_sci_trigger(&sci_trigger_cfg);
 }
 
 int gpio_interrupt_status(gpio_t gpio)
 {
-	uintptr_t gpio_address = gpio_get_address(gpio);
-	uint32_t reg = read32((void *)gpio_address);
+	uint32_t reg = gpio_read32(gpio);
 
 	if (reg & GPIO_INT_STATUS) {
 		/* Clear interrupt status, preserve wake status */
 		reg &= ~GPIO_WAKE_STATUS;
-		write32((void *)gpio_address, reg);
+		gpio_write32(gpio, reg);
 		return 1;
 	}
 

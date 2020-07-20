@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#include <stddef.h>
+#include <stdint.h>
 #include <device/pci_ops.h>
 #include <console/console.h>
 #include <device/device.h>
@@ -9,7 +9,7 @@
 #include <soc/iosf.h>
 #include <soc/lpc.h>
 #include <soc/pci_devs.h>
-#include <soc/pmc.h>
+#include <soc/pm.h>
 #include <soc/romstage.h>
 #include "../chip.h"
 

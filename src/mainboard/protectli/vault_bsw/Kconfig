@@ -15,7 +15,7 @@ config BOARD_SPECIFIC_OPTIONS
 
 config MAINBOARD_DIR
 	string
-	default protectli/vault_bsw
+	default "protectli/vault_bsw"
 
 config VARIANT_DIR
 	string
@@ -24,7 +24,7 @@ config VARIANT_DIR
 
 config OVERRIDE_DEVICETREE
 	string
-	default "variants/$(CONFIG_VARIANT_DIR)/overridetree.cb"
+	default "variants/\$(CONFIG_VARIANT_DIR)/overridetree.cb"
 
 config MAINBOARD_PART_NUMBER
 	string

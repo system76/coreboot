@@ -1,8 +1,10 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+#ifndef SOUTHBRIDGE_INTEL_I82801JX_NVS_H
+#define SOUTHBRIDGE_INTEL_I82801JX_NVS_H
 #include <stdint.h>
 
-typedef struct {
+struct __packed global_nvs {
 	/* Miscellaneous */
 	u16	osys; /* 0x00 - Operating System */
 	u8	smif; /* 0x02 - SMI function call ("TRAP") */
@@ -22,11 +24,11 @@ typedef struct {
 	u8	dckn; /* 0x13 - PCIe docking state */
 	/* Thermal policy */
 	u8	actt; /* 0x14 - active trip point */
-	u8	psvt; /* 0x15 - passive trip point */
+	u8	tpsv; /* 0x15 - passive trip point */
 	u8	tc1v; /* 0x16 - passive trip point TC1 */
 	u8	tc2v; /* 0x17 - passive trip point TC2 */
 	u8	tspv; /* 0x18 - passive trip point TSP */
-	u8	crtt; /* 0x19 - critical trip point */
+	u8	tcrt; /* 0x19 - critical trip point */
 	u8	dtse; /* 0x1a - Digital Thermal Sensor enable */
 	u8	dts1; /* 0x1b - DT sensor 1 */
 	u8	flvl; /* 0x1c - current fan level */
@@ -94,6 +96,6 @@ typedef struct {
 	u8	dock; /* 0xf0 - Docking Status */
 	u8	bten;
 	u8	rsvd13[14];
-} __packed global_nvs_t;
+};
 
-void acpi_create_gnvs(global_nvs_t *gnvs);
+#endif /* SOUTHBRIDGE_INTEL_I82801JX_NVS_H */

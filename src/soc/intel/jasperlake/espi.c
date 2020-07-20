@@ -10,7 +10,6 @@
 #include <intelblocks/itss.h>
 #include <intelblocks/lpc_lib.h>
 #include <intelblocks/pcr.h>
-#include <reg_script.h>
 #include <soc/espi.h>
 #include <soc/iomap.h>
 #include <soc/irq.h>
@@ -189,23 +188,6 @@ void lpc_soc_init(struct device *dev)
 	setup_i8259();
 	i8259_configure_irq_trigger(9, 1);
 	soc_mirror_dmi_pcr_io_dec();
-}
-
-/* Fill up ESPI IO resource structure inside SoC directory */
-void pch_lpc_soc_fill_io_resources(struct device *dev)
-{
-	/*
-	 * PMC pci device gets hidden from PCI bus due to Silicon
-	 * policy hence bind ACPI BASE aka ABASE (offset 0x20) with
-	 * ESPI IO resources to ensure that ABASE falls under PCI reserved
-	 * IO memory range.
-	 *
-	 * Note: Don't add any more resource with same offset 0x20
-	 * under this device space.
-	 */
-	pch_lpc_add_new_resource(dev, PCI_BASE_ADDRESS_4,
-			ACPI_BASE_ADDRESS, ACPI_BASE_SIZE, IORESOURCE_IO |
-			IORESOURCE_ASSIGNED | IORESOURCE_FIXED);
 }
 
 #endif

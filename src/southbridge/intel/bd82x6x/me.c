@@ -10,10 +10,10 @@
 
 #include <acpi/acpi.h>
 #include <device/mmio.h>
-#include <device/pci_ops.h>
-#include <console/console.h>
 #include <device/device.h>
 #include <device/pci.h>
+#include <device/pci_ops.h>
+#include <console/console.h>
 #include <device/pci_ids.h>
 #include <device/pci_def.h>
 #include <string.h>
@@ -234,8 +234,7 @@ static int mei_send_msg(struct mei_header *mei, struct mkhi_header *mkhi,
 	return mei_wait_for_me_ready();
 }
 
-static int mei_recv_msg(struct mei_header *mei, struct mkhi_header *mkhi,
-			void *rsp_data, int rsp_bytes)
+static int mei_recv_msg(struct mkhi_header *mkhi, void *rsp_data, int rsp_bytes)
 {
 	struct mei_header mei_rsp;
 	struct mkhi_header mkhi_rsp;
@@ -279,7 +278,8 @@ static int mei_recv_msg(struct mei_header *mei, struct mkhi_header *mkhi,
 	if (mei_rsp.length & 3)
 		ndata++;
 	if (ndata != (expected - 1)) {
-		printk(BIOS_ERR, "ME: response is missing data\n");
+		printk(BIOS_ERR, "ME: response is missing data %d != %d\n",
+		       ndata, (expected - 1));
 		return -1;
 	}
 
@@ -322,7 +322,7 @@ static inline int mei_sendrecv(struct mei_header *mei, struct mkhi_header *mkhi,
 {
 	if (mei_send_msg(mei, mkhi, req_data) < 0)
 		return -1;
-	if (mei_recv_msg(mei, mkhi, rsp_data, rsp_bytes) < 0)
+	if (mei_recv_msg(mkhi, rsp_data, rsp_bytes) < 0)
 		return -1;
 	return 0;
 }
@@ -432,39 +432,6 @@ static int __unused mkhi_get_fwcaps(void)
 	return 0;
 }
 
-#if CONFIG(CHROMEOS) && 0 /* DISABLED */
-/* Tell ME to issue a global reset */
-int mkhi_global_reset(void)
-{
-	struct me_global_reset reset = {
-		.request_origin	= GLOBAL_RESET_BIOS_POST,
-		.reset_type	= CBM_RR_GLOBAL_RESET,
-	};
-	struct mkhi_header mkhi = {
-		.group_id	= MKHI_GROUP_ID_CBM,
-		.command	= MKHI_GLOBAL_RESET,
-	};
-	struct mei_header mei = {
-		.is_complete	= 1,
-		.length		= sizeof(mkhi) + sizeof(reset),
-		.host_address	= MEI_HOST_ADDRESS,
-		.client_address	= MEI_ADDRESS_MKHI,
-	};
-
-	printk(BIOS_NOTICE, "ME: Requesting global reset\n");
-
-	/* Send request and wait for response */
-	if (mei_sendrecv(&mei, &mkhi, &reset, NULL, 0) < 0) {
-		/* No response means reset will happen shortly... */
-		halt();
-	}
-
-	/* If the ME responded it rejected the reset request */
-	printk(BIOS_ERR, "ME: Global Reset failed\n");
-	return -1;
-}
-#endif
-
 #ifdef __SIMPLE_DEVICE__
 
 static void intel_me7_finalize_smm(void)
@@ -493,10 +460,8 @@ static void intel_me7_finalize_smm(void)
 	mkhi_end_of_post();
 
 	/* Make sure IO is disabled */
-	reg32 = pci_read_config32(PCH_ME_DEV, PCI_COMMAND);
-	reg32 &= ~(PCI_COMMAND_MASTER |
-		   PCI_COMMAND_MEMORY | PCI_COMMAND_IO);
-	pci_write_config32(PCH_ME_DEV, PCI_COMMAND, reg32);
+	pci_and_config16(PCH_ME_DEV, PCI_COMMAND,
+			 ~(PCI_COMMAND_MASTER | PCI_COMMAND_MEMORY | PCI_COMMAND_IO));
 
 	/* Hide the PCI device */
 	RCBA32_OR(FD2, PCH_DISABLE_MEI1);
@@ -589,7 +554,6 @@ static int intel_mei_setup(struct device *dev)
 {
 	struct resource *res;
 	struct mei_csr host;
-	u32 reg32;
 
 	/* Find the MMIO base for the ME interface */
 	res = find_resource(dev, PCI_BASE_ADDRESS_0);
@@ -597,12 +561,10 @@ static int intel_mei_setup(struct device *dev)
 		printk(BIOS_DEBUG, "ME: MEI resource not present!\n");
 		return -1;
 	}
-	mei_base_address = (u32*)(uintptr_t)res->base;
+	mei_base_address = (u32 *)(uintptr_t)res->base;
 
 	/* Ensure Memory and Bus Master bits are set */
-	reg32 = pci_read_config32(dev, PCI_COMMAND);
-	reg32 |= PCI_COMMAND_MASTER | PCI_COMMAND_MEMORY;
-	pci_write_config32(dev, PCI_COMMAND, reg32);
+	pci_or_config16(dev, PCI_COMMAND, PCI_COMMAND_MASTER | PCI_COMMAND_MEMORY);
 
 	/* Clean up status for next message */
 	read_host_csr(&host);
@@ -711,16 +673,12 @@ static void intel_me_init(struct device *dev)
 	}
 }
 
-static struct pci_operations pci_ops = {
-	.set_subsystem = pci_dev_set_subsystem,
-};
-
 static struct device_operations device_ops = {
 	.read_resources		= pci_dev_read_resources,
 	.set_resources		= pci_dev_set_resources,
 	.enable_resources	= pci_dev_enable_resources,
 	.init			= intel_me_init,
-	.ops_pci		= &pci_ops,
+	.ops_pci		= &pci_dev_ops_pci,
 };
 
 static const struct pci_driver intel_me __pci_driver = {

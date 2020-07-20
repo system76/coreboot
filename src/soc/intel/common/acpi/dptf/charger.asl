@@ -2,14 +2,15 @@
 
 Device (TCHG)
 {
-	Name (_HID, "INT3403")
+	Name (_HID, DPTF_GEN_DEVICE)
+
 	Name (_UID, 0)
 	Name (PTYP, 0x0B)
 	Name (_STR, Unicode("Battery Charger"))
 
 	Method (_STA)
 	{
-		If (LEqual (\DPTE, One)) {
+		If (\DPTE == One) {
 			Return (0xF)
 		} Else {
 			Return (0x0)
@@ -26,11 +27,11 @@ Device (TCHG)
 	Method (PPPC)
 	{
 		/* Convert size of PPSS table to index */
-		Store (SizeOf (\_SB.CHPS), Local0)
-		Decrement (Local0)
+		Local0 = SizeOf (\_SB.CHPS)
+		Local0--
 
 		/* Check if charging is disabled (AC removed) */
-		If (LEqual (\_SB.PCI0.LPCB.EC0.ACEX, Zero)) {
+		If (\_SB.PCI0.LPCB.EC0.ACEX == 0) {
 			/* Return last power state */
 			Return (Local0)
 		} Else {
@@ -45,8 +46,7 @@ Device (TCHG)
 	Method (SPPC, 1)
 	{
 		/* Retrieve Control (index 4) for specified PPSS level */
-		Store (DeRefOf (Index (DeRefOf (Index
-			(\_SB.CHPS, ToInteger (Arg0))), 4)), Local0)
+		Local0 = DeRefOf (DeRefOf (\_SB.CHPS[ToInteger (Arg0)])[4])
 
 		/* Pass Control value to EC to limit charging */
 		\_SB.PCI0.LPCB.EC0.CHGS (Local0)

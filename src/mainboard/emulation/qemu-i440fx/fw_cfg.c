@@ -74,9 +74,11 @@ static int fw_cfg_find_file(FWCfgFile *file, const char *name)
 		if (strcmp(file->name, name) == 0) {
 			file->size = be32_to_cpu(file->size);
 			file->select = be16_to_cpu(file->select);
+			printk(BIOS_INFO, "QEMU: firmware config: Found '%s'\n", name);
 			return 0;
 		}
 	}
+	printk(BIOS_INFO, "QEMU: firmware config: Couldn't find '%s'\n", name);
 	return -1;
 }
 
@@ -116,7 +118,7 @@ uintptr_t fw_cfg_tolud(void)
 	uint64_t top = 0;
 	uint32_t size = 0, pos = 0;
 
-	if (fw_cfg_e820_select(&size)) {
+	if (fw_cfg_e820_select(&size) == 0) {
 		while (!fw_cfg_e820_read(&e, &size, &pos)) {
 			uint64_t limit = e.address + e.length;
 			if (e.type == 1 && limit < 4ULL * GiB && limit > top)

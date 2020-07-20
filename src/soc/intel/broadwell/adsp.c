@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#include <cbmem.h>
+#include <acpi/acpi_gnvs.h>
 #include <console/console.h>
 #include <device/device.h>
 #include <device/pci.h>
@@ -80,16 +80,14 @@ static void adsp_init(struct device *dev)
 
 	if (config->sio_acpi_mode) {
 		/* Configure for ACPI mode */
-		global_nvs_t *gnvs;
+		struct global_nvs *gnvs;
 
 		printk(BIOS_INFO, "ADSP: Enable ACPI Mode IRQ3\n");
 
 		/* Find ACPI NVS to update BARs */
-		gnvs = (global_nvs_t *)cbmem_find(CBMEM_ID_ACPI_GNVS);
-		if (!gnvs) {
-			printk(BIOS_ERR, "Unable to locate Global NVS\n");
+		gnvs = acpi_get_gnvs();
+		if (!gnvs)
 			return;
-		}
 
 		/* Save BAR0 and BAR1 to ACPI NVS */
 		gnvs->dev.bar0[SIO_NVS_ADSP] = (u32)bar0->base;
@@ -117,7 +115,7 @@ static void adsp_init(struct device *dev)
 		printk(BIOS_INFO, "ADSP: Enable PCI Mode IRQ23\n");
 
 		/* Configure for PCI mode */
-		pci_write_config32(dev, PCI_INTERRUPT_LINE, ADSP_PCI_IRQ);
+		pci_write_config8(dev, PCI_INTERRUPT_LINE, ADSP_PCI_IRQ);
 
 		/* Clear ACPI Interrupt Enable Bit */
 		pch_iobp_update(ADSP_IOBP_PCICFGCTL,

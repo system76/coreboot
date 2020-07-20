@@ -53,7 +53,7 @@ const char *acpi_device_name(const struct device *dev)
 		return NULL;
 
 	/* Check for device specific handler */
-	if (dev->ops->acpi_name)
+	if (dev->ops && dev->ops->acpi_name)
 		return dev->ops->acpi_name(dev);
 
 	/* Walk up the tree to find if any parent can identify this device */
@@ -523,6 +523,80 @@ void acpi_device_write_spi(const struct acpi_spi *spi)
 	acpi_device_fill_len(desc_length);
 }
 
+/* UART Serial Bus - UARTSerialBusV2() */
+void acpi_device_write_uart(const struct acpi_uart *uart)
+{
+	void *desc_length, *type_length;
+	uint16_t flags;
+
+	/* Byte 0: Descriptor Type */
+	acpigen_emit_byte(ACPI_DESCRIPTOR_SERIAL_BUS);
+
+	/* Byte 1+2: Length (filled in later) */
+	desc_length = acpi_device_write_zero_len();
+
+	/* Byte 3: Revision ID */
+	acpigen_emit_byte(ACPI_UART_SERIAL_BUS_REVISION_ID);
+
+	/* Byte 4: Resource Source Index is Reserved */
+	acpigen_emit_byte(0);
+
+	/* Byte 5: Serial Bus Type is UART */
+	acpigen_emit_byte(ACPI_SERIAL_BUS_TYPE_UART);
+
+	/*
+	 * Byte 6: Flags
+	 *  [7:2]: 0 => Reserved
+	 *    [1]: 1 => ResourceConsumer
+	 *    [0]: 0 => ControllerInitiated
+	 */
+	acpigen_emit_byte(BIT(1));
+
+	/*
+	 * Byte 7-8: Type Specific Flags
+	 *   [15:8]: 0 => Reserved
+	 *      [7]: 0 => Little Endian, 1 => Big Endian
+	 *    [6:4]: Data bits
+	 *    [3:2]: Stop bits
+	 *    [1:0]: Flow control
+	 */
+	flags = uart->flow_control & 3;
+	flags |= (uart->stop_bits & 3) << 2;
+	flags |= (uart->data_bits & 7) << 4;
+	flags |= (uart->endian & 1) << 7;
+	acpigen_emit_word(flags);
+
+	/* Byte 9: Type Specific Revision ID */
+	acpigen_emit_byte(ACPI_UART_TYPE_SPECIFIC_REVISION_ID);
+
+	/* Byte 10-11: Type Data Length */
+	type_length = acpi_device_write_zero_len();
+
+	/* Byte 12-15: Initial Baud Rate */
+	acpigen_emit_dword(uart->initial_baud_rate);
+
+	/* Byte 16-17: RX FIFO size */
+	acpigen_emit_word(uart->rx_fifo_bytes);
+
+	/* Byte 18-19: TX FIFO size */
+	acpigen_emit_word(uart->tx_fifo_bytes);
+
+	/* Byte 20: Parity */
+	acpigen_emit_byte(uart->parity);
+
+	/* Byte 21: Lines Enabled */
+	acpigen_emit_byte(uart->lines_in_use);
+
+	/* Fill in Type Data Length */
+	acpi_device_fill_len(type_length);
+
+	/* Byte 22+: ResourceSource */
+	acpigen_emit_string(uart->resource);
+
+	/* Fill in Descriptor Length */
+	acpi_device_fill_len(desc_length);
+}
+
 /* PowerResource() with Enable and/or Reset control */
 void acpi_device_add_power_res(const struct acpi_power_res_params *params)
 {
@@ -658,10 +732,48 @@ static void acpi_dp_free(struct acpi_dp *dp)
 	}
 }
 
-void acpi_dp_write(struct acpi_dp *table)
+static bool acpi_dp_write_properties(struct acpi_dp *prop, const char *uuid)
+{
+	struct acpi_dp *dp;
+	char *prop_count = NULL;
+
+	/* Print base properties */
+	for (dp = prop; dp; dp = dp->next) {
+		if (dp->type == ACPI_DP_TYPE_TABLE ||
+		    dp->type == ACPI_DP_TYPE_CHILD ||
+		    dp->type == ACPI_DP_TYPE_PACKAGE)
+			continue;
+
+		/*
+		 * The UUID and package is only added when
+		 * we come across the first property.  This
+		 * is to avoid creating a zero-length package
+		 * in situations where there are only children.
+		 */
+		if (!prop_count) {
+			/* ToUUID (dp->uuid) */
+			acpigen_write_uuid(uuid);
+			/*
+			 * Package (PROP), element count determined as
+			 * it is populated
+			 */
+			prop_count = acpigen_write_package(0);
+		}
+		(*prop_count)++;
+		acpi_dp_write_property(dp);
+	}
+	if (prop_count) {
+		/* Package (PROP) length, if a package was written */
+		acpigen_pop_len();
+		return true;
+	}
+	return false;
+}
+
+static void acpi_dp_write_(struct acpi_dp *table)
 {
 	struct acpi_dp *dp, *prop;
-	char *dp_count, *prop_count = NULL;
+	char *dp_count;
 	int child_count = 0;
 
 	if (!table || table->type != ACPI_DP_TYPE_TABLE || !table->next)
@@ -677,37 +789,17 @@ void acpi_dp_write(struct acpi_dp *table)
 	dp_count = acpigen_write_package(0);
 
 	/* Print base properties */
-	for (dp = prop; dp; dp = dp->next) {
-		if (dp->type == ACPI_DP_TYPE_CHILD) {
-			child_count++;
-		} else {
-			/*
-			 * The UUID and package is only added when
-			 * we come across the first property.  This
-			 * is to avoid creating a zero-length package
-			 * in situations where there are only children.
-			 */
-			if (!prop_count) {
-				*dp_count += 2;
-				/* ToUUID (ACPI_DP_UUID) */
-				acpigen_write_uuid(ACPI_DP_UUID);
-				/*
-				 * Package (PROP), element count determined as
-				 * it is populated
-				 */
-				prop_count = acpigen_write_package(0);
-			}
-			(*prop_count)++;
-			acpi_dp_write_property(dp);
-		}
-	}
-	if (prop_count) {
-		/* Package (PROP) length, if a package was written */
-		acpigen_pop_len();
-	}
+	if (acpi_dp_write_properties(prop, table->uuid))
+		*dp_count += 2;
 
+	/* Count child properties */
+	for (dp = prop; dp; dp = dp->next)
+		if (dp->type == ACPI_DP_TYPE_CHILD)
+			child_count++;
+
+	/* Add child properties to the base table */
 	if (child_count) {
-		/* Update DP package count to 2 or 4 */
+		/* Update DP package count */
 		*dp_count += 2;
 		/* ToUUID (ACPI_DP_CHILD_UUID) */
 		acpigen_write_uuid(ACPI_DP_CHILD_UUID);
@@ -722,13 +814,24 @@ void acpi_dp_write(struct acpi_dp *table)
 		acpigen_pop_len();
 	}
 
+	/* Write packages of properties with unique UUID */
+	for (dp = prop; dp; dp = dp->next)
+		if (dp->type == ACPI_DP_TYPE_PACKAGE)
+			if (acpi_dp_write_properties(dp->child, dp->uuid))
+				*dp_count += 2;
+
 	/* Package (DP) length */
 	acpigen_pop_len();
 
 	/* Recursively parse children into separate tables */
 	for (dp = prop; dp; dp = dp->next)
 		if (dp->type == ACPI_DP_TYPE_CHILD)
-			acpi_dp_write(dp->child);
+			acpi_dp_write_(dp->child);
+}
+
+void acpi_dp_write(struct acpi_dp *table)
+{
+	acpi_dp_write_(table);
 
 	/* Clean up */
 	acpi_dp_free(table);
@@ -746,6 +849,7 @@ static struct acpi_dp *acpi_dp_new(struct acpi_dp *dp, enum acpi_dp_type type,
 	memset(new, 0, sizeof(*new));
 	new->type = type;
 	new->name = name;
+	new->uuid = ACPI_DP_UUID;
 
 	if (dp) {
 		/* Add to end of property list */
@@ -858,6 +962,22 @@ struct acpi_dp *acpi_dp_add_child(struct acpi_dp *dp, const char *name,
 	if (new) {
 		new->child = child;
 		new->string = child->name;
+	}
+
+	return new;
+}
+
+struct acpi_dp *acpi_dp_add_package(struct acpi_dp *dp, struct acpi_dp *package)
+{
+	struct acpi_dp *new;
+
+	if (!dp || !package || package->type != ACPI_DP_TYPE_TABLE)
+		return NULL;
+
+	new = acpi_dp_new(dp, ACPI_DP_TYPE_PACKAGE, NULL);
+	if (new) {
+		new->uuid = package->name;
+		new->child = package;
 	}
 
 	return new;

@@ -1,5 +1,6 @@
 ifeq ($(CONFIG_EC_GOOGLE_CHROMEEC),y)
 
+subdirs-y += audio_codec
 subdirs-y += i2c_tunnel
 
 bootblock-$(CONFIG_EC_GOOGLE_CHROMEEC_BOARDID) += ec_boardid.c
@@ -40,6 +41,8 @@ verstage-$(CONFIG_VBOOT) += vboot_storage.c
 verstage-$(CONFIG_EC_GOOGLE_CHROMEEC_SWITCHES) += switches.c
 romstage-$(CONFIG_EC_GOOGLE_CHROMEEC_SWITCHES) += switches.c
 ramstage-$(CONFIG_EC_GOOGLE_CHROMEEC_SWITCHES) += switches.c
+
+ramstage-$(CONFIG_DRIVERS_INTEL_DPTF) += ec_dptf_helpers.c
 
 CHROMEEC_SOURCE ?= $(top)/3rdparty/chromeec
 

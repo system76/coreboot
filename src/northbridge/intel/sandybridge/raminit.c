@@ -2,7 +2,6 @@
 
 #include <console/console.h>
 #include <commonlib/region.h>
-#include <bootmode.h>
 #include <cf9_reset.h>
 #include <string.h>
 #include <arch/cpu.h>
@@ -90,10 +89,10 @@ void read_spd(spd_raw_data * spd, u8 addr, bool id_only)
 	int j;
 	if (id_only) {
 		for (j = 117; j < 128; j++)
-			(*spd)[j] = do_smbus_read_byte(SMBUS_IO_BASE, addr, j);
+			(*spd)[j] = smbus_read_byte(addr, j);
 	} else {
 		for (j = 0; j < 256; j++)
-			(*spd)[j] = do_smbus_read_byte(SMBUS_IO_BASE, addr, j);
+			(*spd)[j] = smbus_read_byte(addr, j);
 	}
 }
 

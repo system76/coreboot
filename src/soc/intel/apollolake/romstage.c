@@ -4,13 +4,11 @@
 #include <device/pci_ops.h>
 #include <arch/symbols.h>
 #include <assert.h>
-#include <bootmode.h>
 #include <cbmem.h>
 #include <cf9_reset.h>
 #include <console/console.h>
 #include <cpu/x86/pae.h>
 #include <delay.h>
-#include <cpu/x86/smm.h>
 #include <device/pci_def.h>
 #include <device/resource.h>
 #include <fsp/api.h>
@@ -75,23 +73,6 @@ static void soc_early_romstage_init(void)
 						P2SB_HPTC_ADDRESS_ENABLE);
 }
 
-/* Thermal throttle activation offset */
-static void configure_thermal_target(void)
-{
-	msr_t msr;
-	const config_t *conf = config_of_soc();
-
-	if (!conf->tcc_offset)
-		return;
-
-	msr = rdmsr(MSR_TEMPERATURE_TARGET);
-	/* Bits 27:24 */
-	msr.lo &= ~(TEMPERATURE_TCC_MASK << TEMPERATURE_TCC_SHIFT);
-	msr.lo |= (conf->tcc_offset & TEMPERATURE_TCC_MASK)
-		<< TEMPERATURE_TCC_SHIFT;
-	wrmsr(MSR_TEMPERATURE_TARGET, msr);
-}
-
 /*
  * Punit Initialization code. This all isn't documented, but
  * this is the recipe.
@@ -103,7 +84,7 @@ static bool punit_init(void)
 	struct stopwatch sw;
 
 	/* Thermal throttle activation offset */
-	configure_thermal_target();
+	configure_tcc_thermal_target();
 
 	/*
 	 * Software Core Disable Mask (P_CR_CORE_DISABLE_MASK_0_0_0_MCHBAR).

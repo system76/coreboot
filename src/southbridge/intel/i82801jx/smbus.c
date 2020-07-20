@@ -11,12 +11,8 @@
 
 static void pch_smbus_init(struct device *dev)
 {
-	u16 reg16;
-
 	/* Enable clock gating */
-	reg16 = pci_read_config16(dev, 0x80);
-	reg16 &= ~((1 << 8)|(1 << 10)|(1 << 12)|(1 << 14));
-	pci_write_config16(dev, 0x80, reg16);
+	pci_and_config16(dev, 0x80, ~((1 << 8) | (1 << 10) | (1 << 12) | (1 << 14)));
 }
 
 static int lsmbus_read_byte(struct device *dev, u8 address)
@@ -77,10 +73,6 @@ static struct smbus_bus_operations lops_smbus_bus = {
 	.block_write    = lsmbus_block_write,
 };
 
-static struct pci_operations smbus_pci_ops = {
-	.set_subsystem    = pci_dev_set_subsystem,
-};
-
 static void smbus_read_resources(struct device *dev)
 {
 	struct resource *res = new_resource(dev, PCI_BASE_ADDRESS_4);
@@ -101,7 +93,7 @@ static struct device_operations smbus_ops = {
 	.scan_bus		= scan_smbus,
 	.init			= pch_smbus_init,
 	.ops_smbus_bus		= &lops_smbus_bus,
-	.ops_pci		= &smbus_pci_ops,
+	.ops_pci		= &pci_dev_ops_pci,
 };
 
 static const unsigned short pci_device_ids[] =

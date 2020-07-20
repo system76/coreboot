@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#include <stddef.h>
+#include <stdint.h>
 #include <acpi/acpi.h>
 #include <assert.h>
 #include <cbfs.h>
@@ -166,11 +166,9 @@ void raminit(struct mrc_params *mp, int prev_sleep_state)
 	if (prev_sleep_state != ACPI_S3) {
 		cbmem_initialize_empty();
 	} else if (cbmem_initialize()) {
-	#if CONFIG(HAVE_ACPI_RESUME)
 		printk(BIOS_DEBUG, "Failed to recover CBMEM in S3 resume.\n");
 		/* Failed S3 resume, reset to come up cleanly */
 		system_reset();
-	#endif
 	}
 
 	print_dram_info(mp->mainboard.dram_data[0]);

@@ -7,7 +7,6 @@
  */
 
 #include <acpi/acpigen.h>
-#include <bootstate.h>
 #include <console/console.h>
 #include <device/mmio.h>
 #include <device/device.h>
@@ -78,8 +77,6 @@ static void pmc_init(struct device *dev)
 	pmc_set_power_failure_state(true);
 	pmc_gpe_init();
 
-	pmc_set_acpi_mode();
-
 	config_deep_s3(config->deep_s3_enable_ac, config->deep_s3_enable_dc);
 	config_deep_s5(config->deep_s5_enable_ac, config->deep_s5_enable_dc);
 	config_deep_sx(config->deep_sx_config);
@@ -102,8 +99,13 @@ static void soc_pmc_read_resources(struct device *dev)
 
 static void soc_pmc_fill_ssdt(const struct device *dev)
 {
-	acpigen_write_scope(acpi_device_scope(dev));
-	acpigen_write_device(acpi_device_name(dev));
+	const char *scope = acpi_device_scope(dev);
+	const char *name = acpi_device_name(dev);
+	if (!scope || !name)
+		return;
+
+	acpigen_write_scope(scope);
+	acpigen_write_device(name);
 
 	acpigen_write_name_string("_HID", PMC_HID);
 	acpigen_write_name_string("_DDN", "Intel(R) Tiger Lake IPC Controller");
@@ -124,6 +126,9 @@ static void soc_pmc_fill_ssdt(const struct device *dev)
 	       dev_path(dev));
 }
 
+/* FIXME: Rewrite loop below without this. */
+extern struct chip_operations drivers_intel_pmc_mux_ops;
+
 /* By default, TGL uses the PMC MUX for all ports, so port_number is unused */
 const struct device *soc_get_pmc_mux_device(int port_number)
 {
@@ -143,9 +148,24 @@ const struct device *soc_get_pmc_mux_device(int port_number)
 	return child;
 }
 
+static void soc_acpi_mode_init(struct device *dev)
+{
+	/*
+	 * pmc_set_acpi_mode() should be delayed until BS_DEV_INIT in order
+	 * to ensure the ordering does not break the assumptions that other
+	 * drivers make about ACPI mode (e.g. Chrome EC). Since it disables
+	 * ACPI mode, other drivers may take different actions based on this
+	 * (e.g. Chrome EC will flush any pending hostevent bits). Because
+	 * TGL has its PMC device available for device_operations, it can be
+	 * done from the "ops->init" callback.
+	 */
+	pmc_set_acpi_mode();
+}
+
 struct device_operations pmc_ops = {
 	.read_resources	  = soc_pmc_read_resources,
 	.set_resources	  = noop_set_resources,
+	.init		  = soc_acpi_mode_init,
 	.enable		  = pmc_init,
 #if CONFIG(HAVE_ACPI_TABLES)
 	.acpi_fill_ssdt	  = soc_pmc_fill_ssdt,

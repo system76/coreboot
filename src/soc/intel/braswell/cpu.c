@@ -32,8 +32,6 @@ static const struct reg_script core_msr_script[] = {
 
 static void soc_core_init(struct device *cpu)
 {
-	printk(BIOS_SPEW, "%s/%s (%s)\n",
-			__FILE__, __func__, dev_name(cpu));
 	printk(BIOS_DEBUG, "Init Braswell core.\n");
 
 	/* Enable the local cpu apics */
@@ -188,6 +186,11 @@ static void relocation_handler(int cpu, uintptr_t curr_smbase, uintptr_t stagger
 	smm_state->smbase = staggered_smbase;
 }
 
+static void post_mp_init(void)
+{
+	global_smi_enable();
+}
+
 static const struct mp_ops mp_ops = {
 	.pre_mp_init         = pre_mp_init,
 	.get_cpu_count       = get_cpu_count,
@@ -196,14 +199,12 @@ static const struct mp_ops mp_ops = {
 	.pre_mp_smm_init     = smm_southbridge_clear_state,
 	.per_cpu_smm_trigger = per_cpu_smm_trigger,
 	.relocation_handler  = relocation_handler,
-	.post_mp_init        = smm_southbridge_enable_smi,
+	.post_mp_init        = post_mp_init,
 };
 
 void soc_init_cpus(struct device *dev)
 {
 	struct bus *cpu_bus = dev->link_list;
-
-	printk(BIOS_SPEW, "%s/%s (%s)\n", __FILE__, __func__, dev_name(dev));
 
 	if (mp_init_with_smm(cpu_bus, &mp_ops))
 		printk(BIOS_ERR, "MP initialization failure.\n");

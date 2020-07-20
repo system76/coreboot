@@ -4,7 +4,7 @@
 
 #ifndef __LIB_H__
 #define __LIB_H__
-#include <stdint.h>
+
 #include <types.h>
 
 /* Defined in src/lib/lzma.c. Returns decompressed size or 0 on error. */
@@ -40,6 +40,8 @@ void hexdump32(char LEVEL, const void *d, size_t len);
  *
  * Defined in src/lib/hexstrtobin.c
  * Ignores non-hex characters in the string.
+ * Ignores the last hex character if the number of hex characters in the string
+ * is odd.
  * Returns the number of bytes that have been put in the buffer.
  */
 size_t hexstrtobin(const char *str, uint8_t *buf, size_t len);

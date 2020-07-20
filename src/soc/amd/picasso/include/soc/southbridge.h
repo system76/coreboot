@@ -207,6 +207,10 @@
 
 /* Bit definitions for Device D3 Control AOACx0000[40...7E] step 2 */
 #define   FCH_AOAC_TARGET_DEVICE_STATE (BIT(0) + BIT(1))
+#define     FCH_AOAC_D0_UNINITIALIZED	0
+#define     FCH_AOAC_D0_INITIALIZED	1
+#define     FCH_AOAC_D1_2_3_WARM	2
+#define     FCH_AOAC_D3_COLD		3
 #define   FCH_AOAC_DEVICE_STATE		BIT(2)
 #define   FCH_AOAC_PWR_ON_DEV		BIT(3)
 #define   FCH_AOAC_SW_PWR_ON_RSTB	BIT(4)
@@ -273,13 +277,16 @@ struct soc_power_reg {
 };
 
 void enable_aoac_devices(void);
+bool is_aoac_device_enabled(int dev);
+void power_on_aoac_device(int dev);
+void power_off_aoac_device(int dev);
+void wait_for_aoac_enabled(int dev);
 void sb_clk_output_48Mhz(void);
 void sb_enable(struct device *dev);
 void southbridge_final(void *chip_info);
 void southbridge_init(void *chip_info);
 void fch_pre_init(void);
 void fch_early_init(void);
-void set_uart_config(int idx);
 
 /* Initialize all the i2c buses that are marked with early init. */
 void i2c_soc_early_init(void);

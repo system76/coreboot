@@ -515,32 +515,6 @@ static void __unused me_print_fwcaps(mbp_mefwcaps *cap)
 	print_cap("Wireless LAN (WLAN)", cap->wlan);
 }
 
-#if CONFIG(CHROMEOS) && 0 /* DISABLED */
-/* Tell ME to issue a global reset */
-static int mkhi_global_reset(void)
-{
-	struct me_global_reset reset = {
-		.request_origin	= GLOBAL_RESET_BIOS_POST,
-		.reset_type	= CBM_RR_GLOBAL_RESET,
-	};
-	struct mkhi_header mkhi = {
-		.group_id	= MKHI_GROUP_ID_CBM,
-		.command	= MKHI_GLOBAL_RESET,
-	};
-
-	/* Send request and wait for response */
-	printk(BIOS_NOTICE, "ME: %s\n", __FUNCTION__);
-	if (mei_sendrecv_mkhi(&mkhi, &reset, sizeof(reset), NULL, 0) < 0) {
-		/* No response means reset will happen shortly... */
-		halt();
-	}
-
-	/* If the ME responded it rejected the reset request */
-	printk(BIOS_ERR, "ME: Global Reset failed\n");
-	return -1;
-}
-#endif
-
 /* Send END OF POST message to the ME */
 static int __unused mkhi_end_of_post(void)
 {
@@ -551,7 +525,7 @@ static int __unused mkhi_end_of_post(void)
 	u32 eop_ack;
 
 	/* Send request and wait for response */
-	printk(BIOS_NOTICE, "ME: %s\n", __FUNCTION__);
+	printk(BIOS_NOTICE, "ME: %s\n", __func__);
 	if (mei_sendrecv_mkhi(&mkhi, NULL, 0, &eop_ack, sizeof(eop_ack)) < 0) {
 		printk(BIOS_ERR, "ME: END OF POST message failed\n");
 		return -1;
@@ -698,7 +672,7 @@ static me_bios_path intel_me_path(struct device *dev)
 	/* Check if the MBP is ready */
 	if (!hfs2.mbp_rdy) {
 		printk(BIOS_CRIT, "%s: mbp is not ready!\n",
-		       __FUNCTION__);
+		       __func__);
 		path = ME_ERROR_BIOS_PATH;
 	}
 
@@ -848,10 +822,6 @@ static void intel_me_init(struct device *dev)
 	 */
 }
 
-static struct pci_operations pci_ops = {
-	.set_subsystem = pci_dev_set_subsystem,
-};
-
 static void intel_me_enable(struct device *dev)
 {
 	/* Avoid talking to the device in S3 path */
@@ -867,7 +837,7 @@ static struct device_operations device_ops = {
 	.enable_resources	= pci_dev_enable_resources,
 	.enable			= intel_me_enable,
 	.init			= intel_me_init,
-	.ops_pci		= &pci_ops,
+	.ops_pci		= &pci_dev_ops_pci,
 };
 
 static const unsigned short pci_device_ids[] = {
@@ -895,22 +865,6 @@ static u32 me_to_host_words_pending(void)
 	return (me.buffer_write_ptr - me.buffer_read_ptr) &
 		(me.buffer_depth - 1);
 }
-
-#if 0
-/* This function is not yet being used, keep it in for the future. */
-static u32 host_to_me_words_room(void)
-{
-	struct mei_csr csr;
-
-	read_me_csr(&csr);
-	if (!csr.ready)
-		return 0;
-
-	read_host_csr(&csr);
-	return (csr.buffer_read_ptr - csr.buffer_write_ptr - 1) &
-		(csr.buffer_depth - 1);
-}
-#endif
 
 struct mbp_payload {
 	mbp_header header;

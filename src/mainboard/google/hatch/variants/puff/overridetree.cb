@@ -84,6 +84,18 @@ chip soc/intel/cannonlake
 	register "usb3_ports[4]" = "USB3_PORT_DEFAULT(OC0)"     # Type-A Port 0
 	register "usb3_ports[5]" = "USB3_PORT_DEFAULT(OC_SKIP)" # Type-A Port 4
 
+	# Bitmap for Wake Enable on USB attach/detach
+	register "usb2_wake_enable_bitmap" = "USB_PORT_WAKE_ENABLE(1) | \
+					      USB_PORT_WAKE_ENABLE(3) | \
+					      USB_PORT_WAKE_ENABLE(4) | \
+					      USB_PORT_WAKE_ENABLE(5) | \
+					      USB_PORT_WAKE_ENABLE(6)"
+	register "usb3_wake_enable_bitmap" = "USB_PORT_WAKE_ENABLE(1) | \
+					      USB_PORT_WAKE_ENABLE(2) | \
+					      USB_PORT_WAKE_ENABLE(3) | \
+					      USB_PORT_WAKE_ENABLE(5) | \
+					      USB_PORT_WAKE_ENABLE(6)"
+
 	# Enable eMMC HS400
 	register "ScsEmmcHs400Enabled" = "1"
 
@@ -161,13 +173,13 @@ chip soc/intel/cannonlake
 		},
 		.i2c[2] = {
 			.speed = I2C_SPEED_FAST,
-			.rise_time_ns = 0,
-			.fall_time_ns = 0,
+			.rise_time_ns = 60,
+			.fall_time_ns = 60,
 		},
 		.i2c[3] = {
 			.speed = I2C_SPEED_FAST,
-			.rise_time_ns = 0,
-			.fall_time_ns = 0,
+			.rise_time_ns = 60,
+			.fall_time_ns = 60,
 		},
 		.i2c[4] = {
 			.speed = I2C_SPEED_FAST,
@@ -280,8 +292,22 @@ chip soc/intel/cannonlake
 			# RFU - Reserved for Future Use.
 		end # I2C #0
 		device pci 15.1 off end # I2C #1
-		device pci 15.2 on end # I2C #2, PCON PS175.
-		device pci 15.3 on end # I2C #3, Realtek RTD2142.
+		device pci 15.2 on
+			chip drivers/i2c/generic
+				register "hid" = ""1AF80175""
+				register "name" = ""PS17""
+				register "desc" = ""Parade PS175""
+				device i2c 4a on end
+			end
+		end # I2C #2, PCON PS175.
+		device pci 15.3 on
+			chip drivers/i2c/generic
+				register "hid" = ""10EC2142""
+				register "name" = ""RTD2""
+				register "desc" = ""Realtek RTD2142""
+				device i2c 4a on end
+			end
+		end # I2C #3, Realtek RTD2142.
 		device pci 19.0 on
 			chip drivers/i2c/generic
 				register "hid" = ""10EC5682""

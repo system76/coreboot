@@ -8,8 +8,6 @@
 #include "chip.h"
 #include "i82801gx.h"
 
-typedef struct southbridge_intel_i82801gx_config config_t;
-
 static void ide_init(struct device *dev)
 {
 	u16 ideTimingConfig;
@@ -17,7 +15,7 @@ static void ide_init(struct device *dev)
 	u32 enable_primary, enable_secondary;
 
 	/* Get the chip configuration */
-	config_t *config = dev->chip_info;
+	const struct southbridge_intel_i82801gx_config *config = dev->chip_info;
 
 	printk(BIOS_DEBUG, "i82801gx_ide: initializing...");
 	if (config == NULL) {
@@ -78,17 +76,13 @@ static void ide_init(struct device *dev)
 	printk(BIOS_DEBUG, "\n");
 }
 
-static struct pci_operations ide_pci_ops = {
-	.set_subsystem    = pci_dev_set_subsystem,
-};
-
 static struct device_operations ide_ops = {
 	.read_resources		= pci_dev_read_resources,
 	.set_resources		= pci_dev_set_resources,
 	.enable_resources	= pci_dev_enable_resources,
 	.init			= ide_init,
 	.enable			= i82801gx_enable,
-	.ops_pci		= &ide_pci_ops,
+	.ops_pci		= &pci_dev_ops_pci,
 };
 
 /* 82801GB/GR/GDH/GBM/GHM/GU (ICH7/ICH7R/ICH7DH/ICH7-M/ICH7-M DH/ICH7-U) */

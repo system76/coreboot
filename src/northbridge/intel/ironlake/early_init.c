@@ -31,22 +31,17 @@ static void ironlake_setup_bars(void)
 	/* halt timer */
 	outw((1 << 11), DEFAULT_PMBASE | 0x60 | 0x08);
 	/* halt timer */
-	outw(inw(DEFAULT_PMBASE | 0x60 | 0x06) | 2,
-	     DEFAULT_PMBASE | 0x60 | 0x06);
+	outw(inw(DEFAULT_PMBASE | 0x60 | 0x06) | 2, DEFAULT_PMBASE | 0x60 | 0x06);
 	printk(BIOS_DEBUG, " done.\n");
 
 	printk(BIOS_DEBUG, "Setting up static northbridge registers...");
 	/* Set up all hardcoded northbridge BARs */
 	pci_write_config32(PCI_DEV(0, 0x00, 0), EPBAR, DEFAULT_EPBAR | 1);
-	pci_write_config32(PCI_DEV(0, 0x00, 0), EPBAR + 4,
-			   (0LL + DEFAULT_EPBAR) >> 32);
+	pci_write_config32(PCI_DEV(0, 0x00, 0), EPBAR + 4, 0);
 	pci_write_config32(PCI_DEV(0, 0x00, 0), MCHBAR, (uintptr_t)DEFAULT_MCHBAR | 1);
-	pci_write_config32(PCI_DEV(0, 0x00, 0), MCHBAR + 4,
-			   (0LL + (uintptr_t)DEFAULT_MCHBAR) >> 32);
-
+	pci_write_config32(PCI_DEV(0, 0x00, 0), MCHBAR + 4, 0);
 	pci_write_config32(PCI_DEV(0, 0x00, 0), DMIBAR, (uintptr_t)DEFAULT_DMIBAR | 1);
-	pci_write_config32(PCI_DEV(0, 0x00, 0), DMIBAR + 4,
-			   (0LL + (uintptr_t)DEFAULT_DMIBAR) >> 32);
+	pci_write_config32(PCI_DEV(0, 0x00, 0), DMIBAR + 4, 0);
 
 	/* Set C0000-FFFFF to access RAM on both reads and writes */
 	pci_write_config8(PCI_DEV(0xff, 0x00, 1), QPD0F1_PAM(0), 0x30);
@@ -60,15 +55,14 @@ static void ironlake_setup_bars(void)
 	printk(BIOS_DEBUG, " done.\n");
 }
 
-static void early_cpu_init (void)
+static void early_cpu_init(void)
 {
 	msr_t m;
 
 	/* bit 0 = disable multicore,
 	   bit 1 = disable quadcore,
 	   bit 8 = disable hyperthreading.  */
-	pci_write_config32(PCI_DEV(0xff, 0x00, 0), 0x80,
-			   (pci_read_config32(PCI_DEV(0xff, 0x0, 0x0), 0x80) & 0xfffffefc) | 0x10000);
+	pci_update_config32(PCI_DEV(0xff, 0x00, 0), 0x80, 0xfffffefc, 0x10000);
 
 	u8 reg8;
 	struct cpuid_result result;
@@ -126,8 +120,7 @@ void ironlake_early_initialization(int chipset_type)
 	elog_boot_notify(s3_resume);
 
 	/* Device Enable */
-	pci_write_config32(PCI_DEV(0, 0, 0), D0F0_DEVEN,
-			   DEVEN_IGD | DEVEN_PEG10 | DEVEN_HOST);
+	pci_write_config32(PCI_DEV(0, 0, 0), D0F0_DEVEN, DEVEN_IGD | DEVEN_PEG10 | DEVEN_HOST);
 
 	early_cpu_init();
 
@@ -137,7 +130,7 @@ void ironlake_early_initialization(int chipset_type)
 
 	/* Magic for S3 resume. Must be done early.  */
 	if (s3_resume) {
-		MCHBAR32 (0x1e8) = (MCHBAR32(0x1e8) & ~1) | 6;
-		MCHBAR32 (0x1e8) = (MCHBAR32(0x1e8) & ~3) | 4;
+		MCHBAR32(0x1e8) = (MCHBAR32(0x1e8) & ~1) | 6;
+		MCHBAR32(0x1e8) = (MCHBAR32(0x1e8) & ~3) | 4;
 	}
 }

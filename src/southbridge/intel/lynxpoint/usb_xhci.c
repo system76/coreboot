@@ -1,10 +1,10 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+#include <cpu/x86/smm.h>
 #include <delay.h>
 #include <device/device.h>
 #include <device/pci.h>
 #include <device/pci_ids.h>
-#include <arch/io.h>
 #include <device/mmio.h>
 #include <device/pci_ops.h>
 #include "chip.h"
@@ -356,20 +356,16 @@ static void usb_xhci_init(struct device *dev)
 		usb_xhci_reset_usb3(dev, 0);
 	} else if (config->xhci_default) {
 		/* Route all ports to XHCI */
-		outb(0xca, 0xb2);
+		apm_control(APM_CNT_ROUTE_ALL_XHCI);
 	}
 }
-
-static struct pci_operations lops_pci = {
-	.set_subsystem = &pci_dev_set_subsystem,
-};
 
 static struct device_operations usb_xhci_ops = {
 	.read_resources		= pci_dev_read_resources,
 	.set_resources		= pci_dev_set_resources,
 	.enable_resources	= pci_dev_enable_resources,
 	.init			= usb_xhci_init,
-	.ops_pci		= &lops_pci,
+	.ops_pci		= &pci_dev_ops_pci,
 };
 
 static const unsigned short pci_device_ids[] = { 0x8c31, /* LynxPoint-H */

@@ -4,14 +4,10 @@
 #include <console/console.h>
 #include <delay.h>
 #include <device/i2c_simple.h>
-#include <symbols.h>
-#include <timer.h>
 #include <device/mmio.h>
 #include <soc/addressmap.h>
 #include <soc/i2c.h>
-#include <device/mmio.h>
 #include <soc/pll.h>
-#include <soc/i2c.h>
 
 #define I2C_CLK_HZ (AXI_HZ / 16)
 

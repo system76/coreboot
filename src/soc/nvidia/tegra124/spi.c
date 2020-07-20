@@ -7,13 +7,11 @@
 #include <boot_device.h>
 #include <console/console.h>
 #include <delay.h>
-#include <stdint.h>
 #include <soc/addressmap.h>
 #include <soc/dma.h>
 #include <soc/spi.h>
 #include <spi-generic.h>
 #include <spi_flash.h>
-#include <symbols.h>
 #include <timer.h>
 #include <types.h>
 

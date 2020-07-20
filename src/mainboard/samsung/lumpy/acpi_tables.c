@@ -1,8 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#include <types.h>
 #include <acpi/acpi.h>
-#include <arch/smp/mpspec.h>
+#include <acpi/acpi_gnvs.h>
 #include <device/device.h>
 #include <ec/acpi/ec.h>
 #if CONFIG(CHROMEOS)
@@ -12,12 +11,8 @@
 
 #include "thermal.h"
 
-static global_nvs_t *gnvs_;
-
-void acpi_create_gnvs(global_nvs_t *gnvs)
+void acpi_create_gnvs(struct global_nvs *gnvs)
 {
-	gnvs_ = gnvs;
-
 	/*
 	 * Disable 3G in suspend by default.
 	 * Provide option to enable for http://crosbug.com/p/7925

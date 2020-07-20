@@ -16,6 +16,7 @@
 #include <soc/smi.h>
 #include <soc/iomap.h>
 #include <console/console.h>
+#include <cpu/amd/microcode.h>
 
 /*
  * MP and SMM loading initialization.
@@ -36,7 +37,7 @@ static struct smm_relocation_params smm_reloc_params;
  */
 static void pre_mp_init(void)
 {
-	x86_setup_mtrrs_with_detect();
+	x86_setup_mtrrs_with_detect_no_above_4gb();
 	x86_mtrr_check();
 }
 
@@ -89,16 +90,16 @@ static const struct mp_ops mp_ops = {
 	.get_cpu_count = get_cpu_count,
 	.get_smm_info = get_smm_info,
 	.relocation_handler = relocation_handler,
-	.post_mp_init = enable_smi_generation,
+	.post_mp_init = global_smi_enable,
 };
 
-void picasso_init_cpus(struct device *dev)
+void mp_init_cpus(struct bus *cpu_bus)
 {
 	/* Clear for take-off */
-	if (mp_init_with_smm(dev->link_list, &mp_ops) < 0)
+	if (mp_init_with_smm(cpu_bus, &mp_ops) < 0)
 		printk(BIOS_ERR, "MP initialization failure.\n");
 
-	/* The flash is now no longer cacheable. Reset to WP for performance. */
+	/* pre_mp_init made the flash not cacheable. Reset to WP for performance. */
 	mtrr_use_temp_range(FLASH_BASE_ADDR, CONFIG_ROM_SIZE, MTRR_TYPE_WRPROT);
 
 	set_warm_reset_flag();
@@ -108,6 +109,8 @@ static void model_17_init(struct device *dev)
 {
 	check_mca();
 	setup_lapic();
+
+	amd_update_microcode_from_cbfs();
 }
 
 static struct device_operations cpu_dev_ops = {

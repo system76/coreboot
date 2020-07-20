@@ -96,7 +96,9 @@ postcar-y += vboot_common.c
 bootblock-y += common.c
 verstage-y += vboot_logic.c
 verstage-y += common.c
+ifeq ($(CONFIG_VBOOT_STARTS_BEFORE_BOOTBLOCK),)
 verstage-$(CONFIG_VBOOT_SEPARATE_VERSTAGE) += verstage.c
+endif
 ifeq (${CONFIG_VBOOT_MOCK_SECDATA},y)
 verstage-y += secdata_mock.c
 romstage-y += secdata_mock.c
@@ -122,10 +124,12 @@ ifeq ($(CONFIG_VBOOT_SEPARATE_VERSTAGE),y)
 
 $(eval $(call vboot-for-stage,verstage))
 
+ifeq ($(CONFIG_VBOOT_STARTS_BEFORE_BOOTBLOCK),)
 cbfs-files-$(CONFIG_VBOOT_SEPARATE_VERSTAGE) += $(CONFIG_CBFS_PREFIX)/verstage
 $(CONFIG_CBFS_PREFIX)/verstage-file := $(objcbfs)/verstage.elf
 $(CONFIG_CBFS_PREFIX)/verstage-type := stage
 $(CONFIG_CBFS_PREFIX)/verstage-compression := $(CBFS_PRERAM_COMPRESS_FLAG)
+endif	# CONFIG_VBOOT_STARTS_BEFORE_BOOTBLOCK
 
 ifeq ($(CONFIG_ARCH_VERSTAGE_X86_32)$(CONFIG_ARCH_VERSTAGE_X86_64),y)
 $(CONFIG_CBFS_PREFIX)/verstage-options := -a 64 -S ".car.data"
@@ -161,14 +165,15 @@ RW_PARTITIONS += FW_MAIN_B
 endif
 
 # Return the regions a specific file should be placed in. The files listed below and the ones
-# that are specified in CONFIG_RO_REGION_ONLY are only specified in the RO region. The files
-# specified in the CONFIG_RW_REGION_ONLY are only placed in the RW regions.
+# that are specified in CONFIG_RO_REGION_ONLY, are only specified in the RO region. The files
+# specified in the CONFIG_RW_REGION_ONLY are placed in all RW regions.  Files specified
+# in CONFIG_RWA_REGION_ONLY or CONFIG_RWB_REGION_ONLY get placed only in those sections.
 # All other files will be installed into RO and RW regions
 # Use $(sort) to cut down on extra spaces that would be translated to commas
 regions-for-file = $(subst $(spc),$(comma),$(sort \
 	$(if $(filter \
-		$(if $(filter y,$(CONFIG_VBOOT_STARTS_IN_BOOTBLOCK)),, \
-			%/romstage) \
+		$(if $(filter y,$(CONFIG_VBOOT_STARTS_IN_ROMSTAGE)), \
+			%/romstage,) \
 		mts \
 		%/verstage \
 		locales \
@@ -181,9 +186,15 @@ regions-for-file = $(subst $(spc),$(comma),$(sort \
 		$(call strip_quotes,$(CONFIG_RO_REGION_ONLY)) \
 		,$(1)),COREBOOT,\
 		$(if $(filter \
+			$(call strip_quotes,$(CONFIG_RWA_REGION_ONLY)) \
+			,$(1)), FW_MAIN_A, \
+		$(if $(filter \
+			$(call strip_quotes,$(CONFIG_RWB_REGION_ONLY)) \
+			,$(1)), FW_MAIN_B, \
+		$(if $(filter \
 			$(call strip_quotes,$(CONFIG_RW_REGION_ONLY)) \
 			,$(1)), $(RW_PARTITIONS), $(VBOOT_PARTITIONS) ) \
-		)))
+		)))))
 
 CONFIG_GBB_HWID := $(call strip_quotes,$(CONFIG_GBB_HWID))
 CONFIG_GBB_BMPFV_FILE := $(call strip_quotes,$(CONFIG_GBB_BMPFV_FILE))

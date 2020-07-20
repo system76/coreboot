@@ -14,7 +14,6 @@
 #include <cpu/intel/speedstep.h>
 #include <cpu/intel/turbo.h>
 #include <cpu/x86/name.h>
-#include <cpu/x86/smm.h>
 #include <delay.h>
 #include <intelblocks/cpulib.h>
 #include <soc/cpu.h>
@@ -291,22 +290,6 @@ static void configure_c_states(void)
 	wrmsr(MSR_C_STATE_LATENCY_CONTROL_5, msr);
 }
 
-static void configure_thermal_target(void)
-{
-	config_t *conf = config_of_soc();
-	msr_t msr;
-
-
-	/* Set TCC activation offset if supported */
-	msr = rdmsr(MSR_PLATFORM_INFO);
-	if ((msr.lo & (1 << 30)) && conf->tcc_offset) {
-		msr = rdmsr(MSR_TEMPERATURE_TARGET);
-		msr.lo &= ~(0xf << 24); /* Bits 27:24 */
-		msr.lo |= (conf->tcc_offset & 0xf) << 24;
-		wrmsr(MSR_TEMPERATURE_TARGET, msr);
-	}
-}
-
 static void configure_misc(void)
 {
 	msr_t msr;
@@ -431,7 +414,7 @@ static void cpu_core_init(struct device *cpu)
 	configure_misc();
 
 	/* Thermal throttle activation offset */
-	configure_thermal_target();
+	configure_tcc_thermal_target();
 
 	/* Enable Direct Cache Access */
 	configure_dca_cap();
@@ -495,7 +478,7 @@ static void post_mp_init(void)
 
 	/* Now that all APs have been relocated as well as the BSP let SMIs
 	 * start flowing. */
-	smm_southbridge_enable_smi();
+	global_smi_enable();
 
 	/* Lock down the SMRAM space. */
 	smm_lock();

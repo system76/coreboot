@@ -1,10 +1,8 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#include <types.h>
 #include <acpi/acpi.h>
-#include <arch/smp/mpspec.h>
+#include <acpi/acpi_gnvs.h>
 #include <device/device.h>
-#include <cpu/x86/msr.h>
 
 #include <intelblocks/acpi.h>
 #include <soc/acpi.h>
@@ -12,7 +10,7 @@
 
 extern const unsigned char AmlCode[];
 
-void acpi_create_gnvs(global_nvs_t *gnvs)
+void acpi_create_gnvs(struct global_nvs *gnvs)
 {
 	acpi_init_gnvs(gnvs);
 
@@ -22,4 +20,9 @@ void acpi_create_gnvs(global_nvs_t *gnvs)
 
 	/* TPM Present */
 	gnvs->tpmp = 0;
+}
+
+void mainboard_fill_fadt(acpi_fadt_t *fadt)
+{
+	fadt->preferred_pm_profile = PM_ENTERPRISE_SERVER;
 }

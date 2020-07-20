@@ -9,8 +9,6 @@
 #include "i82801gx.h"
 #include "sata.h"
 
-typedef struct southbridge_intel_i82801gx_config config_t;
-
 static u8 get_ich7_sata_ports(void)
 {
 	struct device *lpc;
@@ -77,7 +75,7 @@ static void sata_init(struct device *dev)
 	u8 ports;
 
 	/* Get the chip configuration */
-	config_t *config = dev->chip_info;
+	const struct southbridge_intel_i82801gx_config *config = dev->chip_info;
 
 	printk(BIOS_DEBUG, "i82801gx_sata: initializing...\n");
 
@@ -211,17 +209,13 @@ static void sata_init(struct device *dev)
 	pci_write_config32(dev, SATA_IR, reg32);
 }
 
-static struct pci_operations sata_pci_ops = {
-	.set_subsystem = pci_dev_set_subsystem,
-};
-
 static struct device_operations sata_ops = {
 	.read_resources		= pci_dev_read_resources,
 	.set_resources		= pci_dev_set_resources,
 	.enable_resources	= pci_dev_enable_resources,
 	.init			= sata_init,
 	.enable			= i82801gx_enable,
-	.ops_pci		= &sata_pci_ops,
+	.ops_pci		= &pci_dev_ops_pci,
 };
 
 static const unsigned short sata_ids[] = {

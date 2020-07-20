@@ -15,11 +15,13 @@ enum acpi_dp_type {
 	ACPI_DP_TYPE_TABLE,
 	ACPI_DP_TYPE_ARRAY,
 	ACPI_DP_TYPE_CHILD,
+	ACPI_DP_TYPE_PACKAGE,
 };
 
 struct acpi_dp {
 	enum acpi_dp_type type;
 	const char *name;
+	const char *uuid;
 	struct acpi_dp *next;
 	union {
 		struct acpi_dp *child;
@@ -156,11 +158,6 @@ enum acpi_gpio_io_restrict {
 	ACPI_GPIO_IO_RESTRICT_PRESERVE
 };
 
-enum acpi_gpio_polarity {
-	ACPI_GPIO_ACTIVE_HIGH = 0,
-	ACPI_GPIO_ACTIVE_LOW = 1,
-};
-
 #define ACPI_GPIO_REVISION_ID		1
 #define ACPI_GPIO_MAX_PINS		8
 
@@ -180,137 +177,105 @@ struct acpi_gpio {
 	uint16_t output_drive_strength;		/* 1/100 mA */
 	int io_shared;
 	enum acpi_gpio_io_restrict io_restrict;
-	enum acpi_gpio_polarity polarity;
+	/*
+	 * As per ACPI spec, GpioIo does not have any polarity associated with it. Linux kernel
+	 * uses `active_low` argument within GPIO _DSD property to allow BIOS to indicate if the
+	 * corresponding GPIO should be treated as active low. Thus, if the GPIO has active high
+	 * polarity or if it does not have any polarity, then the `active_low` argument is
+	 * supposed to be set to 0.
+	 *
+	 * Reference:
+	 * https://www.kernel.org/doc/html/latest/firmware-guide/acpi/gpio-properties.html
+	 */
+	bool active_low;
 };
 
-/* Basic output GPIO with default pull settings */
-#define ACPI_GPIO_OUTPUT_ACTIVE_HIGH(gpio) { \
+/* GpioIo-related macros */
+#define ACPI_GPIO_CFG(_gpio, _io_restrict, _active_low) { \
 	.type = ACPI_GPIO_TYPE_IO, \
 	.pull = ACPI_GPIO_PULL_DEFAULT, \
-	.io_restrict = ACPI_GPIO_IO_RESTRICT_OUTPUT, \
-	.polarity = ACPI_GPIO_ACTIVE_HIGH,     \
+	.io_restrict = _io_restrict, \
+	.active_low = _active_low, \
 	.pin_count = 1, \
-	.pins = { (gpio) } }
+	.pins = { (_gpio) } }
 
-#define ACPI_GPIO_OUTPUT_ACTIVE_LOW(gpio) { \
-	.type = ACPI_GPIO_TYPE_IO, \
-	.pull = ACPI_GPIO_PULL_DEFAULT, \
-	.io_restrict = ACPI_GPIO_IO_RESTRICT_OUTPUT, \
-	.polarity = ACPI_GPIO_ACTIVE_LOW,     \
-	.pin_count = 1, \
-	.pins = { (gpio) } }
+/* Basic output GPIO with default pull settings */
+#define ACPI_GPIO_OUTPUT_CFG(gpio, active_low) \
+		ACPI_GPIO_CFG(gpio, ACPI_GPIO_IO_RESTRICT_OUTPUT, active_low)
+
+#define ACPI_GPIO_OUTPUT(gpio)			ACPI_GPIO_OUTPUT_CFG(gpio, 0)
+#define ACPI_GPIO_OUTPUT_ACTIVE_HIGH(gpio)	ACPI_GPIO_OUTPUT_CFG(gpio, 0)
+#define ACPI_GPIO_OUTPUT_ACTIVE_LOW(gpio)	ACPI_GPIO_OUTPUT_CFG(gpio, 1)
 
 /* Basic input GPIO with default pull settings */
-#define ACPI_GPIO_INPUT_ACTIVE_HIGH(gpio) {   \
-	.type = ACPI_GPIO_TYPE_IO, \
-	.pull = ACPI_GPIO_PULL_DEFAULT, \
-	.io_restrict = ACPI_GPIO_IO_RESTRICT_INPUT, \
-	.polarity = ACPI_GPIO_ACTIVE_HIGH,     \
-	.pin_count = 1, \
-	.pins = { (gpio) } }
+#define ACPI_GPIO_INPUT_CFG(gpio, polarity) \
+		ACPI_GPIO_CFG(gpio, ACPI_GPIO_IO_RESTRICT_INPUT, polarity)
 
-#define ACPI_GPIO_INPUT_ACTIVE_LOW(gpio) {   \
-	.type = ACPI_GPIO_TYPE_IO, \
+#define ACPI_GPIO_INPUT(gpio)			ACPI_GPIO_INPUT_CFG(gpio, 0)
+#define ACPI_GPIO_INPUT_ACTIVE_HIGH(gpio)	ACPI_GPIO_INPUT_CFG(gpio, 0)
+#define ACPI_GPIO_INPUT_ACTIVE_LOW(gpio)	ACPI_GPIO_INPUT_CFG(gpio, 1)
+
+/* GpioInt-related macros */
+#define ACPI_GPIO_IRQ_CFG(_gpio, _mode, _polarity, _wake) { \
+	.type = ACPI_GPIO_TYPE_INTERRUPT, \
 	.pull = ACPI_GPIO_PULL_DEFAULT, \
-	.io_restrict = ACPI_GPIO_IO_RESTRICT_INPUT, \
-	.polarity = ACPI_GPIO_ACTIVE_LOW,     \
+	.irq.mode = _mode, \
+	.irq.polarity = _polarity, \
+	.irq.wake = _wake, \
 	.pin_count = 1, \
-	.pins = { (gpio) } }
+	.pins = { (_gpio) } }
+
+#define ACPI_GPIO_IRQ_EDGE(gpio, polarity) \
+		ACPI_GPIO_IRQ_CFG(gpio, ACPI_IRQ_EDGE_TRIGGERED, polarity, 0)
+
+#define ACPI_GPIO_IRQ_EDGE_WAKE(gpio, polarity) \
+		ACPI_GPIO_IRQ_CFG(gpio, ACPI_IRQ_EDGE_TRIGGERED, polarity, ACPI_IRQ_WAKE)
+
+#define ACPI_GPIO_IRQ_LEVEL(gpio, polarity) \
+		ACPI_GPIO_IRQ_CFG(gpio, ACPI_IRQ_LEVEL_TRIGGERED, polarity, 0)
+
+#define ACPI_GPIO_IRQ_LEVEL_WAKE(gpio, polarity) \
+		ACPI_GPIO_IRQ_CFG(gpio, ACPI_IRQ_LEVEL_TRIGGERED, polarity, ACPI_IRQ_WAKE)
 
 /* Edge Triggered Active High GPIO interrupt */
-#define ACPI_GPIO_IRQ_EDGE_HIGH(gpio) { \
-	.type = ACPI_GPIO_TYPE_INTERRUPT, \
-	.pull = ACPI_GPIO_PULL_DEFAULT, \
-	.irq.mode = ACPI_IRQ_EDGE_TRIGGERED, \
-	.irq.polarity = ACPI_IRQ_ACTIVE_HIGH, \
-	.pin_count = 1, \
-	.pins = { (gpio) } }
+#define ACPI_GPIO_IRQ_EDGE_HIGH(gpio) \
+		ACPI_GPIO_IRQ_EDGE(gpio, ACPI_IRQ_ACTIVE_HIGH)
 
 /* Edge Triggered Active Low GPIO interrupt */
-#define ACPI_GPIO_IRQ_EDGE_LOW(gpio) { \
-	.type = ACPI_GPIO_TYPE_INTERRUPT, \
-	.pull = ACPI_GPIO_PULL_DEFAULT, \
-	.irq.mode = ACPI_IRQ_EDGE_TRIGGERED, \
-	.irq.polarity = ACPI_IRQ_ACTIVE_LOW, \
-	.pin_count = 1, \
-	.pins = { (gpio) } }
+#define ACPI_GPIO_IRQ_EDGE_LOW(gpio) \
+		ACPI_GPIO_IRQ_EDGE(gpio, ACPI_IRQ_ACTIVE_LOW)
 
 /* Edge Triggered Active Both GPIO interrupt */
-#define ACPI_GPIO_IRQ_EDGE_BOTH(gpio) { \
-	.type = ACPI_GPIO_TYPE_INTERRUPT, \
-	.pull = ACPI_GPIO_PULL_DEFAULT, \
-	.irq.mode = ACPI_IRQ_EDGE_TRIGGERED, \
-	.irq.polarity = ACPI_IRQ_ACTIVE_BOTH, \
-	.pin_count = 1, \
-	.pins = { (gpio) } }
+#define ACPI_GPIO_IRQ_EDGE_BOTH(gpio) \
+		ACPI_GPIO_IRQ_EDGE(gpio, ACPI_IRQ_ACTIVE_BOTH)
 
 /* Edge Triggered Active High GPIO interrupt with wake */
-#define ACPI_GPIO_IRQ_EDGE_HIGH_WAKE(gpio) { \
-	.type = ACPI_GPIO_TYPE_INTERRUPT, \
-	.pull = ACPI_GPIO_PULL_DEFAULT, \
-	.irq.mode = ACPI_IRQ_EDGE_TRIGGERED, \
-	.irq.polarity = ACPI_IRQ_ACTIVE_HIGH, \
-	.irq.wake = ACPI_IRQ_WAKE, \
-	.pin_count = 1, \
-	.pins = { (gpio) } }
+#define ACPI_GPIO_IRQ_EDGE_HIGH_WAKE(gpio) \
+		ACPI_GPIO_IRQ_EDGE_WAKE(gpio, ACPI_IRQ_ACTIVE_HIGH)
 
 /* Edge Triggered Active Low GPIO interrupt with wake */
-#define ACPI_GPIO_IRQ_EDGE_LOW_WAKE(gpio) { \
-	.type = ACPI_GPIO_TYPE_INTERRUPT, \
-	.pull = ACPI_GPIO_PULL_DEFAULT, \
-	.irq.mode = ACPI_IRQ_EDGE_TRIGGERED, \
-	.irq.polarity = ACPI_IRQ_ACTIVE_LOW, \
-	.irq.wake = ACPI_IRQ_WAKE, \
-	.pin_count = 1, \
-	.pins = { (gpio) } }
+#define ACPI_GPIO_IRQ_EDGE_LOW_WAKE(gpio) \
+		ACPI_GPIO_IRQ_EDGE_WAKE(gpio, ACPI_IRQ_ACTIVE_LOW)
 
 /* Edge Triggered Active Both GPIO interrupt with wake */
-#define ACPI_GPIO_IRQ_EDGE_BOTH_WAKE(gpio) { \
-	.type = ACPI_GPIO_TYPE_INTERRUPT, \
-	.pull = ACPI_GPIO_PULL_DEFAULT, \
-	.irq.mode = ACPI_IRQ_EDGE_TRIGGERED, \
-	.irq.polarity = ACPI_IRQ_ACTIVE_BOTH, \
-	.irq.wake = ACPI_IRQ_WAKE, \
-	.pin_count = 1, \
-	.pins = { (gpio) } }
+#define ACPI_GPIO_IRQ_EDGE_BOTH_WAKE(gpio) \
+		ACPI_GPIO_IRQ_EDGE_WAKE(gpio, ACPI_IRQ_ACTIVE_BOTH)
 
 /* Level Triggered Active High GPIO interrupt */
-#define ACPI_GPIO_IRQ_LEVEL_HIGH(gpio) { \
-	.type = ACPI_GPIO_TYPE_INTERRUPT, \
-	.pull = ACPI_GPIO_PULL_DEFAULT, \
-	.irq.mode = ACPI_IRQ_LEVEL_TRIGGERED, \
-	.irq.polarity = ACPI_IRQ_ACTIVE_HIGH, \
-	.pin_count = 1, \
-	.pins = { (gpio) } }
+#define ACPI_GPIO_IRQ_LEVEL_HIGH(gpio) \
+		ACPI_GPIO_IRQ_LEVEL(gpio, ACPI_IRQ_ACTIVE_HIGH)
 
 /* Level Triggered Active Low GPIO interrupt */
-#define ACPI_GPIO_IRQ_LEVEL_LOW(gpio) { \
-	.type = ACPI_GPIO_TYPE_INTERRUPT, \
-	.pull = ACPI_GPIO_PULL_DEFAULT, \
-	.irq.mode = ACPI_IRQ_LEVEL_TRIGGERED, \
-	.irq.polarity = ACPI_IRQ_ACTIVE_LOW, \
-	.pin_count = 1, \
-	.pins = { (gpio) } }
+#define ACPI_GPIO_IRQ_LEVEL_LOW(gpio) \
+		ACPI_GPIO_IRQ_LEVEL(gpio, ACPI_IRQ_ACTIVE_LOW)
 
 /* Level Triggered Active High GPIO interrupt with wake */
-#define ACPI_GPIO_IRQ_LEVEL_HIGH_WAKE(gpio) { \
-	.type = ACPI_GPIO_TYPE_INTERRUPT, \
-	.pull = ACPI_GPIO_PULL_DEFAULT, \
-	.irq.mode = ACPI_IRQ_LEVEL_TRIGGERED, \
-	.irq.polarity = ACPI_IRQ_ACTIVE_HIGH, \
-	.irq.wake = ACPI_IRQ_WAKE, \
-	.pin_count = 1, \
-	.pins = { (gpio) } }
+#define ACPI_GPIO_IRQ_LEVEL_HIGH_WAKE(gpio) \
+		ACPI_GPIO_IRQ_LEVEL_WAKE(gpio, ACPI_IRQ_ACTIVE_HIGH)
 
 /* Level Triggered Active Low GPIO interrupt with wake */
-#define ACPI_GPIO_IRQ_LEVEL_LOW_WAKE(gpio) { \
-	.type = ACPI_GPIO_TYPE_INTERRUPT, \
-	.pull = ACPI_GPIO_PULL_DEFAULT, \
-	.irq.mode = ACPI_IRQ_LEVEL_TRIGGERED, \
-	.irq.polarity = ACPI_IRQ_ACTIVE_LOW, \
-	.irq.wake = ACPI_IRQ_WAKE, \
-	.pin_count = 1, \
-	.pins = { (gpio) } }
+#define ACPI_GPIO_IRQ_LEVEL_LOW_WAKE(gpio) \
+		ACPI_GPIO_IRQ_LEVEL_WAKE(gpio, ACPI_IRQ_ACTIVE_LOW)
 
 /* Write GpioIo() or GpioInt() descriptor to SSDT AML output */
 void acpi_device_write_gpio(const struct acpi_gpio *gpio);
@@ -321,10 +286,14 @@ void acpi_device_write_gpio(const struct acpi_gpio *gpio);
 
 #define ACPI_SERIAL_BUS_TYPE_I2C		1
 #define ACPI_SERIAL_BUS_TYPE_SPI		2
+#define ACPI_SERIAL_BUS_TYPE_UART		3
+
 #define ACPI_I2C_SERIAL_BUS_REVISION_ID		1 /* TODO: upgrade to 2 */
 #define ACPI_I2C_TYPE_SPECIFIC_REVISION_ID	1
 #define ACPI_SPI_SERIAL_BUS_REVISION_ID		1
 #define ACPI_SPI_TYPE_SPECIFIC_REVISION_ID	1
+#define ACPI_UART_SERIAL_BUS_REVISION_ID	1
+#define ACPI_UART_TYPE_SPECIFIC_REVISION_ID	1
 
 /*
  * ACPI I2C Bus
@@ -369,6 +338,91 @@ struct acpi_spi {
 
 /* Write SPI Bus descriptor to SSDT AML output */
 void acpi_device_write_spi(const struct acpi_spi *spi);
+
+/*
+ * ACPI UART Bus
+ */
+
+enum acpi_uart_data_bits {
+	ACPI_UART_DATA_BITS_5,
+	ACPI_UART_DATA_BITS_6,
+	ACPI_UART_DATA_BITS_7,
+	ACPI_UART_DATA_BITS_8,
+	ACPI_UART_DATA_BITS_9
+};
+
+enum acpi_uart_stop_bits {
+	ACPI_UART_STOP_BITS_0,
+	ACPI_UART_STOP_BITS_1,
+	ACPI_UART_STOP_BITS_1_5,
+	ACPI_UART_STOP_BITS_2
+};
+
+enum acpi_uart_lines {
+	ACPI_UART_LINE_DTD = BIT(2),	/* Data Carrier Detect */
+	ACPI_UART_LINE_RI = BIT(3),	/* Ring Indicator */
+	ACPI_UART_LINE_DSR = BIT(4),	/* Data Set Ready */
+	ACPI_UART_LINE_DTR = BIT(5),	/* Data Terminal Ready */
+	ACPI_UART_LINE_CTS = BIT(6),	/* Clear to Send */
+	ACPI_UART_LINE_RTS = BIT(7)	/* Request to Send */
+};
+
+enum acpi_uart_endian {
+	ACPI_UART_ENDIAN_LITTLE,
+	ACPI_UART_ENDIAN_BIG
+};
+
+enum acpi_uart_parity {
+	ACPI_UART_PARITY_NONE,
+	ACPI_UART_PARITY_EVEN,
+	ACPI_UART_PARITY_ODD,
+	ACPI_UART_PARITY_MARK,
+	ACPI_UART_PARITY_SPACE
+};
+
+enum acpi_uart_flow_control {
+	ACPI_UART_FLOW_NONE,
+	ACPI_UART_FLOW_HARDWARE,
+	ACPI_UART_FLOW_SOFTWARE
+};
+
+struct acpi_uart {
+	/* Initial Baud Rate in bits per second */
+	uint32_t initial_baud_rate;
+	/* Number of bits of data in a packet (value between 5-9) */
+	enum acpi_uart_data_bits data_bits;
+	/* Number of bits to signal end of packet */
+	enum acpi_uart_stop_bits stop_bits;
+	/* Bitmask indicating presence or absence of particular line */
+	unsigned int lines_in_use;
+	/* Specify if the device expects big or little endian format */
+	enum acpi_uart_endian endian;
+	/* Specify the type of parity bits included after the data in a packet */
+	enum acpi_uart_parity parity;
+	/* Specify the flow control method */
+	enum acpi_uart_flow_control flow_control;
+	/* Upper limit in bytes of the buffer sizes for this device */
+	uint16_t rx_fifo_bytes;
+	uint16_t tx_fifo_bytes;
+	/* Set true if UART is shared, false if it is exclusive for one device */
+	bool shared;
+	/* Reference to UART controller */
+	const char *resource;
+};
+
+#define ACPI_UART_RAW_DEVICE(baud_rate, fifo_bytes) { \
+	.initial_baud_rate = (baud_rate), \
+	.data_bits = ACPI_UART_DATA_BITS_8, \
+	.stop_bits = ACPI_UART_STOP_BITS_1, \
+	.endian = ACPI_UART_ENDIAN_LITTLE, \
+	.parity = ACPI_UART_PARITY_NONE, \
+	.flow_control = ACPI_UART_FLOW_NONE, \
+	.rx_fifo_bytes = (fifo_bytes), \
+	.tx_fifo_bytes = (fifo_bytes), \
+	.shared = false }
+
+/* Write UARTSerialBusV2() descriptor to SSDT AML output */
+void acpi_device_write_uart(const struct acpi_uart *uart);
 
 /* GPIO/timing information for the power on/off sequences */
 struct acpi_power_res_params {
@@ -463,6 +517,9 @@ void acpi_device_add_power_res(const struct acpi_power_res_params *params);
 
 /* Start a new Device Property table with provided ACPI reference */
 struct acpi_dp *acpi_dp_new_table(const char *ref);
+
+/* Add package of device properties with a unique UUID */
+struct acpi_dp *acpi_dp_add_package(struct acpi_dp *dp, struct acpi_dp *package);
 
 /* Add integer Device Property */
 struct acpi_dp *acpi_dp_add_integer(struct acpi_dp *dp, const char *name,

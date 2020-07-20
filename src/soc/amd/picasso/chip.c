@@ -1,15 +1,13 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#include <bootstate.h>
-#include <cpu/amd/mtrr.h>
 #include <console/console.h>
 #include <device/device.h>
 #include <device/pci.h>
 #include <drivers/i2c/designware/dw_i2c.h>
-#include <romstage_handoff.h>
 #include <soc/acpi.h>
 #include <soc/cpu.h>
 #include <soc/data_fabric.h>
+#include <soc/iomap.h>
 #include <soc/pci_devs.h>
 #include <soc/southbridge.h>
 #include "chip.h"
@@ -17,12 +15,13 @@
 
 /* Supplied by i2c.c */
 extern struct device_operations picasso_i2c_mmio_ops;
-extern const char *i2c_acpi_name(const struct device *dev);
+/* Supplied by uart.c */
+extern struct device_operations picasso_uart_mmio_ops;
 
 struct device_operations cpu_bus_ops = {
 	.read_resources	  = noop_read_resources,
 	.set_resources	  = noop_set_resources,
-	.init		  = picasso_init_cpus,
+	.init		  = mp_cpu_bus_init,
 	.acpi_fill_ssdt   = generate_cpu_entries,
 };
 
@@ -30,23 +29,6 @@ const char *soc_acpi_name(const struct device *dev)
 {
 	if (dev->path.type == DEVICE_PATH_DOMAIN)
 		return "PCI0";
-
-	if (dev->path.type == DEVICE_PATH_USB) {
-		switch (dev->path.usb.port_type) {
-		case 0:
-			/* Root Hub */
-			return "RHUB";
-		case 3:
-			/* USB3 ports */
-			switch (dev->path.usb.port_id) {
-			case 0: return "SS01";
-			case 1: return "SS02";
-			case 2: return "SS03";
-			}
-			break;
-		}
-		return NULL;
-	}
 
 	if (dev->path.type != DEVICE_PATH_PCI)
 		return NULL;
@@ -57,44 +39,12 @@ const char *soc_acpi_name(const struct device *dev)
 			return "GNB";
 		case IOMMU_DEVFN:
 			return "IOMM";
-		case PCIE_GPP_0_DEVFN:
-			return "PBR0";
-		case PCIE_GPP_1_DEVFN:
-			return "PBR1";
-		case PCIE_GPP_2_DEVFN:
-			return "PBR2";
-		case PCIE_GPP_3_DEVFN:
-			return "PBR3";
-		case PCIE_GPP_4_DEVFN:
-			return "PBR4";
-		case PCIE_GPP_5_DEVFN:
-			return "PBR5";
-		case PCIE_GPP_6_DEVFN:
-			return "PBR6";
-		case PCIE_GPP_A_DEVFN:
-			return "PBRA";
-		case PCIE_GPP_B_DEVFN:
-			return "PBRB";
 		case LPC_DEVFN:
 			return "LPCB";
 		case SMBUS_DEVFN:
 			return "SBUS";
 		default:
 			printk(BIOS_WARNING, "Unknown root PCI device: dev: %d, fn: %d\n",
-			       PCI_SLOT(dev->path.pci.devfn), PCI_FUNC(dev->path.pci.devfn));
-			return NULL;
-		}
-	}
-
-	if (dev->bus->dev->path.type == DEVICE_PATH_PCI
-	    && dev->bus->dev->path.pci.devfn == PCIE_GPP_A_DEVFN) {
-		switch (dev->path.pci.devfn) {
-		case XHCI0_DEVFN:
-			return "XHC0";
-		case XHCI1_DEVFN:
-			return "XHC1";
-		default:
-			printk(BIOS_WARNING, "Unknown Bus A PCI device: dev: %d, fn: %d\n",
 			       PCI_SLOT(dev->path.pci.devfn), PCI_FUNC(dev->path.pci.devfn));
 			return NULL;
 		}
@@ -112,14 +62,22 @@ struct device_operations pci_domain_ops = {
 	.acpi_name	  = soc_acpi_name,
 };
 
-static struct device_operations pci_ops_ops_bus_ab = {
-	.read_resources		= pci_bus_read_resources,
-	.set_resources		= pci_dev_set_resources,
-	.enable_resources	= pci_bus_enable_resources,
-	.scan_bus		= pci_scan_bridge,
-	.reset_bus		= pci_bus_reset,
-	.acpi_fill_ssdt		= acpi_device_write_pci_dev,
-};
+static void set_mmio_dev_ops(struct device *dev)
+{
+	switch (dev->path.mmio.addr) {
+	case APU_I2C2_BASE:
+	case APU_I2C3_BASE:
+	case APU_I2C4_BASE:
+		dev->ops = &picasso_i2c_mmio_ops;
+		break;
+	case APU_UART0_BASE:
+	case APU_UART1_BASE:
+	case APU_UART2_BASE:
+	case APU_UART3_BASE:
+		dev->ops = &picasso_uart_mmio_ops;
+		break;
+	}
+}
 
 static void enable_dev(struct device *dev)
 {
@@ -128,28 +86,19 @@ static void enable_dev(struct device *dev)
 		dev->ops = &pci_domain_ops;
 	} else if (dev->path.type == DEVICE_PATH_CPU_CLUSTER) {
 		dev->ops = &cpu_bus_ops;
-	} else if (dev->path.type == DEVICE_PATH_PCI) {
-		if (dev->bus->dev->path.type == DEVICE_PATH_DOMAIN) {
-			switch (dev->path.pci.devfn) {
-			case PCIE_GPP_A_DEVFN:
-			case PCIE_GPP_B_DEVFN:
-				dev->ops = &pci_ops_ops_bus_ab;
-			}
-		}
-		sb_enable(dev);
 	} else if (dev->path.type == DEVICE_PATH_MMIO) {
-		if (i2c_acpi_name(dev) != NULL)
-			dev->ops = &picasso_i2c_mmio_ops;
+		set_mmio_dev_ops(dev);
 	}
 }
 
 static void soc_init(void *chip_info)
 {
+	default_dev_ops_root.write_acpi_tables = agesa_write_acpi_tables;
+
 	fsp_silicon_init(acpi_is_wakeup_s3());
 
 	data_fabric_set_mmio_np();
 	southbridge_init(chip_info);
-	setup_bsp_ramtop();
 }
 
 static void soc_final(void *chip_info)

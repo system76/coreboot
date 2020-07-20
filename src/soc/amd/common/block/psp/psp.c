@@ -1,8 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
 #include <device/mmio.h>
-#include <cpu/x86/msr.h>
-#include <timer.h>
 #include <bootstate.h>
 #include <console/console.h>
 #include <amdblocks/psp.h>

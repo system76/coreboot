@@ -13,6 +13,26 @@
 #include "chip.h"
 #include "pch.h"
 
+static const char *pch_pcie_acpi_name(const struct device *dev)
+{
+	ASSERT(dev);
+
+	if (PCI_SLOT(dev->path.pci.devfn) == 0x1c) {
+		static const char *names[] = { "RP01",
+				"RP02",
+				"RP03",
+				"RP04",
+				"RP05",
+				"RP06",
+				"RP07",
+				"RP08"};
+
+		return names[PCI_FUNC(dev->path.pci.devfn)];
+	}
+
+	return NULL;
+}
+
 static void pch_pcie_pm_early(struct device *dev)
 {
 	u16 link_width_p0, link_width_p4;
@@ -89,9 +109,7 @@ static void pch_pcie_pm_early(struct device *dev)
 	pci_write_config8(dev, 0xe1, reg8);
 
 	/* Set 0xE8[0] = 1 */
-	reg32 = pci_read_config32(dev, 0xe8);
-	reg32 |= 1;
-	pci_write_config32(dev, 0xe8, reg32);
+	pci_or_config32(dev, 0xe8, 1);
 
 	/* Adjust Common Clock exit latency */
 	reg32 = pci_read_config32(dev, 0xd8);
@@ -124,38 +142,24 @@ static void pch_pcie_pm_late(struct device *dev)
 {
 	struct southbridge_intel_bd82x6x_config *config = dev->chip_info;
 	enum aspm_type apmc = 0;
-	u32 reg32;
 
 	/* Set 0x314 = 0x743a361b */
 	pci_write_config32(dev, 0x314, 0x743a361b);
 
 	/* Set 0x318[31:16] = 0x1414 */
-	reg32 = pci_read_config32(dev, 0x318);
-	reg32 &= 0x0000ffff;
-	reg32 |= 0x14140000;
-	pci_write_config32(dev, 0x318, reg32);
+	pci_update_config32(dev, 0x318, 0x0000ffff, 0x14140000);
 
 	/* Set 0x324[5] = 1 */
-	reg32 = pci_read_config32(dev, 0x324);
-	reg32 |= (1 << 5);
-	pci_write_config32(dev, 0x324, reg32);
+	pci_or_config32(dev, 0x324, 1 << 5);
 
 	/* Set 0x330[7:0] = 0x40 */
-	reg32 = pci_read_config32(dev, 0x330);
-	reg32 &= ~(0xff);
-	reg32 |= 0x40;
-	pci_write_config32(dev, 0x330, reg32);
+	pci_update_config32(dev, 0x330, ~0xff, 0x40);
 
 	/* Set 0x33C[24:0] = 0x854c74 */
-	reg32 = pci_read_config32(dev, 0x33c);
-	reg32 &= 0xff000000;
-	reg32 |= 0x00854c74;
-	pci_write_config32(dev, 0x33c, reg32);
+	pci_update_config32(dev, 0x33c, 0xff000000, 0x00854c74);
 
 	/* No IO-APIC, Disable EOI forwarding */
-	reg32 = pci_read_config32(dev, 0xd4);
-	reg32 |= (1 << 1);
-	pci_write_config32(dev, 0xd4, reg32);
+	pci_or_config32(dev, 0xd4, 1 << 1);
 
 	/* Check for a rootport ASPM override */
 	switch (PCI_FUNC(dev->path.pci.devfn)) {
@@ -187,55 +191,35 @@ static void pch_pcie_pm_late(struct device *dev)
 
 	/* Setup the override or get the real ASPM setting */
 	if (apmc) {
-		reg32 = pci_read_config32(dev, 0xd4);
-		reg32 |= (apmc << 2) | (1 << 4);
-		pci_write_config32(dev, 0xd4, reg32);
+		pci_or_config32(dev, 0xd4, (apmc << 2) | (1 << 4));
+
 	} else {
 		apmc = pci_read_config32(dev, 0x50) & 3;
 	}
 
 	/* If both L0s and L1 enabled then set root port 0xE8[1]=1 */
-	if (apmc == PCIE_ASPM_BOTH) {
-		reg32 = pci_read_config32(dev, 0xe8);
-		reg32 |= (1 << 1);
-		pci_write_config32(dev, 0xe8, reg32);
-	}
+	if (apmc == PCIE_ASPM_BOTH)
+		pci_or_config32(dev, 0xe8, 1 << 1);
 }
 
 static void pci_init(struct device *dev)
 {
 	u16 reg16;
-	u32 reg32;
 	struct southbridge_intel_bd82x6x_config *config = dev->chip_info;
 
 	printk(BIOS_DEBUG, "Initializing PCH PCIe bridge.\n");
 
 	/* Enable Bus Master */
-	reg32 = pci_read_config32(dev, PCI_COMMAND);
-	reg32 |= PCI_COMMAND_MASTER;
-	pci_write_config32(dev, PCI_COMMAND, reg32);
+	pci_or_config16(dev, PCI_COMMAND, PCI_COMMAND_MASTER);
 
 	/* Set Cache Line Size to 0x10 */
 	// This has no effect but the OS might expect it
 	pci_write_config8(dev, 0x0c, 0x10);
 
-	reg16 = pci_read_config16(dev, PCI_BRIDGE_CONTROL);
-	reg16 &= ~PCI_BRIDGE_CTL_PARITY;
-	reg16 |= PCI_BRIDGE_CTL_NO_ISA;
-	pci_write_config16(dev, PCI_BRIDGE_CONTROL, reg16);
+	pci_update_config16(dev, PCI_BRIDGE_CONTROL,
+			    ~PCI_BRIDGE_CTL_PARITY, PCI_BRIDGE_CTL_NO_ISA);
 
-#ifdef EVEN_MORE_DEBUG
-	reg32 = pci_read_config32(dev, 0x20);
-	printk(BIOS_SPEW, "    MBL    = 0x%08x\n", reg32);
-	reg32 = pci_read_config32(dev, 0x24);
-	printk(BIOS_SPEW, "    PMBL   = 0x%08x\n", reg32);
-	reg32 = pci_read_config32(dev, 0x28);
-	printk(BIOS_SPEW, "    PMBU32 = 0x%08x\n", reg32);
-	reg32 = pci_read_config32(dev, 0x2c);
-	printk(BIOS_SPEW, "    PMLU32 = 0x%08x\n", reg32);
-#endif
-
-	/* Clear errors in status registers */
+	/* Clear errors in status registers. FIXME: Do something? */
 	reg16 = pci_read_config16(dev, 0x06);
 	//reg16 |= 0xf900;
 	pci_write_config16(dev, 0x06, reg16);
@@ -246,9 +230,7 @@ static void pci_init(struct device *dev)
 
 	/* Enable expresscard hotplug events.  */
 	if (config->pcie_hotplug_map[PCI_FUNC(dev->path.pci.devfn)]) {
-		pci_write_config32(dev, 0xd8,
-				   pci_read_config32(dev, 0xd8)
-				   | (1 << 30));
+		pci_or_config32(dev, 0xd8, 1 << 30);
 		pci_write_config16(dev, 0x42, 0x142);
 	}
 }
@@ -274,30 +256,6 @@ static void pch_pciexp_scan_bridge(struct device *dev)
 	pch_pcie_pm_late(dev);
 }
 
-static const char *pch_pcie_acpi_name(const struct device *dev)
-{
-	ASSERT(dev);
-
-	if (PCI_SLOT(dev->path.pci.devfn) == 0x1c) {
-		static const char *names[] = { "RP01",
-				"RP02",
-				"RP03",
-				"RP04",
-				"RP05",
-				"RP06",
-				"RP07",
-				"RP08"};
-
-		return names[PCI_FUNC(dev->path.pci.devfn)];
-	}
-
-	return NULL;
-}
-
-static struct pci_operations pci_ops = {
-	.set_subsystem = pci_dev_set_subsystem,
-};
-
 static struct device_operations device_ops = {
 	.read_resources		= pci_bus_read_resources,
 	.set_resources		= pci_dev_set_resources,
@@ -306,7 +264,7 @@ static struct device_operations device_ops = {
 	.enable			= pch_pcie_enable,
 	.scan_bus		= pch_pciexp_scan_bridge,
 	.acpi_name		= pch_pcie_acpi_name,
-	.ops_pci		= &pci_ops,
+	.ops_pci		= &pci_dev_ops_pci,
 };
 
 static const unsigned short pci_device_ids[] = { 0x1c10, 0x1c12, 0x1c14, 0x1c16,

@@ -1,16 +1,11 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #include <device/pci_ops.h>
+#include <device/smbus_host.h>
 #include <cbmem.h>
 #include <cf9_reset.h>
 #include <console/console.h>
-#include <cpu/x86/mtrr.h>
 #include <arch/cpu.h>
-#if CONFIG(SOUTHBRIDGE_INTEL_I82801GX)
-#include <southbridge/intel/i82801gx/i82801gx.h> /* smbus_read_byte */
-#else
-#include <southbridge/intel/i82801jx/i82801jx.h> /* smbus_read_byte */
-#endif
 #include <spd.h>
 #include <string.h>
 #include <device/dram/ddr2.h>
@@ -598,10 +593,9 @@ static void checkreset_ddr2(int boot_path)
 		pci_write_config8(PCI_DEV(0, 0x1f, 0), 0xa2, pmcon2);
 
 		/* do magic 0xf0 thing. */
-		u8 reg8 = pci_read_config8(PCI_DEV(0, 0, 0), 0xf0);
-		pci_write_config8(PCI_DEV(0, 0, 0), 0xf0, reg8 & ~(1 << 2));
-		reg8 = pci_read_config8(PCI_DEV(0, 0, 0), 0xf0);
-		pci_write_config8(PCI_DEV(0, 0, 0), 0xf0, reg8 |  (1 << 2));
+		pci_and_config8(PCI_DEV(0, 0, 0), 0xf0, ~(1 << 2));
+
+		pci_or_config8(PCI_DEV(0, 0, 0), 0xf0, (1 << 2));
 
 		full_reset();
 	}
@@ -691,11 +685,10 @@ void sdram_initialize(int boot_path, const u8 *spd_map)
 
 	do_raminit(&s, fast_boot);
 
-	reg8 = pci_read_config8(PCI_DEV(0, 0x1f, 0), 0xa2);
-	pci_write_config8(PCI_DEV(0, 0x1f, 0), 0xa2, reg8 & ~0x80);
+	pci_and_config8(PCI_DEV(0, 0x1f, 0), 0xa2, (u8)~0x80);
 
-	reg8 = pci_read_config8(PCI_DEV(0, 0, 0), 0xf4);
-	pci_write_config8(PCI_DEV(0, 0, 0), 0xf4, reg8 | 1);
+	pci_or_config8(PCI_DEV(0, 0, 0), 0xf4, 1);
+
 	printk(BIOS_DEBUG, "RAM initialization finished.\n");
 
 	cbmem_was_inited = !cbmem_recovery(s.boot_path == BOOT_PATH_RESUME);

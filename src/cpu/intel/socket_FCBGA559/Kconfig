@@ -11,7 +11,6 @@ config SOCKET_SPECIFIC_OPTIONS
 	select MMX
 	select SSE
 	select CPU_HAS_L2_ENABLE_MSR
-	select NO_FIXED_XIP_ROM_SIZE
 
 config DCACHE_RAM_BASE
 	hex
@@ -27,5 +26,9 @@ config DCACHE_BSP_STACK_SIZE
 	help
 	  The amount of anticipated stack usage in CAR by bootblock and
 	  other stages.
+
+config MAX_CPUS
+	int
+	default 4
 
 endif

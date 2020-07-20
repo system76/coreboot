@@ -1,8 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#include <types.h>
 #include <acpi/acpi.h>
-#include <arch/smp/mpspec.h>
+#include <acpi/acpi_gnvs.h>
 #include <device/device.h>
 #include <vendorcode/google/chromeos/gnvs.h>
 #include <ec/compal/ene932/ec.h>
@@ -13,7 +12,7 @@
 #include "thermal.h"
 #include "onboard.h"
 
-void acpi_create_gnvs(global_nvs_t *gnvs)
+void acpi_create_gnvs(struct global_nvs *gnvs)
 {
 	/* Disable USB ports in S3 by default */
 	gnvs->s3u0 = 0;

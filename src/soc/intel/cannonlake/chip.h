@@ -29,6 +29,12 @@
 #define SOC_INTEL_CML_UART_DEV_MAX 3
 #define SOC_INTEL_CML_SATA_DEV_MAX 8
 
+enum chip_pl2_4_cfg {
+	baseline,
+	performance,
+	value_not_set /* vr_config internal use only */
+};
+
 struct soc_intel_cannonlake_config {
 
 	/* Common struct containing soc config data required by common code */
@@ -142,6 +148,7 @@ struct soc_intel_cannonlake_config {
 	uint8_t SataPortsEnable[8];
 	uint8_t SataPortsDevSlp[8];
 	uint8_t SataPortsDevSlpResetConfig[8];
+	uint8_t SataPortsHotPlug[8];
 
 	/* Enable/Disable SLP_S0 with GBE Support. 0: disable, 1: enable */
 	uint8_t SlpS0WithGbeSupport;
@@ -182,6 +189,29 @@ struct soc_intel_cannonlake_config {
 	/* Enable/Disable HotPlug support for Root Port */
 	uint8_t PcieRpHotPlug[CONFIG_MAX_ROOT_PORTS];
 
+	/*
+	 * Enable/Disable AER (Advanced Error Reporting) for Root Port
+	 * 0: Disable AER
+	 * 1: Enable AER
+	 */
+	uint8_t PcieRpAdvancedErrorReporting[CONFIG_MAX_ROOT_PORTS];
+
+	/* PCIE RP ASPM, ASPM support for the root port */
+	enum {
+		AspmDefault,
+		AspmDisabled,
+		AspmL0s,
+		AspmL1,
+		AspmL0sL1,
+		AspmAutoConfig,
+	} PcieRpAspm[CONFIG_MAX_ROOT_PORTS];
+
+	/* PCIE RP Max Payload, Max Payload Size supported */
+	enum {
+		RpMaxPayload_128,
+		RpMaxPayload_256,
+	} PcieRpMaxPayload[CONFIG_MAX_ROOT_PORTS];
+
 	/* eMMC and SD */
 	uint8_t ScsEmmcHs400Enabled;
 	/* Need to update DLL setting to get Emmc running at HS400 speed */
@@ -220,10 +250,7 @@ struct soc_intel_cannonlake_config {
 	 * Performance: Maximum PLs for maximum performance.
 	 * Baseline: Baseline PLs for balanced performance at lower power.
 	 */
-	enum {
-		baseline,
-		performance
-	} cpu_pl2_4_cfg;
+	enum chip_pl2_4_cfg cpu_pl2_4_cfg;
 
 	/* VrConfig Settings for 5 domains
 	 * 0 = System Agent, 1 = IA Core, 2 = Ring,
@@ -288,6 +315,23 @@ struct soc_intel_cannonlake_config {
 	 *  4 = 2s
 	 */
 	uint8_t PchPmSlpAMinAssert;
+
+	/*
+	 * PCH PM Reset Power Cycle Duration
+	 *  0 = 4s
+	 *  1 = 1s
+	 *  2 = 2s
+	 *  3 = 3s
+	 *  4 = 4s (default)
+	 *
+	 * NOTE: Duration programmed in the PchPmPwrCycDur should never be smaller than the
+	 * stretch duration programmed in the following registers -
+	 *  - GEN_PMCON_A.SLP_S3_MIN_ASST_WDTH (PchPmSlpS3MinAssert)
+	 *  - GEN_PMCON_A.S4MAW (PchPmSlpS4MinAssert)
+	 *  - PM_CFG.SLP_A_MIN_ASST_WDTH (PchPmSlpAMinAssert)
+	 *  - PM_CFG.SLP_LAN_MIN_ASST_WDTH
+	 */
+	uint8_t PchPmPwrCycDur;
 
 	/*
 	 * SerialIO device mode selection:

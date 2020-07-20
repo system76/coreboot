@@ -4,6 +4,7 @@
 #include <delay.h>
 #include <device/pci_def.h>
 #include <device/pci_ops.h>
+#include <device/smbus_host.h>
 #include <cf9_reset.h>
 #include <device/mmio.h>
 #include <device/device.h>
@@ -53,7 +54,7 @@ static __attribute__((noinline)) void do_ram_command(u32 command)
 	u32 reg32;
 
 	reg32 = MCHBAR32(DCC);
-	reg32 &= ~((3<<21) | (1<<20) | (1<<19) | (7 << 16));
+	reg32 &= ~((3 << 21) | (1 << 20) | (1 << 19) | (7 << 16));
 	reg32 |= command;
 
 	/* Also set Init Complete */
@@ -193,19 +194,6 @@ static int sdram_capabilities_enhanced_addressing_xor(void)
 	return (!reg8);
 }
 
-/* TODO check if we ever need this function */
-#if 0
-static int sdram_capabilities_MEM4G_disable(void)
-{
-	u8 reg8;
-
-	reg8 = pci_read_config8(PCI_DEV(0, 0x00, 0), 0xe5); /* CAPID0 + 5 */
-	reg8 &= (1 << 0);
-
-	return (reg8 != 0);
-}
-#endif
-
 #define GFX_FREQUENCY_CAP_166MHZ	0x04
 #define GFX_FREQUENCY_CAP_200MHZ	0x03
 #define GFX_FREQUENCY_CAP_250MHZ	0x02
@@ -229,8 +217,8 @@ static void sdram_detect_errors(struct sys_info *sysinfo)
 
 	reg8 = pci_read_config8(PCI_DEV(0, 0x1f, 0), GEN_PMCON_2);
 
-	if (reg8 & ((1<<7)|(1<<2))) {
-		if (reg8 & (1<<2)) {
+	if (reg8 & ((1 << 7) | (1 << 2))) {
+		if (reg8 & (1 << 2)) {
 			printk(BIOS_DEBUG, "SLP S4# Assertion Width Violation.\n");
 			/* Write back clears bit 2 */
 			pci_write_config8(PCI_DEV(0, 0x1f, 0), GEN_PMCON_2, reg8);
@@ -238,9 +226,9 @@ static void sdram_detect_errors(struct sys_info *sysinfo)
 
 		}
 
-		if (reg8 & (1<<7)) {
+		if (reg8 & (1 << 7)) {
 			printk(BIOS_DEBUG, "DRAM initialization was interrupted.\n");
-			reg8 &= ~(1<<7);
+			reg8 &= ~(1 << 7);
 			pci_write_config8(PCI_DEV(0, 0x1f, 0), GEN_PMCON_2, reg8);
 			do_reset = 1;
 		}
@@ -257,9 +245,7 @@ static void sdram_detect_errors(struct sys_info *sysinfo)
 	}
 
 	/* Set DRAM initialization bit in ICH7 */
-	reg8 = pci_read_config8(PCI_DEV(0, 0x1f, 0), GEN_PMCON_2);
-	reg8 |= (1<<7);
-	pci_write_config8(PCI_DEV(0, 0x1f, 0), GEN_PMCON_2, reg8);
+	pci_or_config8(PCI_DEV(0, 0x1f, 0), GEN_PMCON_2, 1 << 7);
 
 	/* clear self refresh status if check is disabled or not a resume */
 	if (!CONFIG(CHECK_SLFRCS_ON_RESUME) || sysinfo->boot_path != BOOT_PATH_RESUME) {
@@ -268,12 +254,12 @@ static void sdram_detect_errors(struct sys_info *sysinfo)
 		/* Validate self refresh config */
 		if (((sysinfo->dimm[0] != SYSINFO_DIMM_NOT_POPULATED) ||
 		     (sysinfo->dimm[1] != SYSINFO_DIMM_NOT_POPULATED)) &&
-		    !(MCHBAR8(SLFRCS) & (1<<0))) {
+		    !(MCHBAR8(SLFRCS) & (1 << 0))) {
 			do_reset = 1;
 		}
 		if (((sysinfo->dimm[2] != SYSINFO_DIMM_NOT_POPULATED) ||
 		     (sysinfo->dimm[3] != SYSINFO_DIMM_NOT_POPULATED)) &&
-		    !(MCHBAR8(SLFRCS) & (1<<1))) {
+		    !(MCHBAR8(SLFRCS) & (1 << 1))) {
 			do_reset = 1;
 		}
 	}
@@ -565,7 +551,7 @@ static void derive_timings(struct sys_info *sysinfo, struct timings *saved_timin
 		sysinfo->refresh = REFRESH_7_8US;
 	else
 		sysinfo->refresh = REFRESH_15_6US;
-	printk(BIOS_DEBUG, "Refresh: %s\n", sysinfo->refresh?"7.8us":"15.6us");
+	printk(BIOS_DEBUG, "Refresh: %s\n", sysinfo->refresh ? "7.8us" : "15.6us");
 }
 
 /**
@@ -601,38 +587,38 @@ static void sdram_program_dram_width(struct sys_info *sysinfo)
 	for (i = 0; i < DIMM_SOCKETS; i++) { /* Channel 0 */
 		switch (sysinfo->dimm[i]) {
 		case SYSINFO_DIMM_X16DS:
-			c0dramw |= (0x0000) << 4*(i % 2);
+			c0dramw |= (0x0000) << 4 * (i % 2);
 			break;
 		case SYSINFO_DIMM_X8DS:
-			c0dramw |= (0x0001) << 4*(i % 2);
+			c0dramw |= (0x0001) << 4 * (i % 2);
 			break;
 		case SYSINFO_DIMM_X16SS:
-			c0dramw |= (0x0000) << 4*(i % 2);
+			c0dramw |= (0x0000) << 4 * (i % 2);
 			break;
 		case SYSINFO_DIMM_X8DDS:
-			c0dramw |= (0x0005) << 4*(i % 2);
+			c0dramw |= (0x0005) << 4 * (i % 2);
 			break;
 		case SYSINFO_DIMM_NOT_POPULATED:
-			c0dramw |= (0x0000) << 4*(i % 2);
+			c0dramw |= (0x0000) << 4 * (i % 2);
 			break;
 		}
 	}
 	for (i = DIMM_SOCKETS; i < idx * DIMM_SOCKETS; i++) { /* Channel 1 */
 		switch (sysinfo->dimm[i]) {
 		case SYSINFO_DIMM_X16DS:
-			c1dramw |= (0x0000) << 4*(i % 2);
+			c1dramw |= (0x0000) << 4 * (i % 2);
 			break;
 		case SYSINFO_DIMM_X8DS:
-			c1dramw |= (0x0010) << 4*(i % 2);
+			c1dramw |= (0x0010) << 4 * (i % 2);
 			break;
 		case SYSINFO_DIMM_X16SS:
-			c1dramw |= (0x0000) << 4*(i % 2);
+			c1dramw |= (0x0000) << 4 * (i % 2);
 			break;
 		case SYSINFO_DIMM_X8DDS:
-			c1dramw |= (0x0050) << 4*(i % 2);
+			c1dramw |= (0x0050) << 4 * (i % 2);
 			break;
 		case SYSINFO_DIMM_NOT_POPULATED:
-			c1dramw |= (0x0000) << 4*(i % 2);
+			c1dramw |= (0x0000) << 4 * (i % 2);
 			break;
 		}
 	}
@@ -646,7 +632,7 @@ static void sdram_write_slew_rates(u32 offset, const u32 *slew_rate_table)
 	int i;
 
 	for (i = 0; i < 16; i++)
-		MCHBAR32(offset+(i*4)) = slew_rate_table[i];
+		MCHBAR32(offset+(i * 4)) = slew_rate_table[i];
 }
 
 static const u32 dq2030[] = {
@@ -1250,9 +1236,9 @@ static int sdram_set_row_attributes(struct sys_info *sysinfo)
 			dra = (dra << 4) | dra;
 
 		if (i < DIMM_SOCKETS)
-			dra0 |= (dra << (i*8));
+			dra0 |= (dra << (i * 8));
 		else
-			dra1 |= (dra << ((i - DIMM_SOCKETS)*8));
+			dra1 |= (dra << ((i - DIMM_SOCKETS) * 8));
 	}
 
 	MCHBAR16(C0DRA0) = dra0;
@@ -1615,7 +1601,6 @@ static void sdram_program_pll_settings(struct sys_info *sysinfo)
 static void sdram_program_graphics_frequency(struct sys_info *sysinfo)
 {
 	u8 reg8;
-	u16 reg16;
 	u8 freq, second_vco, voltage;
 
 #define CRCLK_166MHz	0x00
@@ -1636,10 +1621,10 @@ static void sdram_program_graphics_frequency(struct sys_info *sysinfo)
 	voltage = VOLTAGE_1_05;
 	if (MCHBAR32(DFT_STRAP1) & (1 << 20))
 		voltage = VOLTAGE_1_50;
-	printk(BIOS_DEBUG, "Voltage: %s ", (voltage == VOLTAGE_1_05)?"1.05V":"1.5V");
+	printk(BIOS_DEBUG, "Voltage: %s ", (voltage == VOLTAGE_1_05) ? "1.05V" : "1.5V");
 
 	/* Gate graphics hardware for frequency change */
-	reg8 = (1<<3) | (1<<1); /* disable crclk, gate cdclk */
+	reg8 = (1 << 3) | (1 << 1); /* disable crclk, gate cdclk */
 	pci_write_config8(PCI_DEV(0, 2, 0), GCFC + 1, reg8);
 
 	/* Get graphics frequency capabilities */
@@ -1716,14 +1701,11 @@ static void sdram_program_graphics_frequency(struct sys_info *sysinfo)
 		sysinfo->clkcfg_bit7 = 0;
 
 	/* Graphics Core Render Clock */
-	reg16 = pci_read_config16(PCI_DEV(0, 2, 0), GCFC);
-	reg16 &= ~((7 << 0) | (1 << 13));
-	reg16 |= freq;
-	pci_write_config16(PCI_DEV(0, 2, 0), GCFC, reg16);
+	pci_update_config16(PCI_DEV(0, 2, 0), GCFC, ~((7 << 0) | (1 << 13)), freq);
 
 	/* Graphics Core Display Clock */
 	reg8 = pci_read_config8(PCI_DEV(0, 2, 0), GCFC);
-	reg8 &= ~((1<<7) | (7<<4));
+	reg8 &= ~((1 << 7) | (7 << 4));
 
 	if (voltage == VOLTAGE_1_05) {
 		reg8 |= CDCLK_200MHz;
@@ -1736,7 +1718,7 @@ static void sdram_program_graphics_frequency(struct sys_info *sysinfo)
 
 	reg8 = pci_read_config8(PCI_DEV(0, 2, 0), GCFC + 1);
 
-	reg8 |= (1<<3) | (1<<1);
+	reg8 |= (1 << 3) | (1 << 1);
 	pci_write_config8(PCI_DEV(0, 2, 0), GCFC + 1, reg8);
 
 	reg8 |= 0x0f;
@@ -1750,7 +1732,6 @@ static void sdram_program_graphics_frequency(struct sys_info *sysinfo)
 static void sdram_program_memory_frequency(struct sys_info *sysinfo)
 {
 	u32 clkcfg;
-	u8 reg8;
 	u8 offset = CONFIG(NORTHBRIDGE_INTEL_SUBTYPE_I945GM) ? 1 : 0;
 
 	printk(BIOS_DEBUG, "Setting Memory Frequency... ");
@@ -1795,9 +1776,7 @@ static void sdram_program_memory_frequency(struct sys_info *sysinfo)
 	/* Make sure the following code is in the cache before we execute it. */
 	goto cache_code;
 vco_update:
-	reg8 = pci_read_config8(PCI_DEV(0, 0x1f, 0), GEN_PMCON_2);
-	reg8 &= ~(1 << 7);
-	pci_write_config8(PCI_DEV(0, 0x1f, 0), GEN_PMCON_2, reg8);
+	pci_and_config8(PCI_DEV(0, 0x1f, 0), GEN_PMCON_2, (u8)~(1 << 7));
 
 	clkcfg &= ~(1 << 10);
 	MCHBAR32(CLKCFG) = clkcfg;
@@ -2142,7 +2121,6 @@ static void sdram_post_jedec_initialization(struct sys_info *sysinfo)
 
 static void sdram_power_management(struct sys_info *sysinfo)
 {
-	u8 reg8;
 	u16 reg16;
 	u32 reg32;
 	int integrated_graphics = 1;
@@ -2207,11 +2185,7 @@ static void sdram_power_management(struct sys_info *sysinfo)
 		reg16 |= (4 << 11);
 	MCHBAR16(CPCTL) = reg16;
 
-#if 0
-	if ((MCHBAR32(ECO) & (1 << 16)) != 0) {
-#else
 	if (i945_silicon_revision() != 0) {
-#endif
 		switch (sysinfo->fsb_frequency) {
 		case 667:
 			MCHBAR32(HGIPMC2) = 0x0d590d59;
@@ -2262,13 +2236,6 @@ static void sdram_power_management(struct sys_info *sysinfo)
 	else
 		MCHBAR32(ECO) |= (1 << 16);
 
-#if 0
-
-	if (i945_silicon_revision() == 0)
-		MCHBAR32(FSBPMC3) &= ~(1 << 29);
-	else
-		MCHBAR32(FSBPMC3) |= (1 << 29);
-#endif
 	MCHBAR32(FSBPMC3) &= ~(1 << 29);
 
 	MCHBAR32(FSBPMC3) |= (1 << 21);
@@ -2293,27 +2260,10 @@ static void sdram_power_management(struct sys_info *sysinfo)
 		MCHBAR32(FSBPMC4) |= (1 << 4);
 	}
 
-	reg8 = pci_read_config8(PCI_DEV(0, 0x0, 0), 0xfc);
-	reg8 |= (1 << 4);
-	pci_write_config8(PCI_DEV(0, 0x0, 0), 0xfc, reg8);
+	pci_or_config8(PCI_DEV(0, 0x0, 0), 0xfc, 1 << 4);
 
-	reg8 = pci_read_config8(PCI_DEV(0, 0x2, 0), 0xc1);
-	reg8 |= (1 << 2);
-	pci_write_config8(PCI_DEV(0, 0x2, 0), 0xc1, reg8);
+	pci_or_config8(PCI_DEV(0, 0x2, 0), 0xc1, 1 << 2);
 
-#ifdef C2_SELF_REFRESH_DISABLE
-
-	if (integrated_graphics) {
-		printk(BIOS_DEBUG, "C2 self-refresh with IGD\n");
-		MCHBAR16(MIPMC4) = 0x0468;
-		MCHBAR16(MIPMC5) = 0x046c;
-		MCHBAR16(MIPMC6) = 0x046c;
-	} else {
-		MCHBAR16(MIPMC4) = 0x6468;
-		MCHBAR16(MIPMC5) = 0x646c;
-		MCHBAR16(MIPMC6) = 0x646c;
-	}
-#else
 	if (integrated_graphics) {
 		MCHBAR16(MIPMC4) = 0x04f8;
 		MCHBAR16(MIPMC5) = 0x04fc;
@@ -2323,8 +2273,6 @@ static void sdram_power_management(struct sys_info *sysinfo)
 		MCHBAR16(MIPMC5) = 0x64fc;
 		MCHBAR16(MIPMC6) = 0x64fc;
 	}
-
-#endif
 
 	reg32 = MCHBAR32(PMCFG);
 	reg32 &= ~(3 << 17);
@@ -2469,19 +2417,19 @@ static void sdram_on_die_termination(struct sys_info *sysinfo)
 	cas = sysinfo->cas;
 
 	reg32 = MCHBAR32(C0ODT) & 0xfff00000;
-	reg32 |= odt[(cas-3) * 2];
+	reg32 |= odt[(cas - 3) * 2];
 	MCHBAR32(C0ODT) = reg32;
 
 	reg32 = MCHBAR32(C1ODT) & 0xfff00000;
-	reg32 |= odt[(cas-3) * 2];
+	reg32 |= odt[(cas - 3) * 2];
 	MCHBAR32(C1ODT) = reg32;
 
 	reg32 = MCHBAR32(C0ODT + 4) & 0x1fc8ffff;
-	reg32 |= odt[((cas-3) * 2) + 1];
+	reg32 |= odt[((cas - 3) * 2) + 1];
 	MCHBAR32(C0ODT + 4) = reg32;
 
 	reg32 = MCHBAR32(C1ODT + 4) & 0x1fc8ffff;
-	reg32 |= odt[((cas-3) * 2) + 1];
+	reg32 |= odt[((cas - 3) * 2) + 1];
 	MCHBAR32(C1ODT + 4) = reg32;
 }
 
@@ -2499,16 +2447,16 @@ static void sdram_enable_memory_clocks(struct sys_info *sysinfo)
 #define CLOCKS_WIDTH 3
 #endif
 	if (sysinfo->dimm[0] != SYSINFO_DIMM_NOT_POPULATED)
-		clocks[0] |= (1 << CLOCKS_WIDTH)-1;
+		clocks[0] |= (1 << CLOCKS_WIDTH) - 1;
 
 	if (sysinfo->dimm[1] != SYSINFO_DIMM_NOT_POPULATED)
-		clocks[0] |= ((1 << CLOCKS_WIDTH)-1) << CLOCKS_WIDTH;
+		clocks[0] |= ((1 << CLOCKS_WIDTH) - 1) << CLOCKS_WIDTH;
 
 	if (sysinfo->dimm[2] != SYSINFO_DIMM_NOT_POPULATED)
-		clocks[1] |= (1 << CLOCKS_WIDTH)-1;
+		clocks[1] |= (1 << CLOCKS_WIDTH) - 1;
 
 	if (sysinfo->dimm[3] != SYSINFO_DIMM_NOT_POPULATED)
-		clocks[1] |= ((1 << CLOCKS_WIDTH)-1) << CLOCKS_WIDTH;
+		clocks[1] |= ((1 << CLOCKS_WIDTH) - 1) << CLOCKS_WIDTH;
 
 #if CONFIG(OVERRIDE_CLOCK_DISABLE)
 	/* Usually system firmware turns off system memory clock signals to unused SO-DIMM slots
@@ -2729,7 +2677,6 @@ static void sdram_setup_processor_side(void)
 void sdram_initialize(int boot_path, const u8 *spd_addresses)
 {
 	struct sys_info sysinfo;
-	u8 reg8;
 
 	timestamp_add_now(TS_BEFORE_INITRAM);
 	printk(BIOS_DEBUG, "Setting up RAM controller.\n");
@@ -2826,9 +2773,7 @@ void sdram_initialize(int boot_path, const u8 *spd_addresses)
 	sdram_enable_rcomp();
 
 	/* Tell ICH7 that we're done */
-	reg8 = pci_read_config8(PCI_DEV(0, 0x1f, 0), GEN_PMCON_2);
-	reg8 &= ~(1 << 7);
-	pci_write_config8(PCI_DEV(0, 0x1f, 0), GEN_PMCON_2, reg8);
+	pci_and_config8(PCI_DEV(0, 0x1f, 0), GEN_PMCON_2, (u8)~(1 << 7));
 
 	printk(BIOS_DEBUG, "RAM initialization finished.\n");
 

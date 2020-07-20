@@ -1,5 +1,8 @@
 chip northbridge/intel/haswell
 
+	# This mainboard has VGA
+	register "gpu_ddi_e_connected" = "1"
+
 	device cpu_cluster 0 on
 		chip cpu/intel/haswell
 			register "c1_acpower" = "1"
@@ -23,9 +26,7 @@ chip northbridge/intel/haswell
 		device pci 03.0 on  end		# Mini-HD audio
 
 		chip southbridge/intel/lynxpoint
-			register "gen1_dec"      = "0x000c0291"
-			register "gen2_dec"      = "0x000c0241"
-			register "gen3_dec"      = "0x000c0251"
+			register "gen1_dec"      = "0x000c0291"	# Super I/O HWM
 			register "pirqa_routing" = "0x8b"
 			register "pirqb_routing" = "0x80"
 			register "pirqc_routing" = "0x83"
@@ -59,18 +60,18 @@ chip northbridge/intel/haswell
 						io  0x60 = 0x0378
 						irq 0x70 = 6
 						drq 0x74 = 2
-						irq 0xf0 = 0x3b
+						irq 0xf0 = 0x3b		# + ECP and EPP 1.9
 					end
 					device pnp 2e.2   on		# UART A
 						io  0x60 = 0x03f8
 						irq 0x70 = 4
 					end
 					device pnp 2e.3   off end	# UART B, IR
-					device pnp 2e.5   on		# PS/2 KBC
+					device pnp 2e.5   on		# PS/2 Keyboard/Mouse
 						io  0x60 = 0x0060
 						io  0x62 = 0x0064
-						irq 0x70 = 12		# + Keyboard
-						irq 0x72 = 12		# + Mouse
+						irq 0x70 = 1		# + Keyboard IRQ
+						irq 0x72 = 12		# + Mouse IRQ (unused)
 					end
 					device pnp 2e.6   off end	# CIR
 					device pnp 2e.7   off end	# GPIO8
@@ -78,29 +79,30 @@ chip northbridge/intel/haswell
 					device pnp 2e.8   off end	# WDT
 					device pnp 2e.108 on		# GPIO0
 						irq 0xe0 = 0xf9		# + GPIO0 direction
-						irq 0xe1 = 0xfb		# + GPIO0 value
-						irq 0xf0 = 0xf1		# + GPIO1 direction
-						irq 0xf1 = 0xf1		# + GPIO1 value
+						irq 0xe1 = 0xfd		# + GPIO0 value
 					end
 					device pnp 2e.208 off end	# GPIOA
 					device pnp 2e.308 off end	# GPIO base
-					device pnp 2e.109 on  end	# GPIO1
-					device pnp 2e.209 on		# GPIO2
-						irq 0xe0 = 0xff		# + GPIO2 direction
+					device pnp 2e.109 on		# GPIO1
+						irq 0xf0 = 0xf1		# + GPIO1 direction
+						irq 0xf1 = 0xf1		# + GPIO1 value
 					end
+					device pnp 2e.209 off end	# GPIO2
 					device pnp 2e.309 off end	# GPIO3
 					device pnp 2e.409 off end	# GPIO4
 					device pnp 2e.509 off end	# GPIO5
 					device pnp 2e.609 off end	# GPIO6
-					device pnp 2e.709 off end	# GPIO7
+					device pnp 2e.709 on		# GPIO7
+						irq 0xe0 = 0xff		# + GPIO7 direction
+					end
 					device pnp 2e.a   on		# ACPI
-						irq 0xe0 = 0x41		# + Enable KBC wakeup
 						irq 0xe4 = 0x10		# + Power RAM in S3
 						irq 0xf0 = 0x20
 					end
 					device pnp 2e.b   on		# HWM, LED
-						irq 0x30 = 0xe1
-						io  0x60 = 0x0290
+						irq 0x30 = 0xe1		# + Fan RPM sense pins
+						io  0x60 = 0x0290	# + HWM base address
+						irq 0x70 = 0
 					end
 					device pnp 2e.d   off end	# VID
 					device pnp 2e.e   off end	# CIR wake-up

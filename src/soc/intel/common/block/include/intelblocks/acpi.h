@@ -12,7 +12,7 @@
 struct chipset_power_state;
 
 /* Forward  declare the global nvs structure here */
-struct global_nvs_t;
+struct global_nvs;
 
 /* Return ACPI name for this device */
 const char *soc_acpi_name(const struct device *dev);
@@ -32,19 +32,6 @@ unsigned long southbridge_write_acpi_tables(const struct device *device,
 					    struct acpi_rsdp *rsdp);
 
 /*
- * Creates acpi gnvs and adds it to the DSDT table.
- * GNVS creation is chipset specific and is done in soc specific acpi.c file.
- */
-void southbridge_inject_dsdt(const struct device *device);
-
-/*
- * This function populates the gnvs structure in acpi table.
- * Defined as weak in common acpi as gnvs structure definition is
- * chipset specific.
- */
-void acpi_create_gnvs(struct global_nvs_t *gnvs);
-
-/*
  * get_cstate_map returns a table of processor specific acpi_cstate_t entries
  * and number of entries in the table
  */
@@ -62,9 +49,6 @@ acpi_tstate_t *soc_get_tss_table(int *entries);
  */
 uint32_t acpi_fill_soc_wake(uint32_t generic_pm1_en,
 			    const struct chipset_power_state *ps);
-
-/* Chipset specific settings for filling up fadt table */
-void soc_fill_fadt(acpi_fadt_t *fadt);
 
 /* Chipset specific settings for filling up dmar table */
 unsigned long sa_write_acpi_tables(const struct device *dev,

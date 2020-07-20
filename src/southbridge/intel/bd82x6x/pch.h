@@ -40,8 +40,6 @@
 #endif
 
 #ifndef __ACPI__
-#define DEBUG_PERIODIC_SMIS 0
-
 
 int pch_silicon_revision(void);
 int pch_silicon_type(void);
@@ -49,10 +47,6 @@ int pch_silicon_supported(int type, int rev);
 void pch_iobp_update(u32 address, u32 andvalue, u32 orvalue);
 
 void enable_usb_bar(void);
-
-#if ENV_ROMSTAGE
-int smbus_read_byte(unsigned int device, unsigned int address);
-#endif
 
 void early_thermal_init(void);
 void southbridge_configure_default_intmap(void);

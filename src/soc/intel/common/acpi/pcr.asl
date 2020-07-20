@@ -8,8 +8,7 @@
  */
 Method (PCRB, 1, NotSerialized)
 {
-	Return (Add (CONFIG_PCR_BASE_ADDRESS,
-				ShiftLeft (Arg0, PCR_PORTID_SHIFT)))
+	Return (CONFIG_PCR_BASE_ADDRESS + (Arg0 << PCR_PORTID_SHIFT))
 }
 
 /*
@@ -19,7 +18,7 @@ Method (PCRB, 1, NotSerialized)
  */
 Method (PCRR, 2, Serialized)
 {
-	OperationRegion (PCRD, SystemMemory, Add (PCRB (Arg0), Arg1), 4)
+	OperationRegion (PCRD, SystemMemory, PCRB (Arg0) + Arg1, 4)
 	Field (PCRD, DWordAcc, NoLock, Preserve)
 	{
 		DATA, 32
@@ -35,12 +34,12 @@ Method (PCRR, 2, Serialized)
  */
 Method (PCRA, 3, Serialized)
 {
-	OperationRegion (PCRD, SystemMemory, Add (PCRB (Arg0), Arg1), 4)
+	OperationRegion (PCRD, SystemMemory, PCRB (Arg0) + Arg1, 4)
 	Field (PCRD, DWordAcc, NoLock, Preserve)
 	{
 		DATA, 32
 	}
-	And (DATA, Arg2, DATA)
+	DATA &= Arg2
 
 	/*
 	 * After every write one needs to read an innocuous register
@@ -59,12 +58,12 @@ Method (PCRA, 3, Serialized)
  */
 Method (PCRO, 3, Serialized)
 {
-	OperationRegion (PCRD, SystemMemory, Add (PCRB (Arg0), Arg1), 4)
+	OperationRegion (PCRD, SystemMemory, PCRB (Arg0) + Arg1, 4)
 	Field (PCRD, DWordAcc, NoLock, Preserve)
 	{
 		DATA, 32
 	}
-	Or (DATA, Arg2, DATA)
+	DATA |= Arg2
 
 	/*
 	 * After every write one needs to read an innocuous register

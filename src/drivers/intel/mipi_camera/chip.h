@@ -4,14 +4,62 @@
 #define __INTEL_MIPI_CAMERA_CHIP_H__
 
 #include <stdint.h>
+#include <acpi/acpi_pld.h>
 
-#define MAX_PWDB_ENTRIES 12
+#define DEFAULT_LINK_FREQ	450000000
+#define MAX_PWDB_ENTRIES	12
+#define MAX_PORT_ENTRIES	4
+#define MAX_LINK_FREQ_ENTRIES	4
+#define MAX_CLK_CONFIGS		2
+#define MAX_GPIO_CONFIGS	4
+#define MAX_PWR_OPS		5
+
+#define SEQ_OPS_CLK_ENABLE(ind, delay) \
+	{ .type = IMGCLK, .index = (ind), .action = ENABLE, .delay_ms = (delay) }
+#define SEQ_OPS_CLK_DISABLE(ind, delay) \
+	{ .type = IMGCLK, .index = (ind), .action = DISABLE, .delay_ms = (delay) }
+#define SEQ_OPS_GPIO_ENABLE(ind, delay) \
+	{ .type = GPIO, .index = (ind), .action = ENABLE, .delay_ms = (delay) }
+#define SEQ_OPS_GPIO_DISABLE(ind, delay) \
+	{ .type = GPIO, .index = (ind), .action = DISABLE, .delay_ms = (delay) }
+
+enum camera_device_type {
+	DEV_TYPE_SENSOR = 0,
+	DEV_TYPE_VCM,
+	DEV_TYPE_ROM
+};
+
+enum intel_camera_platform_type {
+	PLATFORM_SKC = 9,
+	PLATFORM_CNL = 10
+};
+
+enum intel_camera_flash_type {
+	FLASH_DEFAULT = 0,
+	FLASH_DISABLE = 2,
+	FLASH_ENABLE = 3
+};
+
+enum intel_camera_led_type {
+	PRIVACY_LED_DEFAULT = 0,
+	PRIVACY_LED_A_16mA
+};
+
+enum intel_camera_mipi_info {
+	MIPI_INFO_SENSOR_DRIVER = 0,
+	MIPI_INFO_ACPI_DEFINED
+};
+
+#define CLK_FREQ_19_2MHZ	19200000
+#define CLK_FREQ_24MHZ		24000000
+#define CLK_FREQ_20MHZ		20000000
 
 enum intel_camera_device_type {
 	INTEL_ACPI_CAMERA_CIO2,
 	INTEL_ACPI_CAMERA_IMGU,
 	INTEL_ACPI_CAMERA_SENSOR,
 	INTEL_ACPI_CAMERA_VCM,
+	INTEL_ACPI_CAMERA_NVM,
 	INTEL_ACPI_CAMERA_PMIC = 100,
 };
 
@@ -20,6 +68,47 @@ enum intel_power_action_type {
 	INTEL_ACPI_CAMERA_CLK,
 	INTEL_ACPI_CAMERA_GPIO,
 };
+
+enum ctrl_type {
+	IMGCLK = 1,
+	GPIO
+};
+
+enum action_type {
+	ENABLE = 1,
+	DISABLE
+};
+
+struct clk_config {
+	/* IMGCLKOUT_x being used for a port */
+	uint8_t clknum;
+	/* frequency setting: 0:24Mhz, 1:19.2 Mhz */
+	uint8_t freq;
+} __packed;
+
+struct gpio_config {
+	uint8_t gpio_num;
+} __packed;
+
+struct clock_ctrl_panel {
+	struct clk_config clks[MAX_CLK_CONFIGS];
+} __packed;
+
+struct gpio_ctrl_panel {
+	struct gpio_config gpio[MAX_GPIO_CONFIGS];
+} __packed;
+
+struct operation_type {
+	enum ctrl_type type;
+	uint8_t index;
+	enum action_type action;
+	uint32_t delay_ms;
+} __packed;
+
+struct operation_seq {
+	struct operation_type ops[MAX_PWR_OPS];
+	uint8_t ops_cnt;
+} __packed;
 
 struct intel_ssdb {
 	uint8_t version;			/* Current version */
@@ -64,12 +153,16 @@ struct intel_ssdb {
 	uint8_t degree;				/* Camera Orientation */
 	uint8_t mipi_define;			/* MIPI info defined in ACPI or
 						sensor driver */
+	uint32_t mclk_speed;			/* Clock info for sensor */
 	uint32_t mclk;				/* Clock info for sensor */
 	uint8_t control_logic_id;		/* PMIC device node used for
 						the camera sensor */
 	uint8_t mipi_data_format;		/* MIPI data format */
 	uint8_t silicon_version;		/* Silicon version */
 	uint8_t customer_id;			/* Customer ID */
+	uint8_t mclk_port;
+	uint8_t reserved[13];			/* Pads SSDB out so the binary blob in ACPI is
+						   the same size as seen on other firmwares.*/
 } __packed;
 
 struct intel_pwdb {
@@ -82,6 +175,11 @@ struct intel_pwdb {
 } __packed;
 
 struct drivers_intel_mipi_camera_config {
+	struct clock_ctrl_panel clk_panel;
+	struct gpio_ctrl_panel gpio_panel;
+	struct operation_seq on_seq;
+	struct operation_seq off_seq;
+
 	struct intel_ssdb ssdb;
 	struct intel_pwdb pwdb[MAX_PWDB_ENTRIES];
 	enum intel_camera_device_type device_type;
@@ -90,6 +188,42 @@ struct drivers_intel_mipi_camera_config {
 	const char *acpi_name;
 	const char *chip_name;
 	unsigned int acpi_uid;
+	const char *pr0;
+
+	/* Settings specific to CIO2 device */
+	uint32_t cio2_num_ports;
+	uint32_t cio2_lanes_used[MAX_PORT_ENTRIES];
+	const char *cio2_lane_endpoint[MAX_PORT_ENTRIES];
+	uint32_t cio2_prt[MAX_PORT_ENTRIES];
+
+	/* Settings specific to camera sensor */
+	bool disable_ssdb_defaults;
+
+	uint8_t num_freq_entries;	/* # of elements in link_freq */
+	uint32_t link_freq[MAX_LINK_FREQ_ENTRIES];
+	const char *sensor_name;	/* default "UNKNOWN" */
+	const char *remote_name;	/* default "\_SB.PCI0.CIO2" */
+	const char *vcm_name;		/* defaults to |vcm_address| device */
+	bool use_pld;
+	bool disable_pld_defaults;
+	struct acpi_pld pld;
+	uint16_t rom_address;		/* I2C to use if ssdb.rom_type != 0 */
+	uint16_t vcm_address;		/* I2C to use if ssdb.vcm_type != 0 */
+	/*
+	 * Settings specific to nvram. Many values, if left as zero, will be assigned a default.
+	 * Set disable_nvm_defaults to non-zero if you want to disable the defaulting behavior
+	 * so you can use zero for a value.
+	 */
+	bool disable_nvm_defaults;
+	uint32_t nvm_size;
+	uint32_t nvm_pagesize;
+	uint32_t nvm_readonly;
+	uint32_t nvm_width;
+
+	/* Settings specific to vcm */
+	const char *vcm_compat;
+	/* Does the device have a power resource entries */
+	bool has_power_resource;
 };
 
 #endif

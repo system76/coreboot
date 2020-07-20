@@ -9,7 +9,6 @@
 #include <device/mmio.h>
 #include <device/pci_ops.h>
 #include <console/console.h>
-#include <amdblocks/acpimmio.h>
 
 #include "hudson.h"
 #include "pci_devs.h"
@@ -17,7 +16,6 @@
 
 #if CONFIG(HUDSON_UART)
 
-#include <cpu/x86/msr.h>
 #include <delay.h>
 
 void configure_hudson_uart(void)

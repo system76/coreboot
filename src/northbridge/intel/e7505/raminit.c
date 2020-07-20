@@ -16,16 +16,14 @@
 #include <arch/io.h>
 #include <device/mmio.h>
 #include <device/pci_ops.h>
+#include <device/smbus_host.h>
 #include <lib.h>
 #include <commonlib/helpers.h>
 #include <console/console.h>
-#include <cpu/x86/mtrr.h>
-#include <cpu/x86/msr.h>
 #include <assert.h>
 #include <spd.h>
 #include <sdram_mode.h>
 #include <timestamp.h>
-#include <southbridge/intel/i82801dx/i82801dx.h>
 
 #include "raminit.h"
 #include "e7505.h"

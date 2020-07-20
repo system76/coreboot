@@ -3,12 +3,14 @@
 #include <console/console.h>
 #include <device/mmio.h>
 #include <bootstate.h>
+#include <cpu/amd/msr.h>
 #include <cpu/x86/smm.h>
 #include <cpu/x86/msr.h>
 #include <device/device.h>
 #include <device/pci.h>
 #include <device/pci_ops.h>
 #include <cbmem.h>
+#include <acpi/acpi_gnvs.h>
 #include <amdblocks/amd_pci_util.h>
 #include <amdblocks/reset.h>
 #include <amdblocks/acpimmio.h>
@@ -20,36 +22,13 @@
 #include <soc/i2c.h>
 #include <soc/southbridge.h>
 #include <soc/smi.h>
+#include <soc/uart.h>
 #include <soc/amd_pci_int_defs.h>
 #include <delay.h>
 #include <soc/pci_devs.h>
 #include <soc/nvs.h>
 #include <types.h>
 #include "chip.h"
-
-#define FCH_AOAC_UART_FOR_CONSOLE \
-		(CONFIG_UART_FOR_CONSOLE == 0 ? FCH_AOAC_DEV_UART0 \
-		: CONFIG_UART_FOR_CONSOLE == 1 ? FCH_AOAC_DEV_UART1 \
-		: CONFIG_UART_FOR_CONSOLE == 2 ? FCH_AOAC_DEV_UART2 \
-		: CONFIG_UART_FOR_CONSOLE == 3 ? FCH_AOAC_DEV_UART3 \
-		: -1)
-#if FCH_AOAC_UART_FOR_CONSOLE == -1
-# error Unsupported UART_FOR_CONSOLE chosen
-#endif
-
-/*
- * Table of devices that need their AOAC registers enabled and waited
- * upon (usually about .55 milliseconds). Instead of individual delays
- * waiting for each device to become available, a single delay will be
- * executed.  The console UART is handled separately from this table.
- */
-const static int aoac_devs[] = {
-	FCH_AOAC_DEV_AMBA,
-	FCH_AOAC_DEV_I2C2,
-	FCH_AOAC_DEV_I2C3,
-	FCH_AOAC_DEV_I2C4,
-	FCH_AOAC_DEV_ESPI,
-};
 
 /*
  * Table of APIC register index and associated IRQ name. Using IDX_XXX_NAME
@@ -110,63 +89,6 @@ const struct irq_idx_name *sb_get_apic_reg_association(size_t *size)
 	return irq_association;
 }
 
-static void power_on_aoac_device(int dev)
-{
-	uint8_t byte;
-
-	/* Power on the UART and AMBA devices */
-	byte = aoac_read8(AOAC_DEV_D3_CTL(dev));
-	byte |= FCH_AOAC_PWR_ON_DEV;
-	aoac_write8(AOAC_DEV_D3_CTL(dev), byte);
-}
-
-static bool is_aoac_device_enabled(int dev)
-{
-	uint8_t byte;
-
-	byte = aoac_read8(AOAC_DEV_D3_STATE(dev));
-	byte &= (FCH_AOAC_PWR_RST_STATE | FCH_AOAC_RST_CLK_OK_STATE);
-	if (byte == (FCH_AOAC_PWR_RST_STATE | FCH_AOAC_RST_CLK_OK_STATE))
-		return true;
-	else
-		return false;
-}
-
-static void enable_aoac_console_uart(void)
-{
-	if (!CONFIG(PICASSO_UART))
-		return;
-
-	power_on_aoac_device(FCH_AOAC_UART_FOR_CONSOLE);
-}
-
-static bool is_aoac_console_uart_enabled(void)
-{
-	if (!CONFIG(PICASSO_UART))
-		return true;
-
-	return is_aoac_device_enabled(FCH_AOAC_UART_FOR_CONSOLE);
-}
-
-void enable_aoac_devices(void)
-{
-	bool status;
-	int i;
-
-	for (i = 0; i < ARRAY_SIZE(aoac_devs); i++)
-		power_on_aoac_device(aoac_devs[i]);
-	enable_aoac_console_uart();
-
-	/* Wait for AOAC devices to indicate power and clock OK */
-	do {
-		udelay(100);
-		status = true;
-		for (i = 0; i < ARRAY_SIZE(aoac_devs); i++)
-			status &= is_aoac_device_enabled(aoac_devs[i]);
-		status &= is_aoac_console_uart_enabled();
-	} while (!status);
-}
-
 static void sb_enable_cf9_io(void)
 {
 	uint32_t reg = pm_read32(PM_DECODE_EN);
@@ -225,7 +147,14 @@ void fch_pre_init(void)
 	sb_enable_legacy_io();
 	enable_aoac_devices();
 	sb_reset_i2c_slaves();
-	if (CONFIG(PICASSO_UART))
+
+	/*
+	 * On reset Range_0 defaults to enabled. We want to start with a clean
+	 * slate to not have things unexpectedly enabled.
+	 */
+	clear_uart_legacy_config();
+
+	if (CONFIG(PICASSO_CONSOLE_UART))
 		set_uart_config(CONFIG_UART_FOR_CONSOLE);
 }
 
@@ -318,7 +247,7 @@ static void sb_init_acpi_ports(void)
 	/* CpuControl is in \_SB.CP00, 6 bytes */
 	cst_addr.hi = 0;
 	cst_addr.lo = ACPI_CPU_CONTROL;
-	wrmsr(CSTATE_BASE_REG, cst_addr);
+	wrmsr(MSR_CSTATE_ADDRESS, cst_addr);
 
 	if (CONFIG(HAVE_SMI_HANDLER)) {
 		/* APMC - SMI Command Port */
@@ -374,13 +303,13 @@ static int get_index_bit(uint32_t value, uint16_t limit)
 static void set_nvs_sws(void *unused)
 {
 	struct soc_power_reg *sws;
-	struct global_nvs_t *gnvs;
+	struct global_nvs *gnvs;
 	int index;
 
 	sws = cbmem_find(CBMEM_ID_POWER_STATE);
 	if (sws == NULL)
 		return;
-	gnvs = cbmem_find(CBMEM_ID_ACPI_GNVS);
+	gnvs = acpi_get_gnvs();
 	if (gnvs == NULL)
 		return;
 
@@ -408,7 +337,7 @@ void southbridge_init(void *chip_info)
 
 static void set_sb_final_nvs(void)
 {
-	struct global_nvs_t *gnvs = cbmem_find(CBMEM_ID_ACPI_GNVS);
+	struct global_nvs *gnvs = acpi_get_gnvs();
 	if (gnvs == NULL)
 		return;
 

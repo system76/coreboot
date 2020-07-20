@@ -32,10 +32,6 @@ config MAINBOARD_PART_NUMBER
 
 config OVERRIDE_DEVICETREE
 	string
-	default "variants/$(CONFIG_VARIANT_DIR)/overridetree.cb"
-
-config MAX_CPUS
-	int
-	default 4
+	default "variants/\$(CONFIG_VARIANT_DIR)/overridetree.cb"
 
 endif # BOARD_FOXCONN_G41S_K

@@ -6,7 +6,6 @@
 /* MMIO Ranges */
 /* IO_APIC_ADDR defined in arch/x86	0xfec00000 */
 #define SPI_BASE_ADDRESS		0xfec10000
-#define ESPI_BASE_ADDRESS		0xfec20000
 
 #if CONFIG(HPET_ADDRESS_OVERRIDE)
 #error HPET address override is not allowed and must be fixed at 0xfed00000
@@ -39,7 +38,8 @@
 /* I2C parameters for lpc_read_resources */
 #define I2C_BASE_ADDRESS		APU_I2C2_BASE
 #define I2C_DEVICE_SIZE			0x00001000
-#define I2C_DEVICE_COUNT		3
+#define I2C_DEVICE_COUNT		(I2C_MASTER_DEV_COUNT \
+					 - I2C_MASTER_START_INDEX)
 
 #define APU_DMAC0_BASE			0xfedc7000
 #define APU_DMAC1_BASE			0xfedc8000
@@ -63,11 +63,12 @@
 #define  ACPI_PM1_STS		(ACPI_PM_EVT_BLK + 0x00)	  /* 2 bytes */
 #define  ACPI_PM1_EN		(ACPI_PM_EVT_BLK + 0x02)	  /* 2 bytes */
 #define  ACPI_PM1_CNT_BLK	(PICASSO_ACPI_IO_BASE + 0x04)     /* 2 bytes */
-#define  ACPI_CPU_CONTROL	(PICASSO_ACPI_IO_BASE + 0x08)     /* 6 bytes */
-#define  ACPI_GPE0_BLK		(PICASSO_ACPI_IO_BASE + 0x10)     /* 8 bytes */
+#define  ACPI_PM_TMR_BLK	(PICASSO_ACPI_IO_BASE + 0x08)     /* 4 bytes */
+#define  ACPI_CPU_CONTROL	(PICASSO_ACPI_IO_BASE + 0x0c)     /* 6 bytes */
+/* doc says 0x14 for GPE0_BLK but FT5 only works with 0x20 */
+#define  ACPI_GPE0_BLK		(PICASSO_ACPI_IO_BASE + 0x20)     /* 8 bytes */
 #define  ACPI_GPE0_STS		(ACPI_GPE0_BLK + 0x00)		  /* 4 bytes */
 #define  ACPI_GPE0_EN		(ACPI_GPE0_BLK + 0x04)		  /* 4 bytes */
-#define  ACPI_PM_TMR_BLK	(PICASSO_ACPI_IO_BASE + 0x18)     /* 4 bytes */
 #define NCP_ERR				0xf0
 #define SMB_BASE_ADDR			0xb00
 #define PM2_INDEX			0xcd0

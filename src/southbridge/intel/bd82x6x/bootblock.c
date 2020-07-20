@@ -2,21 +2,8 @@
 
 #include <arch/bootblock.h>
 #include <device/pci_ops.h>
+#include <southbridge/intel/common/early_spi.h>
 #include "pch.h"
-
-/*
- * Enable Prefetching and Caching.
- */
-static void enable_spi_prefetch(void)
-{
-	u8 reg8;
-	pci_devfn_t dev = PCH_LPC_DEV;
-
-	reg8 = pci_read_config8(dev, BIOS_CNTL);
-	reg8 &= ~(3 << 2);
-	reg8 |= (2 << 2); /* Prefetching and Caching Enabled */
-	pci_write_config8(dev, BIOS_CNTL, reg8);
-}
 
 static void enable_port80_on_lpc(void)
 {
@@ -46,7 +33,7 @@ static void set_spi_speed(void)
 
 void bootblock_early_southbridge_init(void)
 {
-	enable_spi_prefetch();
+	enable_spi_prefetching_and_caching();
 
 	early_pch_init();
 

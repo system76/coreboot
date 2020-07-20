@@ -155,25 +155,6 @@ static void configure_c_states(void)
 	wrmsr(MSR_C_STATE_LATENCY_CONTROL_5, msr);
 }
 
-static void configure_thermal_target(void)
-{
-	config_t *conf = config_of_soc();
-	msr_t msr;
-
-	/* Set TCC activation offset if supported */
-	msr = rdmsr(MSR_PLATFORM_INFO);
-	if ((msr.lo & (1 << 30)) && conf->tcc_offset) {
-		msr = rdmsr(MSR_TEMPERATURE_TARGET);
-		msr.lo &= ~(0xf << 24); /* Bits 27:24 */
-		msr.lo |= (conf->tcc_offset & 0xf) << 24;
-		wrmsr(MSR_TEMPERATURE_TARGET, msr);
-	}
-	msr = rdmsr(MSR_TEMPERATURE_TARGET);
-	msr.lo &= ~0x7f; /* Bits 6:0 */
-	msr.lo |= 0xe6; /* setting 100ms thermal time window */
-	wrmsr(MSR_TEMPERATURE_TARGET, msr);
-}
-
 /*
  * The emulated ACPI timer allows replacing of the ACPI timer
  * (PM1_TMR) to have no impart on the system.
@@ -254,7 +235,7 @@ static void post_mp_init(void)
 	 * Now that all APs have been relocated as well as the BSP let SMIs
 	 * start flowing.
 	 */
-	smm_southbridge_enable(GBL_EN);
+	global_smi_enable_no_pwrbtn();
 
 	/* Lock down the SMRAM space. */
 	smm_lock();
@@ -282,7 +263,7 @@ void soc_init_cpus(struct bus *cpu_bus)
 		printk(BIOS_ERR, "MP initialization failure.\n");
 
 	/* Thermal throttle activation offset */
-	configure_thermal_target();
+	configure_tcc_thermal_target();
 }
 
 int soc_skip_ucode_update(u32 current_patch_id, u32 new_patch_id)
@@ -312,6 +293,6 @@ int soc_skip_ucode_update(u32 current_patch_id, u32 new_patch_id)
 	if (msr2.lo && (current_patch_id == new_patch_id - 1))
 		return 0;
 
-	return (msr1.lo & PRMRR_SUPPORTED) &&
+	return (msr1.lo & MTRR_CAP_PRMRR) &&
 		(current_patch_id == new_patch_id - 1);
 }

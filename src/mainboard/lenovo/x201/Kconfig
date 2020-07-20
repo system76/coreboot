@@ -40,7 +40,7 @@ config VBOOT_VBNV_OFFSET
 
 config FMDFILE
 	string
-	default "src/mainboard/$(CONFIG_MAINBOARD_DIR)/vboot-rwa.fmd" if VBOOT
+	default "src/mainboard/\$(CONFIG_MAINBOARD_DIR)/vboot-rwa.fmd" if VBOOT
 
 config MAINBOARD_DIR
 	string
@@ -57,10 +57,6 @@ config USBDEBUG_HCD_INDEX
 config DRAM_RESET_GATE_GPIO
 	int
 	default 10
-
-config MAX_CPUS
-	int
-	default 4
 
 # Without the Intel ME's EFFS partition some PCIe devices (like the USB and SATA
 # controllers) don't work as expected

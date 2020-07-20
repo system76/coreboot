@@ -2,7 +2,7 @@
 
 #include <device/mmio.h>
 #include <device/pci_ops.h>
-#include <cbmem.h>
+#include <acpi/acpi_gnvs.h>
 #include <console/console.h>
 #include <device/device.h>
 #include <device/pci.h>
@@ -53,14 +53,12 @@ static void lpe_enable_acpi_mode(struct device *dev)
 
 		REG_SCRIPT_END
 	};
-	global_nvs_t *gnvs;
+	struct global_nvs *gnvs;
 
 	/* Find ACPI NVS to update BARs */
-	gnvs = cbmem_find(CBMEM_ID_ACPI_GNVS);
-	if (!gnvs) {
-		printk(BIOS_ERR, "Unable to locate Global NVS\n");
+	gnvs = acpi_get_gnvs();
+	if (!gnvs)
 		return;
-	}
 
 	/* Save BAR0, BAR1, and firmware base  to ACPI NVS */
 	assign_device_nvs(dev, &gnvs->dev.lpe_bar0, PCI_BASE_ADDRESS_0);
@@ -134,12 +132,9 @@ static void lpe_stash_firmware_info(struct device *dev)
 	write32((void *)(uintptr_t)(mmio->base + FIRMWARE_REG_LENGTH_C0), res->size);
 }
 
-
 static void lpe_init(struct device *dev)
 {
 	struct soc_intel_braswell_config *config = config_of(dev);
-
-	printk(BIOS_SPEW, "%s/%s (%s)\n", __FILE__, __func__, dev_name(dev));
 
 	lpe_stash_firmware_info(dev);
 	setup_codec_clock(dev);

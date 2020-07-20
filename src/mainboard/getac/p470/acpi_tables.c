@@ -1,15 +1,15 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#include <types.h>
 #include <string.h>
 #include <console/console.h>
 #include <acpi/acpi.h>
+#include <acpi/acpi_gnvs.h>
 #include <device/device.h>
 #include <southbridge/intel/i82801gx/nvs.h>
 
 #include "mainboard.h"
 
-void acpi_create_gnvs(global_nvs_t *gnvs)
+void acpi_create_gnvs(struct global_nvs *gnvs)
 {
 	/* Enable COM port(s) */
 	gnvs->cmap = 0x01;

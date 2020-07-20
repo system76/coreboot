@@ -12,22 +12,18 @@ config BOARD_SPECIFIC_OPTIONS
 	select HAVE_OPTION_TABLE
 	select INTEL_GMA_HAVE_VBT
 	select MAINBOARD_HAS_LIBGFXINIT
+	select MAINBOARD_USES_IFD_GBE_REGION
 	select NORTHBRIDGE_INTEL_HASWELL
 	select SERIRQ_CONTINUOUS_MODE
 	select SOUTHBRIDGE_INTEL_LYNXPOINT
 	select SUPERIO_NUVOTON_NCT6776
-	select SUPERIO_NUVOTON_NCT6776_COM_A
 
 config MAINBOARD_DIR
 	string
-	default asrock/b85m_pro4
+	default "asrock/b85m_pro4"
 
 config MAINBOARD_PART_NUMBER
 	string
 	default "B85M Pro4"
-
-config MAX_CPUS
-	int
-	default 8
 
 endif

@@ -2,7 +2,8 @@
 
 Device (TFN1)
 {
-	Name (_HID, "INT3404")
+	Name (_HID, DPTF_FAN_DEVICE)
+
 	Name (_UID, 0)
 	Name (_STR, Unicode("Fan Control"))
 
@@ -32,19 +33,19 @@ Device (TFN1)
 	Method (_FST, 0, Serialized,,PkgObj)
 	{
 		/* Fill in TFST with current control. */
-		Store (\_SB.PCI0.LPCB.EC0.FAND, Index (TFST, 1))
+		TFST[1] = \_SB.PCI0.LPCB.EC0.FAND
 		Return (TFST)
 	}
 
 	/* _FSL: Fan Speed Level */
 	Method (_FSL, 1, Serialized)
 	{
-		Store (Arg0, \_SB.PCI0.LPCB.EC0.FAND)
+		\_SB.PCI0.LPCB.EC0.FAND = Arg0
 	}
 
 	Method (_STA)
 	{
-		If (LEqual (\DPTE, One))
+		If (\DPTE == 1)
 		{
 			Return (0xF)
 		} Else {

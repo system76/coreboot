@@ -28,7 +28,7 @@ static int is_sgx_supported(void)
 
 	cpuid_regs = cpuid_ext(0x7, 0x0); /* EBX[2] is feature capability */
 	msr = rdmsr(MTRR_CAP_MSR); /* Bit 12 is PRMRR enablement */
-	return ((cpuid_regs.ebx & SGX_SUPPORTED) && (msr.lo & PRMRR_SUPPORTED));
+	return ((cpuid_regs.ebx & SGX_SUPPORTED) && (msr.lo & MTRR_CAP_PRMRR));
 }
 
 void prmrr_core_configure(void)
@@ -235,7 +235,7 @@ void sgx_configure(void *unused)
 		activate_sgx();
 }
 
-void sgx_fill_gnvs(global_nvs_t *gnvs)
+void sgx_fill_gnvs(struct global_nvs *gnvs)
 {
 	struct cpuid_result cpuid_regs;
 

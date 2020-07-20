@@ -12,7 +12,6 @@
 #include <drivers/intel/gma/opregion.h>
 #include <drivers/intel/gma/libgfxinit.h>
 #include <pc80/vga.h>
-#include <types.h>
 
 #include "chip.h"
 #include "drivers/intel/gma/i915_reg.h"
@@ -48,11 +47,9 @@ static void gma_func0_init(struct device *dev)
 static void gma_func0_disable(struct device *dev)
 {
 	struct device *dev_host = pcidev_on_root(0, 0);
-	u16 ggc;
 
-	ggc = pci_read_config16(dev_host, D0F0_GGC);
-	ggc |= (1 << 1); /* VGA cycles to discrete GPU */
-	pci_write_config16(dev_host, D0F0_GGC, ggc);
+	/* VGA cycles to discrete GPU */
+	pci_or_config16(dev_host, D0F0_GGC, 1 << 1);
 }
 
 static void gma_generate_ssdt(const struct device *device)
@@ -67,17 +64,13 @@ static const char *gma_acpi_name(const struct device *dev)
 	return "GFX0";
 }
 
-static struct pci_operations gma_pci_ops = {
-	.set_subsystem = pci_dev_set_subsystem,
-};
-
 static struct device_operations gma_func0_ops = {
 	.read_resources		= pci_dev_read_resources,
 	.set_resources		= pci_dev_set_resources,
 	.enable_resources	= pci_dev_enable_resources,
 	.acpi_fill_ssdt		= gma_generate_ssdt,
 	.init			= gma_func0_init,
-	.ops_pci		= &gma_pci_ops,
+	.ops_pci		= &pci_dev_ops_pci,
 	.disable		= gma_func0_disable,
 	.acpi_name		= gma_acpi_name,
 };

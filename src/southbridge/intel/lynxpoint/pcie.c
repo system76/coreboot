@@ -670,17 +670,6 @@ static void pci_init(struct device *dev)
 	reg16 |= PCI_BRIDGE_CTL_NO_ISA;
 	pci_write_config16(dev, PCI_BRIDGE_CONTROL, reg16);
 
-#ifdef EVEN_MORE_DEBUG
-	reg32 = pci_read_config32(dev, 0x20);
-	printk(BIOS_SPEW, "    MBL    = 0x%08x\n", reg32);
-	reg32 = pci_read_config32(dev, 0x24);
-	printk(BIOS_SPEW, "    PMBL   = 0x%08x\n", reg32);
-	reg32 = pci_read_config32(dev, 0x28);
-	printk(BIOS_SPEW, "    PMBU32 = 0x%08x\n", reg32);
-	reg32 = pci_read_config32(dev, 0x2c);
-	printk(BIOS_SPEW, "    PMLU32 = 0x%08x\n", reg32);
-#endif
-
 	/* Clear errors in status registers */
 	reg16 = pci_read_config16(dev, 0x06);
 	pci_write_config16(dev, 0x06, reg16);
@@ -708,10 +697,6 @@ static void pch_pcie_enable(struct device *dev)
 		root_port_commit_config();
 }
 
-static struct pci_operations pci_ops = {
-	.set_subsystem = pci_dev_set_subsystem,
-};
-
 static struct device_operations device_ops = {
 	.read_resources		= pci_bus_read_resources,
 	.set_resources		= pci_dev_set_resources,
@@ -719,7 +704,7 @@ static struct device_operations device_ops = {
 	.init			= pci_init,
 	.enable			= pch_pcie_enable,
 	.scan_bus		= pciexp_scan_bridge,
-	.ops_pci		= &pci_ops,
+	.ops_pci		= &pci_dev_ops_pci,
 };
 
 static const unsigned short pci_device_ids[] = {

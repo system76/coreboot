@@ -253,7 +253,7 @@ static int find_strobes_edge(int channel_offset, u8 *mediumcoarse, u8 *fine,
 }
 
 /**
- * Here we use a trick. The RCVEN channel 0 registers are all at an
+ * Here we use a trick. The RCVEN channel 1 registers are all at an
  * offset of 0x80 to the channel 0 registers. We don't want to waste
  * a lot of if ()s so let's just pass 0 or 0x80 for the channel offset.
  */
@@ -291,7 +291,7 @@ static int receive_enable_autoconfig(int channel_offset, struct sys_info *sysinf
 	 * It can be removed when the output message is not printed anymore
 	 */
 	if (MCHBAR8(C0WL0REOST + channel_offset) == 0)
-		printk(BIOS_DEBUG, "Weird. No C%sWL0REOST\n", channel_offset?"1":"0");
+		printk(BIOS_DEBUG, "Weird. No C%sWL0REOST\n", channel_offset ? "1" : "0");
 
 	return 0;
 }

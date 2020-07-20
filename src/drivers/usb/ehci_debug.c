@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#include <stddef.h>
+#include <stdint.h>
 #include <console/console.h>
 #include <console/usb.h>
 #include <arch/io.h>
@@ -563,13 +563,6 @@ try_next_port:
 	}
 	dprintk(BIOS_INFO, "EHCI debug port enabled.\n");
 
-#if 0
-	/* Completely transfer the debug device to the debug controller */
-	portsc = read32(&ehci_regs->port_status[debug_port - 1]);
-	portsc &= ~PORT_PE;
-	write32(&ehci_regs->port_status[debug_port - 1], portsc);
-#endif
-
 	dbgp_mdelay(100);
 
 	struct ehci_dbg_port *port = (void *)(uintptr_t)info->ehci_debug;
@@ -591,23 +584,21 @@ err:
 	//return ret;
 
 next_debug_port:
-#if CONFIG_USBDEBUG_DEFAULT_PORT == 0
-	port_map_tried |= (1 << (debug_port - 1));
-	new_debug_port = ((debug_port-1 + 1) % n_ports) + 1;
-	if (port_map_tried != ((1 << n_ports) - 1)) {
-		ehci_debug_select_port(new_debug_port);
-		goto try_next_port;
+	if (CONFIG_USBDEBUG_DEFAULT_PORT == 0) {
+		port_map_tried |= (1 << (debug_port - 1));
+		new_debug_port = ((debug_port-1 + 1) % n_ports) + 1;
+		if (port_map_tried != ((1 << n_ports) - 1)) {
+			ehci_debug_select_port(new_debug_port);
+			goto try_next_port;
+		}
+		if (--playtimes) {
+			ehci_debug_select_port(new_debug_port);
+			goto try_next_time;
+		}
+	} else {
+		if (--playtimes)
+			goto try_next_time;
 	}
-	if (--playtimes) {
-		ehci_debug_select_port(new_debug_port);
-		goto try_next_time;
-	}
-#else
-	if (0)
-		goto try_next_port;
-	if (--playtimes)
-		goto try_next_time;
-#endif
 
 	return -10;
 }

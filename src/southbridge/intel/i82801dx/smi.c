@@ -261,18 +261,10 @@ static void aseg_smm_relocate(void)
 	 */
 
 	smi_en = 0; /* reset SMI enables */
-
-#if 0
-	smi_en |= LEGACY_USB2_EN | LEGACY_USB_EN;
-#endif
 	smi_en |= TCO_EN;
 	smi_en |= APMC_EN;
-#if DEBUG_PERIODIC_SMIS
-	/* Set DEBUG_PERIODIC_SMIS in i82801gx.h to debug using
-	 * periodic SMIs.
-	 */
-	smi_en |= PERIODIC_EN;
-#endif
+	if (CONFIG(DEBUG_PERIODIC_SMI))
+		smi_en |= PERIODIC_EN;
 	smi_en |= SLP_SMI_EN;
 	smi_en |= BIOS_EN;
 
@@ -301,7 +293,7 @@ static void aseg_smm_relocate(void)
 
 	/* raise an SMI interrupt */
 	printk(BIOS_SPEW, "  ... raise SMI#\n");
-	outb(0x00, 0xb2);
+	apm_control(APM_CNT_NOOP_SMI);
 }
 
 static void aseg_smm_install(void)
@@ -337,15 +329,4 @@ void aseg_smm_lock(void)
 	 */
 	printk(BIOS_DEBUG, "Locking SMM.\n");
 	northbridge_write_smram(D_LCK | G_SMRAME | C_BASE_SEG);
-}
-
-void smm_setup_structures(void *gnvs, void *tcg, void *smi1)
-{
-	/* The GDT or coreboot table is going to live here. But a long time
-	 * after we relocated the GNVS, so this is not troublesome.
-	 */
-	*(u32 *)0x500 = (u32)gnvs;
-	*(u32 *)0x504 = (u32)tcg;
-	*(u32 *)0x508 = (u32)smi1;
-	outb(0xea, 0xb2);
 }

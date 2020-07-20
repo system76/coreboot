@@ -25,12 +25,11 @@
 #include "pch.h"
 
 #if CONFIG(CHROMEOS)
-#include <vendorcode/google/chromeos/chromeos.h>
 #include <vendorcode/google/chromeos/gnvs.h>
 #endif
 
 /* Path that the BIOS should take based on ME state */
-static const char *me_bios_path_values[] __unused  = {
+static const char *me_bios_path_values[] __unused = {
 	[ME_NORMAL_BIOS_PATH]		= "Normal",
 	[ME_S3WAKE_BIOS_PATH]		= "S3 Wake",
 	[ME_ERROR_BIOS_PATH]		= "Error",
@@ -38,11 +37,9 @@ static const char *me_bios_path_values[] __unused  = {
 	[ME_DISABLE_BIOS_PATH]		= "Disable",
 	[ME_FIRMWARE_UPDATE_BIOS_PATH]	= "Firmware Update",
 };
-static int intel_me_read_mbp(me_bios_payload *mbp_data);
 
 /* MMIO base address for MEI interface */
 static u32 *mei_base_address;
-
 
 static void mei_dump(void *ptr, int dword, int offset, const char *type)
 {
@@ -237,13 +234,12 @@ static int mei_send_msg(struct mei_header *mei, struct mkhi_header *mkhi,
 	return mei_wait_for_me_ready();
 }
 
-static int mei_recv_msg(struct mkhi_header *mkhi,
-			void *rsp_data, int rsp_bytes)
+static int mei_recv_msg(struct mkhi_header *mkhi, void *rsp_data, int rsp_bytes)
 {
 	struct mei_header mei_rsp;
 	struct mkhi_header mkhi_rsp;
 	struct mei_csr me, host;
-	unsigned int ndata, n/*, me_data_len*/;
+	unsigned int ndata, n;
 	unsigned int expected;
 	u32 *data;
 
@@ -292,7 +288,7 @@ static int mei_recv_msg(struct mkhi_header *mkhi,
 	if (!mkhi_rsp.is_response ||
 	    mkhi->group_id != mkhi_rsp.group_id ||
 	    mkhi->command != mkhi_rsp.command) {
-		printk(BIOS_ERR, "ME: invalid response, group %u ?= %u,"
+		printk(BIOS_ERR, "ME: invalid response, group %u ?= %u, "
 		       "command %u ?= %u, is_response %u\n", mkhi->group_id,
 		       mkhi_rsp.group_id, mkhi->command, mkhi_rsp.command,
 		       mkhi_rsp.is_response);
@@ -419,7 +415,7 @@ static int __unused mkhi_end_of_post(void)
 	u32 eop_ack;
 
 	/* Send request and wait for response */
-	printk(BIOS_NOTICE, "ME: %s\n", __FUNCTION__);
+	printk(BIOS_NOTICE, "ME: %s\n", __func__);
 	if (mei_sendrecv(&mei, &mkhi, NULL, &eop_ack, sizeof(eop_ack)) < 0) {
 		printk(BIOS_ERR, "ME: END OF POST message failed\n");
 		return -1;
@@ -457,10 +453,8 @@ void intel_me8_finalize_smm(void)
 	mkhi_end_of_post();
 
 	/* Make sure IO is disabled */
-	reg32 = pci_read_config32(PCH_ME_DEV, PCI_COMMAND);
-	reg32 &= ~(PCI_COMMAND_MASTER |
-		   PCI_COMMAND_MEMORY | PCI_COMMAND_IO);
-	pci_write_config32(PCH_ME_DEV, PCI_COMMAND, reg32);
+	pci_and_config16(PCH_ME_DEV, PCI_COMMAND,
+			 ~(PCI_COMMAND_MASTER | PCI_COMMAND_MEMORY | PCI_COMMAND_IO));
 
 	/* Hide the PCI device */
 	RCBA32_OR(FD2, PCH_DISABLE_MEI1);
@@ -518,7 +512,7 @@ static me_bios_path intel_me_path(struct device *dev)
 	/* Check if the MBP is ready */
 	if (!gmes.mbp_rdy) {
 		printk(BIOS_CRIT, "%s: mbp is not ready!\n",
-		       __FUNCTION__);
+		       __func__);
 		path = ME_ERROR_BIOS_PATH;
 	}
 
@@ -545,7 +539,6 @@ static int intel_mei_setup(struct device *dev)
 {
 	struct resource *res;
 	struct mei_csr host;
-	u32 reg32;
 
 	/* Find the MMIO base for the ME interface */
 	res = find_resource(dev, PCI_BASE_ADDRESS_0);
@@ -556,9 +549,7 @@ static int intel_mei_setup(struct device *dev)
 	mei_base_address = (u32 *)(uintptr_t)res->base;
 
 	/* Ensure Memory and Bus Master bits are set */
-	reg32 = pci_read_config32(dev, PCI_COMMAND);
-	reg32 |= PCI_COMMAND_MASTER | PCI_COMMAND_MEMORY;
-	pci_write_config32(dev, PCI_COMMAND, reg32);
+	pci_or_config16(dev, PCI_COMMAND, PCI_COMMAND_MASTER | PCI_COMMAND_MEMORY);
 
 	/* Clean up status for next message */
 	read_host_csr(&host);
@@ -569,6 +560,10 @@ static int intel_mei_setup(struct device *dev)
 
 	return 0;
 }
+
+#if CONFIG(CHROMEOS)
+#include <vendorcode/google/chromeos/chromeos.h>
+#endif
 
 /* Read the Extend register hash of ME firmware */
 static int intel_me_extend_valid(struct device *dev)
@@ -624,6 +619,8 @@ static void intel_me_hide(struct device *dev)
 	pch_enable(dev);
 }
 
+static int intel_me_read_mbp(me_bios_payload *mbp_data);
+
 /* Check whether ME is present and do basic init */
 static void intel_me_init(struct device *dev)
 {
@@ -669,16 +666,12 @@ static void intel_me_init(struct device *dev)
 	}
 }
 
-static struct pci_operations pci_ops = {
-	.set_subsystem = pci_dev_set_subsystem,
-};
-
 static struct device_operations device_ops = {
 	.read_resources		= pci_dev_read_resources,
 	.set_resources		= pci_dev_set_resources,
 	.enable_resources	= pci_dev_enable_resources,
 	.init			= intel_me_init,
-	.ops_pci		= &pci_ops,
+	.ops_pci		= &pci_dev_ops_pci,
 };
 
 static const struct pci_driver intel_me __pci_driver = {
@@ -701,21 +694,6 @@ static u32 me_to_host_words_pending(void)
 		(me.buffer_depth - 1);
 }
 
-#if 0
-/* This function is not yet being used, keep it in for the future. */
-static u32 host_to_me_words_room(void)
-{
-	struct mei_csr csr;
-
-	read_me_csr(&csr);
-	if (!csr.ready)
-		return 0;
-
-	read_host_csr(&csr);
-	return (csr.buffer_read_ptr - csr.buffer_write_ptr - 1) &
-		(csr.buffer_depth - 1);
-}
-#endif
 /*
  * mbp seems to be following its own flow, let's retrieve it in a dedicated
  * function.

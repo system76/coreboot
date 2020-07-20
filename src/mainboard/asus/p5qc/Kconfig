@@ -35,16 +35,12 @@ config MAINBOARD_PART_NUMBER
 
 config DEVICETREE
 	string
-	default "variants/$(CONFIG_VARIANT_DIR)/devicetree.cb"
+	default "variants/\$(CONFIG_VARIANT_DIR)/devicetree.cb"
 
 config GPIO_C
 	string
 	default "variants/p5ql_pro/gpio.c" if BOARD_ASUS_P5QL_PRO
 	default "gpio.c"
-
-config MAX_CPUS
-	int
-	default 4
 
 # The MARVELL IDE controller delays SeaBIOS a lot and results in an unbootable
 # bogus disk. Compiling SeaBIOS without ATA support is a workaround.
@@ -54,6 +50,6 @@ config MAX_CPUS
 config PAYLOAD_CONFIGFILE
 	string
 	default "" if PAYLOAD_SEABIOS && BOARD_ASUS_P5QL_PRO
-	default "$(top)/src/mainboard/$(MAINBOARDDIR)/config_seabios" if PAYLOAD_SEABIOS
+	default "\$(top)/src/mainboard/\$(MAINBOARDDIR)/config_seabios" if PAYLOAD_SEABIOS
 
 endif # BOARD_ASUS_P5Q*

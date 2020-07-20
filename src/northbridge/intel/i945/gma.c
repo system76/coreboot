@@ -701,9 +701,7 @@ static void gma_func0_disable(struct device *dev)
 	pci_write_config16(dev, GCFC, 0xa00);
 	pci_write_config16(dev_host, GGC, (1 << 1));
 
-	unsigned int reg32 = pci_read_config32(dev_host, DEVEN);
-	reg32 &= ~(DEVEN_D2F0 | DEVEN_D2F1);
-	pci_write_config32(dev_host, DEVEN, reg32);
+	pci_and_config32(dev_host, DEVEN, ~(DEVEN_D2F0 | DEVEN_D2F1));
 
 	dev->enabled = 0;
 }
@@ -730,13 +728,8 @@ static void gma_generate_ssdt(const struct device *device)
 
 static void gma_func0_read_resources(struct device *dev)
 {
-	u8 reg8;
-
-	/* Set Untrusted Aperture Size to 256mb */
-	reg8 = pci_read_config8(dev, MSAC);
-	reg8 &= ~0x3;
-	reg8 |= 0x2;
-	pci_write_config8(dev, MSAC, reg8);
+	/* Set Untrusted Aperture Size to 256MB */
+	pci_update_config8(dev, MSAC, ~0x3, 0x2);
 
 	pci_dev_read_resources(dev);
 }
@@ -746,10 +739,6 @@ static const char *gma_acpi_name(const struct device *dev)
 	return "GFX0";
 }
 
-static struct pci_operations gma_pci_ops = {
-	.set_subsystem    = pci_dev_set_subsystem,
-};
-
 static struct device_operations gma_func0_ops = {
 	.read_resources		= gma_func0_read_resources,
 	.set_resources		= pci_dev_set_resources,
@@ -757,7 +746,7 @@ static struct device_operations gma_func0_ops = {
 	.init			= gma_func0_init,
 	.acpi_fill_ssdt		= gma_generate_ssdt,
 	.disable		= gma_func0_disable,
-	.ops_pci		= &gma_pci_ops,
+	.ops_pci		= &pci_dev_ops_pci,
 	.acpi_name		= gma_acpi_name,
 };
 
@@ -767,7 +756,7 @@ static struct device_operations gma_func1_ops = {
 	.set_resources		= pci_dev_set_resources,
 	.enable_resources	= pci_dev_enable_resources,
 	.init			= gma_func1_init,
-	.ops_pci		= &gma_pci_ops,
+	.ops_pci		= &pci_dev_ops_pci,
 };
 
 static const unsigned short i945_gma_func0_ids[] = {

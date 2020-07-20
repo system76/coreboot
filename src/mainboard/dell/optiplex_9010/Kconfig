@@ -22,7 +22,7 @@ config BOARD_SPECIFIC_OPTIONS
 
 config MAINBOARD_DIR
 	string
-	default dell/optiplex_9010
+	default "dell/optiplex_9010"
 
 config MAINBOARD_PART_NUMBER
 	string
@@ -39,10 +39,6 @@ config VGA_BIOS_ID
 config DRAM_RESET_GATE_GPIO
 	int
 	default 60
-
-config MAX_CPUS
-	int
-	default 8
 
 config USBDEBUG_HCD_INDEX
 	int

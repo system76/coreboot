@@ -17,6 +17,11 @@ chip soc/amd/picasso
 
 	# End : OPN Performance Configuration
 
+	register "telemetry_vddcr_vdd_slope" = "30231" #mA
+	register "telemetry_vddcr_vdd_offset" = "0-1"
+	register "telemetry_vddcr_soc_slope" = "22644" #mA
+	register "telemetry_vddcr_soc_offset" = "68"
+
 	# I2C2 for touchscreen and trackpad
 	register "i2c[2]" = "{
 		.speed = I2C_SPEED_FAST,
@@ -35,9 +40,6 @@ chip soc/amd/picasso
 	# See AMD 55570-B1 Table 13: PCI Device ID Assignments.
 	device domain 0 on
 		subsystemid 0x1022 0x1510 inherit
-		device pci 8.1 on      # Internal GPP Bridge 0 to Bus A
-			device pci 0.3 on  end # USB 3.1
-		end
 	end # domain
 
 	device mmio 0xfedc4000 on # APU_I2C2_BASE
@@ -88,7 +90,7 @@ chip soc/amd/picasso
 			register "hid" = ""ELAN0000""
 			register "desc" = ""ELAN Touchpad""
 			register "irq_gpio" = "ACPI_GPIO_IRQ_EDGE_LOW(GPIO_9)"
-			register "wake" = "7"
+			register "wake" = "GEVENT_22"
 			register "probed" = "1"
 			device i2c 15 on end
 		end
@@ -96,7 +98,7 @@ chip soc/amd/picasso
 			register "generic.hid" = ""PNP0C50""
 			register "generic.desc" = ""Synaptics Touchpad""
 			register "generic.irq_gpio" = "ACPI_GPIO_IRQ_EDGE_LOW(GPIO_9)"
-			register "generic.wake" = "7"
+			register "generic.wake" = "GEVENT_22"
 			register "generic.probed" = "1"
 			register "hid_desc_reg_offset" = "0x20"
 			device i2c 2c on end

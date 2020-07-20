@@ -13,18 +13,15 @@ config BOARD_SPECIFIC_OPTIONS
 	select SUPERIO_NUVOTON_NCT6776_COM_A
 	select SUPERIO_NUVOTON_WPCM450
 	select MAINBOARD_USES_IFD_GBE_REGION
+	select IPMI_KCS
 
 config MAINBOARD_DIR
 	string
-	default supermicro/x9scl
+	default "supermicro/x9scl"
 
 config MAINBOARD_PART_NUMBER
 	string
 	default "X9SCL/X9SCM"
-
-config MAX_CPUS
-	int
-	default 8
 
 config USBDEBUG_HCD_INDEX
 	int

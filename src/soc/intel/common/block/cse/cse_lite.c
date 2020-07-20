@@ -4,6 +4,8 @@
 #include <soc/intel/common/reset.h>
 #include <intelblocks/cse.h>
 #include <security/vboot/vboot_common.h>
+#include <security/vboot/misc.h>
+#include <vb2_api.h>
 
 /* Converts bp index to boot partition string */
 #define GET_BP_STR(bp_index) (bp_index ? "RW" : "RO")
@@ -25,6 +27,30 @@ enum boot_partition_id {
 
 	/* RW(BP2) contains fully functional CSE Firmware */
 	RW = 1
+};
+
+/* CSE recovery sub-error codes */
+enum csme_failure_reason {
+	/* Unspecified error */
+	CSE_LITE_SKU_UNSPECIFIED = 1,
+
+	/* CSE fails to boot from RW */
+	CSE_LITE_SKU_RW_JUMP_ERROR = 2,
+
+	/* CSE RW boot partition access error */
+	CSE_LITE_SKU_RW_ACCESS_ERROR = 3,
+
+	/* Fails to set next boot partition as RW */
+	CSE_LITE_SKU_RW_SWITCH_ERROR = 4,
+
+	/* CSE firmware update failure */
+	CSE_LITE_SKU_FW_UPDATE_ERROR = 5,
+
+	/* Fails to communicate with CSE */
+	CSE_LITE_SKU_COMMUNICATION_ERROR = 6,
+
+	/* Fails to wipe CSE runtime data */
+	CSE_LITE_SKU_DATA_WIPE_ERROR = 7
 };
 
 /*
@@ -112,6 +138,19 @@ struct get_bp_info_rsp {
 	struct cse_bp_info bp_info;
 } __packed;
 
+static void cse_trigger_recovery(uint8_t rec_sub_code)
+{
+	if (CONFIG(VBOOT)) {
+		struct vb2_context *ctx;
+		ctx = vboot_get_context();
+		vb2api_fail(ctx, VB2_RECOVERY_INTEL_CSE_LITE_SKU, rec_sub_code);
+		vboot_save_data(ctx);
+		vboot_reboot();
+	}
+
+	die("cse_lite: Failed to trigger recovery mode(recovery subcode:%d)\n", rec_sub_code);
+}
+
 static uint8_t cse_get_current_bp(const struct cse_bp_info *cse_bp_info)
 {
 	return cse_bp_info->current_bp;
@@ -127,21 +166,23 @@ static void cse_print_boot_partition_info(const struct cse_bp_info *cse_bp_info)
 {
 	const struct cse_bp_entry *cse_bp;
 
-	printk(BIOS_DEBUG, "ME: Number of partitions = %d\n", cse_bp_info->total_number_of_bp);
-	printk(BIOS_DEBUG, "ME: Current partition = %s\n", GET_BP_STR(cse_bp_info->current_bp));
-	printk(BIOS_DEBUG, "ME: Next partition = %s\n", GET_BP_STR(cse_bp_info->next_bp));
-	printk(BIOS_DEBUG, "ME: Flags = 0x%x\n", cse_bp_info->flags);
+	printk(BIOS_DEBUG, "cse_lite: Number of partitions = %d\n",
+			cse_bp_info->total_number_of_bp);
+	printk(BIOS_DEBUG, "cse_lite: Current partition = %s\n",
+			GET_BP_STR(cse_bp_info->current_bp));
+	printk(BIOS_DEBUG, "cse_lite: Next partition = %s\n", GET_BP_STR(cse_bp_info->next_bp));
+	printk(BIOS_DEBUG, "cse_lite: Flags = 0x%x\n", cse_bp_info->flags);
 
 	/* Log version info of RO & RW partitions */
 	cse_bp = cse_get_bp_entry(RO, cse_bp_info);
-	printk(BIOS_DEBUG, "ME: %s version = %d.%d.%d.%d (Status=0x%x, Start=0x%x, End=0x%x)\n",
+	printk(BIOS_DEBUG, "cse_lite: %s version = %d.%d.%d.%d (Status=0x%x, Start=0x%x, End=0x%x)\n",
 			GET_BP_STR(RO), cse_bp->fw_ver.major, cse_bp->fw_ver.minor,
 			cse_bp->fw_ver.hotfix, cse_bp->fw_ver.build,
 			cse_bp->status, cse_bp->start_offset,
 			cse_bp->end_offset);
 
 	cse_bp = cse_get_bp_entry(RW, cse_bp_info);
-	printk(BIOS_DEBUG, "ME: %s version = %d.%d.%d.%d (Status=0x%x, Start=0x%x, End=0x%x)\n",
+	printk(BIOS_DEBUG, "cse_lite: %s version = %d.%d.%d.%d (Status=0x%x, Start=0x%x, End=0x%x)\n",
 			GET_BP_STR(RW), cse_bp->fw_ver.major, cse_bp->fw_ver.minor,
 			cse_bp->fw_ver.hotfix, cse_bp->fw_ver.build,
 			cse_bp->status, cse_bp->start_offset,
@@ -183,19 +224,19 @@ static bool cse_get_bp_info(struct get_bp_info_rsp *bp_info_rsp)
 	};
 
 	if (!cse_is_bp_cmd_info_possible()) {
-		printk(BIOS_ERR, "cse_bp: CSE does not meet prerequisites\n");
+		printk(BIOS_ERR, "cse_lite: CSE does not meet prerequisites\n");
 		return false;
 	}
 
 	size_t resp_size = sizeof(struct get_bp_info_rsp);
 
 	if (!heci_send_receive(&info_req, sizeof(info_req), bp_info_rsp, &resp_size)) {
-		printk(BIOS_ERR, "cse_bp: Could not get partition info\n");
+		printk(BIOS_ERR, "cse_lite: Could not get partition info\n");
 		return false;
 	}
 
 	if (bp_info_rsp->hdr.result) {
-		printk(BIOS_ERR, "cse_bp: Get partition info resp failed: %d\n",
+		printk(BIOS_ERR, "cse_lite: Get partition info resp failed: %d\n",
 				bp_info_rsp->hdr.result);
 		return false;
 	}
@@ -227,14 +268,14 @@ static bool cse_set_next_boot_partition(enum boot_partition_id bp)
 	};
 
 	if (bp != RO && bp != RW) {
-		printk(BIOS_ERR, "cse_bp: Incorrect partition id(%d) is provided", bp);
+		printk(BIOS_ERR, "cse_lite: Incorrect partition id(%d) is provided", bp);
 		return false;
 	}
 
-	printk(BIOS_INFO, "cse_bp: Set Boot Partition Info Command (%s)\n", GET_BP_STR(bp));
+	printk(BIOS_INFO, "cse_lite: Set Boot Partition Info Command (%s)\n", GET_BP_STR(bp));
 
 	if (!cse_is_bp_cmd_info_possible()) {
-		printk(BIOS_ERR, "cse_bp: CSE does not meet prerequisites\n");
+		printk(BIOS_ERR, "cse_lite: CSE does not meet prerequisites\n");
 		return false;
 	}
 
@@ -245,7 +286,7 @@ static bool cse_set_next_boot_partition(enum boot_partition_id bp)
 		return false;
 
 	if (switch_resp.result) {
-		printk(BIOS_ERR, "cse_bp: Set Boot Partition Info Response Failed: %d\n",
+		printk(BIOS_ERR, "cse_lite: Set Boot Partition Info Response Failed: %d\n",
 				switch_resp.result);
 		return false;
 	}
@@ -263,7 +304,7 @@ static bool cse_boot_to_rw(const struct cse_bp_info *cse_bp_info)
 
 	do_global_reset();
 
-	die("cse_bp: Failed to reset system\n");
+	die("cse_lite: Failed to reset system\n");
 
 	/* Control never reaches here */
 	return false;
@@ -278,7 +319,7 @@ static bool cse_is_rw_status_valid(const struct cse_bp_info *cse_bp_info)
 
 	if (rw_bp->status == BP_STATUS_PARTITION_NOT_PRESENT ||
 			rw_bp->status == BP_STATUS_GENERAL_FAILURE) {
-		printk(BIOS_ERR, "cse_bp: RW BP (status:%u) is not valid\n", rw_bp->status);
+		printk(BIOS_ERR, "cse_lite: RW BP (status:%u) is not valid\n", rw_bp->status);
 		return false;
 	}
 	return true;
@@ -294,34 +335,34 @@ void cse_fw_sync(void *unused)
 	static struct get_bp_info_rsp cse_bp_info;
 
 	if (vboot_recovery_mode_enabled()) {
-		printk(BIOS_DEBUG, "cse_bp: Skip switching to RW in the recovery path\n");
+		printk(BIOS_DEBUG, "cse_lite: Skip switching to RW in the recovery path\n");
 		return;
 	}
 
 	/* If CSE SKU type is not Lite, skip enabling CSE Lite SKU */
 	if (!cse_is_hfs3_fw_sku_lite()) {
-		printk(BIOS_ERR, "cse_bp: Not a CSE Lite SKU\n");
+		printk(BIOS_ERR, "cse_lite: Not a CSE Lite SKU\n");
 		return;
 	}
 
 	if (!cse_get_bp_info(&cse_bp_info)) {
-		printk(BIOS_ERR, "cse_bp: Failed to get CSE boot partition info\n");
-		goto failed;
+		printk(BIOS_ERR, "cse_lite: Failed to get CSE boot partition info\n");
+		cse_trigger_recovery(CSE_LITE_SKU_COMMUNICATION_ERROR);
 	}
 
-
 	if (!cse_is_rw_info_valid(&cse_bp_info.bp_info)) {
-		printk(BIOS_ERR, "cse_bp: CSE RW partition is not valid\n");
-		goto failed;
+		printk(BIOS_ERR, "cse_lite: CSE RW partition is not valid\n");
+		cse_trigger_recovery(CSE_LITE_SKU_RW_JUMP_ERROR);
 	}
 
 	if (!cse_boot_to_rw(&cse_bp_info.bp_info)) {
-		printk(BIOS_ERR, "cse_bp: Failed to switch to RW\n");
-		goto failed;
+		printk(BIOS_ERR, "cse_lite: Failed to switch to RW\n");
+		cse_trigger_recovery(CSE_LITE_SKU_RW_SWITCH_ERROR);
 	}
-	return;
-failed:
-	do_global_reset();
 }
 
+#if CONFIG(SOC_INTEL_TIGERLAKE)
+BOOT_STATE_INIT_ENTRY(BS_DEV_INIT_CHIPS, BS_ON_ENTRY, cse_fw_sync, NULL);
+#else
 BOOT_STATE_INIT_ENTRY(BS_PRE_DEVICE, BS_ON_ENTRY, cse_fw_sync, NULL);
+#endif

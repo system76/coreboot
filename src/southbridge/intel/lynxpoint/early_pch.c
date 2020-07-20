@@ -13,23 +13,30 @@
 
 #if CONFIG(INTEL_LYNXPOINT_LP)
 #include "lp_gpio.h"
+extern const struct pch_lp_gpio_map mainboard_gpio_map[];
 #else
 #include <southbridge/intel/common/gpio.h>
 #endif
 
-const struct rcba_config_instruction pch_early_config[] = {
-	/* Enable IOAPIC */
-	RCBA_SET_REG_16(OIC, 0x0100),
-	/* PCH BWG says to read back the IOAPIC enable register */
-	RCBA_READ_REG_16(OIC),
+enum pch_platform_type get_pch_platform_type(void)
+{
+	const u16 did = pci_read_config16(PCH_LPC_DEV, PCI_DEVICE_ID);
 
-	RCBA_END_CONFIG,
-};
+	/* Check if this is a LPT-LP or WPT-LP device ID */
+	if ((did & 0xff00) == 0x9c00)
+		return PCH_TYPE_ULT;
+
+	/* Non-LP laptop SKUs have an odd device ID (least significant bit is one) */
+	if (did & 1)
+		return PCH_TYPE_MOBILE;
+
+	/* Desktop and Server SKUs have an even device ID */
+	return PCH_TYPE_DESKTOP;
+}
 
 int pch_is_lp(void)
 {
-	u8 id = pci_read_config8(PCH_LPC_DEV, PCI_DEVICE_ID + 1);
-	return id == PCH_TYPE_LPT_LP;
+	return get_pch_platform_type() == PCH_TYPE_ULT;
 }
 
 static void pch_enable_bars(void)
@@ -86,28 +93,32 @@ void __weak mainboard_config_superio(void)
 {
 }
 
-int early_pch_init(const void *gpio_map,
-		   const struct rcba_config_instruction *rcba_config)
+int early_pch_init(void)
 {
 	int wake_from_s3;
 
 	pch_enable_bars();
 
 #if CONFIG(INTEL_LYNXPOINT_LP)
-	setup_pch_lp_gpios(gpio_map);
+	setup_pch_lp_gpios(mainboard_gpio_map);
 #else
-	setup_pch_gpios(gpio_map);
+	setup_pch_gpios(&mainboard_gpio_map);
 #endif
 	pch_generic_setup();
 
 	/* Enable SMBus for reading SPDs. */
 	enable_smbus();
 
-	/* Early PCH RCBA settings */
-	pch_config_rcba(pch_early_config);
+	/* Enable IOAPIC */
+	RCBA16(OIC) = 0x0100;
+
+	/* PCH BWG says to read back the IOAPIC enable register */
+	(void) RCBA16(OIC);
 
 	/* Mainboard RCBA settings */
-	pch_config_rcba(rcba_config);
+	mainboard_config_rcba();
+
+	RCBA32_OR(FD, PCH_DISABLE_ALWAYS);
 
 	wake_from_s3 = southbridge_detect_s3_resume();
 

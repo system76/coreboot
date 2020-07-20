@@ -1,10 +1,13 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+#ifndef SOUTHBRIDGE_INTEL_BD82X6X_NVS_H
+#define SOUTHBRIDGE_INTEL_BD82X6X_NVS_H
+
 #include <commonlib/helpers.h>
 #include <stdint.h>
 #include "vendorcode/google/chromeos/gnvs.h"
 
-typedef struct global_nvs_t {
+struct __packed global_nvs {
 	/* Miscellaneous */
 	u16	osys; /* 0x00 - Operating System */
 	u8	smif; /* 0x02 - SMI function call ("TRAP") */
@@ -102,9 +105,8 @@ typedef struct global_nvs_t {
 
 	/* ChromeOS specific (starts at 0x100)*/
 	chromeos_acpi_t chromeos;
-} __packed global_nvs_t;
-check_member(global_nvs_t, chromeos, GNVS_CHROMEOS_ACPI_OFFSET);
+};
 
-/* Used in SMM to find the ACPI GNVS address */
-global_nvs_t *smm_get_gnvs(void);
-void acpi_create_gnvs(global_nvs_t *gnvs);
+check_member(global_nvs, chromeos, GNVS_CHROMEOS_ACPI_OFFSET);
+
+#endif /* SOUTHBRIDGE_INTEL_BD82X6X_NVS_H */

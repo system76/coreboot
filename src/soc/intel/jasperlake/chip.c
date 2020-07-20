@@ -58,6 +58,7 @@ const char *soc_acpi_name(const struct device *dev)
 
 	switch (dev->path.pci.devfn) {
 	case SA_DEVFN_ROOT:	return "MCHC";
+	case SA_DEVFN_IPU:	return "IPU0";
 	case PCH_DEVFN_ISH:	return "ISHB";
 	case PCH_DEVFN_XHCI:	return "XHCI";
 	case PCH_DEVFN_I2C0:	return "I2C0";
@@ -150,6 +151,7 @@ static struct device_operations cpu_bus_ops = {
 #endif
 };
 
+extern struct device_operations pmc_ops;
 static void soc_enable(struct device *dev)
 {
 	/* Set the operations if it is a special bus type */
@@ -157,6 +159,9 @@ static void soc_enable(struct device *dev)
 		dev->ops = &pci_domain_ops;
 	else if (dev->path.type == DEVICE_PATH_CPU_CLUSTER)
 		dev->ops = &cpu_bus_ops;
+	else if (dev->path.type == DEVICE_PATH_PCI &&
+		 dev->path.pci.devfn == PCH_DEVFN_PMC)
+		dev->ops = &pmc_ops;
 }
 
 struct chip_operations soc_intel_jasperlake_ops = {

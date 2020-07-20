@@ -21,14 +21,9 @@
 u16 pmbase = DEFAULT_PMBASE;
 u8 smm_initialized = 0;
 
-/* GNVS needs to be updated by an 0xEA PM Trap (B2) after it has been located by coreboot. */
-global_nvs_t *gnvs = (global_nvs_t *)0x0;
-
-void southbridge_update_gnvs(u8 apm_cnt, int *smm_done)
-{
-	gnvs = *(global_nvs_t **)0x500;
-	*smm_done = 1;
-}
+/* This implementation was removed since it was invalid. There will be one shared
+   approach to set GNVS pointer into SMM without the 0xEA PM Trap mentioned above. */
+void southbridge_update_gnvs(u8 apm_cnt, int *smm_done) { }
 
 int southbridge_io_trap_handler(int smif)
 {

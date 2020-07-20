@@ -16,8 +16,8 @@ config CPU_AMD_AGESA
 	select LAPIC_MONOTONIC_TIMER
 	select SPI_FLASH if HAVE_ACPI_RESUME
 	select SMM_ASEG
-	select NO_FIXED_XIP_ROM_SIZE
 	select SSE2
+	select ACPI_NO_SMI_GNVS
 
 if CPU_AMD_AGESA
 

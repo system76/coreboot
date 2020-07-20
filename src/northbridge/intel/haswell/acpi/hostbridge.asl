@@ -1,6 +1,5 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-
 Name(_HID,EISAID("PNP0A08"))	// PCIe
 Name(_CID,EISAID("PNP0A03"))	// PCI
 
@@ -16,24 +15,24 @@ Device (MCHC)
 		Offset (0x40),	// EPBAR
 		EPEN,	 1,	// Enable
 		,	11,	//
-		EPBR,	24,	// EPBAR
+		EPBR,	27,	// EPBAR
 
 		Offset (0x48),	// MCHBAR
 		MHEN,	 1,	// Enable
-		,	13,	//
-		MHBR,	22,	// MCHBAR
+		,	14,	//
+		MHBR,	24,	// MCHBAR
 		Offset (0x54),
 		DVEN,	32,
 		Offset (0x60),	// PCIe BAR
 		PXEN,	 1,	// Enable
 		PXSZ,	 2,	// BAR size
 		,	23,	//
-		PXBR,	10,	// PCIe BAR
+		PXBR,	13,	// PCIe BAR
 
 		Offset (0x68),	// DMIBAR
 		DMEN,	 1,	// Enable
 		,	11,	//
-		DMBR,	24,	// DMIBAR
+		DMBR,	27,	// DMIBAR
 
 		Offset (0x70),	// ME Base Address
 		MEBA,	 64,
@@ -89,7 +88,7 @@ Device (MCHC)
 	Name (CTCU, 2)		/* CTDP Up Select */
 	Name (SPL1, 0)		/* Saved PL1 value */
 
-	OperationRegion (MCHB, SystemMemory, Add(DEFAULT_MCHBAR,0x5000), 0x1000)
+	OperationRegion (MCHB, SystemMemory, DEFAULT_MCHBAR + 0x5000, 0x1000)
 	Field (MCHB, DWordAcc, Lock, Preserve)
 	{
 		Offset (0x930), /* PACKAGE_POWER_SKU */
@@ -141,17 +140,16 @@ Device (MCHC)
 	External (\_SB.CP00._PSS)
 	Method (PSSS, 1, NotSerialized)
 	{
-		Store (One, Local0) /* Start at P1 */
-		Store (SizeOf (\_SB.CP00._PSS), Local1)
+		Local0 = 1 /* Start at P1 */
+		Local1 = SizeOf (\_SB.CP00._PSS)
 
-		While (LLess (Local0, Local1)) {
+		While (Local0 < Local1) {
 			/* Store _PSS entry Control value to Local2 */
-			ShiftRight (DeRefOf (Index (DeRefOf (Index
-			      (\_SB.CP00._PSS, Local0)), 4)), 8, Local2)
-			If (LEqual (Local2, Arg0)) {
-				Return (Subtract (Local0, 1))
+			Local2 = DeRefOf (Index (DeRefOf (Index (\_SB.CP00._PSS, Local0)), 4)) >> 8
+			If (Local2 == Arg0) {
+				Return (Local0 - 1)
 			}
-			Increment (Local0)
+			Local0++
 		}
 
 		Return (0)
@@ -162,10 +160,10 @@ Device (MCHC)
 	{
 		If (\ISLP ()) {
 			/* Haswell ULT PL2 = 25W */
-			Return (Multiply (25, 8))
+			Return (25 * 8)
 		} Else {
 			/* Haswell Mobile PL2 = 1.25 * PL1 */
-			Return (Divide (Multiply (Arg0, 125), 100))
+			Return ((Arg0 * 125) / 100)
 		}
 	}
 
@@ -183,23 +181,23 @@ Device (MCHC)
 		Store ("Set TDP Down", Debug)
 
 		/* Set CTC */
-		Store (CTCD, CTCS)
+		CTCS = CTCD
 
 		/* Set TAR */
-		Store (TARD, TARS)
+		TARS = TARD
 
 		/* Set PPC limit and notify OS */
-		Store (PSSS (TARD), PPCM)
+		PPCM = PSSS (TARD)
 		PPCN ()
 
 		/* Set PL2 */
-		Store (CPL2 (CTDD), PL2V)
+		PL2V = CPL2 (CTDD)
 
 		/* Set PL1 */
-		Store (CTDD, PL1V)
+		PL1V = CTDD
 
 		/* Store the new TDP Down setting */
-		Store (CTCD, CTCC)
+		CTCC = CTCD
 
 		Release (CTCM)
 		Return (1)
@@ -211,7 +209,7 @@ Device (MCHC)
 		If (Acquire (CTCM, 100)) {
 			Return (0)
 		}
-		If (LEqual (CTCN, CTCC)) {
+		If (CTCN == CTCC) {
 			Release (CTCM)
 			Return (0)
 		}
@@ -219,23 +217,23 @@ Device (MCHC)
 		Store ("Set TDP Nominal", Debug)
 
 		/* Set PL1 */
-		Store (CTDN, PL1V)
+		PL1V = CTDN
 
 		/* Set PL2 */
-		Store (CPL2 (CTDN), PL2V)
+		PL2V = CPL2 (CTDN)
 
 		/* Set PPC limit and notify OS */
-		Store (PSSS (TARN), PPCM)
+		PPCM = PSSS (TARN)
 		PPCN ()
 
 		/* Set TAR */
-		Store (TARN, TARS)
+		TARS = TARN
 
 		/* Set CTC */
-		Store (CTCN, CTCS)
+		CTCS = CTCN
 
 		/* Store the new TDP Nominal setting */
-		Store (CTCN, CTCC)
+		CTCC = CTCN
 
 		Release (CTCM)
 		Return (1)
@@ -244,7 +242,7 @@ Device (MCHC)
 	/* Calculate PL1 value based on requested TDP */
 	Method (TDPP, 1, NotSerialized)
 	{
-		Return (Multiply (ShiftLeft (Subtract (PUNI, 1), 2), Arg0))
+		Return (((PUNI - 1) << 2) * Arg0)
 	}
 
 	/* Enable Controllable TDP to limit PL1 to requested value */
@@ -254,22 +252,22 @@ Device (MCHC)
 			Return (0)
 		}
 
-		Store ("Enable PL1 Limit", Debug)
+		Debug = "Enable PL1 Limit"
 
 		/* Set _PPC to LFM */
-		Store (PSSS (LFM_), Local0)
-		Add (Local0, 1, PPCM)
+		Local0 = PSSS (LFM_)
+		PPCM = Local0 + 1
 		\PPCN ()
 
 		/* Set TAR to LFM-1 */
-		Subtract (LFM_, 1, TARS)
+		TARS = LFM_ - 1
 
 		/* Set PL1 to desired value */
-		Store (PL1V, SPL1)
-		Store (TDPP (Arg0), PL1V)
+		SPL1 = PL1V
+		PL1V = TDPP (Arg0)
 
 		/* Set PL1 CLAMP bit */
-		Store (One, PL1C)
+		PL1C = 1
 
 		Release (CTCM)
 		Return (1)
@@ -282,19 +280,19 @@ Device (MCHC)
 			Return (0)
 		}
 
-		Store ("Disable PL1 Limit", Debug)
+		Debug = "Disable PL1 Limit"
 
 		/* Clear PL1 CLAMP bit */
-		Store (Zero, PL1C)
+		PL1C = 0
 
 		/* Set PL1 to normal value */
-		Store (SPL1, PL1V)
+		PL1V = SPL1
 
 		/* Set TAR to 0 */
-		Store (Zero, TARS)
+		TARS = 0
 
 		/* Set _PPC to 0 */
-		Store (Zero, PPCM)
+		PPCM = 0
 		\PPCN ()
 
 		Release (CTCM)
@@ -426,18 +424,22 @@ Method (_CRS, 0, Serialized)
 
 	// Fix up PCI memory region
 	// Start with Top of Lower Usable DRAM
-	Store (^MCHC.TLUD, Local0)
-	Store (^MCHC.MEBA, Local1)
+	// Lower 20 bits of TOLUD register need to be masked since they contain lock and
+	// reserved bits.
+	Local0 = ^MCHC.TLUD & (0xfff << 20)
+	Local1 = ^MCHC.MEBA
 
 	// Check if ME base is equal
-	If (LEqual (Local0, Local1)) {
+	If (Local0 == Local1) {
 		// Use Top Of Memory instead
-		Store (^MCHC.TOM, Local0)
+		// Lower 20 bits of TOM register need to be masked since they contain lock and
+		// reserved bits.
+		Local0 = ^MCHC.TOM & (0x7ffff << 20)
 	}
 
-	Store (Local0, PMIN)
-	Store (Subtract(CONFIG_MMCONF_BASE_ADDRESS, 1), PMAX)
-	Add(Subtract(PMAX, PMIN), 1, PLEN)
+	PMIN = Local0
+	PMAX = CONFIG_MMCONF_BASE_ADDRESS - 1
+	PLEN = PMAX - PMIN + 1
 
 	Return (MCRS)
 }

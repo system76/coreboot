@@ -1,7 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
 #include <arch/cpu.h>
-#include <bootstate.h>
 #include <console/console.h>
 #include <device/device.h>
 #include <device/pci.h>
@@ -14,7 +13,6 @@
 #include <cpu/intel/speedstep.h>
 #include <cpu/intel/turbo.h>
 #include <cpu/x86/name.h>
-#include <cpu/x86/smm.h>
 #include <cpu/intel/smm_reloc.h>
 #include <intelblocks/cpulib.h>
 #include <intelblocks/fast_spi.h>
@@ -26,29 +24,8 @@
 #include <soc/pm.h>
 #include <soc/ramstage.h>
 #include <soc/systemagent.h>
-#include <timer.h>
 
 #include "chip.h"
-
-static void configure_thermal_target(void)
-{
-	config_t *conf = config_of_soc();
-	msr_t msr;
-
-
-	/* Set TCC activation offset if supported */
-	msr = rdmsr(MSR_PLATFORM_INFO);
-	if ((msr.lo & (1 << 30)) && conf->tcc_offset) {
-		msr = rdmsr(MSR_TEMPERATURE_TARGET);
-		msr.lo &= ~(0xf << 24); /* Bits 27:24 */
-		msr.lo |= (conf->tcc_offset & 0xf) << 24;
-		wrmsr(MSR_TEMPERATURE_TARGET, msr);
-	}
-	msr = rdmsr(MSR_TEMPERATURE_TARGET);
-	msr.lo &= ~0x7f; /* Bits 6:0 */
-	msr.lo |= 0xe6; /* setting 100ms thermal time window */
-	wrmsr(MSR_TEMPERATURE_TARGET, msr);
-}
 
 static void configure_isst(void)
 {
@@ -297,7 +274,7 @@ static void post_mp_init(void)
 	 * Now that all APs have been relocated as well as the BSP let SMIs
 	 * start flowing.
 	 */
-	smm_southbridge_enable(GBL_EN);
+	global_smi_enable_no_pwrbtn();
 
 	/* Lock down the SMRAM space. */
 	if (CONFIG(HAVE_SMI_HANDLER))
@@ -336,7 +313,7 @@ void soc_init_cpus(struct bus *cpu_bus)
 		printk(BIOS_ERR, "MP initialization failure.\n");
 
 	/* Thermal throttle activation offset */
-	configure_thermal_target();
+	configure_tcc_thermal_target();
 }
 
 int soc_skip_ucode_update(u32 current_patch_id, u32 new_patch_id)
@@ -358,6 +335,6 @@ int soc_skip_ucode_update(u32 current_patch_id, u32 new_patch_id)
 	if (msr2.lo && (current_patch_id == new_patch_id - 1))
 		return 0;
 	else
-		return (msr1.lo & PRMRR_SUPPORTED) &&
+		return (msr1.lo & MTRR_CAP_PRMRR) &&
 			(current_patch_id == new_patch_id - 1);
 }

@@ -19,7 +19,7 @@ endif
 ifeq ($(CONFIG_PAYLOAD_DEPTHCHARGE),y)
 PAYLOAD_CONFIG=payloads/external/depthcharge/depthcharge/.config
 $(PAYLOAD_CONFIG): payloads/external/depthcharge/depthcharge/build/depthcharge.elf
-ifeq ($(call strip_quotes,$(CONFIG_MAINBOARD_DEPTHCHARGE))),)
+ifeq ($(call strip_quotes,$(CONFIG_MAINBOARD_DEPTHCHARGE)),)
   BOARD=$(call ws_to_under,$(call strip_quotes,$(call tolower,$(CONFIG_MAINBOARD_PART_NUMBER))))
 else
   BOARD=$(CONFIG_MAINBOARD_DEPTHCHARGE)
@@ -253,7 +253,7 @@ payloads/external/iPXE/ipxe/ipxe.rom ipxe: $(DOTCONFIG) $(PXE_CONFIG_SCRIPT)
 	CONFIG_TTYS0_BAUD=$(CONFIG_TTYS0_BAUD) \
 	CONFIG_SCRIPT=$(PXE_CONFIG_SCRIPT) \
 	CONFIG_HAS_SCRIPT=$(CONFIG_PXE_ADD_SCRIPT) \
-	CONFIG_PXE_NO_PROMT=$(CONFIG_PXE_NO_PROMT) \
+	CONFIG_PXE_NO_PROMPT=$(CONFIG_PXE_NO_PROMPT) \
 	CONFIG_PXE_HAS_HTTPS=$(CONFIG_PXE_HAS_HTTPS) \
 	MFLAGS= MAKEFLAGS=
 

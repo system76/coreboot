@@ -16,8 +16,6 @@
 #include <soc/pm.h>
 #include <soc/nvs.h>
 
-/* GNVS needs to be set by coreboot initiating a software SMI. */
-static global_nvs_t *gnvs;
 static int smm_initialized;
 
 int southbridge_io_trap_handler(int smif)
@@ -37,9 +35,10 @@ int southbridge_io_trap_handler(int smif)
 	return 0;
 }
 
-void southbridge_smi_set_eos(void) { enable_smi(EOS); }
-
-global_nvs_t *smm_get_gnvs(void) { return gnvs; }
+void southbridge_smi_set_eos(void)
+{
+	enable_smi(EOS);
+}
 
 static void busmaster_disable_on_bus(int bus)
 {
@@ -49,7 +48,7 @@ static void busmaster_disable_on_bus(int bus)
 
 	for (slot = 0; slot < 0x20; slot++) {
 		for (func = 0; func < 8; func++) {
-			u32 reg32;
+			u16 reg16;
 
 			pci_devfn_t dev = PCI_DEV(bus, slot, func);
 			val = pci_read_config32(dev, PCI_VENDOR_ID);
@@ -59,9 +58,9 @@ static void busmaster_disable_on_bus(int bus)
 				continue;
 
 			/* Disable Bus Mastering for this one device */
-			reg32 = pci_read_config32(dev, PCI_COMMAND);
-			reg32 &= ~PCI_COMMAND_MASTER;
-			pci_write_config32(dev, PCI_COMMAND, reg32);
+			reg16 = pci_read_config16(dev, PCI_COMMAND);
+			reg16 &= ~PCI_COMMAND_MASTER;
+			pci_write_config16(dev, PCI_COMMAND, reg16);
 
 			/* If this is a bridge, then follow it. */
 			hdr = pci_read_config8(dev, PCI_HEADER_TYPE);
@@ -241,7 +240,7 @@ static void southbridge_smi_apmc(void)
 		state = smi_apmc_find_state_save(reg8);
 		if (state) {
 			/* EBX in the state save contains the GNVS pointer */
-			gnvs = (global_nvs_t *)((uint32_t)state->rbx);
+			gnvs = (struct global_nvs *)((uint32_t)state->rbx);
 			smm_initialized = 1;
 			printk(BIOS_DEBUG, "SMI#: Setting GNVS to %p\n", gnvs);
 		}

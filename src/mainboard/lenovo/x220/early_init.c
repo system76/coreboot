@@ -1,14 +1,12 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
 #include <stdint.h>
-#include <cpu/x86/lapic.h>
 #include <acpi/acpi.h>
 #include <northbridge/intel/sandybridge/sandybridge.h>
 #include <northbridge/intel/sandybridge/raminit.h>
 #include <northbridge/intel/sandybridge/raminit_native.h>
 #include <southbridge/intel/bd82x6x/pch.h>
 #include <southbridge/intel/common/gpio.h>
-#include <cpu/x86/msr.h>
 
 void mainboard_fill_pei_data(struct pei_data *pei_data)
 {

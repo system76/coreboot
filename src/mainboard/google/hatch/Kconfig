@@ -3,7 +3,6 @@ config BOARD_GOOGLE_BASEBOARD_HATCH
 	def_bool n
 	select BOARD_GOOGLE_HATCH_COMMON
 	select SYSTEM_TYPE_LAPTOP
-	select VBOOT_LID_SWITCH
 
 config BOARD_GOOGLE_BASEBOARD_PUFF
 	def_bool n
@@ -12,6 +11,7 @@ config BOARD_GOOGLE_BASEBOARD_PUFF
 	select RT8168_SET_LED_MODE
 	select ROMSTAGE_SPD_SMBUS
 	select SPD_READ_BY_WORD
+	select SOC_INTEL_CSE_LITE_SKU
 
 config BOARD_GOOGLE_HATCH_COMMON
 	def_bool n
@@ -90,15 +90,19 @@ config UART_FOR_CONSOLE
 if BOARD_GOOGLE_BASEBOARD_HATCH
 config FMDFILE
 	string
-	default "src/mainboard/$(CONFIG_MAINBOARD_DIR)/chromeos-hatch-16MiB.fmd" if BOARD_ROMSIZE_KB_16384
-	default "src/mainboard/$(CONFIG_MAINBOARD_DIR)/chromeos-hatch-32MiB.fmd" if BOARD_ROMSIZE_KB_32768
+	default "src/mainboard/\$(CONFIG_MAINBOARD_DIR)/chromeos-hatch-16MiB.fmd" if BOARD_ROMSIZE_KB_16384
+	default "src/mainboard/\$(CONFIG_MAINBOARD_DIR)/chromeos-hatch-32MiB.fmd" if BOARD_ROMSIZE_KB_32768
 endif
 
 if BOARD_GOOGLE_BASEBOARD_PUFF
 config FMDFILE
 	string
-	default "src/mainboard/$(CONFIG_MAINBOARD_DIR)/chromeos-puff-16MiB.fmd" if BOARD_ROMSIZE_KB_16384
-	default "src/mainboard/$(CONFIG_MAINBOARD_DIR)/chromeos-puff-32MiB.fmd" if BOARD_ROMSIZE_KB_32768
+	default "src/mainboard/\$(CONFIG_MAINBOARD_DIR)/chromeos-puff-16MiB.fmd" if BOARD_ROMSIZE_KB_16384
+	default "src/mainboard/\$(CONFIG_MAINBOARD_DIR)/chromeos-puff-32MiB.fmd" if BOARD_ROMSIZE_KB_32768
+
+config POWER_OFF_ON_CR50_UPDATE
+	bool
+	default n
 endif
 
 config MAINBOARD_DIR
@@ -115,6 +119,7 @@ config MAINBOARD_PART_NUMBER
 	default "Dratini" if BOARD_GOOGLE_DRATINI
 	default "Duffy" if BOARD_GOOGLE_DUFFY
 	default "Duffy" if BOARD_GOOGLE_DUFFY_LEGACY
+	default "Faffy" if BOARD_GOOGLE_FAFFY
 	default "Hatch" if BOARD_GOOGLE_HATCH
 	default "Helios" if BOARD_GOOGLE_HELIOS
 	default "Helios_Diskswap" if BOARD_GOOGLE_HELIOS_DISKSWAP
@@ -130,11 +135,12 @@ config MAINBOARD_PART_NUMBER
 	default "Puff" if BOARD_GOOGLE_PUFF
 	default "Stryke" if BOARD_GOOGLE_STRYKE
 	default "Sushi" if BOARD_GOOGLE_SUSHI
+	default "Wyvern" if BOARD_GOOGLE_WYVERN
 
 config OVERRIDE_DEVICETREE
 	string
 	default "variants/helios_diskswap/overridetree.cb" if BOARD_GOOGLE_HELIOS_DISKSWAP
-	default "variants/$(CONFIG_VARIANT_DIR)/overridetree.cb"
+	default "variants/\$(CONFIG_VARIANT_DIR)/overridetree.cb"
 
 config TPM_TIS_ACPI_INTERRUPT
 	int
@@ -146,6 +152,7 @@ config VARIANT_DIR
 	default "dratini" if BOARD_GOOGLE_DRATINI
 	default "duffy" if BOARD_GOOGLE_DUFFY
 	default "duffy" if BOARD_GOOGLE_DUFFY_LEGACY
+	default "faffy" if BOARD_GOOGLE_FAFFY
 	default "hatch" if BOARD_GOOGLE_HATCH
 	default "helios" if BOARD_GOOGLE_HELIOS
 	default "helios" if BOARD_GOOGLE_HELIOS_DISKSWAP
@@ -161,6 +168,7 @@ config VARIANT_DIR
 	default "puff" if BOARD_GOOGLE_PUFF
 	default "stryke" if BOARD_GOOGLE_STRYKE
 	default "sushi" if BOARD_GOOGLE_SUSHI
+	default "wyvern" if BOARD_GOOGLE_WYVERN
 
 config VBOOT
 	select HAS_RECOVERY_MRC_CACHE

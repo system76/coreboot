@@ -12,6 +12,8 @@
 #include <program_loading.h>
 #include <types.h>
 
+#define FSP_VER_LEN	30
+
 struct hob_header {
 	uint16_t type;
 	uint16_t length;
@@ -19,6 +21,17 @@ struct hob_header {
 
 struct fsp_notify_params {
 	enum fsp_notify_phase phase;
+};
+
+enum fsp_multi_phase_action {
+	GET_NUMBER_OF_PHASES = 0,
+	EXECUTE_PHASE = 1
+};
+
+struct fsp_multi_phase_params {
+	enum fsp_multi_phase_action multi_phase_action;
+	uint32_t phase_index;
+	void *multi_phase_param_ptr;
 };
 
 struct hob_resource {
@@ -74,7 +87,8 @@ const struct hob_resource *fsp_hob_header_to_resource(
 const struct hob_header *fsp_next_hob(const struct hob_header *parent);
 bool fsp_guid_compare(const uint8_t guid1[16], const uint8_t guid2[16]);
 void fsp_find_bootloader_tolum(struct range_entry *re);
-
+void fsp_get_version(char *buf);
+void lb_string_platform_blob_version(struct lb_header *header);
 
 /* Fill in header and validate sanity of component within region device. */
 enum cb_err fsp_validate_component(struct fsp_header *hdr,
@@ -115,6 +129,7 @@ typedef asmlinkage uint32_t (*temp_ram_exit_fn)(void *param);
 typedef asmlinkage uint32_t (*fsp_memory_init_fn)
 				   (void *raminit_upd, void **hob_list);
 typedef asmlinkage uint32_t (*fsp_silicon_init_fn)(void *silicon_upd);
+typedef asmlinkage uint32_t (*fsp_multi_phase_si_init_fn)(struct fsp_multi_phase_params *);
 typedef asmlinkage uint32_t (*fsp_notify_fn)(struct fsp_notify_params *);
 #include <fsp/debug.h>
 

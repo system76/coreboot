@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
 #include <acpi/acpi.h>
+#include <acpi/acpi_gnvs.h>
 #include <console/console.h>
 #include <cpu/x86/smm.h>
 #include <southbridge/intel/bd82x6x/nvs.h>
@@ -48,18 +49,18 @@ void mainboard_smi_sleep(u8 slp_typ)
 	/* Disable USB charging if required */
 	switch (slp_typ) {
 	case ACPI_S3:
-		if (smm_get_gnvs()->s3u0 == 0)
+		if (gnvs->s3u0 == 0)
 			google_chromeec_set_usb_charge_mode(
 				0, USB_CHARGE_MODE_DISABLED);
-		if (smm_get_gnvs()->s3u1 == 0)
+		if (gnvs->s3u1 == 0)
 			google_chromeec_set_usb_charge_mode(
 				1, USB_CHARGE_MODE_DISABLED);
 		break;
 	case ACPI_S5:
-		if (smm_get_gnvs()->s5u0 == 0)
+		if (gnvs->s5u0 == 0)
 			google_chromeec_set_usb_charge_mode(
 				0, USB_CHARGE_MODE_DISABLED);
-		if (smm_get_gnvs()->s5u1 == 0)
+		if (gnvs->s5u1 == 0)
 			google_chromeec_set_usb_charge_mode(
 				1, USB_CHARGE_MODE_DISABLED);
 		break;
@@ -76,19 +77,16 @@ void mainboard_smi_sleep(u8 slp_typ)
 	google_chromeec_set_wake_mask(LINK_EC_S3_WAKE_EVENTS);
 }
 
-#define APMC_ACPI_EN  0xe1
-#define APMC_ACPI_DIS 0x1e
-
 int mainboard_smi_apmc(u8 apmc)
 {
 	switch (apmc) {
-	case APMC_ACPI_EN:
+	case APM_CNT_ACPI_ENABLE:
 		google_chromeec_set_smi_mask(0);
 		/* Clear all pending events */
 		while (google_chromeec_get_event() != 0);
 		google_chromeec_set_sci_mask(LINK_EC_SCI_EVENTS);
 		break;
-	case APMC_ACPI_DIS:
+	case APM_CNT_ACPI_DISABLE:
 		google_chromeec_set_sci_mask(0);
 		/* Clear all pending events */
 		while (google_chromeec_get_event() != 0);

@@ -17,12 +17,6 @@
 #include "pch.h"
 #include "nvs.h"
 
-static global_nvs_t *gnvs;
-global_nvs_t *smm_get_gnvs(void)
-{
-	return gnvs;
-}
-
 int southbridge_io_trap_handler(int smif)
 {
 	switch (smif) {
@@ -93,22 +87,21 @@ void southbridge_gate_memory_reset(void)
 
 static void xhci_sleep(u8 slp_typ)
 {
-	u32 reg32, xhci_bar;
+	u32 xhci_bar;
 	u16 reg16;
 
 	switch (slp_typ) {
 	case ACPI_S3:
 	case ACPI_S4:
+		/* FIXME: Unbalanced width in read/write ops (16-bit read then 32-bit write) */
 		reg16 = pci_read_config16(PCH_XHCI_DEV, 0x74);
 		reg16 &= ~0x03UL;
 		pci_write_config32(PCH_XHCI_DEV, 0x74, reg16);
 
-		reg32 = pci_read_config32(PCH_XHCI_DEV, PCI_COMMAND);
-		reg32 |= (PCI_COMMAND_MASTER | PCI_COMMAND_MEMORY);
-		pci_write_config32(PCH_XHCI_DEV, PCI_COMMAND, reg32);
+		pci_or_config16(PCH_XHCI_DEV, PCI_COMMAND,
+				PCI_COMMAND_MASTER | PCI_COMMAND_MEMORY);
 
-		xhci_bar = pci_read_config32(PCH_XHCI_DEV,
-				              PCI_BASE_ADDRESS_0) & ~0xFUL;
+		xhci_bar = pci_read_config32(PCH_XHCI_DEV, PCI_BASE_ADDRESS_0) & ~0xFUL;
 
 		if ((xhci_bar + 0x4C0) & 1)
 			pch_iobp_update(0xEC000082, ~0UL, (3 << 2));
@@ -119,19 +112,14 @@ static void xhci_sleep(u8 slp_typ)
 		if ((xhci_bar + 0x4F0) & 1)
 			pch_iobp_update(0xEC000382, ~0UL, (3 << 2));
 
-		reg32 = pci_read_config32(PCH_XHCI_DEV, PCI_COMMAND);
-		reg32 &= ~(PCI_COMMAND_MASTER | PCI_COMMAND_MEMORY);
-		pci_write_config32(PCH_XHCI_DEV, PCI_COMMAND, reg32);
+		pci_and_config16(PCH_XHCI_DEV, PCI_COMMAND,
+				 ~(PCI_COMMAND_MASTER | PCI_COMMAND_MEMORY));
 
-		reg16 = pci_read_config16(PCH_XHCI_DEV, 0x74);
-		reg16 |= 0x03;
-		pci_write_config16(PCH_XHCI_DEV, 0x74, reg16);
+		pci_or_config16(PCH_XHCI_DEV, 0x74, 0x03);
 		break;
 
 	case ACPI_S5:
-		reg16 = pci_read_config16(PCH_XHCI_DEV, 0x74);
-		reg16 |= ((1 << 8) | 0x03);
-		pci_write_config16(PCH_XHCI_DEV, 0x74, reg16);
+		pci_or_config16(PCH_XHCI_DEV, 0x74, (1 << 8) | 0x03);
 		break;
 	}
 }
@@ -192,7 +180,7 @@ void southbridge_smi_monitor(void)
 
 void southbridge_smm_xhci_sleep(u8 slp_type)
 {
-	if (smm_get_gnvs()->xhci)
+	if (gnvs->xhci)
 		xhci_sleep(slp_type);
 }
 
@@ -202,7 +190,7 @@ void southbridge_update_gnvs(u8 apm_cnt, int *smm_done)
 		smi_apmc_find_state_save(apm_cnt);
 	if (state) {
 		/* EBX in the state save contains the GNVS pointer */
-		gnvs = (global_nvs_t *)((u32)state->rbx);
+		gnvs = (struct global_nvs *)((u32)state->rbx);
 		*smm_done = 1;
 		printk(BIOS_DEBUG, "SMI#: Setting GNVS to %p\n", gnvs);
 	}

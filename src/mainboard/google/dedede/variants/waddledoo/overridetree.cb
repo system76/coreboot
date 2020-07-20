@@ -24,8 +24,8 @@ chip soc/intel/jasperlake
 		},
 		.i2c[0] = {
 			.speed = I2C_SPEED_FAST,
-			.rise_time_ns = 66,
-			.fall_time_ns = 90,
+			.rise_time_ns = 270,
+			.fall_time_ns = 270,
 			.data_hold_time_ns = 350,
 		},
 		.i2c[1] = {
@@ -33,6 +33,8 @@ chip soc/intel/jasperlake
 		},
 		.i2c[2] = {
 			.speed = I2C_SPEED_FAST,
+			.rise_time_ns = 200,
+			.fall_time_ns = 200,
 		},
 		.i2c[3] = {
 			.speed = I2C_SPEED_FAST,
@@ -41,8 +43,8 @@ chip soc/intel/jasperlake
 			.speed = I2C_SPEED_FAST,
 			.speed_config[0] = {
 				.speed = I2C_SPEED_FAST,
-				.scl_lcnt = 176,
-				.scl_hcnt = 95,
+				.scl_lcnt = 200,
+				.scl_hcnt = 120,
 				.sda_hold = 36,
 			}
 		},
@@ -52,9 +54,21 @@ chip soc/intel/jasperlake
 			chip drivers/usb/acpi
 				device usb 0.0 on
 					chip drivers/usb/acpi
+						register "desc" = ""Discrete Bluetooth""
+						register "type" = "UPC_TYPE_INTERNAL"
+						register "reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_H19)"
+						device usb 2.4 on end
+					end
+					chip drivers/usb/acpi
 						register "desc" = ""Camera""
 						register "type" = "UPC_TYPE_INTERNAL"
 						device usb 2.5 on end
+					end
+					chip drivers/usb/acpi
+						register "desc" = ""Integrated Bluetooth""
+						register "type" = "UPC_TYPE_INTERNAL"
+						register "reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_H19)"
+						device usb 2.7 on end
 					end
 				end
 			end

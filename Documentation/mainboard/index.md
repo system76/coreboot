@@ -51,10 +51,6 @@ The boards in this section are not real mainboards, but emulators.
 
 - [GA-H61M-S2PV](gigabyte/ga-h61m-s2pv.md)
 
-## Google
-
-- [Dragonegg](google/dragonegg.md)
-
 ## HP
 
 - [Compaq 8200 Elite SFF](hp/compaq_8200_sff.md)
@@ -102,6 +98,7 @@ The boards in this section are not real mainboards, but emulators.
 - [W530](lenovo/w530.md)
 - [T430 / T530 / X230 / W530 common](lenovo/Ivy_Bridge_series.md)
 - [T431s](lenovo/t431s.md)
+- [X230s](lenovo/x230s.md)
 - [Internal flashing](lenovo/ivb_internal_flashing.md)
 
 ### Haswell series
@@ -116,6 +113,10 @@ The boards in this section are not real mainboards, but emulators.
 
 - [MS-7707](msi/ms7707/ms7707.md)
 
+## OCP
+
+- [Tioga Pass](ocp/tiogapass.md)
+
 ## Open Cellular
 
 - [Elgon](opencellular/elgon.md)
@@ -129,6 +130,10 @@ The boards in this section are not real mainboards, but emulators.
 ## Portwell
 
 - [PQ7-M107](portwell/pq7-m107.md)
+
+## Prodrive
+
+- [Hermes](prodrive/hermes.md)
 
 ## Protectli
 
