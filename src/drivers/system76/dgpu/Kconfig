@@ -3,18 +3,3 @@ config DRIVERS_SYSTEM76_DGPU
 	default n
 	help
 		System76 switchable graphics support
-
-config DRIVERS_SYSTEM76_DGPU_GC6
-	string
-	help
-		Discrete GPU GC6 power state GPIO
-
-config DRIVERS_SYSTEM76_DGPU_PWR_EN
-	string
-	help
-		Discrete GPU power enable GPIO
-
-config DRIVERS_SYSTEM76_DGPU_RST_N
-	string
-	help
-		Discrete GPU reset-low GPIO
