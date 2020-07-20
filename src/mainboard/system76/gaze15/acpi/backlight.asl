@@ -2,10 +2,8 @@
 
 #include <drivers/intel/gma/acpi/gma.asl>
 
-Scope (GFX0)
-{
-       Name (BRIG, Package (22)
-       {
+Scope (GFX0) {
+       Name (BRIG, Package (22) {
                 40, /* default AC */
                 40, /* default Battery */
                  5,

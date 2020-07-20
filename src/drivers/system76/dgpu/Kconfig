@@ -1,0 +1,5 @@
+config DRIVERS_SYSTEM76_DGPU
+	bool
+	default n
+	help
+		System76 switchable graphics support

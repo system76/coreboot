@@ -78,8 +78,7 @@ static const struct cnl_mb_cfg memcfg = {
 	.ect = 0,
 };
 
-void mainboard_memory_init_params(FSPM_UPD *memupd)
-{
+void mainboard_memory_init_params(FSPM_UPD *memupd) {
 	// Set primary display to internal graphics
 	memupd->FspmConfig.PrimaryDisplay = 0;
 	cannonlake_memcfg_init(&memupd->FspmConfig, &memcfg);
