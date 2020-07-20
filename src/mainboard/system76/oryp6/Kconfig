@@ -26,7 +26,7 @@ config BOARD_SPECIFIC_OPTIONS
 
 config MAINBOARD_DIR
 	string
-	default system76/oryp6
+	default "system76/oryp6"
 
 config MAINBOARD_PART_NUMBER
 	string

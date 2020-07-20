@@ -25,7 +25,7 @@ config BOARD_SPECIFIC_OPTIONS
 
 config MAINBOARD_DIR
 	string
-	default system76/kbl-u
+	default "system76/kbl-u"
 
 config VARIANT_DIR
 	string

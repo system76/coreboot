@@ -24,7 +24,7 @@ config BOARD_SPECIFIC_OPTIONS
 
 config MAINBOARD_DIR
 	string
-	default system76/gaze15
+	default "system76/gaze15"
 
 config MAINBOARD_PART_NUMBER
 	string

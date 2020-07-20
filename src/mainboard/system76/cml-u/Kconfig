@@ -27,7 +27,7 @@ config BOARD_SPECIFIC_OPTIONS
 
 config MAINBOARD_DIR
 	string
-	default system76/cml-u
+	default "system76/cml-u"
 
 config VARIANT_DIR
 	string

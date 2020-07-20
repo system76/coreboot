@@ -24,7 +24,7 @@ config BOARD_SPECIFIC_OPTIONS
 
 config MAINBOARD_DIR
 	string
-	default system76/thelio-b1
+	default "system76/thelio-b1"
 
 config MAINBOARD_PART_NUMBER
 	string
