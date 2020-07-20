@@ -1,0 +1,12 @@
+config DRIVERS_SYSTEM76_DGPU
+	bool
+	default n
+	help
+		System76 switchable graphics support
+
+#TODO: make this cleaner, use device tree?
+config DRIVERS_SYSTEM76_DGPU_DEVICE
+	hex
+	default 0x01
+	help
+		System76 switchable graphics root device number
