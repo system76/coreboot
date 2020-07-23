@@ -3,6 +3,7 @@
 #include <console/console.h>
 #include <device/smbus.h>
 #include <device/pci.h>
+#include "chip.h"
 #include "tas5825m.h"
 
 int tas5825m_write_at(struct device *dev, uint8_t addr, uint8_t value) {
@@ -29,14 +30,7 @@ int tas5825m_set_book(struct device *dev, uint8_t book) {
 	return tas5825m_write_at(dev, 0x7F, book);
 }
 
-__weak int tas5825m_setup(struct device *dev) {
-	struct drivers_i2c_tas5825m_config *config = dev->chip_info;
-
-	if (!config) {
-		printk(BIOS_ERR, "tas5825m: failed to find config\n");
-		return -1;
-	}
-
+__weak int tas5825m_setup(struct device *dev, int id) {
 	printk(BIOS_ERR, "tas5825m: setup not implemented\n");
 	return -1;
 }
@@ -45,12 +39,20 @@ static void tas5825m_init(struct device *dev) {
 	if (dev->enabled && dev->path.type == DEVICE_PATH_I2C &&
 		ops_smbus_bus(get_pbus_smbus(dev))) {
 		printk(BIOS_DEBUG, "tas5825m at %s\n", dev_path(dev));
-		int res = tas5825m_setup(dev);
-		if (res) {
-			printk(BIOS_ERR, "tas5825m init failed: %d\n", res);
+
+		struct drivers_i2c_tas5825m_config *config = dev->chip_info;
+		if (config) {
+			printk(BIOS_DEBUG, "tas5825m id %d\n", config->id);
+			int res = tas5825m_setup(dev, config->id);
+			if (res) {
+				printk(BIOS_ERR, "tas5825m init failed: %d\n", res);
+			} else {
+				printk(BIOS_DEBUG, "tas5825m init successful\n");
+			}
 		} else {
-			printk(BIOS_DEBUG, "tas5825m init successful\n");
+			printk(BIOS_ERR, "tas5825m: failed to find config\n");
 		}
+
 	}
 }
 
