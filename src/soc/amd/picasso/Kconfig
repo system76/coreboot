@@ -59,6 +59,12 @@ config CPU_SPECIFIC_OPTIONS
 	select SUPPORT_CPU_UCODE_IN_CBFS
 	select ACPI_NO_SMI_GNVS
 
+config SOC_AMD_PICASSO_MATISSE
+	bool
+	default n
+	help
+	  "Hack to support Matisse"
+
 config MEMLAYOUT_LD_FILE
 	string
 	default "src/soc/amd/picasso/memlayout.ld"
@@ -427,6 +433,7 @@ comment "AMD Firmware Directory Table set to location for 16MB ROM"
 
 config AMD_PUBKEY_FILE
 	string
+	default "3rdparty/amd_blobs/matisse/PSP/AmdPubKeySsp.bin" if SOC_AMD_PICASSO_MATISSE
 	default "3rdparty/amd_blobs/picasso/PSP/AmdPubKeyRV.bin"
 
 config USE_PSPSCUREOS
@@ -468,6 +475,7 @@ config PSP_WHITELIST_FILE
 
 config PSP_BOOTLOADER_FILE
 	string "Specify the PSP Bootloader file path"
+	default "3rdparty/amd_blobs/matisse/PSP/PspBootLoader_mts.sbin" if SOC_AMD_PICASSO_MATISSE
 	default "3rdparty/amd_blobs/picasso/PSP/PspBootLoader_WL_RV.sbin" if HAVE_PSP_WHITELIST_FILE
 	default "3rdparty/amd_blobs/picasso/PSP/PspBootLoader_prod_RV.sbin"
 	help

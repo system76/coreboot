@@ -6,6 +6,7 @@ config BOARD_SPECIFIC_OPTIONS
 	def_bool y
 	select SOC_AMD_COMMON_BLOCK_USE_ESPI
 	select SOC_AMD_PICASSO
+	select SOC_AMD_PICASSO_MATISSE
 	select HAVE_ACPI_TABLES
 	select BOARD_ROMSIZE_KB_16384
 	select AZALIA_PLUGIN_SUPPORT
@@ -18,7 +19,7 @@ config BOARD_SPECIFIC_OPTIONS
 
 config CBFS_SIZE
 	hex
-	default 0xA00000
+	default 0xFCF000
 
 config MAINBOARD_DIR
 	string
@@ -64,14 +65,5 @@ config CONSOLE_POST
 config POST_DEVICE
 	bool
 	default n
-
-# Hacks to use matisse
-config AMD_PUBKEY_FILE
-	string
-	default "3rdparty/amd_blobs/matisse/PSP/AmdPubKeySsp.bin"
-
-config PSP_BOOTLOADER_FILE
-	string
-	default "3rdparty/amd_blobs/matisse/PSP/PspBootLoader_mts.sbin"
 
 endif

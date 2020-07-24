@@ -132,10 +132,15 @@ PSPBTLDR_FILE=$(realpath $(call strip_quotes, $(CONFIG_PSP_BOOTLOADER_FILE)))
 $(info Adding PSP $(shell md5sum $(PSPBTLDR_FILE)))
 
 # types = 0x8 and 0x12
+ifeq ($(CONFIG_SOC_AMD_PICASSO_MATISSE),y)
+PSP_SMUFW1_SUB1_FILE=$(FIRMWARE_LOCATE)/SmuFirmwareMts.cbin
+PSP_SMUFW2_SUB1_FILE=$(FIRMWARE_LOCATE)/SmuFirmware2Mts.cbin
+else
 PSP_SMUFW1_SUB1_FILE=$(FIRMWARE_LOCATE)/SmuFirmwareRV2.csbin
 PSP_SMUFW1_SUB2_FILE=$(FIRMWARE_LOCATE)/SmuFirmwarePCO.csbin
 PSP_SMUFW2_SUB1_FILE=$(FIRMWARE_LOCATE)/SmuFirmware2RV2.csbin
 PSP_SMUFW2_SUB2_FILE=$(FIRMWARE_LOCATE)/SmuFirmware2PCO.csbin
+endif
 
 ifeq ($(CONFIG_PSP_UNLOCK_SECURE_DEBUG),y)
 # type = 0x9
@@ -149,15 +154,27 @@ endif
 
 ifeq ($(CONFIG_USE_PSPSCUREOS),y)
 # types = 0x2
+ifeq ($(CONFIG_SOC_AMD_PICASSO_MATISSE),y)
+PSPSCUREOS_FILE=$(FIRMWARE_LOCATE)/psp_os_combined_mts.sbin
+else
 PSPSCUREOS_FILE=$(FIRMWARE_LOCATE)/psp_os_combined_prod_RV.sbin
+endif
 endif
 
 # type = 0x21
+ifeq ($(CONFIG_SOC_AMD_PICASSO_MATISSE),y)
+PSP_IKEK_FILE=$(FIRMWARE_LOCATE)/iKEK.enc.by.Matisse.rKEK
+else
 PSP_IKEK_FILE=$(FIRMWARE_LOCATE)/PspIkekRV.bin
+endif
 
 # type = 0x24
+ifeq ($(CONFIG_SOC_AMD_PICASSO_MATISSE),y)
+PSP_SECG1_FILE=$(FIRMWARE_LOCATE)/RsmuSecPolicy_mts.sbin
+else
 PSP_SECG1_FILE=$(FIRMWARE_LOCATE)/security_policy_RV2_FP5_AM4.sbin
 PSP_SECG2_FILE=$(FIRMWARE_LOCATE)/security_policy_PCO_FP5_AM4.sbin
+endif
 
 ifeq ($(CONFIG_PSP_LOAD_MP2_FW),y)
 # type = 0x25
@@ -171,13 +188,20 @@ PSP_SOFTFUSE_BITS += 29
 endif
 
 # type = 0x28
+ifeq ($(CONFIG_SOC_AMD_PICASSO_MATISSE),y)
+PSP_DRIVERS_FILE=$(FIRMWARE_LOCATE)/drv_sys_mts.sbin
+else
 PSP_DRIVERS_FILE=$(FIRMWARE_LOCATE)/drv_sys_prod_RV.sbin
+endif
 
 ifeq ($(CONFIG_PSP_LOAD_S0I3_FW),y)
 PSP_S0I3_FILE=$(FIRMWARE_LOCATE)/dr_agesa_prod_RV.sbin
 endif
 
 # types = 0x30 - 0x37
+ifeq ($(CONFIG_SOC_AMD_PICASSO_MATISSE),y)
+PSP_ABL0_FILE=$(FIRMWARE_LOCATE)/AgesaBootloader_U_prod_MTS.bin
+else
 PSP_ABL0_FILE=$(FIRMWARE_LOCATE)/AgesaBootloader0_prod_RV.csbin
 PSP_ABL1_FILE=$(FIRMWARE_LOCATE)/AgesaBootloader1_prod_RV.csbin
 PSP_ABL2_FILE=$(FIRMWARE_LOCATE)/AgesaBootloader2_prod_RV.csbin
@@ -186,6 +210,7 @@ PSP_ABL4_FILE=$(FIRMWARE_LOCATE)/AgesaBootloader4_prod_RV.csbin
 PSP_ABL5_FILE=$(FIRMWARE_LOCATE)/AgesaBootloader5_prod_RV.csbin
 PSP_ABL6_FILE=$(FIRMWARE_LOCATE)/AgesaBootloader6_prod_RV.csbin
 PSP_ABL7_FILE=$(FIRMWARE_LOCATE)/AgesaBootloader7_prod_RV.csbin
+endif
 
 # type = 0x3a
 ifeq ($(CONFIG_HAVE_PSP_WHITELIST_FILE),y)
@@ -225,6 +250,12 @@ _GET_APOBNV_BASE=grep "RW_MRC_CACHE" | sed 's/.*@//' | sed 's/ .*//'
 _GET_APOBNV_SIZE=grep "RW_MRC_CACHE" | sed 's/.*@//' | sed 's/.* //'
 
 # type2 = 0x64, 0x65
+ifeq ($(CONFIG_SOC_AMD_PICASSO_MATISSE),y)
+PSP_PMUI_FILE1=$(FIRMWARE_LOCATE)/Appb_MTS_1D_Ddr4_Udimm_Imem.csbin
+PSP_PMUI_FILE2=$(FIRMWARE_LOCATE)/Appb_MTS_2D_Ddr4_Udimm_Imem.csbin
+PSP_PMUD_FILE1=$(FIRMWARE_LOCATE)/Appb_MTS_1D_Ddr4_Udimm_Dmem.csbin
+PSP_PMUD_FILE2=$(FIRMWARE_LOCATE)/Appb_MTS_2D_Ddr4_Udimm_Dmem.csbin
+else
 PSP_PMUI_FILE1=$(FIRMWARE_LOCATE)/Appb_Rv_1D_Ddr4_Udimm_Imem.csbin
 PSP_PMUI_FILE2=$(FIRMWARE_LOCATE)/Appb_Rv_2D_Ddr4_Imem.csbin
 PSP_PMUI_FILE3=$(FIRMWARE_LOCATE)/Appb_Rv2_1D_ddr4_Udimm_Imem.csbin
@@ -233,11 +264,17 @@ PSP_PMUD_FILE1=$(FIRMWARE_LOCATE)/Appb_Rv_1D_Ddr4_Udimm_Dmem.csbin
 PSP_PMUD_FILE2=$(FIRMWARE_LOCATE)/Appb_Rv_2D_Ddr4_Dmem.csbin
 PSP_PMUD_FILE3=$(FIRMWARE_LOCATE)/Appb_Rv2_1D_ddr4_Udimm_Dmem.csbin
 PSP_PMUD_FILE4=$(FIRMWARE_LOCATE)/Appb_Rv2_2D_ddr4_Udimm_Dmem.csbin
+endif
 
 # type = 0x66
+ifeq ($(CONFIG_SOC_AMD_PICASSO_MATISSE),y)
+PSP_UCODE_FILE1=$(FIRMWARE_LOCATE)/UcodePatch_MTS_A0.bin
+PSP_UCODE_FILE2=$(FIRMWARE_LOCATE)/UcodePatch_MTS_B0.bin
+else
 PSP_UCODE_FILE1=$(FIRMWARE_LOCATE)/UcodePatch_PCO_B1.bin
 PSP_UCODE_FILE2=$(FIRMWARE_LOCATE)/UcodePatch_PCO_B0.bin
 PSP_UCODE_FILE3=$(FIRMWARE_LOCATE)/UcodePatch_RV2_A0.bin
+endif
 
 ifeq ($(CONFIG_VBOOT_STARTS_BEFORE_BOOTBLOCK),y)
 # type = 0x6B - PSP Shared memory location
