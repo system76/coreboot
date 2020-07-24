@@ -21,6 +21,10 @@ config CBFS_SIZE
 	hex
 	default 0xFCF000
 
+config AMD_FWM_POSITION_INDEX
+	int
+	default 3
+
 config MAINBOARD_DIR
 	string
 	default "system76/serw12"
