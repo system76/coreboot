@@ -3,9 +3,10 @@
 #include <bootblock_common.h>
 #include "gpio.h"
 
-#define SERIAL_DEV PNP_DEV(0x4e, SIO1036_SP1)
-
 void bootblock_mainboard_early_init(void)
 {
+	// Map EC memory
+	lpc_set_wideio_range(0xE00, 0x200);
+
 	mainboard_program_early_gpios();
 }
