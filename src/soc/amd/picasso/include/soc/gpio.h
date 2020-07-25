@@ -95,6 +95,25 @@
 #define GPIO_143			143
 #define GPIO_144			144
 
+// Additions for matisse
+#define GPIO_28 28
+#define GPIO_63 63
+#define GPIO_117 117
+#define GPIO_118 118
+#define GPIO_119 119
+#define GPIO_122 122
+#define GPIO_133 133
+#define GPIO_134 134
+#define GPIO_145 145
+#define GPIO_146 146
+#define GPIO_147 147
+#define GPIO_148 148
+#define GPIO_149 149
+#define GPIO_150 150
+#define GPIO_151 151
+#define GPIO_152 152
+#define GPIO_191 191
+
 #define GPIO_SCL_HIGH			0
 #define GPIO_SCL_LOW			GPIO_OUTPUT_ENABLE
 

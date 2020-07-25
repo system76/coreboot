@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+#include <amdblocks/lpc.h>
 #include <bootblock_common.h>
 #include "gpio.h"
 
