@@ -234,7 +234,7 @@ PSP_ELF_FILE=$(objcbfs)/bootblock.elf
 # the elf file.
 PSP_BIOSBIN_SIZE=$(CONFIG_C_ENV_BOOTBLOCK_SIZE)
 # This address must match the BOOTBLOCK logic in arch/x86/memlayout.ld.
-PSP_BIOSBIN_DEST=$(shell printf "%x" $(call int-subtract, $(call int-add, $(CONFIG_X86_RESET_VECTOR) 0x10) $(PSP_BIOSBIN_SIZE)))
+PSP_BIOSBIN_DEST=$(shell printf "0x%x" $(call int-subtract, $(call int-add, $(CONFIG_X86_RESET_VECTOR) 0x10) $(PSP_BIOSBIN_SIZE)))
 
 # type = 0x63 - construct APOB NV base/size from flash map
 # TODO(b/157068645): Add ability to fmaptool to extract offsets and sizes
@@ -539,6 +539,6 @@ endif
 
 $(call strip_quotes,$(CONFIG_FSP_M_CBFS))-options := -b $(CONFIG_FSP_M_ADDR)
 
-cpu_microcode_bins += $(wildcard 3rdparty/amd_blobs/picasso/PSP/UcodePatch_*.bin)
+cpu_microcode_bins += $(wildcard $(FIRMWARE_LOCATE)/UcodePatch_*.bin)
 
 endif # ($(CONFIG_SOC_AMD_PICASSO),y)
