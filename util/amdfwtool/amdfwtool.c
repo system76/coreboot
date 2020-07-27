@@ -1598,6 +1598,10 @@ int main(int argc, char **argv)
 						amd_bios_table, BDT1_COOKIE);
 		}
 		amd_romsig->bios1_entry = BUFF_TO_RUN(ctx, biosdir);
+
+		// Set the third bios entry, and enable second gen EFS, for Matisse
+		amd_romsig->second_gen_efs = 0xfffffffe;
+		amd_romsig->bios3_entry = BUFF_TO_RUN(ctx, biosdir);
 	}
 
 	targetfd = open(output, O_RDWR | O_CREAT | O_TRUNC, 0666);
