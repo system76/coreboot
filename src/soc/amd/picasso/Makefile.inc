@@ -315,9 +315,9 @@ PSP_SOFTFUSE=$(shell A=$(call int-add, \
 add_opt_prefix=$(if $(call strip_quotes, $(1)), $(2) $(call strip_quotes, $(1)), )
 
 OPT_AMD_PUBKEY_FILE=$(call add_opt_prefix, $(CONFIG_AMD_PUBKEY_FILE), --pubkey)
-OPT_PSPBTLDR_FILE=$(call add_opt_prefix, $(PSPBTLDR_FILE), --bootloader)
 OPT_FCH_FW_FILE=$(call add_opt_prefix, $(FCH_FW_FILE), --fch-fw)
 OPT_FCH_LP_FW_FILE=$(call add_opt_prefix, $(FCH_LP_FW_FILE), --fch-lp-fw)
+OPT_PSPBTLDR_FILE=$(call add_opt_prefix, $(PSPBTLDR_FILE), --bootloader)
 OPT_SMUFW1_SUB1_FILE=$(call add_opt_prefix, $(PSP_SMUFW1_SUB1_FILE), --subprogram 1 --smufirmware)
 OPT_SMUFW1_SUB2_FILE=$(call add_opt_prefix, $(PSP_SMUFW1_SUB2_FILE), --subprogram 2 --smufirmware)
 OPT_SMUFW2_SUB1_FILE=$(call add_opt_prefix, $(PSP_SMUFW2_SUB1_FILE), --subprogram 1 --smufirmware2)
@@ -368,11 +368,11 @@ OPT_APOB_NV_SIZE=$(call add_opt_prefix, $(APOB_NV_SIZE), --apob-nv-size)
 OPT_APOB_NV_BASE=$(call add_opt_prefix, $(APOB_NV_BASE), --apob-nv-base)
 
 AMDFW_COMMON_ARGS=$(OPT_AMD_PUBKEY_FILE) \
+		$(OPT_FCH_FW_FILE) \
+		$(OPT_FCH_LP_FW_FILE) \
 		$(OPT_PSPBTLDR_FILE) \
 		$(OPT_PSPSCUREOS_FILE) \
 		$(OPT_PSP_SEC_DBG_KEY_FILE) \
-		$(OPT_FCH_FW_FILE) \
-		$(OPT_FCH_LP_FW_FILE) \
 		$(OPT_SMUFW1_SUB2_FILE) \
 		$(OPT_SMUFW2_SUB2_FILE) \
 		$(OPT_SMUFW1_SUB1_FILE) \
@@ -462,6 +462,8 @@ $(obj)/APCB_%_x2.bin:	$$(SPD_SOURCES_DIR)/%.spd.hex \
 	--board_id_gpio3 $(APCB_BOARD_ID_GPIO3)
 
 $(obj)/amdfw.rom:	$(call strip_quotes, $(CONFIG_AMD_PUBKEY_FILE)) \
+			$(call strip_quotes, $(FCH_FW_FILE)) \
+			$(call strip_quotes, $(FCH_FW_LP_FILE)) \
 			$(call strip_quotes, $(PSPBTLDR_FILE)) \
 			$(call strip_quotes, $(PSPSCUREOS_FILE)) \
 			$(call strip_quotes, $(PSP_SEC_DBG_KEY_FILE)) \
