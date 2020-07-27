@@ -149,9 +149,17 @@ endif
 
 ifeq ($(CONFIG_PSP_UNLOCK_SECURE_DEBUG),y)
 # type = 0x9
+ifeq ($(CONFIG_SOC_AMD_PICASSO_MATISSE),y)
+PSP_SEC_DBG_KEY_FILE=$(FIRMWARE_LOCATE)/SecureDebug4KToken_mts.stkn
+else
 PSP_SEC_DBG_KEY_FILE=$(FIRMWARE_LOCATE)/RavenSecureDebug_PublicKey.bin
+endif
 # type = 0x13
+ifeq ($(CONFIG_SOC_AMD_PICASSO_MATISSE),y)
+PSP_SEC_DEBUG_FILE=$(FIRMWARE_LOCATE)/SecureDebugUnlock_mts.sbin
+else
 PSP_SEC_DEBUG_FILE=$(FIRMWARE_LOCATE)/secure_unlock_prod_RV.sbin
+endif
 # Enable secure debug unlock
 PSP_SOFTFUSE_BITS += 0
 PSP_TOKEN_UNLOCK="--token-unlock"
@@ -197,6 +205,11 @@ ifeq ($(CONFIG_SOC_AMD_PICASSO_MATISSE),y)
 PSP_DRIVERS_FILE=$(FIRMWARE_LOCATE)/drv_sys_mts.sbin
 else
 PSP_DRIVERS_FILE=$(FIRMWARE_LOCATE)/drv_sys_prod_RV.sbin
+endif
+
+# type = 0x2a
+ifeq ($(CONFIG_SOC_AMD_PICASSO_MATISSE),y)
+PSP_MP5FW_FILE=$(FIRMWARE_LOCATE)/Mp5Mts.cbin
 endif
 
 ifeq ($(CONFIG_PSP_LOAD_S0I3_FW),y)
@@ -333,6 +346,7 @@ OPT_SECG2_FILE=$(call add_opt_prefix, $(PSP_SECG2_FILE), --subprog 2 --sec-gaske
 OPT_MP2FW1_FILE=$(call add_opt_prefix, $(PSP_MP2FW1_FILE), --subprog 1 --mp2-fw)
 OPT_MP2FW2_FILE=$(call add_opt_prefix, $(PSP_MP2FW2_FILE), --subprog 2 --mp2-fw)
 OPT_DRIVERS_FILE=$(call add_opt_prefix, $(PSP_DRIVERS_FILE), --drv-entry-pts)
+OPT_MP5FW_FILE=$(call add_opt_prefix, $(PSP_MP5FW_FILE), --mp5-fw)
 OPT_PSP_S0I3_FILE=$(call add_opt_prefix, $(PSP_S0I3_FILE), --s0i3drv)
 OPT_ABL0_FILE=$(call add_opt_prefix,  $(PSP_ABL0_FILE), --abl-image)
 OPT_ABL1_FILE=$(call add_opt_prefix,  $(PSP_ABL1_FILE), --abl-image)
@@ -408,6 +422,7 @@ AMDFW_COMMON_ARGS=$(OPT_AMD_PUBKEY_FILE) \
 		$(OPT_MP2FW1_FILE) \
 		$(OPT_MP2FW2_FILE) \
 		$(OPT_DRIVERS_FILE) \
+		$(OPT_MP5FW_FILE) \
 		$(OPT_PSP_S0I3_FILE) \
 		$(OPT_IKEK_FILE) \
 		$(OPT_SEC_DEBUG_FILE) \

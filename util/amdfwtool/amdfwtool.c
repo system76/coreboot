@@ -191,6 +191,7 @@ static void usage(void)
 	printf("-N | --secdebug <FILE>         Add secure unlock image\n");
 	printf("-U | --token-unlock            Reserve space for debug token\n");
 	printf("-K | --drv-entry-pts <FILE>    Add PSP driver entry points\n");
+	printf("-E | --mp5-fw <FILE>           Add MP5 firmware\n");
 	printf("-L | --ikek <FILE>             Add Wrapped iKEK\n");
 	printf("-Y | --s0i3drv <FILE>          Add s0i3 driver\n");
 	printf("-Z | --verstage <FILE>         Add verstage\n");
@@ -274,6 +275,7 @@ typedef enum _amd_fw_type {
 	AMD_SEC_GASKET = 0x24,
 	AMD_MP2_FW = 0x25,
 	AMD_DRIVER_ENTRIES = 0x28,
+	AMD_MP5_FW = 0x2A,
 	AMD_S0I3_DRIVER = 0x2d,
 	AMD_ABL0 = 0x30,
 	AMD_ABL1 = 0x31,
@@ -331,6 +333,7 @@ static amd_fw_entry amd_psp_fw_table[] = {
 	{ .type = AMD_MP2_FW, .subprog = 2, .level = PSP_LVL2 },
 	{ .type = AMD_MP2_FW, .subprog = 1, .level = PSP_LVL2 },
 	{ .type = AMD_DRIVER_ENTRIES, .level = PSP_LVL2 },
+	{ .type = AMD_MP5_FW, .level = PSP_BOTH },
 	{ .type = AMD_S0I3_DRIVER, .level = PSP_LVL2 },
 	{ .type = AMD_ABL0, .level = PSP_BOTH },
 	{ .type = AMD_ABL1, .level = PSP_BOTH },
@@ -420,11 +423,28 @@ typedef struct _embedded_firmware {
 	uint32_t bios1_entry;
 	uint32_t bios2_entry;
 	uint32_t second_gen_efs;
-	uint32_t reserved;
 	uint32_t bios3_entry;
+	uint32_t reserved_2c;
 	uint32_t fch_entry;
 	uint32_t fch_lp_entry;
-	uint32_t reserved2[0x18]; /* 0x38 - 0x4f */
+	uint32_t reserved_38;
+	uint32_t reserved_3c;
+	uint8_t spi0_mode; /* Family 15 model 60 to 6f */
+	uint8_t spi0_speed;
+	uint8_t reserved_42;
+	uint8_t spi1_mode; /* Family 17 model 00 to 1f */
+	uint8_t spi1_speed;
+	uint8_t spi1_qpr_dummy; /* 0x0a for micron, otherwise 0xff */
+	uint8_t reserved_46;
+	uint8_t spi2_mode; /* Family 17 30 and up */
+	uint8_t spi2_speed;
+	uint8_t spi2_micron; /* 0x55 or 0xaa for micron */
+	uint8_t reserved_4a;
+	uint8_t reserved_4b;
+	uint8_t reserved_4c;
+	uint8_t reserved_4d;
+	uint8_t reserved_4e;
+	uint8_t reserved_4f;
 } __attribute__((packed, aligned(16))) embedded_firmware;
 
 typedef struct _psp_directory_header {
@@ -1055,8 +1075,8 @@ static void integrate_bios_firmwares(context *ctx,
 
 	fill_dir_header(biosdir, count, cookie);
 }
-// Unused values: E
-static const char *optstring  = "x:i:g:C:D:AMS:p:b:s:r:k:c:n:d:t:u:w:m:T:z:J:B:K:L:Y:N:UW:I:a:Q:V:e:v:j:y:G:O:X:F:H:o:f:l:hZ:qR:P:";
+// Unused values: none
+static const char *optstring  = "x:i:g:C:D:AMS:p:b:s:r:k:c:n:d:t:u:w:m:T:z:J:B:E:K:L:Y:N:UW:I:a:Q:V:e:v:j:y:G:O:X:F:H:o:f:l:hZ:qR:P:";
 
 static struct option long_options[] = {
 	{"xhci",             required_argument, 0, 'x' },
@@ -1085,6 +1105,7 @@ static struct option long_options[] = {
 	{"sec-gasket",       required_argument, 0, 'J' },
 	{"mp2-fw",           required_argument, 0, 'B' },
 	{"drv-entry-pts",    required_argument, 0, 'K' },
+	{"mp5-fw",           required_argument, 0, 'E' },
 	{"ikek",             required_argument, 0, 'L' },
 	{"s0i3drv",          required_argument, 0, 'Y' },
 	{"secdebug",         required_argument, 0, 'N' },
@@ -1387,6 +1408,10 @@ int main(int argc, char **argv)
 			register_fw_filename(AMD_MP2_FW, sub, optarg);
 			sub = instance = 0;
 			break;
+		case 'E':
+			register_fw_filename(AMD_MP5_FW, sub, optarg);
+			sub = instance = 0;
+			break;
 		case 'z':
 			register_fw_filename(AMD_ABL0 + abl_image++,
 								sub, optarg);
@@ -1599,10 +1624,16 @@ int main(int argc, char **argv)
 		}
 		amd_romsig->bios1_entry = BUFF_TO_RUN(ctx, biosdir);
 
-		// Set the third bios entry, and enable second gen EFS, for Matisse
-		amd_romsig->second_gen_efs = 0xfffffffe;
-		amd_romsig->bios3_entry = BUFF_TO_RUN(ctx, biosdir);
+		//TODO: Set the third bios entry, for serw12?
+		//amd_romsig->bios3_entry = BUFF_TO_RUN(ctx, biosdir);
 	}
+
+	// Set micron flags for serw12
+	//TODO: move to cli flags, somehow
+	amd_romsig->second_gen_efs = 0xfffffffe; // Enable second gen EFS
+	amd_romsig->spi2_mode = 0b110; // normal read, easier to debug
+	amd_romsig->spi2_speed = 0b000; // 66 MHz
+	amd_romsig->spi2_micron = 0x55; // micron chip
 
 	targetfd = open(output, O_RDWR | O_CREAT | O_TRUNC, 0666);
 	if (targetfd >= 0) {
