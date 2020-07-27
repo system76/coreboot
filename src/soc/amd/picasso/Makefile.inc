@@ -124,6 +124,11 @@ PICASSO_FWM_POSITION=$(call int-add, \
 # type = 0x0
 FIRMWARE_LOCATE=$(realpath $(dir $(call strip_quotes, $(CONFIG_AMD_PUBKEY_FILE))))
 
+ifeq ($(CONFIG_SOC_AMD_PICASSO_MATISSE),y)
+FCH_FW_FILE=$(FIRMWARE_LOCATE)/PromontoryFW.bin
+FCH_LP_FW_FILE=$(FIRMWARE_LOCATE)/LP_PromontoryFW.bin
+endif
+
 # type = 0x1
 ifeq ($(CONFIG_PSP_BOOTLOADER_FILE),)
 $(error CONFIG_PSP_BOOTLOADER_FILE was not defined)
@@ -311,6 +316,8 @@ add_opt_prefix=$(if $(call strip_quotes, $(1)), $(2) $(call strip_quotes, $(1)),
 
 OPT_AMD_PUBKEY_FILE=$(call add_opt_prefix, $(CONFIG_AMD_PUBKEY_FILE), --pubkey)
 OPT_PSPBTLDR_FILE=$(call add_opt_prefix, $(PSPBTLDR_FILE), --bootloader)
+OPT_FCH_FW_FILE=$(call add_opt_prefix, $(FCH_FW_FILE), --fch-fw)
+OPT_FCH_LP_FW_FILE=$(call add_opt_prefix, $(FCH_LP_FW_FILE), --fch-lp-fw)
 OPT_SMUFW1_SUB1_FILE=$(call add_opt_prefix, $(PSP_SMUFW1_SUB1_FILE), --subprogram 1 --smufirmware)
 OPT_SMUFW1_SUB2_FILE=$(call add_opt_prefix, $(PSP_SMUFW1_SUB2_FILE), --subprogram 2 --smufirmware)
 OPT_SMUFW2_SUB1_FILE=$(call add_opt_prefix, $(PSP_SMUFW2_SUB1_FILE), --subprogram 1 --smufirmware2)
@@ -358,12 +365,14 @@ OPT_MP2CFG_FILE=$(call add_opt_prefix, $(PSP_MP2CFG_FILE), --mp2-config)
 OPT_PSP_SHAREDMEM_BASE=$(call add_opt_prefix, $(PSP_SHAREDMEM_BASE), --sharedmem)
 OPT_PSP_SHAREDMEM_SIZE=$(call add_opt_prefix, $(PSP_SHAREDMEM_SIZE), --sharedmem-size)
 OPT_APOB_NV_SIZE=$(call add_opt_prefix, $(APOB_NV_SIZE), --apob-nv-size)
-OPT_APOB_NV_BASE=$(call add_opt_prefix, $(APOB_NV_BASE),--apob-nv-base)
+OPT_APOB_NV_BASE=$(call add_opt_prefix, $(APOB_NV_BASE), --apob-nv-base)
 
 AMDFW_COMMON_ARGS=$(OPT_AMD_PUBKEY_FILE) \
 		$(OPT_PSPBTLDR_FILE) \
 		$(OPT_PSPSCUREOS_FILE) \
 		$(OPT_PSP_SEC_DBG_KEY_FILE) \
+		$(OPT_FCH_FW_FILE) \
+		$(OPT_FCH_LP_FW_FILE) \
 		$(OPT_SMUFW1_SUB2_FILE) \
 		$(OPT_SMUFW2_SUB2_FILE) \
 		$(OPT_SMUFW1_SUB1_FILE) \

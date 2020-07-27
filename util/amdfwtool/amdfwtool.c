@@ -164,6 +164,8 @@ static void usage(void)
 	printf("-x | --xhci <FILE>             Add XHCI blob\n");
 	printf("-i | --imc <FILE>              Add IMC blob\n");
 	printf("-g | --gec <FILE>              Add GEC blob\n");
+	printf("-C | --fch-fw <FILE>           Add FCH blob\n");
+	printf("-D | --fch-lp-fw <FILE>        Add FCH-LP blob\n");
 
 	printf("\nPSP options:\n");
 	printf("-A | --combo-capable           Place PSP directory pointer at Embedded Firmware\n");
@@ -287,6 +289,8 @@ typedef enum _amd_fw_type {
 	AMD_FW_IMC,
 	AMD_FW_GEC,
 	AMD_FW_XHCI,
+	AMD_FW_FCH,
+	AMD_FW_FCH_LP,
 	AMD_FW_INVALID,
 } amd_fw_type;
 
@@ -347,6 +351,8 @@ static amd_fw_entry amd_fw_table[] = {
 	{ .type = AMD_FW_XHCI },
 	{ .type = AMD_FW_IMC },
 	{ .type = AMD_FW_GEC },
+	{ .type = AMD_FW_FCH },
+	{ .type = AMD_FW_FCH_LP },
 	{ .type = AMD_FW_INVALID },
 };
 
@@ -413,7 +419,12 @@ typedef struct _embedded_firmware {
 	uint32_t bios0_entry; /* todo: add way to select correct entry */
 	uint32_t bios1_entry;
 	uint32_t bios2_entry;
-	uint32_t reserved[0x2c]; /* 0x24 - 0x4f */
+	uint32_t second_gen_efs;
+	uint32_t reserved;
+	uint32_t bios3_entry;
+	uint32_t fch_entry;
+	uint32_t fch_lp_entry;
+	uint32_t reserved2[0x18]; /* 0x38 - 0x4f */
 } __attribute__((packed, aligned(16))) embedded_firmware;
 
 typedef struct _psp_directory_header {
@@ -639,6 +650,12 @@ static void integrate_firmwares(context *ctx,
 				break;
 			case AMD_FW_XHCI:
 				romsig->xhci_entry = RUN_CURRENT(*ctx);
+				break;
+			case AMD_FW_FCH:
+				romsig->fch_entry = RUN_CURRENT(*ctx);
+				break;
+			case AMD_FW_FCH_LP:
+				romsig->fch_lp_entry = RUN_CURRENT(*ctx);
 				break;
 			default:
 				/* Error */
@@ -1038,13 +1055,15 @@ static void integrate_bios_firmwares(context *ctx,
 
 	fill_dir_header(biosdir, count, cookie);
 }
-// Unused values: CDE
-static const char *optstring  = "x:i:g:AMS:p:b:s:r:k:c:n:d:t:u:w:m:T:z:J:B:K:L:Y:N:UW:I:a:Q:V:e:v:j:y:G:O:X:F:H:o:f:l:hZ:qR:P:";
+// Unused values: E
+static const char *optstring  = "x:i:g:C:D:AMS:p:b:s:r:k:c:n:d:t:u:w:m:T:z:J:B:K:L:Y:N:UW:I:a:Q:V:e:v:j:y:G:O:X:F:H:o:f:l:hZ:qR:P:";
 
 static struct option long_options[] = {
 	{"xhci",             required_argument, 0, 'x' },
 	{"imc",              required_argument, 0, 'i' },
 	{"gec",              required_argument, 0, 'g' },
+	{"fch-fw",           required_argument, 0, 'C' },
+	{"fch-lp-fw",        required_argument, 0, 'D' },
 	/* PSP Directory Table items */
 	{"combo-capable",          no_argument, 0, 'A' },
 	{"multilevel",             no_argument, 0, 'M' },
@@ -1221,6 +1240,14 @@ int main(int argc, char **argv)
 			break;
 		case 'g':
 			register_fw_filename(AMD_FW_GEC, sub, optarg);
+			sub = instance = 0;
+			break;
+		case 'C':
+			register_fw_filename(AMD_FW_FCH, sub, optarg);
+			sub = instance = 0;
+			break;
+		case 'D':
+			register_fw_filename(AMD_FW_FCH_LP, sub, optarg);
 			sub = instance = 0;
 			break;
 		case 'A':
@@ -1511,6 +1538,8 @@ int main(int argc, char **argv)
 	amd_romsig->imc_entry = 0;
 	amd_romsig->gec_entry = 0;
 	amd_romsig->xhci_entry = 0;
+	amd_romsig->fch_entry = 0;
+	amd_romsig->fch_lp_entry = 0;
 
 	integrate_firmwares(&ctx, amd_romsig, amd_fw_table);
 
