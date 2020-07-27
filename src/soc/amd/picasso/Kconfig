@@ -432,9 +432,11 @@ comment "AMD Firmware Directory Table set to location for 16MB ROM"
 	depends on AMD_FWM_POSITION_INDEX = 5
 
 config AMD_PUBKEY_FILE
-	string
+	string "Specify the AMD public key file path"
 	default "3rdparty/amd_blobs/matisse/PSP/AmdPubKeySsp.bin" if SOC_AMD_PICASSO_MATISSE
 	default "3rdparty/amd_blobs/picasso/PSP/AmdPubKeyRV.bin"
+	help
+	  Supply the name of the AMD public key file.
 
 config USE_PSPSCUREOS
 	bool
