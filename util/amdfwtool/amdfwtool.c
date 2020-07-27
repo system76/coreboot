@@ -1624,13 +1624,19 @@ int main(int argc, char **argv)
 		}
 		amd_romsig->bios1_entry = BUFF_TO_RUN(ctx, biosdir);
 
-		//TODO: Set the third bios entry, for serw12?
-		//amd_romsig->bios3_entry = BUFF_TO_RUN(ctx, biosdir);
+		// Set all other bios entries, for serw12?
+		amd_romsig->bios0_entry = BUFF_TO_RUN(ctx, biosdir);
+		amd_romsig->bios2_entry = BUFF_TO_RUN(ctx, biosdir);
+		amd_romsig->bios3_entry = BUFF_TO_RUN(ctx, biosdir);
 	}
 
-	// Set micron flags for serw12
+	// Set micron flags for serw12, only spi2 is actually used
 	//TODO: move to cli flags, somehow
 	amd_romsig->second_gen_efs = 0xfffffffe; // Enable second gen EFS
+	amd_romsig->spi0_mode = 0b110; // normal read, easier to debug
+	amd_romsig->spi0_speed = 0b000; // 66 MHz
+	amd_romsig->spi1_mode = 0b110; // normal read, easier to debug
+	amd_romsig->spi1_speed = 0b000; // 66 MHz
 	amd_romsig->spi2_mode = 0b110; // normal read, easier to debug
 	amd_romsig->spi2_speed = 0b000; // 66 MHz
 	amd_romsig->spi2_micron = 0x55; // micron chip
