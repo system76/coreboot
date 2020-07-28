@@ -166,6 +166,7 @@ static void usage(void)
 	printf("-g | --gec <FILE>              Add GEC blob\n");
 	printf("-C | --fch-fw <FILE>           Add FCH blob\n");
 	printf("-D | --fch-lp-fw <FILE>        Add FCH-LP blob\n");
+	printf("-E | --extra-fw ID,<FILE>      Add extra blob\n");
 
 	printf("\nPSP options:\n");
 	printf("-A | --combo-capable           Place PSP directory pointer at Embedded Firmware\n");
@@ -191,7 +192,6 @@ static void usage(void)
 	printf("-N | --secdebug <FILE>         Add secure unlock image\n");
 	printf("-U | --token-unlock            Reserve space for debug token\n");
 	printf("-K | --drv-entry-pts <FILE>    Add PSP driver entry points\n");
-	printf("-E | --mp5-fw <FILE>           Add MP5 firmware\n");
 	printf("-L | --ikek <FILE>             Add Wrapped iKEK\n");
 	printf("-Y | --s0i3drv <FILE>          Add s0i3 driver\n");
 	printf("-Z | --verstage <FILE>         Add verstage\n");
@@ -287,6 +287,10 @@ typedef enum _amd_fw_type {
 	AMD_ABL7 = 0x37,
 	AMD_FW_PSP_WHITELIST = 0x3a,
 	AMD_FW_L2_PTR = 0x40,
+	AMD_DXIO_FW = 0x42,
+	AMD_DXIO_PUBKEY = 0x43,
+	AMD_USB_FW = 0x44,
+	AMD_PMU_PUBKEY = 0x4e,
 	AMD_FW_PSP_VERSTAGE = 0x52,
 	AMD_FW_IMC,
 	AMD_FW_GEC,
@@ -330,6 +334,7 @@ static amd_fw_entry amd_psp_fw_table[] = {
 	{ .type = AMD_TOKEN_UNLOCK, .level = PSP_BOTH },
 	{ .type = AMD_SEC_GASKET, .subprog = 2, .level = PSP_BOTH },
 	{ .type = AMD_SEC_GASKET, .subprog = 1, .level = PSP_BOTH },
+	{ .type = AMD_SEC_GASKET, .subprog = 0, .level = PSP_BOTH },
 	{ .type = AMD_MP2_FW, .subprog = 2, .level = PSP_LVL2 },
 	{ .type = AMD_MP2_FW, .subprog = 1, .level = PSP_LVL2 },
 	{ .type = AMD_DRIVER_ENTRIES, .level = PSP_LVL2 },
@@ -347,6 +352,11 @@ static amd_fw_entry amd_psp_fw_table[] = {
 	{ .type = AMD_FW_PSP_SMU_FIRMWARE2, .subprog = 1, .level = PSP_BOTH },
 	{ .type = AMD_FW_PSP_WHITELIST, .level = PSP_LVL2 },
 	{ .type = AMD_FW_PSP_VERSTAGE, .level = PSP_BOTH },
+	{ .type = AMD_DXIO_FW, .level = PSP_BOTH },
+	{ .type = AMD_DXIO_PUBKEY, .level = PSP_BOTH },
+	{ .type = AMD_USB_FW, .level = PSP_BOTH },
+	{ .type = AMD_PMU_PUBKEY, .level = PSP_BOTH },
+	{ .type = AMD_MP5_FW, .level = PSP_BOTH },
 	{ .type = AMD_FW_INVALID },
 };
 
@@ -771,6 +781,7 @@ static void integrate_psp_firmwares(context *ctx,
 		} else if (fw_table[i].filename != NULL) {
 			bytes = copy_blob(BUFF_CURRENT(*ctx),
 					fw_table[i].filename, BUFF_ROOM(*ctx));
+			printf("%s: %d\n", fw_table[i].filename, bytes);
 			if (bytes < 0) {
 				free(ctx->rom);
 				exit(1);
@@ -1076,7 +1087,7 @@ static void integrate_bios_firmwares(context *ctx,
 	fill_dir_header(biosdir, count, cookie);
 }
 // Unused values: none
-static const char *optstring  = "x:i:g:C:D:AMS:p:b:s:r:k:c:n:d:t:u:w:m:T:z:J:B:E:K:L:Y:N:UW:I:a:Q:V:e:v:j:y:G:O:X:F:H:o:f:l:hZ:qR:P:";
+static const char *optstring  = "x:i:g:C:D:E:AMS:p:b:s:r:k:c:n:d:t:u:w:m:T:z:J:B:K:L:Y:N:UW:I:a:Q:V:e:v:j:y:G:O:X:F:H:o:f:l:hZ:qR:P:";
 
 static struct option long_options[] = {
 	{"xhci",             required_argument, 0, 'x' },
@@ -1084,6 +1095,7 @@ static struct option long_options[] = {
 	{"gec",              required_argument, 0, 'g' },
 	{"fch-fw",           required_argument, 0, 'C' },
 	{"fch-lp-fw",        required_argument, 0, 'D' },
+	{"extra-fw",         required_argument, 0, 'E' },
 	/* PSP Directory Table items */
 	{"combo-capable",          no_argument, 0, 'A' },
 	{"multilevel",             no_argument, 0, 'M' },
@@ -1105,7 +1117,6 @@ static struct option long_options[] = {
 	{"sec-gasket",       required_argument, 0, 'J' },
 	{"mp2-fw",           required_argument, 0, 'B' },
 	{"drv-entry-pts",    required_argument, 0, 'K' },
-	{"mp5-fw",           required_argument, 0, 'E' },
 	{"ikek",             required_argument, 0, 'L' },
 	{"s0i3drv",          required_argument, 0, 'Y' },
 	{"secdebug",         required_argument, 0, 'N' },
@@ -1271,6 +1282,21 @@ int main(int argc, char **argv)
 			register_fw_filename(AMD_FW_FCH_LP, sub, optarg);
 			sub = instance = 0;
 			break;
+		case 'E':
+			{
+				int kind = 0;
+				char name[256] = { 0 };
+				if (sscanf(optarg, "0x%X,%255s", &kind, name) == 2) {
+					printf("extra 0x%X: %s\n", kind, name);
+					register_fw_filename(kind, sub, name);
+				} else {
+					printf("Error: invalid extra argument: %s\n", optarg);
+					retval = 1;
+				}
+			}
+
+			sub = instance = 0;
+			break;
 		case 'A':
 			comboable = 1;
 			break;
@@ -1406,10 +1432,6 @@ int main(int argc, char **argv)
 			break;
 		case 'B':
 			register_fw_filename(AMD_MP2_FW, sub, optarg);
-			sub = instance = 0;
-			break;
-		case 'E':
-			register_fw_filename(AMD_MP5_FW, sub, optarg);
 			sub = instance = 0;
 			break;
 		case 'z':
@@ -1586,6 +1608,8 @@ int main(int argc, char **argv)
 						amd_psp_fw_table, PSP_COOKIE);
 	}
 
+	amd_romsig->comboable = 0;
+	amd_romsig->psp_entry = 0;
 	if (comboable)
 		amd_romsig->comboable = BUFF_TO_RUN(ctx, pspdir);
 	else

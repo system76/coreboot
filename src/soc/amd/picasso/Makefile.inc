@@ -127,6 +127,16 @@ FIRMWARE_LOCATE=$(realpath $(dir $(call strip_quotes, $(CONFIG_AMD_PUBKEY_FILE))
 ifeq ($(CONFIG_SOC_AMD_PICASSO_MATISSE),y)
 FCH_FW_FILE=$(FIRMWARE_LOCATE)/PromontoryFW.bin
 FCH_LP_FW_FILE=$(FIRMWARE_LOCATE)/LP_PromontoryFW.bin
+EXTRA_FW_FILES=\
+	0x3,$(FIRMWARE_LOCATE)/PspRecoveryBootLoader_mts.sbin \
+	0x8,$(FIRMWARE_LOCATE)/SmuFirmwareMts.cbin \
+	0x12,$(FIRMWARE_LOCATE)/SmuFirmware2Mts.cbin \
+	0x24,$(FIRMWARE_LOCATE)/RsmuSecPolicy_mts.sbin \
+	0x2A,$(FIRMWARE_LOCATE)/Mp5Mts.cbin \
+	0x42,$(FIRMWARE_LOCATE)/MtsPhyFw.sbin \
+	0x43,$(FIRMWARE_LOCATE)/MtsPhyFwSb4kr.stkn \
+	0x44,$(FIRMWARE_LOCATE)/Matisse_signed_USB_PHY_FW_20190711.sbin \
+	0x4E,$(FIRMWARE_LOCATE)/Starship-PMU-FW-SB-Matisse-4KR.stkn
 endif
 
 # type = 0x1
@@ -137,10 +147,7 @@ PSPBTLDR_FILE=$(realpath $(call strip_quotes, $(CONFIG_PSP_BOOTLOADER_FILE)))
 $(info Adding PSP $(shell md5sum $(PSPBTLDR_FILE)))
 
 # types = 0x8 and 0x12
-ifeq ($(CONFIG_SOC_AMD_PICASSO_MATISSE),y)
-PSP_SMUFW1_SUB1_FILE=$(FIRMWARE_LOCATE)/SmuFirmwareMts.cbin
-PSP_SMUFW2_SUB1_FILE=$(FIRMWARE_LOCATE)/SmuFirmware2Mts.cbin
-else
+ifneq ($(CONFIG_SOC_AMD_PICASSO_MATISSE),y)
 PSP_SMUFW1_SUB1_FILE=$(FIRMWARE_LOCATE)/SmuFirmwareRV2.csbin
 PSP_SMUFW1_SUB2_FILE=$(FIRMWARE_LOCATE)/SmuFirmwarePCO.csbin
 PSP_SMUFW2_SUB1_FILE=$(FIRMWARE_LOCATE)/SmuFirmware2RV2.csbin
@@ -182,9 +189,7 @@ PSP_IKEK_FILE=$(FIRMWARE_LOCATE)/PspIkekRV.bin
 endif
 
 # type = 0x24
-ifeq ($(CONFIG_SOC_AMD_PICASSO_MATISSE),y)
-PSP_SECG1_FILE=$(FIRMWARE_LOCATE)/RsmuSecPolicy_mts.sbin
-else
+ifneq ($(CONFIG_SOC_AMD_PICASSO_MATISSE),y)
 PSP_SECG1_FILE=$(FIRMWARE_LOCATE)/security_policy_RV2_FP5_AM4.sbin
 PSP_SECG2_FILE=$(FIRMWARE_LOCATE)/security_policy_PCO_FP5_AM4.sbin
 endif
@@ -205,11 +210,6 @@ ifeq ($(CONFIG_SOC_AMD_PICASSO_MATISSE),y)
 PSP_DRIVERS_FILE=$(FIRMWARE_LOCATE)/drv_sys_mts.sbin
 else
 PSP_DRIVERS_FILE=$(FIRMWARE_LOCATE)/drv_sys_prod_RV.sbin
-endif
-
-# type = 0x2a
-ifeq ($(CONFIG_SOC_AMD_PICASSO_MATISSE),y)
-PSP_MP5FW_FILE=$(FIRMWARE_LOCATE)/Mp5Mts.cbin
 endif
 
 ifeq ($(CONFIG_PSP_LOAD_S0I3_FW),y)
@@ -330,6 +330,10 @@ add_opt_prefix=$(if $(call strip_quotes, $(1)), $(2) $(call strip_quotes, $(1)),
 OPT_AMD_PUBKEY_FILE=$(call add_opt_prefix, $(CONFIG_AMD_PUBKEY_FILE), --pubkey)
 OPT_FCH_FW_FILE=$(call add_opt_prefix, $(FCH_FW_FILE), --fch-fw)
 OPT_FCH_LP_FW_FILE=$(call add_opt_prefix, $(FCH_LP_FW_FILE), --fch-lp-fw)
+
+OPT_EXTRA_FW_FILES=$(foreach i, $(shell seq $(words $(EXTRA_FW_FILES))), \
+	$(call add_opt_prefix, $(word $(i), $(EXTRA_FW_FILES)), --extra-fw))
+
 OPT_PSPBTLDR_FILE=$(call add_opt_prefix, $(PSPBTLDR_FILE), --bootloader)
 OPT_SMUFW1_SUB1_FILE=$(call add_opt_prefix, $(PSP_SMUFW1_SUB1_FILE), --subprogram 1 --smufirmware)
 OPT_SMUFW1_SUB2_FILE=$(call add_opt_prefix, $(PSP_SMUFW1_SUB2_FILE), --subprogram 2 --smufirmware)
@@ -346,7 +350,6 @@ OPT_SECG2_FILE=$(call add_opt_prefix, $(PSP_SECG2_FILE), --subprog 2 --sec-gaske
 OPT_MP2FW1_FILE=$(call add_opt_prefix, $(PSP_MP2FW1_FILE), --subprog 1 --mp2-fw)
 OPT_MP2FW2_FILE=$(call add_opt_prefix, $(PSP_MP2FW2_FILE), --subprog 2 --mp2-fw)
 OPT_DRIVERS_FILE=$(call add_opt_prefix, $(PSP_DRIVERS_FILE), --drv-entry-pts)
-OPT_MP5FW_FILE=$(call add_opt_prefix, $(PSP_MP5FW_FILE), --mp5-fw)
 OPT_PSP_S0I3_FILE=$(call add_opt_prefix, $(PSP_S0I3_FILE), --s0i3drv)
 OPT_ABL0_FILE=$(call add_opt_prefix,  $(PSP_ABL0_FILE), --abl-image)
 OPT_ABL1_FILE=$(call add_opt_prefix,  $(PSP_ABL1_FILE), --abl-image)
@@ -384,6 +387,7 @@ OPT_APOB_NV_BASE=$(call add_opt_prefix, $(APOB_NV_BASE), --apob-nv-base)
 AMDFW_COMMON_ARGS=$(OPT_AMD_PUBKEY_FILE) \
 		$(OPT_FCH_FW_FILE) \
 		$(OPT_FCH_LP_FW_FILE) \
+		$(OPT_EXTRA_FW_FILES) \
 		$(OPT_PSPBTLDR_FILE) \
 		$(OPT_PSPSCUREOS_FILE) \
 		$(OPT_PSP_SEC_DBG_KEY_FILE) \
@@ -422,7 +426,6 @@ AMDFW_COMMON_ARGS=$(OPT_AMD_PUBKEY_FILE) \
 		$(OPT_MP2FW1_FILE) \
 		$(OPT_MP2FW2_FILE) \
 		$(OPT_DRIVERS_FILE) \
-		$(OPT_MP5FW_FILE) \
 		$(OPT_PSP_S0I3_FILE) \
 		$(OPT_IKEK_FILE) \
 		$(OPT_SEC_DEBUG_FILE) \
