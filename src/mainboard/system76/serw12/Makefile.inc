@@ -6,5 +6,8 @@ bootblock-y += early_gpio.c
 ramstage-y += gpio.c
 ramstage-y += port_descriptors.c
 
-# APCB_serw12.bin
-#TODO APCB_SOURCES = serw12
+APCB_SOURCES = apcb
+
+build/APCB_apcb.bin:
+	cp -v $(FIRMWARE_OPEN_MODEL_DIR)/apcb.rom $@
+
