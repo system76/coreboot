@@ -1285,8 +1285,8 @@ int main(int argc, char **argv)
 		case 'E':
 			{
 				int kind = 0;
-				char name[256] = { 0 };
-				if (sscanf(optarg, "0x%X,%255s", &kind, name) == 2) {
+				char *name = NULL;
+				if (sscanf(optarg, "0x%X,%ms", &kind, &name) == 2) {
 					printf("extra 0x%X: %s\n", kind, name);
 					register_fw_filename(kind, sub, name);
 				} else {
