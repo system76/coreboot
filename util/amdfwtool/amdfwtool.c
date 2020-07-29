@@ -267,6 +267,7 @@ typedef enum _amd_fw_type {
 	AMD_FW_PSP_TRUSTLETS = 12,
 	AMD_FW_PSP_TRUSTLETKEY = 13,
 	AMD_FW_PSP_SMU_FIRMWARE2 = 18,
+	AMD_FW_PSP_OEM_PUBKEY = 10,
 	AMD_PSP_FUSE_CHAIN = 11,
 	AMD_FW_PSP_SMUSCS = 95,
 	AMD_DEBUG_UNLOCK = 0x13,
@@ -312,24 +313,25 @@ typedef struct _amd_fw_entry {
 } amd_fw_entry;
 
 static amd_fw_entry amd_psp_fw_table[] = {
-	{ .type = AMD_FW_PSP_PUBKEY, .level = PSP_BOTH },
+	{ .type = AMD_FW_PSP_PUBKEY, .level = PSP_LVL1 },
 	{ .type = AMD_FW_PSP_BOOTLOADER, .level = PSP_BOTH },
-	{ .type = AMD_FW_PSP_SMU_FIRMWARE, .subprog = 0, .level = PSP_BOTH },
-	{ .type = AMD_FW_PSP_RECOVERY, .level = PSP_LVL1 },
-	{ .type = AMD_FW_PSP_RTM_PUBKEY, .level = PSP_BOTH },
 	{ .type = AMD_FW_PSP_SECURED_OS, .level = PSP_LVL2 },
+	{ .type = AMD_FW_PSP_RECOVERY, .level = PSP_LVL1 },
 	{ .type = AMD_FW_PSP_NVRAM, .level = PSP_LVL2 },
+	{ .type = AMD_FW_PSP_SMU_FIRMWARE, .subprog = 0, .level = PSP_BOTH },
+	{ .type = AMD_FW_PSP_RTM_PUBKEY, .level = PSP_BOTH },
 	{ .type = AMD_FW_PSP_SMU_FIRMWARE, .subprog = 2, .level = PSP_BOTH },
 	{ .type = AMD_FW_PSP_SECURED_DEBUG, .level = PSP_LVL2 },
-	{ .type = AMD_FW_PSP_TRUSTLETS, .level = PSP_LVL2 },
-	{ .type = AMD_FW_PSP_TRUSTLETKEY, .level = PSP_LVL2 },
 	{ .type = AMD_FW_PSP_SMU_FIRMWARE2, .subprog = 2, .level = PSP_BOTH },
 	{ .type = AMD_FW_PSP_SMU_FIRMWARE, .subprog = 1, .level = PSP_BOTH },
 	{ .type = AMD_FW_PSP_SMU_FIRMWARE2, .subprog = 1, .level = PSP_BOTH },
-	{ .type = AMD_FW_PSP_SMU_FIRMWARE2, .level = PSP_BOTH },
 	{ .type = AMD_FW_PSP_SMUSCS, .level = PSP_BOTH  },
-	{ .type = AMD_PSP_FUSE_CHAIN, .level = PSP_LVL2 },
-	{ .type = AMD_DEBUG_UNLOCK, .level = PSP_LVL2 },
+	{ .type = AMD_FW_PSP_OEM_PUBKEY, .level = PSP_BOTH  },
+	{ .type = AMD_PSP_FUSE_CHAIN, .level = PSP_BOTH },
+	{ .type = AMD_FW_PSP_TRUSTLETS, .level = PSP_LVL2 },
+	{ .type = AMD_FW_PSP_TRUSTLETKEY, .level = PSP_LVL2 },
+	{ .type = AMD_FW_PSP_SMU_FIRMWARE2, .level = PSP_BOTH },
+	{ .type = AMD_DEBUG_UNLOCK, .level = PSP_BOTH },
 	{ .type = AMD_WRAPPED_IKEK, .level = PSP_BOTH },
 	{ .type = AMD_TOKEN_UNLOCK, .level = PSP_BOTH },
 	{ .type = AMD_SEC_GASKET, .subprog = 2, .level = PSP_BOTH },
@@ -354,8 +356,8 @@ static amd_fw_entry amd_psp_fw_table[] = {
 	{ .type = AMD_FW_PSP_VERSTAGE, .level = PSP_BOTH },
 	{ .type = AMD_DXIO_FW, .level = PSP_BOTH },
 	{ .type = AMD_DXIO_PUBKEY, .level = PSP_BOTH },
-	{ .type = AMD_USB_FW, .level = PSP_BOTH },
 	{ .type = AMD_PMU_PUBKEY, .level = PSP_BOTH },
+	{ .type = AMD_USB_FW, .level = PSP_LVL2 },
 	{ .type = AMD_MP5_FW, .level = PSP_BOTH },
 	{ .type = AMD_FW_INVALID },
 };
@@ -1062,6 +1064,7 @@ static void integrate_bios_firmwares(context *ctx,
 
 	if (biosdir2) {
 		biosdir->entries[count].type = AMD_BIOS_L2_PTR;
+		biosdir->entries[count].region_type = 0;
 		biosdir->entries[count].size =
 					+ MAX_BIOS_ENTRIES
 					* sizeof(bios_directory_entry);
@@ -1647,14 +1650,15 @@ int main(int argc, char **argv)
 						amd_bios_table, BDT1_COOKIE);
 		}
 		amd_romsig->bios1_entry = BUFF_TO_RUN(ctx, biosdir);
-
-		// Set all other bios entries, for serw12?
-		amd_romsig->bios0_entry = BUFF_TO_RUN(ctx, biosdir);
-		amd_romsig->bios2_entry = BUFF_TO_RUN(ctx, biosdir);
-		amd_romsig->bios3_entry = BUFF_TO_RUN(ctx, biosdir);
 	}
 
-	// Set micron flags for serw12, only spi2 is actually used
+
+	// Modifications for serw12
+	amd_romsig->bios3_entry = amd_romsig->bios1_entry; // Set correct bios_entry
+	amd_romsig->bios0_entry = 0; // Clear unused bios_entry
+	amd_romsig->bios1_entry = 0; // Clear unused bios_entry
+	amd_romsig->bios2_entry = 0; // Clear unused bios_entry
+
 	//TODO: move to cli flags, somehow
 	amd_romsig->second_gen_efs = 0xfffffffe; // Enable second gen EFS
 	amd_romsig->spi0_mode = 0b110; // normal read, easier to debug
