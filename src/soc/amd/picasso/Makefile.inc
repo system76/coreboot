@@ -362,6 +362,9 @@ OPT_ABL4_FILE=$(call add_opt_prefix,  $(PSP_ABL4_FILE), --abl-image)
 OPT_ABL5_FILE=$(call add_opt_prefix,  $(PSP_ABL5_FILE), --abl-image)
 OPT_ABL6_FILE=$(call add_opt_prefix,  $(PSP_ABL6_FILE), --abl-image)
 OPT_ABL7_FILE=$(call add_opt_prefix,  $(PSP_ABL7_FILE), --abl-image)
+OPT_PSP_UCODE_FILE1=$(call add_opt_prefix,  $(PSP_UCODE_FILE1), --instance 0 --ucode)
+OPT_PSP_UCODE_FILE2=$(call add_opt_prefix,  $(PSP_UCODE_FILE2), --instance 1 --ucode)
+OPT_PSP_UCODE_FILE3=$(call add_opt_prefix,  $(PSP_UCODE_FILE3), --instance 2 --ucode)
 OPT_WHITELIST_FILE=$(call add_opt_prefix, $(PSP_WHITELIST_FILE), --whitelist)
 OPT_VERSTAGE_FILE=$(call add_opt_prefix, $(PSP_VERSTAGE_FILE), --verstage)
 
@@ -423,6 +426,9 @@ AMDFW_COMMON_ARGS=$(OPT_AMD_PUBKEY_FILE) \
 		$(OPT_ABL5_FILE) \
 		$(OPT_ABL6_FILE) \
 		$(OPT_ABL7_FILE) \
+		$(OPT_PSP_UCODE_FILE1) \
+		$(OPT_PSP_UCODE_FILE2) \
+		$(OPT_PSP_UCODE_FILE3) \
 		$(OPT_WHITELIST_FILE) \
 		$(OPT_SECG1_FILE) \
 		$(OPT_SECG2_FILE) \
