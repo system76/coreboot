@@ -197,6 +197,7 @@ PSP_SECG1_FILE=$(FIRMWARE_LOCATE)/security_policy_RV2_FP5_AM4.sbin
 PSP_SECG2_FILE=$(FIRMWARE_LOCATE)/security_policy_PCO_FP5_AM4.sbin
 endif
 
+ifneq ($(CONFIG_SOC_AMD_PICASSO_MATISSE),y)
 ifeq ($(CONFIG_PSP_LOAD_MP2_FW),y)
 # type = 0x25
 PSP_MP2FW1_FILE=$(FIRMWARE_LOCATE)/MP2I2CFWRV2.sbin
@@ -206,6 +207,7 @@ PSP_MP2CFG_FILE=$(FIRMWARE_LOCATE)/MP2FWConfig.sbin
 else
 # Disable MP2 firmware loading
 PSP_SOFTFUSE_BITS += 29
+endif
 endif
 
 # type = 0x28
@@ -315,8 +317,10 @@ APOB_NV_BASE=$(shell printf "0x%x" $(call int-add, \
 			$(shell cat $(obj)/fmap.fmd | $(_GET_BIOS_REG_BASE)) \
 			$(shell cat $(obj)/fmap.fmd | $(_GET_APOBNV_BASE))))
 
+ifneq ($(CONFIG_SOC_AMD_PICASSO_MATISSE),y)
 # type = 0xb - See #55758 (NDA) for bit definitions.
 PSP_SOFTFUSE_BITS += 28
+endif
 
 # Helper function to return a value with given bit set
 set-bit=$(call int-shift-left, 1 $(call _toint,$1))
