@@ -129,7 +129,10 @@ FCH_FW_FILE=$(FIRMWARE_LOCATE)/PromontoryFW.bin
 FCH_LP_FW_FILE=$(FIRMWARE_LOCATE)/LP_PromontoryFW.bin
 EXTRA_FW_FILES=\
 	0x3,$(FIRMWARE_LOCATE)/PspRecoveryBootLoader_mts.sbin \
+	0x4,$(FIRMWARE_LOCATE)/../nvram.rom \
 	0x8,$(FIRMWARE_LOCATE)/SmuFirmwareMts.cbin \
+	0xA,$(FIRMWARE_LOCATE)/AblPubKey_mts.stkn \
+	0xC,$(FIRMWARE_LOCATE)/dr_ftpm_prod_MTS.csbin \
 	0x12,$(FIRMWARE_LOCATE)/SmuFirmware2Mts.cbin \
 	0x24,$(FIRMWARE_LOCATE)/RsmuSecPolicy_mts.sbin \
 	0x2A,$(FIRMWARE_LOCATE)/Mp5Mts.cbin \
@@ -433,6 +436,7 @@ AMDFW_COMMON_ARGS=$(OPT_AMD_PUBKEY_FILE) \
 		$(OPT_PSP_SHAREDMEM_BASE) \
 		$(OPT_PSP_SHAREDMEM_SIZE) \
 		--combo-capable \
+		--multilevel \
 		$(OPT_TOKEN_UNLOCK) \
 		--flashsize $(CONFIG_ROM_SIZE)
 
