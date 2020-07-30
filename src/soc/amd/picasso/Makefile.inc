@@ -128,14 +128,19 @@ ifeq ($(CONFIG_SOC_AMD_PICASSO_MATISSE),y)
 FCH_FW_FILE=$(FIRMWARE_LOCATE)/PromontoryFW.bin
 FCH_LP_FW_FILE=$(FIRMWARE_LOCATE)/LP_PromontoryFW.bin
 EXTRA_FW_FILES=\
+	0x2,$(FIRMWARE_LOCATE)/psp_os_combined_mts.sbin \
 	0x3,$(FIRMWARE_LOCATE)/PspRecoveryBootLoader_mts.sbin \
 	0x4,$(FIRMWARE_LOCATE)/../nvram.rom \
 	0x8,$(FIRMWARE_LOCATE)/SmuFirmwareMts.cbin \
+	0x9,$(FIRMWARE_LOCATE)/SecureDebug4KToken_mts.stkn \
 	0xA,$(FIRMWARE_LOCATE)/AblPubKey_mts.stkn \
 	0xC,$(FIRMWARE_LOCATE)/dr_ftpm_prod_MTS.csbin \
 	0x12,$(FIRMWARE_LOCATE)/SmuFirmware2Mts.cbin \
+	0x13,$(FIRMWARE_LOCATE)/SecureDebugUnlock_mts.sbin \
 	0x24,$(FIRMWARE_LOCATE)/RsmuSecPolicy_mts.sbin \
+	0x28,$(FIRMWARE_LOCATE)/drv_sys_mts.sbin \
 	0x2A,$(FIRMWARE_LOCATE)/Mp5Mts.cbin \
+	0x30,$(FIRMWARE_LOCATE)/AgesaBootloader_U_prod_MTS.bin \
 	0x42,$(FIRMWARE_LOCATE)/MtsPhyFw.sbin \
 	0x43,$(FIRMWARE_LOCATE)/MtsPhyFwSb4kr.stkn \
 	0x44,$(FIRMWARE_LOCATE)/Matisse_signed_USB_PHY_FW_20190711.sbin \
@@ -159,15 +164,11 @@ endif
 
 ifeq ($(CONFIG_PSP_UNLOCK_SECURE_DEBUG),y)
 # type = 0x9
-ifeq ($(CONFIG_SOC_AMD_PICASSO_MATISSE),y)
-PSP_SEC_DBG_KEY_FILE=$(FIRMWARE_LOCATE)/SecureDebug4KToken_mts.stkn
-else
+ifneq ($(CONFIG_SOC_AMD_PICASSO_MATISSE),y)
 PSP_SEC_DBG_KEY_FILE=$(FIRMWARE_LOCATE)/RavenSecureDebug_PublicKey.bin
 endif
 # type = 0x13
-ifeq ($(CONFIG_SOC_AMD_PICASSO_MATISSE),y)
-PSP_SEC_DEBUG_FILE=$(FIRMWARE_LOCATE)/SecureDebugUnlock_mts.sbin
-else
+ifneq ($(CONFIG_SOC_AMD_PICASSO_MATISSE),y)
 PSP_SEC_DEBUG_FILE=$(FIRMWARE_LOCATE)/secure_unlock_prod_RV.sbin
 endif
 # Enable secure debug unlock
@@ -177,9 +178,7 @@ endif
 
 ifeq ($(CONFIG_USE_PSPSCUREOS),y)
 # types = 0x2
-ifeq ($(CONFIG_SOC_AMD_PICASSO_MATISSE),y)
-PSPSCUREOS_FILE=$(FIRMWARE_LOCATE)/psp_os_combined_mts.sbin
-else
+ifneq ($(CONFIG_SOC_AMD_PICASSO_MATISSE),y)
 PSPSCUREOS_FILE=$(FIRMWARE_LOCATE)/psp_os_combined_prod_RV.sbin
 endif
 endif
@@ -211,9 +210,7 @@ endif
 endif
 
 # type = 0x28
-ifeq ($(CONFIG_SOC_AMD_PICASSO_MATISSE),y)
-PSP_DRIVERS_FILE=$(FIRMWARE_LOCATE)/drv_sys_mts.sbin
-else
+ifneq ($(CONFIG_SOC_AMD_PICASSO_MATISSE),y)
 PSP_DRIVERS_FILE=$(FIRMWARE_LOCATE)/drv_sys_prod_RV.sbin
 endif
 
@@ -222,9 +219,7 @@ PSP_S0I3_FILE=$(FIRMWARE_LOCATE)/dr_agesa_prod_RV.sbin
 endif
 
 # types = 0x30 - 0x37
-ifeq ($(CONFIG_SOC_AMD_PICASSO_MATISSE),y)
-PSP_ABL0_FILE=$(FIRMWARE_LOCATE)/AgesaBootloader_U_prod_MTS.bin
-else
+ifneq ($(CONFIG_SOC_AMD_PICASSO_MATISSE),y)
 PSP_ABL0_FILE=$(FIRMWARE_LOCATE)/AgesaBootloader0_prod_RV.csbin
 PSP_ABL1_FILE=$(FIRMWARE_LOCATE)/AgesaBootloader1_prod_RV.csbin
 PSP_ABL2_FILE=$(FIRMWARE_LOCATE)/AgesaBootloader2_prod_RV.csbin

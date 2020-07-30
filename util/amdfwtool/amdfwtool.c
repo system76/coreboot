@@ -783,7 +783,7 @@ static void integrate_psp_firmwares(context *ctx,
 		} else if (fw_table[i].filename != NULL) {
 			bytes = copy_blob(BUFF_CURRENT(*ctx),
 					fw_table[i].filename, BUFF_ROOM(*ctx));
-			printf("%s: %d\n", fw_table[i].filename, bytes);
+			printf("E 0x%02x%02x L 0x%06x F '%s'\n", fw_table[i].subprog, fw_table[i].type, bytes, fw_table[i].filename);
 			if (bytes < 0) {
 				free(ctx->rom);
 				exit(1);
