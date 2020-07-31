@@ -270,10 +270,10 @@ _GET_APOBNV_SIZE=grep "RW_MRC_CACHE" | sed 's/.*@//' | sed 's/.* //'
 
 # type2 = 0x64, 0x65
 ifeq ($(CONFIG_SOC_AMD_PICASSO_MATISSE),y)
-PSP_PMUI_FILE1=$(FIRMWARE_LOCATE)/Appb_MTS_1D_Ddr4_Udimm_Imem.csbin
-PSP_PMUI_FILE2=$(FIRMWARE_LOCATE)/Appb_MTS_2D_Ddr4_Udimm_Imem.csbin
-PSP_PMUD_FILE1=$(FIRMWARE_LOCATE)/Appb_MTS_1D_Ddr4_Udimm_Dmem.csbin
-PSP_PMUD_FILE2=$(FIRMWARE_LOCATE)/Appb_MTS_2D_Ddr4_Udimm_Dmem.csbin
+PSP_PMUI_FILE3=$(FIRMWARE_LOCATE)/Appb_MTS_1D_Ddr4_Udimm_Imem.csbin
+PSP_PMUI_FILE4=$(FIRMWARE_LOCATE)/Appb_MTS_2D_Ddr4_Udimm_Imem.csbin
+PSP_PMUD_FILE3=$(FIRMWARE_LOCATE)/Appb_MTS_1D_Ddr4_Udimm_Dmem.csbin
+PSP_PMUD_FILE4=$(FIRMWARE_LOCATE)/Appb_MTS_2D_Ddr4_Udimm_Dmem.csbin
 else
 PSP_PMUI_FILE1=$(FIRMWARE_LOCATE)/Appb_Rv_1D_Ddr4_Udimm_Imem.csbin
 PSP_PMUI_FILE2=$(FIRMWARE_LOCATE)/Appb_Rv_2D_Ddr4_Imem.csbin
