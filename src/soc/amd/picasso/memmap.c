@@ -10,9 +10,12 @@
 #include <cpu/amd/msr.h>
 #include <arch/bert_storage.h>
 #include <memrange.h>
-#include <fsp/util.h>
 #include <FspGuids.h>
 #include <soc/memmap.h>
+
+#if CONFIG(PLATFORM_USES_FSP2_0)
+#include <fsp/util.h>
+#endif
 
 /*
  * For data stored in TSEG, ensure TValid is clear so R/W access can reach
@@ -45,7 +48,11 @@ void smm_region(uintptr_t *start, size_t *size)
 	*start = 0;
 	*size = 0;
 
+#if CONFIG(PLATFORM_USES_FSP2_0)
 	status = fsp_find_range_hob(&tseg, AMD_FSP_TSEG_HOB_GUID.b);
+#else
+	status = -1;
+#endif
 
 	if (status < 0) {
 		printk(BIOS_ERR, "Error: unable to find TSEG HOB\n");
@@ -69,7 +76,11 @@ void bert_reserved_region(void **start, size_t *size)
 	*start = NULL;
 	*size = 0;
 
+#if CONFIG(PLATFORM_USES_FSP2_0)
 	status = fsp_find_range_hob(&bert, AMD_FSP_BERT_HOB_GUID.b);
+#else
+	status = -1;
+#endif
 
 	if (status < 0) {
 		printk(BIOS_ERR, "Error: unable to find BERT HOB\n");

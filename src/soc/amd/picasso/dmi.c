@@ -4,7 +4,6 @@
  * This code was adapted from src/soc/amd/common/block/pi/amd_late_init.c
  */
 
-#include <fsp/util.h>
 #include <memory_info.h>
 #include <console/console.h>
 #include <cbmem.h>
@@ -13,6 +12,9 @@
 #include <bootstate.h>
 #include <lib.h>
 #include <dimm_info_util.h>
+
+#if CONFIG(PLATFORM_USES_FSP2_0)
+#include <fsp/util.h>
 #include <vendorcode/amd/fsp/picasso/dmi_info.h>
 
 /**
@@ -193,3 +195,6 @@ static void prepare_dmi_17(void *unused)
 
 /* AMD_FSP_DMI_HOB is initialized very late, so check it just in time for writing tables. */
 BOOT_STATE_INIT_ENTRY(BS_WRITE_TABLES, BS_ON_ENTRY, prepare_dmi_17, NULL);
+#else
+//TODO: native init
+#endif

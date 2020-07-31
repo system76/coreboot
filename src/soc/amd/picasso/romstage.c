@@ -14,6 +14,8 @@
 #include <soc/mrc_cache.h>
 #include <types.h>
 #include "chip.h"
+
+#if CONFIG(PLATFORM_USES_FSP2_0)
 #include <fsp/api.h>
 
 void platform_fsp_memory_init_params_cb(FSPM_UPD *mupd, uint32_t version)
@@ -64,6 +66,17 @@ void platform_fsp_memory_init_params_cb(FSPM_UPD *mupd, uint32_t version)
 	mcfg->telemetry_vddcr_soc_slope = config->telemetry_vddcr_soc_slope;
 	mcfg->telemetry_vddcr_soc_offset = config->telemetry_vddcr_soc_offset;
 }
+#else
+void *cbmem_top_chipset(void)
+{
+	// 3 gigs, just for shits and giggles
+	return (void *)0xC0000000;
+}
+
+static void native_ram_init(bool s3_resume) {
+	printk(BIOS_DEBUG, "native_ram_init %d\n", (int)s3_resume);
+}
+#endif
 
 asmlinkage void car_stage_entry(void)
 {
@@ -80,7 +93,11 @@ asmlinkage void car_stage_entry(void)
 	printk(BIOS_DEBUG, "Family_Model: %08x\n", val);
 
 	post_code(0x43);
+#if CONFIG(PLATFORM_USES_FSP2_0)
 	fsp_memory_init(s3_resume);
+#else
+	native_ram_init(s3_resume);
+#endif
 	soc_update_mrc_cache();
 
 	memmap_stash_early_dram_usage();

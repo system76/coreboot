@@ -3,8 +3,10 @@
 #include <device/pci.h>
 #include <soc/pci_devs.h>
 #include <soc/platform_descriptors.h>
-#include <fsp/api.h>
 #include "chip.h"
+
+#if CONFIG(PLATFORM_USES_FSP2_0)
+#include <fsp/api.h>
 
 static void fsps_update_emmc_config(FSP_S_CONFIG *scfg,
 				const struct soc_amd_picasso_config *cfg)
@@ -112,3 +114,4 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 	fsp_fill_pcie_ddi_descriptors(scfg);
 	fsp_usb_oem_customization(scfg, cfg);
 }
+#endif

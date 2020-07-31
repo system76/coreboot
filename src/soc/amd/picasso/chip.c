@@ -11,7 +11,10 @@
 #include <soc/pci_devs.h>
 #include <soc/southbridge.h>
 #include "chip.h"
+
+#if CONFIG(PLATFORM_USES_FSP2_0)
 #include <fsp/api.h>
+#endif
 
 /* Supplied by i2c.c */
 extern struct device_operations picasso_i2c_mmio_ops;
@@ -95,7 +98,11 @@ static void soc_init(void *chip_info)
 {
 	default_dev_ops_root.write_acpi_tables = agesa_write_acpi_tables;
 
+#if CONFIG(PLATFORM_USES_FSP2_0)
 	fsp_silicon_init(acpi_is_wakeup_s3());
+#else
+	printk(BIOS_DEBUG, "native_silicon_init: TODO\n");
+#endif
 
 	data_fabric_set_mmio_np();
 	southbridge_init(chip_info);
