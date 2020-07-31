@@ -1653,21 +1653,38 @@ int main(int argc, char **argv)
 	}
 
 
-	// Modifications for serw12
-	amd_romsig->bios3_entry = amd_romsig->bios1_entry; // Set correct bios_entry
+	// Modifications for serw12 {
+	amd_romsig->reserved_2c = 0;
+	amd_romsig->reserved_38 = 0;
+	amd_romsig->reserved_3c = 0;
+	amd_romsig->reserved_42 = 0;
+	amd_romsig->reserved_46 = 0;
+	amd_romsig->reserved_4a = 0;
+	amd_romsig->reserved_4b = 0;
+	amd_romsig->reserved_4c = 0;
+	amd_romsig->reserved_4d = 0;
+	amd_romsig->reserved_4e = 0;
+	amd_romsig->reserved_4f = 0;
+
+	amd_romsig->bios2_entry = amd_romsig->bios1_entry; // Set correct bios_entry
 	amd_romsig->bios0_entry = 0; // Clear unused bios_entry
 	amd_romsig->bios1_entry = 0; // Clear unused bios_entry
-	amd_romsig->bios2_entry = 0; // Clear unused bios_entry
+	amd_romsig->bios3_entry = 0; // Clear unused bios_entry
 
-	//TODO: move to cli flags, somehow
+	// Upstream has this in CLI flags
 	amd_romsig->second_gen_efs = 0xfffffffe; // Enable second gen EFS
-	amd_romsig->spi0_mode = 0b110; // normal read, easier to debug
-	amd_romsig->spi0_speed = 0b000; // 66 MHz
-	amd_romsig->spi1_mode = 0b110; // normal read, easier to debug
-	amd_romsig->spi1_speed = 0b000; // 66 MHz
-	amd_romsig->spi2_mode = 0b110; // normal read, easier to debug
-	amd_romsig->spi2_speed = 0b000; // 66 MHz
+	amd_romsig->spi0_mode = 0; // normal read, easier to debug
+	amd_romsig->spi0_speed = 0; // 66 MHz
+	amd_romsig->spi1_mode = 0; // normal read, easier to debug
+	amd_romsig->spi1_speed = 0; // 66 MHz
+	amd_romsig->spi1_qpr_dummy = 0; // unused
+	amd_romsig->spi2_mode = 5; // quad I/O. Use 0 when tracing
+	amd_romsig->spi2_speed = 0; // 66 MHz
 	amd_romsig->spi2_micron = 0x55; // micron chip
+
+	amd_romsig->comboable &= 0xFFFFFF;
+	amd_romsig->bios2_entry &= 0xFFFFFF;
+	// } Modifications for serw12
 
 	targetfd = open(output, O_RDWR | O_CREAT | O_TRUNC, 0666);
 	if (targetfd >= 0) {

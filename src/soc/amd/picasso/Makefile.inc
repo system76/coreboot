@@ -125,6 +125,7 @@ PICASSO_FWM_POSITION=$(call int-add, \
 FIRMWARE_LOCATE=$(realpath $(dir $(call strip_quotes, $(CONFIG_AMD_PUBKEY_FILE))))
 
 ifeq ($(CONFIG_SOC_AMD_PICASSO_MATISSE),y)
+IMC_FW_FILE=$(FIRMWARE_LOCATE)/../imc.rom
 FCH_FW_FILE=$(FIRMWARE_LOCATE)/PromontoryFW.bin
 FCH_LP_FW_FILE=$(FIRMWARE_LOCATE)/LP_PromontoryFW.bin
 EXTRA_FW_FILES=\
@@ -330,6 +331,7 @@ PSP_SOFTFUSE=$(shell A=$(call int-add, \
 add_opt_prefix=$(if $(call strip_quotes, $(1)), $(2) $(call strip_quotes, $(1)), )
 
 OPT_AMD_PUBKEY_FILE=$(call add_opt_prefix, $(CONFIG_AMD_PUBKEY_FILE), --pubkey)
+OPT_IMC_FW_FILE=$(call add_opt_prefix, $(IMC_FW_FILE), --imc)
 OPT_FCH_FW_FILE=$(call add_opt_prefix, $(FCH_FW_FILE), --fch-fw)
 OPT_FCH_LP_FW_FILE=$(call add_opt_prefix, $(FCH_LP_FW_FILE), --fch-lp-fw)
 
@@ -390,6 +392,7 @@ OPT_APOB_NV_SIZE=$(call add_opt_prefix, $(APOB_NV_SIZE), --apob-nv-size)
 OPT_APOB_NV_BASE=$(call add_opt_prefix, $(APOB_NV_BASE), --apob-nv-base)
 
 AMDFW_COMMON_ARGS=$(OPT_AMD_PUBKEY_FILE) \
+		$(OPT_IMC_FW_FILE) \
 		$(OPT_FCH_FW_FILE) \
 		$(OPT_FCH_LP_FW_FILE) \
 		$(OPT_EXTRA_FW_FILES) \
@@ -489,6 +492,7 @@ $(obj)/APCB_%_x2.bin:	$$(SPD_SOURCES_DIR)/%.spd.hex \
 	--board_id_gpio3 $(APCB_BOARD_ID_GPIO3)
 
 $(obj)/amdfw.rom:	$(call strip_quotes, $(CONFIG_AMD_PUBKEY_FILE)) \
+			$(call strip_quotes, $(IMC_FW_FILE)) \
 			$(call strip_quotes, $(FCH_FW_FILE)) \
 			$(call strip_quotes, $(FCH_FW_LP_FILE)) \
 			$(call strip_quotes, $(PSPBTLDR_FILE)) \
