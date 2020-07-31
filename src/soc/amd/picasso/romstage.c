@@ -67,12 +67,6 @@ void platform_fsp_memory_init_params_cb(FSPM_UPD *mupd, uint32_t version)
 	mcfg->telemetry_vddcr_soc_offset = config->telemetry_vddcr_soc_offset;
 }
 #else
-void *cbmem_top_chipset(void)
-{
-	// 3 gigs, just for shits and giggles
-	return (void *)0xC0000000;
-}
-
 static void native_ram_init(bool s3_resume) {
 	printk(BIOS_DEBUG, "native_ram_init %d\n", (int)s3_resume);
 	cbmem_initialize_empty();
