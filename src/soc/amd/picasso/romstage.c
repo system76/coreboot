@@ -75,6 +75,7 @@ void *cbmem_top_chipset(void)
 
 static void native_ram_init(bool s3_resume) {
 	printk(BIOS_DEBUG, "native_ram_init %d\n", (int)s3_resume);
+	cbmem_initialize_empty();
 }
 #endif
 
