@@ -50,6 +50,8 @@ chip soc/amd/picasso
 			device pci 0.0 on  end # AHCI
 		end
 		#TODO: Where are bus f, g, and h?
+		device pci 14.0 on  end # SMBus
+		device pci 14.3 on  end # LPC
 		device pci 18.0 on  end # Data fabric [0-7]
 		device pci 18.1 on  end
 		device pci 18.2 on  end
