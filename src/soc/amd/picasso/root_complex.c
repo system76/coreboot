@@ -9,11 +9,9 @@
 #include <device/device.h>
 #include <device/pci.h>
 #include <device/pci_ids.h>
+#include <fsp/util.h>
 #include <stdint.h>
 #include <soc/memmap.h>
-
-#if CONFIG(PLATFORM_USES_FSP2_0)
-#include <fsp/util.h>
 
 /*
  *
@@ -171,6 +169,3 @@ static const struct pci_driver family17_root_complex __pci_driver = {
 	.vendor	= PCI_VENDOR_ID_AMD,
 	.device	= PCI_DEVICE_ID_AMD_17H_MODEL_101F_NB,
 };
-#else
-//TODO: native init
-#endif

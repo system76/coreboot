@@ -10,27 +10,9 @@
 #include <cpu/amd/msr.h>
 #include <arch/bert_storage.h>
 #include <memrange.h>
+#include <fsp/util.h>
 #include <FspGuids.h>
 #include <soc/memmap.h>
-
-#if CONFIG(PLATFORM_USES_FSP2_0)
-#include <fsp/util.h>
-#else
- #if CONFIG_SMM_TSEG_SIZE == 0x0
-  #define BERT_REGION_MAX_SIZE 0x100000
- #else
-  /* SMM_TSEG_SIZE must stay on a boundary appropriate for its granularity */
-  #define BERT_REGION_MAX_SIZE CONFIG_SMM_TSEG_SIZE
- #endif
-
-void *cbmem_top_chipset(void)
-{
-	// 3 gigs, just for shits and giggles
-	return (void *)ALIGN_DOWN(0xC0000000
-			- CONFIG_SMM_TSEG_SIZE
-			- BERT_REGION_MAX_SIZE, 8*MiB);
-}
-#endif
 
 /*
  * For data stored in TSEG, ensure TValid is clear so R/W access can reach
@@ -57,7 +39,6 @@ static void clear_tvalid(void)
 void smm_region(uintptr_t *start, size_t *size)
 {
 	static int once;
-#if CONFIG(PLATFORM_USES_FSP2_0)
 	struct range_entry tseg;
 	int status;
 
@@ -73,10 +54,6 @@ void smm_region(uintptr_t *start, size_t *size)
 
 	*start = (uintptr_t)range_entry_base(&tseg);
 	*size = range_entry_size(&tseg);
-#else
-	*start = (uintptr_t)cbmem_top() + BERT_REGION_MAX_SIZE;
-	*size = CONFIG_SMM_TSEG_SIZE;
-#endif
 
 	if (!once) {
 		clear_tvalid();
@@ -86,7 +63,6 @@ void smm_region(uintptr_t *start, size_t *size)
 
 void bert_reserved_region(void **start, size_t *size)
 {
-#if CONFIG(PLATFORM_USES_FSP2_0)
 	struct range_entry bert;
 	int status;
 
@@ -102,11 +78,6 @@ void bert_reserved_region(void **start, size_t *size)
 
 	*start = (void *)(uintptr_t)range_entry_base(&bert);
 	*size = range_entry_size(&bert);
-#else
-	//TODO: better definition
-	*start = cbmem_top();
-	*size = BERT_REGION_MAX_SIZE;
-#endif
 }
 
 void memmap_stash_early_dram_usage(void)

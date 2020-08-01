@@ -8,11 +8,8 @@
 #include <soc/southbridge.h>
 #include <amdblocks/acpimmio.h>
 #include <amdblocks/reset.h>
-#include <assert.h>
-
-#if CONFIG(PLATFORM_USES_FSP2_0)
 #include <fsp/util.h>
-#endif
+#include <assert.h>
 
 void set_warm_reset_flag(void)
 {
@@ -48,7 +45,6 @@ void do_board_reset(void)
 	do_cold_reset();
 }
 
-#if CONFIG(PLATFORM_USES_FSP2_0)
 void chipset_handle_reset(uint32_t status)
 {
 	printk(BIOS_ERR, "Error: unexpected call to %s(0x%08x).  Doing cold reset.\n",
@@ -56,4 +52,3 @@ void chipset_handle_reset(uint32_t status)
 	assert(0);
 	do_cold_reset();
 }
-#endif

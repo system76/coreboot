@@ -124,30 +124,6 @@ PICASSO_FWM_POSITION=$(call int-add, \
 # type = 0x0
 FIRMWARE_LOCATE=$(realpath $(dir $(call strip_quotes, $(CONFIG_AMD_PUBKEY_FILE))))
 
-ifeq ($(CONFIG_SOC_AMD_PICASSO_MATISSE),y)
-IMC_FW_FILE=$(FIRMWARE_LOCATE)/../imc.rom
-FCH_FW_FILE=$(FIRMWARE_LOCATE)/PromontoryFW.bin
-FCH_LP_FW_FILE=$(FIRMWARE_LOCATE)/LP_PromontoryFW.bin
-EXTRA_FW_FILES=\
-	0x2,$(FIRMWARE_LOCATE)/psp_os_combined_mts.sbin \
-	0x3,$(FIRMWARE_LOCATE)/PspRecoveryBootLoader_mts.sbin \
-	0x4,$(FIRMWARE_LOCATE)/../nvram.rom \
-	0x8,$(FIRMWARE_LOCATE)/SmuFirmwareMts.cbin \
-	0x9,$(FIRMWARE_LOCATE)/SecureDebug4KToken_mts.stkn \
-	0xA,$(FIRMWARE_LOCATE)/AblPubKey_mts.stkn \
-	0xC,$(FIRMWARE_LOCATE)/dr_ftpm_prod_MTS.csbin \
-	0x12,$(FIRMWARE_LOCATE)/SmuFirmware2Mts.cbin \
-	0x13,$(FIRMWARE_LOCATE)/SecureDebugUnlock_mts.sbin \
-	0x24,$(FIRMWARE_LOCATE)/RsmuSecPolicy_mts.sbin \
-	0x28,$(FIRMWARE_LOCATE)/drv_sys_mts.sbin \
-	0x2A,$(FIRMWARE_LOCATE)/Mp5Mts.cbin \
-	0x30,$(FIRMWARE_LOCATE)/AgesaBootloader_U_prod_MTS.bin \
-	0x42,$(FIRMWARE_LOCATE)/MtsPhyFw.sbin \
-	0x43,$(FIRMWARE_LOCATE)/MtsPhyFwSb4kr.stkn \
-	0x44,$(FIRMWARE_LOCATE)/Matisse_signed_USB_PHY_FW_20190711.sbin \
-	0x4E,$(FIRMWARE_LOCATE)/Starship-PMU-FW-SB-Matisse-4KR.stkn
-endif
-
 # type = 0x1
 ifeq ($(CONFIG_PSP_BOOTLOADER_FILE),)
 $(error CONFIG_PSP_BOOTLOADER_FILE was not defined)
@@ -156,22 +132,16 @@ PSPBTLDR_FILE=$(realpath $(call strip_quotes, $(CONFIG_PSP_BOOTLOADER_FILE)))
 $(info Adding PSP $(shell md5sum $(PSPBTLDR_FILE)))
 
 # types = 0x8 and 0x12
-ifneq ($(CONFIG_SOC_AMD_PICASSO_MATISSE),y)
 PSP_SMUFW1_SUB1_FILE=$(FIRMWARE_LOCATE)/SmuFirmwareRV2.csbin
 PSP_SMUFW1_SUB2_FILE=$(FIRMWARE_LOCATE)/SmuFirmwarePCO.csbin
 PSP_SMUFW2_SUB1_FILE=$(FIRMWARE_LOCATE)/SmuFirmware2RV2.csbin
 PSP_SMUFW2_SUB2_FILE=$(FIRMWARE_LOCATE)/SmuFirmware2PCO.csbin
-endif
 
 ifeq ($(CONFIG_PSP_UNLOCK_SECURE_DEBUG),y)
 # type = 0x9
-ifneq ($(CONFIG_SOC_AMD_PICASSO_MATISSE),y)
 PSP_SEC_DBG_KEY_FILE=$(FIRMWARE_LOCATE)/RavenSecureDebug_PublicKey.bin
-endif
 # type = 0x13
-ifneq ($(CONFIG_SOC_AMD_PICASSO_MATISSE),y)
 PSP_SEC_DEBUG_FILE=$(FIRMWARE_LOCATE)/secure_unlock_prod_RV.sbin
-endif
 # Enable secure debug unlock
 PSP_SOFTFUSE_BITS += 0
 PSP_TOKEN_UNLOCK="--token-unlock"
@@ -179,25 +149,16 @@ endif
 
 ifeq ($(CONFIG_USE_PSPSCUREOS),y)
 # types = 0x2
-ifneq ($(CONFIG_SOC_AMD_PICASSO_MATISSE),y)
 PSPSCUREOS_FILE=$(FIRMWARE_LOCATE)/psp_os_combined_prod_RV.sbin
-endif
 endif
 
 # type = 0x21
-ifeq ($(CONFIG_SOC_AMD_PICASSO_MATISSE),y)
-PSP_IKEK_FILE=$(FIRMWARE_LOCATE)/iKEK.enc.by.Matisse.rKEK
-else
 PSP_IKEK_FILE=$(FIRMWARE_LOCATE)/PspIkekRV.bin
-endif
 
 # type = 0x24
-ifneq ($(CONFIG_SOC_AMD_PICASSO_MATISSE),y)
 PSP_SECG1_FILE=$(FIRMWARE_LOCATE)/security_policy_RV2_FP5_AM4.sbin
 PSP_SECG2_FILE=$(FIRMWARE_LOCATE)/security_policy_PCO_FP5_AM4.sbin
-endif
 
-ifneq ($(CONFIG_SOC_AMD_PICASSO_MATISSE),y)
 ifeq ($(CONFIG_PSP_LOAD_MP2_FW),y)
 # type = 0x25
 PSP_MP2FW1_FILE=$(FIRMWARE_LOCATE)/MP2I2CFWRV2.sbin
@@ -208,19 +169,15 @@ else
 # Disable MP2 firmware loading
 PSP_SOFTFUSE_BITS += 29
 endif
-endif
 
 # type = 0x28
-ifneq ($(CONFIG_SOC_AMD_PICASSO_MATISSE),y)
 PSP_DRIVERS_FILE=$(FIRMWARE_LOCATE)/drv_sys_prod_RV.sbin
-endif
 
 ifeq ($(CONFIG_PSP_LOAD_S0I3_FW),y)
 PSP_S0I3_FILE=$(FIRMWARE_LOCATE)/dr_agesa_prod_RV.sbin
 endif
 
 # types = 0x30 - 0x37
-ifneq ($(CONFIG_SOC_AMD_PICASSO_MATISSE),y)
 PSP_ABL0_FILE=$(FIRMWARE_LOCATE)/AgesaBootloader0_prod_RV.csbin
 PSP_ABL1_FILE=$(FIRMWARE_LOCATE)/AgesaBootloader1_prod_RV.csbin
 PSP_ABL2_FILE=$(FIRMWARE_LOCATE)/AgesaBootloader2_prod_RV.csbin
@@ -229,7 +186,6 @@ PSP_ABL4_FILE=$(FIRMWARE_LOCATE)/AgesaBootloader4_prod_RV.csbin
 PSP_ABL5_FILE=$(FIRMWARE_LOCATE)/AgesaBootloader5_prod_RV.csbin
 PSP_ABL6_FILE=$(FIRMWARE_LOCATE)/AgesaBootloader6_prod_RV.csbin
 PSP_ABL7_FILE=$(FIRMWARE_LOCATE)/AgesaBootloader7_prod_RV.csbin
-endif
 
 # type = 0x3a
 ifeq ($(CONFIG_HAVE_PSP_WHITELIST_FILE),y)
@@ -253,7 +209,7 @@ PSP_ELF_FILE=$(objcbfs)/bootblock.elf
 # the elf file.
 PSP_BIOSBIN_SIZE=$(CONFIG_C_ENV_BOOTBLOCK_SIZE)
 # This address must match the BOOTBLOCK logic in arch/x86/memlayout.ld.
-PSP_BIOSBIN_DEST=$(shell printf "0x%x" $(call int-subtract, $(call int-add, $(CONFIG_X86_RESET_VECTOR) 0x10) $(PSP_BIOSBIN_SIZE)))
+PSP_BIOSBIN_DEST=$(shell printf "%x" $(call int-subtract, $(call int-add, $(CONFIG_X86_RESET_VECTOR) 0x10) $(PSP_BIOSBIN_SIZE)))
 
 # type = 0x63 - construct APOB NV base/size from flash map
 # TODO(b/157068645): Add ability to fmaptool to extract offsets and sizes
@@ -269,12 +225,6 @@ _GET_APOBNV_BASE=grep "RW_MRC_CACHE" | sed 's/.*@//' | sed 's/ .*//'
 _GET_APOBNV_SIZE=grep "RW_MRC_CACHE" | sed 's/.*@//' | sed 's/.* //'
 
 # type2 = 0x64, 0x65
-ifeq ($(CONFIG_SOC_AMD_PICASSO_MATISSE),y)
-PSP_PMUI_FILE3=$(FIRMWARE_LOCATE)/Appb_MTS_1D_Ddr4_Udimm_Imem.csbin
-PSP_PMUI_FILE4=$(FIRMWARE_LOCATE)/Appb_MTS_2D_Ddr4_Udimm_Imem.csbin
-PSP_PMUD_FILE3=$(FIRMWARE_LOCATE)/Appb_MTS_1D_Ddr4_Udimm_Dmem.csbin
-PSP_PMUD_FILE4=$(FIRMWARE_LOCATE)/Appb_MTS_2D_Ddr4_Udimm_Dmem.csbin
-else
 PSP_PMUI_FILE1=$(FIRMWARE_LOCATE)/Appb_Rv_1D_Ddr4_Udimm_Imem.csbin
 PSP_PMUI_FILE2=$(FIRMWARE_LOCATE)/Appb_Rv_2D_Ddr4_Imem.csbin
 PSP_PMUI_FILE3=$(FIRMWARE_LOCATE)/Appb_Rv2_1D_ddr4_Udimm_Imem.csbin
@@ -283,17 +233,11 @@ PSP_PMUD_FILE1=$(FIRMWARE_LOCATE)/Appb_Rv_1D_Ddr4_Udimm_Dmem.csbin
 PSP_PMUD_FILE2=$(FIRMWARE_LOCATE)/Appb_Rv_2D_Ddr4_Dmem.csbin
 PSP_PMUD_FILE3=$(FIRMWARE_LOCATE)/Appb_Rv2_1D_ddr4_Udimm_Dmem.csbin
 PSP_PMUD_FILE4=$(FIRMWARE_LOCATE)/Appb_Rv2_2D_ddr4_Udimm_Dmem.csbin
-endif
 
 # type = 0x66
-ifeq ($(CONFIG_SOC_AMD_PICASSO_MATISSE),y)
-PSP_UCODE_FILE1=$(FIRMWARE_LOCATE)/UcodePatch_MTS_A0.bin
-PSP_UCODE_FILE2=$(FIRMWARE_LOCATE)/UcodePatch_MTS_B0.bin
-else
 PSP_UCODE_FILE1=$(FIRMWARE_LOCATE)/UcodePatch_PCO_B1.bin
 PSP_UCODE_FILE2=$(FIRMWARE_LOCATE)/UcodePatch_PCO_B0.bin
 PSP_UCODE_FILE3=$(FIRMWARE_LOCATE)/UcodePatch_RV2_A0.bin
-endif
 
 ifeq ($(CONFIG_VBOOT_STARTS_BEFORE_BOOTBLOCK),y)
 # type = 0x6B - PSP Shared memory location
@@ -313,10 +257,8 @@ APOB_NV_BASE=$(shell printf "0x%x" $(call int-add, \
 			$(shell cat $(obj)/fmap.fmd | $(_GET_BIOS_REG_BASE)) \
 			$(shell cat $(obj)/fmap.fmd | $(_GET_APOBNV_BASE))))
 
-ifneq ($(CONFIG_SOC_AMD_PICASSO_MATISSE),y)
 # type = 0xb - See #55758 (NDA) for bit definitions.
 PSP_SOFTFUSE_BITS += 28
-endif
 
 # Helper function to return a value with given bit set
 set-bit=$(call int-shift-left, 1 $(call _toint,$1))
@@ -331,13 +273,6 @@ PSP_SOFTFUSE=$(shell A=$(call int-add, \
 add_opt_prefix=$(if $(call strip_quotes, $(1)), $(2) $(call strip_quotes, $(1)), )
 
 OPT_AMD_PUBKEY_FILE=$(call add_opt_prefix, $(CONFIG_AMD_PUBKEY_FILE), --pubkey)
-OPT_IMC_FW_FILE=$(call add_opt_prefix, $(IMC_FW_FILE), --imc)
-OPT_FCH_FW_FILE=$(call add_opt_prefix, $(FCH_FW_FILE), --fch-fw)
-OPT_FCH_LP_FW_FILE=$(call add_opt_prefix, $(FCH_LP_FW_FILE), --fch-lp-fw)
-
-OPT_EXTRA_FW_FILES=$(foreach i, $(shell seq $(words $(EXTRA_FW_FILES))), \
-	$(call add_opt_prefix, $(word $(i), $(EXTRA_FW_FILES)), --extra-fw))
-
 OPT_PSPBTLDR_FILE=$(call add_opt_prefix, $(PSPBTLDR_FILE), --bootloader)
 OPT_SMUFW1_SUB1_FILE=$(call add_opt_prefix, $(PSP_SMUFW1_SUB1_FILE), --subprogram 1 --smufirmware)
 OPT_SMUFW1_SUB2_FILE=$(call add_opt_prefix, $(PSP_SMUFW1_SUB2_FILE), --subprogram 2 --smufirmware)
@@ -363,9 +298,6 @@ OPT_ABL4_FILE=$(call add_opt_prefix,  $(PSP_ABL4_FILE), --abl-image)
 OPT_ABL5_FILE=$(call add_opt_prefix,  $(PSP_ABL5_FILE), --abl-image)
 OPT_ABL6_FILE=$(call add_opt_prefix,  $(PSP_ABL6_FILE), --abl-image)
 OPT_ABL7_FILE=$(call add_opt_prefix,  $(PSP_ABL7_FILE), --abl-image)
-OPT_PSP_UCODE_FILE1=$(call add_opt_prefix,  $(PSP_UCODE_FILE1), --instance 0 --ucode)
-OPT_PSP_UCODE_FILE2=$(call add_opt_prefix,  $(PSP_UCODE_FILE2), --instance 1 --ucode)
-OPT_PSP_UCODE_FILE3=$(call add_opt_prefix,  $(PSP_UCODE_FILE3), --instance 2 --ucode)
 OPT_WHITELIST_FILE=$(call add_opt_prefix, $(PSP_WHITELIST_FILE), --whitelist)
 OPT_VERSTAGE_FILE=$(call add_opt_prefix, $(PSP_VERSTAGE_FILE), --verstage)
 
@@ -389,13 +321,9 @@ OPT_MP2CFG_FILE=$(call add_opt_prefix, $(PSP_MP2CFG_FILE), --mp2-config)
 OPT_PSP_SHAREDMEM_BASE=$(call add_opt_prefix, $(PSP_SHAREDMEM_BASE), --sharedmem)
 OPT_PSP_SHAREDMEM_SIZE=$(call add_opt_prefix, $(PSP_SHAREDMEM_SIZE), --sharedmem-size)
 OPT_APOB_NV_SIZE=$(call add_opt_prefix, $(APOB_NV_SIZE), --apob-nv-size)
-OPT_APOB_NV_BASE=$(call add_opt_prefix, $(APOB_NV_BASE), --apob-nv-base)
+OPT_APOB_NV_BASE=$(call add_opt_prefix, $(APOB_NV_BASE),--apob-nv-base)
 
 AMDFW_COMMON_ARGS=$(OPT_AMD_PUBKEY_FILE) \
-		$(OPT_IMC_FW_FILE) \
-		$(OPT_FCH_FW_FILE) \
-		$(OPT_FCH_LP_FW_FILE) \
-		$(OPT_EXTRA_FW_FILES) \
 		$(OPT_PSPBTLDR_FILE) \
 		$(OPT_PSPSCUREOS_FILE) \
 		$(OPT_PSP_SEC_DBG_KEY_FILE) \
@@ -428,9 +356,6 @@ AMDFW_COMMON_ARGS=$(OPT_AMD_PUBKEY_FILE) \
 		$(OPT_ABL5_FILE) \
 		$(OPT_ABL6_FILE) \
 		$(OPT_ABL7_FILE) \
-		$(OPT_PSP_UCODE_FILE1) \
-		$(OPT_PSP_UCODE_FILE2) \
-		$(OPT_PSP_UCODE_FILE3) \
 		$(OPT_WHITELIST_FILE) \
 		$(OPT_SECG1_FILE) \
 		$(OPT_SECG2_FILE) \
@@ -444,7 +369,6 @@ AMDFW_COMMON_ARGS=$(OPT_AMD_PUBKEY_FILE) \
 		$(OPT_PSP_SHAREDMEM_BASE) \
 		$(OPT_PSP_SHAREDMEM_SIZE) \
 		--combo-capable \
-		--multilevel \
 		$(OPT_TOKEN_UNLOCK) \
 		--flashsize $(CONFIG_ROM_SIZE)
 
@@ -492,9 +416,6 @@ $(obj)/APCB_%_x2.bin:	$$(SPD_SOURCES_DIR)/%.spd.hex \
 	--board_id_gpio3 $(APCB_BOARD_ID_GPIO3)
 
 $(obj)/amdfw.rom:	$(call strip_quotes, $(CONFIG_AMD_PUBKEY_FILE)) \
-			$(call strip_quotes, $(IMC_FW_FILE)) \
-			$(call strip_quotes, $(FCH_FW_FILE)) \
-			$(call strip_quotes, $(FCH_FW_LP_FILE)) \
 			$(call strip_quotes, $(PSPBTLDR_FILE)) \
 			$(call strip_quotes, $(PSPSCUREOS_FILE)) \
 			$(call strip_quotes, $(PSP_SEC_DBG_KEY_FILE)) \
@@ -581,6 +502,6 @@ endif
 
 $(call strip_quotes,$(CONFIG_FSP_M_CBFS))-options := -b $(CONFIG_FSP_M_ADDR)
 
-cpu_microcode_bins += $(wildcard $(FIRMWARE_LOCATE)/UcodePatch_*.bin)
+cpu_microcode_bins += $(wildcard 3rdparty/amd_blobs/picasso/PSP/UcodePatch_*.bin)
 
 endif # ($(CONFIG_SOC_AMD_PICASSO),y)

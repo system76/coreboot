@@ -2,13 +2,10 @@
 
 #include <acpi/acpi.h>
 #include <console/console.h>
+#include <fsp/util.h>
 #include <FspGuids.h>
 #include <soc/acpi.h>
 #include <stdint.h>
-
-#if CONFIG(PLATFORM_USES_FSP2_0)
-#include <fsp/util.h>
-#endif
 
 struct amd_fsp_acpi_hob_info {
 	uint32_t table_size_in_bytes;
@@ -25,12 +22,7 @@ static uintptr_t add_agesa_acpi_table(guid_t guid, const char *name, acpi_rsdp_t
 	void *table = (void *)current;
 	size_t hob_size;
 
-#if CONFIG(PLATFORM_USES_FSP2_0)
 	data = fsp_find_extension_hob_by_guid(guid.b, &hob_size);
-#else
-	data = NULL;
-	hob_size = 0;
-#endif
 	if (!data) {
 		printk(BIOS_ERR, "AGESA %s ACPI table was not found.\n", name);
 		return current;

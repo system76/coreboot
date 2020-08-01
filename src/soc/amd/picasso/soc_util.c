@@ -3,14 +3,11 @@
 #include <arch/cpu.h>
 #include <console/console.h>
 #include <FspGuids.h>
+#include <fsp/util.h>
 #include <misc_data.h>
 #include <soc/cpu.h>
 #include <soc/soc_util.h>
 #include <types.h>
-
-#if CONFIG(PLATFORM_USES_FSP2_0)
-#include <fsp/util.h>
-#endif
 
 /*
  * The Zen/Zen+ based APUs can be RV (sometimes called RV1), PCO or RV2 silicon. RV2 has less
@@ -62,12 +59,7 @@ static uint32_t get_internal_silicon_type(void)
 	if (silicon_type)
 		return silicon_type;
 
-#if CONFIG(PLATFORM_USES_FSP2_0)
 	hob = fsp_find_extension_hob_by_guid(PICASSO_MISC_DATA_HOB_GUID.b, &hob_size);
-#else
-	hob = NULL;
-	hob_size = 0;
-#endif
 
 	if (hob == NULL || hob_size == 0) {
 		printk(BIOS_ERR, "Couldn't find Picasso misc data HOB.\n");

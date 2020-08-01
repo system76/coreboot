@@ -50,20 +50,14 @@ config CPU_SPECIFIC_OPTIONS
 	select HAVE_SMI_HANDLER
 	select SSE2
 	select RTC
-	#select PLATFORM_USES_FSP2_0
-	select FSP_COMPRESS_FSP_M_LZMA if PLATFORM_USES_FSP2_0
-	select FSP_COMPRESS_FSP_S_LZMA if PLATFORM_USES_FSP2_0
-	select FSP_USES_CB_STACK if PLATFORM_USES_FSP2_0
+	select PLATFORM_USES_FSP2_0
+	select FSP_COMPRESS_FSP_M_LZMA
+	select FSP_COMPRESS_FSP_S_LZMA
+	select FSP_USES_CB_STACK
 	select UDK_2017_BINDING
 	select HAVE_CF9_RESET
 	select SUPPORT_CPU_UCODE_IN_CBFS
 	select ACPI_NO_SMI_GNVS
-
-config SOC_AMD_PICASSO_MATISSE
-	bool
-	default n
-	help
-	  "Hack to support Matisse"
 
 config MEMLAYOUT_LD_FILE
 	string
@@ -432,11 +426,8 @@ comment "AMD Firmware Directory Table set to location for 16MB ROM"
 	depends on AMD_FWM_POSITION_INDEX = 5
 
 config AMD_PUBKEY_FILE
-	string "Specify the AMD public key file path"
-	default "3rdparty/amd_blobs/matisse/PSP/AmdPubKeySsp.bin" if SOC_AMD_PICASSO_MATISSE
+	string
 	default "3rdparty/amd_blobs/picasso/PSP/AmdPubKeyRV.bin"
-	help
-	  Supply the name of the AMD public key file.
 
 config USE_PSPSCUREOS
 	bool
@@ -477,7 +468,6 @@ config PSP_WHITELIST_FILE
 
 config PSP_BOOTLOADER_FILE
 	string "Specify the PSP Bootloader file path"
-	default "3rdparty/amd_blobs/matisse/PSP/PspBootLoader_mts.sbin" if SOC_AMD_PICASSO_MATISSE
 	default "3rdparty/amd_blobs/picasso/PSP/PspBootLoader_WL_RV.sbin" if HAVE_PSP_WHITELIST_FILE
 	default "3rdparty/amd_blobs/picasso/PSP/PspBootLoader_prod_RV.sbin"
 	help
