@@ -104,7 +104,7 @@ static void soc_init(void *chip_info)
 	printk(BIOS_DEBUG, "native_silicon_init: TODO\n");
 #endif
 
-	data_fabric_set_mmio_np();
+	//data_fabric_set_mmio_np();
 	southbridge_init(chip_info);
 }
 
