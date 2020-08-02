@@ -12,7 +12,7 @@
 
 /* The following sections describe only the GPIOs defined for this SOC */
 
-#define SOC_GPIO_TOTAL_PINS		145
+#define SOC_GPIO_TOTAL_PINS		192
 
 /* Bank 0: GPIO_0 - GPIO_62 */
 #define GPIO_0				0
