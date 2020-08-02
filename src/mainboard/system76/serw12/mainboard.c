@@ -4,7 +4,6 @@
 #include <device/device.h>
 #include <acpi/acpi.h>
 #include <amdblocks/amd_pci_util.h>
-#include <FspsUpd.h>
 #include <soc/cpu.h>
 #include <soc/southbridge.h>
 #include <soc/pci_devs.h>

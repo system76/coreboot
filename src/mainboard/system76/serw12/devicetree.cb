@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0-only
 
-chip soc/amd/picasso
+chip soc/amd/matisse
 	# Set FADT Configuration
 	register "fadt_boot_arch" = "ACPI_FADT_LEGACY_DEVICES | ACPI_FADT_8042"
 	register "fadt_flags" = "ACPI_FADT_WBINVD | /* See table 5-10 ACPI 3.0a spec */
@@ -61,4 +61,4 @@ chip soc/amd/picasso
 		device pci 18.6 on  end
 		device pci 18.7 on  end
 	end # domain
-end	# chip soc/amd/picasso
+end	# chip soc/amd/matisse

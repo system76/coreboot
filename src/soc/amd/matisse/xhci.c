@@ -6,7 +6,6 @@
 #include <drivers/usb/pci_xhci/pci_xhci.h>
 #include <soc/pci_devs.h>
 #include <soc/smi.h>
-#include <soc/soc_util.h>
 
 static const struct sci_source xhci_sci_sources[] = {
 	{
@@ -46,10 +45,7 @@ enum cb_err pci_xhci_get_wake_gpe(const struct device *dev, int *gpe)
 
 static void configure_xhci_sci(void *unused)
 {
-	if (soc_is_reduced_io_sku())
-		gpe_configure_sci(xhci_sci_sources, 1);
-	else
-		gpe_configure_sci(xhci_sci_sources, ARRAY_SIZE(xhci_sci_sources));
+	gpe_configure_sci(xhci_sci_sources, ARRAY_SIZE(xhci_sci_sources));
 }
 
 

@@ -10,10 +10,10 @@
 #include <cpu/amd/msr.h>
 #include <arch/bert_storage.h>
 #include <memrange.h>
-#include <FspGuids.h>
 #include <soc/memmap.h>
 
 #if CONFIG(PLATFORM_USES_FSP2_0)
+#include <FspGuids.h>
 #include <fsp/util.h>
 #else
  #if CONFIG_SMM_TSEG_SIZE == 0x0

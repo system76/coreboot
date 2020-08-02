@@ -1,5 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+// TODO
+#if 0
 #include <soc/platform_descriptors.h>
 #include <soc/soc_util.h>
 #include <types.h>
@@ -214,3 +216,4 @@ void mainboard_get_pcie_ddi_descriptors(
 		*ddi_num = ARRAY_SIZE(pco_ddi_descriptors);
 	}
 }
+#endif

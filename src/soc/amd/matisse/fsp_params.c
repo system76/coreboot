@@ -2,11 +2,11 @@
 
 #include <device/pci.h>
 #include <soc/pci_devs.h>
-#include <soc/platform_descriptors.h>
 #include "chip.h"
 
 #if CONFIG(PLATFORM_USES_FSP2_0)
 #include <fsp/api.h>
+#include <soc/platform_descriptors.h>
 
 static void fsps_update_emmc_config(FSP_S_CONFIG *scfg,
 				const struct soc_amd_matisse_config *cfg)
