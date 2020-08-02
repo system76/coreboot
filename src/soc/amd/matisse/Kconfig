@@ -178,36 +178,6 @@ config VERSTAGE_ADDR
 	hex
 	default 0x4000000
 
-config VGA_BIOS_ID
-	string
-	default "1002,15d8,c1"
-	help
-	  The default VGA BIOS PCI vendor/device ID should be set to the
-	  result of the map_oprom_vendev_rev() function in northbridge.c.
-
-config VGA_BIOS_FILE
-	string
-	default "3rdparty/amd_blobs/matisse/MatisseGenericVbios.bin"
-
-config VGA_BIOS_SECOND
-	def_bool y
-
-config VGA_BIOS_SECOND_ID
-	string
-	default "1002,15dd,c4"
-	help
-	  Because Dali and Matisse need different video BIOSes, but have the
-	  same vendor/device IDs, we need an alternate method to determine the
-	  correct video BIOS. In map_oprom_vendev_rev(), we look at the cpuid
-	  and decide which rom to load.
-
-	  Even though the hardware has the same vendor/device IDs, the vBIOS
-	  contains a *different* device ID, confusing the situation even more.
-
-config VGA_BIOS_SECOND_FILE
-	string
-	default "3rdparty/amd_blobs/matisse/Raven2GenericVbios.bin"
-
 config CHECK_REV_IN_OPROM_NAME
 	bool
 	default y
