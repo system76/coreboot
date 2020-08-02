@@ -22,14 +22,6 @@ static const struct _uart_info {
 			PAD_NF(GPIO_143, UART1_TXD, PULL_NONE),
 			PAD_NF(GPIO_141, UART1_RXD, PULL_NONE),
 	} },
-	[2] = { APU_UART2_BASE, {
-			PAD_NF(GPIO_137, UART2_TXD, PULL_NONE),
-			PAD_NF(GPIO_135, UART2_RXD, PULL_NONE),
-	} },
-	[3] = { APU_UART3_BASE, {
-			PAD_NF(GPIO_140, UART3_TXD, PULL_NONE),
-			PAD_NF(GPIO_142, UART3_RXD, PULL_NONE),
-	} },
 };
 
 uintptr_t get_uart_base(int idx)
@@ -84,10 +76,7 @@ static const char *uart_acpi_name(const struct device *dev)
 		return "FUR0";
 	case APU_UART1_BASE:
 		return "FUR1";
-	case APU_UART2_BASE:
-		return "FUR2";
-	case APU_UART3_BASE:
-		return "FUR3";
+
 	default:
 		return NULL;
 	}
@@ -104,12 +93,6 @@ static void uart_enable(struct device *dev)
 		break;
 	case APU_UART1_BASE:
 		dev_id = FCH_AOAC_DEV_UART1;
-		break;
-	case APU_UART2_BASE:
-		dev_id = FCH_AOAC_DEV_UART2;
-		break;
-	case APU_UART3_BASE:
-		dev_id = FCH_AOAC_DEV_UART3;
 		break;
 	default:
 		printk(BIOS_ERR, "%s: Unknown device: %s\n", __func__, dev_path(dev));

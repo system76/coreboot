@@ -12,28 +12,16 @@
 #endif
 #define HPET_BASE_ADDRESS		0xfed00000
 
-#define ALINK_AHB_ADDRESS		0xfedc0000
+#define I2C_MASTER_DEV_COUNT		6
+#define I2C_MASTER_START_INDEX		0
+#define I2C_SLAVE_DEV_COUNT		0
 
-/* Reserved				0xfecd1000-0xfedc3fff */
-
-/*
- * Matisse/Dali have I2C0 and I2C1 wired to the Sensor Fusion Hub (SFH/MP2).
- * The controllers are not directly accessible via the x86.
- *
- * On Pollock, I2C0 and I2C1 are routed to the x86 domain, but unfortunately the
- * interrupts weren't. This effectively makes the I2C controllers useless, so we
- * pretend they don't exist.
- *
- * We want the device tree numbering to match the I2C numbers, so we allocate
- * I2C0 and I2C1 even though they are not functional.
- */
-#define I2C_MASTER_DEV_COUNT		4
-#define I2C_MASTER_START_INDEX		2
-#define I2C_SLAVE_DEV_COUNT		1
-
+#define APU_I2C0_BASE			0xfedc2000
+#define APU_I2C1_BASE			0xfedc3000
 #define APU_I2C2_BASE			0xfedc4000
 #define APU_I2C3_BASE			0xfedc5000
 #define APU_I2C4_BASE			0xfedc6000
+#define APU_I2C5_BASE			0xfedcb000
 
 /* I2C parameters for lpc_read_resources */
 #define I2C_BASE_ADDRESS		APU_I2C2_BASE
@@ -41,16 +29,9 @@
 #define I2C_DEVICE_COUNT		(I2C_MASTER_DEV_COUNT \
 					 - I2C_MASTER_START_INDEX)
 
-#define APU_DMAC0_BASE			0xfedc7000
-#define APU_DMAC1_BASE			0xfedc8000
 #define APU_UART0_BASE			0xfedc9000
-#define APU_UART1_BASE			0xfedca000
-/* Reserved				0xfedcb000 */
-#define APU_DMAC2_BASE			0xfedcc000
-#define APU_DMAC3_BASE			0xfedcd000
-#define APU_UART2_BASE			0xfedce000
-#define APU_UART3_BASE			0xfedcf000
-/* Reserved				0xfedd0000-0xfedd4fff */
+#define APU_UART1_BASE			0xfedce000
+
 #define APU_EMMC_BASE			0xfedd5000
 #define APU_EMMC_CONFIG_BASE		0xfedd5800
 
