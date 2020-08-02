@@ -112,6 +112,9 @@
 #define DF_F6_DEVFN		PCI_DEVFN(DF_DEV, 6)
 #define SOC_DF_F6_DEV		_SOC_DEV(DF_DEV, 6)
 
+#define DF_F7_DEVFN		PCI_DEVFN(DF_DEV, 7)
+#define SOC_DF_F7_DEV		_SOC_DEV(DF_DEV, 7)
+
 /* SMBUS */
 #define SMBUS_DEV		0x14
 #define SMBUS_FUNC		0
