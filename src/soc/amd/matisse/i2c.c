@@ -15,11 +15,12 @@
 
 #if ENV_X86
 static const uintptr_t i2c_bus_address[I2C_MASTER_DEV_COUNT + I2C_SLAVE_DEV_COUNT] = {
-	0,
-	0,
+	APU_I2C0_BASE,
+	APU_I2C1_BASE,
 	APU_I2C2_BASE,
 	APU_I2C3_BASE,
-	APU_I2C4_BASE, /* Can only be used in slave mode */
+	APU_I2C4_BASE,
+	APU_I2C5_BASE,
 };
 #else
 static uintptr_t i2c_bus_address[I2C_MASTER_DEV_COUNT + I2C_SLAVE_DEV_COUNT];
@@ -60,23 +61,35 @@ const struct dw_i2c_bus_config *dw_i2c_get_soc_cfg(unsigned int bus)
 
 static const char *i2c_acpi_name(const struct device *dev)
 {
-	if ((uintptr_t)dev->path.mmio.addr == i2c_bus_address[2])
+	if ((uintptr_t)dev->path.mmio.addr == i2c_bus_address[0])
+		return "I2C0";
+	else if ((uintptr_t)dev->path.mmio.addr == i2c_bus_address[1])
+		return "I2C1";
+	else if ((uintptr_t)dev->path.mmio.addr == i2c_bus_address[2])
 		return "I2C2";
 	else if ((uintptr_t)dev->path.mmio.addr == i2c_bus_address[3])
 		return "I2C3";
 	else if ((uintptr_t)dev->path.mmio.addr == i2c_bus_address[4])
 		return "I2C4";
+	else if ((uintptr_t)dev->path.mmio.addr == i2c_bus_address[5])
+		return "I254";
 	return NULL;
 }
 
 int dw_i2c_soc_dev_to_bus(const struct device *dev)
 {
-	if ((uintptr_t)dev->path.mmio.addr == i2c_bus_address[2])
+	if ((uintptr_t)dev->path.mmio.addr == i2c_bus_address[0])
+		return 0;
+	else if ((uintptr_t)dev->path.mmio.addr == i2c_bus_address[1])
+		return 1;
+	else if ((uintptr_t)dev->path.mmio.addr == i2c_bus_address[2])
 		return 2;
 	else if ((uintptr_t)dev->path.mmio.addr == i2c_bus_address[3])
 		return 3;
 	else if ((uintptr_t)dev->path.mmio.addr == i2c_bus_address[4])
 		return 4;
+	else if ((uintptr_t)dev->path.mmio.addr == i2c_bus_address[5])
+		return 5;
 	return -1;
 }
 
