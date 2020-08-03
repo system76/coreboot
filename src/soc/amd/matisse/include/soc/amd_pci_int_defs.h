@@ -34,13 +34,14 @@
 /* 0x13-0x15 reserved */
 #define PIRQ_PMON	0x16	/* Performance Monitor */
 #define PIRQ_SD		0x17	/* SD */
+/* 0x18-0x19 reserved */
 #define PIRQ_SDIO	0x1a	/* SDIO */
 /* 0x1b-0x1f reserved */
 #define PIRQ_CIR	0x20	/* CIR, no IRQ connected */
 #define PIRQ_GPIOA	0x21	/* GPIOa from PAD_FANIN0 */
 #define PIRQ_GPIOB	0x22	/* GPIOb from PAD_FANOUT0 */
 #define PIRQ_GPIOC	0x23	/* GPIOc no IRQ connected */
-/* 0x24-0x48 reserved */
+/* 0x24-0x40 reserved */
 #define PIRQ_SATA	0x41	/* SATA */
 /* 0x42 reserved */
 #define PIRQ_EMMC	0x43	/* eMMC */
