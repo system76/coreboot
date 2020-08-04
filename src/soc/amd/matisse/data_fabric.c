@@ -12,31 +12,6 @@
 #include <soc/pci_devs.h>
 #include <stdbool.h>
 
-static void disable_mmio_reg(int reg)
-{
-	pci_write_config32(SOC_DF_F0_DEV, NB_MMIO_CONTROL(reg),
-			   IOMS0_FABRIC_ID << MMIO_DST_FABRIC_ID_SHIFT);
-	pci_write_config32(SOC_DF_F0_DEV, NB_MMIO_BASE(reg), 0);
-	pci_write_config32(SOC_DF_F0_DEV, NB_MMIO_LIMIT(reg), 0);
-}
-
-static bool is_mmio_reg_disabled(int reg)
-{
-	uint32_t val = pci_read_config32(SOC_DF_F0_DEV, NB_MMIO_CONTROL(reg));
-	return !(val & ((MMIO_WE | MMIO_RE)));
-}
-
-static int find_unused_mmio_reg(void)
-{
-	unsigned int i;
-
-	for (i = 0; i < NUM_NB_MMIO_REGS; i++) {
-		if (is_mmio_reg_disabled(i))
-			return i;
-	}
-	return -1;
-}
-
 struct data_fabric_range {
 	uint8_t pci_base;
 	uint8_t pci_limit;
@@ -151,7 +126,7 @@ static void data_fabric_range_set(unsigned int reg, const struct data_fabric_ran
 	}
 }
 
-static void data_fabric_init(void) {
+void data_fabric_init(void) {
 	printk(BIOS_DEBUG, "data_fabric_init start\n");
 
 	for (unsigned int reg = 0; reg < NUM_NB_MMIO_REGS; reg++) {
@@ -159,6 +134,31 @@ static void data_fabric_init(void) {
 	}
 
 	printk(BIOS_DEBUG, "data_fabric_init done\n");
+}
+
+static void disable_mmio_reg(int reg)
+{
+	pci_write_config32(SOC_DF_F0_DEV, NB_MMIO_CONTROL(reg),
+			   IOMS0_FABRIC_ID << MMIO_DST_FABRIC_ID_SHIFT);
+	pci_write_config32(SOC_DF_F0_DEV, NB_MMIO_BASE(reg), 0);
+	pci_write_config32(SOC_DF_F0_DEV, NB_MMIO_LIMIT(reg), 0);
+}
+
+static bool is_mmio_reg_disabled(int reg)
+{
+	uint32_t val = pci_read_config32(SOC_DF_F0_DEV, NB_MMIO_CONTROL(reg));
+	return !(val & ((MMIO_WE | MMIO_RE)));
+}
+
+static int find_unused_mmio_reg(void)
+{
+	unsigned int i;
+
+	for (i = 0; i < NUM_NB_MMIO_REGS; i++) {
+		if (is_mmio_reg_disabled(i))
+			return i;
+	}
+	return -1;
 }
 
 void data_fabric_set_mmio_np(void)
@@ -183,8 +183,6 @@ void data_fabric_set_mmio_np(void)
 	 *     +/-1 are always equivalent to the non-shifted values +/-1.
 	 */
 	printk(BIOS_DEBUG, "data_fabric_set_mmio_np start\n");
-
-	data_fabric_init();
 
 	unsigned int i;
 	int reg;

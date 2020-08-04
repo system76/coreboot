@@ -95,18 +95,101 @@ static void enable_dev(struct device *dev)
 	}
 }
 
+// SMN pair for BIOS use (SMN 2)
+#define SMN_INDEX 0xB8
+#define SMN_DATA 0xBC
+
+static uint32_t smn_read(uint32_t address) {
+	pci_write_config32(SOC_GNB_DEV, SMN_INDEX, address);
+	return pci_read_config32(SOC_GNB_DEV, SMN_DATA);
+}
+
+static void smn_write(uint32_t address, uint32_t value) {
+	pci_write_config32(SOC_GNB_DEV, SMN_INDEX, address);
+	pci_write_config32(SOC_GNB_DEV, SMN_DATA, value);
+}
+
+struct pcie_core {
+	uint32_t smn_base;
+};
+
+const struct pcie_core PCIE_CORES[] = {
+	{
+		.smn_base = 0x11480000,
+	},
+	{
+		.smn_base = 0x11880000,
+	}
+};
+
+static void pcie_init(void) {
+	printk(BIOS_DEBUG, "pcie_init start\n");
+
+	printk(BIOS_DEBUG, "PCIE0 SWRST_COMMAND_STATUS 0x%X\n", smn_read(0x11480400));
+	printk(BIOS_DEBUG, "PCIE0 SWRST_CONTROL_6 0x%X\n", smn_read(0x11480428));
+
+	printk(BIOS_DEBUG, "PCIE1 SWRST_COMMAND_STATUS 0x%X\n", smn_read(0x11880400));
+	printk(BIOS_DEBUG, "PCIE1 SWRST_CONTROL_6 0x%X\n", smn_read(0x11880428));
+
+	int i;
+
+#if 0
+	// Wait for all cores to reset
+	printk(BIOS_DEBUG, "pcie_init reset\n");
+	for (i = 0; i < ARRAY_SIZE(PCIE_CORES); i++) {
+		const struct pcie_core * core = &PCIE_CORES[i];
+
+		// Wait until RESET_COMPLETE is set
+		while (!(smn_read(core->smn_base + 0x400) & (1 << 16))) {}
+	}
+
+	//TODO: set straps using RSMU index/data pair method
+
+	// Reconfigure to make strap changes take effect
+	printk(BIOS_DEBUG, "pcie_init reconfigure\n");
+	for (i = 0; i < ARRAY_SIZE(PCIE_CORES); i++) {
+		const struct pcie_core * core = &PCIE_CORES[i];
+
+		// Set RECONFIGURE
+		smn_write(core->smn_base + 0x400, smn_read(core->smn_base + 0x400) | (1 << 0));
+
+		// Wait until RECONFIGURE is cleared
+		while (smn_read(core->smn_base + 0x400) & (1 << 0)) {}
+	}
+#endif
+
+	//Let's allow link training, just for fun
+	printk(BIOS_DEBUG, "pcie_init training\n");
+	for (i = 0; i < ARRAY_SIZE(PCIE_CORES); i++) {
+		const struct pcie_core * core = &PCIE_CORES[i];
+
+		// Clear HOLD_TRAINING_*
+		smn_write(core->smn_base + 0x428, 0);
+	}
+
+	printk(BIOS_DEBUG, "PCIE0 SWRST_COMMAND_STATUS 0x%X\n", smn_read(0x11480400));
+	printk(BIOS_DEBUG, "PCIE0 SWRST_CONTROL_6 0x%X\n", smn_read(0x11480428));
+
+	printk(BIOS_DEBUG, "PCIE1 SWRST_COMMAND_STATUS 0x%X\n", smn_read(0x11880400));
+	printk(BIOS_DEBUG, "PCIE1 SWRST_CONTROL_6 0x%X\n", smn_read(0x11880428));
+
+	printk(BIOS_DEBUG, "pcie_init finish\n");
+}
+
 static void soc_init(void *chip_info)
 {
+	printk(BIOS_DEBUG, "soc_init start\n");
+
 	default_dev_ops_root.write_acpi_tables = agesa_write_acpi_tables;
 
-#if CONFIG(PLATFORM_USES_FSP2_0)
-	fsp_silicon_init(acpi_is_wakeup_s3());
-#else
-	printk(BIOS_DEBUG, "native_silicon_init: TODO\n");
-#endif
+	data_fabric_init();
+
+	pcie_init();
 
 	data_fabric_set_mmio_np();
 	southbridge_init(chip_info);
+
+	printk(BIOS_DEBUG, "soc_init finish\n");
 }
 
 static void soc_final(void *chip_info)
