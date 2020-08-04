@@ -14,7 +14,7 @@ chip soc/intel/cannonlake
 	register "SendVrMbxCmd" = "2"
 
 # ACPI (soc/intel/cannonlake/acpi.c)
-	# Enable s0ix
+	# Disable s0ix
 	register "s0ix_enable" = "0"
 
 	# PM Timer Enabled
