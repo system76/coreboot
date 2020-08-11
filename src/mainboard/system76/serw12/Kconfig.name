@@ -1,0 +1,2 @@
+config BOARD_SYSTEM76_SERW12
+	bool "serw12"

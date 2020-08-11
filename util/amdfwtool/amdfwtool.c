@@ -164,6 +164,9 @@ static void usage(void)
 	printf("-x | --xhci <FILE>             Add XHCI blob\n");
 	printf("-i | --imc <FILE>              Add IMC blob\n");
 	printf("-g | --gec <FILE>              Add GEC blob\n");
+	printf("-C | --fch-fw <FILE>           Add FCH blob\n");
+	printf("-D | --fch-lp-fw <FILE>        Add FCH-LP blob\n");
+	printf("-E | --extra-fw ID,<FILE>      Add extra blob\n");
 
 	printf("\nPSP options:\n");
 	printf("-A | --combo-capable           Place PSP directory pointer at Embedded Firmware\n");
@@ -264,6 +267,7 @@ typedef enum _amd_fw_type {
 	AMD_FW_PSP_TRUSTLETS = 12,
 	AMD_FW_PSP_TRUSTLETKEY = 13,
 	AMD_FW_PSP_SMU_FIRMWARE2 = 18,
+	AMD_FW_PSP_OEM_PUBKEY = 10,
 	AMD_PSP_FUSE_CHAIN = 11,
 	AMD_FW_PSP_SMUSCS = 95,
 	AMD_DEBUG_UNLOCK = 0x13,
@@ -272,6 +276,7 @@ typedef enum _amd_fw_type {
 	AMD_SEC_GASKET = 0x24,
 	AMD_MP2_FW = 0x25,
 	AMD_DRIVER_ENTRIES = 0x28,
+	AMD_MP5_FW = 0x2A,
 	AMD_S0I3_DRIVER = 0x2d,
 	AMD_ABL0 = 0x30,
 	AMD_ABL1 = 0x31,
@@ -283,10 +288,16 @@ typedef enum _amd_fw_type {
 	AMD_ABL7 = 0x37,
 	AMD_FW_PSP_WHITELIST = 0x3a,
 	AMD_FW_L2_PTR = 0x40,
+	AMD_DXIO_FW = 0x42,
+	AMD_DXIO_PUBKEY = 0x43,
+	AMD_USB_FW = 0x44,
+	AMD_PMU_PUBKEY = 0x4e,
 	AMD_FW_PSP_VERSTAGE = 0x52,
 	AMD_FW_IMC,
 	AMD_FW_GEC,
 	AMD_FW_XHCI,
+	AMD_FW_FCH,
+	AMD_FW_FCH_LP,
 	AMD_FW_INVALID,
 } amd_fw_type;
 
@@ -302,31 +313,34 @@ typedef struct _amd_fw_entry {
 } amd_fw_entry;
 
 static amd_fw_entry amd_psp_fw_table[] = {
-	{ .type = AMD_FW_PSP_PUBKEY, .level = PSP_BOTH },
+	{ .type = AMD_FW_PSP_PUBKEY, .level = PSP_LVL1 },
 	{ .type = AMD_FW_PSP_BOOTLOADER, .level = PSP_BOTH },
-	{ .type = AMD_FW_PSP_SMU_FIRMWARE, .subprog = 0, .level = PSP_BOTH },
-	{ .type = AMD_FW_PSP_RECOVERY, .level = PSP_LVL1 },
-	{ .type = AMD_FW_PSP_RTM_PUBKEY, .level = PSP_BOTH },
 	{ .type = AMD_FW_PSP_SECURED_OS, .level = PSP_LVL2 },
+	{ .type = AMD_FW_PSP_RECOVERY, .level = PSP_LVL1 },
 	{ .type = AMD_FW_PSP_NVRAM, .level = PSP_LVL2 },
+	{ .type = AMD_FW_PSP_SMU_FIRMWARE, .subprog = 0, .level = PSP_BOTH },
+	{ .type = AMD_FW_PSP_RTM_PUBKEY, .level = PSP_BOTH },
 	{ .type = AMD_FW_PSP_SMU_FIRMWARE, .subprog = 2, .level = PSP_BOTH },
 	{ .type = AMD_FW_PSP_SECURED_DEBUG, .level = PSP_LVL2 },
-	{ .type = AMD_FW_PSP_TRUSTLETS, .level = PSP_LVL2 },
-	{ .type = AMD_FW_PSP_TRUSTLETKEY, .level = PSP_LVL2 },
 	{ .type = AMD_FW_PSP_SMU_FIRMWARE2, .subprog = 2, .level = PSP_BOTH },
 	{ .type = AMD_FW_PSP_SMU_FIRMWARE, .subprog = 1, .level = PSP_BOTH },
 	{ .type = AMD_FW_PSP_SMU_FIRMWARE2, .subprog = 1, .level = PSP_BOTH },
-	{ .type = AMD_FW_PSP_SMU_FIRMWARE2, .level = PSP_BOTH },
 	{ .type = AMD_FW_PSP_SMUSCS, .level = PSP_BOTH  },
-	{ .type = AMD_PSP_FUSE_CHAIN, .level = PSP_LVL2 },
-	{ .type = AMD_DEBUG_UNLOCK, .level = PSP_LVL2 },
+	{ .type = AMD_FW_PSP_OEM_PUBKEY, .level = PSP_BOTH  },
+	{ .type = AMD_PSP_FUSE_CHAIN, .level = PSP_BOTH },
+	{ .type = AMD_FW_PSP_TRUSTLETS, .level = PSP_LVL2 },
+	{ .type = AMD_FW_PSP_TRUSTLETKEY, .level = PSP_LVL2 },
+	{ .type = AMD_FW_PSP_SMU_FIRMWARE2, .level = PSP_BOTH },
+	{ .type = AMD_DEBUG_UNLOCK, .level = PSP_BOTH },
 	{ .type = AMD_WRAPPED_IKEK, .level = PSP_BOTH },
 	{ .type = AMD_TOKEN_UNLOCK, .level = PSP_BOTH },
 	{ .type = AMD_SEC_GASKET, .subprog = 2, .level = PSP_BOTH },
 	{ .type = AMD_SEC_GASKET, .subprog = 1, .level = PSP_BOTH },
+	{ .type = AMD_SEC_GASKET, .subprog = 0, .level = PSP_BOTH },
 	{ .type = AMD_MP2_FW, .subprog = 2, .level = PSP_LVL2 },
 	{ .type = AMD_MP2_FW, .subprog = 1, .level = PSP_LVL2 },
 	{ .type = AMD_DRIVER_ENTRIES, .level = PSP_LVL2 },
+	{ .type = AMD_MP5_FW, .level = PSP_BOTH },
 	{ .type = AMD_S0I3_DRIVER, .level = PSP_LVL2 },
 	{ .type = AMD_ABL0, .level = PSP_BOTH },
 	{ .type = AMD_ABL1, .level = PSP_BOTH },
@@ -340,6 +354,11 @@ static amd_fw_entry amd_psp_fw_table[] = {
 	{ .type = AMD_FW_PSP_SMU_FIRMWARE2, .subprog = 1, .level = PSP_BOTH },
 	{ .type = AMD_FW_PSP_WHITELIST, .level = PSP_LVL2 },
 	{ .type = AMD_FW_PSP_VERSTAGE, .level = PSP_BOTH },
+	{ .type = AMD_DXIO_FW, .level = PSP_BOTH },
+	{ .type = AMD_DXIO_PUBKEY, .level = PSP_BOTH },
+	{ .type = AMD_PMU_PUBKEY, .level = PSP_BOTH },
+	{ .type = AMD_USB_FW, .level = PSP_LVL2 },
+	{ .type = AMD_MP5_FW, .level = PSP_BOTH },
 	{ .type = AMD_FW_INVALID },
 };
 
@@ -347,26 +366,12 @@ static amd_fw_entry amd_fw_table[] = {
 	{ .type = AMD_FW_XHCI },
 	{ .type = AMD_FW_IMC },
 	{ .type = AMD_FW_GEC },
+	{ .type = AMD_FW_FCH },
+	{ .type = AMD_FW_FCH_LP },
 	{ .type = AMD_FW_INVALID },
 };
 
 static amd_bios_entry amd_bios_table[] = {
-	{ .type = AMD_BIOS_APCB, .inst = 0, .level = BDT_BOTH },
-	{ .type = AMD_BIOS_APCB, .inst = 1, .level = BDT_BOTH },
-	{ .type = AMD_BIOS_APCB, .inst = 2, .level = BDT_BOTH },
-	{ .type = AMD_BIOS_APCB, .inst = 3, .level = BDT_BOTH },
-	{ .type = AMD_BIOS_APCB, .inst = 4, .level = BDT_BOTH },
-	{ .type = AMD_BIOS_APCB, .inst = 5, .level = BDT_BOTH },
-	{ .type = AMD_BIOS_APCB, .inst = 6, .level = BDT_BOTH },
-	{ .type = AMD_BIOS_APCB, .inst = 7, .level = BDT_BOTH },
-	{ .type = AMD_BIOS_APCB, .inst = 8, .level = BDT_BOTH },
-	{ .type = AMD_BIOS_APCB, .inst = 9, .level = BDT_BOTH },
-	{ .type = AMD_BIOS_APCB, .inst = 10, .level = BDT_BOTH },
-	{ .type = AMD_BIOS_APCB, .inst = 11, .level = BDT_BOTH },
-	{ .type = AMD_BIOS_APCB, .inst = 12, .level = BDT_BOTH },
-	{ .type = AMD_BIOS_APCB, .inst = 13, .level = BDT_BOTH },
-	{ .type = AMD_BIOS_APCB, .inst = 14, .level = BDT_BOTH },
-	{ .type = AMD_BIOS_APCB, .inst = 15, .level = BDT_BOTH },
 	{ .type = AMD_BIOS_APCB_BK, .inst = 0, .level = BDT_BOTH },
 	{ .type = AMD_BIOS_APCB_BK, .inst = 1, .level = BDT_BOTH },
 	{ .type = AMD_BIOS_APCB_BK, .inst = 2, .level = BDT_BOTH },
@@ -383,6 +388,22 @@ static amd_bios_entry amd_bios_table[] = {
 	{ .type = AMD_BIOS_APCB_BK, .inst = 13, .level = BDT_BOTH },
 	{ .type = AMD_BIOS_APCB_BK, .inst = 14, .level = BDT_BOTH },
 	{ .type = AMD_BIOS_APCB_BK, .inst = 15, .level = BDT_BOTH },
+	{ .type = AMD_BIOS_APCB, .inst = 0, .level = BDT_LVL2 },
+	{ .type = AMD_BIOS_APCB, .inst = 1, .level = BDT_LVL2 },
+	{ .type = AMD_BIOS_APCB, .inst = 2, .level = BDT_LVL2 },
+	{ .type = AMD_BIOS_APCB, .inst = 3, .level = BDT_LVL2 },
+	{ .type = AMD_BIOS_APCB, .inst = 4, .level = BDT_LVL2 },
+	{ .type = AMD_BIOS_APCB, .inst = 5, .level = BDT_LVL2 },
+	{ .type = AMD_BIOS_APCB, .inst = 6, .level = BDT_LVL2 },
+	{ .type = AMD_BIOS_APCB, .inst = 7, .level = BDT_LVL2 },
+	{ .type = AMD_BIOS_APCB, .inst = 8, .level = BDT_LVL2 },
+	{ .type = AMD_BIOS_APCB, .inst = 9, .level = BDT_LVL2 },
+	{ .type = AMD_BIOS_APCB, .inst = 10, .level = BDT_LVL2 },
+	{ .type = AMD_BIOS_APCB, .inst = 11, .level = BDT_LVL2 },
+	{ .type = AMD_BIOS_APCB, .inst = 12, .level = BDT_LVL2 },
+	{ .type = AMD_BIOS_APCB, .inst = 13, .level = BDT_LVL2 },
+	{ .type = AMD_BIOS_APCB, .inst = 14, .level = BDT_LVL2 },
+	{ .type = AMD_BIOS_APCB, .inst = 15, .level = BDT_BOTH },
 	{ .type = AMD_BIOS_APOB, .level = BDT_BOTH },
 	{ .type = AMD_BIOS_BIN,
 			.reset = 1, .copy = 1, .zlib = 1, .level = BDT_BOTH },
@@ -413,7 +434,29 @@ typedef struct _embedded_firmware {
 	uint32_t bios0_entry; /* todo: add way to select correct entry */
 	uint32_t bios1_entry;
 	uint32_t bios2_entry;
-	uint32_t reserved[0x2c]; /* 0x24 - 0x4f */
+	uint32_t second_gen_efs;
+	uint32_t bios3_entry;
+	uint32_t reserved_2c;
+	uint32_t fch_entry;
+	uint32_t fch_lp_entry;
+	uint32_t reserved_38;
+	uint32_t reserved_3c;
+	uint8_t spi0_mode; /* Family 15 model 60 to 6f */
+	uint8_t spi0_speed;
+	uint8_t reserved_42;
+	uint8_t spi1_mode; /* Family 17 model 00 to 1f */
+	uint8_t spi1_speed;
+	uint8_t spi1_qpr_dummy; /* 0x0a for micron, otherwise 0xff */
+	uint8_t reserved_46;
+	uint8_t spi2_mode; /* Family 17 30 and up */
+	uint8_t spi2_speed;
+	uint8_t spi2_micron; /* 0x55 or 0xaa for micron */
+	uint8_t reserved_4a;
+	uint8_t reserved_4b;
+	uint8_t reserved_4c;
+	uint8_t reserved_4d;
+	uint8_t reserved_4e;
+	uint8_t reserved_4f;
 } __attribute__((packed, aligned(16))) embedded_firmware;
 
 typedef struct _psp_directory_header {
@@ -640,6 +683,12 @@ static void integrate_firmwares(context *ctx,
 			case AMD_FW_XHCI:
 				romsig->xhci_entry = RUN_CURRENT(*ctx);
 				break;
+			case AMD_FW_FCH:
+				romsig->fch_entry = RUN_CURRENT(*ctx);
+				break;
+			case AMD_FW_FCH_LP:
+				romsig->fch_lp_entry = RUN_CURRENT(*ctx);
+				break;
 			default:
 				/* Error */
 				break;
@@ -734,6 +783,7 @@ static void integrate_psp_firmwares(context *ctx,
 		} else if (fw_table[i].filename != NULL) {
 			bytes = copy_blob(BUFF_CURRENT(*ctx),
 					fw_table[i].filename, BUFF_ROOM(*ctx));
+			printf("E 0x%02x%02x L 0x%06x F '%s'\n", fw_table[i].subprog, fw_table[i].type, bytes, fw_table[i].filename);
 			if (bytes < 0) {
 				free(ctx->rom);
 				exit(1);
@@ -1014,6 +1064,7 @@ static void integrate_bios_firmwares(context *ctx,
 
 	if (biosdir2) {
 		biosdir->entries[count].type = AMD_BIOS_L2_PTR;
+		biosdir->entries[count].region_type = 0;
 		biosdir->entries[count].size =
 					+ MAX_BIOS_ENTRIES
 					* sizeof(bios_directory_entry);
@@ -1038,13 +1089,16 @@ static void integrate_bios_firmwares(context *ctx,
 
 	fill_dir_header(biosdir, count, cookie);
 }
-// Unused values: CDE
-static const char *optstring  = "x:i:g:AMS:p:b:s:r:k:c:n:d:t:u:w:m:T:z:J:B:K:L:Y:N:UW:I:a:Q:V:e:v:j:y:G:O:X:F:H:o:f:l:hZ:qR:P:";
+// Unused values: none
+static const char *optstring  = "x:i:g:C:D:E:AMS:p:b:s:r:k:c:n:d:t:u:w:m:T:z:J:B:K:L:Y:N:UW:I:a:Q:V:e:v:j:y:G:O:X:F:H:o:f:l:hZ:qR:P:";
 
 static struct option long_options[] = {
 	{"xhci",             required_argument, 0, 'x' },
 	{"imc",              required_argument, 0, 'i' },
 	{"gec",              required_argument, 0, 'g' },
+	{"fch-fw",           required_argument, 0, 'C' },
+	{"fch-lp-fw",        required_argument, 0, 'D' },
+	{"extra-fw",         required_argument, 0, 'E' },
 	/* PSP Directory Table items */
 	{"combo-capable",          no_argument, 0, 'A' },
 	{"multilevel",             no_argument, 0, 'M' },
@@ -1221,6 +1275,29 @@ int main(int argc, char **argv)
 			break;
 		case 'g':
 			register_fw_filename(AMD_FW_GEC, sub, optarg);
+			sub = instance = 0;
+			break;
+		case 'C':
+			register_fw_filename(AMD_FW_FCH, sub, optarg);
+			sub = instance = 0;
+			break;
+		case 'D':
+			register_fw_filename(AMD_FW_FCH_LP, sub, optarg);
+			sub = instance = 0;
+			break;
+		case 'E':
+			{
+				int kind = 0;
+				char *name = NULL;
+				if (sscanf(optarg, "0x%X,%ms", &kind, &name) == 2) {
+					printf("extra 0x%X: %s\n", kind, name);
+					register_fw_filename(kind, sub, name);
+				} else {
+					printf("Error: invalid extra argument: %s\n", optarg);
+					retval = 1;
+				}
+			}
+
 			sub = instance = 0;
 			break;
 		case 'A':
@@ -1511,6 +1588,8 @@ int main(int argc, char **argv)
 	amd_romsig->imc_entry = 0;
 	amd_romsig->gec_entry = 0;
 	amd_romsig->xhci_entry = 0;
+	amd_romsig->fch_entry = 0;
+	amd_romsig->fch_lp_entry = 0;
 
 	integrate_firmwares(&ctx, amd_romsig, amd_fw_table);
 
@@ -1532,6 +1611,8 @@ int main(int argc, char **argv)
 						amd_psp_fw_table, PSP_COOKIE);
 	}
 
+	amd_romsig->comboable = 0;
+	amd_romsig->psp_entry = 0;
 	if (comboable)
 		amd_romsig->comboable = BUFF_TO_RUN(ctx, pspdir);
 	else
@@ -1570,6 +1651,40 @@ int main(int argc, char **argv)
 		}
 		amd_romsig->bios1_entry = BUFF_TO_RUN(ctx, biosdir);
 	}
+
+
+	// Modifications for serw12 {
+	amd_romsig->reserved_2c = 0;
+	amd_romsig->reserved_38 = 0;
+	amd_romsig->reserved_3c = 0;
+	amd_romsig->reserved_42 = 0;
+	amd_romsig->reserved_46 = 0;
+	amd_romsig->reserved_4a = 0;
+	amd_romsig->reserved_4b = 0;
+	amd_romsig->reserved_4c = 0;
+	amd_romsig->reserved_4d = 0;
+	amd_romsig->reserved_4e = 0;
+	amd_romsig->reserved_4f = 0;
+
+	amd_romsig->bios2_entry = amd_romsig->bios1_entry; // Set correct bios_entry
+	amd_romsig->bios0_entry = 0; // Clear unused bios_entry
+	amd_romsig->bios1_entry = 0; // Clear unused bios_entry
+	amd_romsig->bios3_entry = 0; // Clear unused bios_entry
+
+	// Upstream has this in CLI flags
+	amd_romsig->second_gen_efs = 0xfffffffe; // Enable second gen EFS
+	amd_romsig->spi0_mode = 0; // normal read, easier to debug
+	amd_romsig->spi0_speed = 0; // 66 MHz
+	amd_romsig->spi1_mode = 0; // normal read, easier to debug
+	amd_romsig->spi1_speed = 0; // 66 MHz
+	amd_romsig->spi1_qpr_dummy = 0; // unused
+	amd_romsig->spi2_mode = 5; // quad I/O. Use 0 when tracing
+	amd_romsig->spi2_speed = 0; // 66 MHz
+	amd_romsig->spi2_micron = 0x55; // micron chip
+
+	amd_romsig->comboable &= 0xFFFFFF;
+	amd_romsig->bios2_entry &= 0xFFFFFF;
+	// } Modifications for serw12
 
 	targetfd = open(output, O_RDWR | O_CREAT | O_TRUNC, 0666);
 	if (targetfd >= 0) {
