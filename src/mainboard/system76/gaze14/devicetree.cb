@@ -99,10 +99,10 @@ chip soc/intel/cannonlake
 
 	# USB2
 	register "usb2_ports[0]" = "USB2_PORT_MID(OC_SKIP)" # USB 3 Right
-	register "usb2_ports[1]" = "USB2_PORT_EMPTY"
+	register "usb2_ports[1]" = "USB2_PORT_MID(OC_SKIP)" # USB 3 Left
 	register "usb2_ports[2]" = "USB2_PORT_TYPE_C(OC_SKIP)" # Type-C
 	register "usb2_ports[3]" = "USB2_PORT_EMPTY"
-	register "usb2_ports[4]" = "USB2_PORT_MID(OC_SKIP)" # USB 3 Left
+	register "usb2_ports[4]" = "USB2_PORT_EMPTY"
 	register "usb2_ports[5]" = "USB2_PORT_MID(OC_SKIP)" # USB 2 Left
 	register "usb2_ports[6]" = "USB2_PORT_MID(OC_SKIP)" # 3G/LTE
 	register "usb2_ports[7]" = "USB2_PORT_MID(OC_SKIP)" # Camera
@@ -117,10 +117,10 @@ chip soc/intel/cannonlake
 
 	# USB3
 	register "usb3_ports[0]" = "USB3_PORT_DEFAULT(OC_SKIP)" # USB 3 Right
-	register "usb3_ports[1]" = "USB3_PORT_EMPTY"
+	register "usb3_ports[1]" = "USB3_PORT_DEFAULT(OC_SKIP)" # USB 3 Left
 	register "usb3_ports[2]" = "USB3_PORT_DEFAULT(OC_SKIP)" # Type-C
 	register "usb3_ports[3]" = "USB3_PORT_DEFAULT(OC_SKIP)" # Type-C
-	register "usb3_ports[4]" = "USB3_PORT_DEFAULT(OC_SKIP)" # USB 3 Left
+	register "usb3_ports[4]" = "USB3_PORT_EMPTY"
 	register "usb3_ports[5]" = "USB3_PORT_EMPTY"
 	register "usb3_ports[6]" = "USB3_PORT_DEFAULT(OC_SKIP)" # 3G/LTE
 	register "usb3_ports[7]" = "USB3_PORT_EMPTY"
