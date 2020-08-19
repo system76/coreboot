@@ -123,7 +123,7 @@ chip soc/intel/cannonlake
 	register "PcieRpEnable[0]" = "1"
 	register "PcieRpLtrEnable[0]" = "1"
 	register "PcieRpHotPlug[0]" = "1"
-	register "PcieClkSrcUsage[6]" = "0"
+	register "PcieClkSrcUsage[6]" = "PCIE_CLK_RP0" # 0 is converted to PCIE_CLK_NOTUSED
 
 	# PCI Express root port #5 x4, Clock 10 (USB 3.2)
 	register "PcieRpEnable[4]" = "1"
