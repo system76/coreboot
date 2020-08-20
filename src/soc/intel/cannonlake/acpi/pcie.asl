@@ -54,7 +54,7 @@ Method (IRQM, 1, Serialized) {
 
 	Switch (ToInteger (Arg0))
 	{
-		Case (Package () { 1, 5, 9, 13 }) {
+		Case (Package () { 1, 5, 9, 13, 17, 21 }) {
 			If (PICM) {
 				Return (IQAA)
 			} Else {
@@ -62,7 +62,7 @@ Method (IRQM, 1, Serialized) {
 			}
 		}
 
-		Case (Package () { 2, 6, 10, 14 }) {
+		Case (Package () { 2, 6, 10, 14, 18, 22 }) {
 			If (PICM) {
 				Return (IQBA)
 			} Else {
@@ -70,7 +70,7 @@ Method (IRQM, 1, Serialized) {
 			}
 		}
 
-		Case (Package () { 3, 7, 11, 15 }) {
+		Case (Package () { 3, 7, 11, 15, 19, 23 }) {
 			If (PICM) {
 				Return (IQCA)
 			} Else {
@@ -78,7 +78,7 @@ Method (IRQM, 1, Serialized) {
 			}
 		}
 
-		Case (Package () { 4, 8, 12, 16 }) {
+		Case (Package () { 4, 8, 12, 16, 20, 24 }) {
 			If (PICM) {
 				Return (IQDA)
 			} Else {
@@ -354,6 +354,142 @@ Device (RP15)
 Device (RP16)
 {
 	Name (_ADR, 0x001D0007)
+
+	OperationRegion (RPCS, PCI_Config, 0x4c, 4)
+	Field (RPCS, AnyAcc, NoLock, Preserve)
+	{
+		, 24,
+		RPPN, 8,	/* Root Port Number */
+	}
+
+	Method (_PRT)
+	{
+		Return (IRQM (RPPN))
+	}
+}
+
+Device (RP17)
+{
+	Name (_ADR, 0x001B0000)
+
+	OperationRegion (RPCS, PCI_Config, 0x4c, 4)
+	Field (RPCS, AnyAcc, NoLock, Preserve)
+	{
+		, 24,
+		RPPN, 8,	/* Root Port Number */
+	}
+
+	Method (_PRT)
+	{
+		Return (IRQM (RPPN))
+	}
+}
+
+Device (RP18)
+{
+	Name (_ADR, 0x001B0001)
+
+	OperationRegion (RPCS, PCI_Config, 0x4c, 4)
+	Field (RPCS, AnyAcc, NoLock, Preserve)
+	{
+		, 24,
+		RPPN, 8,	/* Root Port Number */
+	}
+
+	Method (_PRT)
+	{
+		Return (IRQM (RPPN))
+	}
+}
+
+Device (RP19)
+{
+	Name (_ADR, 0x001B0002)
+
+	OperationRegion (RPCS, PCI_Config, 0x4c, 4)
+	Field (RPCS, AnyAcc, NoLock, Preserve)
+	{
+		, 24,
+		RPPN, 8,	/* Root Port Number */
+	}
+
+	Method (_PRT)
+	{
+		Return (IRQM (RPPN))
+	}
+}
+
+Device (RP20)
+{
+	Name (_ADR, 0x001B0003)
+
+	OperationRegion (RPCS, PCI_Config, 0x4c, 4)
+	Field (RPCS, AnyAcc, NoLock, Preserve)
+	{
+		, 24,
+		RPPN, 8,	/* Root Port Number */
+	}
+
+	Method (_PRT)
+	{
+		Return (IRQM (RPPN))
+	}
+}
+
+Device (RP21)
+{
+	Name (_ADR, 0x001B0004)
+
+	OperationRegion (RPCS, PCI_Config, 0x4c, 4)
+	Field (RPCS, AnyAcc, NoLock, Preserve)
+	{
+		, 24,
+		RPPN, 8,	/* Root Port Number */
+	}
+
+	Method (_PRT)
+	{
+		Return (IRQM (RPPN))
+	}
+}
+
+Device (RP22)
+{
+	Name (_ADR, 0x001B0005)
+
+	OperationRegion (RPCS, PCI_Config, 0x4c, 4)
+	Field (RPCS, AnyAcc, NoLock, Preserve)
+	{
+		, 24,
+		RPPN, 8,	/* Root Port Number */
+	}
+
+	Method (_PRT)
+	{
+		Return (IRQM (RPPN))
+	}
+}
+
+Device (RP23)
+{
+	Name (_ADR, 0x001B0006)
+
+	OperationRegion (RPCS, PCI_Config, 0x4c, 4)
+	Field (RPCS, AnyAcc, NoLock, Preserve)
+	{
+		, 24,
+		RPPN, 8,	/* Root Port Number */
+	}
+
+	Method (_PRT)
+	{
+		Return (IRQM (RPPN))
+	}
+}
+
+Device (RP24)
+{
+	Name (_ADR, 0x001B0007)
 
 	OperationRegion (RPCS, PCI_Config, 0x4c, 4)
 	Field (RPCS, AnyAcc, NoLock, Preserve)
