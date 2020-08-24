@@ -646,6 +646,53 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 		params->PeiGraphicsPeimInit = 1;
 	else
 		params->PeiGraphicsPeimInit = 0;
+
+	/* Disable setting subsystem ID, which causes it to lock */
+	struct svid_ssid_init_entry {
+		union {
+			struct {
+				uint64_t reg:12;
+				uint64_t function:3;
+				uint64_t device:5;
+				uint64_t bus:8;
+				uint64_t reserved1:4;
+				uint64_t segment:16;
+				uint64_t reserved2:16;
+			};
+			uint64_t segbusdevfuncregister;
+		};
+		struct {
+			uint16_t svid;
+			uint16_t ssid;
+		};
+		uint32_t reserved;
+	};
+	const struct svid_ssid_init_entry ssid_table[] = {{{}, {}, }, };
+	params->SiSsidTablePtr = (uintptr_t)ssid_table;
+	params->SiNumberOfSsidTableEntry = 1;
+
+	uint16_t svid = CONFIG_SUBSYSTEM_VENDOR_ID;
+	uint16_t sdid = CONFIG_SUBSYSTEM_DEVICE_ID;
+
+	/* Program XHCI SSID/SVID before FSP silicon init */
+	dev = pcidev_path_on_root(PCH_DEVFN_XHCI);
+	if (!svid || !sdid) {
+		pci_write_config32(dev, PCI_SUBSYSTEM_VENDOR_ID,
+			pci_read_config32(dev, PCI_VENDOR_ID));
+	} else {
+		pci_write_config32(dev, PCI_SUBSYSTEM_VENDOR_ID,
+			((sdid & 0xffff) << 16) | (svid & 0xffff));
+	}
+
+	/* Program HDAudio SSID/SVID before FSP silicon init */
+	dev = pcidev_path_on_root(PCH_DEVFN_HDA);
+	if (!svid || !sdid) {
+		pci_write_config32(dev, PCI_SUBSYSTEM_VENDOR_ID,
+			pci_read_config32(dev, PCI_VENDOR_ID));
+	} else {
+		pci_write_config32(dev, PCI_SUBSYSTEM_VENDOR_ID,
+			((sdid & 0xffff) << 16) | (svid & 0xffff));
+	}
 }
 
 /* Mainboard GPIO Configuration */
