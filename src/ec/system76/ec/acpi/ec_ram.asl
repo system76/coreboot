@@ -8,6 +8,8 @@ Field (ERAM, ByteAcc, Lock, Preserve)
 	    ,   1,
 	LWKE,   1, // Lid wake
 		,   5,
+	Offset (0x07),
+	TMP1,	8, // CPU temperature
 	Offset (0x10),
 	ADP,    1, // AC adapter connected
 	    ,   1,
@@ -28,17 +30,17 @@ Field (ERAM, ByteAcc, Lock, Preserve)
     BCL0,   32,
 	Offset (0x68),
 	ECOS,   8, // Detected OS, 0 = no ACPI, 1 = ACPI but no driver, 2 = ACPI with driver
-	Offset (0xC7),
-	VGAT,   8, // GPU temperature (not implemented)
+	Offset (0xC8),
 	OEM1,   8,
 	OEM2,   8,
 	OEM3,   16,
 	OEM4,   8, // Extra SCI data
-	Offset (0xCE),
-	DUT1,   8, // Fan 1 duty (not implemented)
-	DUT2,   8, // Fan 2 duty (not implemented)
-	RPM1,   16, // Fan 1 RPM (not implemented)
-	RPM2,   16, // Fan 2 RPM (not implemented)
+	Offset (0xCD),
+	TMP2,   8, // GPU temperature
+	DUT1,   8, // Fan 1 duty
+	DUT2,   8, // Fan 2 duty
+	RPM1,   16, // Fan 1 RPM
+	RPM2,   16, // Fan 2 RPM
 	Offset (0xD9),
 	AIRP,   8, // Airplane mode LED
 	WINF,   8, // Enable ACPI brightness controls
