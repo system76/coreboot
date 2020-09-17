@@ -94,10 +94,6 @@ config PXE_ROM_ID
 	string
 	default "10ec,8168"
 
-config FSP_M_XIP
-	bool
-	default y
-
 config POST_DEVICE
 	bool
 	default n
