@@ -180,6 +180,7 @@ chip soc/intel/cannonlake
 	end
 
 	device domain 0 on
+		subsystemid 0x1458 0xa0c3 inherit
 		device pci 00.0 on  end # Host Bridge
 		device pci 02.0 on  end # Integrated Graphics Device
 		device pci 04.0 off end # SA Thermal device

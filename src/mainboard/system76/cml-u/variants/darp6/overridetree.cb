@@ -1,5 +1,6 @@
 chip soc/intel/cannonlake
 	device domain 0 on
+		subsystemid 0x1558 0x1404 inherit
 		device pci 15.0 on
 			chip drivers/i2c/hid
 				register "generic.hid" = ""PNP0C50""
