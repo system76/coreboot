@@ -44,16 +44,6 @@ config CBFS_SIZE
 	hex
 	default 0x600000
 
-config SUBSYSTEM_VENDOR_ID
-	hex
-	default 0x1558
-
-config SUBSYSTEM_DEVICE_ID
-	hex
-	default 0x1303 if BOARD_SYSTEM76_GALP2
-	default 0x1313 if BOARD_SYSTEM76_GALP3
-	default 0x1413 if BOARD_SYSTEM76_GALP3_B
-
 config CONSOLE_POST
 	bool
 	default y

@@ -34,14 +34,6 @@ config CBFS_SIZE
 	hex
 	default 0xA00000
 
-config MAINBOARD_PCI_SUBSYSTEM_VENDOR_ID
-	hex
-	default 0x1458
-
-config MAINBOARD_PCI_SUBSYSTEM_DEVICE_ID
-	hex
-	default 0xa0c3
-
 config CONSOLE_POST
 	bool
 	default y
