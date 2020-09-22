@@ -1,7 +1,7 @@
 chip soc/intel/cannonlake
-	# Lock Down
 	register "common_soc_config" = "{
 		.chipset_lockdown = CHIPSET_LOCKDOWN_COREBOOT,
+		/* Touchpad */
 		.i2c[0] = {
 			.speed = I2C_SPEED_FAST,
 			.rise_time_ns = 80,
@@ -13,7 +13,7 @@ chip soc/intel/cannonlake
 	register "SendVrMbxCmd" = "2"
 
 # ACPI (soc/intel/cannonlake/acpi.c)
-	# Enable s0ix
+	# Disable s0ix
 	register "s0ix_enable" = "0"
 
 	# PM Timer Enabled
@@ -42,18 +42,8 @@ chip soc/intel/cannonlake
 # FSP Silicon (soc/intel/cannonlake/fsp_params.c)
 	# Serial I/O
 	register "SerialIoDevMode" = "{
-		[PchSerialIoIndexI2C0] = PchSerialIoPci,
-		[PchSerialIoIndexI2C1] = PchSerialIoDisabled,
-		[PchSerialIoIndexI2C2] = PchSerialIoDisabled,
-		[PchSerialIoIndexI2C3] = PchSerialIoDisabled,
-		[PchSerialIoIndexI2C4] = PchSerialIoDisabled,
-		[PchSerialIoIndexI2C5] = PchSerialIoDisabled,
-		[PchSerialIoIndexSPI0] = PchSerialIoDisabled,
-		[PchSerialIoIndexSPI1] = PchSerialIoDisabled,
-		[PchSerialIoIndexSPI2] = PchSerialIoDisabled,
-		[PchSerialIoIndexUART0] = PchSerialIoDisabled,
-		[PchSerialIoIndexUART1] = PchSerialIoDisabled,
-		[PchSerialIoIndexUART2] = PchSerialIoPci,
+		[PchSerialIoIndexI2C0] = PchSerialIoPci, // Touchpad
+		[PchSerialIoIndexUART2] = PchSerialIoSkipInit, // LPSS UART
 	}"
 
 	# SATA
@@ -101,7 +91,7 @@ chip soc/intel/cannonlake
 	register "usb2_ports[3]" = "USB2_PORT_MID(OC_SKIP)"		# USB Board port 4
 	register "usb2_ports[4]" = "USB2_PORT_EMPTY"			# NC
 	register "usb2_ports[5]" = "USB2_PORT_EMPTY"			# Finger print
-	register "usb2_ports[6]" = "USB2_PORT_MAX(OC_SKIP)"     # Camera
+	register "usb2_ports[6]" = "USB2_PORT_MAX(OC_SKIP)"		# Camera
 	register "usb2_ports[7]" = "USB2_PORT_EMPTY"			# T17, T18
 	register "usb2_ports[8]" = "USB2_PORT_EMPTY"			# NC
 	register "usb2_ports[9]" = "USB2_PORT_MID(OC_SKIP)"		# Bluetooth
