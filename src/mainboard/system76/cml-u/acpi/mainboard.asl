@@ -22,5 +22,3 @@ Scope (\_SB) {
 Scope (\_GPE) {
 	#include "gpe.asl"
 }
-
-#include "tbt.asl"
