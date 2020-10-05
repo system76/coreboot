@@ -17,7 +17,8 @@
 
 #define amp_set_book(B) R(tas5825m_set_book(dev, B))
 
-int tas5825m_setup(struct device * dev, int id) {
+int tas5825m_setup(struct device * dev, int id)
+{
 	int res = 0;
 
 	amp_set_book(0x00);
