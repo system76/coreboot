@@ -372,14 +372,14 @@ Device (\_SB.PCI0.PEGP.DEV0) {
 				// PCIe configuration space owner write enable
 				CreateField(Arg1, 2, 1, PCOW)
 				// Update current PCIe configuration space owner if requested
-				If (PCOW) {
+				If (ToInteger(PCOW)) {
 					PCOC = PCOT
 				}
 
 				// Optimus power control enable
 				CreateField(Arg1, 24, 2, OPCE)
 				// Update optimus power control if requested
-				If (FLUP) {
+				If (ToInteger(FLUP)) {
 					OPPW = OPCE
 				}
 
