@@ -10,31 +10,31 @@ Device (\_SB.PCI0.PEGP) {
 	Name (PSPO, 0)
 
 	Method (_PS0) {
-		Printf("NVIDIA _PS0 {")
+		Printf("PEG _PS0 {")
 		If (PSPO) {
 			^DEV0._ON()
 			PSPO = 0
 		}
 		_PSC = 0
-		Printf("} NVIDIA _PS0")
+		Printf("} PEG _PS0")
 	}
 
 	Method (_PS3) {
-		Printf("NVIDIA _PS3 {")
+		Printf("PEG _PS3 {")
 		If (^DEV0.OPPW == 3) {
 			^DEV0._OFF()
 			^DEV0.OPPW = 2
 			PSPO = 1
 		}
 		_PSC = 3
-		Printf("} NVIDIA _PS3")
+		Printf("} PEG _PS3")
 	}
 
 	PowerResource (PWRR, 0, 0) {
 		Name (_STA, 1)
 
 		Method (_ON) {
-			Printf("NVIDIA PWRR._ON {")
+			Printf("PEG PWRR._ON {")
 			If (_STA != 1) {
 				If (^^DEV0.DPCX) {
 					^^DEV0.NVPC(^^DEV0.DPCX)
@@ -44,11 +44,11 @@ Device (\_SB.PCI0.PEGP) {
 				}
 				_STA = 1
 			}
-			Printf("} NVIDIA PWRR._ON")
+			Printf("} PEG PWRR._ON")
 		}
 
 		Method (_OFF) {
-			Printf("NVIDIA PWRR._OFF {")
+			Printf("PEG PWRR._OFF {")
 			If (_STA != 0) {
 				If (^^DEV0.DPC) {
 					^^DEV0.NVPC(^^DEV0.DPC)
@@ -58,7 +58,7 @@ Device (\_SB.PCI0.PEGP) {
 				}
 				_STA = 0
 			}
-			Printf("} NVIDIA PWRR._OFF")
+			Printf("} PEG PWRR._OFF")
 		}
 	}
 
@@ -71,6 +71,42 @@ Device (\_SB.PCI0.PEGP) {
 Device (\_SB.PCI0.PEGP.DEV0) {
 	Name(_ADR, 0x00000000)
 	Name (_STA, 0xF)
+
+// Power state {
+	Name (_PSC, 0)
+
+	Method (_PS0) {
+		Printf("NVIDIA _PS0 {")
+		_PSC = 0
+		Printf("} NVIDIA _PS0")
+	}
+
+	Method (_PS3) {
+		Printf("NVIDIA _PS3 {")
+		_PSC = 3
+		Printf("} NVIDIA _PS3")
+	}
+
+	PowerResource (PWRR, 0, 0) {
+		Name (_STA, 1)
+
+		Method (_ON) {
+			Printf("NVIDIA PWRR._ON {")
+			_STA = 1
+			Printf("} NVIDIA PWRR._ON")
+		}
+
+		Method (_OFF) {
+			Printf("NVIDIA PWRR._OFF {")
+			_STA = 0
+			Printf("} NVIDIA PWRR._OFF")
+		}
+	}
+
+	Name (_PR0, Package () { PWRR })
+	Name (_PR2, Package () { PWRR })
+	Name (_PR3, Package () { PWRR })
+// }
 
 // DEBUGGING {
 	// Convert a byte to a hex string, trimming extra parts
@@ -117,11 +153,39 @@ Device (\_SB.PCI0.PEGP.DEV0) {
 // } DEBUGGING
 
 // NVIDIA DSMs {
+	#define NVIDIA_ERROR_UNSPECIFIED 0x80000001
+	#define NVIDIA_ERROR_UNSUPPORTED 0x80000002
+
+	#define NBCI_DSM_GUID "D4A50B75-65C7-46F7-BFB7-41514CEA0244"
+	#define NBCI_REVISION_ID 0x0102
+
+	#define NBCI_FUNC_SUPPORT 0
+
+	Method (NBCI, 2, Serialized) {
+		Printf("NBCI {")
+		Local0 = NVIDIA_ERROR_UNSUPPORTED
+
+		Switch (ToInteger(Arg0)) {
+			Case (NBCI_FUNC_SUPPORT) {
+				Printf("  NBCI_FUNC_SUPPORT")
+
+				Local0 = Buffer (4) { 0, 0, 0, 0 }
+
+				CreateField(Local0, NBCI_FUNC_SUPPORT, 1, FNSP)
+				FNSP = 1
+			}
+			Default {
+				Printf("  Unsupported NBCI_FUNC: %o, %o", SFST(Arg0), SFST(Arg1))
+			}
+		}
+
+		Printf("  Return %o", SFST(Local0))
+		Printf("} NBCI")
+		Return (Local0)
+	}
+
 	#define JT_DSM_GUID "CBECA351-067B-4924-9CBD-B46B00B86F34"
 	#define JT_REVISION_ID 0x0200
-
-	#define JT_ERROR_UNSPECIFIED 0x80000001
-	#define JT_ERROR_UNSUPPORTED 0x80000002
 
 	#define JT_FUNC_SUPPORT 0
 	#define JT_FUNC_CAPS 1
@@ -182,7 +246,7 @@ Device (\_SB.PCI0.PEGP.DEV0) {
 
 	Method (NVJT, 2, Serialized) {
 		Printf("NVJT {")
-		Local0 = JT_ERROR_UNSUPPORTED
+		Local0 = NVIDIA_ERROR_UNSUPPORTED
 
 		Switch (ToInteger(Arg0)) {
 			Case (JT_FUNC_SUPPORT) {
@@ -209,7 +273,7 @@ Device (\_SB.PCI0.PEGP.DEV0) {
 
 				// G-Sync NVSR power features enabled
 				CreateField(Local0, 0, 1, JTE)
-				JTE = 1
+				JTE = 0
 
 				// NVSR enabled
 				CreateField(Local0, 1, 2, NVSE)
@@ -331,9 +395,6 @@ Device (\_SB.PCI0.PEGP.DEV0) {
 	#define NVOP_DSM_UUID "A486D8F8-0BDA-471B-A72B-6042A6B5BEE0"
 	#define NVOP_REVISION_ID 0x0100
 
-	#define NVOP_ERROR_UNSPECIFIED 0x80000001
-	#define NVOP_ERROR_UNSUPPORTED 0x80000002
-
 	#define NVOP_FUNC_SUPPORT 0
 	#define NVOP_FUNC_OPTIMUSCAPS 0x1A
 	#define NVOP_FUNC_OPTIMUSFLAGS 0x1B
@@ -347,7 +408,7 @@ Device (\_SB.PCI0.PEGP.DEV0) {
 
 	Method (NVOP, 2, Serialized) {
 		Printf("NVOP {")
-		Local0 = NVOP_ERROR_UNSUPPORTED
+		Local0 = NVIDIA_ERROR_UNSUPPORTED
 
 		Switch (ToInteger(Arg0)) {
 			Case (NVOP_FUNC_SUPPORT) {
@@ -432,23 +493,33 @@ Device (\_SB.PCI0.PEGP.DEV0) {
 
 	Method (_DSM, 4) {
 		Printf("NVIDIA _DSM {")
-		Local0 = Buffer (1) { 0 }
+		Printf("  Arg0: %o", IDST(Arg0))
+		Printf("  Arg1: %o", SFST(Arg1))
+		Printf("  Arg2: %o", SFST(Arg2))
+		Printf("  Arg3: %o", SFST(Arg3))
+		//TODO: evaluate error return values
+		Local0 = NVIDIA_ERROR_UNSPECIFIED
 
-		If (Arg0 == ToUUID(JT_DSM_GUID)) {
+		If (Arg0 == ToUUID(NBCI_DSM_GUID)) {
+			// Only support pecified NBCI revision
+			If (ToInteger(Arg1) == NBCI_REVISION_ID) {
+				Local0 = NBCI(Arg2, Arg3)
+			} Else {
+				Printf("  Unsupported NBCI_REVISION_ID: %o", SFST(Arg1))
+			}
+		} ElseIf (Arg0 == ToUUID(JT_DSM_GUID)) {
 			// Only support specified NVIDIA JT revision and lower
-			If (Arg1 <= JT_REVISION_ID) {
+			If (ToInteger(Arg1) <= JT_REVISION_ID) {
 				Local0 = NVJT(Arg2, Arg3)
 			} Else {
 				Printf("  Unsupported JT_REVISION_ID: %o", SFST(Arg1))
-				Local0 = JT_ERROR_UNSUPPORTED
 			}
 		} ElseIf (Arg0 == ToUUID(NVOP_DSM_UUID)) {
 			// Only support specified NVIDIA OP revision
-			If (Arg1 == NVOP_REVISION_ID) {
+			If (ToInteger(Arg1) == NVOP_REVISION_ID) {
 				Local0 = NVOP(Arg2, Arg3)
 			} Else {
 				Printf("  Unsupported NVOP_REVISION_ID: %o", SFST(Arg1))
-				Local0 = NVOP_ERROR_UNSUPPORTED
 			}
 		} Else {
 			Printf("  Unsupported DSM: %o, %o, %o, %o", IDST(Arg0), SFST(Arg1), SFST(Arg2), SFST(Arg3))
@@ -685,11 +756,11 @@ Device (\_SB.PCI0.PEGP.DEV0) {
 #else // DGPU_GC6
 
 	// GC6 2.1 implementation
-	#define DLPW 7
-	#define DLHR 2
 	Name (LTRE, 0)
 
 	// GPU power
+	#define DLPW 7
+	#define DLHR 2
 	Method (GPPR, 1) {
 		Printf("NVIDIA GPPR: %o {", Arg0)
 
