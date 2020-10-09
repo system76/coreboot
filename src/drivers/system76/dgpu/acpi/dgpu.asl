@@ -6,59 +6,31 @@ Device (\_SB.PCI0.PEGP) {
 // Power state {
 	Name (_PSC, 0)
 
-	// Power state needs to power on
-	Name (PSPO, 0)
-
 	Method (_PS0) {
-		Printf("NVIDIA _PS0 {")
-		If (PSPO) {
-			^DEV0._ON()
-			PSPO = 0
-		}
+		Printf("PEG _PS0 {")
 		_PSC = 0
-		Printf("} NVIDIA _PS0")
+		Printf("} PEG _PS0")
 	}
 
 	Method (_PS3) {
-		Printf("NVIDIA _PS3 {")
-		If (^DEV0.OPPW == 3) {
-			^DEV0._OFF()
-			^DEV0.OPPW = 2
-			PSPO = 1
-		}
+		Printf("PEG _PS3 {")
 		_PSC = 3
-		Printf("} NVIDIA _PS3")
+		Printf("} PEG _PS3")
 	}
 
 	PowerResource (PWRR, 0, 0) {
 		Name (_STA, 1)
 
 		Method (_ON) {
-			Printf("NVIDIA PWRR._ON {")
-			If (_STA != 1) {
-				If (^^DEV0.DPCX) {
-					^^DEV0.NVPC(^^DEV0.DPCX)
-					^^DEV0.DPCX = 0
-				} Else {
-					^^DEV0._ON()
-				}
-				_STA = 1
-			}
-			Printf("} NVIDIA PWRR._ON")
+			Printf("PEG PWRR._ON {")
+			_STA = 1
+			Printf("} PEG PWRR._ON")
 		}
 
 		Method (_OFF) {
-			Printf("NVIDIA PWRR._OFF {")
-			If (_STA != 0) {
-				If (^^DEV0.DPC) {
-					^^DEV0.NVPC(^^DEV0.DPC)
-					^^DEV0.DPC = 0
-				} Else {
-					^^DEV0._OFF()
-				}
-				_STA = 0
-			}
-			Printf("} NVIDIA PWRR._OFF")
+			Printf("PEG PWRR._OFF {")
+			_STA = 0
+			Printf("} PEG PWRR._OFF")
 		}
 	}
 
@@ -71,6 +43,66 @@ Device (\_SB.PCI0.PEGP) {
 Device (\_SB.PCI0.PEGP.DEV0) {
 	Name(_ADR, 0x00000000)
 	Name (_STA, 0xF)
+
+// Power state {
+	// Power state needs to power on
+	Name (PSPO, 0)
+
+	Name (_PSC, 0)
+
+	Method (_PS0) {
+		Printf("NVIDIA _PS0 {")
+		If (PSPO) {
+			_ON()
+			PSPO = 0
+		}
+		_PSC = 0
+		Printf("} NVIDIA _PS0")
+	}
+
+	Method (_PS3) {
+		Printf("NVIDIA _PS3 {")
+		If (OPPW == 3) {
+			_OFF()
+			OPPW = 2
+			PSPO = 1
+		}
+		_PSC = 3
+		Printf("} NVIDIA _PS3")
+	}
+
+	PowerResource (PWRR, 0, 0) {
+		Name (_STA, 1)
+
+		Method (_ON) {
+			Printf("NVIDIA PWRR._ON {")
+			If (^^DPCX) {
+				^^NVPC(^^DPCX)
+				^^DPCX = 0
+			} Else {
+				^^_ON()
+			}
+			_STA = 1
+			Printf("} NVIDIA PWRR._ON")
+		}
+
+		Method (_OFF) {
+			Printf("NVIDIA PWRR._OFF {")
+			If (^^DPC) {
+				^^NVPC(^^DPC)
+				^^DPC = 0
+			} Else {
+				^^_OFF()
+			}
+			_STA = 0
+			Printf("} NVIDIA PWRR._OFF")
+		}
+	}
+
+	Name (_PR0, Package () { PWRR })
+	Name (_PR2, Package () { PWRR })
+	Name (_PR3, Package () { PWRR })
+// }
 
 // DEBUGGING {
 	// Convert a byte to a hex string, trimming extra parts
