@@ -549,7 +549,9 @@ Device (\_SB.PCI0.PEGP.DEV0) {
 		If (Arg0 == ToUUID(NBCI_DSM_GUID)) {
 			// Only support pecified NBCI revision
 			If (ToInteger(Arg1) == NBCI_REVISION_ID) {
-				Local0 = NBCI(Arg2, Arg3)
+				Printf("  Return NBCI")
+				Printf("} NVIDIA _DSM")
+				Return (NBCI(Arg2, Arg3))
 			} Else {
 				Printf("  Unsupported NBCI_REVISION_ID: %o", SFST(Arg1))
 			}
