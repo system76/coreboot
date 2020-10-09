@@ -190,7 +190,7 @@ Device (\_SB.PCI0.PEGP.DEV0) {
 					}
 					// 'VK' - validation key
 					Case (0x564B) {
-						Printf("  TODO: validation key"
+						Printf("  TODO: validation key")
 					}
 					Default {
 						Printf("  Unknown object type: %o", SFST(OBJT))
