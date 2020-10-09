@@ -160,6 +160,7 @@ Device (\_SB.PCI0.PEGP.DEV0) {
 	#define NBCI_REVISION_ID 0x0102
 
 	#define NBCI_FUNC_SUPPORT 0
+	#define NBCI_FUNC_GETOBJBYTYPE 16
 
 	Method (NBCI, 2, Serialized) {
 		Printf("NBCI {")
@@ -173,6 +174,28 @@ Device (\_SB.PCI0.PEGP.DEV0) {
 
 				CreateField(Local0, NBCI_FUNC_SUPPORT, 1, FNSP)
 				FNSP = 1
+
+				CreateField(Local0, NBCI_FUNC_GETOBJBYTYPE, 1, FNGO)
+				FNGO = 1
+			}
+			Case (NBCI_FUNC_GETOBJBYTYPE) {
+				Printf("  NBCI_FUNC_GETOBJBYTYPE")
+
+				// Object type
+				CreateField(Arg1, 16, 16, OBJT)
+				Switch (ToInteger(OBJT)) {
+					// 'DR' - driver object
+					Case (0x4452) {
+						Printf("  TODO: driver object")
+					}
+					// 'VK' - validation key
+					Case (0x564B) {
+						Printf("  TODO: validation key"
+					}
+					Default {
+						Printf("  Unknown object type: %o", SFST(OBJT))
+					}
+				}
 			}
 			Default {
 				Printf("  Unsupported NBCI_FUNC: %o, %o", SFST(Arg0), SFST(Arg1))
