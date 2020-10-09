@@ -5,7 +5,7 @@
 
 #define DGPU_RST_N GPP_F22
 #define DGPU_PWR_EN GPP_F23
-#define DGPU_GC6 GPP_C12
+// Not used for GC6 2.1: #define DGPU_GC6 GPP_C12
 
 #ifndef __ACPI__
 
