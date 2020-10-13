@@ -3,8 +3,8 @@
 #include "../gpio.h"
 #include <drivers/system76/dgpu/acpi/dgpu.asl>
 
-#define EC_GPE_SCI 0x03 /* GPP_K3 */
-#define EC_GPE_SWI 0x06 /* GPP_K6 */
+#define EC_GPE_SCI 0x6E // TODO
+#define EC_GPE_SWI 0x6B // TODO
 #include <ec/system76/ec/acpi/ec.asl>
 
 Scope (\_SB) {
@@ -12,8 +12,4 @@ Scope (\_SB) {
 	Scope (PCI0) {
 		#include "backlight.asl"
 	}
-}
-
-Scope (\_GPE) {
-	#include "gpe.asl"
 }
