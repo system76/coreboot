@@ -4,9 +4,6 @@
 #ifndef __LIST_H__
 #define __LIST_H__
 
-#include <stddef.h>
-#include <stdint.h>
-
 struct list_node {
 	struct list_node *next;
 	struct list_node *prev;

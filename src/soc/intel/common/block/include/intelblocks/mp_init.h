@@ -44,7 +44,9 @@
 #define CPUID_TIGERLAKE_A0	0x806c0
 #define CPUID_TIGERLAKE_B0	0x806c1
 #define CPUID_ELKHARTLAKE_A0	0x90660
-
+#define CPUID_ELKHARTLAKE_B0	0x90661
+#define CPUID_ALDERLAKE_S_A0	0x90670
+#define CPUID_ALDERLAKE_P_A0	0x906a0
 /*
  * MP Init callback function to Find CPU Topology. This function is common
  * among all SOCs and thus its in Common CPU block.
@@ -68,6 +70,16 @@ const void *intel_mp_current_microcode(void);
  * APs to occur in parallel during MP Init.
  */
 void get_microcode_info(const void **microcode, int *parallel);
+
+/*
+ * Perform BSP and AP initialization
+ * This function can be called in below cases
+ * 1. During coreboot is doing MP initialization as part of BS_DEV_INIT_CHIPS (exclude
+ * this call if user has selected USE_INTEL_FSP_MP_INIT)
+ * 2. coreboot would like to take APs control back after FSP-S has done with MP
+ * initialization based on user select USE_INTEL_FSP_MP_INIT
+ */
+void init_cpus(void);
 
 /*
  * SoC Overrides

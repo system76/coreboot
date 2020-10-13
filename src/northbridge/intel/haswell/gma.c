@@ -108,6 +108,11 @@ u32 map_oprom_vendev(u32 vendev)
 	case 0x8086042a:		/* GT3 Server */
 	case 0x80860a26:		/* GT3 ULT */
 
+	case 0x80860d22:		/* GT3e Desktop */
+	case 0x80860d16:		/* GT1 Mobile 4+3 */
+	case 0x80860d26:		/* GT2 Mobile 4+3, GT3e Mobile */
+	case 0x80860d36:		/* GT3 Mobile 4+3 */
+
 		new_vendev = 0x80860406;	/* GT1 Mobile */
 		break;
 	}
@@ -299,7 +304,6 @@ static void gma_setup_panel(struct device *dev)
 	/* Setup Panel Power On Delays */
 	reg32 = gtt_read(PCH_PP_ON_DELAYS);
 	if (!reg32) {
-		reg32 = (conf->gpu_panel_port_select & 0x3) << 30;
 		reg32 |= (conf->gpu_panel_power_up_delay & 0x1fff) << 16;
 		reg32 |= (conf->gpu_panel_power_backlight_on_delay & 0x1fff);
 		gtt_write(PCH_PP_ON_DELAYS, reg32);
@@ -515,11 +519,12 @@ static const unsigned short pci_device_ids[] = {
 	0x0402, /* Desktop GT1 */
 	0x0412, /* Desktop GT2 */
 	0x0422, /* Desktop GT3 */
+	0x0d22, /* Desktop GT3e */
 	0x0406, /* Mobile GT1 */
 	0x0416, /* Mobile GT2 */
 	0x0426, /* Mobile GT3 */
 	0x0d16, /* Mobile 4+3 GT1 */
-	0x0d26, /* Mobile 4+3 GT2 */
+	0x0d26, /* Mobile 4+3 GT2, Mobile GT3e */
 	0x0d36, /* Mobile 4+3 GT3 */
 	0x0a06, /* ULT GT1 */
 	0x0a16, /* ULT GT2 */

@@ -7,10 +7,9 @@ bootblock-y += early_init.c
 
 romstage-y += dmi_setup.c
 romstage-y += early_init.c
-romstage-y += early_smbus.c
 
+ramstage-y += azalia.c
 ramstage-y += fadt.c
-ramstage-y += hdaudio.c
 ramstage-y += i82801ix.c
 ramstage-y += lpc.c
 ramstage-y += pci.c

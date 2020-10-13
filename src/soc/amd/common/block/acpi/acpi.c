@@ -4,7 +4,6 @@
 #include <amdblocks/acpi.h>
 #include <acpi/acpi.h>
 #include <bootmode.h>
-#include <cbmem.h>
 #include <console/console.h>
 #include <elog.h>
 #include <halt.h>
@@ -23,13 +22,6 @@ void poweroff(void)
 	 */
 	if (!ENV_SMM)
 		halt();
-}
-
-static uint16_t reset_pm1_status(void)
-{
-	uint16_t pm1_sts = acpi_read16(MMIO_ACPI_PM1_STS);
-	acpi_write16(MMIO_ACPI_PM1_STS, pm1_sts);
-	return pm1_sts;
 }
 
 static void print_num_status_bits(int num_bits, uint32_t status,
@@ -91,33 +83,76 @@ static void log_pm1_status(uint16_t pm1_sts)
 		elog_add_event_wake(ELOG_WAKE_SOURCE_PCIE, 0);
 }
 
-static void save_sws(uint16_t pm1_status)
+static void log_gpe_events(const struct acpi_pm_gpe_state *state)
 {
-	struct soc_power_reg *sws;
-	uint32_t reg32;
-	uint16_t reg16;
+	int i;
+	uint32_t valid_gpe = state->gpe0_sts & state->gpe0_en;
 
-	sws = cbmem_add(CBMEM_ID_POWER_STATE, sizeof(struct soc_power_reg));
-	if (sws == NULL)
-		return;
-	sws->pm1_sts = pm1_status;
-	sws->pm1_en = acpi_read16(MMIO_ACPI_PM1_EN);
-	reg32 = acpi_read32(MMIO_ACPI_GPE0_STS);
-	acpi_write32(MMIO_ACPI_GPE0_STS, reg32);
-	sws->gpe0_sts = reg32;
-	sws->gpe0_en = acpi_read32(MMIO_ACPI_GPE0_EN);
-	reg16 = acpi_read16(MMIO_ACPI_PM1_CNT_BLK);
-	reg16 &= SLP_TYP;
-	sws->wake_from = reg16 >> SLP_TYP_SHIFT;
+	for (i = 0; i <= 31; i++) {
+		if (valid_gpe & (1U << i))
+			elog_add_event_wake(ELOG_WAKE_SOURCE_GPE, i);
+	}
 }
 
-void acpi_clear_pm1_status(void)
+void acpi_fill_pm_gpe_state(struct acpi_pm_gpe_state *state)
 {
-	uint16_t pm1_sts = reset_pm1_status();
+	state->pm1_sts = acpi_read16(MMIO_ACPI_PM1_STS);
+	state->pm1_en = acpi_read16(MMIO_ACPI_PM1_EN);
+	state->gpe0_sts = acpi_read32(MMIO_ACPI_GPE0_STS);
+	state->gpe0_en = acpi_read32(MMIO_ACPI_GPE0_EN);
+	state->previous_sx_state = acpi_get_sleep_type();
+	state->aligning_field = 0;
+}
 
-	save_sws(pm1_sts);
-	log_pm1_status(pm1_sts);
-	print_pm1_status(pm1_sts);
+void acpi_pm_gpe_add_events_print_events(const struct acpi_pm_gpe_state *state)
+{
+	log_pm1_status(state->pm1_sts);
+	print_pm1_status(state->pm1_sts);
+	log_gpe_events(state);
+}
+
+void acpi_clear_pm_gpe_status(void)
+{
+	acpi_write16(MMIO_ACPI_PM1_STS, acpi_read16(MMIO_ACPI_PM1_STS));
+	acpi_write32(MMIO_ACPI_GPE0_STS, acpi_read32(MMIO_ACPI_GPE0_STS));
+}
+
+static int get_index_bit(uint32_t value, uint16_t limit)
+{
+	uint16_t i;
+	uint32_t t;
+
+	if (limit >= TOTAL_BITS(uint32_t))
+		return -1;
+
+	/* get a mask of valid bits. Ex limit = 3, set bits 0-2 */
+	t = (1 << limit) - 1;
+	if ((value & t) == 0)
+		return -1;
+	t = 1;
+	for (i = 0; i < limit; i++) {
+		if (value & t)
+			break;
+		t <<= 1;
+	}
+	return i;
+}
+
+void acpi_fill_gnvs(struct global_nvs *gnvs, const struct acpi_pm_gpe_state *state)
+{
+	int index;
+
+	index = get_index_bit(state->pm1_sts & state->pm1_en, PM1_LIMIT);
+	if (index < 0)
+		gnvs->pm1i = ~0ULL;
+	else
+		gnvs->pm1i = index;
+
+	index = get_index_bit(state->gpe0_sts & state->gpe0_en, GPE0_LIMIT);
+	if (index < 0)
+		gnvs->gpei = ~0ULL;
+	else
+		gnvs->gpei = index;
 }
 
 int acpi_get_sleep_type(void)

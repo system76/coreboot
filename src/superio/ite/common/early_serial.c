@@ -45,7 +45,6 @@ void ite_reg_write(pnp_devfn_t dev, u8 reg, u8 value)
 	pnp_exit_conf_state(dev);
 }
 
-
 /*
  * in romstage.c
  * #define CLKIN_DEV PNP_DEV(0x2e, ITE_GPIO)
@@ -90,6 +89,33 @@ void ite_enable_3vsbsw(pnp_devfn_t dev)
 	pnp_set_logical_device(dev);
 	tmp = pnp_read_config(dev, ITE_CONFIG_REG_MFC);
 	tmp |= 0x80;
+	pnp_write_config(dev, ITE_CONFIG_REG_MFC, tmp);
+	pnp_exit_conf_state(dev);
+}
+
+/*
+ *
+ * LDN 7, reg 0x2a, bit 0 - delay PWRGD3 rising edge after 3VSBSW# rising edge
+ * This can be needed for S3 resume.
+ * Documented in IT8728F V0.4.2 but also applies to IT8720F where it is marked
+ * as reserved.
+ *
+ * Delay PWRGD3 assertion after setting 3VSBSW#.
+ * 0: There will be no extra delay before PWRGD3 is set.
+ * 1: The delay after 3VSBSW# rising edge before PWRGD3 is set is increased.
+ *
+ * in romstage.c
+ * #define GPIO_DEV PNP_DEV(0x2e, ITE_GPIO)
+ * and pass: GPIO_DEV
+ */
+
+void ite_delay_pwrgd3(pnp_devfn_t dev)
+{
+	u8 tmp;
+	pnp_enter_conf_state(dev);
+	pnp_set_logical_device(dev);
+	tmp = pnp_read_config(dev, ITE_CONFIG_REG_MFC);
+	tmp |= 0x01;
 	pnp_write_config(dev, ITE_CONFIG_REG_MFC, tmp);
 	pnp_exit_conf_state(dev);
 }

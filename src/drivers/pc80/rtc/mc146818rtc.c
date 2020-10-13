@@ -6,7 +6,6 @@
 #include <fallback.h>
 #include <version.h>
 #include <console/console.h>
-#include <option.h>
 #include <pc80/mc146818rtc.h>
 #include <rtc.h>
 #include <security/vboot/vbnv.h>
@@ -144,7 +143,7 @@ static void cmos_init_vbnv(bool invalid)
 	uint8_t vbnv[VBOOT_VBNV_BLOCK_SIZE];
 
 	/* __cmos_init() will clear vbnv contents when a known rtc failure
-	   occurred with !CONFIG_USE_OPTION_TABLE. However, __cmos_init() may
+	   occurred with !CONFIG(USE_OPTION_TABLE). However, __cmos_init() may
 	   clear vbnv data for other internal reasons. For that, always back up
 	   the vbnv contents and conditionally save them when __cmos_init()
 	   indicates CMOS was cleared. */

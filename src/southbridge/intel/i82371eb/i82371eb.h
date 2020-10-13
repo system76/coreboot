@@ -39,7 +39,7 @@ void i82371eb_early_init(void);
 #define   SMBUS_IO_BASE	0x0f00
 #define SMBHSTCFG	0xd2	/* SMBus host configuration */
 
-/* Power management (ACPI) */
+/* Power management (ACPI) I/O ports, offset from PM_IO_BASE below */
 #define PMSTS		0x00	/* Power Management Status */
 #define PMEN		0x02	/* Power Management Resume Enable */
 #define   PWRBTN_EN	(1<<8)
@@ -49,8 +49,7 @@ void i82371eb_early_init(void);
 #define   SUS_TYP_MSK	(7<<10)
 #define   SUS_TYP_S0	(5<<10)
 #define   SUS_TYP_S1	(4<<10)
-#define   SUS_TYP_S2	(3<<10)
-//#define   SUS_TYP_S2>---(2<<10)
+#define   SUS_TYP_S2	(3<<10) /* S2 may also map as 2<<10 */
 #define   SUS_TYP_S3	(1<<10)
 #define   SUS_TYP_S5	(0<<10)
 #define   SCI_EN	(1<<0)
@@ -64,11 +63,11 @@ void i82371eb_early_init(void);
 #define   EXTSMI_STS	(1<<10)
 #define   GSTBY_STS	(1<<8)
 #define   GP_STS	(1<<7)
-#define   BM1_STS	(1<<6)
+#define   PM1_STS	(1<<6)
 #define   APM_STS	(1<<5)
 #define   DEV_STS	(1<<4)
-#define   BIOS_EN	(1<<1)	/* GBL_RLS write triggers SMI */
-#define   LEGACY_USB_EN	(1<<0)	/* Keyboard controller access triggers SMI */
+#define   LEGACY_USB_STS (1<<1)
+#define   BIOS_STS	(1<<0)
 #define DEVSTS		0x1c	/* Device Status */
 #define GLBEN		0x20	/* Global Enable */
 #define   EXTSMI_EN	(1<<10)	/* EXTSMI# signal triggers SMI */
@@ -86,10 +85,22 @@ void i82371eb_early_init(void);
 #define GPO2		0x36
 #define GPO3		0x37
 
+/* Power management (ACPI) PCI registers */
 #define PMBA		0x40	/* Power management base address */
 #define   DEFAULT_PMBASE	0xe400
 #define   PM_IO_BASE DEFAULT_PMBASE
+#define DEVRESA		0x5c	/* Device resource A */
+#define DEVRESB		0x60	/* Device resource B */
+#define DEVRESC		0x64	/* Device resource C */
+#define DEVRESD		0x52	/* Device resource D */
+#define DEVRESE		0x68	/* Device resource E */
+#define DEVRESF		0x6c	/* Device resource F */
+#define DEVRESG		0x70	/* Device resource G */
+#define DEVRESH		0x74	/* Device resource H */
+#define DEVRESI		0x78	/* Device resource I */
+#define DEVRESJ		0x7c	/* Device resource J */
 #define PMREGMISC	0x80	/* Miscellaneous power management */
+#define   PMIOSE	(1 << 0) /* PM I/O Space Enable */
 
 /* Bit definitions */
 #define EXT_BIOS_ENABLE_1MB	(1 << 9)  /* 1-Meg Extended BIOS Enable */
@@ -105,7 +116,5 @@ void i82371eb_early_init(void);
 #define SSDE0			(1 << 2)  /* Secondary Drive 0 UDMA/33 */
 #define SSDE1			(1 << 3)  /* Secondary Drive 1 UDMA/33 */
 #define ISA			(1 << 0)  /* Select ISA */
-#define EIO			(0 << 0)  /* Select EIO */
-#define PMIOSE			(1 << 0)  /* PM I/O Space Enable */
 
 #endif /* SOUTHBRIDGE_INTEL_I82371EB_I82371EB_H */

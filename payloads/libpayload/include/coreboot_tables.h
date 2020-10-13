@@ -31,6 +31,7 @@
 
 #include <arch/types.h>
 #include <ipchksum.h>
+#include <stdint.h>
 
 enum {
 	CB_TAG_UNUSED			= 0x0000,
@@ -395,5 +396,5 @@ static inline const char *cb_mb_part_string(const struct cb_mainboard *cbm)
 		+ (sizeof((_rec)->map[0]) * (_idx)))
 
 /* Helper functions */
-void *get_cbmem_ptr(unsigned char *ptr);
+uintptr_t get_cbmem_addr(const void *cbmem_tab_entry);
 #endif

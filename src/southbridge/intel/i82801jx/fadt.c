@@ -5,13 +5,10 @@
 #include <cpu/x86/smm.h>
 #include <version.h>
 #include <southbridge/intel/common/pmutil.h>
-#include "chip.h"
 
 void acpi_fill_fadt(acpi_fadt_t *fadt)
 {
-	struct device *dev = pcidev_on_root(0x1f, 0);
-	struct southbridge_intel_i82801jx_config *chip = dev->chip_info;
-	u16 pmbase = pci_read_config16(dev, 0x40) & 0xfffe;
+	u16 pmbase = pci_read_config16(pcidev_on_root(0x1f, 0), 0x40) & 0xfffe;
 
 	fadt->sci_int = 0x9;
 
@@ -36,7 +33,7 @@ void acpi_fill_fadt(acpi_fadt_t *fadt)
 	fadt->pm_tmr_len = 4;
 	fadt->gpe0_blk_len = 16;
 	fadt->p_lvl2_lat = 1;
-	fadt->p_lvl3_lat = chip->c3_latency;
+	fadt->p_lvl3_lat = 0;	/* FIXME: Is this correct? */
 	fadt->duty_offset = 1;
 	fadt->duty_width = 0;
 	fadt->day_alrm = 0xd;
@@ -46,8 +43,6 @@ void acpi_fill_fadt(acpi_fadt_t *fadt)
 	fadt->flags |= (ACPI_FADT_WBINVD | ACPI_FADT_C1_SUPPORTED
 		       | ACPI_FADT_SLEEP_BUTTON | ACPI_FADT_S4_RTC_WAKE
 		       | ACPI_FADT_PLATFORM_CLOCK | ACPI_FADT_C2_MP_SUPPORTED);
-	if (chip->docking_supported)
-		fadt->flags |= ACPI_FADT_DOCKING_SUPPORTED;
 
 	fadt->x_pm1a_evt_blk.space_id = ACPI_ADDRESS_SPACE_IO;
 	fadt->x_pm1a_evt_blk.bit_width = 32;

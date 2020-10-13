@@ -1,6 +1,5 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-
 #include <device/mmio.h>
 #include <soc/mtcmos.h>
 #include <soc/spm.h>
@@ -20,11 +19,6 @@ enum {
 	PWR_ON		= 1U << 2,
 	PWR_ISO		= 1U << 1,
 	PWR_RST_B	= 1U << 0
-};
-
-enum {
-	DISP_PWR_STA_MASK	= 0x1 << 3,
-	AUDIO_PWR_STA_MASK	= 0x1 << 24,
 };
 
 static void mtcmos_power_on(const struct power_domain_data *pd)

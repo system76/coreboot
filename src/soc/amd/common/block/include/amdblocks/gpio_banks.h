@@ -3,9 +3,7 @@
 #ifndef __AMDBLOCK_GPIO_BANKS_H__
 #define __AMDBLOCK_GPIO_BANKS_H__
 
-#include <stdint.h>
-#include <stdbool.h>
-#include <stddef.h>
+#include <types.h>
 
 struct soc_amd_gpio {
 	uint8_t gpio;
@@ -22,6 +20,23 @@ struct soc_amd_event {
 #define GPIO_MASTER_SWITCH	0xFC
 #define   GPIO_MASK_STS_EN	BIT(28)
 #define   GPIO_INTERRUPT_EN	BIT(30)
+#define   GPIO_WAKE_EN		BIT(31)
+
+#define GPIO_WAKE_STAT_0	0x2F0
+#define GPIO_WAKE_STAT_1	0x2F4
+struct gpio_wake_state {
+	uint32_t control_switch;
+	uint32_t wake_stat[2];
+	/* Number of wake_gpio with a valid setting. */
+	uint32_t num_valid_wake_gpios;
+	/* GPIO index number that caused a wake. */
+	uint8_t wake_gpios[16];
+};
+
+/* Fill gpio_wake_state object for future event reporting. */
+void gpio_fill_wake_state(struct gpio_wake_state *state);
+/* Add gpio events to the eventlog. */
+void gpio_add_events(const struct gpio_wake_state *state);
 
 #define GPIO_PIN_IN		(1 << 0)	/* for byte access */
 #define GPIO_PIN_OUT		(1 << 6)	/* for byte access */
@@ -54,7 +69,7 @@ struct soc_amd_event {
 #define GPIO_INT_ENABLE_STATUS		(1 << 11)
 #define GPIO_INT_ENABLE_DELIVERY	(1 << 12)
 #define GPIO_INT_ENABLE_STATUS_DELIVERY	\
-				(GPIO_INT_ENABLE_STATUS | GPIO_INT_ENABLE_STATUS_DELIVERY)
+				(GPIO_INT_ENABLE_STATUS | GPIO_INT_ENABLE_DELIVERY)
 #define GPIO_INT_ENABLE_MASK		(3 << 11)
 
 #define GPIO_S0I3_WAKE_EN	(1 << 13)
@@ -120,7 +135,6 @@ enum {
 #define GPIO_PULL_PULL_NONE 0
 
 #define AMD_GPIO_MUX_MASK			0x03
-
 
 /*
  * Flags used for GPIO configuration. These provide additional information that does not go

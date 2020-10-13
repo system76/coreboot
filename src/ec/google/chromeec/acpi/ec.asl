@@ -10,7 +10,10 @@
 #ifdef DPTF_ENABLE_CHARGER
 External (\_SB.DPTF.TCHG, DeviceObj)
 #endif
-
+/* Enable DPTC interface with AMD ALIB */
+#ifdef EC_ENABLE_AMD_DPTC_SUPPORT
+External(\_SB.DPTC, MethodObj)
+#endif
 
 Device (EC0)
 {
@@ -156,6 +159,17 @@ Device (EC0)
 
 		// Initialize LID switch state
 		Store (LIDS, \LIDS)
+
+#ifdef EC_ENABLE_AMD_DPTC_SUPPORT
+		/*
+		 * Per the device mode (clamshell or tablet) to initialize
+		 * the thermal setting on OS startup.
+		 */
+		If (CondRefOf (\_SB.DPTC)) {
+			\_SB.DPTC()
+		}
+#endif
+
 	}
 
 	/* Read requested temperature and check against EC error values */
@@ -379,6 +393,11 @@ Device (EC0)
 #endif
 #ifdef EC_ENABLE_TBMC_DEVICE
 		Notify (TBMC, 0x80)
+#endif
+#ifdef EC_ENABLE_AMD_DPTC_SUPPORT
+		If (CondRefOf (\_SB.DPTC)) {
+			\_SB.DPTC()
+		}
 #endif
 	}
 

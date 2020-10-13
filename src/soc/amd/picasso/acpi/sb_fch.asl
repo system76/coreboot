@@ -122,6 +122,18 @@ Device (FUR0)
 			Return (Local0)
 		}
 	}
+
+	Name (_PR0, Package () { \_SB.AOAC.FUR0 })
+	Name (_PR2, Package () { \_SB.AOAC.FUR0 })
+	Name (_PR3, Package () { \_SB.AOAC.FUR0 })
+	Method (_PS0, 0, Serialized) {
+		Printf("FUR0._PS0")
+		\_SB.AOAC.FUR0.TDS = 1
+	}
+	Method (_PS3, 0, Serialized) {
+		Printf("FUR0._PS3")
+		\_SB.AOAC.FUR0.TDS = 3
+	}
 }
 
 Device (FUR1) {
@@ -351,6 +363,14 @@ Device (MISC)
 	Name (_UID, 0x3)
 	Name (_CRS, ResourceTemplate() {
 		Memory32Fixed (ReadWrite, ACPIMMIO_MISC_BASE, 0x100)
+	})
+	Name (_DSD, Package ()
+	{
+		ToUUID ("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
+		Package ()
+		{
+			Package () { "is-rv", 1 },
+		},
 	})
 	Method (_STA, 0x0, NotSerialized)
 	{

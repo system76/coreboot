@@ -10,7 +10,7 @@ DefinitionBlock(
 	0x20110725	// OEM revision
 )
 {
-	#include <soc/intel/skylake/acpi/platform.asl>
+	#include <soc/intel/common/block/acpi/acpi/platform.asl>
 
 	// global NVS and variables
 	#include <soc/intel/skylake/acpi/globalnvs.asl>
@@ -41,7 +41,4 @@ DefinitionBlock(
 #endif
 
 	#include <southbridge/intel/common/acpi/sleepstates.asl>
-
-	// Mainboard specific
-	#include "acpi/mainboard.asl"
 }

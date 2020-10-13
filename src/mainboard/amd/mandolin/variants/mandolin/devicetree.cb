@@ -5,18 +5,108 @@ chip soc/amd/picasso
 
 	# Set FADT Configuration
 	register "fadt_boot_arch" = "ACPI_FADT_LEGACY_DEVICES | ACPI_FADT_8042"
-	register "fadt_flags" = "ACPI_FADT_WBINVD | /* See table 5-10 ACPI 3.0a spec */
-				ACPI_FADT_C1_SUPPORTED |
-				ACPI_FADT_SLEEP_BUTTON |
-				ACPI_FADT_S4_RTC_WAKE |
-				ACPI_FADT_32BIT_TIMER |
-				ACPI_FADT_RESET_REGISTER |
-				ACPI_FADT_PCI_EXPRESS_WAKE |
-				ACPI_FADT_PLATFORM_CLOCK |
-				ACPI_FADT_S4_RTC_VALID |
-				ACPI_FADT_REMOTE_POWER_ON"
+	register "fadt_flags" = "ACPI_FADT_SLEEP_BUTTON" # See table 5-34 ACPI 6.3 spec
 
-	register "sd_emmc_config" = "SD_EMMC_DISABLE"
+	register "emmc_config" = "{
+		.timing = SD_EMMC_DISABLE,
+	}"
+
+	register "has_usb2_phy_tune_params" = "1"
+
+	# Controller0 Port0 Default
+	register "usb_2_port_tune_params[0]" = "{
+		.com_pds_tune = 0x03,
+		.sq_rx_tune = 0x3,
+		.tx_fsls_tune = 0x3,
+		.tx_pre_emp_amp_tune = 0x03,
+		.tx_pre_emp_pulse_tune = 0x0,
+		.tx_rise_tune = 0x1,
+		.rx_vref_tune = 0x6,
+		.tx_hsxv_tune = 0x3,
+		.tx_res_tune = 0x01,
+	}"
+
+	# Controller0 Port1 Default
+	register "usb_2_port_tune_params[1]" = "{
+		.com_pds_tune = 0x03,
+		.sq_rx_tune = 0x3,
+		.tx_fsls_tune = 0x3,
+		.tx_pre_emp_amp_tune = 0x03,
+		.tx_pre_emp_pulse_tune = 0x0,
+		.tx_rise_tune = 0x1,
+		.rx_vref_tune = 0x6,
+		.tx_hsxv_tune = 0x3,
+		.tx_res_tune = 0x01,
+	}"
+
+	# Controller0 Port2 Default
+	register "usb_2_port_tune_params[2]" = "{
+		.com_pds_tune = 0x03,
+		.sq_rx_tune = 0x3,
+		.tx_fsls_tune = 0x3,
+		.tx_pre_emp_amp_tune = 0x03,
+		.tx_pre_emp_pulse_tune = 0x0,
+		.tx_rise_tune = 0x1,
+		.rx_vref_tune = 0x6,
+		.tx_hsxv_tune = 0x3,
+		.tx_res_tune = 0x01,
+	}"
+
+	# Controller0 Port3 Default
+	register "usb_2_port_tune_params[3]" = "{
+		.com_pds_tune = 0x03,
+		.sq_rx_tune = 0x3,
+		.tx_fsls_tune = 0x3,
+		.tx_pre_emp_amp_tune = 0x03,
+		.tx_pre_emp_pulse_tune = 0x0,
+		.tx_rise_tune = 0x1,
+		.rx_vref_tune = 0x6,
+		.tx_hsxv_tune = 0x3,
+		.tx_res_tune = 0x01,
+	}"
+
+	# Controller1 Port0 Default
+	register "usb_2_port_tune_params[4]" = "{
+		.com_pds_tune = 0x03,
+		.sq_rx_tune = 0x3,
+		.tx_fsls_tune = 0x3,
+		.tx_pre_emp_amp_tune = 0x02,
+		.tx_pre_emp_pulse_tune = 0x0,
+		.tx_rise_tune = 0x1,
+		.rx_vref_tune = 0x5,
+		.tx_hsxv_tune = 0x3,
+		.tx_res_tune = 0x01,
+	}"
+
+	# Controller1 Port1 Default
+	register "usb_2_port_tune_params[5]" = "{
+		.com_pds_tune = 0x03,
+		.sq_rx_tune = 0x3,
+		.tx_fsls_tune = 0x3,
+		.tx_pre_emp_amp_tune = 0x02,
+		.tx_pre_emp_pulse_tune = 0x0,
+		.tx_rise_tune = 0x1,
+		.rx_vref_tune = 0x5,
+		.tx_hsxv_tune = 0x3,
+		.tx_res_tune = 0x01,
+	}"
+
+	# USB OC pin mapping; all ports share one OC pin
+	register "usb_port_overcurrent_pin[0]" = "USB_OC_PIN_0"
+	register "usb_port_overcurrent_pin[1]" = "USB_OC_PIN_0"
+	register "usb_port_overcurrent_pin[2]" = "USB_OC_PIN_0"
+	register "usb_port_overcurrent_pin[3]" = "USB_OC_PIN_0"
+	register "usb_port_overcurrent_pin[4]" = "USB_OC_PIN_0"
+	register "usb_port_overcurrent_pin[5]" = "USB_OC_PIN_0"
+
+	# SPI Configuration
+	register "common_config.spi_config" = "{
+		.normal_speed = SPI_SPEED_33M, /* MHz */
+		.fast_speed = SPI_SPEED_66M, /* MHz */
+		.altio_speed = SPI_SPEED_33M, /* MHz */
+		.tpm_speed = SPI_SPEED_33M, /* MHz */
+		.read_mode = SPI_READ_MODE_QUAD114,
+	}"
 
 	# eSPI Configuration
 	register "common_config.espi_config" = "{
@@ -35,6 +125,15 @@ chip soc/amd/picasso
 		.oob_ch_en = 0,
 		.flash_ch_en = 0,
 	}"
+
+	# genral purpose PCIe clock output configuration
+	register "gpp_clk_config[0]" = "GPP_CLK_REQ"
+	register "gpp_clk_config[1]" = "GPP_CLK_REQ"
+	register "gpp_clk_config[2]" = "GPP_CLK_REQ"
+	register "gpp_clk_config[3]" = "GPP_CLK_REQ"
+	register "gpp_clk_config[4]" = "GPP_CLK_REQ"
+	register "gpp_clk_config[5]" = "GPP_CLK_REQ"
+	register "gpp_clk_config[6]" = "GPP_CLK_REQ"
 
 	device cpu_cluster 0 on
 		device lapic 0 on end
@@ -76,4 +175,10 @@ chip soc/amd/picasso
 		device pci 18.6 on  end
 		device pci 18.7 on  end
 	end # domain
+
+	device mmio 0xfedc9000 on  end # UART0
+	device mmio 0xfedca000 on  end # UART1
+	device mmio 0xfedce000 off end # UART2
+	device mmio 0xfedcf000 off end # UART3
+
 end	# chip soc/amd/picasso

@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+#include <amdblocks/spi.h>
 #include <console/console.h>
 #include <device/mmio.h>
 #include <bootstate.h>
@@ -256,47 +257,34 @@ void sb_clk_output_48Mhz(u32 osc)
 	misc_write32(MISC_CLK_CNTL1, ctrl);
 }
 
-static uintptr_t sb_init_spi_base(void)
+static void sb_init_spi_base(void)
 {
-	uintptr_t base;
-
 	/* Make sure the base address is predictable */
-	base = lpc_get_spibase();
-
-	if (base)
-		return base;
-
-	lpc_set_spibase(SPI_BASE_ADDRESS);
+	if (ENV_X86)
+		lpc_set_spibase(SPI_BASE_ADDRESS);
 	lpc_enable_spi_rom(SPI_ROM_ENABLE);
-
-	return SPI_BASE_ADDRESS;
 }
 
 void sb_set_spi100(u16 norm, u16 fast, u16 alt, u16 tpm)
 {
-	uintptr_t base = sb_init_spi_base();
-	write16((void *)(base + SPI100_SPEED_CONFIG),
+	spi_write16(SPI100_SPEED_CONFIG,
 				(norm << SPI_NORM_SPEED_NEW_SH) |
 				(fast << SPI_FAST_SPEED_NEW_SH) |
 				(alt << SPI_ALT_SPEED_NEW_SH) |
 				(tpm << SPI_TPM_SPEED_NEW_SH));
-	write16((void *)(base + SPI100_ENABLE), SPI_USE_SPI100);
+	spi_write16(SPI100_ENABLE, SPI_USE_SPI100);
 }
 
 void sb_disable_4dw_burst(void)
 {
-	uintptr_t base = sb_init_spi_base();
-	write16((void *)(base + SPI100_HOST_PREF_CONFIG),
-			read16((void *)(base + SPI100_HOST_PREF_CONFIG))
-					& ~SPI_RD4DW_EN_HOST);
+	spi_write16(SPI100_HOST_PREF_CONFIG,
+			spi_read16(SPI100_HOST_PREF_CONFIG) & ~SPI_RD4DW_EN_HOST);
 }
 
 void sb_read_mode(u32 mode)
 {
-	uintptr_t base = sb_init_spi_base();
-	write32((void *)(base + SPI_CNTRL0),
-			(read32((void *)(base + SPI_CNTRL0))
-					& ~SPI_READ_MODE_MASK) | mode);
+	spi_write32(SPI_CNTRL0,
+			(spi_read32(SPI_CNTRL0) & ~SPI_READ_MODE_MASK) | mode);
 }
 
 static void setup_spread_spectrum(int *reboot)
@@ -513,59 +501,36 @@ static void sb_init_acpi_ports(void)
 				PM_ACPI_TIMER_EN_EN);
 }
 
-static int get_index_bit(uint32_t value, uint16_t limit)
-{
-	uint16_t i;
-	uint32_t t;
-
-	if (limit >= TOTAL_BITS(uint32_t))
-		return -1;
-
-	/* get a mask of valid bits. Ex limit = 3, set bits 0-2 */
-	t = (1 << limit) - 1;
-	if ((value & t) == 0)
-		return -1;
-	t = 1;
-	for (i = 0; i < limit; i++) {
-		if (value & t)
-			break;
-		t <<= 1;
-	}
-	return i;
-}
-
 static void set_nvs_sws(void *unused)
 {
-	struct soc_power_reg *sws;
+	struct acpi_pm_gpe_state *state;
 	struct global_nvs *gnvs;
-	int index;
 
-	sws = cbmem_find(CBMEM_ID_POWER_STATE);
-	if (sws == NULL)
+	state = cbmem_find(CBMEM_ID_POWER_STATE);
+	if (state == NULL)
 		return;
 	gnvs = acpi_get_gnvs();
 	if (gnvs == NULL)
 		return;
 
-	index = get_index_bit(sws->pm1_sts & sws->pm1_en, PM1_LIMIT);
-	if (index < 0)
-		gnvs->pm1i = ~0ULL;
-	else
-		gnvs->pm1i = index;
-
-	index = get_index_bit(sws->gpe0_sts & sws->gpe0_en, GPE0_LIMIT);
-	if (index < 0)
-		gnvs->gpei = ~0ULL;
-	else
-		gnvs->gpei = index;
+	acpi_fill_gnvs(gnvs, state);
 }
 
 BOOT_STATE_INIT_ENTRY(BS_OS_RESUME, BS_ON_ENTRY, set_nvs_sws, NULL);
 
 void southbridge_init(void *chip_info)
 {
+	struct acpi_pm_gpe_state *state;
+
 	sb_init_acpi_ports();
-	acpi_clear_pm1_status();
+
+	state = cbmem_add(CBMEM_ID_POWER_STATE, sizeof(*state));
+	if (state) {
+		acpi_fill_pm_gpe_state(state);
+		acpi_pm_gpe_add_events_print_events(state);
+	}
+
+	acpi_clear_pm_gpe_status();
 }
 
 static void set_sb_final_nvs(void)

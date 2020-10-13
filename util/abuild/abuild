@@ -263,10 +263,8 @@ function update_config
 	# Disable all other payload config options
 	{
 		echo "# CONFIG_PAYLOAD_SEABIOS is not set"
-		echo "# CONFIG_PAYLOAD_BAYOU is not set"
 		echo "# CONFIG_PAYLOAD_FILO is not set"
 		echo "# CONFIG_PAYLOAD_GRUB2 is not set"
-		echo "# CONFIG_PAYLOAD_OPENBIOS is not set"
 		echo "# CONFIG_PAYLOAD_DEPTHCHARGE is not set"
 		echo "# CONFIG_PAYLOAD_LINUXBOOT is not set"
 		echo "# CONFIG_PAYLOAD_UBOOT is not set"
@@ -769,7 +767,7 @@ if ! mkdir -p "$TARGET"; then
 	exit 1
 fi
 
-$MAKE -C"${ROOT}" .xcompile || exit 1
+$MAKE -C"${ROOT}" UPDATED_SUBMODULES=1 .xcompile || exit 1
 
 customizing=$(echo "$customizing" | cut -c3-)
 if [ "$customizing" = "" ]; then
@@ -823,7 +821,7 @@ build_targets()
 	printf "%s" "$configoptions" > "$TMPCFG"
 	$MAKE -j "$cpus" DOTCONFIG="$TMPCFG" obj="$TARGET/temp" objutil="$TARGET/sharedutils" allnoconfig
 	printf "%s" "$configoptions" >> "$TMPCFG"
-	yes "" 2>/dev/null | $MAKE -j "$cpus" DOTCONFIG="$TMPCFG" obj="$TARGET/temp" objutil="$TARGET/sharedutils" oldconfig 2>/dev/null |head > /dev/null
+	yes "" 2>/dev/null | $MAKE -j "$cpus" DOTCONFIG="$TMPCFG" obj="$TARGET/temp" objutil="$TARGET/sharedutils" oldconfig
 	BUILDPREFIX=
 	if [ "$scanbuild" = "true" ]; then
 		scanbuild_out=$TARGET/sharedutils-scanbuild
@@ -852,6 +850,7 @@ build_targets()
 		junit "</failure>"
 		junit "</testcase>"
 		echo "Shared Utilities - Log: $TARGET/sharedutils/make.log" >> "$FAILED_BOARDS"
+		rm "$TMPCFG"
 		return
 	fi
 

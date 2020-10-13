@@ -47,6 +47,22 @@ config SOC_INTEL_COMETLAKE
 	help
 	  Intel Cometlake support
 
+config SOC_INTEL_COMETLAKE_1
+	bool
+	select SOC_INTEL_COMETLAKE
+
+config SOC_INTEL_COMETLAKE_2
+	bool
+	select SOC_INTEL_COMETLAKE
+
+config SOC_INTEL_COMETLAKE_S
+	bool
+	select SOC_INTEL_COMETLAKE
+
+config SOC_INTEL_COMETLAKE_V
+	bool
+	select SOC_INTEL_COMETLAKE
+
 config SOC_INTEL_CANNONLAKE_PCH_H
 	bool
 	help
@@ -58,11 +74,7 @@ config CPU_SPECIFIC_OPTIONS
 	def_bool y
 	select ACPI_INTEL_HARDWARE_SLEEP_VALUES
 	select ACPI_NHLT
-	select ARCH_BOOTBLOCK_X86_32
-	select ARCH_RAMSTAGE_X86_32
-	select ARCH_ROMSTAGE_X86_32
-	select ARCH_VERSTAGE_X86_32
-	select BOOT_DEVICE_SPI_FLASH_RW_NOMMAP_EARLY if BOOT_DEVICE_SPI_FLASH
+	select ARCH_ALL_STAGES_X86_32
 	select BOOT_DEVICE_SUPPORTS_WRITES
 	select CACHE_MRC_SETTINGS
 	select CPU_INTEL_COMMON
@@ -83,8 +95,8 @@ config CPU_SPECIFIC_OPTIONS
 	select PARALLEL_MP_AP_WORK
 	select PLATFORM_USES_FSP2_0
 	select REG_SCRIPT
-	select SMP
 	select PMC_GLOBAL_RESET_ENABLE_LOCK
+	select PMC_LOW_POWER_MODE_PROGRAM
 	select SOC_INTEL_COMMON
 	select SOC_INTEL_COMMON_ACPI_WAKE_SOURCE
 	select SOC_INTEL_COMMON_BLOCK
@@ -295,7 +307,7 @@ choice
 config USE_CANNONLAKE_CAR_NEM_ENHANCED
 	bool "Enhanced Non-evict mode"
 	select SOC_INTEL_COMMON_BLOCK_CAR
-	select INTEL_CAR_NEM_ENHANCED
+	select USE_CAR_NEM_ENHANCED_V1
 	help
 	  A current limitation of NEM (Non-Evict mode) is that code and data
 	  sizes are derived from the requirement to not write out any modified
@@ -314,12 +326,18 @@ endchoice
 
 config FSP_HEADER_PATH
 	default "3rdparty/fsp/CoffeeLakeFspBinPkg/Include/" if SOC_INTEL_COFFEELAKE || SOC_INTEL_WHISKEYLAKE
-	default "3rdparty/fsp/CometLakeFspBinPkg/CometLake1/Include/" if SOC_INTEL_COMETLAKE
+	default "3rdparty/fsp/CometLakeFspBinPkg/CometLake1/Include/" if SOC_INTEL_COMETLAKE_1
+	default "3rdparty/fsp/CometLakeFspBinPkg/CometLake2/Include/" if SOC_INTEL_COMETLAKE_2
+	default "3rdparty/fsp/CometLakeFspBinPkg/CometLakeS/Include/" if SOC_INTEL_COMETLAKE_S
+	default "3rdparty/fsp/CometLakeFspBinPkg/CometLakeV/Include/" if SOC_INTEL_COMETLAKE_V
 	default "src/vendorcode/intel/fsp/fsp2_0/cannonlake/" if SOC_INTEL_CANNONLAKE
 
 config FSP_FD_PATH
 	default "3rdparty/fsp/CoffeeLakeFspBinPkg/Fsp.fd" if SOC_INTEL_COFFEELAKE || SOC_INTEL_WHISKEYLAKE
-	default "3rdparty/fsp/CometLakeFspBinPkg/CometLake1/FSP.fd" if SOC_INTEL_COMETLAKE
+	default "3rdparty/fsp/CometLakeFspBinPkg/CometLake1/Fsp.fd" if SOC_INTEL_COMETLAKE_1
+	default "3rdparty/fsp/CometLakeFspBinPkg/CometLake2/Fsp.fd" if SOC_INTEL_COMETLAKE_2
+	default "3rdparty/fsp/CometLakeFspBinPkg/CometLakeS/Fsp.fd" if SOC_INTEL_COMETLAKE_S
+	default "3rdparty/fsp/CometLakeFspBinPkg/CometLakeV/Fsp.fd" if SOC_INTEL_COMETLAKE_V
 
 config SOC_INTEL_CANNONLAKE_DEBUG_CONSENT
 	int "Debug Consent for CNL"

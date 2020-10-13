@@ -3,10 +3,20 @@
 #ifndef DEVICE_AZALIA_H
 #define DEVICE_AZALIA_H
 
-#include <types.h>
 #include <acpi/acpi.h>
 #include <device/mmio.h>
 #include <device/device.h>
+#include <stdint.h>
+
+#define HDA_GCAP_REG		0x00
+#define HDA_GCTL_REG		0x08
+#define   HDA_GCTL_CRST		(1 << 0)
+#define HDA_STATESTS_REG	0x0e
+#define HDA_IC_REG		0x60
+#define HDA_IR_REG		0x64
+#define HDA_ICII_REG		0x68
+#define   HDA_ICII_BUSY		(1 << 0)
+#define   HDA_ICII_VALID	(1 << 1)
 
 void azalia_audio_init(struct device *dev);
 extern struct device_operations default_azalia_audio_ops;
@@ -101,7 +111,7 @@ enum azalia_pin_location_2 {
 	 ((type) << 16) | \
 	 ((color) << 12) | \
 	 ((no_presence_detect) << 8) | \
-	 ((sequence) << 4) | \
+	 ((association) << 4) | \
 	 ((sequence) << 0))
 
 #define AZALIA_ARRAY_SIZES const u32 pc_beep_verbs_size =	\
@@ -117,6 +127,8 @@ enum azalia_pin_location_2 {
 		| (((val) >> 16) & 0xff)),		\
 	(((codec) << 28) | ((pin) << 20) | (0x71f << 8)	\
 		| (((val) >> 24) & 0xff))
+
+#define AZALIA_PIN_CFG_NC(n)   (0x411111f0 | (n & 0xf))
 
 #define AZALIA_RESET(pin)					\
 	(((pin) << 20) | 0x7ff00), (((pin) << 20) | 0x7ff00),	\

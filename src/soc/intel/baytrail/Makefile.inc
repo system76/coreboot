@@ -49,7 +49,12 @@ ramstage-y += smm.c
 ramstage-y += southcluster.c
 ramstage-y += xhci.c
 ramstage-$(CONFIG_ELOG) += elog.c
-ramstage-$(CONFIG_HAVE_REFCODE_BLOB) += refcode.c
+
+ifeq ($(CONFIG_HAVE_REFCODE_BLOB),y)
+ramstage-y += refcode.c
+else
+ramstage-y += modphy_table.c refcode_native.c
+endif
 
 smm-y += iosf.c
 smm-y += pmutil.c
@@ -61,7 +66,8 @@ ramstage-y += placeholders.c
 
 postcar-y += ../../../cpu/intel/car/non-evict/exit_car.S
 
-cpu_microcode_bins += 3rdparty/blobs/soc/intel/baytrail/microcode.bin
+cpu_microcode_bins += 3rdparty/blobs/soc/intel/baytrail/microcode.bin \
+	3rdparty/intel-microcode/intel-ucode/06-37-09
 
 CPPFLAGS_common += -Isrc/soc/intel/baytrail/include
 

@@ -195,7 +195,11 @@ endif # CONFIG_ARCH_ROMSTAGE_X86_32 / CONFIG_ARCH_ROMSTAGE_X86_64
 # postcar
 ###############################################################################
 
+ifeq ($(CONFIG_ARCH_POSTCAR_X86_32),y)
 $(eval $(call create_class_compiler,postcar,x86_32))
+else
+$(eval $(call create_class_compiler,postcar,x86_64))
+endif
 postcar-generic-ccopts += -D__POSTCAR__
 
 postcar-$(CONFIG_HAVE_ACPI_RESUME) += acpi_s3.c
@@ -241,6 +245,7 @@ ramstage-$(CONFIG_ACPI_BERT) += acpi_bert_storage.c
 ramstage-y += boot.c
 ramstage-y += post.c
 ramstage-y += c_start.S
+ramstage-y += c_exit.S
 ramstage-y += cpu.c
 ramstage-y += cpu_common.c
 ramstage-y += ebda.c
@@ -255,6 +260,7 @@ ramstage-$(CONFIG_GENERATE_MP_TABLE) += mpspec.c
 ramstage-$(CONFIG_GENERATE_PIRQ_TABLE) += pirq_routing.c
 ramstage-y += rdrand.c
 ramstage-$(CONFIG_GENERATE_SMBIOS_TABLES) += smbios.c
+ramstage-$(CONFIG_GENERATE_SMBIOS_TABLES) += smbios_defaults.c
 ramstage-y += tables.c
 ramstage-$(CONFIG_COOP_MULTITASKING) += thread.c
 ramstage-$(CONFIG_COOP_MULTITASKING) += thread_switch.S

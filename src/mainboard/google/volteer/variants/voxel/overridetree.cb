@@ -1,6 +1,70 @@
 chip soc/intel/tigerlake
+	register "DdiPort1Hpd" = "0"
+	register "DdiPort2Hpd" = "0"
+	register "tcc_offset" = "5"     # TCC of 95
+
+	register "power_limits_config[POWER_LIMITS_U_2_CORE]" = "{
+		.tdp_pl1_override = 18,
+		.tdp_pl2_override = 51,
+		.tdp_pl4 = 71,
+	}"
+	register "power_limits_config[POWER_LIMITS_U_4_CORE]" = "{
+		.tdp_pl1_override = 18,
+		.tdp_pl2_override = 51,
+		.tdp_pl4 = 105,
+	}"
+
 	device domain 0 on
-		device pci 15.0 on
+		device ref dptf on
+			chip drivers/intel/dptf
+				## Active Policy
+				register "policies.active" = "{
+					[0] = {.target = DPTF_CPU,
+					       .thresholds = {TEMP_PCT(94, 100),}},
+					[1] = {.target = DPTF_TEMP_SENSOR_2,
+					       .thresholds = {TEMP_PCT(64, 100),
+							      TEMP_PCT(60, 90),
+							      TEMP_PCT(56, 80),
+							      TEMP_PCT(52, 70),
+							      TEMP_PCT(48, 60),
+							      TEMP_PCT(44, 50),
+							      TEMP_PCT(40, 40),}}}"
+
+				## Passive Policy
+				register "policies.passive" = "{
+					[0] = DPTF_PASSIVE(CPU,	CPU,	       95, 5000),
+					[1] = DPTF_PASSIVE(CPU,	TEMP_SENSOR_1, 65, 6000),
+					[2] = DPTF_PASSIVE(CHARGER,	TEMP_SENSOR_0, 65, 6000),
+					[3] = DPTF_PASSIVE(CPU,	TEMP_SENSOR_2, 54, 6000),
+					[4] = DPTF_PASSIVE(CPU,	TEMP_SENSOR_3, 65, 6000)}"
+
+				## Critical Policy
+				register "policies.critical" = "{
+					[0] = DPTF_CRITICAL(CPU,	       100, SHUTDOWN),
+					[1] = DPTF_CRITICAL(TEMP_SENSOR_0,	75, SHUTDOWN),
+					[2] = DPTF_CRITICAL(TEMP_SENSOR_1,	75, SHUTDOWN),
+					[3] = DPTF_CRITICAL(TEMP_SENSOR_2,	75, SHUTDOWN),
+					[4] = DPTF_CRITICAL(TEMP_SENSOR_3,	75, SHUTDOWN)}"
+
+				## Power Limits Control
+				# 12-18W PL1 in 200mW increments, avg over 28-32s interval
+				# PL2 is fixed at 51W, avg over 28-32s interval
+				register "controls.power_limits" = "{
+					.pl1 = {.min_power = 12000,
+						.max_power = 18000,
+						.time_window_min = 28 * MSECS_PER_SEC,
+						.time_window_max = 32 * MSECS_PER_SEC,
+						.granularity = 200,},
+					.pl2 = {.min_power = 15000,
+						.max_power = 51000,
+						.time_window_min = 28 * MSECS_PER_SEC,
+						.time_window_max = 32 * MSECS_PER_SEC,
+						.granularity = 1000,}}"
+
+				device generic 0 on end
+			end
+		end
+		device ref i2c0 on
 			chip drivers/i2c/generic
 				register "hid" = ""10EC5682""
 				register "name" = ""RT58""
@@ -32,8 +96,8 @@ chip soc/intel/tigerlake
 				device i2c 32 on
 				end
 			end
-		end # I2C #0			0xA0E8
-		device pci 15.1 on
+		end
+		device ref i2c1 on
 			chip drivers/i2c/hid
 				register "generic.hid" = ""GDIX0000""
 				register "generic.desc" = ""Goodix Touchscreen""
@@ -63,8 +127,22 @@ chip soc/intel/tigerlake
 				register "hid_desc_reg_offset" = "0x01"
 				device i2c 10 on end
 			end
-		end # I2C1				0xA0E9
-		device pci 15.2 on
+			chip drivers/i2c/generic
+				register "hid" = ""RAYD0001""
+				register "desc" = ""Raydium Touchscreen""
+				register "irq" = "ACPI_IRQ_EDGE_LOW(GPP_E7_IRQ)"
+				register "probed" = "1"
+				register "reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_C10)"
+				register "reset_delay_ms" = "1"
+				register "reset_off_delay_ms" = "2"
+				register "enable_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_A8)"
+				register "enable_delay_ms" = "10"
+				register "enable_off_delay_ms" = "1"
+				register "has_power_resource" = "1"
+				device i2c 39 on end
+			end
+		end
+		device ref i2c2 on
 			chip drivers/i2c/sx9310
 				register "desc" = ""SAR0 Proximity Sensor""
 				register "irq" = "ACPI_IRQ_LEVEL_LOW(GPP_F14_IRQ)"
@@ -95,8 +173,8 @@ chip soc/intel/tigerlake
 				register "reg_sar_ctrl2" = "0x3c"
 				device i2c 28 on end
 			end
-		end # I2C2				0xA0EA
-		device pci 19.1 on
+		end
+		device ref i2c5 on
 			chip drivers/i2c/generic
 				register "hid" = ""ELAN0000""
 				register "desc" = ""ELAN Touchpad""
@@ -105,8 +183,8 @@ chip soc/intel/tigerlake
 				register "probed" = "1"
 				device i2c 15 on end
 			end
-		end # I2C5				0xA0C6
-		device pci 1f.2 hidden
+		end
+		device ref pmc hidden
 			# The pmc_mux chip driver is a placeholder for the
 			# PMC.MUX device in the ACPI hierarchy.
 			chip drivers/intel/pmc_mux
@@ -127,6 +205,6 @@ chip soc/intel/tigerlake
 					end
 				end
 			end
-		end # PMC
+		end
 	end
 end

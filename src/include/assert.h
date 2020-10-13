@@ -5,6 +5,7 @@
 
 #include <arch/hlt.h>
 #include <console/console.h>
+#include <stdint.h>
 
 /* TODO: Fix vendorcode headers to not define macros coreboot uses or to be more
    properly isolated. */
@@ -12,31 +13,48 @@
 #undef ASSERT
 #endif
 
+/* Do not use filenames nor line numbers on timeless builds, to preserve reproducibility */
+#if ENV_TIMELESS
+#define __ASSERT_FILE__ "(filenames not available on timeless builds)"
+#define __ASSERT_LINE__ 404
+#else
+#define __ASSERT_FILE__ __FILE__
+#define __ASSERT_LINE__ __LINE__
+#endif
+
+#ifndef _PORTING_H_	/* TODO: Isolate AGESA properly. */
+#define __build_time_assert(x) \
+	(__builtin_constant_p(x) ? ((x) ? 1 : dead_code_t(int)) : 0)
+#else
+#define __build_time_assert(x) 0
+#endif
+
 /* GCC and CAR versions */
-#define ASSERT(x) {						\
-	if (!(x)) {						\
-		printk(BIOS_EMERG, "ASSERTION ERROR: file '%s'"	\
-			", line %d\n", __FILE__, __LINE__);	\
-		if (CONFIG(FATAL_ASSERTS))		\
-			hlt();					\
-	}							\
+#define ASSERT(x) {							\
+	if (!__build_time_assert(x) && !(x)) {				\
+		printk(BIOS_EMERG,					\
+			"ASSERTION ERROR: file '%s', line %d\n",	\
+			__ASSERT_FILE__, __ASSERT_LINE__);		\
+		if (CONFIG(FATAL_ASSERTS))				\
+			hlt();						\
+	}								\
 }
-
-#define ASSERT_MSG(x, msg) {					\
-	if (!(x)) {						\
-		printk(BIOS_EMERG, "ASSERTION ERROR: file '%s'"	\
-			", line %d\n", __FILE__, __LINE__);	\
-		printk(BIOS_EMERG, "%s", msg);                  \
-		if (CONFIG(FATAL_ASSERTS))			\
-			hlt();					\
-	}							\
+#define ASSERT_MSG(x, msg) {						\
+	if (!__build_time_assert(x) && !(x)) {				\
+		printk(BIOS_EMERG,					\
+			"ASSERTION ERROR: file '%s', line %d\n",	\
+			__ASSERT_FILE__, __ASSERT_LINE__);		\
+		printk(BIOS_EMERG, "%s", msg);				\
+		if (CONFIG(FATAL_ASSERTS))				\
+			hlt();						\
+	}								\
 }
-
-#define BUG() {							\
-	printk(BIOS_EMERG, "ERROR: BUG ENCOUNTERED at file '%s'"\
-		", line %d\n", __FILE__, __LINE__);		\
-	if (CONFIG(FATAL_ASSERTS))			\
-		hlt();						\
+#define BUG() {								\
+	printk(BIOS_EMERG,						\
+		"ERROR: BUG ENCOUNTERED at file '%s', line %d\n",	\
+		__ASSERT_FILE__, __ASSERT_LINE__);			\
+	if (CONFIG(FATAL_ASSERTS))					\
+		hlt();							\
 }
 
 #define assert(statement)	ASSERT(statement)
@@ -62,4 +80,15 @@ extern void _dead_code_assertion_failed(void) __attribute__((noreturn));
 	*(type *)(uintptr_t)0; \
 })
 
+#ifdef __x86_64__
+#define pointer_to_uint32_safe(x) ({ \
+	if ((uintptr_t)(x) > 0xffffffffUL) \
+		die("Cast from pointer to uint32_t overflows"); \
+	(uint32_t)(uintptr_t)(x); \
+})
+#else
+#define pointer_to_uint32_safe(x) ({ \
+	(uint32_t)(uintptr_t)(x); \
+})
+#endif
 #endif // __ASSERT_H__

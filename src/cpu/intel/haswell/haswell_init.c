@@ -618,7 +618,7 @@ static void set_max_ratio(void)
 	}
 	wrmsr(IA32_PERF_CTL, perf_ctl);
 
-	printk(BIOS_DEBUG, "haswell: frequency set to %d\n",
+	printk(BIOS_DEBUG, "CPU: frequency set to %d\n",
 	       ((perf_ctl.lo >> 8) & 0xff) * HASWELL_BCLK);
 }
 
@@ -638,8 +638,7 @@ static void set_energy_perf_bias(u8 policy)
 	msr.lo |= policy & 0xf;
 	wrmsr(IA32_ENERGY_PERF_BIAS, msr);
 
-	printk(BIOS_DEBUG, "haswell: energy policy set to %u\n",
-	       policy);
+	printk(BIOS_DEBUG, "CPU: energy policy set to %u\n", policy);
 }
 
 static void configure_mca(void)
@@ -778,6 +777,8 @@ static const struct cpu_device_id cpu_table[] = {
 	{ X86_VENDOR_INTEL, 0x306c3 }, /* Intel Haswell C0 */
 	{ X86_VENDOR_INTEL, 0x40650 }, /* Intel Haswell ULT B0 */
 	{ X86_VENDOR_INTEL, 0x40651 }, /* Intel Haswell ULT B1 */
+	{ X86_VENDOR_INTEL, 0x40660 }, /* Intel Crystal Well C0 */
+	{ X86_VENDOR_INTEL, 0x40661 }, /* Intel Crystal Well C1 */
 	{ 0, 0 },
 };
 

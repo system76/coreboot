@@ -84,8 +84,8 @@ struct soc_intel_xeon_sp_cpx_config {
 
 	uint32_t pstate_req_ratio;
 
-	uint32_t coherency_support;
-	uint32_t ats_support;
+	uint8_t vtd_support;
+	uint8_t x2apic;
 
 	/* Generic IO decode ranges */
 	uint32_t gen1_dec;
@@ -98,5 +98,11 @@ struct soc_intel_xeon_sp_cpx_config {
 };
 
 typedef struct soc_intel_xeon_sp_cpx_config config_t;
+
+/* soc acpi function prototypes. To be removed when acpi.c is replaced by common/acpi.c */
+void cpx_generate_p_state_entries(int core, int cores_per_package);
+int calculate_power(int tdp, int p1_ratio, int ratio);
+void uncore_inject_dsdt(void);
+unsigned long xeonsp_acpi_create_madt_lapics(unsigned long current);
 
 #endif

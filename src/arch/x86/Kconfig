@@ -4,6 +4,7 @@ config ARCH_X86
 	bool
 	select PCI
 	select RELOCATABLE_MODULES
+	select HAVE_ASAN_IN_RAMSTAGE
 
 # stage selectors for x86
 
@@ -27,6 +28,13 @@ config ARCH_RAMSTAGE_X86_32
 	bool
 	select ARCH_X86
 
+config ARCH_ALL_STAGES_X86_32
+	bool
+	select ARCH_BOOTBLOCK_X86_32
+	select ARCH_VERSTAGE_X86_32
+	select ARCH_ROMSTAGE_X86_32
+	select ARCH_RAMSTAGE_X86_32
+
 # stage selectors for x64
 
 config ARCH_BOOTBLOCK_X86_64
@@ -49,12 +57,19 @@ config ARCH_RAMSTAGE_X86_64
 	bool
 	select ARCH_X86
 
+config ARCH_ALL_STAGES_X86_64
+	bool
+	select ARCH_BOOTBLOCK_X86_64
+	select ARCH_VERSTAGE_X86_64
+	select ARCH_ROMSTAGE_X86_64
+	select ARCH_RAMSTAGE_X86_64
+
 if ARCH_X86
 
 config ARCH_X86_64_PGTBL_LOC
 	hex "x86_64 page table location in CBFS"
 	depends on ARCH_BOOTBLOCK_X86_64
-	default 0xfffea000
+	default 0xfffe9000
 	help
 	  The position where to place pagetables. Needs to be known at
 	  compile time. Must not overlap other files in CBFS.

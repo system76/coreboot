@@ -8,10 +8,7 @@
 #include <smbios.h>
 #include <string.h>
 #include "chip.h"
-#include "drivers/wifi/generic_wifi.h"
-
-#define PMCS_DR 0xcc
-#define PME_STS (1 << 15)
+#include "drivers/wifi/generic/chip.h"
 
 #if CONFIG(GENERATE_SMBIOS_TABLES)
 static int smbios_write_wifi(struct device *dev, int *handle,
@@ -50,27 +47,19 @@ static int smbios_write_wifi(struct device *dev, int *handle,
 static void intel_wifi_fill_ssdt(const struct device *dev)
 {
 	struct drivers_intel_wifi_config *config = dev->chip_info;
-	struct generic_wifi_config generic_config;
+	struct drivers_wifi_generic_config generic_config;
 
-	if (config) {
+	if (config)
 		generic_config.wake = config->wake;
-		/* By default, all intel wifi chips wake from S3 */
-		generic_config.maxsleep = 3;
-	}
-	generic_wifi_fill_ssdt(dev, config ? &generic_config : NULL);
+
+	wifi_generic_fill_ssdt(dev, config ? &generic_config : NULL);
 }
 #endif
 
 static void wifi_pci_dev_init(struct device *dev)
 {
-	pci_dev_init(dev);
-
-	if (CONFIG(ELOG)) {
-		uint32_t val;
-		val = pci_read_config16(dev, PMCS_DR);
-		if (val & PME_STS)
-			elog_add_event_wake(ELOG_WAKE_SOURCE_PME_WIFI, 0);
-	}
+	if (pci_dev_is_wake_source(dev))
+		elog_add_event_wake(ELOG_WAKE_SOURCE_PME_WIFI, 0);
 }
 
 struct device_operations device_ops = {
@@ -83,7 +72,7 @@ struct device_operations device_ops = {
 #endif
 	.ops_pci          = &pci_dev_ops_pci,
 #if CONFIG(HAVE_ACPI_TABLES)
-	.acpi_name        = generic_wifi_acpi_name,
+	.acpi_name        = wifi_generic_acpi_name,
 	.acpi_fill_ssdt   = intel_wifi_fill_ssdt,
 #endif
 };

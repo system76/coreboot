@@ -336,7 +336,6 @@ static const struct vr_lookup vr_config_icc[] = {
 	VR_REFITEM_ICC(PCI_DEVICE_ID_INTEL_CML_S_G0G1_2),
 };
 
-
 VR_CONFIG_LL(PCI_DEVICE_ID_INTEL_CNL_ID_U) {
 	{  0, value_not_set, VR_CFG_ALL_DOMAINS_LOADLINE(10.3, 2.4, 2.0, 2.0) },
 };
@@ -464,7 +463,6 @@ static const struct vr_lookup vr_config_ll[] = {
 	VR_REFITEM_LL(PCI_DEVICE_ID_INTEL_CML_S_G0G1_4),
 	VR_REFITEM_LL(PCI_DEVICE_ID_INTEL_CML_S_G0G1_2),
 };
-
 
 VR_CONFIG_TDC(PCI_DEVICE_ID_INTEL_CFL_ID_S) {
 	{ 58, value_not_set, VR_CFG_ALL_DOMAINS_TDC(10, 33, 30, 30) },

@@ -4,6 +4,7 @@
 #include <device/path.h>
 #include <device/smbus.h>
 #include <device/pci.h>
+#include <device/pci_def.h>
 #include <device/pci_ids.h>
 #include <device/pci_ops.h>
 #include <device/smbus_host.h>
@@ -34,7 +35,7 @@ static int lsmbus_read_byte(struct device *dev, u8 address)
 
 	device = dev->path.i2c.device;
 	pbus = get_pbus_smbus(dev);
-	res = find_resource(pbus->dev, 0x20);
+	res = find_resource(pbus->dev, PCI_BASE_ADDRESS_4);
 
 	return do_smbus_read_byte(res->base, device, address);
 }
@@ -47,7 +48,7 @@ static int lsmbus_write_byte(struct device *dev, u8 address, u8 val)
 
 	device = dev->path.i2c.device;
 	pbus = get_pbus_smbus(dev);
-	res = find_resource(pbus->dev, 0x20);
+	res = find_resource(pbus->dev, PCI_BASE_ADDRESS_4);
 
 	return do_smbus_write_byte(res->base, device, address, val);
 }
@@ -60,7 +61,7 @@ static struct smbus_bus_operations lops_smbus_bus = {
 static void smbus_read_resources(struct device *dev)
 {
 	struct resource *res = new_resource(dev, PCI_BASE_ADDRESS_4);
-	res->base = SMBUS_IO_BASE;
+	res->base = CONFIG_FIXED_SMBUS_IO_BASE;
 	res->size = 32;
 	res->limit = res->base + res->size - 1;
 	res->flags = IORESOURCE_IO | IORESOURCE_FIXED | IORESOURCE_RESERVE |

@@ -11,7 +11,6 @@
 #define PCI_CHIP_AST2100 0x2010
 #define PCI_CHIP_AST1180 0x1180
 
-
 enum ast_chip {
 	AST2000,
 	AST2100,
@@ -64,6 +63,11 @@ struct ast_private {
 
 	int next_cursor;
 	bool support_wide_screen;
+	enum {
+		ast_use_p2a,
+		ast_use_dt,
+		ast_use_defaults
+	} config_mode;
 
 	enum ast_tx_chip tx_chip_type;
 	u8 dp501_maxclk;

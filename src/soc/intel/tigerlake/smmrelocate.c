@@ -9,6 +9,7 @@
 #include <cpu/x86/msr.h>
 #include <cpu/x86/mtrr.h>
 #include <cpu/x86/smm.h>
+#include <cpu/intel/common/common.h>
 #include <cpu/intel/em64t101_save_state.h>
 #include <cpu/intel/smm_reloc.h>
 #include <console/console.h>
@@ -17,7 +18,6 @@
 #include <soc/msr.h>
 #include <soc/pci_devs.h>
 #include <soc/soc_chip.h>
-#include <soc/systemagent.h>
 
 static void update_save_state(int cpu, uintptr_t curr_smbase,
 				uintptr_t staggered_smbase,
@@ -138,8 +138,24 @@ void smm_relocation_handler(int cpu, uintptr_t curr_smbase,
 	/* Make appropriate changes to the save state map. */
 	update_save_state(cpu, curr_smbase, staggered_smbase, relo_params);
 
+	/*
+	 * The SMRR MSRs are core-level registers, so if two threads that share
+	 * a core try to both set the lock bit (in the same physical register),
+	 * a #GP will be raised on the second write to that register (which is
+	 * exactly what the lock is supposed to do), therefore secondary threads
+	 * should exit here.
+	 */
+	if (intel_ht_sibling())
+		return;
+
 	/* Write SMRR MSRs based on indicated support. */
 	mtrr_cap = rdmsr(MTRR_CAP_MSR);
+
+	/* Set Lock bit if supported */
+	if (mtrr_cap.lo & SMRR_LOCK_SUPPORTED)
+		relo_params->smrr_mask.lo |= SMRR_PHYS_MASK_LOCK;
+
+	/* Write SMRRs if supported */
 	if (mtrr_cap.lo & SMRR_SUPPORTED)
 		write_smrr(relo_params);
 }
@@ -232,16 +248,4 @@ void smm_relocate(void)
 		smm_initiate_relocation_parallel();
 	else if (!boot_cpu())
 		smm_initiate_relocation();
-}
-
-void smm_lock(void)
-{
-	struct device *sa_dev = pcidev_path_on_root(SA_DEVFN_ROOT);
-	/*
-	 * LOCK the SMM memory window and enable normal SMM.
-	 * After running this function, only a full reset can
-	 * make the SMM registers writable again.
-	 */
-	printk(BIOS_DEBUG, "Locking SMM.\n");
-	pci_write_config8(sa_dev, SMRAM, D_LCK | G_SMRAME | C_BASE_SEG);
 }

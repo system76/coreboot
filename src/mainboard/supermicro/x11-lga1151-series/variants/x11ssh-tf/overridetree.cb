@@ -14,19 +14,15 @@ chip soc/intel/skylake
 	# PCIe configuration
 	# Enable JPCIE1
 	register "PcieRpEnable[0]" = "1"
-	register "PcieRpClkReqSupport[0]" = "0"
 
 	# Enable ASpeed PCI bridge
 	register "PcieRpEnable[2]" = "1"
-	register "PcieRpClkReqSupport[2]" = "0"
 
 	# Enable X550T (10GbE)
 	register "PcieRpEnable[4]" = "1"
-	register "PcieRpClkReqSupport[4]" = "0"
 
 	# Enable M.2
 	register "PcieRpEnable[8]" = "1"
-	register "PcieRpClkReqSupport[8]" = "0"
 
 	# FIXME: find out why FSP crashes without this
 	register "PchHdaVcType" = "Vc1"
@@ -112,13 +108,17 @@ chip soc/intel/skylake
 							io 0x62 = 0xa10
 							io 0x64 = 0xa20
 							io 0x66 = 0xa30
-							irq 0x70 = 0xb
+							irq 0x70 = 0x00
 						end
 						device pnp 2e.5 off end	# KBC
-						device pnp 2e.7 on end	# GPIO
+						device pnp 2e.7 on	# GPIO
+							irq 0x70 = 0x00
+						end
 						device pnp 2e.b off end	# SUART3
 						device pnp 2e.c off end	# SUART4
-						device pnp 2e.d on end	# iLPC2AHB
+						device pnp 2e.d on	# iLPC2AHB
+							irq 0x70 = 0x00
+						end
 						device pnp 2e.e on	# Mailbox
 							io 0x60 = 0xa40
 							irq 0x70 = 0x00

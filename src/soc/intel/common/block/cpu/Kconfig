@@ -51,6 +51,28 @@ config INTEL_CAR_NEM_ENHANCED
 	  ENHANCED NEM guarantees that modified data is always
 	  kept in cache while clean data is replaced.
 
+config USE_CAR_NEM_ENHANCED_V1
+	bool
+	select INTEL_CAR_NEM_ENHANCED
+	help
+	  This config supports INTEL_CAR_NEM_ENHANCED mode on
+	  SKL, KBL, CNL, WHL, CML and ICL and JSL platforms.
+
+config USE_CAR_NEM_ENHANCED_V2
+	bool
+	select INTEL_CAR_NEM_ENHANCED
+	select COS_MAPPED_TO_MSB
+	help
+	  This config supports INTEL_CAR_NEM_ENHANCED mode on
+	  TGL  platform.
+
+config COS_MAPPED_TO_MSB
+	bool
+	depends on INTEL_CAR_NEM_ENHANCED
+	help
+	  On TGL and JSL platform the class of service configuration
+	  is mapped to MSB of MSR IA32_PQR_ASSOC.
+
 config USE_INTEL_FSP_MP_INIT
 	bool "Perform MP Initialization by FSP"
 	default n
@@ -66,3 +88,13 @@ config USE_INTEL_FSP_TO_CALL_COREBOOT_PUBLISH_MP_PPI
 	help
 	  This option allows FSP to make use of MP services PPI published by
 	  coreboot to perform multiprocessor initialization.
+
+config INTEL_TME
+	bool "Total Memory Encryption (TME)/Multi-key TME (MKTME)"
+	default n
+	help
+	 Enable Total Memory Encryption (TME)/Multi-key TME (MKTME). The spec is
+	 available at "https://software.intel.com/sites/default/files/managed/a5
+	 /16/Multi-Key-Total-Memory-Encryption-Spec.pdf". If CPU supports TME,
+	 it would get enabled. If CPU supports MKTME, this same config option
+	 enables MKTME.

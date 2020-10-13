@@ -100,7 +100,6 @@ static void tristate_gpios(uint32_t val)
 	write32((void *)COMMUNITY_GPSOUTHWEST_BASE + CFIO_140_MMIO_OFFSET, val);
 }
 
-
 static void southbridge_smi_sleep(void)
 {
 	uint32_t reg32;
@@ -301,6 +300,10 @@ static void southbridge_smi_apmc(void)
 		if (state) {
 			/* EBX in the state save contains the GNVS pointer */
 			gnvs = (struct global_nvs *)((uint32_t)state->rbx);
+			if (smm_points_to_smram(gnvs, sizeof(*gnvs))) {
+				printk(BIOS_ERR, "SMI#: ERROR: GNVS overlaps SMM\n");
+				return;
+			}
 			smm_initialized = 1;
 			printk(BIOS_DEBUG, "SMI#: Setting GNVS to %p\n", gnvs);
 		}

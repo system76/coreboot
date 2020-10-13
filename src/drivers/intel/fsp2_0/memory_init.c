@@ -93,8 +93,8 @@ static void do_fsp_post_memory_init(bool s3wake, uint32_t fsp_version)
 
 static void fsp_fill_mrc_cache(FSPM_ARCH_UPD *arch_upd, uint32_t fsp_version)
 {
-	struct region_device rdev;
 	void *data;
+	size_t mrc_size;
 
 	arch_upd->NvsBufferPtr = NULL;
 
@@ -113,25 +113,22 @@ static void fsp_fill_mrc_cache(FSPM_ARCH_UPD *arch_upd, uint32_t fsp_version)
 			return;
 	}
 
-	if (mrc_cache_get_current(MRC_TRAINING_DATA, fsp_version, &rdev) < 0)
-		return;
-
 	/* Assume boot device is memory mapped. */
 	assert(CONFIG(BOOT_DEVICE_MEMORY_MAPPED));
-	data = rdev_mmap_full(&rdev);
 
+	data = mrc_cache_current_mmap_leak(MRC_TRAINING_DATA, fsp_version,
+					   &mrc_size);
 	if (data == NULL)
 		return;
 
 	if (CONFIG(FSP2_0_USES_TPM_MRC_HASH) &&
-	    !mrc_cache_verify_hash(data, region_device_sz(&rdev)))
+	    !mrc_cache_verify_hash(data, mrc_size))
 		return;
 
 	/* MRC cache found */
 	arch_upd->NvsBufferPtr = data;
 
-	printk(BIOS_SPEW, "MRC cache found, size %zx\n",
-			region_device_sz(&rdev));
+	printk(BIOS_SPEW, "MRC cache found, size %zx\n", mrc_size);
 }
 
 static enum cb_err check_region_overlap(const struct memranges *ranges,
@@ -184,8 +181,9 @@ static enum cb_err fsp_fill_common_arch_params(FSPM_ARCH_UPD *arch_upd,
 	 * top and does not reinitialize stack pointer. The parameters passed
 	 * as StackBase and StackSize are actually for temporary RAM and HOBs
 	 * and are not related to FSP stack at all.
+	 * Non-CAR FSP 2.0 platforms pass a DRAM location for the FSP stack.
 	 */
-	if (CONFIG(FSP_USES_CB_STACK)) {
+	if (CONFIG(FSP_USES_CB_STACK) || !ENV_CACHE_AS_RAM) {
 		arch_upd->StackBase = temp_ram;
 		arch_upd->StackSize = sizeof(temp_ram);
 	} else if (setup_fsp_stack_frame(arch_upd, memmap)) {
@@ -277,6 +275,21 @@ static void do_fsp_memory_init(const struct fspm_context *context, bool s3wake)
 
 	/* Reserve enough memory under TOLUD to save CBMEM header */
 	arch_upd->BootLoaderTolumSize = cbmem_overhead_size();
+
+	/*
+	 * If ACPI APEI BERT region size is defined, reserve memory for it.
+	 * +------------------------+ range_entry_top(tolum)
+	 * | Other reserved regions |
+	 * | APEI BERT region       |
+	 * +------------------------+ cbmem_top()
+	 * | CBMEM IMD ROOT         |
+	 * | CBMEM IMD SMALL        |
+	 * +------------------------+ range_entry_base(tolum), TOLUM
+	 * | CBMEM FSP MEMORY       |
+	 * | Other CBMEM regions... |
+	 */
+	if (CONFIG(ACPI_BERT))
+		arch_upd->BootLoaderTolumSize += CONFIG_ACPI_BERT_SIZE;
 
 	/* Fill common settings on behalf of chipset. */
 	if (fsp_fill_common_arch_params(arch_upd, s3wake, fsp_version,

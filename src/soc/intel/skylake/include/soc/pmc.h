@@ -77,11 +77,13 @@
 #define  DSX_EN_LAN_WAKE_PIN	(1 << 0)
 #define PMSYNC_TPR_CFG		0xc4
 #define  PMSYNC_LOCK		(1 << 31)
+#define PCH_PWRM_ACPI_TMR_CTL	0xfc
+#define  ACPI_TIM_DIS		(1 << 1)
 #define GPIO_GPE_CFG		0x120
 #define  GPE0_DWX_MASK		0xf
 #define GPE0_DW_SHIFT(x)	(4*(x))
 #define GBLRST_CAUSE0		0x124
 #define GBLRST_CAUSE1		0x128
-#define CIR31C			0x31c
+#define CPPMVRIC		0x31c
 #define  XTALSDQDIS		(1 << 22)
 #endif

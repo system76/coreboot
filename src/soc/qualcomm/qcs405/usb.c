@@ -5,6 +5,7 @@
 #include <delay.h>
 #include <soc/usb.h>
 #include <soc/clock.h>
+#include <types.h>
 
 /* USB BASE ADDRESS */
 #define USB_HOST0_DWC3_BASE		0x758C100
@@ -195,7 +196,6 @@ void setup_usb_host(enum usb_port port, struct usb_board_data *board_data)
 
 	 /* Clear core reset. */
 	clock_reset_bcr(dwc3->usb3_bcr, 0);
-
 
 	if (port == HSUSB_SS_PORT_0) {
 		/* Set PHY reset. */

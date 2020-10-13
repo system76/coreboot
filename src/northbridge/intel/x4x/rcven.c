@@ -3,7 +3,6 @@
 #include <device/mmio.h>
 #include <console/console.h>
 #include <delay.h>
-#include "iomap.h"
 #include "x4x.h"
 
 #define MAX_COARSE 15
@@ -19,7 +18,7 @@ struct rec_timing {
 	u8 tap;
 };
 
-static inline void barrier(void)
+static inline void mfence(void)
 {
 	asm volatile("mfence":::);
 }
@@ -33,10 +32,10 @@ static u8 sampledqs(u32 addr, u8 lane, u8 channel)
 	udelay(2);
 	MCHBAR8(RESET_CNTL(channel)) |= 0x2;
 	udelay(2);
-	barrier();
+	mfence();
 	/* Read strobe */
 	read32((u32 *)addr);
-	barrier();
+	mfence();
 	return (MCHBAR8(sample_offset) >> 6) & 1;
 }
 

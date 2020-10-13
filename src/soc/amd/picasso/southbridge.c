@@ -18,13 +18,13 @@
 #include <amdblocks/lpc.h>
 #include <amdblocks/acpi.h>
 #include <amdblocks/spi.h>
+#include <soc/acpi.h>
 #include <soc/cpu.h>
 #include <soc/i2c.h>
 #include <soc/southbridge.h>
 #include <soc/smi.h>
 #include <soc/uart.h>
 #include <soc/amd_pci_int_defs.h>
-#include <delay.h>
 #include <soc/pci_devs.h>
 #include <soc/nvs.h>
 #include <types.h>
@@ -233,7 +233,6 @@ void sb_enable(struct device *dev)
 static void sb_init_acpi_ports(void)
 {
 	u32 reg;
-	msr_t cst_addr;
 
 	/* We use some of these ports in SMM regardless of whether or not
 	 * ACPI tables are generated. Enable these ports indiscriminately.
@@ -243,11 +242,6 @@ static void sb_init_acpi_ports(void)
 	pm_write16(PM1_CNT_BLK, ACPI_PM1_CNT_BLK);
 	pm_write16(PM_TMR_BLK, ACPI_PM_TMR_BLK);
 	pm_write16(PM_GPE0_BLK, ACPI_GPE0_BLK);
-
-	/* CpuControl is in \_SB.CP00, 6 bytes */
-	cst_addr.hi = 0;
-	cst_addr.lo = ACPI_CPU_CONTROL;
-	wrmsr(MSR_CSTATE_ADDRESS, cst_addr);
 
 	if (CONFIG(HAVE_SMI_HANDLER)) {
 		/* APMC - SMI Command Port */
@@ -279,76 +273,99 @@ static void sb_init_acpi_ports(void)
 				PM_ACPI_TIMER_EN_EN);
 }
 
-static int get_index_bit(uint32_t value, uint16_t limit)
-{
-	uint16_t i;
-	uint32_t t;
-
-	if (limit >= TOTAL_BITS(uint32_t))
-		return -1;
-
-	/* get a mask of valid bits. Ex limit = 3, set bits 0-2 */
-	t = (1 << limit) - 1;
-	if ((value & t) == 0)
-		return -1;
-	t = 1;
-	for (i = 0; i < limit; i++) {
-		if (value & t)
-			break;
-		t <<= 1;
-	}
-	return i;
-}
-
 static void set_nvs_sws(void *unused)
 {
-	struct soc_power_reg *sws;
+	struct chipset_state *state;
 	struct global_nvs *gnvs;
-	int index;
 
-	sws = cbmem_find(CBMEM_ID_POWER_STATE);
-	if (sws == NULL)
+	state = cbmem_find(CBMEM_ID_POWER_STATE);
+	if (state == NULL)
 		return;
 	gnvs = acpi_get_gnvs();
 	if (gnvs == NULL)
 		return;
 
-	index = get_index_bit(sws->pm1_sts & sws->pm1_en, PM1_LIMIT);
-	if (index < 0)
-		gnvs->pm1i = ~0ULL;
-	else
-		gnvs->pm1i = index;
-
-	index = get_index_bit(sws->gpe0_sts & sws->gpe0_en, GPE0_LIMIT);
-	if (index < 0)
-		gnvs->gpei = ~0ULL;
-	else
-		gnvs->gpei = index;
+	acpi_fill_gnvs(gnvs, &state->gpe_state);
 }
 
 BOOT_STATE_INIT_ENTRY(BS_OS_RESUME, BS_ON_ENTRY, set_nvs_sws, NULL);
 
-void southbridge_init(void *chip_info)
+/*
+ * A-Link to AHB bridge, part of the AMBA fabric. These are internal clocks
+ * and unneeded for Raven/Picasso so gate them to save power.
+ */
+static void al2ahb_clock_gate(void)
 {
-	i2c_soc_init();
-	sb_init_acpi_ports();
-	acpi_clear_pm1_status();
+	uint8_t al2ahb_val;
+	uintptr_t al2ahb_base = ALINK_AHB_ADDRESS;
+
+	al2ahb_val = read8((void *)(al2ahb_base + AL2AHB_CONTROL_CLK_OFFSET));
+	al2ahb_val |= AL2AHB_CLK_GATE_EN;
+	write8((void *)(al2ahb_base + AL2AHB_CONTROL_CLK_OFFSET), al2ahb_val);
+	al2ahb_val = read8((void *)(al2ahb_base + AL2AHB_CONTROL_HCLK_OFFSET));
+	al2ahb_val |= AL2AHB_HCLK_GATE_EN;
+	write8((void *)(al2ahb_base + AL2AHB_CONTROL_HCLK_OFFSET), al2ahb_val);
 }
 
-static void set_sb_final_nvs(void)
+/* configure the genral purpose PCIe clock outputs according to the devicetree settings */
+static void gpp_clk_setup(void)
 {
-	struct global_nvs *gnvs = acpi_get_gnvs();
-	if (gnvs == NULL)
-		return;
+	const struct soc_amd_picasso_config *cfg = config_of_soc();
 
-	gnvs->aoac.ic2e = is_aoac_device_enabled(FCH_AOAC_DEV_I2C2);
-	gnvs->aoac.ic3e = is_aoac_device_enabled(FCH_AOAC_DEV_I2C3);
-	gnvs->aoac.ic4e = is_aoac_device_enabled(FCH_AOAC_DEV_I2C4);
-	gnvs->aoac.ut0e = is_aoac_device_enabled(FCH_AOAC_DEV_UART0);
-	gnvs->aoac.ut1e = is_aoac_device_enabled(FCH_AOAC_DEV_UART1);
-	gnvs->aoac.ut2e = is_aoac_device_enabled(FCH_AOAC_DEV_UART2);
-	gnvs->aoac.ut3e = is_aoac_device_enabled(FCH_AOAC_DEV_UART3);
-	gnvs->aoac.espi = 1;
+	/* look-up table to be able to iterate over the PCIe clock output settings */
+	const uint8_t gpp_clk_shift_lut[GPP_CLK_OUTPUT_COUNT] = {
+		GPP_CLK0_REQ_SHIFT,
+		GPP_CLK1_REQ_SHIFT,
+		GPP_CLK2_REQ_SHIFT,
+		GPP_CLK3_REQ_SHIFT,
+		GPP_CLK4_REQ_SHIFT,
+		GPP_CLK5_REQ_SHIFT,
+		GPP_CLK6_REQ_SHIFT,
+	};
+
+	uint32_t gpp_clk_ctl = misc_read32(GPP_CLK_CNTRL);
+
+	for (int i = 0; i < GPP_CLK_OUTPUT_COUNT; i++) {
+		gpp_clk_ctl &= ~GPP_CLK_REQ_MASK(gpp_clk_shift_lut[i]);
+		/*
+		 * The remapping of values is done so that the default of the enum used for the
+		 * devicetree settings is the clock being enabled, so that a missing devicetree
+		 * configuration for this will result in an always active clock and not an
+		 * inactive PCIe clock output.
+		 */
+		switch (cfg->gpp_clk_config[i]) {
+		case GPP_CLK_REQ:
+			gpp_clk_ctl |= GPP_CLK_REQ_EXT(gpp_clk_shift_lut[i]);
+			break;
+		case GPP_CLK_OFF:
+			gpp_clk_ctl |= GPP_CLK_REQ_OFF(gpp_clk_shift_lut[i]);
+			break;
+		case GPP_CLK_ON:
+		default:
+			gpp_clk_ctl |= GPP_CLK_REQ_ON(gpp_clk_shift_lut[i]);
+		}
+	}
+
+	misc_write32(GPP_CLK_CNTRL, gpp_clk_ctl);
+}
+
+void southbridge_init(void *chip_info)
+{
+	struct chipset_state *state;
+
+	i2c_soc_init();
+	sb_init_acpi_ports();
+
+	state = cbmem_find(CBMEM_ID_POWER_STATE);
+	if (state) {
+		acpi_pm_gpe_add_events_print_events(&state->gpe_state);
+		gpio_add_events(&state->gpio_state);
+	}
+	acpi_clear_pm_gpe_status();
+
+	al2ahb_clock_gate();
+
+	gpp_clk_setup();
 }
 
 void southbridge_final(void *chip_info)
@@ -358,8 +375,6 @@ void southbridge_final(void *chip_info)
 	if (CONFIG(MAINBOARD_POWER_RESTORE))
 		restored_power = PM_RESTORE_S0_IF_PREV_S0;
 	pm_write8(PM_RTC_SHADOW, restored_power);
-
-	set_sb_final_nvs();
 }
 
 /*

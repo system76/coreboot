@@ -1,6 +1,5 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-
 #ifndef _SOC_CHIP_H_
 #define _SOC_CHIP_H_
 
@@ -49,19 +48,6 @@ struct soc_intel_skylake_config {
 		GPU_BACKLIGHT_POLARITY_LOW,
 	} gpu_pch_backlight_polarity;
 
-	/*
-	 * Interrupt Routing configuration
-	 * If bit7 is 1, the interrupt is disabled.
-	 */
-	uint8_t pirqa_routing;
-	uint8_t pirqb_routing;
-	uint8_t pirqc_routing;
-	uint8_t pirqd_routing;
-	uint8_t pirqe_routing;
-	uint8_t pirqf_routing;
-	uint8_t pirqg_routing;
-	uint8_t pirqh_routing;
-
 	/* Gpio group routed to each dword of the GPE0 block. Values are
 	 * of the form GPP_[A:G] or GPD. */
 	uint8_t gpe0_dw0; /* GPE0_31_0 STS/EN */
@@ -99,7 +85,7 @@ struct soc_intel_skylake_config {
 	uint32_t deep_sx_config;
 
 	/* TCC activation offset */
-	int tcc_offset;
+	uint32_t tcc_offset;
 
 	/* Package PL4 power limit in Watts */
 	u32 PowerLimit4;
@@ -149,14 +135,12 @@ struct soc_intel_skylake_config {
 	u8 CmdTriStateDis;
 
 	/* Lan */
-	u8 EnableLan;
 	u8 EnableLanLtr;
 	u8 EnableLanK1Off;
 	u8 LanClkReqSupported;
 	u8 LanClkReqNumber;
 
 	/* SATA related */
-	u8 EnableSata;
 	enum {
 		/* Documentation and header files of Skylake FSP disagree on
 		   the values, Kaby Lake FSP (KabylakeFsp0001 on github) uses
@@ -172,7 +156,6 @@ struct soc_intel_skylake_config {
 	u8 SataSpeedLimit;
 
 	/* Audio related */
-	u8 EnableAzalia;
 	u8 DspEnable;
 
 	/* HDA Virtual Channel Type Select */
@@ -190,7 +173,6 @@ struct soc_intel_skylake_config {
 	u8 IoBufferOwnership;
 
 	/* Trace Hub function */
-	u8 EnableTraceHub;
 	u32 TraceHubMemReg0Size;
 	u32 TraceHubMemReg1Size;
 
@@ -287,9 +269,6 @@ struct soc_intel_skylake_config {
 	struct usb3_port_config usb3_ports[10];
 	u8 SsicPortEnable;
 
-	/* SMBus */
-	u8 SmbusEnable;
-
 	/*
 	 * SerialIO device mode selection:
 	 *
@@ -320,14 +299,8 @@ struct soc_intel_skylake_config {
 	/* Bus voltage level, default is 3.3V */
 	enum skylake_i2c_voltage i2c_voltage[CONFIG_SOC_INTEL_I2C_DEV_MAX];
 
-	/* Camera */
-	u8 Cio2Enable;
-	u8 SaImguEnable;
-
 	/* eMMC and SD */
-	u8 ScsEmmcEnabled;
 	u8 ScsEmmcHs400Enabled;
-	u8 ScsSdCardEnabled;
 	u8 EmmcHs400DllNeed;
 	u8 ScsEmmcHs400RxStrobeDll1;
 	u8 ScsEmmcHs400TxDataDll;
@@ -335,7 +308,6 @@ struct soc_intel_skylake_config {
 	u8 PttSwitch;
 	u8 HeciTimeouts;
 	u8 HsioMessaging;
-	u8 Heci3Enabled;
 
 	/* Gfx related */
 	u8 IgdDvmt50PreAlloc;
@@ -358,7 +330,6 @@ struct soc_intel_skylake_config {
 	u32 LogoPtr;
 	u32 LogoSize;
 	u32 GraphicsConfigPtr;
-	u8 Device4Enable;
 	u8 RtcLock;
 	/* GPIO IRQ Route  The valid values is 14 or 15*/
 	u8 GpioIrqSelect;

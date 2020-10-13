@@ -32,7 +32,7 @@ _coreboot.org-status_ and _docs.coreboot.org_
 * __ectool__ - Dumps the RAM of a laptop's Embedded/Environmental
 Controller (EC). `C`
 * __exynos__ - Computes and fills Exynos ROM checksum (for BL1 or BL2).
-`Python2`
+`Python3`
 * __find_usbdebug__ - Help find USB debug ports
 * __futility__ - Firmware utility for signing ChromeOS images `Make`
 * __fuzz-tests__ - Create test cases that crash the jpeg code. `C`
@@ -65,7 +65,7 @@ embedded controller and insert them to the firmware image. `C`
 partial deblobbing of Intel ME/TXE firmware images `Python`
 * __mma__ - Memory Margin Analysis automation tests `Bash`
 * __msrtool__ - Dumps chipset-specific MSR registers. `C`
-* __mtkheader__ - Generate MediaTek bootload header. `Python2`
+* __mtkheader__ - Generate MediaTek bootload header. `Python3`
 * __nvidia__ - nvidia blob parsers
 * __nvramtool__ - Reads and writes coreboot parameters and displaying
 information from the coreboot table in CMOS/NVRAM. `C`
@@ -83,7 +83,7 @@ devices on the board such as dGPU. `C`
 can be passed to SPIKE, the RISC-V reference emulator.`Bash`
 	* _sifive-gpt.py_ - Wraps the bootblock in a GPT partition for
 SiFive's bootrom. `Python3`
-* __rockchip__ - Generate Rockchip idblock bootloader. `Python2`
+* __rockchip__ - Generate Rockchip idblock bootloader. `Python3`
 * __sconfig__ - coreboot device tree compiler `Lex` `Yacc`
 * __scripts__
 	* _config_ - Manipulate options in a .config file from the

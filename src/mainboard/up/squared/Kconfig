@@ -44,14 +44,6 @@ config FMDFILE
 	default "src/mainboard/\$(CONFIG_MAINBOARD_DIR)/vboot-roa.fmd"	if VBOOT_SLOTS_RW_A && !VBOOT_SLOTS_RW_AB
 	default "src/mainboard/\$(CONFIG_MAINBOARD_DIR)/vboot-roab.fmd"	if VBOOT_SLOTS_RW_AB
 
-config SUBSYSTEM_VENDOR_ID
-	hex
-	default 0x8086
-
-config SUBSYSTEM_DEVICE_ID
-	hex
-	default 0x7270
-
 config VGA_BIOS_ID
 	string
 	default "8086,5a85"
@@ -59,10 +51,6 @@ config VGA_BIOS_ID
 config PXE_ROM_ID
 	string
 	default "10ec,8168"
-
-config MAX_CPUS
-	int
-	default 2
 
 config LINUX_COMMAND_LINE
 	string

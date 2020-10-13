@@ -54,13 +54,13 @@ chip soc/intel/cannonlake
 	register "PcieRpEnable[15]" = "1"	# M2 Slot E x1
 	register "PcieRpEnable[20]" = "1"	# Slot 1 x4
 	# Set MaxPayload to 256 bytes
-        register "PcieRpMaxPayload[20]" = "RpMaxPayload_256"
-        # Enable Latency Tolerance Reporting Mechanism
-        register "PcieRpLtrEnable[20]" = "1"
-        # Enable Advanced Error Reporting
-        register "PcieRpAdvancedErrorReporting[20]" = "1"
-        # Disable Aspm
-        register "PcieRpAspm[20]" = "AspmDisabled"
+	register "PcieRpMaxPayload[20]" = "RpMaxPayload_256"
+	# Enable Latency Tolerance Reporting Mechanism
+	register "PcieRpLtrEnable[20]" = "1"
+	# Enable Advanced Error Reporting
+	register "PcieRpAdvancedErrorReporting[20]" = "1"
+	# Disable Aspm
+	register "PcieRpAspm[20]" = "AspmDisabled"
 
 	# Controls the CLKREQ, not the output directly.
 	# Depends on the CLKREQ to CLK gen mapping below
@@ -118,8 +118,6 @@ chip soc/intel/cannonlake
 	# USB OC5-7: not connected
 	# BMC
 	register "usb2_ports[10]" = "USB2_PORT_MID(OC_SKIP)"
-	# unused
-	register "usb2_ports[11]" = "USB2_PORT_EMPTY"
 	# piggy-back
 	register "usb2_ports[12]" = "USB2_PORT_MID(OC_SKIP)"
 	# M2 key E
@@ -130,12 +128,6 @@ chip soc/intel/cannonlake
 
 	# Enable "Intel Speed Shift Technology"
 	register "speed_shift_enable" = "1"
-
-	# HECI
-	register "HeciEnabled" = "1"
-
-	# Internal GFX
-	register "InternalGfx" = "1"
 
 	# Disable S0ix
 	register "s0ix_enable" = "0"
@@ -171,30 +163,53 @@ chip soc/intel/cannonlake
 
 
 	device domain 0 on
-		device pci 02.0 on  end # Integrated Graphics Device
+		device pci 02.0 on      # Integrated Graphics Device
+			register "InternalGfx" = "1"
+		end
 		chip drivers/intel/wifi
 			register "wake" = "PME_B0_EN_BIT"
 			device pci 14.3 on  end # CNVi wifi
 		end
 
-		device pci 19.2 on  end # UART #2
-
-		device pci 1b.4 on
+		# This device does not have any function on CNP-H, but it needs
+		# to be here so that the resource allocator is aware of UART 2.
+		device pci 19.0 hidden end
+		chip soc/intel/common/block/uart
+			device pci 19.2 hidden
+				register "devid" = "PCI_DEVICE_ID_INTEL_CNP_H_UART2"
+			end # UART #2, in ACPI mode
+		end
+		device pci 1b.4 on	# PCIe root port 21 (Slot 1)
 			smbios_slot_desc "SlotTypePciExpressGen3X16" "SlotLengthOther" "SLOT1" "SlotDataBusWidth4X"
-		end # PCIe Slot 1
-		device pci 1c.0 on
+			register "PcieRpSlotImplemented[20]" = "1"
+		end
+		device pci 1c.0 on	# PCIe root port 1 (Slot 3)
 			smbios_slot_desc "SlotTypePciExpressGen3X16" "SlotLengthOther" "SLOT3" "SlotDataBusWidth4X"
-		end # PCIe Slot 3
-		device pci 1c.4 on end # PHY 3
-		device pci 1c.5 on end # PHY 4
-		device pci 1c.6 on end # PHY 2
-		device pci 1c.7 on end # PHY 1
+			register "PcieRpSlotImplemented[0]" = "1"
+		end
+		device pci 1c.4 on	# PCIe root port 5 (PHY 3)
+			register "PcieRpSlotImplemented[4]" = "1"
+		end
+		device pci 1c.5 on	# PCIe root port 6 (PHY 4)
+			register "PcieRpSlotImplemented[5]" = "1"
+		end
+		device pci 1c.6 on	# PCIe root port 7 (PHY 2)
+			register "PcieRpSlotImplemented[6]" = "1"
+		end
+		device pci 1c.7 on	# PCIe root port 8 (PHY 1)
+			register "PcieRpSlotImplemented[7]" = "1"
+		end
 
-		device pci 1d.0 on
+		device pci 1d.0 on	# PCIe root port 9 (M2 M)
 			smbios_slot_desc "SlotTypePciExpressGen3X16" "SlotLengthOther" "M2 M" "SlotDataBusWidth4X"
-		end # M2 M
-		device pci 1d.5 on end # PHY 0
-		device pci 1d.6 on end # BMC
+			register "PcieRpSlotImplemented[8]" = "1"
+		end
+		device pci 1d.5 on	# PCIe root port 14 (PHY 0)
+			register "PcieRpSlotImplemented[13]" = "1"
+		end
+		device pci 1d.6 on	# PCIe root port 15 (BMC)
+			register "PcieRpSlotImplemented[14]" = "1"
+		end
 
 		device pci 1e.0 on  end # UART #0
 		device pci 1e.1 on  end # UART #1

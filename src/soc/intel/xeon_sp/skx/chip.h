@@ -1,6 +1,5 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 
-
 #ifndef _SOC_CHIP_H_
 #define _SOC_CHIP_H_
 
@@ -37,6 +36,7 @@ struct soc_intel_xeon_sp_skx_config {
 	 * 6h = PIRQG#
 	 * 7h = PIRQH#
 	 */
+
 	uint16_t ir00_routing;
 	uint16_t ir01_routing;
 	uint16_t ir02_routing;
@@ -75,5 +75,9 @@ struct soc_intel_xeon_sp_skx_config {
 };
 
 typedef struct soc_intel_xeon_sp_skx_config config_t;
+
+/* soc acpi function prototypes. To be removed when acpi.c is replaced by common/acpi.c */
+void uncore_inject_dsdt(void);
+unsigned long xeonsp_acpi_create_madt_lapics(unsigned long current);
 
 #endif

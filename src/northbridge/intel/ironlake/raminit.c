@@ -61,7 +61,7 @@ typedef struct {
 	u8 largest;
 } timing_bounds_t[2][2][2][9];
 
-#define MRC_CACHE_VERSION 1
+#define MRC_CACHE_VERSION 3
 
 struct ram_training {
 	/* [TM][CHANNEL][SLOT][RANK][LANE] */
@@ -192,8 +192,6 @@ struct raminfo {
 	unsigned int interleaved_part_mb;
 	unsigned int non_interleaved_part_mb;
 
-	u32 heci_bar;
-	u64 heci_uma_addr;
 	unsigned int memory_reserved_for_heci_mb;
 
 	struct ram_training training;
@@ -1337,9 +1335,9 @@ static void program_board_delay(struct raminfo *info)
 	MCHBAR16_OR(0x612, 0x100);
 	MCHBAR16_OR(0x214, 0x3E00);
 	for (i = 0; i < 8; i++) {
-		pci_write_config32(PCI_DEV (QUICKPATH_BUS, 0, 1), 0x80 + 4 * i,
+		pci_write_config32(QPI_SAD, SAD_DRAM_RULE(i),
 			       (info->total_memory_mb - 64) | !i | 2);
-		pci_write_config32(PCI_DEV (QUICKPATH_BUS, 0, 1), 0xc0 + 4 * i, 0);
+		pci_write_config32(QPI_SAD, SAD_INTERLEAVE_LIST(i), 0);
 	}
 }
 
@@ -1362,13 +1360,11 @@ static unsigned int get_mmio_size(void)
 		return cfg->pci_mmio_size;
 }
 
-#define BETTER_MEMORY_MAP 0
-
 static void program_total_memory_map(struct raminfo *info)
 {
-	unsigned int TOM, TOLUD, TOUUD;
+	unsigned int tom, tolud, touud;
 	unsigned int quickpath_reserved;
-	unsigned int REMAPbase;
+	unsigned int remap_base;
 	unsigned int uma_base_igd;
 	unsigned int uma_base_gtt;
 	unsigned int mmio_size;
@@ -1382,7 +1378,7 @@ static void program_total_memory_map(struct raminfo *info)
 	memset(memory_map, 0, sizeof(memory_map));
 
 	if (info->uma_enabled) {
-		u16 t = pci_read_config16(NORTHBRIDGE, D0F0_GGC);
+		u16 t = pci_read_config16(NORTHBRIDGE, GGC);
 		gav(t);
 		const int uma_sizes_gtt[16] =
 		    { 0, 1, 0, 2, 0, 0, 0, 0, 0, 2, 3, 4, 42, 42, 42, 42 };
@@ -1398,23 +1394,23 @@ static void program_total_memory_map(struct raminfo *info)
 
 	mmio_size = get_mmio_size();
 
-	TOM = info->total_memory_mb;
-	if (TOM == 4096)
-		TOM = 4032;
-	TOUUD = ALIGN_DOWN(TOM - info->memory_reserved_for_heci_mb, 64);
-	TOLUD = ALIGN_DOWN(MIN(4096 - mmio_size + ALIGN_UP(uma_size_igd + uma_size_gtt, 64)
-			      , TOUUD), 64);
+	tom = info->total_memory_mb;
+	if (tom == 4096)
+		tom = 4032;
+	touud = ALIGN_DOWN(tom - info->memory_reserved_for_heci_mb, 64);
+	tolud = ALIGN_DOWN(MIN(4096 - mmio_size + ALIGN_UP(uma_size_igd + uma_size_gtt, 64)
+			      , touud), 64);
 	memory_remap = 0;
-	if (TOUUD - TOLUD > 64) {
+	if (touud - tolud > 64) {
 		memory_remap = 1;
-		REMAPbase = MAX(4096, TOUUD);
-		TOUUD = TOUUD - TOLUD + 4096;
+		remap_base = MAX(4096, touud);
+		touud = touud - tolud + 4096;
 	}
-	if (TOUUD > 4096)
-		memory_map[2] = TOUUD | 1;
+	if (touud > 4096)
+		memory_map[2] = touud | 1;
 	quickpath_reserved = 0;
 
-	u32 t = pci_read_config32(PCI_DEV(QUICKPATH_BUS, 0, 1), 0x68);
+	u32 t = pci_read_config32(QPI_SAD, 0x68);
 
 	gav(t);
 
@@ -1426,26 +1422,26 @@ static void program_total_memory_map(struct raminfo *info)
 	}
 
 	if (memory_remap)
-		TOUUD -= quickpath_reserved;
+		touud -= quickpath_reserved;
 
-	uma_base_igd = TOLUD - uma_size_igd;
+	uma_base_igd = tolud - uma_size_igd;
 	uma_base_gtt = uma_base_igd - uma_size_gtt;
 	tseg_base = ALIGN_DOWN(uma_base_gtt, 64) - (CONFIG_SMM_TSEG_SIZE >> 20);
 	if (!memory_remap)
 		tseg_base -= quickpath_reserved;
 	tseg_base = ALIGN_DOWN(tseg_base, 8);
 
-	pci_write_config16(NORTHBRIDGE, D0F0_TOLUD, TOLUD << 4);
-	pci_write_config16(NORTHBRIDGE, D0F0_TOM, TOM >> 6);
+	pci_write_config16(NORTHBRIDGE, TOLUD, tolud << 4);
+	pci_write_config16(NORTHBRIDGE, TOM, tom >> 6);
 	if (memory_remap) {
-		pci_write_config16(NORTHBRIDGE, D0F0_REMAPBASE, REMAPbase >> 6);
-		pci_write_config16(NORTHBRIDGE, D0F0_REMAPLIMIT, (TOUUD - 64) >> 6);
+		pci_write_config16(NORTHBRIDGE, REMAPBASE, remap_base >> 6);
+		pci_write_config16(NORTHBRIDGE, REMAPLIMIT, (touud - 64) >> 6);
 	}
-	pci_write_config16(NORTHBRIDGE, D0F0_TOUUD, TOUUD);
+	pci_write_config16(NORTHBRIDGE, TOUUD, touud);
 
 	if (info->uma_enabled) {
-		pci_write_config32(NORTHBRIDGE, D0F0_IGD_BASE, uma_base_igd << 20);
-		pci_write_config32(NORTHBRIDGE, D0F0_GTT_BASE, uma_base_gtt << 20);
+		pci_write_config32(NORTHBRIDGE, IGD_BASE, uma_base_igd << 20);
+		pci_write_config32(NORTHBRIDGE, GTT_BASE, uma_base_gtt << 20);
 	}
 	pci_write_config32(NORTHBRIDGE, TSEG, tseg_base << 20);
 
@@ -1454,10 +1450,10 @@ static void program_total_memory_map(struct raminfo *info)
 	memory_map[1] = 4096;
 	for (i = 0; i < ARRAY_SIZE(memory_map); i++) {
 		current_limit = MAX(current_limit, memory_map[i] & ~1);
-		pci_write_config32(PCI_DEV(QUICKPATH_BUS, 0, 1), 4 * i + 0x80,
+		pci_write_config32(QPI_SAD, SAD_DRAM_RULE(i),
 			       (memory_map[i] & 1) | ALIGN_DOWN(current_limit -
 								1, 64) | 2);
-		pci_write_config32(PCI_DEV(QUICKPATH_BUS, 0, 1), 4 * i + 0xc0, 0);
+		pci_write_config32(QPI_SAD, SAD_INTERLEAVE_LIST(i), 0);
 	}
 }
 
@@ -1471,9 +1467,6 @@ static void collect_system_info(struct raminfo *info)
 	while (!(read8((u8 *)0xfed40000) & (1 << 7)))
 		;
 
-	if (!info->heci_bar)
-		gav(info->heci_bar =
-		    pci_read_config32(HECIDEV, HECIBAR) & 0xFFFFFFF8);
 	if (!info->memory_reserved_for_heci_mb) {
 		/* Wait for ME to be ready */
 		intel_early_me_init();
@@ -1482,7 +1475,7 @@ static void collect_system_info(struct raminfo *info)
 
 	for (i = 0; i < 3; i++)
 		gav(capid0[i] =
-		    pci_read_config32(NORTHBRIDGE, D0F0_CAPID0 | (i << 2)));
+		    pci_read_config32(NORTHBRIDGE, CAPID0 | (i << 2)));
 	gav(info->revision = pci_read_config8(NORTHBRIDGE, PCI_REVISION_ID));
 	info->max_supported_clock_speed_index = (~capid0[1] & 7);
 
@@ -1490,7 +1483,7 @@ static void collect_system_info(struct raminfo *info)
 		info->uma_enabled = 0;
 	else
 		gav(info->uma_enabled =
-		    pci_read_config8(NORTHBRIDGE, D0F0_DEVEN) & 8);
+		    pci_read_config8(NORTHBRIDGE, DEVEN) & 8);
 	/* Unrecognised: [0000:fffd3d2d] 37f81.37f82 ! CPUID: eax: 00000001; ecx: 00000e00 => 00020655.00010800.029ae3ff.bfebfbff */
 	info->silicon_revision = 0;
 
@@ -1620,11 +1613,9 @@ static void save_timings(struct raminfo *info)
 
 static const struct ram_training *get_cached_training(void)
 {
-	struct region_device rdev;
-	if (mrc_cache_get_current(MRC_TRAINING_DATA, MRC_CACHE_VERSION,
-					&rdev))
-		return 0;
-	return (void *)rdev_mmap_full(&rdev);
+	return mrc_cache_current_mmap_leak(MRC_TRAINING_DATA,
+					   MRC_CACHE_VERSION,
+					   NULL);
 }
 
 /* FIXME: add timeout.  */
@@ -1632,8 +1623,8 @@ static void wait_heci_ready(void)
 {
 	while (!(read32(DEFAULT_HECIBAR + 0xc) & 8))	// = 0x8000000c
 		;
-	write32((DEFAULT_HECIBAR + 0x4),
-		(read32(DEFAULT_HECIBAR + 0x4) & ~0x10) | 0xc);
+
+	write32((DEFAULT_HECIBAR + 0x4), (read32(DEFAULT_HECIBAR + 0x4) & ~0x10) | 0xc);
 }
 
 /* FIXME: add timeout.  */
@@ -1647,12 +1638,10 @@ static void wait_heci_cb_avail(int len)
 	while (!(read32(DEFAULT_HECIBAR + 0xc) & 8))
 		;
 
-	do
+	do {
 		csr.raw = read32(DEFAULT_HECIBAR + 0x4);
-	while (len >
-	       csr.csr.buffer_depth - (csr.csr.buffer_write_ptr -
-				       csr.csr.buffer_read_ptr))
-		;
+	} while (len > csr.csr.buffer_depth - (csr.csr.buffer_write_ptr -
+					       csr.csr.buffer_read_ptr));
 }
 
 static void send_heci_packet(struct mei_header *head, u32 *payload)
@@ -1671,8 +1660,7 @@ static void send_heci_packet(struct mei_header *head, u32 *payload)
 	write32(DEFAULT_HECIBAR + 0x4, read32(DEFAULT_HECIBAR + 0x4) | 0x4);
 }
 
-static void
-send_heci_message(u8 *msg, int len, u8 hostaddress, u8 clientaddress)
+static void send_heci_message(u8 *msg, int len, u8 hostaddress, u8 clientaddress)
 {
 	struct mei_header head;
 	int maxlen;
@@ -1698,9 +1686,7 @@ send_heci_message(u8 *msg, int len, u8 hostaddress, u8 clientaddress)
 }
 
 /* FIXME: Add timeout.  */
-static int
-recv_heci_packet(struct raminfo *info, struct mei_header *head, u32 *packet,
-		 u32 *packet_size)
+static int recv_heci_packet(struct mei_header *head, u32 *packet, u32 *packet_size)
 {
 	union {
 		struct mei_csr csr;
@@ -1711,27 +1697,23 @@ recv_heci_packet(struct raminfo *info, struct mei_header *head, u32 *packet,
 	write32(DEFAULT_HECIBAR + 0x4, read32(DEFAULT_HECIBAR + 0x4) | 2);
 	do {
 		csr.raw = read32(DEFAULT_HECIBAR + 0xc);
-	}
-	while (csr.csr.buffer_write_ptr == csr.csr.buffer_read_ptr)
-		;
+	} while (csr.csr.buffer_write_ptr == csr.csr.buffer_read_ptr);
+
 	*(u32 *) head = read32(DEFAULT_HECIBAR + 0x8);
 	if (!head->length) {
-		write32(DEFAULT_HECIBAR + 0x4,
-			read32(DEFAULT_HECIBAR + 0x4) | 2);
+		write32(DEFAULT_HECIBAR + 0x4, read32(DEFAULT_HECIBAR + 0x4) | 2);
 		*packet_size = 0;
 		return 0;
 	}
-	if (head->length + 4 > 4 * csr.csr.buffer_depth
-	    || head->length > *packet_size) {
+	if (head->length + 4 > 4 * csr.csr.buffer_depth || head->length > *packet_size) {
 		*packet_size = 0;
 		return -1;
 	}
 
-	do
+	do {
 		csr.raw = read32(DEFAULT_HECIBAR + 0xc);
-	while (((head->length + 3) >> 2) >
-		(csr.csr.buffer_write_ptr - csr.csr.buffer_read_ptr))
-		;
+	} while (((head->length + 3) >> 2) >
+		(csr.csr.buffer_write_ptr - csr.csr.buffer_read_ptr));
 
 	for (i = 0; i < (head->length + 3) >> 2; i++)
 		packet[i++] = read32(DEFAULT_HECIBAR + 0x8);
@@ -1743,8 +1725,7 @@ recv_heci_packet(struct raminfo *info, struct mei_header *head, u32 *packet,
 }
 
 /* FIXME: Add timeout.  */
-static int
-recv_heci_message(struct raminfo *info, u32 *message, u32 *message_size)
+static int recv_heci_message(u32 *message, u32 *message_size)
 {
 	struct mei_header head;
 	int current_position;
@@ -1754,7 +1735,7 @@ recv_heci_message(struct raminfo *info, u32 *message, u32 *message_size)
 		u32 current_size;
 		current_size = *message_size - current_position;
 		if (recv_heci_packet
-		    (info, &head, message + (current_position >> 2),
+		    (&head, message + (current_position >> 2),
 		     &current_size) == -1)
 			break;
 		if (!current_size)
@@ -1772,9 +1753,9 @@ recv_heci_message(struct raminfo *info, u32 *message, u32 *message_size)
 	return -1;
 }
 
-static void send_heci_uma_message(struct raminfo *info)
+static void send_heci_uma_message(const u64 heci_uma_addr, const unsigned int heci_uma_size)
 {
-	struct uma_reply {
+	volatile struct uma_reply {
 		u8 group_id;
 		u8 command;
 		u8 reserved;
@@ -1782,6 +1763,10 @@ static void send_heci_uma_message(struct raminfo *info)
 		u8 field2;
 		u8 unk3[0x48 - 4 - 1];
 	} __packed reply;
+
+	/* FIXME: recv_heci_message() does not always initialize 'reply' */
+	reply.command = 0;
+
 	struct uma_message {
 		u8 group_id;
 		u8 cmd;
@@ -1789,18 +1774,24 @@ static void send_heci_uma_message(struct raminfo *info)
 		u8 result;
 		u32 c2;
 		u64 heci_uma_addr;
-		u32 memory_reserved_for_heci_mb;
+		u32 heci_uma_size;
 		u16 c3;
 	} __packed msg = {
-	0, MKHI_SET_UMA, 0, 0,
-		    0x82,
-		    info->heci_uma_addr, info->memory_reserved_for_heci_mb, 0};
+		.group_id      = 0,
+		.cmd           = MKHI_SET_UMA,
+		.reserved      = 0,
+		.result        = 0,
+		.c2            = 0x82,
+		.heci_uma_addr = heci_uma_addr,
+		.heci_uma_size = heci_uma_size,
+		.c3            = 0,
+	};
 	u32 reply_size;
 
-	send_heci_message((u8 *) & msg, sizeof(msg), 0, 7);
+	send_heci_message((u8 *) &msg, sizeof(msg), 0, 7);
 
 	reply_size = sizeof(reply);
-	if (recv_heci_message(info, (u32 *) & reply, &reply_size) == -1)
+	if (recv_heci_message((u32 *) &reply, &reply_size) == -1)
 		return;
 
 	if (reply.command != (MKHI_SET_UMA | (1 << 7)))
@@ -1809,54 +1800,39 @@ static void send_heci_uma_message(struct raminfo *info)
 
 static void setup_heci_uma(struct raminfo *info)
 {
-	u32 reg44;
-
-	reg44 = pci_read_config32(HECIDEV, 0x44);	// = 0x80010020
-	info->memory_reserved_for_heci_mb = 0;
-	info->heci_uma_addr = 0;
-	if (!((reg44 & 0x10000) && !(pci_read_config32(HECIDEV, 0x40) & 0x20)))
+	if (!info->memory_reserved_for_heci_mb && !(pci_read_config32(HECIDEV, 0x40) & 0x20))
 		return;
 
-	info->heci_bar = pci_read_config32(HECIDEV, 0x10) & 0xFFFFFFF0;
-	info->memory_reserved_for_heci_mb = reg44 & 0x3f;
-	info->heci_uma_addr =
+	const u64 heci_uma_addr =
 	    ((u64)
-	     ((((u64) pci_read_config16(NORTHBRIDGE, D0F0_TOM)) << 6) -
+	     ((((u64)pci_read_config16(NORTHBRIDGE, TOM)) << 6) -
 	      info->memory_reserved_for_heci_mb)) << 20;
 
 	pci_read_config32(NORTHBRIDGE, DMIBAR);
 	if (info->memory_reserved_for_heci_mb) {
-		write32(DEFAULT_DMIBAR + 0x14,
-			read32(DEFAULT_DMIBAR + 0x14) & ~0x80);
-		write32(DEFAULT_RCBA + 0x14,
-			read32(DEFAULT_RCBA + 0x14) & ~0x80);
-		write32(DEFAULT_DMIBAR + 0x20,
-			read32(DEFAULT_DMIBAR + 0x20) & ~0x80);
-		write32(DEFAULT_RCBA + 0x20,
-			read32(DEFAULT_RCBA + 0x20) & ~0x80);
-		write32(DEFAULT_DMIBAR + 0x2c,
-			read32(DEFAULT_DMIBAR + 0x2c) & ~0x80);
-		write32(DEFAULT_RCBA + 0x30,
-			read32(DEFAULT_RCBA + 0x30) & ~0x80);
-		write32(DEFAULT_DMIBAR + 0x38,
-			read32(DEFAULT_DMIBAR + 0x38) & ~0x80);
-		write32(DEFAULT_RCBA + 0x40,
-			read32(DEFAULT_RCBA + 0x40) & ~0x80);
+		DMIBAR32(DMIVC0RCTL) &= ~0x80;
+		write32(DEFAULT_RCBA   + 0x14, read32(DEFAULT_RCBA   + 0x14) & ~0x80);
+		DMIBAR32(DMIVC1RCTL) &= ~0x80;
+		write32(DEFAULT_RCBA   + 0x20, read32(DEFAULT_RCBA   + 0x20) & ~0x80);
+		DMIBAR32(DMIVCPRCTL) &= ~0x80;
+		write32(DEFAULT_RCBA   + 0x30, read32(DEFAULT_RCBA   + 0x30) & ~0x80);
+		DMIBAR32(DMIVCMRCTL) &= ~0x80;
+		write32(DEFAULT_RCBA   + 0x40, read32(DEFAULT_RCBA   + 0x40) & ~0x80);
 
-		write32(DEFAULT_RCBA + 0x40, 0x87000080);	// OK
-		write32(DEFAULT_DMIBAR + 0x38, 0x87000080);	// OK
+		write32(DEFAULT_RCBA   + 0x40, 0x87000080);	// OK
+		DMIBAR32(DMIVCMRCTL) = 0x87000080;	// OK
+
 		while ((read16(DEFAULT_RCBA + 0x46) & 2) &&
-			read16(DEFAULT_DMIBAR + 0x3e) & 2)
+			DMIBAR16(DMIVCMRSTS) & VCMNP)
 			;
 	}
 
 	MCHBAR32(0x24) = 0x10000 + info->memory_reserved_for_heci_mb;
 
-	send_heci_uma_message(info);
+	send_heci_uma_message(heci_uma_addr, info->memory_reserved_for_heci_mb);
 
 	pci_write_config32(HECIDEV, 0x10, 0x0);
 	pci_write_config8(HECIDEV, 0x4, 0x0);
-
 }
 
 static int have_match_ranks(struct raminfo *info, int channel, int ranks)
@@ -1965,7 +1941,7 @@ static void flush_cache(u32 start, u32 size)
 
 	end = start + (ALIGN_DOWN(size + 4096, 4096));
 	for (addr = start; addr < end; addr += 64)
-		clflush((void *)addr);
+		clflush((void *)(uintptr_t)addr);
 }
 
 static void clear_errors(void)
@@ -1980,7 +1956,7 @@ static void write_testing(struct raminfo *info, int totalrank, int flip)
 	u32 offset;
 	u8 *base;
 
-	base = (u8 *)(totalrank << 28);
+	base = (u8 *)(uintptr_t)(totalrank << 28);
 	for (offset = 0; offset < 9 * 480; offset += 2) {
 		write32(base + offset * 8, get_etalon2(flip, offset));
 		write32(base + offset * 8 + 4, get_etalon2(flip, offset));
@@ -3628,12 +3604,12 @@ static void restore_274265(struct raminfo *info)
 
 static void dmi_setup(void)
 {
-	gav(read8(DEFAULT_DMIBAR + 0x254));
-	write8(DEFAULT_DMIBAR + 0x254, 0x1);
-	write16(DEFAULT_DMIBAR + 0x1b8, 0x18f2);
+	gav(DMIBAR8(0x254));
+	DMIBAR8(0x254) = 0x1;
+	DMIBAR16(0x1b8) = 0x18f2;
 	MCHBAR16_AND_OR(0x48, 0, 0x2);
 
-	write32(DEFAULT_DMIBAR + 0xd68, read32(DEFAULT_DMIBAR + 0xd68) | 0x08000000);
+	DMIBAR32(0xd68) |= 0x08000000;
 
 	outl((gav(inl(DEFAULT_GPIOBASE | 0x38)) & ~0x140000) | 0x400000,
 	     DEFAULT_GPIOBASE | 0x38);
@@ -3667,10 +3643,10 @@ void chipset_init(const int s3resume)
 
 	ggc = 0xb00 | ((gfxsize + 5) << 4);
 
-	pci_write_config16(NORTHBRIDGE, D0F0_GGC, ggc | 2);
+	pci_write_config16(NORTHBRIDGE, GGC, ggc | 2);
 
 	u16 deven;
-	deven = pci_read_config16(NORTHBRIDGE, D0F0_DEVEN);	// = 0x3
+	deven = pci_read_config16(NORTHBRIDGE, DEVEN);	// = 0x3
 
 	if (deven & 8) {
 		MCHBAR8(0x2c30) = 0x20;
@@ -3678,8 +3654,8 @@ void chipset_init(const int s3resume)
 		MCHBAR16_OR(0x2c30, 0x200);
 		MCHBAR16(0x2c32) = 0x434;
 		MCHBAR32_AND_OR(0x2c44, 0, 0x1053687);
-		pci_read_config8(GMA, 0x62);	// = 0x2
-		pci_write_config8(GMA, 0x62, 0x2);
+		pci_read_config8(GMA, MSAC);	// = 0x2
+		pci_write_config8(GMA, MSAC, 0x2);
 		read8(DEFAULT_RCBA + 0x2318);
 		write8(DEFAULT_RCBA + 0x2318, 0x47);
 		read8(DEFAULT_RCBA + 0x2320);
@@ -3688,7 +3664,7 @@ void chipset_init(const int s3resume)
 
 	MCHBAR32_AND_OR(0x30, 0, 0x40);
 
-	pci_write_config16(NORTHBRIDGE, D0F0_GGC, ggc);
+	pci_write_config16(NORTHBRIDGE, GGC, ggc);
 	gav(read32(DEFAULT_RCBA + 0x3428));
 	write32(DEFAULT_RCBA + 0x3428, 0x1d);
 }
@@ -3706,7 +3682,7 @@ void raminit(const int s3resume, const u8 *spd_addrmap)
 
 	printk(RAM_DEBUG, "Scratchpad MCHBAR8(0x2ca8): 0x%04x\n", x2ca8);
 
-	deven = pci_read_config16(NORTHBRIDGE, D0F0_DEVEN);
+	deven = pci_read_config16(NORTHBRIDGE, DEVEN);
 
 	memset(&info, 0x5a, sizeof(info));
 
@@ -3727,7 +3703,6 @@ void raminit(const int s3resume, const u8 *spd_addrmap)
 	info.training.reg_178 = 0;
 	info.training.reg_10b = 0;
 
-	info.heci_bar = 0;
 	info.memory_reserved_for_heci_mb = 0;
 
 	/* before SPD */
@@ -3834,7 +3809,7 @@ void raminit(const int s3resume, const u8 *spd_addrmap)
 
 		gav(0x55);
 
-		gav(pci_read_config32(NORTHBRIDGE, D0F0_CAPID0 + 4));
+		gav(pci_read_config32(NORTHBRIDGE, CAPID0 + 4));
 	}
 
 	/* after SPD  */
@@ -3880,8 +3855,8 @@ void raminit(const int s3resume, const u8 *spd_addrmap)
 	MCHBAR32_OR(0x1890, 0x2000000);
 	MCHBAR32_OR(0x18b4, 0x8000);
 
-	gav(pci_read_config32(PCI_DEV(0xff, 2, 1), 0x50));	// !!!!
-	pci_write_config8(PCI_DEV(0xff, 2, 1), 0x54, 0x12);
+	gav(pci_read_config32(QPI_PHY_0, QPI_PLL_STATUS));	// !!!!
+	pci_write_config8(QPI_PHY_0, QPI_PLL_RATIO, 0x12);
 
 	gav(MCHBAR16(0x2c10));
 	MCHBAR16(0x2c10) = 0x412;
@@ -3891,8 +3866,8 @@ void raminit(const int s3resume, const u8 *spd_addrmap)
 	gav(MCHBAR8(0x2ca8));	// !!!!
 	MCHBAR32_AND_OR(0x1804, 0xfffffffc, 0x8400080);
 
-	pci_read_config32(PCI_DEV(0xff, 2, 1), 0x6c);	// !!!!
-	pci_write_config32(PCI_DEV(0xff, 2, 1), 0x6c, 0x40a0a0);
+	pci_read_config32(QPI_PHY_0, QPI_PHY_CONTROL);	// !!!!
+	pci_write_config32(QPI_PHY_0, QPI_PHY_CONTROL, 0x40a0a0);
 	gav(MCHBAR32(0x1c04));	// !!!!
 	gav(MCHBAR32(0x1804));	// !!!!
 
@@ -3902,16 +3877,16 @@ void raminit(const int s3resume, const u8 *spd_addrmap)
 
 	MCHBAR32(0x18d8) = 0x120000;
 	MCHBAR32(0x18dc) = 0x30a484a;
-	pci_write_config32(PCI_DEV(0xff, 2, 1), 0xe0, 0x0);
-	pci_write_config32(PCI_DEV(0xff, 2, 1), 0xf4, 0x9444a);
+	pci_write_config32(QPI_PHY_0, QPI_PHY_EP_SELECT, 0x0);
+	pci_write_config32(QPI_PHY_0, QPI_PHY_EP_MCTR, 0x9444a);
 	MCHBAR32(0x18d8) = 0x40000;
 	MCHBAR32(0x18dc) = 0xb000000;
-	pci_write_config32(PCI_DEV(0xff, 2, 1), 0xe0, 0x60000);
-	pci_write_config32(PCI_DEV(0xff, 2, 1), 0xf4, 0x0);
+	pci_write_config32(QPI_PHY_0, QPI_PHY_EP_SELECT, 0x60000);
+	pci_write_config32(QPI_PHY_0, QPI_PHY_EP_MCTR, 0x0);
 	MCHBAR32(0x18d8) = 0x180000;
 	MCHBAR32(0x18dc) = 0xc0000142;
-	pci_write_config32(PCI_DEV(0xff, 2, 1), 0xe0, 0x20000);
-	pci_write_config32(PCI_DEV(0xff, 2, 1), 0xf4, 0x142);
+	pci_write_config32(QPI_PHY_0, QPI_PHY_EP_SELECT, 0x20000);
+	pci_write_config32(QPI_PHY_0, QPI_PHY_EP_MCTR, 0x142);
 	MCHBAR32(0x18d8) = 0x1e0000;
 
 	gav(MCHBAR32(0x18dc));	// !!!!
@@ -3923,7 +3898,7 @@ void raminit(const int s3resume, const u8 *spd_addrmap)
 	}
 
 	MCHBAR32(0x188c) = 0x20bc09;
-	pci_write_config32(PCI_DEV(0xff, 2, 1), 0xd0, 0x40b0c09);
+	pci_write_config32(QPI_PHY_0, QPI_PHY_PWR_MGMT, 0x40b0c09);
 	MCHBAR32(0x1a10) = 0x4200010e;
 	MCHBAR32_OR(0x18b8, 0x200);
 	gav(MCHBAR32(0x1918));	// !!!!
@@ -3933,8 +3908,8 @@ void raminit(const int s3resume, const u8 *spd_addrmap)
 	MCHBAR32(0x18b8) = 0xe00;
 	gav(MCHBAR32(0x182c));	// !!!!
 	MCHBAR32(0x182c) = 0x10202;
-	gav(pci_read_config32(PCI_DEV(0xff, 2, 1), 0x94));	// !!!!
-	pci_write_config32(PCI_DEV(0xff, 2, 1), 0x94, 0x10202);
+	gav(pci_read_config32(QPI_PHY_0, QPI_PHY_PRIM_TIMEOUT));	// !!!!
+	pci_write_config32(QPI_PHY_0, QPI_PHY_PRIM_TIMEOUT, 0x10202);
 	MCHBAR32_AND(0x1a1c, 0x8fffffff);
 	MCHBAR32_OR(0x1a70, 0x100000);
 
@@ -3948,13 +3923,13 @@ void raminit(const int s3resume, const u8 *spd_addrmap)
 		MCHBAR8_OR(0x2ca8, 1);	// guess
 	}
 
-	pci_read_config32(PCI_DEV(0xff, 2, 0), 0x048);	// !!!!
-	pci_write_config32(PCI_DEV(0xff, 2, 0), 0x048, 0x140000);
-	pci_read_config32(PCI_DEV(0xff, 2, 0), 0x058);	// !!!!
-	pci_write_config32(PCI_DEV(0xff, 2, 0), 0x058, 0x64555);
-	pci_read_config32(PCI_DEV(0xff, 2, 0), 0x058);	// !!!!
-	pci_read_config32(PCI_DEV (0xff, 0, 0), 0xd0);	// !!!!
-	pci_write_config32(PCI_DEV (0xff, 0, 0), 0xd0, 0x180);
+	pci_read_config32(QPI_LINK_0, QPI_QPILCL);	// !!!!
+	pci_write_config32(QPI_LINK_0, QPI_QPILCL, 0x140000);
+	pci_read_config32(QPI_LINK_0, QPI_DEF_RMT_VN_CREDITS);	// !!!!
+	pci_write_config32(QPI_LINK_0, QPI_DEF_RMT_VN_CREDITS, 0x64555);
+	pci_read_config32(QPI_LINK_0, QPI_DEF_RMT_VN_CREDITS);	// !!!!
+	pci_read_config32(QPI_NON_CORE, MIRROR_PORT_CTL);	// !!!!
+	pci_write_config32(QPI_NON_CORE, MIRROR_PORT_CTL, 0x180);
 	gav(MCHBAR32(0x1af0));	// !!!!
 	gav(MCHBAR32(0x1af0));	// !!!!
 	MCHBAR32(0x1af0) = 0x1f020003;
@@ -4223,7 +4198,7 @@ void raminit(const int s3resume, const u8 *spd_addrmap)
 
 	MCHBAR8(0x2ca8) = MCHBAR8(0x2ca8);
 	MCHBAR32_AND_OR(0x2c80, 0, 0x53688);	// !!!!
-	pci_write_config32(PCI_DEV (0xff, 0, 0), 0x60, 0x20220);
+	pci_write_config32(QPI_NON_CORE, MAX_RTIDS, 0x20220);
 	MCHBAR16(0x2c20);	// !!!!
 	MCHBAR16(0x2c10);	// !!!!
 	MCHBAR16(0x2c00);	// !!!!
@@ -4625,9 +4600,9 @@ void raminit(const int s3resume, const u8 *spd_addrmap)
 	}
 	u32 reg1c;
 	pci_read_config32(NORTHBRIDGE, 0x40);	// = DEFAULT_EPBAR | 0x001 // OK
-	reg1c = read32p(DEFAULT_EPBAR | 0x01c);	// = 0x8001 // OK
+	reg1c = EPBAR32(EPVC1RCAP);	// = 0x8001 // OK
 	pci_read_config32(NORTHBRIDGE, 0x40);	// = DEFAULT_EPBAR | 0x001 // OK
-	write32p(DEFAULT_EPBAR | 0x01c, reg1c);	// OK
+	EPBAR32(EPVC1RCAP) = reg1c;	// OK
 	MCHBAR8(0xe08);	// = 0x0
 	pci_read_config32(NORTHBRIDGE, 0xe4);	// = 0x316126
 	MCHBAR8_OR(0x1210, 2);

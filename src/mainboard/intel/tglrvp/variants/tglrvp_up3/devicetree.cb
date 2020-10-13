@@ -9,11 +9,14 @@ chip soc/intel/tigerlake
 	# route. i.e. If this route changes then the affected GPE
 	# offset bits also need to be changed.
 	register "pmc_gpe0_dw0" = "GPP_B"
-	register "pmc_gpe0_dw1" = "GPP_D"
-	register "pmc_gpe0_dw2" = "GPP_E"
+	register "pmc_gpe0_dw1" = "GPP_C"
+	register "pmc_gpe0_dw2" = "GPP_D"
+
+	# Enable heci1 communication
+	register "HeciEnabled" = "1"
 
 	# FSP configuration
-	register "SaGv" = "SaGv_Disabled"
+	register "SaGv" = "SaGv_Enabled"
 	register "SmbusEnable" = "1"
 
 	register "usb2_ports[0]" = "USB2_PORT_MID(OC0)"		# Type-C Port1
@@ -29,11 +32,9 @@ chip soc/intel/tigerlake
 
 	register "usb3_ports[0]" = "USB3_PORT_DEFAULT(OC0)"	# USB3/2 Type A port1
 	register "usb3_ports[1]" = "USB3_PORT_DEFAULT(OC0)"	# USB3/2 Type A port2
-	register "usb3_ports[2]" = "USB3_PORT_EMPTY"		# Not used
-	register "usb3_ports[3]" = "USB3_PORT_EMPTY"		# USB3/USB2 Flex Connector
 
-        # CPU replacement check
-        register "CpuReplacementCheck" = "1"
+	# CPU replacement check
+	register "CpuReplacementCheck" = "1"
 
 	# EC host command ranges are in 0x800-0x8ff & 0x200-0x20f
 	register "gen1_dec" = "0x00fc0801"
@@ -85,14 +86,14 @@ chip soc/intel/tigerlake
 
 	register "SerialIoGSpiMode" = "{
 		[PchSerialIoIndexGSPI0] = PchSerialIoDisabled,
-		[PchSerialIoIndexGSPI1] = PchSerialIoDisabled,
+		[PchSerialIoIndexGSPI1] = PchSerialIoPci,
 		[PchSerialIoIndexGSPI2] = PchSerialIoDisabled,
 		[PchSerialIoIndexGSPI3] = PchSerialIoDisabled,
 	}"
 
 	register "SerialIoGSpiCsMode" = "{
 		[PchSerialIoIndexGSPI0] = 0,
-		[PchSerialIoIndexGSPI1] = 0,
+		[PchSerialIoIndexGSPI1] = 1,
 		[PchSerialIoIndexGSPI2] = 0,
 		[PchSerialIoIndexGSPI3] = 0,
 	}"
@@ -114,12 +115,29 @@ chip soc/intel/tigerlake
 	register "TcssXhciEn" = "1"
 	register "TcssAuxOri" = "0"
 
+	# Enable "Intel Speed Shift Technology"
+	register "speed_shift_enable" = "1"
+
 	# Enable S0ix
 	register "s0ix_enable" = "1"
 
-	# D3Hot and D3Cold for TCSS
-	register "TcssD3HotEnable" = "1"
-	register "TcssD3ColdEnable" = "1"
+	# Enable DPTF
+	register "dptf_enable" = "1"
+
+	# Enable Processor Thermal Control
+	register "Device4Enable" = "1"
+
+	# Add PL1 and PL2 values
+	register "power_limits_config[POWER_LIMITS_U_2_CORE]" = "{
+		.tdp_pl1_override = 15,
+		.tdp_pl2_override = 38,
+		.tdp_pl4 = 71,
+	}"
+	register "power_limits_config[POWER_LIMITS_U_4_CORE]" = "{
+		.tdp_pl1_override = 15,
+		.tdp_pl2_override = 60,
+		.tdp_pl4 = 105,
+	}"
 
 	#HD Audio
 	register "PchHdaDspEnable" = "1"
@@ -134,6 +152,10 @@ chip soc/intel/tigerlake
 	# Intel Common SoC Config
 	register "common_soc_config" = "{
 		.chipset_lockdown = CHIPSET_LOCKDOWN_COREBOOT,
+		.gspi[1] = {
+			.speed_mhz = 1,
+			.early_init = 1,
+		},
 		.i2c[0] = {
 			.speed = I2C_SPEED_FAST,
 		},
@@ -142,7 +164,7 @@ chip soc/intel/tigerlake
 		},
 		.i2c[2] = {
 			.speed = I2C_SPEED_FAST,
-                },
+		},
 		.i2c[3] = {
 			.speed = I2C_SPEED_FAST,
 		},
@@ -155,7 +177,29 @@ chip soc/intel/tigerlake
 		#From EDS(575683)
 		device pci 00.0 on  end # Host Bridge		0x9A14:U/0x9A12:Y
 		device pci 02.0 on  end # Graphics
-		device pci 04.0 on  end # DPTF			0x9A03
+		device pci 04.0 on
+			# Default DPTF Policy for all tglrvp_up3 boards if not overridden
+			chip drivers/intel/dptf
+				register "policies.passive[0]" = "DPTF_PASSIVE(CPU, CPU, 95, 1000)"
+				register "policies.critical[0]" = "DPTF_CRITICAL(CPU, 105, SHUTDOWN)"
+
+				# Power Limits Control
+				register "controls.power_limits.pl1" = "{
+					.min_power = 3000,
+					.max_power = 15000,
+					.time_window_min = 28 * MSECS_PER_SEC,
+					.time_window_max = 32 * MSECS_PER_SEC,
+					.granularity = 200,}"
+				register "controls.power_limits.pl2" = "{
+					.min_power = 15000,
+					.max_power = 60000,
+					.time_window_min = 28 * MSECS_PER_SEC,
+					.time_window_max = 32 * MSECS_PER_SEC,
+					.granularity = 1000,}"
+				device generic 0 on end
+			end
+		end # DPTF	0x9A04:U22/0x9A14:U42
+
 		device pci 05.0 on  end # IPU			0x9A19
 		device pci 06.0 on  end # PEG60			0x9A09
 		device pci 07.0 on  end # TBT_PCIe0		0x9A23
@@ -254,9 +298,20 @@ chip soc/intel/tigerlake
 		device pci 1d.3 off end # RP12			0xA0B3
 		device pci 1e.0 off end # UART0			0xA0A8
 		device pci 1e.1 off end # UART1			0xA0A9
-		device pci 1e.2 off end # GSPI0			0xA0AA
-		device pci 1e.3 off end # GSPI1			0xA0AB
-		device pci 1f.0 on  end # eSPI			0xA080 - A09F
+		device pci 1e.2 on end # GSPI0			0xA0AA
+		device pci 1e.3 on
+			chip drivers/spi/acpi
+				register "hid" = "ACPI_DT_NAMESPACE_HID"
+				register "compat_string" = ""google,cr50""
+				register "irq" = "ACPI_IRQ_EDGE_LOW(GPP_C22_IRQ)"
+				device spi 0 on end
+			end
+		end # GSPI1					0xA0AB
+		device pci 1f.0 on
+			chip ec/google/chromeec
+				device pnp 0c09.0 on end
+			end
+		end # eSPI                                      0xA080 - A09F
 		device pci 1f.1 on  end # P2SB			0xA0A0
 		device pci 1f.2 hidden  # PMC			0xA0A1
 			# The pmc_mux chip driver is a placeholder for the

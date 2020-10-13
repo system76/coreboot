@@ -97,8 +97,6 @@ void lpc_disable_clkrun(void);
 void lpc_io_setup_comm_a_b(void);
 /* Enable PCH LPC by setting up generic decode range registers. */
 void pch_enable_lpc(void);
-/* Retrieve and setup SoC specific PCH LPC interrupt routing. */
-void soc_pch_pirq_init(const struct device *dev);
 /* Get SoC's generic IO decoder range register settings. */
 void soc_get_gen_io_dec_range(const struct device *dev,
 			uint32_t gen_io_dec[LPC_NUM_GENERIC_IO_RANGES]);
@@ -107,5 +105,15 @@ void soc_setup_dmi_pcr_io_dec(uint32_t gen_io_dec[LPC_NUM_GENERIC_IO_RANGES]);
 /* Add resource into LPC PCI device space */
 void pch_lpc_add_new_resource(struct device *dev, uint8_t offset,
 	uintptr_t base, size_t size, unsigned long flags);
+/* Enable PCH IOAPIC */
+void pch_enable_ioapic(void);
+/* Retrieve and setup PCH LPC interrupt routing. */
+void pch_pirq_init(void);
+/*
+ * LPC MISC programming
+ * 1. Setup NMI on errors, disable SERR
+ * 2. Disable NMI sources
+ */
+void pch_misc_init(void);
 
 #endif /* _SOC_COMMON_BLOCK_LPC_LIB_H_ */

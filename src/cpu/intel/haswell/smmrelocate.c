@@ -33,8 +33,6 @@
 #define SMRR_SUPPORTED (1 << 11)
 #define PRMRR_SUPPORTED (1 << 12)
 
-
-
 static void update_save_state(int cpu, uintptr_t curr_smbase,
 				uintptr_t staggered_smbase,
 				struct smm_relocation_params *relo_params)
@@ -111,7 +109,7 @@ void smm_relocation_handler(int cpu, uintptr_t curr_smbase,
 	msr_t mtrr_cap;
 	struct smm_relocation_params *relo_params = &smm_reloc_params;
 
-	printk(BIOS_DEBUG, "In relocation handler: cpu %d\n", cpu);
+	printk(BIOS_DEBUG, "In relocation handler: CPU %d\n", cpu);
 
 	/* Determine if the processor supports saving state in MSRs. If so,
 	 * enable it before the non-BSPs run so that SMM relocation can occur

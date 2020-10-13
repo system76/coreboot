@@ -8,38 +8,68 @@
 #include <ec/google/chromeec/ec.h>
 
 static const struct soc_amd_gpio ezkinil_bid1_gpio_set_stage_ram[] = {
+	/* PEN_DETECT_ODL - Not connected */
+	PAD_NC(GPIO_4),
+	/* PEN_POWER_EN - Not connected */
+	PAD_NC(GPIO_5),
 	/* DMIC_SEL */
 	PAD_GPO(GPIO_13, LOW), // Select Camera 1 Dmic
 	/* USB_OC4_L - USB_A1 */
-	PAD_NF(GPIO_14, USB_OC4_L, PULL_UP),
+	PAD_NF(GPIO_14, USB_OC4_L, PULL_NONE),
 	/* USB_OC2_L - USB A0 */
-	PAD_NF(GPIO_18, USB_OC2_L, PULL_UP),
+	PAD_NF(GPIO_18, USB_OC2_L, PULL_NONE),
+	/* EN_PWR_WIFI */
+	PAD_GPO(GPIO_29, HIGH),
 	/* EN_PWR_TOUCHPAD_PS2 */
 	PAD_GPO(GPIO_67, HIGH),
 	/* MST_GPIO_2 (Fw Update HDMI hub) */
 	PAD_GPI(GPIO_86, PULL_NONE),
+	/* EN_DEV_BEEP_L */
+	PAD_GPO(GPIO_89, HIGH),
 	/* MST_GPIO_3 (Fw Update HDMI hub) */
 	PAD_GPI(GPIO_90, PULL_NONE),
+	/* USI_RESET */
+	PAD_GPO(GPIO_140, HIGH),
 };
 
 static const struct soc_amd_gpio ezkinil_bid2_gpio_set_stage_ram[] = {
+	/* PEN_DETECT_ODL - Not connected */
+	PAD_NC(GPIO_4),
+	/* PEN_POWER_EN - Not connected */
+	PAD_NC(GPIO_5),
 	/* FPMCU_RST_L Change NC */
-	PAD_GPI(GPIO_11, PULL_UP),
+	PAD_NC(GPIO_11),
 	/* DMIC_SEL */
 	PAD_GPO(GPIO_13, LOW), // Select Camera 1 Dmic
+	/* EN_PWR_WIFI */
+	PAD_GPO(GPIO_29, HIGH),
 	/* EN_PWR_TOUCHPAD_PS2 */
 	PAD_GPO(GPIO_67, HIGH),
 	/* FPMCU_BOOT0 Change NC */
-	PAD_GPI(GPIO_69, PULL_UP),
+	PAD_NC(GPIO_69),
 	/* MST_GPIO_2 (Fw Update HDMI hub) Change NC */
-	PAD_GPI(GPIO_86, PULL_UP),
+	PAD_NC(GPIO_86),
+	/* EN_DEV_BEEP_L */
+	PAD_GPO(GPIO_89, HIGH),
+	/* TP */
+	PAD_NC(GPIO_90),
+	/* USI_RESET */
+	PAD_GPO(GPIO_140, HIGH),
 };
 
 static const struct soc_amd_gpio ezkinil_bid3_gpio_set_stage_ram[] = {
+	/* PEN_DETECT_ODL - Not connected */
+	PAD_NC(GPIO_4),
+	/* PEN_POWER_EN - Not connected */
+	PAD_NC(GPIO_5),
 	/* FPMCU_RST_L Change NC */
-	PAD_GPI(GPIO_11, PULL_UP),
+	PAD_NC(GPIO_11),
 	/* FPMCU_BOOT0 Change NC */
-	PAD_GPI(GPIO_69, PULL_UP),
+	PAD_NC(GPIO_69),
+	/* EN_DEV_BEEP_L */
+	PAD_GPO(GPIO_89, HIGH),
+	/* USI_RESET */
+	PAD_GPO(GPIO_140, HIGH),
 };
 
 const struct soc_amd_gpio *variant_override_gpio_table(size_t *size)

@@ -170,11 +170,9 @@ static void soc_peg_init_params(FSP_M_CONFIG *m_cfg,
 	 * If PEG port is not defined in the device tree, it will be disabled
 	 * in FSP
 	 */
-	dev = pcidev_on_root(SA_DEV_SLOT_PEG, 0); /* PEG 0:1:0 */
-	if (!dev || !dev->enabled)
-		m_cfg->Peg0Enable = 0;
-	else if (dev->enabled) {
-		m_cfg->Peg0Enable = dev->enabled;
+	dev = pcidev_path_on_root(SA_DEVFN_PEG0); /* PEG 0:1:0 */
+	m_cfg->Peg0Enable = dev && dev->enabled;
+	if (m_cfg->Peg0Enable) {
 		m_cfg->Peg0MaxLinkWidth = config->Peg0MaxLinkWidth;
 		/* Use maximum possible link speed */
 		m_cfg->Peg0MaxLinkSpeed = 0;
@@ -185,11 +183,9 @@ static void soc_peg_init_params(FSP_M_CONFIG *m_cfg,
 		m_t_cfg->Peg0Gen3EqPh3Method = 0;
 	}
 
-	dev = pcidev_on_root(SA_DEV_SLOT_PEG, 1); /* PEG 0:1:1 */
-	if (!dev || !dev->enabled)
-		m_cfg->Peg1Enable = 0;
-	else if (dev->enabled) {
-		m_cfg->Peg1Enable = dev->enabled;
+	dev = pcidev_path_on_root(SA_DEVFN_PEG1); /* PEG 0:1:1 */
+	m_cfg->Peg1Enable = dev && dev->enabled;
+	if (m_cfg->Peg1Enable) {
 		m_cfg->Peg1MaxLinkWidth = config->Peg1MaxLinkWidth;
 		m_cfg->Peg1MaxLinkSpeed = 0;
 		m_cfg->Peg1PowerDownUnusedLanes = 1;
@@ -197,11 +193,9 @@ static void soc_peg_init_params(FSP_M_CONFIG *m_cfg,
 		m_t_cfg->Peg1Gen3EqPh3Method = 0;
 	}
 
-	dev = pcidev_on_root(SA_DEV_SLOT_PEG, 2); /* PEG 0:1:2 */
-	if (!dev || !dev->enabled)
-		m_cfg->Peg2Enable = 0;
-	else if (dev->enabled) {
-		m_cfg->Peg2Enable = dev->enabled;
+	dev = pcidev_path_on_root(SA_DEVFN_PEG2); /* PEG 0:1:2 */
+	m_cfg->Peg2Enable = dev && dev->enabled;
+	if (m_cfg->Peg2Enable) {
 		m_cfg->Peg2MaxLinkWidth = config->Peg2MaxLinkWidth;
 		m_cfg->Peg2MaxLinkSpeed = 0;
 		m_cfg->Peg2PowerDownUnusedLanes = 1;
@@ -226,7 +220,7 @@ static void soc_memory_init_params(FSP_M_CONFIG *m_cfg,
 	m_cfg->CmdTriStateDis = config->CmdTriStateDis;
 	m_cfg->DdrFreqLimit = config->DdrFreqLimit;
 	m_cfg->VmxEnable = CONFIG(ENABLE_VMX);
-	m_cfg->PrmrrSize = get_prmrr_size();
+	m_cfg->PrmrrSize = get_valid_prmrr_size();
 	for (i = 0; i < ARRAY_SIZE(config->PcieRpEnable); i++) {
 		if (config->PcieRpEnable[i])
 			mask |= (1<<i);
@@ -247,31 +241,27 @@ static void soc_primary_gfx_config_params(FSP_M_CONFIG *m_cfg,
 	const struct device *dev;
 
 	dev = pcidev_path_on_root(SA_DEVFN_IGD);
-	if (!dev || !dev->enabled) {
-		/*
-		 * If iGPU is disabled or not defined in the devicetree.cb,
-		 * the FSP does not initialize this device
-		 */
-		m_cfg->InternalGfx = 0;
-		m_cfg->IgdDvmt50PreAlloc = 0;
-	} else {
-		m_cfg->InternalGfx = 1;
-		/*
-		 * Set IGD stolen size to 64MB.  The FBC hardware for skylake
-		 * does not have access to the bios_reserved range so it always
-		 * assumes 8MB is used and so the kernel will avoid the last
-		 * 8MB of the stolen window. With the default stolen size of
-		 * 32MB(-8MB) there is not enough space for FBC to work with
-		 * a high resolution panel
-		 */
-		m_cfg->IgdDvmt50PreAlloc = 2;
-	}
+	m_cfg->InternalGfx = dev && dev->enabled;
+
+	/*
+	 * If iGPU is enabled, set IGD stolen size to 64MB. The FBC
+	 * hardware for skylake does not have access to the bios
+	 * reserved range so it always assumes 8MB is used and so the
+	 * kernel will avoid the last 8MB of the stolen window. With
+	 * the default stolen size of 32MB(-8MB) there is not enough
+	 * space for FBC to work with a high resolution panel.
+	 *
+	 * If disabled, don't reserve memory for it.
+	 */
+	m_cfg->IgdDvmt50PreAlloc = m_cfg->InternalGfx ? 2 : 0;
+
 	m_cfg->PrimaryDisplay = config->PrimaryDisplay;
 }
 
 void platform_fsp_memory_init_params_cb(FSPM_UPD *mupd, uint32_t version)
 {
 	const struct soc_intel_skylake_config *config;
+	const struct device *dev;
 	FSP_M_CONFIG *m_cfg = &mupd->FspmConfig;
 	FSP_M_TEST_CONFIG *m_t_cfg = &mupd->FspmTestConfig;
 
@@ -292,12 +282,15 @@ void platform_fsp_memory_init_params_cb(FSPM_UPD *mupd, uint32_t version)
 
 	/* DCI and TraceHub configs */
 	m_t_cfg->PchDciEn = config->PchDciEn;
-	m_cfg->EnableTraceHub = config->EnableTraceHub;
+
+	dev = pcidev_path_on_root(PCH_DEVFN_TRACEHUB);
+	m_cfg->EnableTraceHub = dev && dev->enabled;
 	m_cfg->TraceHubMemReg0Size = config->TraceHubMemReg0Size;
 	m_cfg->TraceHubMemReg1Size = config->TraceHubMemReg1Size;
 
-	/* Enable SMBus controller based on config */
-	m_cfg->SmbusEnable = config->SmbusEnable;
+	/* Enable SMBus controller */
+	dev = pcidev_path_on_root(PCH_DEVFN_SMBUS);
+	m_cfg->SmbusEnable = dev && dev->enabled;
 
 	/* Set primary graphic device */
 	soc_primary_gfx_config_params(m_cfg, config);

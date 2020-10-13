@@ -1,11 +1,13 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 #include <assert.h>
 #include <console/console.h>
+#include <device/device.h>
 #include <fsp/api.h>
 #include <fsp/ppi/mp_service_ppi.h>
 #include <fsp/util.h>
 #include <intelblocks/lpss.h>
 #include <intelblocks/mp_init.h>
+#include <intelblocks/pmclib.h>
 #include <intelblocks/xdci.h>
 #include <intelpch/lockdown.h>
 #include <soc/intel/common/vbt.h>
@@ -76,6 +78,11 @@ static void parse_devicetree(FSP_S_CONFIG *params)
 		sizeof(config->SerialIoUartMode));
 }
 
+__weak void mainboard_update_soc_chip_config(struct soc_intel_jasperlake_config *config)
+{
+	/* Override settings per board. */
+}
+
 /* UPD parameters to be initialized before SiliconInit */
 void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 {
@@ -83,6 +90,9 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 	struct device *dev;
 	FSP_S_CONFIG *params = &supd->FspsConfig;
 	struct soc_intel_jasperlake_config *config = config_of_soc();
+
+	/* Allow mainboard to override any chip config */
+	mainboard_update_soc_chip_config(config);
 
 	/* Parse device tree and fill in FSP UPDs */
 	parse_devicetree(params);
@@ -92,19 +102,13 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 
 	/* Check if IGD is present and fill Graphics init param accordingly */
 	dev = pcidev_path_on_root(SA_DEVFN_IGD);
+	params->PeiGraphicsPeimInit = CONFIG(RUN_FSP_GOP) && is_dev_enabled(dev);
 
-	if (CONFIG(RUN_FSP_GOP) && dev && dev->enabled)
-		params->PeiGraphicsPeimInit = 1;
-	else
-		params->PeiGraphicsPeimInit = 0;
+	params->PavpEnable = CONFIG(PAVP);
 
 	/* Use coreboot MP PPI services if Kconfig is enabled */
-	if (CONFIG(USE_INTEL_FSP_TO_CALL_COREBOOT_PUBLISH_MP_PPI)) {
+	if (CONFIG(USE_INTEL_FSP_TO_CALL_COREBOOT_PUBLISH_MP_PPI))
 		params->CpuMpPpi = (uintptr_t) mp_fill_ppi_services_data();
-		params->SkipMpInit = 0;
-	} else {
-		params->SkipMpInit = !CONFIG_USE_INTEL_FSP_MP_INIT;
-	}
 
 	/* Chipset Lockdown */
 	if (get_lockdown_config() == CHIPSET_LOCKDOWN_COREBOOT) {
@@ -123,7 +127,7 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 	params->EndOfPostMessage = EOP_PEI;
 
 	/* Legacy 8254 timer support */
-	params->Enable8254ClockGating = !CONFIG_USE_LEGACY_8254_TIMER;
+	params->Enable8254ClockGating = !CONFIG(USE_LEGACY_8254_TIMER);
 	params->Enable8254ClockGatingOnS3 = 1;
 
 	/* disable Legacy PME */
@@ -135,19 +139,25 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 
 	/* USB configuration */
 	for (i = 0; i < ARRAY_SIZE(config->usb2_ports); i++) {
-
 		params->PortUsb20Enable[i] = config->usb2_ports[i].enable;
-		params->Usb2OverCurrentPin[i] = config->usb2_ports[i].ocpin;
 		params->Usb2PhyPetxiset[i] = config->usb2_ports[i].pre_emp_bias;
 		params->Usb2PhyTxiset[i] = config->usb2_ports[i].tx_bias;
 		params->Usb2PhyPredeemp[i] = config->usb2_ports[i].tx_emp_enable;
 		params->Usb2PhyPehalfbit[i] = config->usb2_ports[i].pre_emp_bit;
+
+		if (config->usb2_ports[i].enable)
+			params->Usb2OverCurrentPin[i] = config->usb2_ports[i].ocpin;
+		else
+			params->Usb2OverCurrentPin[i] = 0xff;
 	}
 
 	for (i = 0; i < ARRAY_SIZE(config->usb3_ports); i++) {
-
 		params->PortUsb30Enable[i] = config->usb3_ports[i].enable;
-		params->Usb3OverCurrentPin[i] = config->usb3_ports[i].ocpin;
+		if (config->usb3_ports[i].enable) {
+			params->Usb3OverCurrentPin[i] = config->usb3_ports[i].ocpin;
+		} else {
+			params->Usb3OverCurrentPin[i] = 0xff;
+		}
 		if (config->usb3_ports[i].tx_de_emp) {
 			params->Usb3HsioTxDeEmphEnable[i] = 1;
 			params->Usb3HsioTxDeEmph[i] = config->usb3_ports[i].tx_de_emp;
@@ -161,8 +171,8 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 
 	/* SATA */
 	dev = pcidev_path_on_root(PCH_DEVFN_SATA);
-	if (dev) {
-		params->SataEnable = dev->enabled;
+	params->SataEnable = is_dev_enabled(dev);
+	if (params->SataEnable) {
 		params->SataMode = config->SataMode;
 		params->SataSalpSupport = config->SataSalpSupport;
 
@@ -175,32 +185,30 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 				ARRAY_SIZE(config->SataPortsDevSlp), "copy buffer overflow!");
 		memcpy(params->SataPortsDevSlp, config->SataPortsDevSlp,
 				sizeof(params->SataPortsDevSlp));
-	} else {
-		params->SataEnable = 0;
 	}
+
+	/* VR Configuration */
+	params->ImonSlope[0] = config->ImonSlope;
+	params->ImonOffset[0] = config->ImonOffset;
 
 	/* SDCard related configuration */
 	dev = pcidev_path_on_root(PCH_DEVFN_SDCARD);
-	if (!dev) {
-		params->ScsSdCardEnabled = 0;
-	} else {
-		params->ScsSdCardEnabled = dev->enabled;
+	params->ScsSdCardEnabled = is_dev_enabled(dev);
+	if (params->ScsSdCardEnabled)
 		params->SdCardPowerEnableActiveHigh = config->SdCardPowerEnableActiveHigh;
-	}
 
-	params->Device4Enable = config->Device4Enable;
+	/* Enable Processor Thermal Control */
+	dev = pcidev_path_on_root(SA_DEVFN_DPTF);
+	params->Device4Enable = is_dev_enabled(dev);
 
 	/* Set TccActivationOffset */
 	params->TccActivationOffset = config->tcc_offset;
 
 	/* eMMC configuration */
 	dev = pcidev_path_on_root(PCH_DEVFN_EMMC);
-	if (!dev) {
-		params->ScsEmmcEnabled = 0;
-	} else {
-		params->ScsEmmcEnabled = dev->enabled;
+	params->ScsEmmcEnabled = is_dev_enabled(dev);
+	if (params->ScsEmmcEnabled)
 		params->ScsEmmcHs400Enabled = config->ScsEmmcHs400Enabled;
-	}
 
 	/* Enable xDCI controller if enabled in devicetree and allowed */
 	dev = pcidev_path_on_root(PCH_DEVFN_USBOTG);
@@ -213,14 +221,33 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 		params->XdciEnable = 0;
 	}
 
-	/* Disable Pavp */
-	params->PavpEnable = 0;
-
 	/* Provide correct UART number for FSP debug logs */
 	params->SerialIoDebugUartNumber = CONFIG_UART_FOR_CONSOLE;
 
+	/* Apply minimum assertion width settings if non-zero */
+	if (config->PchPmSlpS3MinAssert)
+		params->PchPmSlpS3MinAssert = config->PchPmSlpS3MinAssert;
+	if (config->PchPmSlpS4MinAssert)
+		params->PchPmSlpS4MinAssert = config->PchPmSlpS4MinAssert;
+	if (config->PchPmSlpSusMinAssert)
+		params->PchPmSlpSusMinAssert = config->PchPmSlpSusMinAssert;
+	if (config->PchPmSlpAMinAssert)
+		params->PchPmSlpAMinAssert = config->PchPmSlpAMinAssert;
+
+	/* Set Power Cycle Duration */
+	if (config->PchPmPwrCycDur)
+		params->PchPmPwrCycDur = get_pm_pwr_cyc_dur(config->PchPmSlpS4MinAssert,
+				config->PchPmSlpS3MinAssert, config->PchPmSlpAMinAssert,
+				config->PchPmPwrCycDur);
+
 	/* Override/Fill FSP Silicon Param for mainboard */
 	mainboard_silicon_init_params(params);
+}
+
+/* Disable Multiphase Si init */
+int soc_fsp_multi_phase_init_is_enable(void)
+{
+	return 0;
 }
 
 /* Mainboard GPIO Configuration */

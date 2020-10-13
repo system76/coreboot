@@ -6,6 +6,7 @@
 #include <cpu/x86/lapic.h>
 #include <device/pci.h>
 #include <fsp/api.h>
+#include <intelblocks/lpc_lib.h>
 #include <intelblocks/p2sb.h>
 #include <post.h>
 #include <soc/acpi.h>
@@ -450,7 +451,6 @@ static void xeonsp_pci_domain_read_resources(struct device *dev)
 		}
 	}
 
-
 	/* assign resources */
 	assign_stack_resources(&stack_info, dev, NULL);
 
@@ -493,11 +493,23 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *silupd)
 	/* not implemented yet */
 }
 
+#if CONFIG(HAVE_ACPI_TABLES)
+static const char *soc_acpi_name(const struct device *dev)
+{
+	if (dev->path.type == DEVICE_PATH_DOMAIN)
+		return "PC00";
+	return NULL;
+}
+#endif
+
 static struct device_operations pci_domain_ops = {
 	.read_resources = &pci_domain_read_resources,
 	.set_resources = &xeonsp_cpx_pci_domain_set_resources,
 	.scan_bus = &xeonsp_cpx_pci_domain_scan_bus,
+#if CONFIG(HAVE_ACPI_TABLES)
 	.write_acpi_tables  = &northbridge_write_acpi_tables,
+	.acpi_name        = soc_acpi_name
+#endif
 };
 
 static struct device_operations cpu_bus_ops = {
@@ -546,27 +558,6 @@ static void attach_iio_stacks(struct device *dev)
 	DEV_FUNC_EXIT(dev);
 }
 
-static void pch_enable_ioapic(const struct device *dev)
-{
-	uint32_t reg32;
-
-	set_ioapic_id((void *)IO_APIC_ADDR, 2);
-
-	/* affirm full set of redirection table entries ("write once") */
-	reg32 = io_apic_read((void *)IO_APIC_ADDR, 1);
-
-	reg32 &= ~0x00ff0000;
-	reg32 |= (C620_IOAPIC_REDIR_ENTRIES - 1) << 16;
-
-	io_apic_write((void *)IO_APIC_ADDR, 1, reg32);
-
-	/*
-	 * Select Boot Configuration register (0x03) and
-	 * use Processor System Bus (0x01) to deliver interrupts.
-	 */
-	io_apic_write((void *)IO_APIC_ADDR, 3, 1);
-}
-
 struct pci_operations soc_pci_ops = {
 	.set_subsystem = pci_dev_set_subsystem,
 };
@@ -593,7 +584,7 @@ static void chip_init(void *data)
 {
 	printk(BIOS_DEBUG, "coreboot: calling fsp_silicon_init\n");
 	fsp_silicon_init(false);
-	pch_enable_ioapic(NULL);
+	pch_enable_ioapic();
 	setup_lapic();
 	p2sb_unhide();
 }

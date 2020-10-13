@@ -50,7 +50,7 @@ Device (LPCB)
 		RCBA,	18,
 	}
 
-	#include "irqlinks.asl"
+	#include <southbridge/intel/common/acpi/irqlinks.asl>
 
 	#include "acpi/ec.asl"
 
@@ -184,8 +184,6 @@ Device (LPCB)
 		Name (_CRS, ResourceTemplate()
 		{
 			IO (Decode16, 0x70, 0x70, 1, 8)
-// Disable as Windows doesn't like it, and systems don't seem to use it.
-//			IRQNoFlags() { 8 }
 		})
 	}
 

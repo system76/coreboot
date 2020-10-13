@@ -9,11 +9,7 @@ if SOC_INTEL_DENVERTON_NS
 
 config CPU_SPECIFIC_OPTIONS
 	def_bool y
-	select ARCH_BOOTBLOCK_X86_32
-	select ARCH_RAMSTAGE_X86_32
-	select ARCH_ROMSTAGE_X86_32
-	select ARCH_VERSTAGE_X86_32
-	select BOOT_DEVICE_SPI_FLASH_RW_NOMMAP_EARLY if BOOT_DEVICE_SPI_FLASH
+	select ARCH_ALL_STAGES_X86_32
 	select BOOT_DEVICE_SUPPORTS_WRITES
 	select DEBUG_GPIO
 	select SOC_INTEL_COMMON
@@ -25,7 +21,6 @@ config CPU_SPECIFIC_OPTIONS
 	select CACHE_MRC_SETTINGS
 	select PARALLEL_MP
 	select PCR_COMMON_IOSF_1_0
-	select SMP
 	select INTEL_DESCRIPTOR_MODE_CAPABLE
 	select SOC_INTEL_COMMON_BLOCK
 	select SOC_INTEL_COMMON_BLOCK_CPU
@@ -121,13 +116,6 @@ config IQAT_ENABLE
 	bool "Enable IQAT"
 	default y
 
-config IQAT_MEMORY_REGION_SIZE
-	depends on IQAT_ENABLE
-	hex
-	default 0x100000
-	help
-	  Do not change this value
-
 config HSUART_DEV
 	hex
 	default 0x1a
@@ -169,7 +157,7 @@ config DENVERTON_NS_CAR_NEM_ENHANCED
 	depends on !FSP_CAR
 	default y
 	select SOC_INTEL_COMMON_BLOCK_CAR
-	select INTEL_CAR_NEM_ENHANCED
+	select USE_CAR_NEM_ENHANCED_V1
 	help
 	  A current limitation of NEM (Non-Evict mode) is that code and data sizes
 	  are derived from the requirement to not write out any modified cache line.

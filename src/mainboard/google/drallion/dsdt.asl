@@ -12,7 +12,7 @@ DefinitionBlock(
 	0x20110725	/* OEM revision */
 )
 {
-	#include <soc/intel/cannonlake/acpi/platform.asl>
+	#include <soc/intel/common/block/acpi/acpi/platform.asl>
 
 	/* global NVS and variables */
 	#include <soc/intel/common/block/acpi/acpi/globalnvs.asl>
@@ -40,7 +40,7 @@ DefinitionBlock(
 	#include <southbridge/intel/common/acpi/sleepstates.asl>
 
 	/* Low power idle table */
-	#include <soc/intel/cannonlake/acpi/lpit.asl>
+	#include <soc/intel/common/acpi/lpit.asl>
 
 	/* Chrome OS Embedded Controller */
 	Scope (\_SB.PCI0.LPCB)

@@ -4,17 +4,16 @@
 
 #include <amdblocks/acpimmio.h>
 #include <amdblocks/espi.h>
+#include <amdblocks/spi.h>
 #include <arch/exception.h>
 #include <arch/hlt.h>
 #include <arch/io.h>
 #include <bl_uapp/bl_errorcodes_public.h>
 #include <bl_uapp/bl_syscall_public.h>
 #include <console/console.h>
-#include <delay.h>
 #include <soc/i2c.h>
 #include <soc/southbridge.h>
 #include <stdint.h>
-#include <timestamp.h>
 
 static void i2c3_set_bar(void *bar)
 {
@@ -84,6 +83,7 @@ static struct {
 	{"eSPI", {FCH_IO_DEVICE_ESPI}, espi_set_bar},
 	{"I2C2", {FCH_IO_DEVICE_I2C, 2}, i2c2_set_bar},
 	{"I2C3", {FCH_IO_DEVICE_I2C, 3}, i2c3_set_bar},
+	{"SPI", {FCH_IO_DEVICE_SPI}, spi_set_base},
 	{"AOAC", {FCH_IO_DEVICE_AOAC}, aoac_set_bar},
 };
 

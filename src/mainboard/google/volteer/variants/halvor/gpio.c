@@ -23,8 +23,20 @@ static const struct pad_config gpio_table[] = {
 	PAD_CFG_NF(GPP_A9, NONE, DEEP, NF1),
 	/* A10 : I2S2_RXD ==> I2S1_RXD */
 	PAD_CFG_NF(GPP_A10, NONE, DEEP, NF1),
+	/* A13 : PMC_I2C_SCL ==> BT_DISABLE_L */
+	PAD_CFG_GPO(GPP_A13, 1, DEEP),
+	/* A14 : DDSP_HPD3 ==> USB_C2_DP_HPD */
+	PAD_CFG_NF(GPP_A14, NONE, DEEP, NF2),
+	/* A16 : USB_OC3# ==> USB_C0_OC_OD# */
+	PAD_CFG_NF(GPP_A16, NONE, DEEP, NF1),
 	/* A18 : DDSP_HPDB ==> NC */
 	PAD_NC(GPP_A18, NONE),
+	/* A19 : DDSP_HPD1 ==> USB_C0_DP_HPD */
+	PAD_CFG_NF(GPP_A19, NONE, DEEP, NF1),
+	/* A20 : DDSP_HPD2 ==> USB_C1_DP_HPD */
+	PAD_CFG_NF(GPP_A20, NONE, DEEP, NF1),
+	/* A21 : DDPC_CTRCLK ==> EN_FP_PWR */
+	PAD_CFG_GPO(GPP_A21, 1, DEEP),
 	/* A22 : DDPC_CTRLDATA ==> NC */
 	PAD_NC(GPP_A22, NONE),
 	/* A23 : I2S1_SCLK ==> HP_INT_L */
@@ -42,6 +54,16 @@ static const struct pad_config gpio_table[] = {
 	PAD_CFG_NF(GPP_B7, NONE, DEEP, NF1),
 	/* B8  : ISH_I2C1_SCL ==> I2C_SENSOR_SCL */
 	PAD_CFG_NF(GPP_B8, NONE, DEEP, NF1),
+	/* B9  : I2C5_SDA ==> PCH_I2C5_TRACKPAD_SDA */
+	PAD_CFG_NF(GPP_B9, NONE, DEEP, NF1),
+	/* B10 : I2C5_SCL ==> PCH_I2C5_TRACKPAD_SCL */
+	PAD_CFG_NF(GPP_B10, NONE, DEEP, NF1),
+	/* B19 : GSPI1_CS0# ==> PCH_GSPI1_FPMCU_CS_L */
+	PAD_CFG_NF(GPP_B19, NONE, DEEP, NF1),
+	/* B20 : GSPI1_CLK ==> PCH_GSPI1_FPMCU_CLK */
+	PAD_CFG_NF(GPP_B20, NONE, DEEP, NF1),
+	/* B21 : GSPI1_MISO ==> PCH_GSPI1_FPMCU_MISO */
+	PAD_CFG_NF(GPP_B21, NONE, DEEP, NF1),
 
 	/* C1  : SMBDATA ==> FPMCU_BOOT1 */
 	PAD_CFG_GPO(GPP_C1, 0, DEEP),
@@ -53,9 +75,17 @@ static const struct pad_config gpio_table[] = {
 	PAD_NC(GPP_C11, NONE),
 	/* C13 : UART1_TXD ==> NC */
 	PAD_NC(GPP_C13, NONE),
+	/* C20 : UART2_RXD ==> FPMCU_INT_L */
+	PAD_CFG_GPI_INT(GPP_C20, NONE, PLTRST, LEVEL),
+	/* C22 : UART2_RTS# ==> PCH_FPMCU_BOOT0 */
+	PAD_CFG_GPO(GPP_C22, 0, DEEP),
+	/* C23 : UART2_CTS# ==> FPMCU_RST_ODL */
+	PAD_CFG_GPO(GPP_C23, 1, DEEP),
 
 	/* D7  : SRCCLKREQ2# ==> NC */
 	PAD_NC(GPP_D7, NONE),
+	/* D8  : SRCCLKREQ3# ==> SD_CLKREQ_ODL */
+	PAD_CFG_NF(GPP_D8, NONE, DEEP, NF1),
 	/* D9  : ISH_SPI_CS# ==> TBT_LSX2_TXD */
 	PAD_CFG_NF(GPP_D9, NONE, DEEP, NF4),
 	/* D10 : ISH_SPI_CLK ==> TBT_LSX2_RXD */
@@ -64,6 +94,8 @@ static const struct pad_config gpio_table[] = {
 	PAD_NC(GPP_D11, NONE),
 	/* D12 : ISH_SPI_MOSI ==> NC */
 	PAD_NC(GPP_D12, NONE),
+	/* D16 : ISH_UART0_CTS# ==> EN_PP3300_SD */
+	PAD_CFG_GPO(GPP_D16, 1, DEEP),
 
 	/* E0  : SATAXPCIE0 ==> NC */
 	PAD_NC(GPP_E0, NONE),
@@ -75,10 +107,14 @@ static const struct pad_config gpio_table[] = {
 	PAD_NC(GPP_E5, NONE),
 	/* E10 : SPI1_CS# ==> NC */
 	PAD_NC(GPP_E10, NONE),
+	/* E11 : SPI1_CLK ==> SD_PE_WAKE_ODL */
+	PAD_CFG_GPI(GPP_E11, NONE, DEEP),
 	/* E12 : SPI1_MISO_IO1 ==> NC */
 	PAD_NC(GPP_E12, NONE),
 	/* E13 : SPI1_MOSI_IO0 ==> NC */
 	PAD_NC(GPP_E13, NONE),
+	/* E15 : ISH_GP6 ==> TRACKPAD_INT_ODL */
+	PAD_CFG_GPI_IRQ_WAKE(GPP_E15, NONE, DEEP, LEVEL, INVERT),
 	/* E16 : ISH_GP7 ==> SD_PRSNT# */
 	PAD_CFG_GPI(GPP_E16, NONE, DEEP),
 	/* E17 : THC0_SPI1_INT# ==> NC */
@@ -96,6 +132,8 @@ static const struct pad_config gpio_table[] = {
 	PAD_NC(GPP_F11, NONE),
 	/* F12 : GSXDOUT ==> EN_PP3300_TRACKPAD */
 	PAD_CFG_GPO(GPP_F12, 1, DEEP),
+	/* F13 : GSXDOUT ==> WiFi_DISABLE_L */
+	PAD_CFG_GPO(GPP_F13, 1, DEEP),
 	/* F14 : GSXDIN ==> NC */
 	PAD_NC(GPP_F14, NONE),
 	/* F15 : GSXSRESET# ==> NC */
@@ -109,6 +147,8 @@ static const struct pad_config gpio_table[] = {
 	/* F19 : SRCCLKREQ6# ==> NC */
 	PAD_NC(GPP_F19, NONE),
 
+	/* H3  : SX_EXIT_HOLDOFF# ==> SD_PERST_L */
+	PAD_CFG_GPO(GPP_H3, 1, DEEP),
 	/* H6  : I2C3_SDA */
 	PAD_CFG_NF(GPP_H6, NONE, DEEP, NF1),
 	/* H7  : I2C3_SCL */
@@ -125,6 +165,8 @@ static const struct pad_config gpio_table[] = {
 	PAD_NC(GPP_H16, NONE),
 	/* H17 : DDPB_CTRLDATA ==> NC */
 	PAD_NC(GPP_H17, NONE),
+	/* H19 : TIME_SYNC0 ==> USER_PRES_FP_ODL */
+	PAD_CFG_GPI(GPP_H19, NONE, DEEP),
 	/* H23 : IMGCLKOUT4 ==> NC */
 	PAD_NC(GPP_H23, NONE),
 
@@ -183,6 +225,9 @@ static const struct pad_config early_gpio_table[] = {
 
 	/* C22 : UART2_RTS# ==> PCH_FPMCU_BOOT0 */
 	PAD_CFG_GPO(GPP_C22, 0, DEEP),
+
+	/* D16 : ISH_UART0_CTS# ==> EN_PP3300_SD */
+	PAD_CFG_GPO(GPP_D16, 1, DEEP),
 
 	/* H11 : SRCCLKREQ5# ==> WLAN_PERST_L */
 	PAD_CFG_GPO(GPP_H11, 1, DEEP),

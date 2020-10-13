@@ -6,10 +6,9 @@ bootblock-y += bootblock.c
 bootblock-y += early_init.c
 
 romstage-y += early_init.c
-romstage-y += early_smbus.c
 
+ramstage-y += azalia.c
 ramstage-y += fadt.c
-ramstage-y += hdaudio.c
 ramstage-y += i82801jx.c
 ramstage-y += lpc.c
 ramstage-y += pci.c

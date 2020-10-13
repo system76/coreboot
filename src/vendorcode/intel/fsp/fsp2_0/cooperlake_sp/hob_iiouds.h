@@ -45,6 +45,7 @@ are permitted provided that the following conditions are met:
 #define MAX_IMC                   2
 #define MAX_CH                    6
 #define MC_MAX_NODE               (MAX_SOCKET * MAX_IMC)
+#define MAX_CHA_MAP               4
 
 // Maximum KTI PORTS to be used in structure definition
 #if (MAX_SOCKET == 1)
@@ -90,45 +91,41 @@ typedef struct {
  IIO PCIe Ports
  **/
 typedef enum {
+	// IOU0, CSTACK
 	PORT_0 = 0,
-	// IOU0
+	// IOU1, PSTACK0
 	PORT_1A,
 	PORT_1B,
 	PORT_1C,
 	PORT_1D,
-	// IOU1
+	// IOU2, PSTACK1
 	PORT_2A,
 	PORT_2B,
 	PORT_2C,
 	PORT_2D,
-	// IOU2
-	PORT_4A,
-	PORT_4B,
-	PORT_4C,
-	PORT_4D,
-	// MCP0
-	PORT_5A,
-	PORT_5B,
-	PORT_5C,
-	PORT_5D,
-	// MCP1
-	PORT_6A,
-	PORT_6B,
-	PORT_6C,
-	PORT_6D,
+	// IOU3, PSTACK2
+	PORT_3A,
+	PORT_3B,
+	PORT_3C,
+	PORT_3D,
 	MAX_PORTS
 } PCIE_PORTS;
 
 /**
- IIO Stacks
- **/
+ * IIO Stacks
+ *
+ * Ports    Stack	Stack(HOB)	IioConfigIou
+ * =================================================
+ * 0        CSTACK	stack 0		IOU0
+ * 1A..1D   PSTACK0	stack 1		IOU1
+ * 2A..2D   PSTACK1	stack 2		IOU2
+ * 3A..3D   PSTACK2	stack 4		IOU3
+ */
 typedef enum {
 	CSTACK = 0,
 	PSTACK0,
 	PSTACK1,
-	PSTACK2,
-	PSTACK3,
-	PSTACK4,
+	PSTACK2 = 4,
 	MAX_STACKS
 } IIO_STACKS;
 
@@ -155,11 +152,10 @@ typedef struct {
   uint8_t                     PcieSegment;
   UINT64_STRUCT               SegMmcfgBase;
   uint16_t                    stackPresentBitmap;
-  uint16_t                    CxlPresentBitmap;
   uint16_t                    M2PciePresentBitmap;
   uint8_t                     TotM3Kti;
   uint8_t                     TotCha;
-  uint32_t                    ChaList;
+  uint32_t                    ChaList[MAX_CHA_MAP];
   uint32_t                    SocId;
   QPI_PEER_DATA               PeerInfo[MAX_FW_KTI_PORTS];    // QPI LEP info
 } QPI_CPU_DATA;
@@ -200,23 +196,20 @@ typedef struct _STACK_RES {
   uint8_t                   Personality; // see STACK_TYPE for details
   uint8_t                   BusBase;
   uint8_t                   BusLimit;
-  uint16_t                  IoBase; // Base of IO configured for this stack
-  uint16_t                  IoLimit; // Limit of IO configured for this stack
+  uint16_t                  PciResourceIoBase;
+  uint16_t                  PciResourceIoLimit;
   uint32_t                  IoApicBase; // Base of IO configured for this stack
   uint32_t                  IoApicLimit; // Limit of IO configured for this stack
   uint32_t                  Mmio32Base;
   uint32_t                  Mmio32Limit;
   uint64_t                  Mmio64Base;
   uint64_t                  Mmio64Limit;
-  uint8_t                   PciResourceBusBase; // Base of Bus resource available for PCI devices
-  uint8_t                   PciResourceBusLimit; // Limit of Bus resource available for PCI devices
-  uint16_t                  PciResourceIoBase; // Base of IO resource available for PCI devices
-  uint16_t                  PciResourceIoLimit; // Limit of IO resource available for PCI devices
   uint32_t                  PciResourceMem32Base;
   uint32_t                  PciResourceMem32Limit;
   uint64_t                  PciResourceMem64Base;
   uint64_t                  PciResourceMem64Limit;
   uint32_t                  VtdBarAddress;
+  uint32_t                  Mmio32MinSize;         // Minimum required size of MMIO32 resource needed for this stack
 } STACK_RES;
 
 typedef struct {

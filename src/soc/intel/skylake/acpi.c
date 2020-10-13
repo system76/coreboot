@@ -379,7 +379,7 @@ void generate_cpu_entries(const struct device *device)
 	printk(BIOS_DEBUG, "Found %d CPU(s) with %d core(s) each.\n",
 	       numcpus, cores_per_package);
 
-	if (config->eist_enable && config->speed_shift_enable) {
+	if (config->speed_shift_enable) {
 		struct cppc_config cppc_config;
 		cpu_init_cppc_config(&cppc_config, 2 /* version 2 */);
 		acpigen_write_CPPC_package(&cppc_config);
@@ -403,9 +403,11 @@ void generate_cpu_entries(const struct device *device)
 				/* Generate P-state tables */
 				generate_p_state_entries(core_id,
 						cores_per_package);
-				if (config->speed_shift_enable)
-					acpigen_write_CPPC_method();
 			}
+
+			if (config->speed_shift_enable)
+				acpigen_write_CPPC_method();
+
 			acpigen_pop_len();
 		}
 	}
@@ -425,22 +427,19 @@ static unsigned long acpi_fill_dmar(unsigned long current)
 	const bool gfxvten = MCHBAR32(GFXVTBAR) & 1;
 
 	/* iGFX has to be enabled, GFXVTBAR set and in 32-bit space. */
-	if (igfx_dev && igfx_dev->enabled && gfxvten &&
-	    gfx_vtbar && !MCHBAR32(GFXVTBAR + 4)) {
-		unsigned long tmp = current;
+	const bool emit_igd =
+			igfx_dev && igfx_dev->enabled &&
+			gfx_vtbar && gfxvten &&
+			!MCHBAR32(GFXVTBAR + 4);
+
+	/* First, add DRHD entries */
+	if (emit_igd) {
+		const unsigned long tmp = current;
 
 		current += acpi_create_dmar_drhd(current, 0, 0, gfx_vtbar);
 		current += acpi_create_dmar_ds_pci(current, 0, 2, 0);
 
 		acpi_dmar_drhd_fixup(tmp, current);
-
-		/* Add RMRR entry */
-		tmp = current;
-
-		current += acpi_create_dmar_rmrr(current, 0,
-				sa_get_gsm_base(), sa_get_tolud_base() - 1);
-		current += acpi_create_dmar_ds_pci(current, 0, 2, 0);
-		acpi_dmar_rmrr_fixup(tmp, current);
 	}
 
 	const u32 vtvc0bar = MCHBAR32(VTVC0BAR) & ~0xfff;
@@ -459,6 +458,16 @@ static unsigned long acpi_fill_dmar(unsigned long current)
 							V_P2SB_HBDF_DEV, V_P2SB_HBDF_FUN);
 
 		acpi_dmar_drhd_fixup(tmp, current);
+	}
+
+	/* Then, add RMRR entries after all DRHD entries */
+	if (emit_igd) {
+		const unsigned long tmp = current;
+
+		current += acpi_create_dmar_rmrr(current, 0,
+				sa_get_gsm_base(), sa_get_tolud_base() - 1);
+		current += acpi_create_dmar_ds_pci(current, 0, 2, 0);
+		acpi_dmar_rmrr_fixup(tmp, current);
 	}
 
 	return current;
@@ -625,12 +634,18 @@ const char *soc_acpi_name(const struct device *dev)
 	if (dev->path.type != DEVICE_PATH_PCI)
 		return NULL;
 
-	/* Only match devices on the root bus */
-	if (dev->bus && dev->bus->secondary > 0)
+	/* Match functions 0 and 1 for possible GPUs on a secondary bus */
+	if (dev->bus && dev->bus->secondary > 0) {
+		switch (PCI_FUNC(dev->path.pci.devfn)) {
+		case 0: return "DEV0";
+		case 1: return "DEV1";
+		}
 		return NULL;
+	}
 
 	switch (dev->path.pci.devfn) {
 	case SA_DEVFN_ROOT:	return "MCHC";
+	case SA_DEVFN_PEG0:	return "PEGP";
 	case SA_DEVFN_IGD:	return "GFX0";
 	case PCH_DEVFN_ISH:	return "ISHB";
 	case PCH_DEVFN_XHCI:	return "XHCI";
@@ -673,7 +688,6 @@ const char *soc_acpi_name(const struct device *dev)
 	case PCH_DEVFN_EMMC:	return "EMMC";
 	case PCH_DEVFN_SDIO:	return "SDIO";
 	case PCH_DEVFN_SDCARD:	return "SDXC";
-	case PCH_DEVFN_LPC:	return "LPCB";
 	case PCH_DEVFN_P2SB:	return "P2SB";
 	case PCH_DEVFN_PMC:	return "PMC_";
 	case PCH_DEVFN_HDA:	return "HDAS";

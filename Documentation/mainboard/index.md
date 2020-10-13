@@ -37,6 +37,8 @@ The boards in this section are not real mainboards, but emulators.
 - [Spike RISC-V emulator](emulation/spike-riscv.md)
 - [Qemu RISC-V emulator](emulation/qemu-riscv.md)
 - [Qemu AArch64 emulator](emulation/qemu-aarch64.md)
+- [Qemu x86 Q35](emulation/qemu-q35.md)
+- [Qemu x86 PC](emulation/qemu-i440fx.md)
 
 ## Facebook
 
@@ -59,6 +61,7 @@ The boards in this section are not real mainboards, but emulators.
 ### EliteBook series
 
 - [HP Laptops with KBC1126 EC](hp/hp_kbc1126_laptops.md)
+- [EliteBook 2560p](hp/2560p.md)
 - [EliteBook 8760w](hp/8760w.md)
 
 ## Intel
@@ -115,6 +118,7 @@ The boards in this section are not real mainboards, but emulators.
 
 ## OCP
 
+- [Delta Lake](ocp/deltalake.md)
 - [Tioga Pass](ocp/tiogapass.md)
 
 ## Open Cellular
@@ -134,6 +138,10 @@ The boards in this section are not real mainboards, but emulators.
 ## Prodrive
 
 - [Hermes](prodrive/hermes.md)
+
+## Purism
+
+- [Librem Mini](purism/librem_mini.md)
 
 ## Protectli
 

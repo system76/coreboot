@@ -8,6 +8,7 @@
 #include <device/device.h>
 #include <device/path.h>
 #include <stdlib.h>
+#include <types.h>
 #include <crc_byte.h>
 
 #if CONFIG(GENERIC_GPIO_LIB)
@@ -196,7 +197,6 @@ int acpi_device_status(const struct device *dev)
 		return ACPI_STATUS_DEVICE_HIDDEN_ON;
 	return ACPI_STATUS_DEVICE_ALL_ON;
 }
-
 
 /* Write the unique _UID based on ACPI device path. */
 void acpi_device_write_uid(const struct device *dev)

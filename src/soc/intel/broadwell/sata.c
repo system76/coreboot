@@ -36,7 +36,8 @@ static void sata_init(struct device *dev)
 	printk(BIOS_DEBUG, "SATA: Initializing controller in AHCI mode.\n");
 
 	/* Enable BARs */
-	pci_write_config16(dev, PCI_COMMAND, 0x0007);
+	pci_write_config16(dev, PCI_COMMAND,
+			   PCI_COMMAND_MASTER | PCI_COMMAND_MEMORY | PCI_COMMAND_IO);
 
 	/* Set Interrupt Line */
 	/* Interrupt Pin is set by D31IP.PIP */
@@ -198,7 +199,6 @@ static void sata_init(struct device *dev)
 				(config->sata_port3_gen3_dtle & SATA_DTLE_MASK)
 				<< SATA_DTLE_EDGE_SHIFT);
 	}
-
 
 	/*
 	 * Additional Programming Requirements for Power Optimizer

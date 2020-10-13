@@ -1,10 +1,10 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
 #include <intelblocks/gpio.h>
+#include <soc/intel/common/block/acpi/acpi/gpio_op.asl>
 #include <soc/gpio_defs.h>
 #include <soc/irq.h>
 #include <soc/pcr_ids.h>
-#include "gpio_op.asl"
 
 #include <soc/intel/common/acpi/gpio.asl>
 
@@ -18,7 +18,6 @@ Device (GPIO)
 	{
 		Memory32Fixed (ReadWrite, 0, 0, COM0)
 		Memory32Fixed (ReadWrite, 0, 0, COM1)
-		Memory32Fixed (ReadWrite, 0, 0, COM2)
 		Memory32Fixed (ReadWrite, 0, 0, COM4)
 		Memory32Fixed (ReadWrite, 0, 0, COM5)
 		Interrupt (ResourceConsumer, Level, ActiveLow, Shared,,, GIRQ)
@@ -38,12 +37,6 @@ Device (GPIO)
 		CreateDWordField (^RBUF, ^COM1._LEN, LEN1)
 		BAS1 = ^^PCRB (PID_GPIOCOM1)
 		LEN1 = GPIO_BASE_SIZE
-
-		/* GPIO Community 2 */
-		CreateDWordField (^RBUF, ^COM2._BAS, BAS2)
-		CreateDWordField (^RBUF, ^COM2._LEN, LEN2)
-		BAS2 = ^^PCRB (PID_GPIOCOM2)
-		LEN2 = GPIO_BASE_SIZE
 
 		/* GPIO Community 4 */
 		CreateDWordField (^RBUF, ^COM4._BAS, BAS4)

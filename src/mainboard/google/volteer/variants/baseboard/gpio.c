@@ -1,8 +1,4 @@
-/*
- *
- *
- * SPDX-License-Identifier: GPL-2.0-or-later
- */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #include <baseboard/gpio.h>
 #include <baseboard/variants.h>
@@ -264,6 +260,8 @@ static const struct pad_config gpio_table[] = {
 	PAD_NC(GPP_F9, NONE),
 	/* F10 : GPPF10_STRAP */
 	PAD_NC(GPP_F10, DN_20K),
+	/* F11 : THC1_SPI2_CLK ==> EN_PP3300_WWAN */
+	PAD_CFG_GPO(GPP_F11, 1, DEEP),
 	/* F12 : GSXDOUT ==> NC */
 	PAD_NC(GPP_F12, NONE),
 	/* F13 : GSXDOUT ==> NC */
@@ -423,9 +421,6 @@ static const struct pad_config early_gpio_table[] = {
 
 	/* C21 : UART2_TXD ==> H1_PCH_INT_ODL */
 	PAD_CFG_GPI_APIC(GPP_C21, NONE, PLTRST, LEVEL, INVERT),
-
-	/* E12 : SPI1_MISO_IO1 ==> EN_PP3300_SSD */
-	PAD_CFG_GPO(GPP_E12, 1, DEEP),
 
 	/* F11 : THC1_SPI2_CLK ==> EN_PP3300_WWAN */
 	PAD_CFG_GPO(GPP_F11, 1, DEEP),

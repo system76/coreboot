@@ -216,7 +216,6 @@ void enter_raminit_or_reset(void)
 	pci_write_config8(PCI_DEV(0, 0x1f, 0), 0xa2, reg8 | (1 << 7));
 }
 
-
 /* For a detected DIMM, test the value of an SPD byte to
    match the expected value after masking some bits. */
 static int test_dimm(sysinfo_t *const sysinfo,
@@ -280,7 +279,6 @@ static void verify_ddr3(sysinfo_t *const sysinfo, int mask)
 		cur++;
 	}
 }
-
 
 typedef struct {
 	int dimm_mask;
@@ -808,8 +806,7 @@ static void set_igd_memory_frequencies(const sysinfo_t *const sysinfo)
 	pci_write_config16(GCFGC_PCIDEV, GCFGC_OFFSET, gcfgc);
 
 	/* Clear update bit. */
-	pci_write_config16(GCFGC_PCIDEV, GCFGC_OFFSET,
-		pci_read_config16(GCFGC_PCIDEV, GCFGC_OFFSET) & ~GCFGC_UPDATE);
+	pci_and_config16(GCFGC_PCIDEV, GCFGC_OFFSET, ~GCFGC_UPDATE);
 
 	/* Set display clock select bit. */
 	pci_write_config16(GCFGC_PCIDEV, GCFGC_OFFSET,
@@ -1229,10 +1226,7 @@ static void program_memory_map(const dimminfo_t *const dimms, const channel_mode
 		}
 		/* TSEG 2M, This amount can easily be covered by SMRR MTRR's,
 		   which requires to have TSEG_BASE aligned to TSEG_SIZE. */
-		u8 reg8 = pci_read_config8(PCI_DEV(0, 0, 0), D0F0_ESMRAMC);
-		reg8 &= ~0x7;
-		reg8 |= (1 << 1) | (1 << 0); /* 2M and TSEG_Enable */
-		pci_write_config8(PCI_DEV(0, 0, 0), D0F0_ESMRAMC, reg8);
+		pci_update_config8(PCI_DEV(0, 0, 0), D0F0_ESMRAMC, ~0x07, (1 << 1) | (1 << 0));
 		uma_sizem += 2;
 	}
 
@@ -1560,10 +1554,9 @@ static void jedec_init(const timings_t *const timings,
 
 	MCHBAR32(DCC_MCHBAR) = (MCHBAR32(DCC_MCHBAR) & ~DCC_CMD_MASK) | DCC_CMD_NOP;
 
-	u8 reg8 = pci_read_config8(PCI_DEV(0, 0, 0), 0xf0);
-	pci_write_config8(PCI_DEV(0, 0, 0), 0xf0, reg8 & ~(1 << 2));
-	reg8 = pci_read_config8(PCI_DEV(0, 0, 0), 0xf0);
-	pci_write_config8(PCI_DEV(0, 0, 0), 0xf0, reg8 |  (1 << 2));
+	pci_and_config8(PCI_DEV(0, 0, 0), 0xf0, ~(1 << 2));
+
+	pci_or_config8(PCI_DEV(0, 0, 0), 0xf0, 1 << 2);
 	udelay(2);
 
 				  /* 5  6  7  8  9 10 11 12 */
@@ -1701,7 +1694,6 @@ void raminit(sysinfo_t *const sysinfo, const int s3resume)
 	const timings_t *const timings = &sysinfo->selected_timings;
 
 	int ch;
-	u8 reg8;
 
 	timestamp_add_now(TS_BEFORE_INITRAM);
 
@@ -1715,7 +1707,6 @@ void raminit(sysinfo_t *const sysinfo, const int s3resume)
 
 	/* Check for bad warm boot. */
 	reset_on_bad_warmboot();
-
 
 	/***** From now on, program according to collected infos: *****/
 
@@ -1773,14 +1764,12 @@ void raminit(sysinfo_t *const sysinfo, const int s3resume)
 
 	/* Announce normal operation, initialization completed. */
 	MCHBAR32(DCC_MCHBAR) |= (0x7 << 16) | (0x1 << 19);
-	reg8 = pci_read_config8(PCI_DEV(0, 0, 0), 0xf0);
-	pci_write_config8(PCI_DEV(0, 0, 0), 0xf0, reg8 | (1 << 2));
-	reg8 = pci_read_config8(PCI_DEV(0, 0, 0), 0xf0);
-	pci_write_config8(PCI_DEV(0, 0, 0), 0xf0, reg8 & ~(1 << 2));
 
+	pci_or_config8(PCI_DEV(0, 0, 0), 0xf0, 1 << 2);
+
+	pci_and_config8(PCI_DEV(0, 0, 0), 0xf0, ~(1 << 2));
 
 	/* Take a breath (the reader). */
-
 
 	/* Perform ZQ calibration for DDR3. */
 	if (sysinfo->spd_type == DDR3)
@@ -1811,8 +1800,7 @@ void raminit(sysinfo_t *const sysinfo, const int s3resume)
 	dram_optimizations(timings, dimms);
 
 	/* Mark raminit being finished. :-) */
-	u8 tmp8 = pci_read_config8(PCI_DEV(0, 0x1f, 0), 0xa2) & ~(1 << 7);
-	pci_write_config8(PCI_DEV(0, 0x1f, 0), 0xa2, tmp8);
+	pci_and_config8(PCI_DEV(0, 0x1f, 0), 0xa2, (u8)~(1 << 7));
 
 	raminit_thermal(sysinfo);
 	init_igd(sysinfo);

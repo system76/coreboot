@@ -27,14 +27,6 @@ chip northbridge/intel/haswell
 
 		chip southbridge/intel/lynxpoint
 			register "gen1_dec"      = "0x000c0291"	# Super I/O HWM
-			register "pirqa_routing" = "0x8b"
-			register "pirqb_routing" = "0x80"
-			register "pirqc_routing" = "0x83"
-			register "pirqd_routing" = "0x8a"
-			register "pirqe_routing" = "0x83"
-			register "pirqf_routing" = "0x80"
-			register "pirqg_routing" = "0x8b"
-			register "pirqh_routing" = "0x8a"
 			register "sata_ahci"     = "1"
 			register "sata_port_map" = "0x3f"
 
@@ -110,6 +102,9 @@ chip northbridge/intel/haswell
 					device pnp 2e.14  off end	# SVID
 					device pnp 2e.16  off end	# Deep sleep
 					device pnp 2e.17  off end	# GPIOA
+				end
+				chip drivers/pc80/tpm
+					device pnp 4e.0 on end		# TPM
 				end
 			end
 			device pci 1f.2 on  end		# SATA (AHCI)

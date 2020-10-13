@@ -54,7 +54,6 @@ static void busmaster_disable_on_bus(int bus)
 
 	for (slot = 0; slot < 0x20; slot++) {
 		for (func = 0; func < 8; func++) {
-			u16 reg16;
 			pci_devfn_t dev = PCI_DEV(bus, slot, func);
 
 			val = pci_read_config32(dev, PCI_VENDOR_ID);
@@ -64,9 +63,7 @@ static void busmaster_disable_on_bus(int bus)
 				continue;
 
 			/* Disable Bus Mastering for this one device */
-			reg16 = pci_read_config16(dev, PCI_COMMAND);
-			reg16 &= ~PCI_COMMAND_MASTER;
-			pci_write_config16(dev, PCI_COMMAND, reg16);
+			pci_and_config16(dev, PCI_COMMAND, ~PCI_COMMAND_MASTER);
 
 			/* If this is a bridge, then follow it. */
 			hdr = pci_read_config8(dev, PCI_HEADER_TYPE);
@@ -80,7 +77,6 @@ static void busmaster_disable_on_bus(int bus)
 		}
 	}
 }
-
 
 static void southbridge_smi_sleep(void)
 {
@@ -317,6 +313,10 @@ static void southbridge_smi_apmc(void)
 		if (state) {
 			/* EBX in the state save contains the GNVS pointer */
 			gnvs = (struct global_nvs *)((u32)state->rbx);
+			if (smm_points_to_smram(gnvs, sizeof(*gnvs))) {
+				printk(BIOS_ERR, "SMI#: ERROR: GNVS overlaps SMM\n");
+				return;
+			}
 			smm_initialized = 1;
 			printk(BIOS_DEBUG, "SMI#: Setting GNVS to %p\n", gnvs);
 		}
@@ -378,8 +378,6 @@ static void southbridge_smi_mc(void)
 	printk(BIOS_DEBUG, "Microcontroller SMI.\n");
 }
 
-
-
 static void southbridge_smi_tco(void)
 {
 	u32 tco_sts = clear_tco_status();
@@ -405,8 +403,7 @@ static void southbridge_smi_tco(void)
 			 * box.
 			 */
 			printk(BIOS_DEBUG, "Switching back to RO\n");
-			pci_write_config32(PCI_DEV(0, 0x1f, 0), 0xdc,
-					   (bios_cntl & ~1));
+			pci_write_config32(PCI_DEV(0, 0x1f, 0), 0xdc, (bios_cntl & ~1));
 		} /* No else for now? */
 	} else if (tco_sts & (1 << 3)) { /* TIMEOUT */
 		/* Handle TCO timeout */
@@ -431,7 +428,7 @@ static void southbridge_smi_monitor(void)
 {
 #define IOTRAP(x) (trap_sts & (1 << x))
 	u32 trap_sts, trap_cycle;
-	u32 data, mask = 0;
+	u32 mask = 0;
 	int i;
 
 	trap_sts = RCBA32(0x1e00); // TRSR - Trap Status Register
@@ -442,7 +439,6 @@ static void southbridge_smi_monitor(void)
 		if (trap_cycle & (1 << i))
 			mask |= (0xff << ((i - 16) << 2));
 	}
-
 
 	/* IOTRAP(3) SMI function call */
 	if (IOTRAP(3)) {
@@ -458,8 +454,9 @@ static void southbridge_smi_monitor(void)
 	if (IOTRAP(0)) {
 		if (!(trap_cycle & (1 << 24))) { // It's a write
 			printk(BIOS_DEBUG, "SMI1 command\n");
-			data = RCBA32(0x1e18);
-			data &= mask;
+			(void)RCBA32(0x1e18);
+			// data = RCBA32(0x1e18);
+			// data &= mask;
 			// if (smi1)
 			//	southbridge_smi_command(data);
 			// return;
@@ -478,8 +475,7 @@ static void southbridge_smi_monitor(void)
 
 	if (!(trap_cycle & (1 << 24))) {
 		/* Write Cycle */
-		data = RCBA32(0x1e18);
-		printk(BIOS_DEBUG, "  iotrap written data = 0x%08x\n", data);
+		printk(BIOS_DEBUG, "  iotrap written data = 0x%08x\n", RCBA32(0x1e18));
 	}
 #undef IOTRAP
 }

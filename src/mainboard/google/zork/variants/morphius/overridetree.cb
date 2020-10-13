@@ -14,13 +14,26 @@ chip soc/amd/picasso
 	register "slow_ppt_time_constant" = "5" #second
 	register "stapm_time_constant" = "200" #second
 	register "sustained_power_limit" = "12000" #mw
+	register "thermctl_limit" = "100" #degrees C
 
 	register "telemetry_vddcr_vdd_slope" = "78709" #mA
 	register "telemetry_vddcr_vdd_offset" = "0"
 	register "telemetry_vddcr_soc_slope" = "29035" #mA
 	register "telemetry_vddcr_soc_offset" = "0"
 
+	# Set STAPM confiuration for tablet mode
+	register "dptc_enable" = "1"
+	register "slow_ppt_limit_tablet_mode" = "20000" #mw
+	register "fast_ppt_limit_tablet_mode" = "24000" #mw
+	register "sustained_power_limit_tablet_mode" = "12000" #mw
+	register "thermctl_limit_tablet_mode" = "70" #degrees C
+
 	# End : OPN Performance Configuration
+
+	register "usb3_port_force_gen1" = "{
+		.ports.xhci0_port1 = 1, /* Left USB3A port 1 */
+		.ports.xhci0_port2 = 1, /* Left USB3A port 2 */
+	}"
 
 	# Enable I2C2 for trackpad, touchscreen, pen at 400kHz
 	register "i2c[2]" = "{
@@ -35,6 +48,12 @@ chip soc/amd/picasso
 		.rise_time_ns = 184, /* 0 to 1.26v (1.8 * .7) */
 		.fall_time_ns = 42,  /* 1.26v to 0 */
 		.early_init = true,
+	}"
+
+	register "emmc_config" = "{
+		.timing = SD_EMMC_EMMC_HS400,
+		.sdr104_hs400_driver_strength = SD_EMMC_DRIVE_STRENGTH_A,
+		.init_khz_preset = 400,
 	}"
 
 	# See AMD 55570-B1 Table 13: PCI Device ID Assignments.
@@ -61,12 +80,17 @@ chip soc/amd/picasso
 			device i2c 2c on end
 		end
 		chip drivers/i2c/hid
-			register "generic.hid" = ""GTCH7375L""
-			register "generic.desc" = ""G2TOUCH Touchscreen""
+			register "generic.hid" = ""GDIX0000""
+			register "generic.desc" = ""Goodix Touchscreen""
 			register "generic.irq_gpio" = "ACPI_GPIO_IRQ_EDGE_LOW(GPIO_12)"
 			register "generic.probed" = "1"
-			register "generic.reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPIO_140)"
+			register "generic.enable_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPIO_90)"
+			register "generic.enable_delay_ms" = "10"
+			register "generic.reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPIO_140)"
 			register "generic.reset_delay_ms" = "120"
+			register "generic.reset_off_delay_ms" = "1"
+			register "generic.stop_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPIO_144)"
+			register "generic.stop_off_delay_ms" = "1"
 			register "generic.has_power_resource" = "1"
 			register "generic.disable_gpio_export_in_crs" = "1"
 			register "hid_desc_reg_offset" = "0x01"
@@ -92,7 +116,7 @@ chip soc/amd/picasso
 			register "desc" = ""Fingerprint Reader""
 			register "hid" = "ACPI_DT_NAMESPACE_HID"
 			register "compat_string" = ""google,cros-ec-uart""
-			register "irq_gpio" = "ACPI_GPIO_IRQ_LEVEL_LOW_WAKE(GPIO_6)"
+			register "irq_gpio" = "ACPI_GPIO_IRQ_LEVEL_LOW(GPIO_6)"
 			register "wake" = "GEVENT_10"
 			register "uart" = "ACPI_UART_RAW_DEVICE(3000000, 64)"
 			device generic 0 on end

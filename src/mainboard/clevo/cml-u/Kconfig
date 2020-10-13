@@ -1,0 +1,88 @@
+if BOARD_CLEVO_L140CU
+
+config BOARD_SPECIFIC_OPTIONS
+	def_bool y
+	select BOARD_ROMSIZE_KB_16384
+	select DRIVERS_I2C_HID
+	select EC_SYSTEM76_EC
+	select HAVE_ACPI_RESUME
+	select HAVE_ACPI_TABLES
+	select HAVE_SMI_HANDLER
+	select HAVE_SPD_IN_CBFS
+	select INTEL_GMA_HAVE_VBT
+	select INTEL_LPSS_UART_FOR_CONSOLE
+	select MAINBOARD_HAS_LPC_TPM
+	select MAINBOARD_HAS_TPM2
+	select NO_UART_ON_SUPERIO
+	select SOC_INTEL_COMETLAKE_1
+	select SOC_INTEL_COMMON_BLOCK_HDA
+	select SOC_INTEL_COMMON_BLOCK_HDA_VERB
+	select SPD_READ_BY_WORD
+	select SYSTEM_TYPE_LAPTOP
+
+config MAINBOARD_DIR
+	string
+	default "clevo/cml-u"
+
+config MAINBOARD_PART_NUMBER
+	string
+	default "L140CU" if BOARD_CLEVO_L140CU
+
+config MAINBOARD_VERSION
+	string
+	default "2.1A" if BOARD_CLEVO_L140CU
+
+config DEVICETREE
+	string
+	default "variants/$(CONFIG_VARIANT_DIR)/devicetree.cb"
+
+config CBFS_SIZE
+	hex
+	default 0xc00000 if BOARD_CLEVO_L140CU
+
+config CONSOLE_POST
+	bool
+	default y
+
+config UART_FOR_CONSOLE
+	int
+	default 2
+
+config MAX_CPUS
+	int
+	default 8 if BOARD_CLEVO_L140CU
+
+config DIMM_MAX
+	int
+	default 2 if BOARD_CLEVO_L140CU
+
+config DIMM_SPD_SIZE
+	int
+	default 512
+
+config VGA_BIOS_FILE
+	string
+	default "pci8086,9b41.rom"
+
+config VGA_BIOS_ID
+	string
+	default "8086,9b41"
+
+config TPM_PIRQ
+	hex
+	default 0x10 if BOARD_CLEVO_L140CU # GPP_A7/PIRQA#
+
+config POST_DEVICE
+	bool
+	default n
+
+config VARIANT_DIR
+	string
+	default "l140cu" if BOARD_CLEVO_L140CU
+
+config SEABIOS_PS2_TIMEOUT
+	int
+	depends on PAYLOAD_SEABIOS
+	default 500
+
+endif

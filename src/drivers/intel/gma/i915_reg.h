@@ -27,7 +27,6 @@
 #define    IVB_GMCH_GMS_SHIFT   4
 #define    IVB_GMCH_GMS_MASK    0xf
 
-
 /* PCI config space */
 
 #define HPLLCC	0xc0 /* 855 only */
@@ -295,7 +294,6 @@
 #define   PIPE_CONTROL_STALL_AT_SCOREBOARD		(1<<1)
 #define   PIPE_CONTROL_DEPTH_CACHE_FLUSH		(1<<0)
 #define   PIPE_CONTROL_GLOBAL_GTT (1<<2) /* in addr dword */
-
 
 /*
  * Reset registers
@@ -791,7 +789,6 @@
 #define   ILK_FBCQ_DIS		(1<<22)
 #define	  ILK_PABSTRETCH_DIS	(1<<21)
 
-
 /*
  * Framebuffer compression for Sandybridge
  *
@@ -800,7 +797,6 @@
 #define SNB_DPFC_CTL_SA		0x100100
 #define   SNB_CPU_FENCE_ENABLE	(1<<29)
 #define DPFC_CPU_FENCE_OFFSET	0x100104
-
 
 /*
  * GPIO regs
@@ -1213,7 +1209,6 @@
 					 HSW_CXT_RENDER_SIZE(ctx_reg) + \
 					 GEN7_CXT_VFSTATE_SIZE(ctx_reg))
 
-
 /*
  * Overlay regs
  */
@@ -1253,7 +1248,6 @@
 #define _PIPEBSRC	0x6101c
 #define _BCLRPAT_B	0x61020
 #define _VSYNCSHIFT_B	0x61028
-
 
 #define HTOTAL(trans) _TRANSCODER(trans, _HTOTAL_A, _HTOTAL_B)
 #define HBLANK(trans) _TRANSCODER(trans, _HBLANK_A, _HBLANK_B)
@@ -1310,7 +1304,6 @@
 #define   ADPA_DPMS_SUSPEND	(1<<10)
 #define   ADPA_DPMS_STANDBY	(2<<10)
 #define   ADPA_DPMS_OFF		(3<<10)
-
 
 /* Hotplug control (945+ only) */
 #define PORT_HOTPLUG_EN		0x61110
@@ -1672,6 +1665,33 @@
 #define   BLM_PCH_OVERRIDE_ENABLE		(1 << 30)
 #define   BLM_PCH_POLARITY			(1 << 29)
 #define BLC_PWM_PCH_CTL2	0xc8254
+
+#define UTIL_PIN_CTL		0x48400
+#define   UTIL_PIN_ENABLE	(1 << 31)
+
+#define   UTIL_PIN_PIPE(x)	((x) << 29)
+#define   UTIL_PIN_PIPE_MASK	(3 << 29)
+#define   UTIL_PIN_MODE_PWM	(1 << 24)
+#define   UTIL_PIN_MODE_MASK	(0xf << 24)
+#define   UTIL_PIN_POLARITY	(1 << 22)
+
+/* BXT backlight register definition. */
+#define _BXT_BLC_PWM_CTL1			0xC8250
+#define   BXT_BLC_PWM_ENABLE			(1 << 31)
+#define   BXT_BLC_PWM_POLARITY			(1 << 29)
+#define _BXT_BLC_PWM_FREQ1			0xC8254
+#define _BXT_BLC_PWM_DUTY1			0xC8258
+
+#define _BXT_BLC_PWM_CTL2			0xC8350
+#define _BXT_BLC_PWM_FREQ2			0xC8354
+#define _BXT_BLC_PWM_DUTY2			0xC8358
+
+#define BXT_BLC_PWM_CTL(controller)    _PIPE(controller,		\
+					_BXT_BLC_PWM_CTL1, _BXT_BLC_PWM_CTL2)
+#define BXT_BLC_PWM_FREQ(controller)   _PIPE(controller, \
+					_BXT_BLC_PWM_FREQ1, _BXT_BLC_PWM_FREQ2)
+#define BXT_BLC_PWM_DUTY(controller)   _PIPE(controller, \
+					_BXT_BLC_PWM_DUTY1, _BXT_BLC_PWM_DUTY2)
 
 /* TV port control */
 #define TV_CTL			0x68000
@@ -2781,7 +2801,6 @@
 #define _PIPEB_FRMCOUNT_GM45	0x71040
 #define _PIPEB_FLIPCOUNT_GM45	0x71044
 
-
 /* Display B control */
 #define _DSPBCNTR		0x71180
 #define   DISPPLANE_ALPHA_TRANS_ENABLE		(1<<15)
@@ -2983,7 +3002,6 @@
 #define  FDI_PLL_FREQ_CHANGE_REQUEST    (1<<24)
 #define  FDI_PLL_FREQ_LOCK_LIMIT_MASK   0xfff00
 #define  FDI_PLL_FREQ_DISABLE_COUNT_LIMIT_MASK  0xff
-
 
 #define _PIPEA_DATA_M1           0x60030
 #define  TU_SIZE(x)             (((x)-1) << 25) /* default size 64 */
@@ -3537,7 +3555,6 @@
 #define _TRANSB_CHICKEN2	 0xf1064
 #define TRANS_CHICKEN2(pipe) _PIPE(pipe, _TRANSA_CHICKEN2, _TRANSB_CHICKEN2)
 #define  TRANS_CHICKEN2_TIMING_OVERRIDE		(1UL<<31)
-
 
 #define SOUTH_CHICKEN1		0xc2000
 #define  FDIA_PHASE_SYNC_SHIFT_OVR	19

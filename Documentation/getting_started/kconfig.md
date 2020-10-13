@@ -52,7 +52,7 @@ command line.
   not have an answer yet, it stops and queries the user for the desired value.
 - olddefconfig - Generates a config, using the default value for any symbols not
   listed in the .config file.
-- savedefconfig - Creates a ‘mini-config’ file, stripping out all of the symbols
+- savedefconfig - Creates a ‘defconfig’ file, stripping out all of the symbols
   that were left as default values.  This is very useful for debugging, and is
   how config files should be saved.
 - silentoldconfig - This evaluates the .config file the same way that the
@@ -398,6 +398,8 @@ default &lt;expr&gt; \[if &lt;expr&gt;\]
 - If there is no 'default' entry for a symbol, it gets set to 'n', 0, 0x0, or
   “” depending on the type, however the 'bool' type is the only type that
   should be left without a default value.
+- If possible, the declaration should happen before all default entries to make
+  it visible in Kconfig tools like menuconfig.
 
 --------------------------------------------------------------------------------
 

@@ -31,7 +31,6 @@ enum fsp_notify_phase {
 	END_OF_FIRMWARE = 0xF0
 };
 
-
 /* Main FSP stages */
 void fsp_memory_init(bool s3wake);
 void fsp_silicon_init(bool s3wake);
@@ -73,6 +72,13 @@ const struct cbmem_entry *soc_load_logo(FSPS_UPD *supd);
 /* Update the SOC specific memory config param for mma. */
 void soc_update_memory_params_for_mma(FSP_M_CONFIG *memory_cfg,
 	struct mma_config_param *mma_cfg);
+
+/*
+ * As per FSP integration guide:
+ * If bootloader needs to take control of APs back, a full AP re-initialization is
+ * required after FSP-S is completed and control has been transferred back to bootloader
+ */
+void do_mpinit_after_fsp(void);
 
 /*
  * # DOCUMENTATION:

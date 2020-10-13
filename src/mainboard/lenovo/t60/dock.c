@@ -75,7 +75,7 @@ int dlpc_init(void)
 
 	/* Enable 14.318MHz CLK on CLKIN */
 	dlpc_write_register(0x29, 0xa0);
-	while(!(dlpc_read_register(0x29) & 0x10) && timeout--)
+	while (!(dlpc_read_register(0x29) & 0x10) && timeout--)
 		udelay(1000);
 
 	if (!timeout)
@@ -102,7 +102,7 @@ static int dock_superio_init(void)
 	/* startup 14.318MHz Clock */
 	dock_write_register(0x29, 0xa0);
 	/* wait until clock is settled */
-	while(!(dock_read_register(0x29) & 0x10) && timeout--)
+	while (!(dock_read_register(0x29) & 0x10) && timeout--)
 		udelay(1000);
 
 	if (!timeout)
@@ -147,7 +147,6 @@ static int dock_superio_init(void)
 	dock_gpio_set_mode(0x07, PC87384_GPIO_PIN_DEBOUNCE |
 			   PC87384_GPIO_PIN_PULLUP, 0x00);
 
-
 	/* no GPIO events enabled for PORT0 */
 	outb(0x00, 0x1622);
 	/* clear GPIO events on PORT0 */
@@ -171,7 +170,7 @@ int dock_connect(void)
 
 	timeout = 1000;
 
-	while(!(inb(DLPC_CONTROL) & 8) && timeout--)
+	while (!(inb(DLPC_CONTROL) & 8) && timeout--)
 		udelay(1000);
 
 	if (!timeout) {

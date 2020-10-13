@@ -195,6 +195,11 @@ void disable_children(struct bus *bus);
 bool dev_is_active_bridge(struct device *dev);
 void add_more_links(struct device *dev, unsigned int total_links);
 
+static inline bool is_dev_enabled(const struct device *const dev)
+{
+	return dev && dev->enabled;
+}
+
 /* Option ROM helper functions */
 void run_bios(struct device *dev, unsigned long addr);
 
@@ -202,6 +207,10 @@ void run_bios(struct device *dev, unsigned long addr);
 DEVTREE_CONST struct device *find_dev_path(
 		const struct bus *parent,
 		const struct device_path *path);
+DEVTREE_CONST struct device *find_dev_nested_path(
+		const struct bus *parent,
+		const struct device_path nested_path[],
+		size_t nested_path_length);
 struct device *alloc_find_dev(struct bus *parent, struct device_path *path);
 struct device *dev_find_device(u16 vendor, u16 device, struct device *from);
 struct device *dev_find_class(unsigned int class, struct device *from);
@@ -330,6 +339,12 @@ DEVTREE_CONST struct device *pcidev_path_on_root_debug(pci_devfn_t devfn, const 
 void devtree_bug(const char *func, pci_devfn_t devfn);
 void __noreturn devtree_die(void);
 
+/*
+ * Dies if `dev` or `dev->chip_info` are NULL. Returns `dev->chip_info` otherwise.
+ *
+ * Only use if missing `chip_info` is fatal and we can't boot. If it's
+ * not fatal, please handle the NULL case gracefully.
+ */
 static inline DEVTREE_CONST void *config_of(const struct device *dev)
 {
 	if (dev && dev->chip_info)

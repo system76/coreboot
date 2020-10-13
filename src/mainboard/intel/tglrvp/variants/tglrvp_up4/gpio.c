@@ -51,6 +51,10 @@ static const struct pad_config gpio_table[] = {
 	PAD_CFG_NF(GPP_D19, NONE, DEEP, NF1), /* I2S_MCLK1 */
 	PAD_CFG_NF(GPP_F8, NONE, DEEP, NF1),  /* I2S_MCLK2 */
 
+	/* EC_SYNC_IRQ */
+	PAD_CFG_GPI_APIC(GPP_A15, NONE, PLTRST, LEVEL, INVERT), /* MECC_HPD2 */
+
+	PAD_CFG_GPO(GPP_H1, 1, DEEP), /* AUDIO_PWREN */
 };
 
 /* Early pad configuration in bootblock */
@@ -86,6 +90,16 @@ static const struct pad_config early_gpio_table[] = {
 	PAD_CFG_NF(GPP_A19, NONE, DEEP, NF1), /* HPD_1 */
 	PAD_CFG_NF(GPP_E18, NONE, DEEP, NF1), /* DDP_1_CTRCLK */
 	PAD_CFG_NF(GPP_E19, NONE, DEEP, NF1), /* DDP_1_CTRDATA */
+
+	/* TPM */
+	/* B19 : GSPI1_CS0B */
+	PAD_CFG_NF(GPP_B19, NONE, DEEP, NF1),
+	/* B20 : GSPI1_CLK */
+	PAD_CFG_NF(GPP_B20, NONE, DEEP, NF1),
+	/* B21 : GSPI1_MISO */
+	PAD_CFG_NF(GPP_B21, NONE, DEEP, NF1),
+	/* B22 : GSPI1_MOSI */
+	PAD_CFG_NF(GPP_B22, NONE, DEEP, NF1),
 };
 
 const struct pad_config *variant_gpio_table(size_t *num)

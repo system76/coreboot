@@ -10,7 +10,11 @@ ramstage-$(CONFIG_HAVE_REGULATORY_DOMAIN) += wrdd.c
 ramstage-$(CONFIG_USE_SAR) += sar.c
 ramstage-$(CONFIG_CHROMEOS_DSM_CALIB) += dsm_calib.c
 ramstage-$(CONFIG_TPM_CR50) += cr50_enable_update.c
+ramstage-$(CONFIG_CHROMEOS_CSE_BOARD_RESET_OVERRIDE) += cse_board_reset.c
 
 bootblock-y += watchdog.c
 verstage-y += watchdog.c
+romstage-y += watchdog.c
 ramstage-y += watchdog.c
+
+romstage-$(CONFIG_CHROMEOS_DRAM_PART_NUMBER_IN_CBI) += dram_part_num_override.c

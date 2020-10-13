@@ -3,6 +3,7 @@
 #ifndef __ACPI_ACPIGEN_H__
 #define __ACPI_ACPIGEN_H__
 
+#include <stddef.h>
 #include <stdint.h>
 #include <acpi/acpi.h>
 #include <acpi/acpi_device.h>
@@ -323,6 +324,7 @@ void acpigen_write_STA_ext(const char *namestring);
 void acpigen_write_TPC(const char *gnvs_tpc_limit);
 void acpigen_write_PSS_package(u32 coreFreq, u32 power, u32 transLat,
 			u32 busmLat, u32 control, u32 status);
+void acpigen_write_pss_object(const struct acpi_sw_pstate *pstate_values, size_t nentries);
 typedef enum { SW_ALL = 0xfc, SW_ANY = 0xfd, HW_ALL = 0xfe } PSD_coord;
 void acpigen_write_PSD_package(u32 domain, u32 numprocs, PSD_coord coordtype);
 void acpigen_write_CST_package_entry(acpi_cstate_t *cstate);
@@ -330,6 +332,10 @@ void acpigen_write_CST_package(acpi_cstate_t *entry, int nentries);
 typedef enum { CSD_HW_ALL = 0xfe } CSD_coord;
 void acpigen_write_CSD_package(u32 domain, u32 numprocs, CSD_coord coordtype,
 				u32 index);
+void acpigen_write_pct_package(const acpi_addr_t *perf_ctrl, const acpi_addr_t *perf_sts);
+void acpigen_write_xpss_package(const struct acpi_xpss_sw_pstate *pstate_value);
+void acpigen_write_xpss_object(const struct acpi_xpss_sw_pstate *pstate_values,
+			       size_t nentries);
 void acpigen_write_processor(u8 cpuindex, u32 pblock_addr, u8 pblock_len);
 void acpigen_write_processor_package(const char *name,
 				     unsigned int first_core,
@@ -367,6 +373,7 @@ void acpigen_write_if_lequal_namestr_int(const char *namestr, uint64_t val);
 void acpigen_write_else(void);
 void acpigen_write_to_buffer(uint8_t src, uint8_t dst);
 void acpigen_write_to_integer(uint8_t src, uint8_t dst);
+void acpigen_write_to_integer_from_namestring(const char *source, uint8_t dst_op);
 void acpigen_write_byte_buffer(uint8_t *arr, size_t size);
 void acpigen_write_return_byte_buffer(uint8_t *arr, size_t size);
 void acpigen_write_return_singleton_buffer(uint8_t arg);
@@ -379,6 +386,10 @@ void acpigen_write_ADR_pci_devfn(pci_devfn_t devfn);
 void acpigen_write_ADR_pci_device(const struct device *dev);
 struct soundwire_address;
 void acpigen_write_ADR_soundwire_device(const struct soundwire_address *address);
+void acpigen_write_create_byte_field(uint8_t op, size_t byte_offset, const char *name);
+void acpigen_write_create_word_field(uint8_t op, size_t byte_offset, const char *name);
+void acpigen_write_create_dword_field(uint8_t op, size_t byte_offset, const char *name);
+void acpigen_write_create_qword_field(uint8_t op, size_t byte_offset, const char *name);
 /*
  * Generate ACPI AML code for _DSM method.
  * This function takes as input uuid for the device, set of callbacks and

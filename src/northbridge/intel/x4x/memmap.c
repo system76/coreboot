@@ -57,15 +57,11 @@ u32 decode_tseg_size(const u32 esmramc)
 	}
 }
 
-u8 decode_pciebar(u32 *const base, u32 *const len)
+int decode_pcie_bar(u32 *const base, u32 *const len)
 {
 	*base = 0;
 	*len = 0;
-	const pci_devfn_t dev = PCI_DEV(0, 0, 0);
-	u32 pciexbar = 0;
-	u32 pciexbar_reg;
-	u32 reg32;
-	int max_buses;
+
 	const struct {
 		u16 num_buses;
 		u32 addr_mask;
@@ -76,16 +72,16 @@ u8 decode_pciebar(u32 *const base, u32 *const len)
 		{0,   0},
 	};
 
-	pciexbar_reg = pci_read_config32(dev, D0F0_PCIEXBAR_LO);
+	const u32 pciexbar_reg = pci_read_config32(HOST_BRIDGE, D0F0_PCIEXBAR_LO);
 
 	if (!(pciexbar_reg & 1)) {
 		printk(BIOS_WARNING, "WARNING: MMCONF not set\n");
 		return 0;
 	}
 
-	reg32 = (pciexbar_reg >> 1) & 3;
-	pciexbar = pciexbar_reg & busmask[reg32].addr_mask;
-	max_buses = busmask[reg32].num_buses;
+	const u32 index = (pciexbar_reg >> 1) & 3;
+	const u32 pciexbar = pciexbar_reg & busmask[index].addr_mask;
+	const int max_buses = busmask[index].num_buses;
 
 	if (!pciexbar) {
 		printk(BIOS_WARNING, "WARNING: pciexbar invalid\n");
@@ -99,15 +95,14 @@ u8 decode_pciebar(u32 *const base, u32 *const len)
 
 static size_t northbridge_get_tseg_size(void)
 {
-	const u8 esmramc = pci_read_config8(PCI_DEV(0, 0, 0), D0F0_ESMRAMC);
+	const u8 esmramc = pci_read_config8(HOST_BRIDGE, D0F0_ESMRAMC);
 	return decode_tseg_size(esmramc);
 }
 
 static uintptr_t northbridge_get_tseg_base(void)
 {
-	return pci_read_config32(PCI_DEV(0, 0, 0), D0F0_TSEG);
+	return pci_read_config32(HOST_BRIDGE, D0F0_TSEG);
 }
-
 
 /* Depending of UMA and TSEG configuration, TSEG might start at any
  * 1 MiB alignment. As this may cause very greedy MTRR setup, push

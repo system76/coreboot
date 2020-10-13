@@ -9,6 +9,7 @@
 #include <soc/southbridge.h>
 #include <soc/gpio.h>
 #include <soc/uart.h>
+#include <types.h>
 
 static const struct _uart_info {
 	uintptr_t base;
@@ -32,25 +33,69 @@ static const struct _uart_info {
 	} },
 };
 
-uintptr_t get_uart_base(int idx)
+uintptr_t get_uart_base(unsigned int idx)
 {
-	if (idx < 0 || idx >= ARRAY_SIZE(uart_info))
+	if (idx >= ARRAY_SIZE(uart_info))
 		return 0;
 
 	return uart_info[idx].base;
 }
 
-void clear_uart_legacy_config(void)
+static bool get_uart_idx(uintptr_t base, unsigned int *idx)
 {
-	write16((void *)FCH_UART_LEGACY_DECODE, 0);
+	for (unsigned int i = 0; i < ARRAY_SIZE(uart_info); i++) {
+		if (base == uart_info[i].base) {
+			*idx = i;
+			return true;
+		}
+	}
+
+	return false;
 }
 
-void set_uart_config(int idx)
+void clear_uart_legacy_config(void)
+{
+	write16((void *)FCH_LEGACY_UART_DECODE, 0);
+}
+
+void set_uart_legacy_config(unsigned int uart_idx, unsigned int range_idx)
+{
+	uint16_t uart_legacy_decode;
+	uint8_t uart_map_offset;
+
+	if (uart_idx >= ARRAY_SIZE(uart_info) || range_idx >= ARRAY_SIZE(uart_info))
+		return;
+
+	uart_legacy_decode = read16((void *)FCH_LEGACY_UART_DECODE);
+	/* Map uart_idx to io range_idx */
+	uart_map_offset = range_idx * FCH_LEGACY_UART_MAP_SIZE + FCH_LEGACY_UART_MAP_SHIFT;
+	uart_legacy_decode &= ~(FCH_LEGACY_UART_MAP_MASK << uart_map_offset);
+	uart_legacy_decode |= uart_idx << uart_map_offset;
+	/* Enable io range */
+	uart_legacy_decode |= 1 << range_idx;
+	write16((void *)FCH_LEGACY_UART_DECODE, uart_legacy_decode);
+}
+
+static void enable_uart_legacy_decode(uintptr_t base)
+{
+	unsigned int idx;
+	const uint8_t range_idx[ARRAY_SIZE(uart_info)] = {
+		FCH_LEGACY_UART_RANGE_3F8,
+		FCH_LEGACY_UART_RANGE_2F8,
+		FCH_LEGACY_UART_RANGE_3E8,
+		FCH_LEGACY_UART_RANGE_2E8,
+	};
+
+	if (get_uart_idx(base, &idx)) {
+		set_uart_legacy_config(idx, range_idx[idx]);
+	}
+}
+
+void set_uart_config(unsigned int idx)
 {
 	uint32_t uart_ctrl;
-	uint16_t uart_leg;
 
-	if (idx < 0 || idx >= ARRAY_SIZE(uart_info))
+	if (idx >= ARRAY_SIZE(uart_info))
 		return;
 
 	program_gpios(uart_info[idx].mux, 2);
@@ -61,20 +106,6 @@ void set_uart_config(int idx)
 		sm_pci_write32(SMB_UART_CONFIG, uart_ctrl);
 	}
 
-	if (CONFIG(PICASSO_UART_LEGACY) && idx != 3) {
-		/* Force 3F8 if idx=0, 2F8 if idx=1, 3E8 if idx=2 */
-
-		/* TODO: make clearer once PPR is updated */
-		uart_leg = (idx << 8) | (idx << 10) | (idx << 12) | (idx << 14);
-		if (idx == 0)
-			uart_leg |= 1 << FCH_LEGACY_3F8_SH;
-		else if (idx == 1)
-			uart_leg |= 1 << FCH_LEGACY_2F8_SH;
-		else if (idx == 2)
-			uart_leg |= 1 << FCH_LEGACY_3E8_SH;
-
-		write16((void *)FCH_UART_LEGACY_DECODE, uart_leg);
-	}
 }
 
 static const char *uart_acpi_name(const struct device *dev)
@@ -96,7 +127,7 @@ static const char *uart_acpi_name(const struct device *dev)
 /* Even though this is called enable, it gets called for both enabled and disabled devices. */
 static void uart_enable(struct device *dev)
 {
-	int dev_id;
+	unsigned int dev_id;
 
 	switch (dev->path.mmio.addr) {
 	case APU_UART0_BASE:
@@ -119,6 +150,8 @@ static void uart_enable(struct device *dev)
 	if (dev->enabled) {
 		power_on_aoac_device(dev_id);
 		wait_for_aoac_enabled(dev_id);
+		if (CONFIG(PICASSO_UART_LEGACY))
+			enable_uart_legacy_decode(dev->path.mmio.addr);
 	} else {
 		power_off_aoac_device(dev_id);
 	}

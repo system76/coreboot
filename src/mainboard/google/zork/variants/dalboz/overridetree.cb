@@ -37,6 +37,12 @@ chip soc/amd/picasso
 		.early_init = true,
 	}"
 
+	register "emmc_config" = "{
+		.timing = SD_EMMC_EMMC_HS400,
+		.sdr104_hs400_driver_strength = SD_EMMC_DRIVE_STRENGTH_A,
+		.init_khz_preset = 400,
+	}"
+
 	# See AMD 55570-B1 Table 13: PCI Device ID Assignments.
 	device domain 0 on
 		subsystemid 0x1022 0x1510 inherit
@@ -48,9 +54,12 @@ chip soc/amd/picasso
 			register "desc" = ""Raydium Touchscreen""
 			register "probed" = "1"
 			register "irq_gpio" = "ACPI_GPIO_IRQ_EDGE_LOW(GPIO_12)"
-			register "reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPIO_140)"
-			register "reset_delay_ms" = "20"
+			register "reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPIO_140)"
+			# 32ms: Rise time of the reset line
+			# 20ms: Firmware ready time
+			register "reset_delay_ms" = "32 + 20"
 			register "has_power_resource" = "1"
+			register "disable_gpio_export_in_crs" = "1"
 			device i2c 39 on end
 		end
 		chip drivers/i2c/generic
@@ -58,7 +67,7 @@ chip soc/amd/picasso
 			register "desc" = ""ELAN Touchscreen""
 			register "probed" = "1"
 			register "irq_gpio" = "ACPI_GPIO_IRQ_EDGE_LOW(GPIO_12)"
-			register "reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPIO_140)"
+			register "reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPIO_140)"
 			register "reset_delay_ms" = "20"
 			register "has_power_resource" = "1"
 			device i2c 10 on end
@@ -68,7 +77,7 @@ chip soc/amd/picasso
 			register "generic.desc" = ""Synaptics Touchscreen""
 			register "generic.irq_gpio" = "ACPI_GPIO_IRQ_EDGE_LOW(GPIO_12)"
 			register "generic.probed" = "1"
-			register "generic.reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPIO_140)"
+			register "generic.reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPIO_140)"
 			register "generic.reset_delay_ms" = "45"
 			register "generic.has_power_resource" = "1"
 			register "generic.disable_gpio_export_in_crs" = "1"
@@ -80,8 +89,11 @@ chip soc/amd/picasso
 			register "generic.desc" = ""Goodix Touchscreen""
 			register "generic.irq_gpio" = "ACPI_GPIO_IRQ_EDGE_LOW(GPIO_12)"
 			register "generic.probed" = "1"
-			register "generic.reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPIO_140)"
+			register "generic.reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPIO_140)"
 			register "generic.reset_delay_ms" = "120"
+			register "generic.reset_off_delay_ms" = "1"
+			register "generic.stop_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPIO_144)"
+			register "generic.stop_off_delay_ms" = "1"
 			register "generic.has_power_resource" = "1"
 			register "hid_desc_reg_offset" = "0x01"
 			device i2c 5d on end

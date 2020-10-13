@@ -3,7 +3,6 @@
 #include <arch/exception.h>
 #include <assert.h>
 #include <bootmode.h>
-#include <cbmem.h>
 #include <fmap.h>
 #include <security/tpm/tspi/crtm.h>
 #include <security/tpm/tss/vendor/cr50/cr50.h>
@@ -207,7 +206,6 @@ static vb2_error_t hash_body(struct vb2_context *ctx,
 
 	return VB2_SUCCESS;
 }
-
 
 static uint32_t extend_pcrs(struct vb2_context *ctx)
 {

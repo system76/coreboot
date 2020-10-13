@@ -48,35 +48,9 @@ enum {
 	FW_CONFIG_SHIFT_FAN = 27,
 };
 
-int variant_fw_config_valid(void)
-{
-	static uint32_t board_version;
-	const uint32_t bv_valid = CONFIG_VARIANT_BOARD_VER_FW_CONFIG_VALID;
-
-	if (!CONFIG(VARIANT_HAS_FW_CONFIG))
-		return 0;
-
-	/* Fast path for non-zero board version. */
-	if (board_version >= bv_valid)
-		return 1;
-
-	if (google_chromeec_cbi_get_board_version(&board_version)) {
-		printk(BIOS_ERR, "Unable to obtain board version for FW_CONFIG\n");
-		return 0;
-	}
-
-	if (board_version >= bv_valid)
-		return 1;
-
-	return 0;
-}
-
 static int get_fw_config(uint32_t *val)
 {
 	static uint32_t known_value;
-
-	if (!variant_fw_config_valid())
-		return -1;
 
 	if (known_value) {
 		*val = known_value;
@@ -130,6 +104,31 @@ bool variant_uses_v3_schematics(void)
 	return true;
 }
 
+bool variant_uses_v3_6_schematics(void)
+{
+	uint32_t board_version;
+
+	if (!CONFIG(VARIANT_SUPPORTS_PRE_V3_6_SCHEMATICS))
+		return true;
+
+	if (google_chromeec_cbi_get_board_version(&board_version))
+		return false;
+
+	if ((int)board_version < CONFIG_VARIANT_MIN_BOARD_ID_V3_6_SCHEMATICS)
+		return false;
+
+	return true;
+}
+
+/*
+ * pre-v3.6, CODEC_GPI was used as headphone jack interrupt.
+ * Starting v3.6 this was changed to a separate GPIO.
+ */
+bool variant_uses_codec_gpi(void)
+{
+	return !variant_uses_v3_6_schematics();
+}
+
 bool variant_has_active_low_wifi_power(void)
 {
 	uint32_t board_version;
@@ -144,4 +143,9 @@ bool variant_has_active_low_wifi_power(void)
 		return false;
 
 	return true;
+}
+
+int variant_get_daughterboard_id(void)
+{
+	return extract_field(FW_CONFIG_MASK_DB_INDEX, FW_CONFIG_DB_INDEX_SHIFT);
 }

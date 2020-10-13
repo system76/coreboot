@@ -46,8 +46,8 @@ void kbc1100_early_init(u16 port)
 	pnp_set_enable(dev, 0);
 	pnp_set_iobase(dev, PNP_IDX_IO0, 0x60);
 	pnp_set_iobase(dev, PNP_IDX_IO1, 0x64);
-	pnp_set_irq(dev, 0x70, 1);   /* IRQ 1 */
-	pnp_set_irq(dev, 0x72, 12);   /* IRQ 12 */
+	pnp_set_irq(dev, PNP_IDX_IRQ0, 1);   /* IRQ 1 */
+	pnp_set_irq(dev, PNP_IDX_IRQ1, 12);   /* IRQ 12 */
 	pnp_set_enable(dev, 1);
 
 	/* Enable EC Channel 0 */

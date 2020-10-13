@@ -4,6 +4,7 @@
 #define __AMDBLOCKS_ACPI_H__
 
 #include <types.h>
+#include <soc/nvs.h>
 
 /* ACPI MMIO registers 0xfed80800 */
 #define MMIO_ACPI_PM1_STS		0x00
@@ -16,7 +17,24 @@
 #define MMIO_ACPI_GPE0_STS		0x14
 #define MMIO_ACPI_GPE0_EN		0x18
 
-void acpi_clear_pm1_status(void);
+/* Structure to maintain standard ACPI register state for reporting purposes. */
+struct acpi_pm_gpe_state {
+	uint16_t pm1_sts;
+	uint16_t pm1_en;
+	uint32_t gpe0_sts;
+	uint32_t gpe0_en;
+	uint16_t previous_sx_state;
+	uint16_t aligning_field;
+};
+
+/* Fill object with the ACPI PM and GPE state. */
+void acpi_fill_pm_gpe_state(struct acpi_pm_gpe_state *state);
+/* Save events to eventlog log and also print information on console. */
+void acpi_pm_gpe_add_events_print_events(const struct acpi_pm_gpe_state *state);
+/* Clear PM and GPE status registers. */
+void acpi_clear_pm_gpe_status(void);
+/* Fill GNVS object from PM GPE object. */
+void acpi_fill_gnvs(struct global_nvs *gnvs, const struct acpi_pm_gpe_state *state);
 
 /*
  * If a system reset is about to be requested, modify the PM1 register so it

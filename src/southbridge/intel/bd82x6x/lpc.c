@@ -520,7 +520,9 @@ static void lpc_init(struct device *dev)
 	report_pch_info(dev);
 
 	/* Set the value for PCI command register. */
-	pci_write_config16(dev, PCI_COMMAND, 0x000f);
+	pci_write_config16(dev, PCI_COMMAND,
+			   PCI_COMMAND_MASTER | PCI_COMMAND_SPECIAL |
+			   PCI_COMMAND_MEMORY | PCI_COMMAND_IO);
 
 	/* IO APIC initialization. */
 	pch_enable_ioapic(dev);
@@ -731,7 +733,6 @@ static struct device_operations device_ops = {
 	.scan_bus		= scan_static_bus,
 	.ops_pci		= &pci_dev_ops_pci,
 };
-
 
 /* IDs for LPC device of Intel 6 Series Chipset, Intel 7 Series Chipset, and
  * Intel C200 Series Chipset

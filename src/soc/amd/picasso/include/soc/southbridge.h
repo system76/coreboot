@@ -139,30 +139,23 @@
 
 /* FCH MISC Registers 0xfed80e00 */
 #define GPP_CLK_CNTRL			0x00
-#define   GPP_CLK0_REQ_SHL		0
-#define   GPP_CLK1_REQ_SHL		2
-#define   GFX_CLK0_REQ_SHL		4
-#define   GPP_CLK2_REQ_SHL		6
-#define   GPP_CLK3_REQ_SHL		8
-#define   GFX_CLK1_REQ_SHL		10
-#define   GPP_CLK_REQ_MAP_MASK0		(3 << GPP_CLK0_REQ_SHL)
-#define   GPP_CLK_REQ_MAP_CLK0		(1 << GPP_CLK0_REQ_SHL)
-#define   GPP_CLK_REQ_MAP_MASK1		(3 << GPP_CLK1_REQ_SHL)
-#define   GPP_CLK_REQ_MAP_CLK1		(1 << GPP_CLK1_REQ_SHL)
-#define   GFX_CLK_REQ_MAP_MASK0		(3 << GFX_CLK0_REQ_SHL)
-#define   GFX_CLK_REQ_MAP_CLK0		(1 << GFX_CLK0_REQ_SHL)
-#define   GPP_CLK_REQ_MAP_MASK2		(3 << GPP_CLK2_REQ_SHL)
-#define   GPP_CLK_REQ_MAP_CLK2		(1 << GPP_CLK2_REQ_SHL)
-#define   GPP_CLK_REQ_MAP_MASK3		(3 << GPP_CLK3_REQ_SHL)
-#define   GPP_CLK_REQ_MAP_CLK3		(1 << GPP_CLK3_REQ_SHL)
-#define   GFX_CLK_REQ_MAP_MASK1		(3 << GPP_CLK1_REQ_SHL)
-#define   GFX_CLK_REQ_MAP_CLK1		(1 << GPP_CLK1_REQ_SHL)
+#define   GPP_CLK0_REQ_SHIFT		0
+#define   GPP_CLK1_REQ_SHIFT		2
+#define   GPP_CLK4_REQ_SHIFT		4
+#define   GPP_CLK2_REQ_SHIFT		6
+#define   GPP_CLK3_REQ_SHIFT		8
+#define   GPP_CLK5_REQ_SHIFT		10
+#define   GPP_CLK6_REQ_SHIFT		12
+#define     GPP_CLK_OUTPUT_COUNT	7
+#define   GPP_CLK_REQ_MASK(clk_shift)	(0x3 << (clk_shift))
+#define   GPP_CLK_REQ_ON(clk_shift)	(0x3 << (clk_shift))
+#define   GPP_CLK_REQ_EXT(clk_shift)	(0x1 << (clk_shift))
+#define   GPP_CLK_REQ_OFF(clk_shift)	(0x0 << (clk_shift))
+
 #define MISC_CGPLL_CONFIG1		0x08
 #define   CG1PLL_SPREAD_SPECTRUM_ENABLE	BIT(0)
 #define MISC_CLK_CNTL1			0x40
 #define   BP_X48M0_OUTPUT_EN		BIT(2) /* 1=En, unlike Hudson, Kern */
-#define   OSCOUT1_CLK_OUTPUT_ENB	BIT(2)  /* 0 = Enabled, 1 = Disabled */
-#define   OSCOUT2_CLK_OUTPUT_ENB	BIT(7)  /* 0 = Enabled, 1 = Disabled */
 #define MISC_I2C0_PAD_CTRL		0xd8
 #define MISC_I2C1_PAD_CTRL		0xdc
 #define MISC_I2C2_PAD_CTRL		0xe0
@@ -228,10 +221,14 @@
 #define   FCH_AOAC_STAT0		BIT(6)
 #define   FCH_AOAC_STAT1		BIT(7)
 
-#define FCH_UART_LEGACY_DECODE		0xfedc0020
-#define   FCH_LEGACY_3F8_SH		3
-#define   FCH_LEGACY_2F8_SH		1
-#define   FCH_LEGACY_3E8_SH		2
+#define FCH_LEGACY_UART_DECODE		(ALINK_AHB_ADDRESS + 0x20) /* 0xfedc0020 */
+#define   FCH_LEGACY_UART_MAP_SHIFT	8
+#define   FCH_LEGACY_UART_MAP_SIZE	2
+#define   FCH_LEGACY_UART_MAP_MASK	0x3
+#define   FCH_LEGACY_UART_RANGE_2E8	0
+#define   FCH_LEGACY_UART_RANGE_2F8	1
+#define   FCH_LEGACY_UART_RANGE_3E8	2
+#define   FCH_LEGACY_UART_RANGE_3F8	3
 
 #define PM1_LIMIT			16
 #define GPE0_LIMIT			28
@@ -252,6 +249,13 @@
 /* IO 0xf0 NCP Error */
 #define   NCP_WARM_BOOT			BIT(7) /* Write-once */
 
+/* this is for the devicetree setting and not the values written to the register */
+enum gpp_clk_req_setting {
+	GPP_CLK_ON,	/* GPP clock always on; default */
+	GPP_CLK_REQ,	/* GPP clock controlled by corresponding #CLK_REQx pin */
+	GPP_CLK_OFF,	/* GPP clk off */
+};
+
 typedef struct aoac_devs {
 	unsigned int :7;
 	unsigned int ic2e:1; /* 7: I2C2 */
@@ -268,25 +272,18 @@ typedef struct aoac_devs {
 	unsigned int :4;
 } __packed aoac_devs_t;
 
-struct soc_power_reg {
-	uint16_t pm1_sts;
-	uint16_t pm1_en;
-	uint32_t gpe0_sts;
-	uint32_t gpe0_en;
-	uint16_t wake_from;
-};
-
 void enable_aoac_devices(void);
-bool is_aoac_device_enabled(int dev);
-void power_on_aoac_device(int dev);
-void power_off_aoac_device(int dev);
-void wait_for_aoac_enabled(int dev);
+bool is_aoac_device_enabled(unsigned int dev);
+void power_on_aoac_device(unsigned int dev);
+void power_off_aoac_device(unsigned int dev);
+void wait_for_aoac_enabled(unsigned int dev);
 void sb_clk_output_48Mhz(void);
 void sb_enable(struct device *dev);
 void southbridge_final(void *chip_info);
 void southbridge_init(void *chip_info);
 void fch_pre_init(void);
 void fch_early_init(void);
+void set_uart_legacy_config(unsigned int uart_idx, unsigned int range_idx);
 
 /* Initialize all the i2c buses that are marked with early init. */
 void i2c_soc_early_init(void);

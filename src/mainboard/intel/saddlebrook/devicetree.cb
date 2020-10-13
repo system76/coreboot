@@ -18,16 +18,10 @@ chip soc/intel/skylake
 	register "speed_shift_enable" = "1"
 
 	# FSP Configuration
-	register "EnableAzalia" = "1"
 	register "DspEnable" = "1"
 	register "IoBufferOwnership" = "3"
-	register "SmbusEnable" = "1"
-	register "ScsEmmcEnabled" = "0"
 	register "ScsEmmcHs400Enabled" = "0"
-	register "ScsSdCardEnabled" = "0"
 	register "SkipExtGfxScan" = "1"
-	register "Device4Enable" = "0"
-	register "Heci3Enabled" = "0"
 
 	register "SaGv" = "SaGv_Enabled"
 	register "PmTimerDisabled" = "0"
@@ -140,8 +134,6 @@ chip soc/intel/skylake
 	register "PcieRpClkReqNumber[5]" = "0"
 	register "PcieRpClkReqNumber[12]" = "1"
 
-	register "EnableLan" = "1"
-
 	# USB related
 	register "SsicPortEnable" = "1"
 
@@ -175,16 +167,6 @@ chip soc/intel/skylake
 
 	# Must leave UART0 enabled or SD/eMMC will not work as PCI
 
-	register "pirqa_routing" = "0x0b"
-	register "pirqb_routing" = "0x0a"
-	register "pirqc_routing" = "0x0b"
-	register "pirqd_routing" = "0x0b"
-	register "pirqe_routing" = "0x0b"
-	register "pirqf_routing" = "0x0b"
-	register "pirqg_routing" = "0x0b"
-	register "pirqh_routing" = "0x0b"
-
-	register "EnableSata" = "1"
 	register "SataSalpSupport" = "1"
 	register "SataPortsEnable" = "{ \
 		[0]	= 1, \
@@ -227,6 +209,7 @@ chip soc/intel/skylake
 	device domain 0 on
 		device pci 00.0 on  end # Host Bridge
 		device pci 02.0 on  end # Integrated Graphics Device
+		device pci 04.0 off end # SA thermal subsystem
 		device pci 14.0 on  end # USB xHCI
 		device pci 14.1 off end # USB xDCI (OTG)
 		device pci 14.2 on  end # Thermal Subsystem

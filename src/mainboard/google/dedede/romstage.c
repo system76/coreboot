@@ -1,4 +1,4 @@
-/* SPDX-License-Identifier: GPL-2.0-or-later  */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #include <baseboard/variants.h>
 #include <console/console.h>
@@ -20,20 +20,4 @@ void mainboard_memory_init_params(FSPM_UPD *memupd)
 	bool half_populated = variant_mem_is_half_populated();
 
 	memcfg_init(&memupd->FspmConfig, board_cfg, &spd_info, half_populated);
-}
-
-bool mainboard_get_dram_part_num(const char **part_num, size_t *len)
-{
-	static char part_num_store[DIMM_INFO_PART_NUMBER_SIZE];
-
-	if (google_chromeec_cbi_get_dram_part_num(&part_num_store[0],
-					sizeof(part_num_store)) < 0) {
-		printk(BIOS_ERR, "No DRAM part number in CBI!\n");
-		return false;
-	}
-
-
-	*part_num = &part_num_store[0];
-	*len = strlen(part_num_store);
-	return true;
 }

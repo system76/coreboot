@@ -40,6 +40,8 @@ are permitted provided that the following conditions are met:
 #define MEMTYPE_2LM_MASK       (1 << 1)
 #define MEMTYPE_VOLATILE_MASK  (MEMTYPE_1LM_MASK | MEMTYPE_2LM_MASK)
 
+#define MAX_FPGA_REMOTE_SAD_RULES         2     // Maximum FPGA sockets exists on ICX platform
+
 #define MAX_SAD_RULES                     24
 #define MAX_DRAM_CLUSTERS                 1
 #define MAX_IMC_PER_SOCKET                2
@@ -56,6 +58,9 @@ are permitted provided that the following conditions are met:
 #define MEM_TYPE_RESERVED (1 << 8)
 #define MEM_ADDR_64MB_SHIFT_BITS 26
 
+#define NGN_MAX_SERIALNUMBER_STRLEN 4
+#define NGN_MAX_PARTNUMBER_STRLEN 20
+#define NGN_FW_VER_LEN 4
 //
 //  System Memory Map HOB information
 //
@@ -83,9 +88,50 @@ typedef struct SystemMemoryMapElement {
 	UINT32   ElementSize;
 } SYSTEM_MEMORY_MAP_ELEMENT;
 
+typedef struct DimmDevice {
+	UINT8    Present;
+	UINT8    reserved1[1];
+	UINT8    DcpmmPresent;
+	UINT8    reserved2[1];
+	UINT8    NumRanks;
+	UINT8    reserved3[1];
+	UINT8    actKeyByte2;
+	UINT8    reserved4[4];
+	UINT16   nonVolCap;
+	UINT16   DimmSize;
+	UINT8    reserved5[4];
+	UINT16   SPDMMfgId;				    // Module Mfg Id from SPD
+	UINT16   VendorID;
+	UINT16   DeviceID;
+	UINT8    reserved6[22];
+	UINT8    serialNumber[NGN_MAX_SERIALNUMBER_STRLEN]; // Serial Number
+	UINT8    PartNumber[NGN_MAX_PARTNUMBER_STRLEN];     // Part Number
+	UINT8    FirmwareVersionStr[NGN_FW_VER_LEN];        // Used to update the SMBIOS TYPE 17
+	UINT8    reserved7[23];
+	UINT16   SubsystemVendorID;
+	UINT16   SubsystemDeviceID;
+	UINT8    reserved8[4];
+	UINT8    DimmSku;				    // Dimm SKU info
+	UINT8    reserved9[3];
+	INT32    commonTck;
+	UINT8    EnergyType;
+	UINT8    reserved10[1];
+	UINT16   SPDRegVen;				    // Register Vendor ID in SPD
+} MEMMAP_DIMM_DEVICE_INFO_STRUCT;
+
+struct ChannelDevice {
+	UINT8    reserved1[15];
+	MEMMAP_DIMM_DEVICE_INFO_STRUCT    DimmInfo[MAX_IMC];
+};
+
+typedef struct socket {
+	UINT8    reserved1[1114];
+	struct   ChannelDevice ChannelInfo[MAX_CH];
+} MEMMAP_SOCKET;
+
 /* NOTE - Reserved sizes need to be calibrated if any of the above #define values change */
 typedef struct SystemMemoryMapHob {
-  UINT8    reserved1[58];
+  UINT8    reserved1[61];
 
   UINT32   lowMemBase;                            // Mem base in 64MB units for below 4GB mem.
   UINT32   lowMemSize;                            // Mem size in 64MB units for below 4GB mem.
@@ -94,16 +140,24 @@ typedef struct SystemMemoryMapHob {
   UINT32   memSize;                               // Total physical memory size
   UINT16   memFreq;                               // Mem Frequency
 
-  UINT8    reserved2[61];
+  UINT8    reserved2[22];
 
+  UINT8    DdrVoltage;
+  UINT8    reserved3[38];
+  UINT8    NumChPerMC;
   UINT8    numberEntries;                         // Number of Memory Map Elements
-  SYSTEM_MEMORY_MAP_ELEMENT Element[MAX_SOCKET * MAX_DRAM_CLUSTERS * MAX_SAD_RULES];
+  SYSTEM_MEMORY_MAP_ELEMENT Element[(MAX_SOCKET * MAX_DRAM_CLUSTERS * MAX_SAD_RULES) + MAX_FPGA_REMOTE_SAD_RULES];
+  UINT8    reserved4[2213];
+  MEMMAP_SOCKET Socket[MAX_SOCKET];
+  UINT8    reserved5[1603];
 
-  UINT8    reserved3[24514];
+  UINT16  BiosFisVersion;                              // Firmware Interface Specification version currently supported by BIOS
+
+  UINT8    reserved6[24];
 
   UINT32   MmiohBase;                                   // MMIOH base in 64MB granularity
 
-  UINT8    reserved4[2];
+  UINT8    reserved7[5];
 
 } SYSTEM_MEMORY_MAP_HOB;
 

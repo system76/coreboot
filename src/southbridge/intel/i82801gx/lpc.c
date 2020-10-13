@@ -247,18 +247,13 @@ static void i82801gx_power_options(struct device *dev)
 
 static void i82801gx_configure_cstates(struct device *dev)
 {
-	u8 reg8;
-
-	reg8 = pci_read_config8(dev, 0xa9); // Cx state configuration
-	reg8 |= (1 << 4) | (1 << 3) | (1 << 2);	// Enable Popup & Popdown
-	pci_write_config8(dev, 0xa9, reg8);
+	// Enable Popup & Popdown
+	pci_or_config8(dev, 0xa9, (1 << 4) | (1 << 3) | (1 << 2));
 
 	// Set Deeper Sleep configuration to recommended values
-	reg8 = pci_read_config8(dev, 0xaa);
-	reg8 &= 0xf0;
-	reg8 |= (2 << 2);	// Deeper Sleep to Stop CPU: 34-40us
-	reg8 |= (2 << 0);	// Deeper Sleep to Sleep: 15us
-	pci_write_config8(dev, 0xaa, reg8);
+	// Deeper Sleep to Stop CPU: 34-40us
+	// Deeper Sleep to Sleep: 15us
+	pci_update_config8(dev, 0xaa, 0xf0, (2 << 2) | (2 << 0));
 }
 
 static void i82801gx_rtc_init(struct device *dev)
@@ -347,7 +342,9 @@ static void lpc_init(struct device *dev)
 	printk(BIOS_DEBUG, "i82801gx: %s\n", __func__);
 
 	/* Set the value for PCI command register. */
-	pci_write_config16(dev, PCI_COMMAND, 0x000f);
+	pci_write_config16(dev, PCI_COMMAND,
+			   PCI_COMMAND_MASTER | PCI_COMMAND_SPECIAL |
+			   PCI_COMMAND_MEMORY | PCI_COMMAND_IO);
 
 	/* IO APIC initialization. */
 	i82801gx_enable_ioapic(dev);
@@ -413,7 +410,6 @@ unsigned long acpi_fill_madt(unsigned long current)
 		 current, 0, 0, 2, MP_IRQ_POLARITY_HIGH | MP_IRQ_TRIGGER_EDGE);
 	current += acpi_create_madt_irqoverride((acpi_madt_irqoverride_t *)
 		 current, 0, 9, 9, MP_IRQ_POLARITY_HIGH | MP_IRQ_TRIGGER_LEVEL);
-
 
 	return current;
 }

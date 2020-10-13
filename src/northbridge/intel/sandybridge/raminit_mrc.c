@@ -14,6 +14,8 @@
 #include <device/pci_def.h>
 #include <lib.h>
 #include <mrc_cache.h>
+#include <stddef.h>
+#include <stdint.h>
 #include <timestamp.h>
 #include "raminit.h"
 #include "pei_data.h"
@@ -70,8 +72,8 @@ void save_mrc_data(struct pei_data *pei_data)
 
 static void prepare_mrc_cache(struct pei_data *pei_data)
 {
-	struct region_device rdev;
 	u16 c1, c2, checksum, seed_checksum;
+	size_t mrc_size;
 
 	/* Preset just in case there is an error */
 	pei_data->mrc_input = NULL;
@@ -101,16 +103,18 @@ static void prepare_mrc_cache(struct pei_data *pei_data)
 		return;
 	}
 
-	if (mrc_cache_get_current(MRC_TRAINING_DATA, MRC_CACHE_VERSION, &rdev)) {
+	pei_data->mrc_input = mrc_cache_current_mmap_leak(MRC_TRAINING_DATA,
+							  MRC_CACHE_VERSION,
+							  &mrc_size);
+	if (pei_data->mrc_input == NULL) {
 		/* Error message printed in find_current_mrc_cache */
 		return;
 	}
 
-	pei_data->mrc_input = rdev_mmap_full(&rdev);
-	pei_data->mrc_input_len = region_device_sz(&rdev);
+	pei_data->mrc_input_len = mrc_size;
 
-	printk(BIOS_DEBUG, "%s: at %p, size %x\n", __func__, pei_data->mrc_input,
-			pei_data->mrc_input_len);
+	printk(BIOS_DEBUG, "%s: at %p, size %zx\n", __func__,
+	       pei_data->mrc_input, mrc_size);
 }
 
 /**
@@ -120,7 +124,6 @@ static void prepare_mrc_cache(struct pei_data *pei_data)
  */
 void sdram_initialize(struct pei_data *pei_data)
 {
-	struct sys_info sysinfo;
 	int (*entry)(struct pei_data *pei_data) __attribute__((regparm(1)));
 
 	/* Wait for ME to be ready */
@@ -128,10 +131,6 @@ void sdram_initialize(struct pei_data *pei_data)
 	intel_early_me_uma_size();
 
 	printk(BIOS_DEBUG, "Starting UEFI PEI System Agent\n");
-
-	memset(&sysinfo, 0, sizeof(sysinfo));
-
-	sysinfo.boot_path = pei_data->boot_mode;
 
 	/*
 	 * Do not pass MRC data in for recovery mode boot,
@@ -251,10 +250,10 @@ static void southbridge_fill_pei_data(struct pei_data *pei_data)
 {
 	const struct device *dev = pcidev_on_root(0x19, 0);
 
-	pei_data->smbusbar   = SMBUS_IO_BASE;
+	pei_data->smbusbar   = CONFIG_FIXED_SMBUS_IO_BASE;
 	pei_data->wdbbar     = 0x04000000;
 	pei_data->wdbsize    = 0x1000;
-	pei_data->rcba       = (uintptr_t)DEFAULT_RCBABASE;
+	pei_data->rcba       = (uintptr_t)DEFAULT_RCBA;
 	pei_data->pmbase     = DEFAULT_PMBASE;
 	pei_data->gpiobase   = DEFAULT_GPIOBASE;
 	pei_data->gbe_enable = dev && dev->enabled;

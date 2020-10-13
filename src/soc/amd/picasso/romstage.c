@@ -2,19 +2,90 @@
 
 #include <arch/cpu.h>
 #include <acpi/acpi.h>
+#include <amdblocks/acpi.h>
+#include <cbmem.h>
 #include <cpu/x86/cache.h>
 #include <cpu/amd/mtrr.h>
 #include <console/uart.h>
-#include <cbmem.h>
 #include <commonlib/helpers.h>
 #include <console/console.h>
+#include <device/device.h>
 #include <program_loading.h>
 #include <elog.h>
+#include <soc/acpi.h>
 #include <soc/memmap.h>
 #include <soc/mrc_cache.h>
+#include <soc/pci_devs.h>
 #include <types.h>
 #include "chip.h"
 #include <fsp/api.h>
+
+static struct chipset_state chipset_state;
+
+static void fill_chipset_state(void)
+{
+	acpi_fill_pm_gpe_state(&chipset_state.gpe_state);
+	gpio_fill_wake_state(&chipset_state.gpio_state);
+}
+
+static void add_chipset_state_cbmem(int unused)
+{
+	struct chipset_state *state;
+
+	state = cbmem_add(CBMEM_ID_POWER_STATE, sizeof(*state));
+
+	if (state)
+		memcpy(state, &chipset_state, sizeof(*state));
+}
+
+ROMSTAGE_CBMEM_INIT_HOOK(add_chipset_state_cbmem);
+
+static const struct device_path hda_path[] = {
+	{
+		.type = DEVICE_PATH_PCI,
+		.pci.devfn = PCIE_GPP_A_DEVFN
+	},
+	{
+		.type = DEVICE_PATH_PCI,
+		.pci.devfn = HD_AUDIO_DEVFN
+	},
+};
+
+static bool devtree_hda_dev_enabled(void)
+{
+	const struct device *hda_dev;
+
+	hda_dev = find_dev_nested_path(pci_root_bus(), hda_path, ARRAY_SIZE(hda_path));
+
+	if (!hda_dev)
+		return false;
+
+	return hda_dev->enabled;
+}
+
+
+static const struct device_path sata_path[] = {
+	{
+		.type = DEVICE_PATH_PCI,
+		.pci.devfn = PCIE_GPP_B_DEVFN
+	},
+	{
+		.type = DEVICE_PATH_PCI,
+		.pci.devfn = SATA_DEVFN
+	},
+};
+
+static bool devtree_sata_dev_enabled(void)
+{
+	const struct device *ahci_dev;
+
+	ahci_dev = find_dev_nested_path(pci_root_bus(), sata_path, ARRAY_SIZE(sata_path));
+
+	if (!ahci_dev)
+		return false;
+
+	return ahci_dev->enabled;
+}
 
 void platform_fsp_memory_init_params_cb(FSPM_UPD *mupd, uint32_t version)
 {
@@ -44,6 +115,9 @@ void platform_fsp_memory_init_params_cb(FSPM_UPD *mupd, uint32_t version)
 		mcfg->stapm_time_constant = config->stapm_time_constant;
 	}
 
+	mcfg->ccx_down_core_mode = config->downcore_mode;
+	mcfg->ccx_disable_smt = config->smt_disable;
+
 	mcfg->sustained_power_limit = config->sustained_power_limit;
 	mcfg->prochot_l_deassertion_ramp_time = config->prochot_l_deassertion_ramp_time;
 	mcfg->thermctl_limit = config->thermctl_limit;
@@ -63,6 +137,8 @@ void platform_fsp_memory_init_params_cb(FSPM_UPD *mupd, uint32_t version)
 	mcfg->telemetry_vddcr_vdd_offset = config->telemetry_vddcr_vdd_offset;
 	mcfg->telemetry_vddcr_soc_slope = config->telemetry_vddcr_soc_slope;
 	mcfg->telemetry_vddcr_soc_offset = config->telemetry_vddcr_soc_offset;
+	mcfg->hd_audio_enable = devtree_hda_dev_enabled();
+	mcfg->sata_enable = devtree_sata_dev_enabled();
 }
 
 asmlinkage void car_stage_entry(void)
@@ -78,6 +154,9 @@ asmlinkage void car_stage_entry(void)
 	post_code(0x42);
 	u32 val = cpuid_eax(1);
 	printk(BIOS_DEBUG, "Family_Model: %08x\n", val);
+
+	/* Snapshot chipset state prior to any FSP call. */
+	fill_chipset_state();
 
 	post_code(0x43);
 	fsp_memory_init(s3_resume);

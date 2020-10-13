@@ -1,9 +1,9 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 #include <soc/gpio_defs.h>
+#include <soc/intel/common/block/acpi/acpi/gpio_op.asl>
 #include <soc/irq.h>
 #include <soc/pcr_ids.h>
 #include <intelblocks/gpio.h>
-#include "gpio_op.asl"
 
 Device (GPIO)
 {
@@ -61,7 +61,7 @@ Device (GPIO)
 Method (GADD, 1, NotSerialized)
 {
 	/* GPIO Community 0 */
-	If (LAnd (LGreaterEqual (Arg0, GPP_A0), LLessEqual (Arg0, GPIO_RSVD_11)))
+	If (LAnd (LGreaterEqual (Arg0, GPP_A0), LLessEqual (Arg0, SPI0_CLK_LOOPBK)))
 	{
 		Store (PID_GPIOCOM0, Local0)
 		Subtract (Arg0, GPP_A0, Local1)
@@ -73,19 +73,19 @@ Method (GADD, 1, NotSerialized)
 		Subtract (Arg0, GPP_D0, Local1)
 	}
 	/* GPIO Community 2 */
-	If (LAnd (LGreaterEqual (Arg0, GPD0), LLessEqual (Arg0, GPD11)))
+	If (LAnd (LGreaterEqual (Arg0, GPD0), LLessEqual (Arg0, DRAM_RESET_B)))
 	{
-		Store (PID_GPIOCOM1, Local0)
+		Store (PID_GPIOCOM2, Local0)
 		Subtract (Arg0, GPD0, Local1)
 	}
 	/* GPIO Community 3 */
-	If (LAnd (LGreaterEqual (Arg0, HDA_BCLK), LLessEqual (Arg0, GPIO_RSVD_38)))
+	If (LAnd (LGreaterEqual (Arg0, HDA_BCLK), LLessEqual (Arg0, TRIGGER_OUT)))
 	{
-		Store (PID_GPIOCOM1, Local0)
+		Store (PID_GPIOCOM3, Local0)
 		Subtract (Arg0, HDA_BCLK, Local1)
 	}
-	/* GPIO Community 04*/
-	If (LAnd (LGreaterEqual (Arg0, GPP_C0), LLessEqual (Arg0, GPIO_RSVD_27)))
+	/* GPIO Community 4*/
+	If (LAnd (LGreaterEqual (Arg0, GPP_C0), LLessEqual (Arg0, CL_RST_B)))
 	{
 		Store (PID_GPIOCOM4, Local0)
 		Subtract (Arg0, GPP_C0, Local1)

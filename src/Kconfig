@@ -270,6 +270,45 @@ config UBSAN
 	  say N because it adds a small performance penalty and may abort
 	  on code that happens to work in spite of the UB.
 
+config HAVE_ASAN_IN_ROMSTAGE
+	bool
+	default n
+
+config ASAN_IN_ROMSTAGE
+	bool
+	default n
+	help
+	  Enable address sanitizer in romstage for platform.
+
+config HAVE_ASAN_IN_RAMSTAGE
+	bool
+	default n
+
+config ASAN_IN_RAMSTAGE
+	bool
+	default n
+	help
+	  Enable address sanitizer in ramstage for platform.
+
+config ASAN
+	bool "Address sanitizer support"
+	default n
+	select ASAN_IN_ROMSTAGE if HAVE_ASAN_IN_ROMSTAGE
+	select ASAN_IN_RAMSTAGE if HAVE_ASAN_IN_RAMSTAGE
+	help
+	  Enable address sanitizer - runtime memory debugger,
+	  designed to find out-of-bounds accesses and use-after-scope bugs.
+
+	  This feature consumes up to 1/8 of available memory and brings about
+	  ~1.5x performance slowdown.
+
+	  If unsure, say N.
+
+if ASAN
+	comment "Before using this feature, make sure that           "
+	comment "asan_shadow_offset_callback patch is applied to GCC."
+endif
+
 choice
 	prompt "Stage Cache for ACPI S3 resume"
 	default NO_STAGE_CACHE if !HAVE_ACPI_RESUME
@@ -496,6 +535,17 @@ source "src/southbridge/intel/common/firmware/Kconfig"
 source "src/vendorcode/*/Kconfig"
 
 source "src/arch/*/Kconfig"
+
+config CHIPSET_DEVICETREE
+	string
+	default ""
+	help
+	  This symbol allows a chipset to provide a set of default settings in
+	  a devicetree which are common to all mainboards. This may include
+	  devices (including alias names), chip drivers, register settings,
+	  and others. This path is relative to the src/ directory.
+
+	  Example: "chipset.cb"
 
 endmenu
 
@@ -839,7 +889,7 @@ config DEBUG_SMI
 	bool "Output verbose SMI debug messages"
 	default n
 	depends on HAVE_SMI_HANDLER
-	select SPI_FLASH_SMM if SPI_CONSOLE || CONSOLE_SPI_FLASH
+	select SPI_FLASH_SMM if EM100PRO_SPI_CONSOLE || CONSOLE_SPI_FLASH
 	help
 	  This option enables additional SMI related debug messages.
 
@@ -1104,7 +1154,6 @@ config EM100
 	  by changing the settings in the descriptor.bin file.
 
 endmenu
-
 
 ###############################################################################
 # Set variables with no prompt - these can be set anywhere, and putting at

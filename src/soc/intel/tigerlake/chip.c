@@ -8,6 +8,7 @@
 #include <intelblocks/acpi.h>
 #include <intelblocks/cfg.h>
 #include <intelblocks/itss.h>
+#include <intelblocks/pcie_rp.h>
 #include <intelblocks/xdci.h>
 #include <romstage_handoff.h>
 #include <soc/intel/common/vbt.h>
@@ -15,6 +16,12 @@
 #include <soc/pci_devs.h>
 #include <soc/ramstage.h>
 #include <soc/soc_chip.h>
+
+static const struct pcie_rp_group pch_lp_rp_groups[] = {
+	{ .slot = PCH_DEV_SLOT_PCIE,	.count = 8 },
+	{ .slot = PCH_DEV_SLOT_PCIE_1,	.count = 4 },
+	{ 0 }
+};
 
 #if CONFIG(HAVE_ACPI_TABLES)
 const char *soc_acpi_name(const struct device *dev)
@@ -97,8 +104,6 @@ const char *soc_acpi_name(const struct device *dev)
 	case PCH_DEVFN_GSPI1:		return "SPI1";
 	case PCH_DEVFN_GSPI2:		return "SPI2";
 	case PCH_DEVFN_GSPI3:		return "SPI3";
-	/* Keeping ACPI device name coherent with ec.asl */
-	case PCH_DEVFN_ESPI:		return "LPCB";
 	case PCH_DEVFN_HDA:		return "HDAS";
 	case PCH_DEVFN_SMBUS:		return "SBUS";
 	case PCH_DEVFN_GBE:		return "GLAN";
@@ -140,6 +145,9 @@ void soc_init_pre_device(void *chip_info)
 	itss_restore_irq_polarities(GPIO_IRQ_START, GPIO_IRQ_END);
 
 	soc_fill_gpio_pm_configuration();
+
+	/* Swap enabled PCI ports in device tree if needed. */
+	pcie_rp_update_devicetree(pch_lp_rp_groups);
 }
 
 static struct device_operations pci_domain_ops = {

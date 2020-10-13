@@ -33,8 +33,9 @@ chip soc/intel/xeon_sp/cpx
 	# configure PSTATE_REQ_RATIO for MSR_IA32_PERF_CTRL
 	register "pstate_req_ratio" = "0xa"
 
-	register "coherency_support" = "0"
-	register "ats_support" = "0"
+	# configure VT-d
+	register "vtd_support" = "1"
+	register "x2apic" = "1"
 
 	register "gen1_dec" = "0x00fc0601" # BIC in-band update support
 	register "gen2_dec" = "0x000c0ca1" # IPMI KCS
@@ -84,6 +85,12 @@ chip soc/intel/xeon_sp/cpx
 				device pnp ca2.0 on end
 				register "bmc_i2c_address" = "0x20"
 				register "bmc_boot_timeout" = "60"
+			end
+			chip drivers/ipmi/ocp # OCP specific IPMI porting
+				device pnp ca2.1 on end
+			end
+			chip drivers/pc80/tpm	# TPM
+				device pnp 0c31.0 on  end
 			end
 		end # ISA bridge: Intel Device a245
 		device pci 1f.1 on end # p2sb

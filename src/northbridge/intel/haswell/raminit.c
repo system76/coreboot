@@ -10,6 +10,7 @@
 #include <memory_info.h>
 #include <mrc_cache.h>
 #include <device/pci_def.h>
+#include <device/pci_ops.h>
 #include <device/dram/ddr3.h>
 #include <smbios.h>
 #include <spd.h>
@@ -30,21 +31,24 @@ void save_mrc_data(struct pei_data *pei_data)
 
 static void prepare_mrc_cache(struct pei_data *pei_data)
 {
-	struct region_device rdev;
+	size_t mrc_size;
 
 	/* Preset just in case there is an error */
 	pei_data->mrc_input = NULL;
 	pei_data->mrc_input_len = 0;
 
-	if (mrc_cache_get_current(MRC_TRAINING_DATA, MRC_CACHE_VERSION, &rdev))
+	pei_data->mrc_input =
+		mrc_cache_current_mmap_leak(MRC_TRAINING_DATA,
+					    MRC_CACHE_VERSION,
+					    &mrc_size);
+	if (!pei_data->mrc_input)
 		/* Error message printed in find_current_mrc_cache */
 		return;
 
-	pei_data->mrc_input = rdev_mmap_full(&rdev);
-	pei_data->mrc_input_len = region_device_sz(&rdev);
+	pei_data->mrc_input_len = mrc_size;
 
-	printk(BIOS_DEBUG, "%s: at %p, size %x\n", __func__, pei_data->mrc_input,
-	       pei_data->mrc_input_len);
+	printk(BIOS_DEBUG, "%s: at %p, size %zx\n", __func__,
+	       pei_data->mrc_input, mrc_size);
 }
 
 static const char *ecc_decoder[] = {
@@ -170,6 +174,45 @@ void sdram_initialize(struct pei_data *pei_data)
 	report_memory_config();
 }
 
+static bool nb_supports_ecc(const uint32_t capid0_a)
+{
+	return !(capid0_a & CAPID_ECCDIS);
+}
+
+static uint16_t nb_slots_per_channel(const uint32_t capid0_a)
+{
+	return !(capid0_a & CAPID_DDPCD) + 1;
+}
+
+static uint16_t nb_number_of_channels(const uint32_t capid0_a)
+{
+	return !(capid0_a & CAPID_PDCD) + 1;
+}
+
+static uint32_t nb_max_chan_capacity_mib(const uint32_t capid0_a)
+{
+	uint32_t ddrsz;
+
+	/* Values from documentation, which assume two DIMMs per channel */
+	switch (CAPID_DDRSZ(capid0_a)) {
+	case 1:
+		ddrsz = 8192;
+		break;
+	case 2:
+		ddrsz = 2048;
+		break;
+	case 3:
+		ddrsz = 512;
+		break;
+	default:
+		ddrsz = 16384;
+		break;
+	}
+
+	/* Account for the maximum number of DIMMs per channel */
+	return (ddrsz / 2) * nb_slots_per_channel(capid0_a);
+}
+
 void setup_sdram_meminfo(struct pei_data *pei_data)
 {
 	u32 addr_decode_ch[2];
@@ -215,10 +258,18 @@ void setup_sdram_meminfo(struct pei_data *pei_data)
 					(pei_data->spd_data[dimm_cnt][SPD_DIMM_MOD_ID2] << 8) |
 					(pei_data->spd_data[dimm_cnt][SPD_DIMM_MOD_ID1] & 0xff);
 				dimm->mod_type = SPD_SODIMM;
-				dimm->bus_width = 0x3;	/* 64-bit */
+				dimm->bus_width = MEMORY_BUS_WIDTH_64;
 				dimm_cnt++;
 			}
 		}
 	}
 	mem_info->dimm_cnt = dimm_cnt;
+
+	const uint32_t capid0_a = pci_read_config32(HOST_BRIDGE, CAPID0_A);
+
+	const uint16_t channels = nb_number_of_channels(capid0_a);
+
+	mem_info->ecc_capable = nb_supports_ecc(capid0_a);
+	mem_info->max_capacity_mib = channels * nb_max_chan_capacity_mib(capid0_a);
+	mem_info->number_of_devices = channels * nb_slots_per_channel(capid0_a);
 }

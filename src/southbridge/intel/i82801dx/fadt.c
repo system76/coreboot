@@ -20,7 +20,6 @@ void acpi_fill_fadt(acpi_fadt_t *fadt)
 {
 	u16 pmbase = pci_read_config16(pcidev_on_root(0x1f, 0), 0x40) & 0xfffe;
 
-
 	fadt->sci_int = 0x9;
 
 	if (permanent_smi_handler()) {
@@ -46,37 +45,37 @@ void acpi_fill_fadt(acpi_fadt_t *fadt)
 	fadt->day_alrm = 0xd;
 	fadt->mon_alrm = 0x00;
 	fadt->century = 0x00;
-	fadt->iapc_boot_arch = 0x03;
+	fadt->iapc_boot_arch = ACPI_FADT_LEGACY_DEVICES | ACPI_FADT_8042;
 
 	fadt->flags |= ACPI_FADT_WBINVD | ACPI_FADT_C1_SUPPORTED |
 			ACPI_FADT_C2_MP_SUPPORTED | ACPI_FADT_SLEEP_BUTTON |
 			ACPI_FADT_S4_RTC_WAKE | ACPI_FADT_PLATFORM_CLOCK;
 
-	fadt->x_pm1a_evt_blk.space_id = 1;
+	fadt->x_pm1a_evt_blk.space_id = ACPI_ADDRESS_SPACE_IO;
 	fadt->x_pm1a_evt_blk.bit_width = 32;
 	fadt->x_pm1a_evt_blk.bit_offset = 0;
-	fadt->x_pm1a_evt_blk.access_size = 0;
+	fadt->x_pm1a_evt_blk.access_size = ACPI_ACCESS_SIZE_UNDEFINED;
 	fadt->x_pm1a_evt_blk.addrl = pmbase;
 	fadt->x_pm1a_evt_blk.addrh = 0x0;
 
 	fadt->x_pm1a_cnt_blk.space_id = ACPI_ADDRESS_SPACE_IO;
 	fadt->x_pm1a_cnt_blk.bit_width = 16;
 	fadt->x_pm1a_cnt_blk.bit_offset = 0;
-	fadt->x_pm1a_cnt_blk.access_size = 0;
+	fadt->x_pm1a_cnt_blk.access_size = ACPI_ACCESS_SIZE_UNDEFINED;
 	fadt->x_pm1a_cnt_blk.addrl = pmbase + 0x4;
 	fadt->x_pm1a_cnt_blk.addrh = 0x0;
 
 	fadt->x_pm_tmr_blk.space_id = ACPI_ADDRESS_SPACE_IO;
 	fadt->x_pm_tmr_blk.bit_width = 32;
 	fadt->x_pm_tmr_blk.bit_offset = 0;
-	fadt->x_pm_tmr_blk.access_size = 0;
+	fadt->x_pm_tmr_blk.access_size = ACPI_ACCESS_SIZE_UNDEFINED;
 	fadt->x_pm_tmr_blk.addrl = pmbase + 0x8;
 	fadt->x_pm_tmr_blk.addrh = 0x0;
 
 	fadt->x_gpe0_blk.space_id = ACPI_ADDRESS_SPACE_IO;
 	fadt->x_gpe0_blk.bit_width = 64;
 	fadt->x_gpe0_blk.bit_offset = 0;
-	fadt->x_gpe0_blk.access_size = 0;
+	fadt->x_gpe0_blk.access_size = ACPI_ACCESS_SIZE_UNDEFINED;
 	fadt->x_gpe0_blk.addrl = pmbase + 0x28;
 	fadt->x_gpe0_blk.addrh = 0x0;
 }

@@ -29,29 +29,6 @@ const struct lpc_mmio_range *soc_get_fixed_mmio_ranges(void)
 	return skl_lpc_fixed_mmio_ranges;
 }
 
-static void pch_enable_ioapic(struct device *dev)
-{
-	u32 reg32;
-	/* PCH-LP has 120 redirection entries */
-	const int redir_entries = 120;
-
-	set_ioapic_id((void *)IO_APIC_ADDR, 0x02);
-
-	/* affirm full set of redirection table entries ("write once") */
-	reg32 = io_apic_read((void *)IO_APIC_ADDR, 0x01);
-
-	reg32 &= ~0x00ff0000;
-	reg32 |= (redir_entries - 1) << 16;
-
-	io_apic_write((void *)IO_APIC_ADDR, 0x01, reg32);
-
-	/*
-	 * Select Boot Configuration register (0x03) and
-	 * use Processor System Bus (0x01) to deliver interrupts.
-	 */
-	io_apic_write((void *)IO_APIC_ADDR, 0x03, 0x01);
-}
-
 void soc_get_gen_io_dec_range(const struct device *dev, uint32_t *gen_io_dec)
 {
 	const config_t *config = config_of(dev);
@@ -72,10 +49,6 @@ void soc_setup_dmi_pcr_io_dec(uint32_t *gen_io_dec)
 }
 
 static const struct reg_script pch_misc_init_script[] = {
-	/* Setup NMI on errors, disable SERR */
-	REG_IO_RMW8(0x61, ~0xf0, (1 << 2)),
-	/* Disable NMI sources */
-	REG_IO_OR8(0x70, (1 << 7)),
 	/* Enable BIOS updates outside of SMM */
 	REG_PCI_RMW8(0xdc, ~(1 << 5), 0),
 	REG_SCRIPT_END
@@ -87,6 +60,7 @@ void lpc_soc_init(struct device *dev)
 
 	/* Legacy initialization */
 	isa_dma_init();
+	pch_misc_init();
 	reg_script_run_on_dev(PCH_DEV_LPC, pch_misc_init_script);
 
 	/* Enable CLKRUN_EN for power gating LPC */
@@ -96,8 +70,8 @@ void lpc_soc_init(struct device *dev)
 	lpc_set_serirq_mode(config->serirq_mode);
 
 	/* Interrupt configuration */
-	pch_enable_ioapic(dev);
-	soc_pch_pirq_init(dev);
+	pch_enable_ioapic();
+	pch_pirq_init();
 	setup_i8259();
 	i8259_configure_irq_trigger(9, 1);
 }

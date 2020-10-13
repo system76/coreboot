@@ -51,6 +51,11 @@ static int get_pcie_bar(struct device *dev, unsigned int index, u32 *base, u32 *
 	return 0;
 }
 
+int decode_pcie_bar(u32 *const base, u32 *const len)
+{
+	return get_pcie_bar(pcidev_on_root(0, 0), PCIEXBAR, base, len);
+}
+
 static const char *northbridge_acpi_name(const struct device *dev)
 {
 	if (dev->path.type == DEVICE_PATH_DOMAIN)
@@ -418,9 +423,68 @@ static void disable_devices(void)
 	pci_write_config32(host_dev, DEVEN, deven);
 }
 
+static void init_egress(void)
+{
+	/* VC0: Enable, ID0, TC0 */
+	EPBAR32(EPVC0RCTL) = (1 << 31) | (0 << 24) | (1 << 0);
+
+	/* No Low Priority Extended VCs, one Extended VC */
+	EPBAR32(EPPVCCAP1) = (0 << 4) | (1 << 0);
+
+	/* VC1: Enable, ID1, TC1 */
+	EPBAR32(EPVC1RCTL) = (1 << 31) | (1 << 24) | (1 << 1);
+
+	/* Poll the VC1 Negotiation Pending bit */
+	while ((EPBAR16(EPVC1RSTS) & (1 << 1)) != 0)
+		;
+}
+
+static void northbridge_dmi_init(void)
+{
+	const bool is_haswell_h = !CONFIG(INTEL_LYNXPOINT_LP);
+
+	u16 reg16;
+	u32 reg32;
+
+	/* Steps prior to DMI ASPM */
+	if (is_haswell_h) {
+		/* Configure DMI De-Emphasis */
+		reg16 = DMIBAR16(DMILCTL2);
+		reg16 |= (1 << 6);	/* 0b: -6.0 dB, 1b: -3.5 dB */
+		DMIBAR16(DMILCTL2) = reg16;
+
+		reg32 = DMIBAR32(DMIL0SLAT);
+		reg32 |= (1 << 31);
+		DMIBAR32(DMIL0SLAT) = reg32;
+
+		reg32 = DMIBAR32(DMILLTC);
+		reg32 |= (1 << 29);
+		DMIBAR32(DMILLTC) = reg32;
+
+		reg32 = DMIBAR32(DMI_AFE_PM_TMR);
+		reg32 &= ~0x1f;
+		reg32 |= 0x13;
+		DMIBAR32(DMI_AFE_PM_TMR) = reg32;
+	}
+
+	/* Clear error status bits */
+	DMIBAR32(DMIUESTS) = 0xffffffff;
+	DMIBAR32(DMICESTS) = 0xffffffff;
+
+	if (is_haswell_h) {
+		/* Enable ASPM L0s and L1 on SA link, should happen before PCH link */
+		reg16 = DMIBAR16(DMILCTL);
+		reg16 |= (1 << 1) | (1 << 0);
+		DMIBAR16(DMILCTL) = reg16;
+	}
+}
+
 static void northbridge_init(struct device *dev)
 {
 	u8 bios_reset_cpl, pair;
+
+	init_egress();
+	northbridge_dmi_init();
 
 	/* Enable Power Aware Interrupt Routing. */
 	pair = MCHBAR8(INTRDIRCTL);
@@ -461,6 +525,9 @@ static const unsigned short mc_pci_device_ids[] = {
 	0x0c04, /* Mobile */
 	0x0a04, /* ULT */
 	0x0c08, /* Server */
+	0x0d00, /* Crystal Well Desktop */
+	0x0d04, /* Crystal Well Mobile */
+	0x0d08, /* Crystal Well Server (by extrapolation) */
 	0
 };
 

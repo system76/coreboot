@@ -5,29 +5,25 @@
 #include <delay.h>
 #include <soc/emi.h>
 #include <soc/dramc_pi_api.h>
+#include <soc/dramc_param.h>
 #include <soc/dramc_register.h>
 #include <soc/infracfg.h>
 #include <string.h>
 #include <timer.h>
 
-enum {
-	CKE_FIXOFF = 0,
-	CKE_FIXON,
-	CKE_DYNAMIC
-};
-
-static void cke_fix_onoff(int option, u8 chn)
+void dramc_cke_fix_onoff(enum cke_type option, u8 chn)
 {
 	u8 on = 0, off = 0;
 
 	/* if CKE is dynamic, set both CKE fix On and Off as 0 */
 	if (option != CKE_DYNAMIC) {
 		on = option;
-		off = (1 - option);
+		off = 1 - option;
 	}
 
-	clrsetbits32(&ch[chn].ao.ckectrl,
-		(0x1 << 6) | (0x1 << 7), (on << 6) | (off << 7));
+	SET32_BITFIELDS(&ch[chn].ao.ckectrl,
+			CKECTRL_CKEFIXON, on,
+			CKECTRL_CKEFIXOFF, off);
 }
 
 static void dvfs_settings(u8 freq_group)
@@ -56,9 +52,9 @@ static void dvfs_settings(u8 freq_group)
 	for (u8 chn = 0; chn < CHANNEL_MAX; chn++) {
 		setbits32(&ch[chn].ao.dvfsdll, 0x1 << 5);
 		setbits32(&ch[chn].phy.dvfs_emi_clk, 0x1 << 29);
-		clrsetbits32(&ch[0].ao.shuctrl2, 0x7f, dll_idle);
+		clrsetbits32(&ch[chn].ao.shuctrl2, 0x7f, dll_idle);
 
-		setbits32(&ch[0].phy.misc_ctrl0, 0x3 << 19);
+		setbits32(&ch[chn].phy.misc_ctrl0, 0x3 << 19);
 		setbits32(&ch[chn].phy.dvfs_emi_clk, 0x1 << 24);
 		setbits32(&ch[chn].ao.dvfsdll, 0x1 << 7);
 	}
@@ -295,8 +291,8 @@ static void ddr_phy_pll_setting(u8 chn, u8 freq_group)
 	for (size_t i = 0; i < ARRAY_SIZE(regs_bak); i++)
 		write32(regs_bak[i].addr, regs_bak[i].value);
 
-	cke_fix_onoff(CKE_DYNAMIC, CHANNEL_A);
-	cke_fix_onoff(CKE_DYNAMIC, CHANNEL_B);
+	dramc_cke_fix_onoff(CKE_DYNAMIC, CHANNEL_A);
+	dramc_cke_fix_onoff(CKE_DYNAMIC, CHANNEL_B);
 
 	if (freq_group == LP4X_DDR3200 || freq_group == LP4X_DDR3600) {
 		setbits32(&ch[chn].phy.shu[0].pll[5], 0x1 << 0);
@@ -521,6 +517,19 @@ static void update_initial_settings(u8 freq_group)
 		(0x1 << 31) | (0xa << 21) | (0xa << 26));
 	setbits32(&ch[0].ao.ckectrl, 0x1 << 23);
 	clrbits32(&ch[0].ao.shu[0].rodtenstb, 0x1 << 31);
+
+	/* CA prebit shift and delay */
+	SET32_BITFIELDS(&ch[0].ao.shu[0].selph_ca7,
+		SHU_SELPH_CA7_DLY_RA0, 0x0,
+		SHU_SELPH_CA7_DLY_RA1, 0x0,
+		SHU_SELPH_CA7_DLY_RA2, 0x0,
+		SHU_SELPH_CA7_DLY_RA3, 0x0,
+		SHU_SELPH_CA7_DLY_RA4, 0x0,
+		SHU_SELPH_CA7_DLY_RA5, 0x0);
+	SET32_BITFIELDS(&ch[0].phy.shu[0].rk[0].ca_cmd[9],
+		SHU1_R0_CA_CMD9_RG_RK0_ARPI_CMD, 0x20);
+	SET32_BITFIELDS(&ch[0].phy.shu[0].rk[1].ca_cmd[9],
+		SHU1_R1_CA_CMD9_RG_RK1_ARPI_CMD, 0x20);
 }
 
 static void dramc_power_on_sequence(void)
@@ -528,8 +537,8 @@ static void dramc_power_on_sequence(void)
 	for (size_t chn = 0; chn < CHANNEL_MAX; chn++)
 		clrbits32(&ch[chn].phy.misc_ctrl1, 0x1 << 13);
 
-	dramc_cke_fix_onoff(CHANNEL_A, false, true);
-	dramc_cke_fix_onoff(CHANNEL_B, false, true);
+	dramc_cke_fix_onoff(CKE_FIXOFF, CHANNEL_A);
+	dramc_cke_fix_onoff(CKE_FIXOFF, CHANNEL_B);
 
 	udelay(200);
 	for (size_t chn = 0; chn < CHANNEL_MAX; chn++)
@@ -539,8 +548,8 @@ static void dramc_power_on_sequence(void)
 		setbits32(&ch[chn].ao.dramc_pd_ctrl, 0x1 << 26);
 
 	udelay(2000);
-	dramc_cke_fix_onoff(CHANNEL_A, true, false);
-	dramc_cke_fix_onoff(CHANNEL_B, true, false);
+	dramc_cke_fix_onoff(CKE_FIXON, CHANNEL_A);
+	dramc_cke_fix_onoff(CKE_FIXON, CHANNEL_B);
 	udelay(2);
 }
 
@@ -697,7 +706,7 @@ static u8 dramc_zq_calibration(u8 chn, u8 rank)
 		regs_bak[i].value = read32(regs_bak[i].addr);
 
 	setbits32(&ch[chn].ao.dramc_pd_ctrl, 0x1 << 26);
-	dramc_cke_fix_onoff(chn, true, false);
+	dramc_cke_fix_onoff(CKE_FIXON, chn);
 
 	SET32_BITFIELDS(&ch[chn].ao.mrs, MRS_MRSRK, rank);
 	SET32_BITFIELDS(&ch[chn].ao.mpc_option, MPC_OPTION_MPCRKEN, 1);
@@ -841,8 +850,8 @@ static void auto_refresh_cke_off(void)
 		setbits32(&ch[chn].ao.refctrl0, 0x1 << 29);
 
 	udelay(3);
-	cke_fix_onoff(CKE_FIXOFF, CHANNEL_A);
-	cke_fix_onoff(CKE_FIXOFF, CHANNEL_B);
+	dramc_cke_fix_onoff(CKE_FIXOFF, CHANNEL_A);
+	dramc_cke_fix_onoff(CKE_FIXOFF, CHANNEL_B);
 
 	dramc_set_broadcast(broadcast_bak);
 }
@@ -889,12 +898,12 @@ static void dramc_setting_DDR1600(void)
 
 	clrsetbits32(&ch[0].ao.shu[0].dqsg_retry, (0x1 << 2) | (0xf << 8),
 		(0x0 << 2) | (0x3 << 8));
-	clrsetbits32(&ch[0].phy.b[0].dq[5], 0x7 << 20, 0x4 << 20);
-
-	clrsetbits32(&ch[0].phy.b[0].dq[7], (0x3 << 4) | (0x1 << 7) | (0x1 << 13),
-			(0x2 << 4) | (0x0 << 7) | (0x0 << 13));
-	clrsetbits32(&ch[0].phy.b[1].dq[5], 0x7 << 20, 0x4 << 20);
-	clrbits32(&ch[0].phy.b[1].dq[7], (0x1 << 7) | (0x1 << 13));
+	clrsetbits32(&ch[0].phy.shu[0].b[0].dq[5], 0x7 << 20, 0x4 << 20);
+	clrsetbits32(&ch[0].phy.shu[0].b[0].dq[7],
+		(0x3 << 4) | (0x1 << 7) | (0x1 << 13),
+		(0x2 << 4) | (0x0 << 7) | (0x0 << 13));
+	clrsetbits32(&ch[0].phy.shu[0].b[1].dq[5], 0x7 << 20, 0x4 << 20);
+	clrbits32(&ch[0].phy.shu[0].b[1].dq[7], (0x1 << 7) | (0x1 << 13));
 
 	for (size_t r = 0; r < 2; r++) {
 		int value = ((r == 0) ? 0x1a : 0x26);
@@ -948,11 +957,12 @@ static void dramc_setting_DDR2400(void)
 
 	clrsetbits32(&ch[0].ao.shu[0].dqsg_retry,
 		(0x1 << 2) | (0xf << 8), (0x1 << 2) | (0x4 << 8));
-	clrsetbits32(&ch[0].phy.b[0].dq[5], 0x7 << 20, 0x3 << 20);
-	clrsetbits32(&ch[0].phy.b[0].dq[7], (0x3 << 4) | (0x1 << 7) | (0x1 << 13),
+	clrsetbits32(&ch[0].phy.shu[0].b[0].dq[5], 0x7 << 20, 0x3 << 20);
+	clrsetbits32(&ch[0].phy.shu[0].b[0].dq[7],
+		(0x3 << 4) | (0x1 << 7) | (0x1 << 13),
 		(0x1 << 4) | (0x1 << 7) | (0x1 << 13));
-	clrsetbits32(&ch[0].phy.b[1].dq[5], 0x7 << 20, 0x3 << 20);
-	clrsetbits32(&ch[0].phy.b[1].dq[7],
+	clrsetbits32(&ch[0].phy.shu[0].b[1].dq[5], 0x7 << 20, 0x3 << 20);
+	clrsetbits32(&ch[0].phy.shu[0].b[1].dq[7],
 		(0x1 << 7) | (0x1 << 13), (0x1 << 7) | (0x1 << 13));
 
 	for (size_t r = 0; r < 2; r++) {
@@ -1056,7 +1066,7 @@ static void dramc_setting(const struct sdram_params *params, u8 freq_group,
 	clrsetbits32(&ch[0].phy.ca_cmd[6], (0x1 << 6) | (0x3 << 14) | (0x1 << 16),
 		(0x0 << 6) | (0x0 << 14) | (0x0 << 16));
 
-	clrbits32(&ch[0].phy.pll3, 0x1 < 0);
+	clrbits32(&ch[0].phy.pll3, 0x1 << 0);
 	setbits32(&ch[0].phy.b[0].dq[3], 0x1 << 3);
 	setbits32(&ch[0].phy.b[1].dq[3], 0x1 << 3);
 
@@ -1087,7 +1097,11 @@ static void dramc_setting(const struct sdram_params *params, u8 freq_group,
 
 	for (size_t b = 0; b < 2; b++)
 		setbits32(&ch[0].phy.b[b].dq[3], (0x3 << 1) | (0x1 << 10));
+
+	dramc_set_broadcast(DRAMC_BROADCAST_OFF);
 	setbits32(&ch[0].phy.shu[0].ca_dll[0], 0x1 << 0);
+	setbits32(&ch[1].phy.shu[0].ca_dll[0], 0x1 << 0);
+	dramc_set_broadcast(DRAMC_BROADCAST_ON);
 
 	for (size_t b = 0; b < 2; b++)
 		clrsetbits32(&ch[0].phy.shu[0].b[b].dll[0],

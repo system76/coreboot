@@ -231,7 +231,6 @@ static void parade_dp_bridge_setup(void)
 	udelay(10);
 	gpio_set_value(dp_rst_l, 1);
 
-
 	gpio_set_pull(dp_hpd, GPIO_PULL_NONE);
 	gpio_cfg_pin(dp_hpd, GPIO_INPUT);
 
@@ -254,7 +253,7 @@ static void parade_dp_bridge_setup(void)
 	 * we're out of here.
 	 * If it's not ready after a second, then we're in big trouble.
 	 */
-	for(i = 0; i < 1000; i++){
+	for (i = 0; i < 1000; i++){
 		if (gpio_get_value(dp_hpd))
 			break;
 		mdelay(1);

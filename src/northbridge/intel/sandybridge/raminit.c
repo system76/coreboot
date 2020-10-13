@@ -54,8 +54,47 @@ static void disable_channel(ramctr_timing *ctrl, int channel)
 	memset(&ctrl->info.dimm[channel][0], 0, sizeof(ctrl->info.dimm[0]));
 }
 
-/* Fill cbmem with information for SMBIOS type 17 */
-static void fill_smbios17(ramctr_timing *ctrl)
+static bool nb_supports_ecc(const uint32_t capid0_a)
+{
+	return !(capid0_a & CAPID_ECCDIS);
+}
+
+static uint16_t nb_slots_per_channel(const uint32_t capid0_a)
+{
+	return !(capid0_a & CAPID_DDPCD) + 1;
+}
+
+static uint16_t nb_number_of_channels(const uint32_t capid0_a)
+{
+	return !(capid0_a & CAPID_PDCD) + 1;
+}
+
+static uint32_t nb_max_chan_capacity_mib(const uint32_t capid0_a)
+{
+	uint32_t ddrsz;
+
+	/* Values from documentation, which assume two DIMMs per channel */
+	switch (CAPID_DDRSZ(capid0_a)) {
+	case 1:
+		ddrsz = 8192;
+		break;
+	case 2:
+		ddrsz = 2048;
+		break;
+	case 3:
+		ddrsz = 512;
+		break;
+	default:
+		ddrsz = 16384;
+		break;
+	}
+
+	/* Account for the maximum number of DIMMs per channel */
+	return (ddrsz / 2) * nb_slots_per_channel(capid0_a);
+}
+
+/* Fill cbmem with information for SMBIOS type 16 and type 17 */
+static void setup_sdram_meminfo(ramctr_timing *ctrl)
 {
 	int channel, slot;
 	const u16 ddr_freq = (1000 << 8) / ctrl->tCK;
@@ -66,6 +105,19 @@ static void fill_smbios17(ramctr_timing *ctrl)
 		if (ret != CB_SUCCESS)
 			printk(BIOS_ERR, "RAMINIT: Failed to add SMBIOS17\n");
 	}
+
+	/* The 'spd_add_smbios17' function allocates this CBMEM area */
+	struct memory_info *m = cbmem_find(CBMEM_ID_MEMINFO);
+	if (m == NULL)
+		return;
+
+	const uint32_t capid0_a = pci_read_config32(HOST_BRIDGE, CAPID0_A);
+
+	const uint16_t channels = nb_number_of_channels(capid0_a);
+
+	m->ecc_capable = nb_supports_ecc(capid0_a);
+	m->max_capacity_mib = channels * nb_max_chan_capacity_mib(capid0_a);
+	m->number_of_devices = channels * nb_slots_per_channel(capid0_a);
 }
 
 /* Return CRC16 match for all SPDs */
@@ -115,10 +167,8 @@ static void dram_find_spds_ddr3(spd_raw_data *spd, ramctr_timing *ctrl)
 		/* Count dimms on channel */
 		for (slot = 0; slot < NUM_SLOTS; slot++) {
 			spd_slot = 2 * channel + slot;
-			printk(BIOS_DEBUG, "SPD probe channel%d, slot%d\n", channel, slot);
 
-			spd_decode_ddr3(&dimm->dimm[channel][slot], spd[spd_slot]);
-			if (dimm->dimm[channel][slot].dram_type == SPD_MEMORY_TYPE_SDRAM_DDR3)
+			if (spd[spd_slot][SPD_MEMORY_TYPE] == SPD_MEMORY_TYPE_SDRAM_DDR3)
 				ch_dimms++;
 		}
 
@@ -245,7 +295,7 @@ static void init_dram_ddr3(int s3resume, const u32 cpuid)
 	int me_uma_size, cbmem_was_inited, fast_boot, err;
 	ramctr_timing ctrl;
 	spd_raw_data spds[4];
-	struct region_device rdev;
+	size_t mrc_size;
 	ramctr_timing *ctrl_cached = NULL;
 
 	MCHBAR32(SAPMCTL) |= 1;
@@ -272,10 +322,11 @@ static void init_dram_ddr3(int s3resume, const u32 cpuid)
 	early_thermal_init();
 
 	/* Try to find timings in MRC cache */
-	err = mrc_cache_get_current(MRC_TRAINING_DATA, MRC_CACHE_VERSION, &rdev);
-
-	if (!err && !(region_device_sz(&rdev) < sizeof(ctrl)))
-		ctrl_cached = rdev_mmap_full(&rdev);
+	ctrl_cached = mrc_cache_current_mmap_leak(MRC_TRAINING_DATA,
+						  MRC_CACHE_VERSION,
+						  &mrc_size);
+	if (mrc_size < sizeof(ctrl))
+		ctrl_cached = NULL;
 
 	/* Before reusing training data, assert that the CPU has not been replaced */
 	if (ctrl_cached && cpuid != ctrl_cached->cpu) {
@@ -364,14 +415,44 @@ static void init_dram_ddr3(int s3resume, const u32 cpuid)
 
 	set_scrambling_seed(&ctrl);
 
+	if (!s3resume && ctrl.ecc_enabled)
+		channel_scrub(&ctrl);
+
 	set_normal_operation(&ctrl);
 
 	final_registers(&ctrl);
 
+	/* can't do this earlier because it needs to be done in normal operation */
+	if (CONFIG(DEBUG_RAM_SETUP) && !s3resume && ctrl.ecc_enabled) {
+		uint32_t i, tseg = pci_read_config32(HOST_BRIDGE, TSEGMB);
+
+		printk(BIOS_INFO, "RAMINIT: ECC scrub test on first channel up to 0x%x\n",
+		       tseg);
+
+		/*
+		 * This test helps to debug the ECC scrubbing.
+		 * It likely tests every channel/rank, as rank interleave and enhanced
+		 * interleave are enabled, but there's no guarantee for it.
+		 */
+
+		/* Skip first MB to avoid special case for A-seg and test up to TSEG */
+		for (i = 1; i < tseg >> 20; i++) {
+			for (int j = 0; j < 1 * MiB; j += 4096) {
+				uintptr_t addr = i * MiB + j;
+				if (read32((u32 *)addr) == 0)
+					continue;
+
+				printk(BIOS_ERR, "RAMINIT: ECC scrub: DRAM not cleared at"
+				       " addr 0x%lx\n", addr);
+				break;
+			}
+		}
+		printk(BIOS_INFO, "RAMINIT: ECC scrub test done.\n");
+	}
+
 	/* Zone config */
 	dram_zones(&ctrl, 0);
 
-	intel_early_me_status();
 	intel_early_me_init_done(ME_INIT_STATUS_SUCCESS);
 	intel_early_me_status();
 
@@ -386,7 +467,7 @@ static void init_dram_ddr3(int s3resume, const u32 cpuid)
 	}
 
 	if (!s3resume)
-		fill_smbios17(&ctrl);
+		setup_sdram_meminfo(&ctrl);
 }
 
 void perform_raminit(int s3resume)

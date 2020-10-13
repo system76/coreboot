@@ -169,7 +169,6 @@ static void busmaster_disable_on_bus(int bus)
 	}
 }
 
-
 void smihandler_southbridge_sleep(
 	const struct smm_save_state_ops *save_state_ops)
 {
@@ -201,8 +200,8 @@ void smihandler_southbridge_sleep(
 		break;
 	case ACPI_S3:
 		printk(BIOS_DEBUG, "SMI#: Entering S3 (Suspend-To-RAM)\n");
-
-		gnvs->uior = uart_is_controller_initialized();
+		if (CONFIG(SOC_INTEL_COMMON_BLOCK_UART))
+			gnvs->uior = uart_is_controller_initialized();
 
 		/* Invalidate the cache before going to S3 */
 		wbinvd();
@@ -373,6 +372,10 @@ void smihandler_southbridge_apmc(
 			/* EBX in the state save contains the GNVS pointer */
 			uint32_t reg_ebx = save_state_ops->get_reg(state, RBX);
 			gnvs = (struct global_nvs *)(uintptr_t)reg_ebx;
+			if (smm_points_to_smram(gnvs, sizeof(*gnvs))) {
+				printk(BIOS_ERR, "SMI#: ERROR: GNVS overlaps SMM\n");
+				return;
+			}
 			smm_initialized = 1;
 			printk(BIOS_DEBUG, "SMI#: Setting GNVS to %p\n", gnvs);
 		}

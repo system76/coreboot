@@ -1,9 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
 #include <assert.h>
-#include <delay.h>
 #include <device/mmio.h>
-#include <timestamp.h>
 #include <types.h>
 
 #include <gpio.h>

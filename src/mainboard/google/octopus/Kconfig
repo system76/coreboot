@@ -1,7 +1,7 @@
 
 config BOARD_GOOGLE_BASEBOARD_OCTOPUS
 	def_bool n
-	select SOC_INTEL_GLK
+	select SOC_INTEL_GEMINILAKE
 	select BOARD_ROMSIZE_KB_16384
 	select DRIVERS_GENERIC_GPIO_KEYS
 	select DRIVERS_GENERIC_MAX98357A
@@ -96,10 +96,6 @@ config MAINBOARD_PART_NUMBER
 config MAINBOARD_FAMILY
 	string
 	default "Google_Octopus"
-
-config MAX_CPUS
-	int
-	default 4
 
 config UART_FOR_CONSOLE
 	int

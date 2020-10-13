@@ -64,7 +64,7 @@ uint32_t nc_read_top_of_low_memory(void)
 static void nc_read_resources(struct device *dev)
 {
 	unsigned long mmconf;
-	unsigned long bmbound;
+	unsigned long bmbound_k;
 	unsigned long bmbound_hi;
 	unsigned long smmrrh;
 	unsigned long smmrrl;
@@ -98,25 +98,26 @@ static void nc_read_resources(struct device *dev)
 		reserved_ram_resource(dev, index++, smmrrl, smmrrh - smmrrl);
 
 	/* All address space between bmbound and smmrrh is unusable. */
-	bmbound = RES_IN_KiB(nc_read_top_of_low_memory());
-	mmio_resource(dev, index++, smmrrh, bmbound - smmrrh);
+	bmbound_k = RES_IN_KiB(nc_read_top_of_low_memory());
+	mmio_resource(dev, index++, smmrrh, bmbound_k - smmrrh);
 
-	/* The BMBOUND_HI register matches register bits of 31:24 with address
-	 * bits of 35:28. Therefore, shift register to align properly. */
+	/*
+	 * The BMBOUND_HI register matches register bits of 31:24 with address
+	 * bits of 35:28. Therefore, shift register to align properly.
+	 */
 	bmbound_hi = iosf_bunit_read(BUNIT_BMBOUND_HI) & ~((1 << 24) - 1);
 	bmbound_hi = RES_IN_KiB(bmbound_hi) << 4;
 	if (bmbound_hi > four_gig_kib)
-		ram_resource(dev, index++, four_gig_kib,
-		             bmbound_hi - four_gig_kib);
+		ram_resource(dev, index++, four_gig_kib, bmbound_hi - four_gig_kib);
 
-	/* Reserve everything between A segment and 1MB:
+	/*
+	 * Reserve everything between A segment and 1MB:
 	 *
 	 * 0xa0000 - 0xbffff: legacy VGA
 	 * 0xc0000 - 0xfffff: RAM
 	 */
 	mmio_resource(dev, index++, (0xa0000 >> 10), (0xc0000 - 0xa0000) >> 10);
-	reserved_ram_resource(dev, index++, (0xc0000 >> 10),
-	                      (0x100000 - 0xc0000) >> 10);
+	reserved_ram_resource(dev, index++, (0xc0000 >> 10), (0x100000 - 0xc0000) >> 10);
 
 	if (CONFIG(CHROMEOS))
 		chromeos_reserve_ram_oops(dev, index++);

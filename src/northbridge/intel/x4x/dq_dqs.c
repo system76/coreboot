@@ -6,7 +6,6 @@
 #include <string.h>
 #include <types.h>
 #include "x4x.h"
-#include "iomap.h"
 
 static void print_dll_setting(const struct dll_setting *dll_setting,
 			u8 default_verbose)
@@ -129,7 +128,6 @@ static int decrement_dq_dqs(const struct sysinfo *s,
 	return CB_SUCCESS;
 }
 
-
 #define WT_PATTERN_SIZE 80
 
 static const u32 write_training_schedule[WT_PATTERN_SIZE] = {
@@ -220,7 +218,7 @@ static int find_dq_limit(const struct sysinfo *s, const u8 channel,
 		expected_result == FAILING ? "failing" : "succeeding", channel);
 	memset(pass_count, 0, sizeof(pass_count));
 
-	while(succes_mask) {
+	while (succes_mask) {
 		test_result = test_dq_aligned(s, channel);
 		FOR_EACH_BYTELANE(lane) {
 			if (((test_result >> lane) & 1) != expected_result) {
@@ -390,7 +388,7 @@ static int rt_find_dqs_limit(struct sysinfo *s, u8 channel,
 	FOR_EACH_BYTELANE(lane)
 		rt_set_dqs(channel, lane, 0, &dqs_setting[lane]);
 
-	while(status == CB_SUCCESS) {
+	while (status == CB_SUCCESS) {
 		test_result = test_dqs_aligned(s, channel);
 		if (test_result == (expected_result == SUCCEEDING ? 0 : 0xff))
 			return CB_SUCCESS;
@@ -498,7 +496,7 @@ int do_read_training(struct sysinfo *s)
 		FOR_EACH_BYTELANE(lane) {
 			saved_dqs_center[channel][lane] /= RT_LOOPS;
 			while (saved_dqs_center[channel][lane]--) {
-				if(rt_increment_dqs(&s->rt_dqs[channel][lane])
+				if (rt_increment_dqs(&s->rt_dqs[channel][lane])
 							== CB_ERR)
 					/* Should never happen */
 					printk(BIOS_ERR,

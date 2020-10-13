@@ -752,7 +752,7 @@ void acpi_create_hpet(acpi_hpet_t *hpet)
 	header->revision = get_acpi_table_revision(HPET);
 
 	/* Fill out HPET address. */
-	addr->space_id = 0; /* Memory */
+	addr->space_id = ACPI_ADDRESS_SPACE_MEMORY;
 	addr->bit_width = 64;
 	addr->bit_offset = 0;
 	addr->addrl = CONFIG_HPET_ADDRESS & 0xffffffff;
@@ -1367,7 +1367,8 @@ unsigned long write_acpi_tables(unsigned long start)
 	if (slic_file
 	    && (slic_file->length > slic_size
 		|| slic_file->length < sizeof(acpi_header_t)
-		|| memcmp(slic_file->signature, "SLIC", 4) != 0)) {
+		|| (memcmp(slic_file->signature, "SLIC", 4) != 0
+		    && memcmp(slic_file->signature, "MSDM", 4) != 0))) {
 		slic_file = 0;
 	}
 
@@ -1626,7 +1627,7 @@ int get_acpi_table_revision(enum acpi_tables table)
 	case VFCT: /* ACPI 2.0/3.0/4.0: 1 */
 		return 1;
 	case IVRS:
-		return IVRS_FORMAT_FIXED;
+		return IVRS_FORMAT_MIXED;
 	case DBG2:
 		return 0;
 	case FACS: /* ACPI 2.0/3.0: 1, ACPI 4.0 upto 6.3: 2 */

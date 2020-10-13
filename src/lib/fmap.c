@@ -46,6 +46,10 @@ static void setup_preram_cache(struct mem_region_device *cache_mrdev)
 	if (CONFIG(NO_FMAP_CACHE))
 		return;
 
+	/* No need to use FMAP cache in SMM */
+	if (ENV_SMM)
+		return;
+
 	if (!ENV_ROMSTAGE_OR_BEFORE) {
 		/* We get here if ramstage makes an FMAP access before calling
 		   cbmem_initialize(). We should avoid letting it come to that,
@@ -56,9 +60,8 @@ static void setup_preram_cache(struct mem_region_device *cache_mrdev)
 	}
 
 	struct fmap *fmap = (struct fmap *)_fmap_cache;
-	if (!ENV_BOOTBLOCK) {
-		/* NOTE: This assumes that for all platforms running this code,
-		   the bootblock is the first stage and the bootblock will make
+	if (!(ENV_INITIAL_STAGE)) {
+		/* NOTE: This assumes that the first stage will make
 		   at least one FMAP access (usually from finding CBFS). */
 		if (!check_signature(fmap))
 			goto register_cache;

@@ -54,6 +54,13 @@ const char *smbios_chassis_version(void);
 const char *smbios_chassis_serial_number(void);
 const char *smbios_processor_serial_number(void);
 
+void smbios_ec_revision(uint8_t *ec_major_revision, uint8_t *ec_minor_revision);
+
+unsigned int smbios_processor_external_clock(void);
+unsigned int smbios_processor_characteristics(void);
+struct cpuid_result;
+unsigned int smbios_processor_family(struct cpuid_result res);
+
 /* Used by mainboard to add port information of type 8 */
 struct port_information;
 int smbios_write_type8(unsigned long *current, int *handle,
@@ -247,6 +254,19 @@ struct smbios_entry {
 	u8 smbios_bcd_revision;
 } __packed;
 
+struct smbios_entry30 {
+	u8 anchor[5];
+	u8 checksum;
+	u8 length;
+	u8 major_version;
+	u8 minor_version;
+	u8 smbios_doc_rev;
+	u8 entry_point_rev;
+	u8 reserved;
+	u32 struct_table_length;
+	u64 struct_table_address;
+} __packed;
+
 struct smbios_type0 {
 	u8 type;
 	u8 length;
@@ -402,8 +422,16 @@ struct smbios_type4 {
 	u8 thread_count;
 	u16 processor_characteristics;
 	u16 processor_family2;
+	u16 core_count2;
+	u16 core_enabled2;
+	u16 thread_count2;
 	u8 eos[2];
 } __packed;
+
+/* defines for smbios_type4 */
+
+#define SMBIOS_PROCESSOR_STATUS_POPULATED		(1 << 6)
+#define SMBIOS_PROCESSOR_STATUS_CPU_ENABLED		(1 << 0)
 
 /* defines for supported_sram_type/current_sram_type */
 
@@ -825,6 +853,19 @@ struct smbios_type17 {
 	u16 minimum_voltage;
 	u16 maximum_voltage;
 	u16 configured_voltage;
+	u8 eos[2];
+} __packed;
+
+struct smbios_type19 {
+	u8 type;
+	u8 length;
+	u16 handle;
+	u32 starting_address;
+	u32 ending_address;
+	u16 memory_array_handle;
+	u8 partition_width;
+	u64 extended_starting_address;
+	u64 extended_ending_address;
 	u8 eos[2];
 } __packed;
 

@@ -49,7 +49,8 @@ static void sata_init(struct device *dev)
 	/* SATA configuration */
 
 	/* Enable BARs */
-	pci_write_config16(dev, PCI_COMMAND, 0x0007);
+	pci_write_config16(dev, PCI_COMMAND,
+			   PCI_COMMAND_MASTER | PCI_COMMAND_MEMORY | PCI_COMMAND_IO);
 
 	if (sata_mode == 0) {
 		/* AHCI */
@@ -89,7 +90,7 @@ static void sata_init(struct device *dev)
 		pci_write_config32(dev, 0x98, 0x00590200);
 
 		/* Initialize AHCI memory-mapped space */
-		abar = (u32 *)pci_read_config32(dev, PCI_BASE_ADDRESS_5);
+		abar = (u32 *)(uintptr_t)pci_read_config32(dev, PCI_BASE_ADDRESS_5);
 		printk(BIOS_DEBUG, "ABAR: %p\n", abar);
 		/* CAP (HBA Capabilities) : enable power management */
 		reg32 = read32(abar + 0x00);

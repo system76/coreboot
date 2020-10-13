@@ -15,25 +15,6 @@
 
 static void ironlake_setup_bars(void)
 {
-	/* Setting up Southbridge. In the northbridge code. */
-	printk(BIOS_DEBUG, "Setting up static southbridge registers...");
-	pci_write_config32(PCI_DEV(0, 0x1f, 0), RCBA, (uintptr_t)DEFAULT_RCBA | 1);
-
-	pci_write_config32(PCI_DEV(0, 0x1f, 0), PMBASE, DEFAULT_PMBASE | 1);
-	/* Enable ACPI BAR */
-	pci_write_config8(PCI_DEV(0, 0x1f, 0), 0x44 /* ACPI_CNTL */, 0x80);
-
-	printk(BIOS_DEBUG, " done.\n");
-
-	printk(BIOS_DEBUG, "Disabling Watchdog reboot...");
-	/* No reset */
-	RCBA32(GCS) = RCBA32(GCS) | (1 << 5);
-	/* halt timer */
-	outw((1 << 11), DEFAULT_PMBASE | 0x60 | 0x08);
-	/* halt timer */
-	outw(inw(DEFAULT_PMBASE | 0x60 | 0x06) | 2, DEFAULT_PMBASE | 0x60 | 0x06);
-	printk(BIOS_DEBUG, " done.\n");
-
 	printk(BIOS_DEBUG, "Setting up static northbridge registers...");
 	/* Set up all hardcoded northbridge BARs */
 	pci_write_config32(PCI_DEV(0, 0x00, 0), EPBAR, DEFAULT_EPBAR | 1);
@@ -44,13 +25,13 @@ static void ironlake_setup_bars(void)
 	pci_write_config32(PCI_DEV(0, 0x00, 0), DMIBAR + 4, 0);
 
 	/* Set C0000-FFFFF to access RAM on both reads and writes */
-	pci_write_config8(PCI_DEV(0xff, 0x00, 1), QPD0F1_PAM(0), 0x30);
-	pci_write_config8(PCI_DEV(0xff, 0x00, 1), QPD0F1_PAM(1), 0x33);
-	pci_write_config8(PCI_DEV(0xff, 0x00, 1), QPD0F1_PAM(2), 0x33);
-	pci_write_config8(PCI_DEV(0xff, 0x00, 1), QPD0F1_PAM(3), 0x33);
-	pci_write_config8(PCI_DEV(0xff, 0x00, 1), QPD0F1_PAM(4), 0x33);
-	pci_write_config8(PCI_DEV(0xff, 0x00, 1), QPD0F1_PAM(5), 0x33);
-	pci_write_config8(PCI_DEV(0xff, 0x00, 1), QPD0F1_PAM(6), 0x33);
+	pci_write_config8(QPI_SAD, QPD0F1_PAM(0), 0x30);
+	pci_write_config8(QPI_SAD, QPD0F1_PAM(1), 0x33);
+	pci_write_config8(QPI_SAD, QPD0F1_PAM(2), 0x33);
+	pci_write_config8(QPI_SAD, QPD0F1_PAM(3), 0x33);
+	pci_write_config8(QPI_SAD, QPD0F1_PAM(4), 0x33);
+	pci_write_config8(QPI_SAD, QPD0F1_PAM(5), 0x33);
+	pci_write_config8(QPI_SAD, QPD0F1_PAM(6), 0x33);
 
 	printk(BIOS_DEBUG, " done.\n");
 }
@@ -62,7 +43,7 @@ static void early_cpu_init(void)
 	/* bit 0 = disable multicore,
 	   bit 1 = disable quadcore,
 	   bit 8 = disable hyperthreading.  */
-	pci_update_config32(PCI_DEV(0xff, 0x00, 0), 0x80, 0xfffffefc, 0x10000);
+	pci_update_config32(QPI_NON_CORE, DESIRED_CORES, 0xfffffefc, 0x10000);
 
 	u8 reg8;
 	struct cpuid_result result;
@@ -112,6 +93,7 @@ void ironlake_early_initialization(int chipset_type)
 	}
 
 	/* Setup all BARs required for early PCIe and raminit */
+	ibexpeak_setup_bars();
 	ironlake_setup_bars();
 
 	s3_resume = (inw(DEFAULT_PMBASE + PM1_STS) & WAK_STS) &&
@@ -120,7 +102,7 @@ void ironlake_early_initialization(int chipset_type)
 	elog_boot_notify(s3_resume);
 
 	/* Device Enable */
-	pci_write_config32(PCI_DEV(0, 0, 0), D0F0_DEVEN, DEVEN_IGD | DEVEN_PEG10 | DEVEN_HOST);
+	pci_write_config32(PCI_DEV(0, 0, 0), DEVEN, DEVEN_IGD | DEVEN_PEG10 | DEVEN_HOST);
 
 	early_cpu_init();
 

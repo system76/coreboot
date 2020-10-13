@@ -6,6 +6,7 @@
 #include <device/device.h>
 #include <device/pci_def.h>
 #include <device/smbus_host.h>
+#include <southbridge/intel/common/pmbase.h>
 #include <southbridge/intel/common/pmclib.h>
 #include <elog.h>
 #include "pch.h"
@@ -34,14 +35,8 @@ enum pch_platform_type get_pch_platform_type(void)
 	return PCH_TYPE_DESKTOP;
 }
 
-int pch_is_lp(void)
-{
-	return get_pch_platform_type() == PCH_TYPE_ULT;
-}
-
 static void pch_enable_bars(void)
 {
-	/* Setting up Southbridge. In the northbridge code. */
 	pci_write_config32(PCH_LPC_DEV, RCBA, (uintptr_t)DEFAULT_RCBA | 1);
 
 	pci_write_config32(PCH_LPC_DEV, PMBASE, DEFAULT_PMBASE | 1);
@@ -58,7 +53,7 @@ static void pch_generic_setup(void)
 {
 	printk(BIOS_DEBUG, "Disabling Watchdog reboot...");
 	RCBA32(GCS) = RCBA32(GCS) | (1 << 5);	/* No reset */
-	outw((1 << 11), DEFAULT_PMBASE | 0x60 | 0x08);	/* halt timer */
+	write_pmbase16(0x60 | 0x08, (1 << 11));	/* halt timer */
 	printk(BIOS_DEBUG, " done.\n");
 }
 

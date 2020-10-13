@@ -9,7 +9,6 @@
 #include <intelblocks/gspi.h>
 #include <stdint.h>
 #include <soc/gpe.h>
-#include <soc/gpio.h>
 #include <soc/pch.h>
 #include <soc/gpio_defs.h>
 #include <soc/pci_devs.h>
@@ -82,7 +81,6 @@ struct soc_intel_icelake_config {
 		SaGv_FixedHigh,
 		SaGv_Enabled,
 	} SaGv;
-
 
 	/* Rank Margin Tool. 1:Enable, 0:Disable */
 	uint8_t RMT;

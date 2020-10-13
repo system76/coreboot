@@ -11,7 +11,7 @@ void i82801ix_lpc_setup(void)
 {
 	const pci_devfn_t d31f0 = PCI_DEV(0, 0x1f, 0);
 	const struct device *dev = pcidev_on_root(0x1f, 0);
-	const struct southbridge_intel_i82801ix_config *config = NULL;
+	const struct southbridge_intel_i82801ix_config *config;
 
 	/* Configure serial IRQs.*/
 	pci_write_config8(d31f0, D31F0_SERIRQ_CNTL, 0xd0);
@@ -27,7 +27,10 @@ void i82801ix_lpc_setup(void)
 	 * - 0x200-0x207 GAMEL
 	 */
 	pci_write_config16(d31f0, D31F0_LPC_IODEC, 0x0010);
-	pci_write_config16(d31f0, D31F0_LPC_EN, 0x3f0f);
+	pci_write_config16(d31f0, D31F0_LPC_EN, CNF2_LPC_EN | CNF1_LPC_EN
+			   | MC_LPC_EN | KBC_LPC_EN | GAMEH_LPC_EN
+			   | GAMEL_LPC_EN | FDD_LPC_EN | LPT_LPC_EN
+			   | COMB_LPC_EN | COMA_LPC_EN);
 
 	/* Set up generic decode ranges */
 	if (!dev || !dev->chip_info)

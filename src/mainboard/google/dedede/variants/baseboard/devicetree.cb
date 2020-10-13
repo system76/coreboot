@@ -1,3 +1,10 @@
+fw_config
+        field TABLETMODE 10
+                option TABLETMODE_DISABLED 0
+                option TABLETMODE_ENABLED 1
+        end
+end
+
 chip soc/intel/jasperlake
 	device cpu_cluster 0 on
 		device lapic 0 on end
@@ -16,9 +23,9 @@ chip soc/intel/jasperlake
 	#   - GPP_D0 - WWAN_HOST_WAKE
 	#   - GPP_D3 - WLAN_PCIE_WAKE_ODL
 	# EC_AP_WAKE_ODL is routed to LAN_WAKE#/GPD02 & is part of DW3.
-	register "pmc_gpe0_dw0" = "GPP_B"
-	register "pmc_gpe0_dw1" = "GPP_C"
-	register "pmc_gpe0_dw2" = "GPP_D"
+	register "pmc_gpe0_dw0" = "PMC_GPP_B"
+	register "pmc_gpe0_dw1" = "PMC_GPP_C"
+	register "pmc_gpe0_dw2" = "PMC_GPP_D"
 
 	# EC host command ranges are in 0x800-0x8ff & 0x200-0x20f
 	register "gen1_dec" = "0x00fc0801"
@@ -32,16 +39,12 @@ chip soc/intel/jasperlake
 	register "usb2_ports[2]" = "USB2_PORT_MID(OC_SKIP)"	# Type-A Port A0
 	register "usb2_ports[3]" = "USB2_PORT_MID(OC_SKIP)"	# Type-A Port A1
 	register "usb2_ports[4]" = "USB2_PORT_MID(OC_SKIP)"	# Discrete Bluetooth
-	register "usb2_ports[5]" = "USB2_PORT_EMPTY"		# Not Used
-	register "usb2_ports[6]" = "USB2_PORT_EMPTY"		# Not Used
 	register "usb2_ports[7]" = "USB2_PORT_MID(OC_SKIP)"	# Integrated Bluetooth
 
 	register "usb3_ports[0]" = "USB3_PORT_DEFAULT(OC_SKIP)"	# USB3/2 Type-C Port C0
 	register "usb3_ports[1]" = "USB3_PORT_DEFAULT(OC_SKIP)"	# USB3/2 Type-C Port C1
 	register "usb3_ports[2]" = "USB3_PORT_DEFAULT(OC_SKIP)"	# USB3/1 Type-A Port A0
 	register "usb3_ports[3]" = "USB3_PORT_DEFAULT(OC_SKIP)"	# USB3/1 Type-A Port A1
-	register "usb3_ports[4]" = "USB3_PORT_EMPTY"		# Not Used
-	register "usb3_ports[5]" = "USB3_PORT_EMPTY"		# Not Used
 
 	register "SerialIoI2cMode" = "{
 		[PchSerialIoIndexI2C0]  = PchSerialIoPci,
@@ -126,14 +129,6 @@ chip soc/intel/jasperlake
 	# Select eDP for port A
 	register "DdiPortAConfig" = "1"
 
-	# Disable PM to allow for shorter irq pulses
-	register "gpio_override_pm" = "1"
-	register "gpio_pm[0]" = "0"
-	register "gpio_pm[1]" = "0"
-	register "gpio_pm[2]" = "0"
-	register "gpio_pm[3]" = "0"
-	register "gpio_pm[4]" = "0"
-
 	# Enable HPD for DDI ports B/C
 	register "DdiPortBHpd" = "1"
 	register "DdiPortCHpd" = "1"
@@ -152,9 +147,6 @@ chip soc/intel/jasperlake
 		.tdp_pl2_override = 20,
 	}"
 
-	# Enable processor thermal control
-	register "Device4Enable" = "1"
-
 	register "tcc_offset" = "10"     # TCC of 90C
 
 	# chipset_lockdown configuration
@@ -163,31 +155,73 @@ chip soc/intel/jasperlake
 	# register "common_soc_config.<variable_name>" = "value"
 	register "common_soc_config.chipset_lockdown" = CHIPSET_LOCKDOWN_COREBOOT
 
+	# VR config settings
+	# Imon Slope correction specified in 1/100 increment values. Range is 0-200.
+	# Eg: 125 = 1.25
+	register "ImonSlope" = "100"
+
+	# Imon offset correction. Value is a 2's complement signed integer.
+	# Units 1/1000, Range 0-63999.
+	# For an offset = 12.580, use 12580
+	register "ImonOffset" = "0"
+
+	# Skip the CPU repalcement check
+	register "SkipCpuReplacementCheck" = "1"
+
+	# Sagv Configuration
+	register "SaGv" = "SaGv_Enabled"
+
+	# Set the minimum assertion width
+	register "PchPmSlpS3MinAssert"  = "3"  # 50ms
+	register "PchPmSlpS4MinAssert"  = "1"  # 1s
+	register "PchPmSlpSusMinAssert" = "3"  # 1s
+	register "PchPmSlpAMinAssert"   = "3"  # 98ms
+
+	# NOTE: Duration programmed in the below register should never be smaller than the
+	# stretch duration programmed in the following registers -
+	#       - GEN_PMCON_A.SLP_S3_MIN_ASST_WDTH (PchPmSlpS3MinAssert)
+	#       - GEN_PMCON_A.S4MAW (PchPmSlpS4MinAssert)
+	#       - PM_CFG.SLP_A_MIN_ASST_WDTH (PchPmSlpAMinAssert)
+	#       - PM_CFG.SLP_LAN_MIN_ASST_WDTH
+	register "PchPmPwrCycDur" = "1"       # 1s
+
 	device domain 0 on
 		device pci 00.0 on end # Host Bridge
 		device pci 02.0 on end # Integrated Graphics Device
 		device pci 04.0 on
+			# Default DPTF Policy for all Dedede boards if not overridden
 			chip drivers/intel/dptf
-				register "policies.passive[0]" = "DPTF_PASSIVE(CPU, CPU,           90, 10000)"
-				register "policies.passive[1]" = "DPTF_PASSIVE(CPU, TEMP_SENSOR_0, 80, 60000)"
-				register "policies.passive[2]" = "DPTF_PASSIVE(CPU, TEMP_SENSOR_1, 55, 15000)"
+				## Passive Policy
+				register "policies.passive" = "{
+					[0] = DPTF_PASSIVE(CPU, CPU,           90, 10000),
+					[1] = DPTF_PASSIVE(CPU, TEMP_SENSOR_0, 80, 60000),
+					[2] = DPTF_PASSIVE(CPU, TEMP_SENSOR_1, 55, 15000)
+				}"
 
-				register "policies.critical[0]" = "DPTF_CRITICAL(CPU,           99, SHUTDOWN)"
-				register "policies.critical[1]" = "DPTF_CRITICAL(TEMP_SENSOR_0, 90, SHUTDOWN)"
-				register "policies.critical[2]" = "DPTF_CRITICAL(TEMP_SENSOR_1, 80, SHUTDOWN)"
+				## Critical Policy
+				register "policies.critical" = "{
+					[0] = DPTF_CRITICAL(CPU,           105, SHUTDOWN),
+					[1] = DPTF_CRITICAL(TEMP_SENSOR_0, 90, SHUTDOWN),
+					[2] = DPTF_CRITICAL(TEMP_SENSOR_1, 80, SHUTDOWN)
+				}"
 
-				register "controls.power_limits.pl1" = "{
-					.min_power = 3000,
-					.max_power = 6000,
-					.time_window_min = 1 * MSECS_PER_SEC,
-					.time_window_max = 1 * MSECS_PER_SEC,
-					.granularity = 200,}"
-				register "controls.power_limits.pl2" = "{
-					.min_power = 6000,
-					.max_power = 20000,
-					.time_window_min = 1 * MSECS_PER_SEC,
-					.time_window_max = 1 * MSECS_PER_SEC,
-					.granularity = 1000,}"
+				## Power Limits Control
+				register "controls.power_limits" = "{
+					.pl1 = {
+						.min_power = 3000,
+						.max_power = 6000,
+						.time_window_min = 1 * MSECS_PER_SEC,
+						.time_window_max = 1 * MSECS_PER_SEC,
+						.granularity = 200,
+					},
+					.pl2 = {
+						.min_power = 6000,
+						.max_power = 20000,
+						.time_window_min = 1 * MSECS_PER_SEC,
+						.time_window_max = 1 * MSECS_PER_SEC,
+						.granularity = 1000,
+					}
+				}"
 
 				register "options.tsr[0].desc" = ""Memory""
 				register "options.tsr[1].desc" = ""Ambient""

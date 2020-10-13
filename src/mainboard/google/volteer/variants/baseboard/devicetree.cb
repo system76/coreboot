@@ -13,6 +13,7 @@ fw_config
 		option MAX98357_ALC5682I_I2S 1
 		option MAX98373_ALC5682I_I2S 2
 		option MAX98373_ALC5682_SNDW 3
+		option MAX98373_ALC5682I_I2S_UP4 4
 	end
 	field TABLETMODE 11
 		option TABLETMODE_DISABLED 0
@@ -21,6 +22,14 @@ fw_config
 	field DB_LTE 12 13
 		option LTE_ABSENT 0
 		option LTE_PRESENT 1
+	end
+	field KB_BL 14
+		option KB_BL_ABSENT 0
+		option KB_BL_PRESENT 1
+	end
+	field NUMPAD 15
+		option NUMPAD_ABSENT 0
+		option NUMPAD_PRESENT 1
 	end
 	field DB_SD 16 19
 		option SD_ABSENT 0
@@ -55,9 +64,6 @@ chip soc/intel/tigerlake
 	register "usb2_ports[2]" = "USB2_PORT_MID(OC_SKIP)"	# M.2 WWAN
 	register "usb2_ports[3]" = "USB2_PORT_MID(OC_SKIP)"	# Type-A / Type-C Cl
 	register "usb2_ports[4]" = "USB2_PORT_MID(OC_SKIP)"	# M.2 Camera
-	register "usb2_ports[5]" = "USB2_PORT_EMPTY"		# Type-A / Type-C Not Used
-	register "usb2_ports[6]" = "USB2_PORT_EMPTY"		# Type-A / Type-C Not Used
-	register "usb2_ports[7]" = "USB2_PORT_EMPTY"		# Type-A / Type-C Not Used
 	register "usb2_ports[8]" = "USB2_PORT_MID(OC_SKIP)"	# Type-A / Type-C Co
 	register "usb2_ports[9]" = "USB2_PORT_MID(OC_SKIP)"	# M.2 Bluetooth
 
@@ -136,8 +142,8 @@ chip soc/intel/tigerlake
 	}"
 
 	register "SerialIoGSpiCsState" = "{
-		[PchSerialIoIndexGSPI0] = 0,
-		[PchSerialIoIndexGSPI1] = 0,
+		[PchSerialIoIndexGSPI0] = 1,
+		[PchSerialIoIndexGSPI1] = 1,
 		[PchSerialIoIndexGSPI2] = 0,
 		[PchSerialIoIndexGSPI3] = 0,
 	}"
@@ -147,6 +153,40 @@ chip soc/intel/tigerlake
 		[PchSerialIoIndexUART1] = PchSerialIoDisabled,
 		[PchSerialIoIndexUART2] = PchSerialIoDisabled,
 	}"
+
+	# Set the minimum assertion width
+	# PchPmSlpS3MinAssert:
+	#	- 1: 60us
+	#	- 2: 1ms
+	#	- 3: 50ms
+	#	- 4: 2s
+	register "PchPmSlpS3MinAssert"  = "3"  # 50ms
+	# PchPmSlpS4MinAssert:
+	#	- 1 = 1s
+	#	- 2 = 2s
+	#	- 3 = 3s
+	#	- 4 = 4s
+	register "PchPmSlpS4MinAssert"  = "1"  # 1s
+	# PchPmSlpSusMinAssert:
+	#	- 1 = 0ms
+	#	- 2 = 500ms
+	#	- 3 = 1s
+	#	- 4 = 4s
+	register "PchPmSlpSusMinAssert" = "3"  # 1s
+	# PchPmSlpAMinAssert
+	#	- 1 = 0ms
+	#	- 2 = 4s
+	#	- 3 = 98ms
+	#	- 4 = 2s
+	register "PchPmSlpAMinAssert"   = "3"  # 98ms
+
+	# NOTE: Duration programmed in the below register should never be smaller than the
+	# stretch duration programmed in the following registers -
+	#	- GEN_PMCON_A.SLP_S3_MIN_ASST_WDTH (PchPmSlpS3MinAssert)
+	#	- GEN_PMCON_A.S4MAW (PchPmSlpS4MinAssert)
+	#	- PM_CFG.SLP_A_MIN_ASST_WDTH (PchPmSlpAMinAssert)
+	#	- PM_CFG.SLP_LAN_MIN_ASST_WDTH
+	register "PchPmPwrCycDur" = "1"       # 1s
 
 	# HD Audio
 	register "PchHdaDspEnable" = "1"
@@ -160,19 +200,15 @@ chip soc/intel/tigerlake
 
 	# TCSS USB3
 	register "TcssXhciEn" = "1"
-	register "TcssAuxOri" = "1"
-	register "IomTypeCPortPadCfg[0]" = "0x090E000A"
-	register "IomTypeCPortPadCfg[1]" = "0x090E000D"
+	register "TcssAuxOri" = "0"
+	register "IomTypeCPortPadCfg[0]" = "0x09000000"
+	register "IomTypeCPortPadCfg[1]" = "0x09000000"
 	register "IomTypeCPortPadCfg[2]" = "0x09000000"
 	register "IomTypeCPortPadCfg[3]" = "0x09000000"
 	register "IomTypeCPortPadCfg[4]" = "0x09000000"
 	register "IomTypeCPortPadCfg[5]" = "0x09000000"
 	register "IomTypeCPortPadCfg[6]" = "0x09000000"
 	register "IomTypeCPortPadCfg[7]" = "0x09000000"
-
-	# D3Hot and D3Cold for TCSS
-	register "TcssD3HotEnable" = "1"
-	register "TcssD3ColdEnable" = "0"
 
 	# DP port
 	register "DdiPortAConfig" = "1"	# eDP
@@ -194,14 +230,6 @@ chip soc/intel/tigerlake
 	register "DdiPort3Ddc" = "0"
 	register "DdiPort4Ddc" = "0"
 
-	# Disable PM to allow for shorter irq pulses
-	register "gpio_override_pm" = "1"
-	register "gpio_pm[0]" = "0"
-	register "gpio_pm[1]" = "0"
-	register "gpio_pm[2]" = "0"
-	register "gpio_pm[3]" = "0"
-	register "gpio_pm[4]" = "0"
-
 	# Enable "Intel Speed Shift Technology"
 	register "speed_shift_enable" = "1"
 
@@ -211,20 +239,32 @@ chip soc/intel/tigerlake
 	# Enable DPTF
 	register "dptf_enable" = "1"
 
-	register "power_limits_config[POWER_LIMITS_U_4_CORE]" = "{
-		.tdp_pl1_override = 15,
-		.tdp_pl2_override = 60,
-		.tdp_pl4 = 105,
-	}"
 	register "power_limits_config[POWER_LIMITS_U_2_CORE]" = "{
 		.tdp_pl1_override = 15,
 		.tdp_pl2_override = 38,
 		.tdp_pl4 = 71,
 	}"
+	register "power_limits_config[POWER_LIMITS_U_4_CORE]" = "{
+		.tdp_pl1_override = 15,
+		.tdp_pl2_override = 60,
+		.tdp_pl4 = 105,
+	}"
+	register "power_limits_config[POWER_LIMITS_Y_2_CORE]" = "{
+		.tdp_pl1_override = 9,
+		.tdp_pl2_override = 35,
+		.tdp_pl4 = 66,
+	}"
+	register "power_limits_config[POWER_LIMITS_Y_4_CORE]" = "{
+		.tdp_pl1_override = 9,
+		.tdp_pl2_override = 40,
+		.tdp_pl4 = 83,
+	}"
 
 	register "Device4Enable" = "1"
 
 	register "tcc_offset" = "10"     # TCC of 90
+
+	register "CnviBtAudioOffload" = "FORCE_ENABLE"
 
 	# Intel Common SoC Config
 	#+-------------------+---------------------------+
@@ -280,91 +320,93 @@ chip soc/intel/tigerlake
 	}"
 
 	device domain 0 on
-		#From EDS(575683)
-		device pci 00.0 on  end # Host Bridge			0x9A14:U/0x9A12:Y
-		device pci 02.0 on  end # Graphics
-		device pci 04.0 on
+		device ref igpu on end
+		device ref dptf on
 			# Default DPTF Policy for all Volteer boards if not overridden
 			chip drivers/intel/dptf
 				## Active Policy
-				register "policies.active[0]" = "{.target=DPTF_CPU,
-					.thresholds={TEMP_PCT(85, 90),
-						     TEMP_PCT(80, 69),
-						     TEMP_PCT(75, 56),
-						     TEMP_PCT(70, 46),
-						     TEMP_PCT(65, 36),}}"
-				register "policies.active[1]" = "{.target=DPTF_TEMP_SENSOR_0,
-					.thresholds={TEMP_PCT(50, 90),
-						     TEMP_PCT(47, 69),
-						     TEMP_PCT(45, 56),
-						     TEMP_PCT(42, 46),
-						     TEMP_PCT(39, 36),}}"
-				register "policies.active[2]" = "{.target=DPTF_TEMP_SENSOR_1,
-					.thresholds={TEMP_PCT(50, 90),
-						     TEMP_PCT(47, 69),
-						     TEMP_PCT(45, 56),
-						     TEMP_PCT(42, 46),
-						     TEMP_PCT(39, 36),}}"
-				register "policies.active[3]" = "{.target=DPTF_TEMP_SENSOR_2,
-					.thresholds={TEMP_PCT(50, 90),
-						     TEMP_PCT(47, 69),
-						     TEMP_PCT(45, 56),
-						     TEMP_PCT(42, 46),
-						     TEMP_PCT(39, 36),}}"
-				register "policies.active[4]" = "{.target=DPTF_TEMP_SENSOR_3,
-					.thresholds={TEMP_PCT(50, 90),
-						     TEMP_PCT(47, 69),
-						     TEMP_PCT(45, 56),
-						     TEMP_PCT(42, 46),
-						     TEMP_PCT(39, 36),}}"
+				register "policies.active" = "{
+					[0] = {.target = DPTF_CPU,
+					       .thresholds = {TEMP_PCT(85, 90),
+							      TEMP_PCT(80, 69),
+							      TEMP_PCT(75, 56),
+							      TEMP_PCT(70, 46),
+							      TEMP_PCT(65, 36),}},
+					[1] = {.target = DPTF_TEMP_SENSOR_0,
+					       .thresholds = {TEMP_PCT(50, 90),
+							      TEMP_PCT(47, 69),
+							      TEMP_PCT(45, 56),
+							      TEMP_PCT(42, 46),
+							      TEMP_PCT(39, 36),}},
+					[2] = {.target = DPTF_TEMP_SENSOR_1,
+					       .thresholds = {TEMP_PCT(50, 90),
+							      TEMP_PCT(47, 69),
+							      TEMP_PCT(45, 56),
+							      TEMP_PCT(42, 46),
+							      TEMP_PCT(39, 36),}},
+					[3] = {.target = DPTF_TEMP_SENSOR_2,
+					       .thresholds = {TEMP_PCT(50, 90),
+							      TEMP_PCT(47, 69),
+							      TEMP_PCT(45, 56),
+							      TEMP_PCT(42, 46),
+							      TEMP_PCT(39, 36),}},
+					[4] = {.target = DPTF_TEMP_SENSOR_3,
+					       .thresholds = {TEMP_PCT(50, 90),
+							      TEMP_PCT(47, 69),
+							      TEMP_PCT(45, 56),
+							      TEMP_PCT(42, 46),
+							      TEMP_PCT(39, 36),}}}"
 
 				## Passive Policy
-				register "policies.passive[0]" = "DPTF_PASSIVE(CPU,     CPU,           95, 5000)"
-				register "policies.passive[1]" = "DPTF_PASSIVE(CPU,     TEMP_SENSOR_1, 65, 6000)"
-				register "policies.passive[2]" = "DPTF_PASSIVE(CHARGER, TEMP_SENSOR_0, 65, 6000)"
-				register "policies.passive[3]" = "DPTF_PASSIVE(CPU,     TEMP_SENSOR_2, 65, 6000)"
-				register "policies.passive[4]" = "DPTF_PASSIVE(CPU,     TEMP_SENSOR_3, 65, 6000)"
+				register "policies.passive" = "{
+					[0] = DPTF_PASSIVE(CPU,	CPU,	       95, 5000),
+					[1] = DPTF_PASSIVE(CPU,	TEMP_SENSOR_1, 65, 6000),
+					[2] = DPTF_PASSIVE(CHARGER,	TEMP_SENSOR_0, 65, 6000),
+					[3] = DPTF_PASSIVE(CPU,	TEMP_SENSOR_2, 65, 6000),
+					[4] = DPTF_PASSIVE(CPU,	TEMP_SENSOR_3, 65, 6000)}"
 
 				## Critical Policy
-				register "policies.critical[0]" = "DPTF_CRITICAL(CPU,          105, SHUTDOWN)"
-				register "policies.critical[1]" = "DPTF_CRITICAL(TEMP_SENSOR_0, 75, SHUTDOWN)"
-				register "policies.critical[2]" = "DPTF_CRITICAL(TEMP_SENSOR_1, 75, SHUTDOWN)"
-				register "policies.critical[3]" = "DPTF_CRITICAL(TEMP_SENSOR_2, 75, SHUTDOWN)"
-				register "policies.critical[4]" = "DPTF_CRITICAL(TEMP_SENSOR_3, 75, SHUTDOWN)"
+				register "policies.critical" = "{
+					[0] = DPTF_CRITICAL(CPU,	       105, SHUTDOWN),
+					[1] = DPTF_CRITICAL(TEMP_SENSOR_0,	75, SHUTDOWN),
+					[2] = DPTF_CRITICAL(TEMP_SENSOR_1,	75, SHUTDOWN),
+					[3] = DPTF_CRITICAL(TEMP_SENSOR_2,	75, SHUTDOWN),
+					[4] = DPTF_CRITICAL(TEMP_SENSOR_3,	75, SHUTDOWN)}"
 
 				## Power Limits Control
-				# 10-15W PL1 in 200mW increments, avg over 28-32s interval
-				# PL2 is fixed at 64W, avg over 28-32s interval
-				register "controls.power_limits.pl1" = "{
-					.min_power = 3000,
-					.max_power = 15000,
-					.time_window_min = 28 * MSECS_PER_SEC,
-					.time_window_max = 32 * MSECS_PER_SEC,
-					.granularity = 200,}"
-				register "controls.power_limits.pl2" = "{
-					.min_power = 15000,
-					.max_power = 60000,
-					.time_window_min = 28 * MSECS_PER_SEC,
-					.time_window_max = 32 * MSECS_PER_SEC,
-					.granularity = 1000,}"
+				# 3-15W PL1 in 200mW increments, avg over 28-32s interval
+				# PL2 ranges from 15 to 60W, avg over 28-32s interval
+				register "controls.power_limits" = "{
+					.pl1 = {.min_power = 3000,
+						.max_power = 15000,
+						.time_window_min = 28 * MSECS_PER_SEC,
+						.time_window_max = 32 * MSECS_PER_SEC,
+						.granularity = 200,},
+					.pl2 = {.min_power = 15000,
+						.max_power = 60000,
+						.time_window_min = 28 * MSECS_PER_SEC,
+						.time_window_max = 32 * MSECS_PER_SEC,
+						.granularity = 1000,}}"
 
 				## Charger Performance Control (Control, mA)
-				register "controls.charger_perf[0]" = "{ 255, 1700 }"
-				register "controls.charger_perf[1]" = "{  24, 1500 }"
-				register "controls.charger_perf[2]" = "{  16, 1000 }"
-				register "controls.charger_perf[3]" = "{   8,  500 }"
+				register "controls.charger_perf" = "{
+					[0] = { 255, 1700 },
+					[1] = {  24, 1500 },
+					[2] = {  16, 1000 },
+					[3] = {   8,  500 }}"
 
 				## Fan Performance Control (Percent, Speed, Noise, Power)
-				register "controls.fan_perf[0]" = "{  90, 6700, 220, 2200, }"
-				register "controls.fan_perf[1]" = "{  80, 5800, 180, 1800, }"
-				register "controls.fan_perf[2]" = "{  70, 5000, 145, 1450, }"
-				register "controls.fan_perf[3]" = "{  60, 4900, 115, 1150, }"
-				register "controls.fan_perf[4]" = "{  50, 3838,  90,  900, }"
-				register "controls.fan_perf[5]" = "{  40, 2904,  55,  550, }"
-				register "controls.fan_perf[6]" = "{  30, 2337,  30,  300, }"
-				register "controls.fan_perf[7]" = "{  20, 1608,  15,  150, }"
-				register "controls.fan_perf[8]" = "{  10,  800,  10,  100, }"
-				register "controls.fan_perf[9]" = "{   0,    0,   0,   50, }"
+				register "controls.fan_perf" = "{
+					[0] = {  90, 6700, 220, 2200, },
+					[1] = {  80, 5800, 180, 1800, },
+					[2] = {  70, 5000, 145, 1450, },
+					[3] = {  60, 4900, 115, 1150, },
+					[4] = {  50, 3838,  90,  900, },
+					[5] = {  40, 2904,  55,  550, },
+					[6] = {  30, 2337,  30,  300, },
+					[7] = {  20, 1608,  15,  150, },
+					[8] = {  10,  800,  10,  100, },
+					[9] = {   0,    0,   0,   50, }}"
 
 				# Fan options
 				register "options.fan.fine_grained_control" = "1"
@@ -373,81 +415,44 @@ chip soc/intel/tigerlake
 				device generic 0 on end
 			end
 		end # DPTF				0x9A03
-		device pci 05.0 off end # IPU				0x9A19
-		device pci 06.0 off end # PEG60				0x9A09
-		device pci 07.0 on  end # TBT_PCIe0			0x9A23
-		device pci 07.1 on  end # TBT_PCIe1			0x9A25
-		device pci 07.2 off end # TBT_PCIe2			0x9A27
-		device pci 07.3 off end # TBT_PCIe3			0x9A29
-		device pci 08.0 on  end # GNA				0x9A11
-		device pci 09.0 off end # NPK				0x9A33
-		device pci 0a.0 off end # Crash-log SRAM		0x9A0D
-		device pci 0d.0 on  end # USB xHCI			0x9A13
-		device pci 0d.1 off end # USB xDCI (OTG)		0x9A15
-		device pci 0d.2 on  end # TBT DMA0			0x9A1B
-		device pci 0d.3 off end # TBT DMA1			0x9A1D
-		device pci 0e.0 off end # VMD				0x9A0B
-
-		# From PCH EDS(576591)
-		device pci 10.2 on  end # CNVi: BT			0xA0F5 - A0F7
-		device pci 10.6 off end # THC0				0xA0D0
-		device pci 10.7 off end # THC1				0xA0D1
-
-		device pci 12.0 off end # SensorHUB			0xA0FC
-		device pci 12.6 off end # GSPI2				0x34FB
-
-		device pci 13.0 off end # GSPI3				0xA0FD
-
-		device pci 14.0 on  end # USB3.1 xHCI			0xA0ED
-		device pci 14.1 off end # USB3.1 xDCI			0xA0EE
-		device pci 14.2 on  end # Shared RAM			0xA0EF
+		device ref tbt_pcie_rp0 on
+			probe DB_USB USB4_GEN2
+			probe DB_USB USB4_GEN3
+		end
+		device ref tbt_pcie_rp1 on
+			probe DB_USB USB4_GEN2
+			probe DB_USB USB4_GEN3
+		end
+		device ref tbt_dma0 on
+			probe DB_USB USB4_GEN2
+			probe DB_USB USB4_GEN3
+		end
+		device ref gna on end
+		device ref north_xhci on end
+		device ref cnvi_bt on end
+		device ref south_xhci on end
+		device ref shared_ram on end
 		chip drivers/intel/wifi
 			register "wake" = "GPE0_PME_B0"
-			device pci 14.3 on end # CNVi: WiFi		0xA0F0 - A0F3
+			device ref cnvi_wifi on end
 		end
-		device pci 15.0 on  end # I2C #0			0xA0E8
-		device pci 15.1 on  end # I2C1				0xA0E9
-		device pci 15.2 on  end # I2C2				0xA0EA
-		device pci 15.3 on  end # I2C3				0xA0EB
-
-		device pci 16.0 on  end # HECI1				0xA0E0
-		device pci 16.1 off end # HECI2				0xA0E1
-		device pci 16.2 off end # CSME				0xA0E2
-		device pci 16.3 off end # CSME				0xA0E3
-		device pci 16.4 off end # HECI3				0xA0E4
-		device pci 16.5 off end # HECI4				0xA0E5
-
-		device pci 17.0 on  end # SATA				0xA0D3
-
-		device pci 19.0 on  end # I2C4				0xA0C5
-		device pci 19.1 on  end # I2C5				0xA0C6
-		device pci 19.2 off end # UART2				0xA0C7
-
-		device pci 1c.0 on  end # RP1				0xA0B8
-		device pci 1c.1 off end # RP2				0xA0B9
-		device pci 1c.2 off end # RP3				0xA0BA
-		device pci 1c.3 off end # RP4				0xA0BB
-		device pci 1c.4 off end # RP5				0xA0BC
-		device pci 1c.5 off end # WWAN RP6			0xA0BD
-		device pci 1c.6 on  end # RP7				0xA0BE
-		device pci 1c.7 on  end # SD Card RP8			0xA0BF
-
-		device pci 1d.0 on  end # RP9				0xA0B0
-		device pci 1d.1 off end # RP10				0xA0B1
-		device pci 1d.2 on  end # RP11				0xA0B2
-		device pci 1d.3 off end # RP12				0xA0B3
-
-		device pci 1e.0 on  end # UART0				0xA0A8
-		device pci 1e.1 off end # UART1				0xA0A9
-		device pci 1e.2 on
+		device ref heci1 on end
+		device ref sata on end
+		device ref pcie_rp1 on end
+		device ref pcie_rp7 on end
+		device ref pcie_rp8 on end
+		device ref pcie_rp9 on end
+		device ref pcie_rp11 on end
+		device ref uart0 on end
+		device ref gspi0 on
 			chip drivers/spi/acpi
 				register "hid" = "ACPI_DT_NAMESPACE_HID"
 				register "compat_string" = ""google,cr50""
 				register "irq" = "ACPI_IRQ_EDGE_LOW(GPP_C21_IRQ)"
 				device spi 0 on end
 			end
-		end # GSPI0						0xA0AA
-		device pci 1e.3 on
+		end
+		device ref gspi1 on
 			chip drivers/spi/acpi
 				register "name" = ""CRFP""
 				register "hid" = "ACPI_DT_NAMESPACE_HID"
@@ -456,18 +461,12 @@ chip soc/intel/tigerlake
 				register "irq_gpio" = "ACPI_GPIO_IRQ_LEVEL_LOW_WAKE(GPP_C20)"
 				device spi 0 on end
 			end # FPMCU
-		end # GSPI1						0xA0AB
-		device pci 1f.0 on
+		end
+		device ref pch_espi on
 			chip ec/google/chromeec
 				device pnp 0c09.0 on end
 			end
-		end # eSPI						0xA080 - A09F
-		device pci 1f.1 off end # P2SB				0xA0A0
-		device pci 1f.2 hidden end # PMC			0xA0A1
-		device pci 1f.3 on  end # Intel HD audio		0xA0C8-A0CF
-		device pci 1f.4 off end # SMBus				0xA0A3
-		device pci 1f.5 on  end # SPI				0xA0A4
-		device pci 1f.6 off end # GbE				0x15E1/0x15E2
-		device pci 1f.7 off end # TH				0xA0A6
+		end
+		device ref hda on end
 	end
 end

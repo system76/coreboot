@@ -1,7 +1,8 @@
 # OCP Delta Lake
 
 This page describes coreboot support status for the [OCP] (Open Compute Project)
-Delta Lake server platform.
+Delta Lake server platform. This page is updated following each 4-weeks
+build/test/release cycle.
 
 ## Introduction
 
@@ -13,8 +14,9 @@ Delta Lake server is a single socket Cooper Lake Scalable Processor server.
 Yosemite-V3 has multiple configurations. Depending on configurations, it may
 host up to 4 Delta Lake servers in one sled.
 
-Yosemite-V3 and Delta Lake are currently in DVT phase. Facebook, Intel and partners
-jointly develop FSP/coreboot/LinuxBoot stack on Delta Lake as an alternative solution.
+The Yosemite-V3 program has reached DVT exit. Facebook, Intel and partners
+jointly develop FSP/coreboot/LinuxBoot stack on Delta Lake as an alternative
+solution. This development is moving toward EVT exit equivalent status.
 
 ## Required blobs
 
@@ -22,7 +24,7 @@ This board currently requires:
 - FSP blob: The blob (Intel Cooper Lake Scalable Processor Firmware Support Package)
   is not yet available to the public. It will be made public some time after the MP
   (Mass Production) of CooperLake Scalable Processor when the FSP is mature.
-- Microcode: Not yet available to the public.
+- Microcode: Available through github.com:otcshare/Intel-Generic-Microcode.git.
 - ME binary: Not yet available to the public.
 
 ## Payload
@@ -55,26 +57,49 @@ as initramfs.
     - Type 2 -- Baseboard Information
     - Type 3 -- System Enclosure or Chassis
     - Type 4 -- Processor Information
+    - Type 7 -- Cache Information
     - Type 8 -- Port Connector Information
     - Type 9 -- PCI Slot Information
     - Type 11 -- OEM String
-    - Type 13 -- BIOS Language Information
-    - Type 16 -- Physical Memory Array
-    - Type 19 -- Memory Array Mapped Address
+    - Type 32 -- System Boot Information
+    - Type 38 -- IPMI Device Information
     - Type 127 -- End-of-Table
-
 - BMC integration:
     - BMC readiness check
     - IPMI commands
     - watchdog timer
     - POST complete pin acknowledgement
+    - Check BMC version: ipmidump -device
 - SEL record generation
 - Early serial output
 - port 80h direct to GPIO
-- ACPI tables: APIC/DSDT/FACP/FACS/HPET/MCFG/SPMI/SRAT/SLIT/SSDT
+- ACPI tables: APIC/DMAR/DSDT/FACP/FACS/HPET/MCFG/SPMI/SRAT/SLIT/SSDT
 - Skipping memory training upon subsequent reboots by using MRC cache
 - BMC crash dump
 - Error injection through ITP
+- Versions
+    - Check FSP version: cbmem | grep LB_TAG_PLATFORM_BLOB_VERSION
+    - Check Microcode version: cat /proc/cpuinfo | grep microcode
+- Devices:
+    - Boot drive
+    - NIC card
+    - All 5 data drives
+- Power button
+- localboot
+- netboot from IPv6
+- TPM
+
+## Stress/performance tests passed
+- OS warm reboot (300 cycles)
+- DC reboot (300 cycles)
+- AC reboot (300 cycle)
+- Mprime test (6 hours)
+- StressAppTest (6 hours)
+- Ptugen (6 hours)
+- MLC (Intel Memory Latency Check)
+- Linkpack
+- Iperf(IPv6)
+- FIO
 
 ## Firmware configurations
 [ChromeOS VPD] is used to store most of the firmware configurations.
@@ -84,29 +109,22 @@ values.
 VPD variables supported are:
 - firmware_version: This variable holds overall firmware version. coreboot
   uses that value to populate smbios type 1 version field.
+- DeltaLake specific VPDs: check mb/ocp/deltalake/vpd.h.
 
 ## Known issues
-- Even though CPX-SP FSP is based on FSP 2.2 framework, it does not
-  support FSP_USES_CB_STACK. An IPS ticket is filed with Intel.
-- VT-d is not supported. An IPS ticket is filed with Intel.
-- PCIe bifuration is not supported. An IPS ticket is filed with Intel.
-- ME based power capping. This is a bug in ME. An IPS ticket is filed
-  with Intel.
-- RO_VPD region as well as other RO regions are not write protected.
-- HECI is not set up correctly, so BMC is not able to get PCH and DIMM
-  temperature sensor readings.
+- spsInfoLinux64 command fail to return ME version.
+- fwts test failures related to mtrr.
+- kernel error message related to SleepButton ACPI event.
 
 ## Feature gaps
-- Delta Lake DVT is not supported, as we only have Delta Lake EVT servers
-  at the moment.
 - SMBIOS:
-    - Type 7 -- Cache Information
+    - Type 16 -- Physical Memory Array
     - Type 17 -- Memory Device
-    - Type 38 -- IPMI Device Information
+    - Type 19 -- Memory Array Mapped Address
     - Type 41 -- Onboard Devices Extended Information
-- ACPI:
-    - DMAR
-- PFR/CBnT
+- Verified measurement through CBnT
+- Boot guard of CBnT
+- RO_VPD region as well as other RO regions are not write protected.
 
 ## Technology
 
@@ -116,7 +134,7 @@ VPD variables supported are:
 +------------------------+---------------------------------------------+
 | BMC                    | Aspeed AST 2500                             |
 +------------------------+---------------------------------------------+
-| PCH                    | Intel Lewisburg C621                        |
+| PCH                    | Intel Lewisburg C620 Series                 |
 +------------------------+---------------------------------------------+
 ```
 

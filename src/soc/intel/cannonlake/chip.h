@@ -11,7 +11,6 @@
 #include <intelblocks/lpc_lib.h>
 #include <intelblocks/power_limit.h>
 #include <stdint.h>
-#include <soc/gpio.h>
 #include <soc/pch.h>
 #include <soc/pci_devs.h>
 #include <soc/pm.h>
@@ -115,7 +114,6 @@ struct soc_intel_cannonlake_config {
 		SaGv_Enabled,
 	} SaGv;
 
-
 	/* Rank Margin Tool. 1:Enable, 0:Disable */
 	uint8_t RMT;
 
@@ -186,6 +184,8 @@ struct soc_intel_cannonlake_config {
 	uint8_t PcieClkSrcClkReq[CONFIG_MAX_PCIE_CLOCKS];
 	/* PCIe LTR(Latency Tolerance Reporting) mechanism */
 	uint8_t PcieRpLtrEnable[CONFIG_MAX_ROOT_PORTS];
+	/* Implemented as slot or built-in? */
+	uint8_t PcieRpSlotImplemented[CONFIG_MAX_ROOT_PORTS];
 	/* Enable/Disable HotPlug support for Root Port */
 	uint8_t PcieRpHotPlug[CONFIG_MAX_ROOT_PORTS];
 
@@ -227,7 +227,6 @@ struct soc_intel_cannonlake_config {
 	uint8_t PchIshEnable;
 
 	/* Heci related */
-	uint8_t Heci3Enabled;
 	uint8_t DisableHeciRetry;
 
 	/* Gfx related */

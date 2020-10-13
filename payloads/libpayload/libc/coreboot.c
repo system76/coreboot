@@ -41,10 +41,10 @@
 /* === Parsing code === */
 /* This is the generic parsing code. */
 
-void *get_cbmem_ptr(unsigned char *ptr)
+uintptr_t get_cbmem_addr(const void *const cbmem_tab_entry)
 {
-	struct cb_cbmem_tab *const cbmem = (struct cb_cbmem_tab *)ptr;
-	return phys_to_virt(cbmem->cbmem_tab);
+	const struct cb_cbmem_tab *const cbmem = cbmem_tab_entry;
+	return cbmem->cbmem_tab;
 }
 
 static void cb_parse_memory(void *ptr, struct sysinfo_t *info)
@@ -80,12 +80,12 @@ static void cb_parse_memory(void *ptr, struct sysinfo_t *info)
 
 static void cb_parse_serial(void *ptr, struct sysinfo_t *info)
 {
-	info->serial = ((struct cb_serial *)ptr);
+	info->cb_serial = virt_to_phys(ptr);
 }
 
 static void cb_parse_vboot_workbuf(unsigned char *ptr, struct sysinfo_t *info)
 {
-	info->vboot_workbuf = get_cbmem_ptr(ptr);
+	info->vboot_workbuf = get_cbmem_addr(ptr);
 }
 
 static void cb_parse_vbnv(unsigned char *ptr, struct sysinfo_t *info)
@@ -130,17 +130,17 @@ static void cb_parse_mac_addresses(unsigned char *ptr,
 
 static void cb_parse_tstamp(unsigned char *ptr, struct sysinfo_t *info)
 {
-	info->tstamp_table = get_cbmem_ptr(ptr);
+	info->tstamp_table = get_cbmem_addr(ptr);
 }
 
 static void cb_parse_cbmem_cons(unsigned char *ptr, struct sysinfo_t *info)
 {
-	info->cbmem_cons = get_cbmem_ptr(ptr);
+	info->cbmem_cons = get_cbmem_addr(ptr);
 }
 
 static void cb_parse_acpi_gnvs(unsigned char *ptr, struct sysinfo_t *info)
 {
-	info->acpi_gnvs = get_cbmem_ptr(ptr);
+	info->acpi_gnvs = get_cbmem_addr(ptr);
 }
 
 static void cb_parse_board_id(unsigned char *ptr, struct sysinfo_t *info)
@@ -164,8 +164,8 @@ static void cb_parse_sku_id(unsigned char *ptr, struct sysinfo_t *info)
 #if CONFIG(LP_NVRAM)
 static void cb_parse_optiontable(void *ptr, struct sysinfo_t *info)
 {
-	/* ptr points to a coreboot table entry and is already virtual */
-	info->option_table = ptr;
+	/* ptr is already virtual, but we want to keep physical addresses */
+	info->cmos_option_table = virt_to_phys(ptr);
 }
 
 static void cb_parse_checksum(void *ptr, struct sysinfo_t *info)
@@ -180,19 +180,21 @@ static void cb_parse_checksum(void *ptr, struct sysinfo_t *info)
 #if CONFIG(LP_COREBOOT_VIDEO_CONSOLE)
 static void cb_parse_framebuffer(void *ptr, struct sysinfo_t *info)
 {
-	/* ptr points to a coreboot table entry and is already virtual */
-	info->framebuffer = ptr;
+	info->framebuffer = *(struct cb_framebuffer *)ptr;
 }
 #endif
 
-static void cb_parse_string(unsigned char *ptr, char **info)
+static void cb_parse_string(const void *const ptr, uintptr_t *const info)
 {
-	*info = (char *)((struct cb_string *)ptr)->string;
+	/* ptr is already virtual (str->string just an offset to that),
+	   but we want to keep physical addresses */
+	const struct cb_string *const str = ptr;
+	*info = virt_to_phys(str->string);
 }
 
 static void cb_parse_wifi_calibration(void *ptr, struct sysinfo_t *info)
 {
-	info->wifi_calibration = get_cbmem_ptr(ptr);
+	info->wifi_calibration = get_cbmem_addr(ptr);
 }
 
 static void cb_parse_ramoops(void *ptr, struct sysinfo_t *info)
@@ -233,12 +235,12 @@ static void cb_parse_boot_media_params(unsigned char *ptr,
 
 static void cb_parse_vpd(void *ptr, struct sysinfo_t *info)
 {
-	info->chromeos_vpd = get_cbmem_ptr(ptr);
+	info->chromeos_vpd = get_cbmem_addr(ptr);
 }
 
 static void cb_parse_fmap_cache(void *ptr, struct sysinfo_t *info)
 {
-	info->fmap_cache = get_cbmem_ptr(ptr);
+	info->fmap_cache = get_cbmem_addr(ptr);
 }
 
 #if CONFIG(LP_TIMER_RDTSC)
@@ -282,7 +284,7 @@ int cb_parse_header(void *addr, int len, struct sysinfo_t *info)
 		     header->table_bytes) != header->table_checksum)
 		return -1;
 
-	info->header = header;
+	info->cb_header = virt_to_phys(header);
 
 	/* Initialize IDs as undefined in case they don't show up in table. */
 	info->board_id = UNDEFINED_STRAPPING_ID;
@@ -353,7 +355,7 @@ int cb_parse_header(void *addr, int len, struct sysinfo_t *info)
 			break;
 #endif
 		case CB_TAG_MAINBOARD:
-			info->mainboard = (struct cb_mainboard *)ptr;
+			info->cb_mainboard = virt_to_phys(ptr);
 			break;
 		case CB_TAG_GPIO:
 			cb_parse_gpios(ptr, info);

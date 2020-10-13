@@ -276,19 +276,6 @@ static void i82801jx_power_options(struct device *dev)
 	outl(reg32, pmbase + 0x10);
 }
 
-static void i82801jx_configure_cstates(struct device *dev)
-{
-	// Enable Popup & Popdown
-	pci_or_config8(dev, D31F0_CxSTATE_CNF, (1 << 4) | (1 << 3) | (1 << 2));
-
-	// Set Deeper Sleep configuration to recommended values
-	// Deeper Sleep to Stop CPU: 34-40us
-	// Deeper Sleep to Sleep: 15us
-	pci_update_config8(dev, D31F0_C4TIMING_CNT, ~0x0f, (2 << 2) | (2 << 0));
-
-	/* We could enable slow-C4 exit here, if someone needs it? */
-}
-
 static void i82801jx_rtc_init(struct device *dev)
 {
 	u8 reg8;
@@ -361,7 +348,9 @@ static void lpc_init(struct device *dev)
 	printk(BIOS_DEBUG, "i82801jx: %s\n", __func__);
 
 	/* Set the value for PCI command register. */
-	pci_write_config16(dev, PCI_COMMAND, 0x000f);
+	pci_write_config16(dev, PCI_COMMAND,
+			   PCI_COMMAND_MASTER | PCI_COMMAND_SPECIAL |
+			   PCI_COMMAND_MEMORY | PCI_COMMAND_IO);
 
 	/* IO APIC initialization. */
 	i82801jx_enable_apic(dev);
@@ -373,10 +362,6 @@ static void lpc_init(struct device *dev)
 
 	/* Setup power options. */
 	i82801jx_power_options(dev);
-
-	/* Configure Cx state registers */
-	if (LPC_IS_MOBILE(dev))
-		i82801jx_configure_cstates(dev);
 
 	/* Initialize the real time clock. */
 	i82801jx_rtc_init(dev);
@@ -423,7 +408,6 @@ unsigned long acpi_fill_madt(unsigned long current)
 	current += acpi_create_madt_irqoverride((acpi_madt_irqoverride_t *)
 		 current, 0, 9, 9, MP_IRQ_POLARITY_HIGH | MP_IRQ_TRIGGER_LEVEL);
 
-
 	return current;
 }
 
@@ -451,7 +435,7 @@ static void i82801jx_lpc_read_resources(struct device *dev)
 	 * 0x00c0 ~ 0x00de....ISA DMA
 	 * 0x00c1 ~ 0x00df....ISA DMA aliases
 	 * 0x00f0.............Coprocessor Error
-	 * (0x0400-0x041f)....SMBus (SMBUS_IO_BASE, during raminit)
+	 * (0x0400-0x041f)....SMBus (CONFIG_FIXED_SMBUS_IO_BASE, during raminit)
 	 * 0x04d0 - 0x04d1....PIC
 	 * 0x0500 - 0x057f....PM (DEFAULT_PMBASE)
 	 * 0x0580 - 0x05bf....SB GPIO (DEFAULT_GPIOBASE)

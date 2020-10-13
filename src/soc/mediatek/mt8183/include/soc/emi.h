@@ -13,8 +13,9 @@ enum DRAMC_PARAM_SOURCE {
 };
 
 struct sdram_params {
-	u16 source;	/* DRAMC_PARAM_SOURCE */
+	u16 source;		/* DRAMC_PARAM_SOURCE */
 	u16 frequency;
+	u32 ddr_geometry;	/* DRAMC_PARAM_GEOMETRY_TYPE */
 	u8 wr_level[CHANNEL_MAX][RANK_MAX][DQS_NUMBER];
 
 	/* DUTY */
@@ -26,6 +27,7 @@ struct sdram_params {
 	u8 cbt_clk_dly[CHANNEL_MAX][RANK_MAX];
 	u8 cbt_cmd_dly[CHANNEL_MAX][RANK_MAX];
 	u8 cbt_cs_dly[CHANNEL_MAX][RANK_MAX];
+	u8 cbt_ca_perbit_delay[CHANNEL_MAX][RANK_MAX][DQS_BIT_NUMBER];
 
 	/* Gating */
 	u8 gating2T[CHANNEL_MAX][RANK_MAX][DQS_NUMBER];

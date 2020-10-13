@@ -519,6 +519,19 @@ config PCIEXP_PLUGIN_SUPPORT
 	bool
 	default y
 
+config PCI_ALLOW_BUS_MASTER
+	bool "Allow PCI bus master bit to be enabled by coreboot"
+	default y
+	help
+	  For security reasons, bus mastering should be enabled as late as
+	  possible. In coreboot, it's usually not necessary and payloads
+	  should only enable it for devices they use. Since not all payloads
+	  enable bus mastering properly yet, this option gives some sort of
+	  "backwards compatibility" and is enabled by default to keep the
+	  traditional behaviour for now. This is currently necessary, for
+	  instance, for libpayload based payloads as the drivers don't enable
+	  bus mastering for PCI bridges.
+
 endif # PCI
 
 if PCIEXP_PLUGIN_SUPPORT
@@ -650,6 +663,9 @@ config SUBSYSTEM_VENDOR_ID
 	  This config option will override the devicetree settings for
 	  PCI Subsystem Vendor ID.
 
+	  Note: This option is not meant for a board's Kconfig; use the
+	  devicetree setting `subsystemid` instead.
+
 config SUBSYSTEM_DEVICE_ID
 	hex "Override PCI Subsystem Device ID"
 	depends on PCI
@@ -657,6 +673,9 @@ config SUBSYSTEM_DEVICE_ID
 	help
 	  This config option will override the devicetree settings for
 	  PCI Subsystem Device ID.
+
+	  Note: This option is not meant for a board's Kconfig; use the
+	  devicetree setting `subsystemid` instead.
 
 config VGA_BIOS
 	bool "Add a VGA BIOS image"

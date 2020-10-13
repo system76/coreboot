@@ -1,6 +1,5 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-
 #ifndef _SOC_USB_H_
 #define _SOC_USB_H_
 
@@ -132,7 +131,7 @@ struct usb3_port_config {
 #define USB3_PORT_DEFAULT(pin) { \
 	.enable           = 1, \
 	.ocpin            = (pin), \
-	.tx_de_emp        = 0x0, \
+	.tx_de_emp        = 0x29, \
 	.tx_downscale_amp = 0x00, \
 }
 

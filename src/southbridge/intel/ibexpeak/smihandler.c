@@ -107,7 +107,6 @@ void southbridge_smi_monitor(void)
 			mask |= (0xff << ((i - 16) << 2));
 	}
 
-
 	/* IOTRAP(3) SMI function call */
 	if (IOTRAP(3)) {
 		if (gnvs && gnvs->smif)
@@ -151,7 +150,11 @@ void southbridge_update_gnvs(u8 apm_cnt, int *smm_done)
 		smi_apmc_find_state_save(apm_cnt);
 	if (state) {
 		/* EBX in the state save contains the GNVS pointer */
-		gnvs = (struct global_nvs *)((u32)state->rbx);
+		gnvs = (struct global_nvs *)(uintptr_t)((u32)state->rbx);
+		if (smm_points_to_smram(gnvs, sizeof(*gnvs))) {
+			printk(BIOS_ERR, "SMI#: ERROR: GNVS overlaps SMM\n");
+			return;
+		}
 		*smm_done = 1;
 		printk(BIOS_DEBUG, "SMI#: Setting GNVS to %p\n", gnvs);
 	}

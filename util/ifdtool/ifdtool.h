@@ -23,6 +23,7 @@ enum ich_chipset {
 	CHIPSET_ICH8,
 	CHIPSET_ICH9,
 	CHIPSET_ICH10,
+	CHIPSET_PCH_UNKNOWN,
 	CHIPSET_5_SERIES_IBEX_PEAK,
 	CHIPSET_6_SERIES_COUGAR_POINT,
 	CHIPSET_7_SERIES_PANTHER_POINT,
@@ -34,9 +35,11 @@ enum ich_chipset {
 	CHIPSET_8_SERIES_WELLSBURG,
 	CHIPSET_9_SERIES_WILDCAT_POINT,
 	CHIPSET_9_SERIES_WILDCAT_POINT_LP,
-	CHIPSET_100_SERIES_SUNRISE_POINT, /* also 6th/7th gen Core i/o (LP)
-					   * variants
-					   */
+	CHIPSET_N_J_SERIES, /* Gemini Lake: N5xxx, J5xxx, N4xxx, J4xxx */
+	CHIPSET_100_200_SERIES_SUNRISE_POINT, /* 6th-7th gen Core i/o (LP) variants */
+	CHIPSET_300_400_SERIES_CANNON_ICE_POINT, /* 8th-10th gen Core i/o (LP) variants */
+	CHIPSET_500_600_SERIES_TIGER_ALDER_POINT, /* 11th-12th gen Core i/o (LP)
+						   * variants onwards */
 	CHIPSET_C620_SERIES_LEWISBURG,
 };
 
@@ -48,6 +51,7 @@ enum platform {
 	PLATFORM_JSL,
 	PLATFORM_SKLKBL,
 	PLATFORM_TGL,
+	PLATFORM_ADL,
 };
 
 #define LAYOUT_LINELEN 80
@@ -58,6 +62,31 @@ enum spi_frequency {
 	SPI_FREQUENCY_48MHZ = 2,
 	SPI_FREQUENCY_50MHZ_30MHZ = 4,
 	SPI_FREQUENCY_17MHZ = 6,
+};
+
+enum spi_frequency_500_series {
+	SPI_FREQUENCY_100MHZ = 0,
+	SPI_FREQUENCY_50MHZ = 1,
+	SPI_FREQUENCY_500SERIES_33MHZ = 3,
+	SPI_FREQUENCY_25MHZ = 4,
+	SPI_FREQUENCY_14MHZ = 6,
+};
+
+enum espi_frequency {
+	ESPI_FREQUENCY_20MHZ = 0,
+	ESPI_FREQUENCY_24MHZ = 1,
+	ESPI_FREQUENCY_30MHZ = 2,
+	ESPI_FREQUENCY_48MHZ = 3,
+	ESPI_FREQUENCY_60MHZ = 4,
+	ESPI_FREQUENCY_17MHZ = 6,
+};
+
+enum espi_frequency_500_series {
+	ESPI_FREQUENCY_500SERIES_20MHZ = 0,
+	ESPI_FREQUENCY_500SERIES_24MHZ = 1,
+	ESPI_FREQUENCY_500SERIES_25MHZ = 2,
+	ESPI_FREQUENCY_500SERIES_48MHZ = 3,
+	ESPI_FREQUENCY_500SERIES_60MHZ = 4,
 };
 
 enum component_density {
@@ -78,6 +107,7 @@ typedef struct {
 	uint32_t flmap0;
 	uint32_t flmap1;
 	uint32_t flmap2;
+	uint32_t flmap3; // Exist for 500 series onwards
 } __attribute__((packed)) fdbar_t;
 
 // regions

@@ -135,6 +135,8 @@ static void mainboard_configure_gpios(void)
 static void mainboard_devtree_update(void)
 {
 	variant_audio_update();
+	variant_bluetooth_update();
+	variant_touchscreen_update();
 	variant_devtree_update();
 }
 
@@ -165,12 +167,12 @@ static void mainboard_init(void *chip_info)
 		gpe_configure_sci(gpes, num);
 }
 
-void mainboard_get_pcie_ddi_descriptors(const fsp_pcie_descriptor **pcie_descs,
-					size_t *pcie_num,
+void mainboard_get_dxio_ddi_descriptors(const fsp_dxio_descriptor **dxio_descs,
+					size_t *dxio_num,
 					const fsp_ddi_descriptor **ddi_descs,
 					size_t *ddi_num)
 {
-	variant_get_pcie_ddi_descriptors(pcie_descs, pcie_num, ddi_descs, ddi_num);
+	variant_get_dxio_ddi_descriptors(dxio_descs, dxio_num, ddi_descs, ddi_num);
 }
 
 /*************************************************
@@ -186,25 +188,12 @@ static void zork_enable(struct device *dev)
 	dev->ops->acpi_inject_dsdt = chromeos_dsdt_generator;
 }
 
-static const struct soc_amd_gpio gpio_set_bl[] = {
-	PAD_GPO(GPIO_85, LOW),
-};
-
-static void reset_backlight_gpio(void *unused)
-{
-	printk(BIOS_DEBUG, "Reset backlight GPIO\n");
-	/* Re-Enable backlight - GPIO 85 active low */
-	/* TODO: Remove this after AGESA stops enabling the fan - b/155667589 */
-	program_gpios(gpio_set_bl, ARRAY_SIZE(gpio_set_bl)); /*  APU_EDP_BL_DISABLE */
-}
-
 static void mainboard_final(void *chip_info)
 {
 	struct global_nvs *gnvs;
 
 	gnvs = acpi_get_gnvs();
 
-	reset_backlight_gpio(NULL);
 
 	if (gnvs) {
 		gnvs->tmps = CTL_TDP_SENSOR_ID;
@@ -229,5 +218,3 @@ __weak const struct soc_amd_gpio *variant_override_gpio_table(size_t *size)
 	*size = 0;
 	return NULL;
 }
-
-BOOT_STATE_INIT_ENTRY(BS_OS_RESUME, BS_ON_ENTRY, reset_backlight_gpio, NULL);

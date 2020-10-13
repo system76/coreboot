@@ -2,6 +2,8 @@
 
 #include <acpi/acpigen.h>
 #include <acpi/acpigen_dptf.h>
+#include <stdbool.h>
+#include <stdint.h>
 
 /* Defaults */
 #define DEFAULT_RAW_UNIT		"ma"
@@ -17,6 +19,7 @@ enum {
 	DEFAULT_TRIP_POINT		= 0xFFFFFFFFull,
 	DEFAULT_WEIGHT			= 100,
 	DPTF_MAX_ART_THRESHOLDS		= 10,
+	FPS_REVISION			= 0,
 	PPCC_REVISION			= 2,
 	RAPL_PL1_INDEX			= 0,
 	RAPL_PL2_INDEX			= 1,
@@ -353,7 +356,8 @@ void dptf_write_fan_perf(const struct dptf_fan_perf *states, int max_count)
 
 	/* _FPS - Fan Performance States */
 	acpigen_write_name("_FPS");
-	pkg_count = acpigen_write_package(0);
+	pkg_count = acpigen_write_package(1); /* 1 for Revision */
+	acpigen_write_integer(FPS_REVISION); /* revision */
 
 	for (i = 0; i < max_count; ++i) {
 		/*

@@ -29,6 +29,8 @@
 #ifndef _SYSINFO_H
 #define _SYSINFO_H
 
+#include <stdint.h>
+
 /* Maximum number of memory range definitions. */
 #define SYSINFO_MAX_MEM_RANGES 32
 /* Allow a maximum of 8 GPIOs */
@@ -39,17 +41,16 @@
 
 #include <coreboot_tables.h>
 
-struct cb_serial;
-
 /*
- * All pointers in here shall be virtual.
+ * This is a collection of information and pointers gathered
+ * mostly from the coreboot table.
  *
- * If a relocation happens after the last call to lib_get_sysinfo(),
- * it is up to the user to call lib_get_sysinfo() again.
+ * We do not store virtual pointers in here to avoid problems
+ * with self-relocating payloads.
  */
 struct sysinfo_t {
 	unsigned int cpu_khz;
-	struct cb_serial *serial;
+	uintptr_t cb_serial;
 	unsigned short ser_ioport;
 	unsigned long ser_base; // for mmapped serial
 
@@ -61,56 +62,56 @@ struct sysinfo_t {
 		unsigned int type;
 	} memrange[SYSINFO_MAX_MEM_RANGES];
 
-	struct cb_cmos_option_table *option_table;
+	uintptr_t cmos_option_table;
 	u32 cmos_range_start;
 	u32 cmos_range_end;
 	u32 cmos_checksum_location;
 	u32 vbnv_start;
 	u32 vbnv_size;
 
-	char *version;
-	char *extra_version;
-	char *build;
-	char *compile_time;
-	char *compile_by;
-	char *compile_host;
-	char *compile_domain;
-	char *compiler;
-	char *linker;
-	char *assembler;
+	uintptr_t version;
+	uintptr_t extra_version;
+	uintptr_t build;
+	uintptr_t compile_time;
+	uintptr_t compile_by;
+	uintptr_t compile_host;
+	uintptr_t compile_domain;
+	uintptr_t compiler;
+	uintptr_t linker;
+	uintptr_t assembler;
 
-	char *cb_version;
+	uintptr_t cb_version;
 
-	struct cb_framebuffer *framebuffer;
+	struct cb_framebuffer framebuffer;
 
 	int num_gpios;
 	struct cb_gpio gpios[SYSINFO_MAX_GPIOS];
 	int num_macs;
 	struct mac_address macs[SYSINFO_MAX_MACS];
-	char *serialno;
+	uintptr_t serialno;
 
 	unsigned long *mbtable; /** Pointer to the multiboot table */
 
-	struct cb_header *header;
-	struct cb_mainboard *mainboard;
+	uintptr_t cb_header;
+	uintptr_t cb_mainboard;
 
-	void *vboot_workbuf;
+	uintptr_t vboot_workbuf;
 
 #if CONFIG(LP_ARCH_X86)
 	int x86_rom_var_mtrr_index;
 #endif
 
-	void		*tstamp_table;
-	void		*cbmem_cons;
-	void		*mrc_cache;
-	void		*acpi_gnvs;
+	uintptr_t tstamp_table;
+	uintptr_t cbmem_cons;
+	uintptr_t mrc_cache;
+	uintptr_t acpi_gnvs;
 
 #define UNDEFINED_STRAPPING_ID (~0)
 	u32		board_id;
 	u32		ram_code;
 	u32		sku_id;
 
-	void		*wifi_calibration;
+	uintptr_t	wifi_calibration;
 	uint64_t	ramoops_buffer;
 	uint32_t	ramoops_buffer_size;
 	struct {
@@ -124,11 +125,11 @@ struct sysinfo_t {
 	uint64_t boot_media_size;
 	uint64_t mtc_start;
 	uint32_t mtc_size;
-	void	*chromeos_vpd;
-	int	mmc_early_wake_status;
+	uintptr_t chromeos_vpd;
+	int mmc_early_wake_status;
 
 	/* Pointer to FMAP cache in CBMEM */
-	void	*fmap_cache;
+	uintptr_t fmap_cache;
 };
 
 extern struct sysinfo_t lib_sysinfo;

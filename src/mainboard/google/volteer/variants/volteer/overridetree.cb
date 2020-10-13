@@ -1,7 +1,55 @@
 chip soc/intel/tigerlake
 	register "SaGv" = "SaGv_Disabled"
+	#+-------------------+---------------------------+
+	#| Field             |  Value                    |
+	#+-------------------+---------------------------+
+	#| chipset_lockdown  | CHIPSET_LOCKDOWN_COREBOOT |
+	#| GSPI0             | cr50 TPM. Early init is   |
+	#|                   | required to set up a BAR  |
+	#|                   | for TPM communication     |
+	#|                   | before memory is up       |
+	#| GSPI1             | Fingerprint MCU           |
+	#| I2C0              | Audio                     |
+	#| I2C1              | Touchscreen               |
+	#| I2C2              | WLAN, SAR0                |
+	#| I2C3              | Camera, SAR1              |
+	#| I2C5              | Trackpad                  |
+	#+-------------------+---------------------------+
+	register "common_soc_config" = "{
+		.chipset_lockdown = CHIPSET_LOCKDOWN_COREBOOT,
+		.gspi[0] = {
+			.speed_mhz = 1,
+			.early_init = 1,
+		},
+		.i2c[0] = {
+			.speed = I2C_SPEED_FAST,
+		},
+		.i2c[1] = {
+			.speed = I2C_SPEED_FAST,
+		},
+		.i2c[2] = {
+			.speed = I2C_SPEED_FAST,
+		},
+		.i2c[3] = {
+			.speed = I2C_SPEED_FAST,
+		},
+		.i2c[5] = {
+			.speed = I2C_SPEED_FAST,
+			.speed_config[0] = {
+				.speed = I2C_SPEED_FAST,
+				.scl_lcnt = 163,
+				.scl_hcnt = 75,
+				.sda_hold = 36,
+			},
+		},
+	}"
+	register "TcssAuxOri" = "1"
+	register "IomTypeCPortPadCfg[0]" = "0x090E000A"
+	register "IomTypeCPortPadCfg[1]" = "0x090E000D"
+
 	device domain 0 on
-		device pci 15.0 on
+		device ref ipu on end
+		device ref i2c0 on
 			chip drivers/i2c/generic
 				register "hid" = ""10EC5682""
 				register "name" = ""RT58""
@@ -38,7 +86,7 @@ chip soc/intel/tigerlake
 				end
 			end
 		end
-		device pci 15.1 on
+		device ref i2c1 on
 			chip drivers/i2c/hid
 				register "generic.hid" = ""GDIX0000""
 				register "generic.desc" = ""Goodix Touchscreen""
@@ -46,10 +94,16 @@ chip soc/intel/tigerlake
 				register "generic.probed" = "1"
 				register "generic.reset_gpio" =
 							"ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_C10)"
+				# Parameter T3 >= 10ms
 				register "generic.reset_delay_ms" = "120"
+				# Parameter T2 >= 1ms
 				register "generic.reset_off_delay_ms" = "3"
 				register "generic.enable_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_A8)"
+				# Parameter T1 >= 10ms
 				register "generic.enable_delay_ms" = "12"
+				register "generic.stop_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_E3)"
+				# Parameter T4 >= 1ms
+				register "generic.stop_off_delay_ms" = "1"
 				register "generic.has_power_resource" = "1"
 				register "hid_desc_reg_offset" = "0x01"
 				device i2c 14 on end
@@ -68,8 +122,21 @@ chip soc/intel/tigerlake
 				register "hid_desc_reg_offset" = "0x01"
 				device i2c 10 on end
 			end
-		end # I2C1				0xA0E9
-		device pci 15.2 on
+			chip drivers/generic/gpio_keys
+				register "name" = ""PENH""
+				# GPP_B3 is the IRQ source, and GPP_E1 is the wake source
+				register "gpio" = "ACPI_GPIO_INPUT_ACTIVE_LOW(GPP_B3)"
+				register "key.wake_gpe" = "GPE0_DW2_01"
+				register "key.wakeup_route" = "WAKEUP_ROUTE_SCI"
+				register "key.wakeup_event_action" = "EV_ACT_DEASSERTED"
+				register "key.dev_name" = ""EJCT""
+				register "key.linux_code" = "SW_PEN_INSERTED"
+				register "key.linux_input_type" = "EV_SW"
+				register "key.label" = ""pen_eject""
+				device generic 0 on end
+			end
+		end
+		device ref i2c2 on
 			chip drivers/i2c/sx9310
 				register "desc" = ""SAR0 Proximity Sensor""
 				register "irq" = "ACPI_IRQ_LEVEL_LOW(GPP_F14_IRQ)"
@@ -100,8 +167,8 @@ chip soc/intel/tigerlake
 				register "reg_sar_ctrl2" = "0x3c"
 				device i2c 28 on end
 			end
-		end # I2C2				0xA0EA
-		device pci 19.1 on
+		end
+		device ref i2c5 on
 			chip drivers/i2c/generic
 				register "hid" = ""ELAN0000""
 				register "desc" = ""ELAN Touchpad""
@@ -110,8 +177,8 @@ chip soc/intel/tigerlake
 				register "probed" = "1"
 				device i2c 15 on end
 			end
-		end # I2C5				0xA0C6
-		device pci 1f.3 on
+		end
+		device ref hda on
 			chip drivers/generic/max98357a
 				register "hid" = ""MX98357A""
 				register "sdmode_gpio" =  "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_A10)"
@@ -141,7 +208,7 @@ chip soc/intel/tigerlake
 				end
 			end
 		end
-		device pci 1f.2 hidden
+		device ref pmc hidden
 			# The pmc_mux chip driver is a placeholder for the
 			# PMC.MUX device in the ACPI hierarchy.
 			chip drivers/intel/pmc_mux
@@ -174,6 +241,6 @@ chip soc/intel/tigerlake
 					end
 				end
 			end
-		end # PMC
+		end
 	end
 end
