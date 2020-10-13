@@ -65,7 +65,7 @@ config MAX_CPUS
 
 config DIMM_MAX
 	int
-	default 2
+	default 4 # Hack to make soc code work
 
 config DIMM_SPD_SIZE
 	int
