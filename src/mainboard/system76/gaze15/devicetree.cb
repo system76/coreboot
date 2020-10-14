@@ -104,10 +104,10 @@ chip soc/intel/cannonlake
 	register "usb2_ports[3]" = "USB2_PORT_EMPTY"
 	register "usb2_ports[4]" = "USB2_PORT_EMPTY"
 	register "usb2_ports[5]" = "USB2_PORT_MID(OC_SKIP)" # USB 2 Left
-	register "usb2_ports[6]" = "USB2_PORT_MID(OC_SKIP)" # 3G/LTE
+	register "usb2_ports[6]" = "USB2_PORT_EMPTY"
 	register "usb2_ports[7]" = "USB2_PORT_MID(OC_SKIP)" # Camera
 	register "usb2_ports[8]" = "USB2_PORT_EMPTY"
-	register "usb2_ports[9]" = "USB2_PORT_EMPTY"
+	register "usb2_ports[9]" = "USB2_PORT_MID(OC_SKIP)" # Fingerprint
 	register "usb2_ports[10]" = "USB2_PORT_EMPTY"
 	register "usb2_ports[11]" = "USB2_PORT_EMPTY"
 	register "usb2_ports[12]" = "USB2_PORT_EMPTY"
@@ -122,7 +122,7 @@ chip soc/intel/cannonlake
 	register "usb3_ports[3]" = "USB3_PORT_DEFAULT(OC_SKIP)" # Type-C
 	register "usb3_ports[4]" = "USB3_PORT_EMPTY"
 	register "usb3_ports[5]" = "USB3_PORT_EMPTY"
-	register "usb3_ports[6]" = "USB3_PORT_DEFAULT(OC_SKIP)" # 3G/LTE
+	register "usb3_ports[6]" = "USB3_PORT_EMPTY"
 	register "usb3_ports[7]" = "USB3_PORT_EMPTY"
 	register "usb3_ports[8]" = "USB3_PORT_EMPTY"
 	register "usb3_ports[9]" = "USB3_PORT_EMPTY"
