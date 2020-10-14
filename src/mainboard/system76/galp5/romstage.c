@@ -26,10 +26,10 @@ static const struct mb_ddr4_cfg board_cfg = {
 static const struct spd_info spd = {
 	.topology = SODIMM,
 	.smbus_info[0] = {
-		.addr_dimm0 = 0xA0,
+		.addr_dimm0 = 0x50,
 	},
 	.smbus_info[1] = {
-		.addr_dimm0 = 0xA4,
+		.addr_dimm0 = 0x52,
 	},
 };
 
