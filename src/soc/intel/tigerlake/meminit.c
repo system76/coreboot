@@ -47,51 +47,51 @@ static void init_spd_upds(FSP_M_CONFIG *mem_cfg, int channel, uintptr_t spd_dimm
 
 	switch (channel) {
 	case 0:
-		mem_cfg->DisableDimmCh0 = dimm_cfg;
-		mem_cfg->MemorySpdPtr00 = spd_dimm0;
-		mem_cfg->MemorySpdPtr01 = spd_dimm1;
+		mem_cfg->DisableDimmMc0Ch0 = dimm_cfg;
+		mem_cfg->MemorySpdPtr000 = spd_dimm0;
+		mem_cfg->MemorySpdPtr001 = spd_dimm1;
 		break;
 
 	case 1:
-		mem_cfg->DisableDimmCh1 = dimm_cfg;
-		mem_cfg->MemorySpdPtr02 = spd_dimm0;
-		mem_cfg->MemorySpdPtr03 = spd_dimm1;
+		mem_cfg->DisableDimmMc0Ch1 = dimm_cfg;
+		mem_cfg->MemorySpdPtr010 = spd_dimm0;
+		mem_cfg->MemorySpdPtr011 = spd_dimm1;
 		break;
 
 	case 2:
-		mem_cfg->DisableDimmCh2 = dimm_cfg;
-		mem_cfg->MemorySpdPtr04 = spd_dimm0;
-		mem_cfg->MemorySpdPtr05 = spd_dimm1;
+		mem_cfg->DisableDimmMc0Ch2 = dimm_cfg;
+		mem_cfg->MemorySpdPtr020 = spd_dimm0;
+		mem_cfg->MemorySpdPtr021 = spd_dimm1;
 		break;
 
 	case 3:
-		mem_cfg->DisableDimmCh3 = dimm_cfg;
-		mem_cfg->MemorySpdPtr06 = spd_dimm0;
-		mem_cfg->MemorySpdPtr07 = spd_dimm1;
+		mem_cfg->DisableDimmMc0Ch3 = dimm_cfg;
+		mem_cfg->MemorySpdPtr030 = spd_dimm0;
+		mem_cfg->MemorySpdPtr031 = spd_dimm1;
 		break;
 
 	case 4:
-		mem_cfg->DisableDimmCh4 = dimm_cfg;
-		mem_cfg->MemorySpdPtr08 = spd_dimm0;
-		mem_cfg->MemorySpdPtr09 = spd_dimm1;
+		mem_cfg->DisableDimmMc1Ch0 = dimm_cfg;
+		mem_cfg->MemorySpdPtr100 = spd_dimm0;
+		mem_cfg->MemorySpdPtr101 = spd_dimm1;
 		break;
 
 	case 5:
-		mem_cfg->DisableDimmCh5 = dimm_cfg;
-		mem_cfg->MemorySpdPtr10 = spd_dimm0;
-		mem_cfg->MemorySpdPtr11 = spd_dimm1;
+		mem_cfg->DisableDimmMc1Ch1 = dimm_cfg;
+		mem_cfg->MemorySpdPtr110 = spd_dimm0;
+		mem_cfg->MemorySpdPtr111 = spd_dimm1;
 		break;
 
 	case 6:
-		mem_cfg->DisableDimmCh6 = dimm_cfg;
-		mem_cfg->MemorySpdPtr12 = spd_dimm0;
-		mem_cfg->MemorySpdPtr13 = spd_dimm1;
+		mem_cfg->DisableDimmMc1Ch2 = dimm_cfg;
+		mem_cfg->MemorySpdPtr120 = spd_dimm0;
+		mem_cfg->MemorySpdPtr121 = spd_dimm1;
 		break;
 
 	case 7:
-		mem_cfg->DisableDimmCh7 = dimm_cfg;
-		mem_cfg->MemorySpdPtr14 = spd_dimm0;
-		mem_cfg->MemorySpdPtr15 = spd_dimm1;
+		mem_cfg->DisableDimmMc1Ch3 = dimm_cfg;
+		mem_cfg->MemorySpdPtr130 = spd_dimm0;
+		mem_cfg->MemorySpdPtr131 = spd_dimm1;
 		break;
 
 	default:
@@ -116,28 +116,28 @@ static void init_dq_upds(FSP_M_CONFIG *mem_cfg, int byte_pair, const uint8_t *dq
 
 	switch (byte_pair) {
 	case 0:
-		dq_upd = mem_cfg->DqMapCpu2DramCh0;
+		dq_upd = mem_cfg->DqMapCpu2DramMc0Ch0;
 		break;
 	case 1:
-		dq_upd = mem_cfg->DqMapCpu2DramCh1;
+		dq_upd = mem_cfg->DqMapCpu2DramMc0Ch1;
 		break;
 	case 2:
-		dq_upd = mem_cfg->DqMapCpu2DramCh2;
+		dq_upd = mem_cfg->DqMapCpu2DramMc0Ch2;
 		break;
 	case 3:
-		dq_upd = mem_cfg->DqMapCpu2DramCh3;
+		dq_upd = mem_cfg->DqMapCpu2DramMc0Ch3;
 		break;
 	case 4:
-		dq_upd = mem_cfg->DqMapCpu2DramCh4;
+		dq_upd = mem_cfg->DqMapCpu2DramMc1Ch0;
 		break;
 	case 5:
-		dq_upd = mem_cfg->DqMapCpu2DramCh5;
+		dq_upd = mem_cfg->DqMapCpu2DramMc1Ch1;
 		break;
 	case 6:
-		dq_upd = mem_cfg->DqMapCpu2DramCh6;
+		dq_upd = mem_cfg->DqMapCpu2DramMc1Ch2;
 		break;
 	case 7:
-		dq_upd = mem_cfg->DqMapCpu2DramCh7;
+		dq_upd = mem_cfg->DqMapCpu2DramMc1Ch3;
 		break;
 	default:
 		die("Invalid byte_pair: %d\n", byte_pair);
@@ -163,28 +163,28 @@ static void init_dqs_upds(FSP_M_CONFIG *mem_cfg, int byte_pair, uint8_t dqs_byte
 
 	switch (byte_pair) {
 	case 0:
-		dqs_upd = mem_cfg->DqsMapCpu2DramCh0;
+		dqs_upd = mem_cfg->DqsMapCpu2DramMc0Ch0;
 		break;
 	case 1:
-		dqs_upd = mem_cfg->DqsMapCpu2DramCh1;
+		dqs_upd = mem_cfg->DqsMapCpu2DramMc0Ch1;
 		break;
 	case 2:
-		dqs_upd = mem_cfg->DqsMapCpu2DramCh2;
+		dqs_upd = mem_cfg->DqsMapCpu2DramMc0Ch2;
 		break;
 	case 3:
-		dqs_upd = mem_cfg->DqsMapCpu2DramCh3;
+		dqs_upd = mem_cfg->DqsMapCpu2DramMc0Ch3;
 		break;
 	case 4:
-		dqs_upd = mem_cfg->DqsMapCpu2DramCh4;
+		dqs_upd = mem_cfg->DqsMapCpu2DramMc1Ch0;
 		break;
 	case 5:
-		dqs_upd = mem_cfg->DqsMapCpu2DramCh5;
+		dqs_upd = mem_cfg->DqsMapCpu2DramMc1Ch1;
 		break;
 	case 6:
-		dqs_upd = mem_cfg->DqsMapCpu2DramCh6;
+		dqs_upd = mem_cfg->DqsMapCpu2DramMc1Ch2;
 		break;
 	case 7:
-		dqs_upd = mem_cfg->DqsMapCpu2DramCh7;
+		dqs_upd = mem_cfg->DqsMapCpu2DramMc1Ch3;
 		break;
 	default:
 		die("Invalid byte_pair: %d\n", byte_pair);
