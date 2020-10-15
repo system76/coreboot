@@ -6,19 +6,10 @@
 
 //TODO: verify values
 static const struct mb_ddr4_cfg board_cfg = {
-	.dq_map[0] = {
-		{0x0F, 0xF0}, {0x00, 0xF0}, {0x0F, 0xF0},
-		//{0x0F, 0x00}, {0xFF, 0x00}, {0xFF, 0x00}
-	},
-	.dq_map[1] = {
-		{0x33, 0xCC}, {0x00, 0xCC}, {0x33, 0xCC},
-		//{0x33, 0x00}, {0xFF, 0x00}, {0xFF, 0x00}
-	},
+	// dq_map unused on DDR4
+	// dqs_map unused on DDR4
 
-	.dqs_map[0] = {7, 6, 5, 4, 1, 0, 3, 2},
-	.dqs_map[1] = {5, 4, 7, 6, 1, 0, 3, 2},
-
-	.dq_pins_interleaved = 1,
+	.dq_pins_interleaved = 0,
 
 	.ect = 0,
 };
