@@ -120,7 +120,8 @@ chip soc/intel/tigerlake
 	# 3 - CARD
 	# 4 - GLAN
 
-	#TODO: how to set up PCIE4?
+	# PCIe PEG0 x4, Clock 0 (SSD1)
+	register "PcieClkSrcUsage[0]" = "0x40"
 	register "PcieClkSrcClkReq[0]" = "0"
 
 	# PCIe root port #5 x4, Clock 2 (NVIDIA GPU)
