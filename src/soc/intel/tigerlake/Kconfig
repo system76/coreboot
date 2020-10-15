@@ -216,4 +216,10 @@ config SOC_INTEL_TIGERLAKE_DEBUG_CONSENT
 config PRERAM_CBMEM_CONSOLE_SIZE
 	hex
 	default 0x2000
+
+config SERIRQ_CONTINUOUS_MODE
+	bool
+	help
+	  If you set this option to y, the serial IRQ machine will be
+	  operated in continuous mode.
 endif
