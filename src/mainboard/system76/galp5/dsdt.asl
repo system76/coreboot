@@ -1,5 +1,8 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+//TODO: cleaner solution for ACPI brightness
+#define SYSTEM76_ACPI_NO_GFX0
+
 #include <acpi/acpi.h>
 DefinitionBlock(
 	"dsdt.aml",
@@ -14,19 +17,17 @@ DefinitionBlock(
 	#include <soc/intel/common/block/acpi/acpi/globalnvs.asl>
 	#include <cpu/intel/common/acpi/cpu.asl>
 
-	Scope (\_SB) {
-		Device (PCI0) {
-			#include <soc/intel/common/block/acpi/acpi/northbridge.asl>
-			#include <soc/intel/tigerlake/acpi/southbridge.asl>
-			#include <soc/intel/tigerlake/acpi/tcss.asl>
-		}
+	Device (\_SB.PCI0) {
+		#include <soc/intel/common/block/acpi/acpi/northbridge.asl>
+		#include <soc/intel/tigerlake/acpi/southbridge.asl>
+		#include <soc/intel/tigerlake/acpi/tcss.asl>
 	}
+
+	#include <southbridge/intel/common/acpi/sleepstates.asl>
 
 	Scope (\_SB.PCI0.LPCB) {
 		#include <drivers/pc80/pc/ps2_controller.asl>
 	}
 
 	#include "acpi/mainboard.asl"
-
-	#include <southbridge/intel/common/acpi/sleepstates.asl>
 }

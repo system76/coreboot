@@ -414,9 +414,9 @@ static const struct pad_config gpio_table[] = {
 		// NC
 		PAD_NC(GPP_T3, NONE),
 		// DGPU_RST#_PCH
-		//TODO PAD_CFG_TERM_GPO(GPP_U4, 1, NONE, PLTRST),
+		PAD_CFG_TERM_GPO(GPP_U4, 1, NONE, DEEP),
 		// DGPU_PWR_EN
-		//TODO PAD_CFG_TERM_GPO(GPP_U5, 1, NONE, PLTRST),
+		PAD_CFG_TERM_GPO(GPP_U5, 1, NONE, DEEP),
 };
 
 #endif
