@@ -35,7 +35,7 @@ Device (\_SB.PCI0.PEGP.DEV0) {
 
 	// Memory mapped PCI express registers
 	// Not sure what this stuff is, but it is used to get into GC6
-	OperationRegion (RPCX, SystemMemory, 0xE0008000, 0x1000)
+	OperationRegion (RPCX, SystemMemory, CONFIG_MMCONF_BASE_ADDRESS + 0x8000, 0x1000)
 	Field (RPCX, ByteAcc, NoLock, Preserve) {
 		PVID,   16,
 		PDID,   16,
