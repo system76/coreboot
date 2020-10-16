@@ -55,13 +55,13 @@ static struct device_operations dgpu_pci_ops_dev = {
 static void dgpu_above_4g(void *unused) {
 	struct device *pdev;
 
-	// Find PEG0
-	pdev = pcidev_on_root(1, 0);
+	// Find PEGP
+	pdev = pcidev_on_root(CONFIG(DRIVERS_SYSTEM76_DGPU_DEVICE), 0);
 	if (!pdev) {
-		printk(BIOS_ERR, "system76: failed to find PEG0\n");
+		printk(BIOS_ERR, "system76: failed to find PEGP\n");
 		return;
 	}
-	printk(BIOS_INFO, "system76: PEG0 at %p, %04x:%04x\n", pdev, pdev->vendor, pdev->device);
+	printk(BIOS_INFO, "system76: PEGP at %p, %04x:%04x\n", pdev, pdev->vendor, pdev->device);
 
     int fn;
     for (fn = 0; fn < 8; fn++) {

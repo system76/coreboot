@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
 Device (\_SB.PCI0.PEGP) {
-	Name (_ADR, 0x00010000)
+	Name (_ADR, CONFIG(DRIVERS_SYSTEM76_DGPU_DEVICE) << 16)
 
 	PowerResource (PWRR, 0, 0) {
 		Name (_STA, 1)

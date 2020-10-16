@@ -5,7 +5,7 @@ Method (MPTS, 1) {
 	\_SB.PCI0.LPCB.EC0.PTS (Arg0)
 
 	// Turn DGPU on before sleeping
-	//TODO: use correct scope \_SB.PCI0.PEGP.DEV0._ON()
+	\_SB.PCI0.PEGP.DEV0._ON()
 }
 
 /* Method called from _WAK prior to wakeup */
