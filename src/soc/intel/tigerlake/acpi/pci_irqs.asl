@@ -67,6 +67,9 @@ Name (PICP, Package () {
 	Package(){0x0007FFFF, 3, 0, 19 },
 	/* D6 */
 	Package(){0x0006FFFF, 0, 0, 16 },
+	Package(){0x0006FFFF, 1, 0, 17 },
+	Package(){0x0006FFFF, 2, 0, 18 },
+	Package(){0x0006FFFF, 3, 0, 19 },
 	/* D5 */
 	Package(){0x0005FFFF, 0, 0, 16 },
 	/* D4 */
@@ -142,6 +145,9 @@ Name (PICN, Package () {
 	Package(){0x0007FFFF, 3, 0, 11 },
 	/* D6 */
 	Package(){0x0006FFFF, 0, 0, 11 },
+	Package(){0x0006FFFF, 1, 0, 10 },
+	Package(){0x0006FFFF, 2, 0, 11 },
+	Package(){0x0006FFFF, 3, 0, 11 },
 	/* D5 */
 	Package(){0x0005FFFF, 0, 0, 11 },
 	/* D4 */
