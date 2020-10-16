@@ -4,7 +4,6 @@
 #include <soc/meminit.h>
 #include <soc/romstage.h>
 
-//TODO: verify values
 static const struct mb_ddr4_cfg board_cfg = {
 	// dq_map unused on DDR4
 	// dqs_map unused on DDR4
