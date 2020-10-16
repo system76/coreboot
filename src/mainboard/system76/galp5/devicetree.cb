@@ -174,7 +174,7 @@ chip soc/intel/tigerlake
 	register "tcc_offset" = "13"
 
 # Graphics (soc/intel/tigerlake/graphics.c)
-#TODO	register "gfx" = "GMA_STATIC_DISPLAYS(0)"
+	register "gfx" = "GMA_STATIC_DISPLAYS(0)"
 
 # PMC (soc/intel/tigerlake/pmc.c)
 	# TODO: Disable deep Sx states
