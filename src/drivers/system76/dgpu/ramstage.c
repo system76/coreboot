@@ -56,7 +56,7 @@ static void dgpu_above_4g(void *unused) {
 	struct device *pdev;
 
 	// Find PEGP
-	pdev = pcidev_on_root(CONFIG(DRIVERS_SYSTEM76_DGPU_DEVICE), 0);
+	pdev = pcidev_on_root(CONFIG_DRIVERS_SYSTEM76_DGPU_DEVICE, 0);
 	if (!pdev) {
 		printk(BIOS_ERR, "system76: failed to find PEGP\n");
 		return;
