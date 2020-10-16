@@ -70,7 +70,7 @@ chip soc/intel/tigerlake
 	register "PchHdaAudioLinkHdaEnable" = "1"
 
 	# System Agent dynamic frequency support
-	register "SaGv" = "SaGv_Disabled"
+	register "SaGv" = "SaGv_Enabled"
 
 	#TODO: TCSS USB3
 	register "TcssXhciEn" = "1"
@@ -80,7 +80,7 @@ chip soc/intel/tigerlake
 	register "Device4Enable" = "1"
 
 	#TODO: Hybrid storage mode
-	register "HybridStorageMode" = "1"
+	register "HybridStorageMode" = "0"
 
 	# I2C channels
 	register "SerialIoI2cMode" = "{
@@ -192,8 +192,8 @@ chip soc/intel/tigerlake
 	register "pmc_gpe0_dw2" = "PMC_GPD"
 
 # SMI Handler (soc/intel/tigerlake/smihandler.c)
-	# Disable HECI
-	register "HeciEnabled" = "0"
+	#TODO Disable HECI
+	register "HeciEnabled" = "1"
 
 # Actual device tree
 	device cpu_cluster 0 on
@@ -259,18 +259,18 @@ chip soc/intel/tigerlake
 		device pci 19.0 off end # I2C4			0xA0C5
 		device pci 19.1 off end # I2C5			0xA0C6
 		device pci 19.2 on  end # UART2			0xA0C7
-		device pci 1c.0 on  end # RP1			0xA0B8
-		device pci 1c.1 on  end # RP2			0xA0B9
-		device pci 1c.2 on  end # RP3			0xA0BA
-		device pci 1c.3 on  end # RP4			0xA0BB
+		device pci 1c.0 off end # RP1			0xA0B8
+		device pci 1c.1 off end # RP2			0xA0B9
+		device pci 1c.2 off end # RP3			0xA0BA
+		device pci 1c.3 off end # RP4			0xA0BB
 		device pci 1c.4 on  end # RP5			0xA0BC
-		device pci 1c.5 on  end # RP6			0xA0BD
-		device pci 1c.6 on  end # RP7			0xA0BE
-		device pci 1c.7 on  end # RP8			0xA0BF
+		device pci 1c.5 off end # RP6			0xA0BD
+		device pci 1c.6 off end # RP7			0xA0BE
+		device pci 1c.7 off end # RP8			0xA0BF
 		device pci 1d.0 on  end # RP9			0xA0B0
 		device pci 1d.1 on  end # RP10			0xA0B1
 		device pci 1d.2 on  end # RP11			0xA0B2
-		device pci 1d.3 on  end # RP12			0xA0B3
+		device pci 1d.3 off end # RP12			0xA0B3
 		device pci 1e.0 off end # UART0			0xA0A8
 		device pci 1e.1 off end # UART1			0xA0A9
 		device pci 1e.2 off end # GSPI0			0xA0AA
