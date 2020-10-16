@@ -126,7 +126,7 @@ config PCR_BASE_ADDRESS
 
 config MMCONF_BASE_ADDRESS
 	hex
-	default 0xc0000000
+	default 0xe0000000
 
 config CPU_BCLK_MHZ
 	int
