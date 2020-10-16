@@ -14,8 +14,10 @@
 
 /* Pad configuration in romstage. */
 static const struct pad_config early_gpio_table[] = {
+		// UART2_RXD
+		PAD_NC(GPP_C20, NONE),
 		// UART2_TXD
-		PAD_CFG_NF(GPP_C21, NONE, DEEP, NF1),
+		PAD_CFG_NF(GPP_C21, UP_20K, DEEP, NF1),
 		// DGPU_RST#_PCH
 		PAD_CFG_TERM_GPO(GPP_U4, 0, NONE, DEEP),
 		// DGPU_PWR_EN
@@ -103,7 +105,7 @@ static const struct pad_config gpio_table[] = {
 		// VRALERT#_PD
 		PAD_CFG_GPI(GPP_B2, UP_20K, DEEP),
 		// GPP_B3 - touchpad interrupt
-		_PAD_CFG_STRUCT(GPP_B3, 0x80800100, 0x0000),
+		PAD_CFG_GPI_APIC_EDGE_LOW(GPP_B3, NONE, PLTRST),
 		// NC
 		PAD_NC(GPP_B4, NONE),
 		// Test point
@@ -187,7 +189,7 @@ static const struct pad_config gpio_table[] = {
 		// UART2_RXD
 		PAD_NC(GPP_C20, NONE),
 		// UART2_TXD
-		PAD_CFG_NF(GPP_C21, NONE, DEEP, NF1),
+		PAD_CFG_NF(GPP_C21, UP_20K, DEEP, NF1),
 		// LAN_PLT_RST#
 		PAD_CFG_TERM_GPO(GPP_C22, 1, NONE, PLTRST),
 		// PCH_GPP_C23 - 4.7k pull-down
