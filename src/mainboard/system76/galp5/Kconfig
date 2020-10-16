@@ -55,7 +55,7 @@ config CONSOLE_POST
 
 config DRIVERS_SYSTEM76_DGPU_DEVICE
 	hex
-	default 0x06
+	default 0x1c
 
 config ONBOARD_VGA_IS_PRIMARY
 	bool
