@@ -27,4 +27,22 @@ bool intel_ht_supported(void);
  */
 bool intel_ht_sibling(void);
 
+/*
+ * Lock AES-NI feature (MSR_FEATURE_CONFIG) to prevent unintended changes
+ * to the enablement state as suggested in Intel document 325384-070US.
+ */
+void set_aesni_lock(void);
+
+/* Enable local CPU APIC TPR (Task Priority Register) updates */
+void enable_lapic_tpr(void);
+
+/* Enable DCA (Direct Cache Access) */
+void configure_dca_cap(void);
+
+/*
+ * Set EPB (Energy Performance Bias)
+ * Possible values are 0 (performance) to 15 (powersave).
+ */
+void set_energy_perf_bias(u8 policy);
+
 #endif

@@ -3,6 +3,7 @@
 #include <acpi/acpigen.h>
 #include <console/console.h>
 #include <cpu/intel/turbo.h>
+#include <cpu/intel/common/common.h>
 #include <cpu/x86/msr.h>
 #include <arch/cpu.h>
 #include <intelblocks/cpulib.h>
@@ -337,7 +338,7 @@ void mca_configure(void)
 
 void cpu_lt_lock_memory(void *unused)
 {
-	msr_set_bit(MSR_LT_CONTROL, LT_CONTROL_LOCK_BIT);
+	msr_set(MSR_LT_CONTROL, LT_CONTROL_LOCK);
 }
 
 int get_valid_prmrr_size(void)

@@ -119,7 +119,7 @@ static void serialio_init_once(int acpi_mode)
 {
 	if (acpi_mode) {
 		/* Enable ACPI IRQ for IRQ13, IRQ7, IRQ6, IRQ5 in RCBA. */
-		RCBA32_OR(ACPIIRQEN, (1 << 13)|(1 << 7)|(1 << 6)|(1 << 5));
+		RCBA32_OR(ACPIIRQEN, (1 << 13) | (1 << 7) | (1 << 6) | (1 << 5));
 	}
 
 	/* Program IOBP CB000154h[12,9:8,4:0] = 1001100011111b. */
@@ -131,7 +131,7 @@ static void serialio_init_once(int acpi_mode)
 
 static void serialio_init(struct device *dev)
 {
-	struct southbridge_intel_lynxpoint_config *config = dev->chip_info;
+	struct southbridge_intel_lynxpoint_config *config = config_of(dev);
 	struct resource *bar0, *bar1;
 	int sio_index = -1;
 

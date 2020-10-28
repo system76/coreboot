@@ -1,6 +1,5 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#include <arch/io.h>
 #include <device/device.h>
 #include <device/path.h>
 #include <device/smbus.h>
@@ -18,6 +17,7 @@ static void pch_smbus_init(struct device *dev)
 	u16 reg16;
 
 	/* Enable clock gating */
+	/* FIXME: Using 32-bit ops with a 16-bit variable is a bug! These should be 16-bit! */
 	reg16 = pci_read_config32(dev, 0x80);
 	reg16 &= ~((1 << 8)|(1 << 10)|(1 << 12)|(1 << 14));
 	pci_write_config32(dev, 0x80, reg16);
@@ -78,7 +78,7 @@ static struct device_operations smbus_ops = {
 	.scan_bus		= scan_smbus,
 	.init			= pch_smbus_init,
 	.ops_smbus_bus		= &lops_smbus_bus,
-	.ops_pci		= &broadwell_pci_ops,
+	.ops_pci		= &pci_dev_ops_pci,
 };
 
 static const unsigned short pci_device_ids[] = {

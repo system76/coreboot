@@ -8,6 +8,7 @@
  * end
  */
 
+#include <arch/io.h>
 #include <console/console.h>
 #include <device/device.h>
 #include <device/pnp.h>
@@ -27,6 +28,9 @@
 /* 4 bit encoding */
 static u8 ipmi_revision_major = 0x1;
 static u8 ipmi_revision_minor = 0x0;
+
+static u8 bmc_revision_major = 0x0;
+static u8 bmc_revision_minor = 0x0;
 
 static int ipmi_get_device_id(struct device *dev, struct ipmi_devid_rsp *rsp)
 {
@@ -143,6 +147,9 @@ static void ipmi_kcs_init(struct device *dev)
 		/* Queried the IPMI revision from BMC */
 		ipmi_revision_minor = IPMI_IPMI_VERSION_MINOR(rsp.ipmi_version);
 		ipmi_revision_major = IPMI_IPMI_VERSION_MAJOR(rsp.ipmi_version);
+
+		bmc_revision_major = rsp.fw_rev1;
+		bmc_revision_minor = rsp.fw_rev2;
 
 		memcpy(&man_id, rsp.manufacturer_id,
 		       sizeof(rsp.manufacturer_id));
@@ -271,6 +278,18 @@ static void ipmi_ssdt(const struct device *dev)
 	acpigen_pop_len(); /* pop scope */
 }
 #endif
+
+void ipmi_bmc_version(uint8_t *ipmi_bmc_major_revision, uint8_t *ipmi_bmc_minor_revision)
+{
+	if (!bmc_revision_major || !bmc_revision_minor) {
+		printk(BIOS_ERR, "IPMI: BMC revision missing\n");
+		*ipmi_bmc_major_revision = 0;
+		*ipmi_bmc_minor_revision = 0;
+	} else {
+		*ipmi_bmc_major_revision = bmc_revision_major;
+		*ipmi_bmc_minor_revision = bmc_revision_minor;
+	}
+}
 
 #if CONFIG(GENERATE_SMBIOS_TABLES)
 static int ipmi_smbios_data(struct device *dev, int *handle,

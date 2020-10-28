@@ -60,9 +60,6 @@ chip soc/intel/cannonlake
 	register "PcieClkSrcClkReq[4]" = "4"
 	register "PcieClkSrcClkReq[5]" = "5"
 
-	# Enable "Intel Speed Shift Technology"
-	register "speed_shift_enable" = "1"
-
 	# GPIO for SD card detect
 	register "sdcard_cd_gpio" = "GPP_G5"
 
@@ -94,7 +91,7 @@ chip soc/intel/cannonlake
 		device pci 12.6 off end # GSPI #2
 		device pci 14.0 on  end # USB xHCI
 		device pci 14.1 off end # USB xDCI (OTG)
-		chip drivers/intel/wifi
+		chip drivers/wifi/generic
 			register "wake" = "PME_B0_EN_BIT"
 			device pci 14.3 on  end # CNVi wifi
 		end

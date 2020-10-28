@@ -54,8 +54,6 @@ chip soc/intel/skylake
 	register "PmConfigSlpAMinAssert" = "3"         # 2s
 	register "PmTimerDisabled" = "1"
 
-	# Set speed_shift_enable to 1 to enable P-States, and 0 to disable
-	register "speed_shift_enable" = "1"
 	register "power_limits_config" = "{
 		.tdp_pl1_override = 7,
 		.tdp_pl2_override = 18,
@@ -402,7 +400,7 @@ chip soc/intel/skylake
 			end
 		end # I2C #4 - Audio
 		device pci 1c.0 on
-			chip drivers/intel/wifi
+			chip drivers/wifi/generic
 				register "wake" = "GPE0_DW2_01"
 				device pci 00.0 on end
 			end

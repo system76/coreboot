@@ -10,6 +10,8 @@
 #include <fmap.h>
 #include <ip_checksum.h>
 #include <region_file.h>
+#include <security/vboot/antirollback.h>
+#include <security/vboot/mrc_cache_hash_tpm.h>
 #include <security/vboot/vboot_common.h>
 #include <spi_flash.h>
 
@@ -44,6 +46,7 @@ struct cache_region {
 	uint32_t cbmem_id;
 	int type;
 	int elog_slot;
+	uint32_t tpm_hash_index;
 	int flags;
 };
 
@@ -52,6 +55,7 @@ static const struct cache_region recovery_training = {
 	.cbmem_id = CBMEM_ID_MRCDATA,
 	.type = MRC_TRAINING_DATA,
 	.elog_slot = ELOG_MEM_CACHE_UPDATE_SLOT_RECOVERY,
+	.tpm_hash_index = MRC_REC_HASH_NV_INDEX,
 #if CONFIG(HAS_RECOVERY_MRC_CACHE)
 	.flags = RECOVERY_FLAG,
 #else
@@ -64,6 +68,7 @@ static const struct cache_region normal_training = {
 	.cbmem_id = CBMEM_ID_MRCDATA,
 	.type = MRC_TRAINING_DATA,
 	.elog_slot = ELOG_MEM_CACHE_UPDATE_SLOT_NORMAL,
+	.tpm_hash_index = MRC_RW_HASH_NV_INDEX,
 	.flags = NORMAL_FLAG | RECOVERY_FLAG,
 };
 
@@ -72,6 +77,7 @@ static const struct cache_region variable_data = {
 	.cbmem_id = CBMEM_ID_VAR_MRCDATA,
 	.type = MRC_VARIABLE_DATA,
 	.elog_slot = ELOG_MEM_CACHE_UPDATE_SLOT_VARIABLE,
+	.tpm_hash_index = 0,
 	.flags = NORMAL_FLAG | RECOVERY_FLAG,
 };
 
@@ -81,6 +87,11 @@ static const struct cache_region *cache_regions[] = {
 	&normal_training,
 	&variable_data,
 };
+
+/* TPM MRC hash functionality depends on vboot starting before memory init. */
+_Static_assert(!CONFIG(MRC_SAVE_HASH_IN_TPM) ||
+	       CONFIG(VBOOT_STARTS_IN_BOOTBLOCK),
+	       "for TPM MRC hash functionality, vboot must start in bootblock");
 
 static int lookup_region_by_name(const char *name, struct region *r)
 {
@@ -169,20 +180,31 @@ static int mrc_header_valid(struct region_device *rdev, struct mrc_metadata *md)
 	return 0;
 }
 
-static int mrc_data_valid(const struct mrc_metadata *md,
+static int mrc_data_valid(int type, const struct mrc_metadata *md,
 			  void *data, size_t data_size)
 {
 	uint16_t checksum;
+	const struct cache_region *cr = lookup_region_type(type);
+	uint32_t hash_idx;
+
+	if (cr == NULL)
+		return -1;
 
 	if (md->data_size != data_size)
 		return -1;
 
-	checksum = compute_ip_checksum(data, data_size);
+	hash_idx = cr->tpm_hash_index;
+	if (hash_idx && CONFIG(MRC_SAVE_HASH_IN_TPM)) {
+		if (!mrc_cache_verify_hash(hash_idx, data, data_size))
+			return -1;
+	} else {
+		checksum = compute_ip_checksum(data, data_size);
 
-	if (md->data_checksum != checksum) {
-		printk(BIOS_ERR, "MRC: data checksum mismatch: %x vs %x\n",
-			md->data_checksum, checksum);
-		return -1;
+		if (md->data_checksum != checksum) {
+			printk(BIOS_ERR, "MRC: data checksum mismatch: %x vs %x\n",
+			       md->data_checksum, checksum);
+			return -1;
+		}
 	}
 
 	return 0;
@@ -277,7 +299,7 @@ ssize_t mrc_cache_load_current(int type, uint32_t version, void *buffer,
 	if (rdev_readat(&rdev, buffer, 0, data_size) != data_size)
 		return -1;
 
-	if (mrc_data_valid(&md, buffer, data_size) < 0)
+	if (mrc_data_valid(type, &md, buffer, data_size) < 0)
 		return -1;
 
 	return data_size;
@@ -304,7 +326,7 @@ void *mrc_cache_current_mmap_leak(int type, uint32_t version,
 		return NULL;
 	}
 
-	if (mrc_data_valid(&md, data, region_device_size) < 0)
+	if (mrc_data_valid(type, &md, data, region_device_size) < 0)
 		return NULL;
 
 	return data;
@@ -315,10 +337,10 @@ static bool mrc_cache_needs_update(const struct region_device *rdev,
 				   const void *new_data, size_t new_data_size)
 {
 	void *mapping, *data_mapping;
-	size_t size = region_device_sz(rdev);
+	size_t old_data_size = region_device_sz(rdev) - sizeof(struct mrc_metadata);
 	bool need_update = false;
 
-	if (new_data_size != size)
+	if (new_data_size != old_data_size)
 		return true;
 
 	mapping = rdev_mmap_full(rdev);
@@ -384,6 +406,7 @@ static void update_mrc_cache_by_type(int type,
 	const struct region_device *backing_rdev;
 	struct region_device latest_rdev;
 	const bool fail_bad_data = false;
+	uint32_t hash_idx;
 
 	cr = lookup_region(&region, type);
 
@@ -443,6 +466,9 @@ static void update_mrc_cache_by_type(int type,
 	} else {
 		printk(BIOS_DEBUG, "MRC: updated '%s'.\n", cr->name);
 		log_event_cache_update(cr->elog_slot, UPDATE_SUCCESS);
+		hash_idx = cr->tpm_hash_index;
+		if (hash_idx && CONFIG(MRC_SAVE_HASH_IN_TPM))
+			mrc_cache_update_hash(hash_idx, new_data, new_data_size);
 	}
 }
 

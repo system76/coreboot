@@ -3,11 +3,13 @@
 #ifndef __HASWELL_REGISTERS_MCHBAR_H__
 #define __HASWELL_REGISTERS_MCHBAR_H__
 
+/* Memory controller characteristics */
+#define NUM_CHANNELS	2
+#define NUM_SLOTS	2
+
 /* Register definitions */
 #define MAD_CHNL		0x5000 /* Address Decoder Channel Configuration */
-#define MAD_DIMM_CH0		0x5004 /* Address Decode Channel 0 */
-#define MAD_DIMM_CH1		0x5008 /* Address Decode Channel 1 */
-#define MAD_DIMM_CH2		0x500c /* Address Decode Channel 2 (unused on HSW) */
+#define MAD_DIMM(ch)		(0x5004 + (ch) * 4)
 #define MC_INIT_STATE_G		0x5030
 #define MRC_REVISION		0x5034 /* MRC Revision */
 
@@ -21,6 +23,8 @@
 
 /* PAVP message register. Bit 0 locks PAVP settings, and bits [31..20] are an offset. */
 #define MMIO_PAVP_MSG		0x5500
+
+#define PCU_DDR_PTM_CTL		0x5880
 
 /* Some power MSRs are also represented in MCHBAR */
 #define MCH_PKG_POWER_LIMIT_LO	0x59a0
@@ -43,5 +47,6 @@
 #define REQLIM			0x6800
 #define DMIVCLIM		0x7000
 #define CRDTLCK			0x77fc
+#define MCARBLCK		0x7ffc
 
 #endif /* __HASWELL_REGISTERS_MCHBAR_H__ */

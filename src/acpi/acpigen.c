@@ -408,7 +408,7 @@ void acpigen_write_processor_cnot(const unsigned int number_of_cores)
  * len is region length.
  * OperationRegion(regionname, regionspace, regionoffset, regionlength)
  */
-void acpigen_write_opregion(struct opregion *opreg)
+void acpigen_write_opregion(const struct opregion *opreg)
 {
 	/* OpregionOp */
 	acpigen_emit_ext_op(OPREGION_OP);
@@ -505,6 +505,12 @@ static void acpigen_write_field_name(const char *name, uint32_t size)
 	acpigen_write_field_length(size);
 }
 
+static void acpigen_write_field_reserved(uint32_t size)
+{
+	acpigen_emit_byte(0);
+	acpigen_write_field_length(size);
+}
+
 /*
  * Generate ACPI AML code for Field
  * Arg0: region name
@@ -515,6 +521,7 @@ static void acpigen_write_field_name(const char *name, uint32_t size)
  * struct fieldlist l[] = {
  *	FIELDLIST_OFFSET(0x84),
  *	FIELDLIST_NAMESTR("PMCS", 2),
+ *	FIELDLIST_RESERVED(6),
  *	};
  * acpigen_write_field("UART", l, ARRAY_SIZE(l), FIELD_ANYACC | FIELD_NOLOCK |
  *								FIELD_PRESERVE);
@@ -522,7 +529,8 @@ static void acpigen_write_field_name(const char *name, uint32_t size)
  * Field (UART, AnyAcc, NoLock, Preserve)
  *	{
  *		Offset (0x84),
- *		PMCS,   2
+ *		PMCS,   2,
+ *              , 6,
  *	}
  */
 void acpigen_write_field(const char *name, const struct fieldlist *l, size_t count,
@@ -544,6 +552,10 @@ void acpigen_write_field(const char *name, const struct fieldlist *l, size_t cou
 		switch (l[i].type) {
 		case NAME_STRING:
 			acpigen_write_field_name(l[i].name, l[i].bits);
+			current_bit_pos += l[i].bits;
+			break;
+		case RESERVED:
+			acpigen_write_field_reserved(l[i].bits);
 			current_bit_pos += l[i].bits;
 			break;
 		case OFFSET:
@@ -1231,6 +1243,22 @@ void acpigen_write_store_op_to_namestr(uint8_t src, const char *dst)
 	acpigen_emit_namestring(dst);
 }
 
+/* Store (src, "namestr") */
+void acpigen_write_store_int_to_namestr(uint64_t src, const char *dst)
+{
+	acpigen_write_store();
+	acpigen_write_integer(src);
+	acpigen_emit_namestring(dst);
+}
+
+/* Store (src, dst) */
+void acpigen_write_store_int_to_op(uint64_t src, uint8_t dst)
+{
+	acpigen_write_store();
+	acpigen_write_integer(src);
+	acpigen_emit_byte(dst);
+}
+
 /* Or (arg1, arg2, res) */
 void acpigen_write_or(uint8_t arg1, uint8_t arg2, uint8_t res)
 {
@@ -1351,6 +1379,14 @@ void acpigen_write_else(void)
 {
 	acpigen_emit_byte(ELSE_OP);
 	acpigen_write_len_f();
+}
+
+void acpigen_write_shiftleft_op_int(uint8_t src_result, uint64_t count)
+{
+	acpigen_emit_byte(SHIFT_LEFT_OP);
+	acpigen_emit_byte(src_result);
+	acpigen_write_integer(count);
+	acpigen_emit_byte(ZERO_OP);
 }
 
 void acpigen_write_to_buffer(uint8_t src, uint8_t dst)
@@ -1829,7 +1865,7 @@ int __weak acpigen_soc_clear_tx_gpio(unsigned int gpio_num)
  *
  * Returns 0 on success and -1 on error.
  */
-int acpigen_enable_tx_gpio(struct acpi_gpio *gpio)
+int acpigen_enable_tx_gpio(const struct acpi_gpio *gpio)
 {
 	if (gpio->active_low)
 		return acpigen_soc_clear_tx_gpio(gpio->pins[0]);
@@ -1837,7 +1873,7 @@ int acpigen_enable_tx_gpio(struct acpi_gpio *gpio)
 		return acpigen_soc_set_tx_gpio(gpio->pins[0]);
 }
 
-int acpigen_disable_tx_gpio(struct acpi_gpio *gpio)
+int acpigen_disable_tx_gpio(const struct acpi_gpio *gpio)
 {
 	if (gpio->active_low)
 		return acpigen_soc_set_tx_gpio(gpio->pins[0]);
@@ -1845,7 +1881,7 @@ int acpigen_disable_tx_gpio(struct acpi_gpio *gpio)
 		return acpigen_soc_clear_tx_gpio(gpio->pins[0]);
 }
 
-void acpigen_get_rx_gpio(struct acpi_gpio *gpio)
+void acpigen_get_rx_gpio(const struct acpi_gpio *gpio)
 {
 	acpigen_soc_read_rx_gpio(gpio->pins[0]);
 
@@ -1853,7 +1889,7 @@ void acpigen_get_rx_gpio(struct acpi_gpio *gpio)
 		acpigen_write_xor(LOCAL0_OP, 1, LOCAL0_OP);
 }
 
-void acpigen_get_tx_gpio(struct acpi_gpio *gpio)
+void acpigen_get_tx_gpio(const struct acpi_gpio *gpio)
 {
 	acpigen_soc_get_tx_gpio(gpio->pins[0]);
 

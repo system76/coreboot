@@ -87,7 +87,7 @@ chip soc/intel/tigerlake
 	# Enable Optane PCIE 11 using clk 0
 	register "PcieRpEnable[10]" = "1"
 	register "PcieRpLtrEnable[10]" = "1"
-	register "HybridStorageMode" = "1"
+	register "HybridStorageMode" = "0"
 
 	# Enable SD Card PCIE 8 using clk 3
 	register "PcieRpEnable[7]" = "1"
@@ -103,10 +103,10 @@ chip soc/intel/tigerlake
 	register "PcieClkSrcClkReq[1]" = "1"
 
 	# Mark SRCCLKREQ pins as unused that are routed for a Non-Clkreq functionality
-	register "PcieClkSrcUsage[2]" = "0xFF"
-	register "PcieClkSrcUsage[4]" = "0xFF"
-	register "PcieClkSrcUsage[5]" = "0xFF"
-	register "PcieClkSrcUsage[6]" = "0xFF"
+	register "PcieClkSrcUsage[2]" = "PCIE_CLK_NOTUSED"
+	register "PcieClkSrcUsage[4]" = "PCIE_CLK_NOTUSED"
+	register "PcieClkSrcUsage[5]" = "PCIE_CLK_NOTUSED"
+	register "PcieClkSrcUsage[6]" = "PCIE_CLK_NOTUSED"
 
 	# Enable SATA
 	register "SataEnable" = "1"
@@ -229,9 +229,6 @@ chip soc/intel/tigerlake
 	register "DdiPort2Ddc" = "0"
 	register "DdiPort3Ddc" = "0"
 	register "DdiPort4Ddc" = "0"
-
-	# Enable "Intel Speed Shift Technology"
-	register "speed_shift_enable" = "1"
 
 	# Enable S0ix
 	register "s0ix_enable" = "1"
@@ -426,13 +423,17 @@ chip soc/intel/tigerlake
 		device ref tbt_dma0 on
 			probe DB_USB USB4_GEN2
 			probe DB_USB USB4_GEN3
+			chip drivers/intel/usb4/retimer
+				register "power_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_H10)"
+				device generic 0 on end
+			end
 		end
 		device ref gna on end
 		device ref north_xhci on end
 		device ref cnvi_bt on end
 		device ref south_xhci on end
 		device ref shared_ram on end
-		chip drivers/intel/wifi
+		chip drivers/wifi/generic
 			register "wake" = "GPE0_PME_B0"
 			device ref cnvi_wifi on end
 		end

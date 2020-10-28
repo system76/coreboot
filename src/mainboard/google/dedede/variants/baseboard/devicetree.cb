@@ -136,9 +136,6 @@ chip soc/intel/jasperlake
 	register "DdiPortBDdc" = "1"
 	register "DdiPortCDdc" = "1"
 
-	# Enable Speed Shift Technology support
-	register "speed_shift_enable" = "1"
-
 	# Enable DPTF
 	register "dptf_enable" = "1"
 
@@ -305,7 +302,7 @@ chip soc/intel/jasperlake
 		end # USB xHCI
 		device pci 14.1 off end # USB xDCI (OTG)
 		device pci 14.2 off end # PMC SRAM
-		chip drivers/intel/wifi
+		chip drivers/wifi/generic
 			register "wake" = "GPE0_PME_B0"
 			device pci 14.3 on  end # CNVi wifi
 		end

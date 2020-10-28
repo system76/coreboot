@@ -23,8 +23,6 @@
 #include <soc/pm.h>
 #include <soc/soc_util.h>
 
-#include "chip.h"
-
 static int acpi_sci_irq(void)
 {
 	int sci_irq = 9;
@@ -130,12 +128,17 @@ unsigned long acpi_fill_madt(unsigned long current)
 
 void acpi_fill_fadt(acpi_fadt_t *fadt)
 {
-
 	const uint16_t pmbase = ACPI_BASE_ADDRESS;
 
 	fadt->header.revision = get_acpi_table_revision(FADT);
 
 	fadt->sci_int = acpi_sci_irq();
+
+	if (permanent_smi_handler()) {
+		fadt->smi_cmd = APM_CNT;
+		fadt->acpi_enable = APM_CNT_ACPI_ENABLE;
+		fadt->acpi_disable = APM_CNT_ACPI_DISABLE;
+	}
 
 	fadt->pm1a_evt_blk = pmbase + PM1_STS;
 	fadt->pm1a_cnt_blk = pmbase + PM1_CNT;
@@ -151,26 +154,29 @@ void acpi_fill_fadt(acpi_fadt_t *fadt)
 	fadt->duty_offset = 1;
 	fadt->day_alrm = 0xd;
 
-	fadt->flags |= ACPI_FADT_WBINVD | ACPI_FADT_C1_SUPPORTED | ACPI_FADT_C2_MP_SUPPORTED |
+	fadt->flags |= ACPI_FADT_WBINVD | ACPI_FADT_C1_SUPPORTED |
+			ACPI_FADT_C2_MP_SUPPORTED | ACPI_FADT_SLEEP_BUTTON |
+			ACPI_FADT_SEALED_CASE | ACPI_FADT_S4_RTC_WAKE |
 			ACPI_FADT_PLATFORM_CLOCK;
 
 	fadt->x_pm1a_evt_blk.space_id = ACPI_ADDRESS_SPACE_IO;
 	fadt->x_pm1a_evt_blk.bit_width = fadt->pm1_evt_len * 8;
 	fadt->x_pm1a_evt_blk.addrl = pmbase + PM1_STS;
+	fadt->x_pm1a_evt_blk.access_size = ACPI_ACCESS_SIZE_WORD_ACCESS;
 
 	fadt->x_pm1a_cnt_blk.space_id = ACPI_ADDRESS_SPACE_IO;
 	fadt->x_pm1a_cnt_blk.bit_width = fadt->pm1_cnt_len * 8;
 	fadt->x_pm1a_cnt_blk.addrl = pmbase + PM1_CNT;
+	fadt->x_pm1a_cnt_blk.access_size = ACPI_ACCESS_SIZE_WORD_ACCESS;
 
-	if (permanent_smi_handler()) {
-		fadt->smi_cmd = APM_CNT;
-		fadt->acpi_enable = APM_CNT_ACPI_ENABLE;
-		fadt->acpi_disable = APM_CNT_ACPI_DISABLE;
-	}
-
-	/*  General-Purpose Event Registers */
+	/*
+	 * Windows 10 requires x_gpe0_blk to be set starting with FADT revision 5.
+	 * The bit_width field intentionally overflows here.
+	 * The OSPM can instead use the values in `fadt->gpe0_blk{,_len}`, which
+	 * seems to work fine on Linux 5.0 and Windows 10.
+	 */
 	fadt->x_gpe0_blk.space_id = ACPI_ADDRESS_SPACE_IO;
-	fadt->x_gpe0_blk.bit_width = 64; /* EventStatus + EventEnable */
+	fadt->x_gpe0_blk.bit_width = fadt->gpe0_blk_len * 8;
 	fadt->x_gpe0_blk.bit_offset = 0;
 	fadt->x_gpe0_blk.access_size = ACPI_ACCESS_SIZE_BYTE_ACCESS;
 	fadt->x_gpe0_blk.addrl = fadt->gpe0_blk;
@@ -208,9 +214,6 @@ void southbridge_inject_dsdt(const struct device *device)
 		acpigen_write_name_dword("NVSA", (uint32_t)gnvs);
 		acpigen_pop_len();
 	}
-
-	/* Add IIOStack ACPI Resource Templates */
-	uncore_inject_dsdt();
 }
 
 int calculate_power(int tdp, int p1_ratio, int ratio)
@@ -258,8 +261,9 @@ void generate_cpu_entries(const struct device *device)
 
 			/* NOTE: Intel idle driver doesn't use ACPI C-state tables */
 
-			/* Generate P-state tables */
-			cpx_generate_p_state_entries(core_id, threads_per_package);
+			/* Soc specific power states generation */
+			soc_power_states_generation(core_id, threads_per_package);
+
 			acpigen_pop_len();
 		}
 	}

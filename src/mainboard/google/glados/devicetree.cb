@@ -30,9 +30,6 @@ chip soc/intel/skylake
 	register "gen1_dec" = "0x00fc0801"
 	register "gen2_dec" = "0x000c0201"
 
-	# Enable "Intel Speed Shift Technology"
-	register "speed_shift_enable" = "1"
-
 	# Enable DPTF
 	register "dptf_enable" = "1"
 
@@ -118,7 +115,7 @@ chip soc/intel/skylake
 		device pci 19.1 off end # I2C #5
 		device pci 19.2 on  end # I2C #4
 		device pci 1c.0 on
-			chip drivers/intel/wifi
+			chip drivers/wifi/generic
 				register "wake" = "GPE0_DW0_16"
 				device pci 00.0 on end
 			end

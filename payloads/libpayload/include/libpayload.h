@@ -42,6 +42,7 @@
 #ifndef _LIBPAYLOAD_H
 #define _LIBPAYLOAD_H
 
+#include <stdbool.h>
 #include <libpayload-config.h>
 #include <compiler.h>
 #include <cbgfx.h>
@@ -186,7 +187,7 @@ int add_reset_handler(void (*new_handler)(void));
  */
 void keyboard_init(void);
 void keyboard_disconnect(void);
-int keyboard_havechar(void);
+bool keyboard_havechar(void);
 unsigned char keyboard_get_scancode(void);
 int keyboard_getchar(void);
 int keyboard_set_layout(char *country);
@@ -445,6 +446,8 @@ u8 hex2bin(u8 h);
 void hexdump(const void *memory, size_t length);
 void fatal(const char *msg) __attribute__((noreturn));
 
+/* Population Count: number of bits that are one */
+static inline int popcnt(u32 x) { return __builtin_popcount(x); }
 /* Count Leading Zeroes: clz(0) == 32, clz(0xf) == 28, clz(1 << 31) == 0 */
 static inline int clz(u32 x)
 {
@@ -454,6 +457,15 @@ static inline int clz(u32 x)
 static inline int log2(u32 x) { return (int)sizeof(x) * 8 - clz(x) - 1; }
 /* Find First Set: __ffs(0xf) == 0, __ffs(0) == -1, __ffs(1 << 31) == 31 */
 static inline int __ffs(u32 x) { return log2(x & (u32)(-(s32)x)); }
+
+static inline int popcnt64(u64 x) { return __builtin_popcountll(x); }
+static inline int clz64(u64 x)
+{
+	return x ? __builtin_clzll(x) : sizeof(x) * 8;
+}
+
+static inline int log2_64(u64 x) { return sizeof(x) * 8 - clz64(x) - 1; }
+static inline int __ffs64(u64 x) { return log2_64(x & (u64)(-(s64)x)); }
 /** @} */
 
 /**

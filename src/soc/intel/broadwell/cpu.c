@@ -25,8 +25,8 @@
 #include <soc/intel/broadwell/chip.h>
 #include <cpu/intel/common/common.h>
 
-/* The core 100MHz BLCK is disabled in deeper c-states. One needs to calibrate
- * the 100MHz BCLCK against the 24MHz BLCK to restore the clocks properly
+/* The core 100MHz BCLK is disabled in deeper c-states. One needs to calibrate
+ * the 100MHz BCLK against the 24MHz BCLK to restore the clocks properly
  * when a core is woken up. */
 static int pcode_ready(void)
 {
@@ -65,7 +65,7 @@ static void calibrate_24mhz_bclk(void)
 
 	err_code = MCHBAR32(BIOS_MAILBOX_INTERFACE) & 0xff;
 
-	printk(BIOS_DEBUG, "PCODE: 24MHz BLCK calibration response: %d\n",
+	printk(BIOS_DEBUG, "PCODE: 24MHz BCLK calibration response: %d\n",
 	       err_code);
 
 	/* Read the calibrated value. */
@@ -77,7 +77,7 @@ static void calibrate_24mhz_bclk(void)
 		return;
 	}
 
-	printk(BIOS_DEBUG, "PCODE: 24MHz BLCK calibration value: 0x%08x\n",
+	printk(BIOS_DEBUG, "PCODE: 24MHz BCLK calibration value: 0x%08x\n",
 	       MCHBAR32(BIOS_MAILBOX_DATA));
 }
 
@@ -311,29 +311,6 @@ static void configure_misc(void)
 	wrmsr(IA32_PACKAGE_THERM_INTERRUPT, msr);
 }
 
-static void enable_lapic_tpr(void)
-{
-	msr_t msr;
-
-	msr = rdmsr(MSR_PIC_MSG_CONTROL);
-	msr.lo &= ~(1 << 10);	/* Enable APIC TPR updates */
-	wrmsr(MSR_PIC_MSG_CONTROL, msr);
-}
-
-static void configure_dca_cap(void)
-{
-	uint32_t feature_flag;
-	msr_t msr;
-
-	/* Check feature flag in CPUID.(EAX=1):ECX[18]==1 */
-	feature_flag = cpu_get_feature_flags_ecx();
-	if (feature_flag & CPUID_DCA) {
-		msr = rdmsr(IA32_PLATFORM_DCA_CAP);
-		msr.lo |= 1;
-		wrmsr(IA32_PLATFORM_DCA_CAP, msr);
-	}
-}
-
 static void set_max_ratio(void)
 {
 	msr_t msr, perf_ctl;
@@ -359,25 +336,6 @@ static void set_max_ratio(void)
 	       ((perf_ctl.lo >> 8) & 0xff) * CPU_BCLK);
 }
 
-static void set_energy_perf_bias(u8 policy)
-{
-	msr_t msr;
-	int ecx;
-
-	/* Determine if energy efficient policy is supported. */
-	ecx = cpuid_ecx(0x6);
-	if (!(ecx & (1 << 3)))
-		return;
-
-	/* Energy Policy is bits 3:0 */
-	msr = rdmsr(IA32_ENERGY_PERF_BIAS);
-	msr.lo &= ~0xf;
-	msr.lo |= policy & 0xf;
-	wrmsr(IA32_ENERGY_PERF_BIAS, msr);
-
-	printk(BIOS_DEBUG, "CPU: energy policy set to %u\n", policy);
-}
-
 static void configure_mca(void)
 {
 	msr_t msr;
@@ -400,7 +358,7 @@ static void cpu_core_init(struct device *cpu)
 	/* Clear out pending MCEs */
 	configure_mca();
 
-	/* Enable the local CPU apics */
+	/* Enable the local CPU APICs */
 	enable_lapic_tpr();
 	setup_lapic();
 

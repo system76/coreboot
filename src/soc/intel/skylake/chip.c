@@ -210,8 +210,10 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 	       sizeof(params->PcieRpHotPlug));
 	for (i = 0; i < CONFIG_MAX_ROOT_PORTS; i++) {
 		params->PcieRpMaxPayload[i] = config->PcieRpMaxPayload[i];
-		if (config->PcieRpAspm[i])
-			params->PcieRpAspm[i] = config->PcieRpAspm[i] - 1;
+		if (config->pcie_rp_aspm[i])
+			params->PcieRpAspm[i] = config->pcie_rp_aspm[i] - 1;
+		if (config->pcie_rp_l1substates[i])
+			params->PcieRpL1Substates[i] = config->pcie_rp_l1substates[i] - 1;
 	}
 
 	/*
@@ -318,16 +320,11 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 		 */
 		params->SpiFlashCfgLockDown = 0;
 	}
-	/* only replacing preexisting subsys ID defaults when non-zero */
-	if (CONFIG_SUBSYSTEM_VENDOR_ID != 0) {
-		params->DefaultSvid = CONFIG_SUBSYSTEM_VENDOR_ID;
-		params->PchSubSystemVendorId = CONFIG_SUBSYSTEM_VENDOR_ID;
-	}
-
-	if (CONFIG_SUBSYSTEM_DEVICE_ID != 0) {
-		params->DefaultSid = CONFIG_SUBSYSTEM_DEVICE_ID;
-		params->PchSubSystemId = CONFIG_SUBSYSTEM_DEVICE_ID;
-	}
+	/* FSP should let coreboot set subsystem IDs, which are read/write-once */
+	params->DefaultSvid = 0;
+	params->PchSubSystemVendorId = 0;
+	params->DefaultSid = 0;
+	params->PchSubSystemId = 0;
 
 	params->PchPmWolEnableOverride = config->WakeConfigWolEnableOverride;
 	params->PchPmPcieWakeFromDeepSx = config->WakeConfigPcieWakeFromDeepSx;

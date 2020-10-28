@@ -20,6 +20,8 @@ romstage-y += ../common/cbmem.c
 romstage-y += emi.c
 romstage-y += flash_controller.c
 romstage-y += ../common/gpio.c gpio.c
+romstage-y += ../common/mmu_operations.c
+romstage-y += memory.c dramc_param.c ../common/memory_test.c
 romstage-$(CONFIG_SPI_FLASH) += ../common/spi.c spi.c
 romstage-y += ../common/timer.c
 romstage-y += ../common/uart.c
@@ -28,11 +30,14 @@ ramstage-y += flash_controller.c
 ramstage-y += ../common/gpio.c gpio.c
 ramstage-y += emi.c
 ramstage-$(CONFIG_SPI_FLASH) += ../common/spi.c spi.c
+ramstage-y += ../common/mmu_operations.c mmu_operations.c
 ramstage-y += ../common/mtcmos.c mtcmos.c
 ramstage-y += soc.c
 ramstage-y += ../common/timer.c
 ramstage-y += ../common/uart.c
 ramstage-y += ../common/usb.c usb.c
+
+BL31_MAKEARGS += PLAT=mt8192
 
 CPPFLAGS_common += -Isrc/soc/mediatek/mt8192/include
 CPPFLAGS_common += -Isrc/soc/mediatek/common/include

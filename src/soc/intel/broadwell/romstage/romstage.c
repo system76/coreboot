@@ -1,33 +1,17 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#include <stdint.h>
+#include <acpi/acpi.h>
 #include <arch/romstage.h>
-#include <cbmem.h>
 #include <console/console.h>
-#include <cpu/x86/mtrr.h>
 #include <elog.h>
-#include <program_loading.h>
 #include <romstage_handoff.h>
-#include <timestamp.h>
 #include <soc/gpio.h>
 #include <soc/me.h>
 #include <soc/pei_data.h>
 #include <soc/pm.h>
 #include <soc/romstage.h>
-#include <soc/spi.h>
-
-void fill_postcar_frame(struct postcar_frame *pcf)
-{
-	uintptr_t top_of_ram;
-
-	/* Cache at least 8 MiB below the top of ram, and at most 8 MiB
-	 * above top of the ram. This satisfies MTRR alignment requirement
-	 * with different TSEG size configurations.
-	 */
-	top_of_ram = ALIGN_DOWN((uintptr_t)cbmem_top(), 8*MiB);
-	postcar_frame_add_mtrr(pcf, top_of_ram - 8*MiB, 16*MiB,
-			MTRR_TYPE_WRBACK);
-}
+#include <stdint.h>
+#include <timestamp.h>
 
 /* Entry from cpu/intel/car/romstage.c. */
 void mainboard_romstage_entry(void)

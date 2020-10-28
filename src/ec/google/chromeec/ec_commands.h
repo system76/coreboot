@@ -414,6 +414,7 @@ extern "C" {
 /* Current version of ACPI memory address space */
 #define EC_ACPI_MEM_VERSION_CURRENT 2
 
+
 /*
  * This header file is used in coreboot both in C and ACPI code.  The ACPI code
  * is pre-processed to handle constants but the ASL compiler is unable to
@@ -1253,6 +1254,7 @@ struct ec_response_get_protocol_info {
 	uint32_t flags;
 } __ec_align4;
 
+
 /*****************************************************************************/
 /* Get/Set miscellaneous values */
 
@@ -1662,6 +1664,7 @@ struct ec_params_flash_erase_v1 {
 /* Rollback information flash region protected now */
 #define EC_FLASH_PROTECT_ROLLBACK_NOW       BIT(10)
 
+
 /**
  * struct ec_params_flash_protect - Parameters for the flash protect command.
  * @mask: Bits in flags to apply.
@@ -1758,6 +1761,7 @@ struct ec_response_vbnvcontext {
 	uint8_t block[EC_VBNV_BLOCK_SIZE];
 } __ec_align4;
 
+
 /* Get SPI flash information */
 #define EC_CMD_FLASH_SPI_INFO 0x0018
 
@@ -1775,6 +1779,7 @@ struct ec_response_flash_spi_info {
 	uint8_t sr1, sr2;
 } __ec_align1;
 
+
 /* Select flash during flash operations */
 #define EC_CMD_FLASH_SELECT 0x0019
 
@@ -1785,6 +1790,7 @@ struct ec_response_flash_spi_info {
 struct ec_params_flash_select {
 	uint8_t select;
 } __ec_align4;
+
 
 /**
  * Request random numbers to be generated and returned.
@@ -2196,6 +2202,7 @@ struct ec_response_lightbar {
 		struct lightbar_params_v0 get_params_v0;
 		struct lightbar_params_v1 get_params_v1;
 
+
 		struct lightbar_params_v2_timing get_params_v2_timing;
 		struct lightbar_params_v2_tap get_params_v2_tap;
 		struct lightbar_params_v2_oscillation get_params_v2_osc;
@@ -2520,6 +2527,12 @@ enum motionsense_command {
 	 */
 	MOTIONSENSE_CMD_ONLINE_CALIB_READ = 19,
 
+	/*
+	 * Activity management
+	 * Retrieve current status of given activity.
+	 */
+	MOTIONSENSE_CMD_GET_ACTIVITY = 20,
+
 	/* Number of motionsense sub-commands. */
 	MOTIONSENSE_NUM_CMDS
 };
@@ -2572,6 +2585,8 @@ enum motionsensor_chip {
 	MOTIONSENSE_CHIP_LIS2DW12 = 21,
 	MOTIONSENSE_CHIP_LIS2DWL = 22,
 	MOTIONSENSE_CHIP_LIS2DS = 23,
+	MOTIONSENSE_CHIP_BMI260 = 24,
+	MOTIONSENSE_CHIP_ICM426XX = 25,
 	MOTIONSENSE_CHIP_MAX,
 };
 
@@ -2592,6 +2607,8 @@ struct ec_response_motion_sensor_data {
 	/* Each sensor is up to 3-axis. */
 	union {
 		int16_t             data[3];
+		/* for sensors using unsigned data */
+		uint16_t            udata[3];
 		struct __ec_todo_packed {
 			uint16_t    reserved;
 			uint32_t    timestamp;
@@ -2637,6 +2654,7 @@ enum motionsensor_activity {
 	MOTIONSENSE_ACTIVITY_SIG_MOTION = 1,
 	MOTIONSENSE_ACTIVITY_DOUBLE_TAP = 2,
 	MOTIONSENSE_ACTIVITY_ORIENTATION = 3,
+	MOTIONSENSE_ACTIVITY_BODY_DETECTION = 4,
 };
 
 struct ec_motion_sense_activity {
@@ -2808,6 +2826,7 @@ struct ec_params_motion_sense {
 			uint16_t scale[3];
 		} sensor_scale;
 
+
 		/* Used for MOTIONSENSE_CMD_FIFO_INFO */
 		/* (no params) */
 
@@ -2820,6 +2839,7 @@ struct ec_params_motion_sense {
 			uint32_t max_data_vector;
 		} fifo_read;
 
+		/* Used for MOTIONSENSE_CMD_SET_ACTIVITY */
 		struct ec_motion_sense_activity set_activity;
 
 		/* Used for MOTIONSENSE_CMD_LID_ANGLE */
@@ -2874,6 +2894,13 @@ struct ec_params_motion_sense {
 			uint8_t sensor_num;
 		} online_calib_read;
 
+		/*
+		 * Used for MOTIONSENSE_CMD_GET_ACTIVITY.
+		 */
+		struct __ec_todo_unpacked {
+			uint8_t sensor_num;
+			uint8_t activity;  /* enum motionsensor_activity */
+		} get_activity;
 	};
 } __ec_todo_packed;
 
@@ -3025,6 +3052,10 @@ struct ec_response_motion_sense {
 			uint16_t hys_degree;
 		} tablet_mode_threshold;
 
+		/* USED for MOTIONSENSE_CMD_GET_ACTIVITY. */
+		struct __ec_todo_unpacked {
+			uint8_t state;
+		} get_activity;
 	};
 } __ec_todo_packed;
 
@@ -3264,6 +3295,7 @@ struct ec_response_thermal_get_threshold {
 	uint16_t value;
 } __ec_align2;
 
+
 /* The version 1 structs are visible. */
 enum ec_temp_thresholds {
 	EC_TEMP_THRESH_WARN = 0,
@@ -3378,6 +3410,7 @@ struct ec_params_tmp006_set_calibration_v1 {
 	uint8_t reserved;
 	float val[0];
 } __ec_align4;
+
 
 /* Read raw TMP006 data */
 #define EC_CMD_TMP006_GET_RAW 0x0055
@@ -3776,6 +3809,7 @@ struct ec_response_keyboard_factory_test {
 #define EC_MKBP_FP_ERR_MATCH_YES_UPDATED       3
 #define EC_MKBP_FP_ERR_MATCH_YES_UPDATE_FAILED 5
 
+
 #define EC_CMD_MKBP_WAKE_MASK 0x0069
 enum ec_mkbp_event_mask_action {
 	/* Retrieve the value of a wake mask. */
@@ -3853,6 +3887,7 @@ struct ec_response_temp_sensor_get_info {
 /*****************************************************************************/
 /* Host event commands */
 
+
 /* Obsolete. New implementation should use EC_CMD_HOST_EVENT instead */
 /*
  * Host event mask params and response structures, shared by all of the host
@@ -3882,6 +3917,10 @@ struct ec_response_host_event_mask {
 /*
  * Unified host event programming interface - Should be used by newer versions
  * of BIOS/OS to program host events and masks
+ *
+ * EC returns:
+ * - EC_RES_INVALID_PARAM: Action or mask type is unknown.
+ * - EC_RES_ACCESS_DENIED: Action is prohibited for specified mask type.
  */
 
 struct ec_params_host_event {
@@ -4429,6 +4468,7 @@ struct ec_params_charge_state {
 			uint32_t value;		/* value to set */
 		} set_param;
 	};
+	uint8_t chgnum;				/* Version 1 supports chgnum */
 } __ec_todo_packed;
 
 struct ec_response_charge_state {
@@ -4448,6 +4488,7 @@ struct ec_response_charge_state {
 		/* set_param returns no args */
 	};
 } __ec_align4;
+
 
 /*
  * Set maximum battery charging current.
@@ -4777,6 +4818,7 @@ struct ec_response_i2c_passthru_protect {
 	uint8_t status;		/* Status flags (0: unlocked, 1: locked) */
 } __ec_align1;
 
+
 /*****************************************************************************/
 /*
  * HDMI CEC commands
@@ -4982,6 +5024,7 @@ enum ec_codec_i2s_rx_subcmd {
 	EC_CODEC_I2S_RX_SET_SAMPLE_DEPTH = 0x2,
 	EC_CODEC_I2S_RX_SET_DAIFMT = 0x3,
 	EC_CODEC_I2S_RX_SET_BCLK = 0x4,
+	EC_CODEC_I2S_RX_RESET = 0x5,
 	EC_CODEC_I2S_RX_SUBCMD_COUNT,
 };
 
@@ -5095,6 +5138,33 @@ struct __ec_align4 ec_response_ec_codec_wov_read_audio_shm {
 };
 
 /*****************************************************************************/
+/* Commands for PoE PSE controller */
+
+#define EC_CMD_PSE 0x00C0
+
+enum ec_pse_subcmd {
+	EC_PSE_STATUS = 0x0,
+	EC_PSE_ENABLE = 0x1,
+	EC_PSE_DISABLE = 0x2,
+	EC_PSE_SUBCMD_COUNT,
+};
+
+struct __ec_align1 ec_params_pse {
+	uint8_t cmd;	/* enum ec_pse_subcmd */
+	uint8_t port;	/* PSE port */
+};
+
+enum ec_pse_status {
+	EC_PSE_STATUS_DISABLED = 0x0,
+	EC_PSE_STATUS_ENABLED = 0x1,
+	EC_PSE_STATUS_POWERED = 0x2,
+};
+
+struct __ec_align1 ec_response_pse_status {
+	uint8_t status;	/* enum ec_pse_status */
+};
+
+/*****************************************************************************/
 /* System commands */
 
 /*
@@ -5112,7 +5182,7 @@ enum ec_reboot_cmd {
 	EC_REBOOT_COLD = 4,          /* Cold-reboot */
 	EC_REBOOT_DISABLE_JUMP = 5,  /* Disable jump until next reboot */
 	EC_REBOOT_HIBERNATE = 6,     /* Hibernate EC */
-	EC_REBOOT_HIBERNATE_CLEAR_AP_OFF = 7, /* and clears AP_OFF flag */
+	EC_REBOOT_HIBERNATE_CLEAR_AP_OFF = 7, /* and clears AP_IDLE flag */
 };
 
 /* Flags for ec_params_reboot_ec.reboot_flags */
@@ -5221,15 +5291,23 @@ struct ec_response_pd_status {
 #define EC_CMD_PD_HOST_EVENT_STATUS 0x0104
 
 /* PD MCU host event status bits */
-#define PD_EVENT_UPDATE_DEVICE     BIT(0)
-#define PD_EVENT_POWER_CHANGE      BIT(1)
-#define PD_EVENT_IDENTITY_RECEIVED BIT(2)
-#define PD_EVENT_DATA_SWAP         BIT(3)
+#define PD_EVENT_UPDATE_DEVICE		BIT(0)
+#define PD_EVENT_POWER_CHANGE		BIT(1)
+#define PD_EVENT_IDENTITY_RECEIVED	BIT(2)
+#define PD_EVENT_DATA_SWAP		BIT(3)
+#define PD_EVENT_TYPEC			BIT(4)
+
 struct ec_response_host_event_status {
 	uint32_t status;      /* PD MCU host event status */
 } __ec_align4;
 
-/* Set USB type-C port role and muxes */
+/*
+ * Set USB type-C port role and muxes
+ *
+ * Deprecated in favor of TYPEC_STATUS and TYPEC_CONTROL commands.
+ *
+ * TODO(b/169771803): TCPMv2: Remove EC_CMD_USB_PD_CONTROL
+ */
 #define EC_CMD_USB_PD_CONTROL 0x0101
 
 enum usb_pd_control_role {
@@ -5330,7 +5408,8 @@ struct ec_response_usb_pd_control_v2 {
 	uint8_t dp_mode;	/* Current DP pin mode (MODE_DP_PIN_[A-E]) */
 	uint8_t reserved;	/* Reserved for future use */
 	uint8_t control_flags;	/* USB_PD_CTRL_*flags */
-	uint8_t cable_speed;	/* TBT_SS_* cable speed */
+	/* TODO: b:158234949 Add definitions for cable speed */
+	uint8_t cable_speed;	/* USB_R30_SS/TBT_SS_* cable speed */
 	uint8_t cable_gen;	/* TBT_GEN3_* cable rounded support */
 } __ec_align1;
 
@@ -5385,6 +5464,7 @@ struct ec_response_usb_pd_power_info {
 	struct usb_chg_measures meas;
 	uint32_t max_power;
 } __ec_align4;
+
 
 /*
  * This command will return the number of USB PD charge port + the number
@@ -5587,6 +5667,7 @@ struct ec_params_pd_write_log_entry {
 	uint8_t port; /* port#, or 0 for events unrelated to a given port */
 } __ec_align1;
 
+
 /* Control USB-PD chip */
 #define EC_CMD_PD_CONTROL 0x0119
 
@@ -5711,6 +5792,8 @@ enum cbi_data_tag {
 	CBI_TAG_MODEL_ID = 5,      /* uint32_t or smaller */
 	CBI_TAG_FW_CONFIG = 6,     /* uint32_t bit field */
 	CBI_TAG_PCB_SUPPLIER = 7,  /* uint32_t or smaller */
+	/* Second Source Factory Cache */
+	CBI_TAG_SSFC = 8,          /* uint32_t bit field */
 	CBI_TAG_COUNT,
 };
 
@@ -5775,6 +5858,9 @@ struct ec_params_set_cbi {
 #define EC_RESET_FLAG_STAY_IN_RO  BIT(19)  /* Do not select RW in EFS. This
 					    * enables PD in RO for Chromebox.
 					    */
+#define EC_RESET_FLAG_EFS         BIT(20)  /* Jumped to this image by EFS */
+#define EC_RESET_FLAG_AP_IDLE     BIT(21)  /* Leave alone AP */
+#define EC_RESET_FLAG_INITIAL_PWR BIT(22)  /* EC had power, then was reset */
 
 struct ec_response_uptime_info {
 	/*
@@ -5870,6 +5956,7 @@ struct ec_response_rollback_info {
 	int32_t rw_rollback_version;
 } __ec_align4;
 
+
 /* Issue AP reset */
 #define EC_CMD_AP_RESET 0x0125
 
@@ -5910,6 +5997,7 @@ struct ec_params_locate_chip {
 		uint16_t reserved;
 	};
 } __ec_align2;
+
 
 struct ec_response_locate_chip {
 	uint8_t bus_type;	/* enum ec_bus_type */
@@ -6035,6 +6123,7 @@ enum keyboard_button_type {
 
 	KEYBOARD_BUTTON_COUNT
 };
+
 /*****************************************************************************/
 /*
  *  "Get the Keyboard Config". An EC implementing this command is expected to be
@@ -6113,6 +6202,300 @@ struct ec_response_keybd_config {
 
 } __ec_align1;
 
+/*
+ * Configure smart discharge
+ */
+#define EC_CMD_SMART_DISCHARGE 0x012B
+
+#define EC_SMART_DISCHARGE_FLAGS_SET	BIT(0)
+
+/* Discharge rates when the system is in cutoff or hibernation. */
+struct discharge_rate {
+	uint16_t cutoff;  /* Discharge rate (uA) in cutoff */
+	uint16_t hibern;  /* Discharge rate (uA) in hibernation */
+};
+
+struct smart_discharge_zone {
+	/* When the capacity (mAh) goes below this, EC cuts off the battery. */
+	int cutoff;
+	/* When the capacity (mAh) is below this, EC stays up. */
+	int stayup;
+};
+
+struct ec_params_smart_discharge {
+	uint8_t flags;  /* EC_SMART_DISCHARGE_FLAGS_* */
+	/*
+	 * Desired hours for the battery to survive before reaching 0%. Set to
+	 * zero to disable smart discharging. That is, the system hibernates as
+	 * soon as the G3 idle timer expires.
+	 */
+	uint16_t hours_to_zero;
+	/* Set both to zero to keep the current rates. */
+	struct discharge_rate drate;
+};
+
+struct ec_response_smart_discharge {
+	uint16_t hours_to_zero;
+	struct discharge_rate drate;
+	struct smart_discharge_zone dzone;
+};
+
+/*****************************************************************************/
+/* Voltage regulator controls */
+
+/*
+ * Get basic info of voltage regulator for given index.
+ *
+ * Returns the regulator name and supported voltage list in mV.
+ */
+#define EC_CMD_REGULATOR_GET_INFO 0x012C
+
+/* Maximum length of regulator name */
+#define EC_REGULATOR_NAME_MAX_LEN 16
+
+/* Maximum length of the supported voltage list. */
+#define EC_REGULATOR_VOLTAGE_MAX_COUNT 16
+
+struct ec_params_regulator_get_info {
+	uint32_t index;
+} __ec_align4;
+
+struct ec_response_regulator_get_info {
+	char name[EC_REGULATOR_NAME_MAX_LEN];
+	uint16_t num_voltages;
+	uint16_t voltages_mv[EC_REGULATOR_VOLTAGE_MAX_COUNT];
+} __ec_align2;
+
+/*
+ * Configure the regulator as enabled / disabled.
+ */
+#define EC_CMD_REGULATOR_ENABLE 0x012D
+
+struct ec_params_regulator_enable {
+	uint32_t index;
+	uint8_t enable;
+} __ec_align4;
+
+/*
+ * Query if the regulator is enabled.
+ *
+ * Returns 1 if the regulator is enabled, 0 if not.
+ */
+#define EC_CMD_REGULATOR_IS_ENABLED 0x012E
+
+struct ec_params_regulator_is_enabled {
+	uint32_t index;
+} __ec_align4;
+
+struct ec_response_regulator_is_enabled {
+	uint8_t enabled;
+} __ec_align1;
+
+/*
+ * Set voltage for the voltage regulator within the range specified.
+ *
+ * The driver should select the voltage in range closest to min_mv.
+ *
+ * Also note that this might be called before the regulator is enabled, and the
+ * setting should be in effect after the regulator is enabled.
+ */
+#define EC_CMD_REGULATOR_SET_VOLTAGE 0x012F
+
+struct ec_params_regulator_set_voltage {
+	uint32_t index;
+	uint32_t min_mv;
+	uint32_t max_mv;
+} __ec_align4;
+
+/*
+ * Get the currently configured voltage for the voltage regulator.
+ *
+ * Note that this might be called before the regulator is enabled, and this
+ * should return the configured output voltage if the regulator is enabled.
+ */
+#define EC_CMD_REGULATOR_GET_VOLTAGE 0x0130
+
+struct ec_params_regulator_get_voltage {
+	uint32_t index;
+} __ec_align4;
+
+struct ec_response_regulator_get_voltage {
+	uint32_t voltage_mv;
+} __ec_align4;
+
+/*
+ * Gather all discovery information for the given port and partner type.
+ *
+ * Note that if discovery has not yet completed, only the currently completed
+ * responses will be filled in.   If the discovery data structures are changed
+ * in the process of the command running, BUSY will be returned.
+ *
+ * VDO field sizes are set to the maximum possible number of VDOs a VDM may
+ * contain, while the number of SVIDs here is selected to fit within the PROTO2
+ * maximum parameter size.
+ */
+#define EC_CMD_TYPEC_DISCOVERY 0x0131
+
+enum typec_partner_type {
+	TYPEC_PARTNER_SOP = 0,
+	TYPEC_PARTNER_SOP_PRIME = 1,
+};
+
+struct ec_params_typec_discovery {
+	uint8_t port;
+	uint8_t partner_type; /* enum typec_partner_type */
+} __ec_align1;
+
+struct svid_mode_info {
+	uint16_t svid;
+	uint16_t mode_count;  /* Number of modes partner sent */
+	uint32_t mode_vdo[6]; /* Max VDOs allowed after VDM header is 6 */
+};
+
+struct ec_response_typec_discovery {
+	uint8_t identity_count;    /* Number of identity VDOs partner sent */
+	uint8_t svid_count;	   /* Number of SVIDs partner sent */
+	uint16_t reserved;
+	uint32_t discovery_vdo[6]; /* Max VDOs allowed after VDM header is 6 */
+	struct svid_mode_info svids[0];
+} __ec_align1;
+
+/* USB Type-C commands for AP-controlled device policy. */
+#define EC_CMD_TYPEC_CONTROL 0x0132
+
+enum typec_control_command {
+	TYPEC_CONTROL_COMMAND_EXIT_MODES,
+	TYPEC_CONTROL_COMMAND_CLEAR_EVENTS,
+};
+
+struct ec_params_typec_control {
+	uint8_t port;
+	uint8_t command;	/* enum typec_control_command */
+	uint16_t reserved;
+
+	/*
+	 * This section will be interpreted based on |command|. Define a
+	 * placeholder structure to avoid having to increase the size and bump
+	 * the command version when adding new sub-commands.
+	 */
+	union {
+		uint32_t clear_events_mask;
+		uint8_t placeholder[128];
+	};
+} __ec_align1;
+
+/*
+ * Gather all status information for a port.
+ *
+ * Note: this covers many of the return fields from the deprecated
+ * EC_CMD_USB_PD_CONTROL command, except those that are redundant with the
+ * discovery data.  The "enum pd_cc_states" is defined with the deprecated
+ * EC_CMD_USB_PD_CONTROL command.
+ *
+ * This also combines in the EC_CMD_USB_PD_MUX_INFO flags.
+ *
+ * Version 0 of command is under development
+ * TODO(b/167700356): Remove this statement when version 0 is finalized
+ */
+#define EC_CMD_TYPEC_STATUS 0x0133
+
+/*
+ * Power role.
+ *
+ * Note this is also used for PD header creation, and values align to those in
+ * the Power Delivery Specification Revision 3.0 (See
+ * 6.2.1.1.4 Port Power Role).
+ */
+enum pd_power_role {
+	PD_ROLE_SINK = 0,
+	PD_ROLE_SOURCE = 1
+};
+
+/*
+ * Data role.
+ *
+ * Note this is also used for PD header creation, and the first two values
+ * align to those in the Power Delivery Specification Revision 3.0 (See
+ * 6.2.1.1.6 Port Data Role).
+ */
+enum pd_data_role {
+	PD_ROLE_UFP = 0,
+	PD_ROLE_DFP = 1,
+	PD_ROLE_DISCONNECTED = 2,
+};
+
+enum pd_vconn_role {
+	PD_ROLE_VCONN_OFF = 0,
+	PD_ROLE_VCONN_SRC = 1,
+};
+
+/*
+ * Note: BIT(0) may be used to determine whether the polarity is CC1 or CC2,
+ * regardless of whether a debug accessory is connected.
+ */
+enum tcpc_cc_polarity {
+	/*
+	 * _CCx: is used to indicate the polarity while not connected to
+	 * a Debug Accessory.  Only one CC line will assert a resistor and
+	 * the other will be open.
+	 */
+	POLARITY_CC1 = 0,
+	POLARITY_CC2 = 1,
+
+	/*
+	 * _CCx_DTS is used to indicate the polarity while connected to a
+	 * SRC Debug Accessory.  Assert resistors on both lines.
+	 */
+	POLARITY_CC1_DTS = 2,
+	POLARITY_CC2_DTS = 3,
+
+	/*
+	 * The current TCPC code relies on these specific POLARITY values.
+	 * Adding in a check to verify if the list grows for any reason
+	 * that this will give a hint that other places need to be
+	 * adjusted.
+	 */
+	POLARITY_COUNT
+};
+
+#define MODE_DP_PIN_A	BIT(0)
+#define MODE_DP_PIN_B	BIT(1)
+#define MODE_DP_PIN_C	BIT(2)
+#define MODE_DP_PIN_D	BIT(3)
+#define MODE_DP_PIN_E	BIT(4)
+#define MODE_DP_PIN_F	BIT(5)
+#define MODE_DP_PIN_ALL	GENMASK(5, 0)
+
+#define PD_STATUS_EVENT_SOP_DISC_DONE		BIT(0)
+#define PD_STATUS_EVENT_SOP_PRIME_DISC_DONE	BIT(1)
+
+struct ec_params_typec_status {
+	uint8_t port;
+} __ec_align1;
+
+struct ec_response_typec_status {
+	uint8_t pd_enabled;	/* PD communication enabled - bool */
+	uint8_t dev_connected;	/* Device connected - bool */
+	uint8_t sop_connected;	/* Device is SOP PD capable - bool */
+	uint8_t reserved1;	/* Reserved for future use */
+
+	uint8_t power_role;	/* enum pd_power_role */
+	uint8_t data_role;	/* enum pd_data_role */
+	uint8_t vconn_role;	/* enum pd_vconn_role */
+	uint8_t reserved2;	/* Reserved for future use */
+
+	uint8_t polarity;	/* enum tcpc_cc_polarity */
+	uint8_t cc_state;	/* enum pd_cc_states */
+	uint8_t dp_pin;		/* DP pin mode (MODE_DP_IN_[A-E]) */
+	uint8_t mux_state;	/* USB_PD_MUX* - encoded USB mux state */
+
+	char tc_state[32];	/* TC state name */
+
+	uint32_t events;	/* PD_STATUS_EVENT bitmask */
+
+	/* TODO(b/167700356): Add revisions and source cap PDOs */
+} __ec_align1;
+
 /*****************************************************************************/
 /* The command range 0x200-0x2FF is reserved for Rotor. */
 
@@ -6156,6 +6539,8 @@ struct ec_params_fp_passthru {
 #define FP_MODE_MATCH          BIT(6)
 /* Reset and re-initialize the sensor. */
 #define FP_MODE_RESET_SENSOR   BIT(7)
+/* Sensor maintenance for dead pixels. */
+#define FP_MODE_SENSOR_MAINTENANCE BIT(8)
 /* special value: don't change anything just read back current mode */
 #define FP_MODE_DONT_CHANGE    BIT(31)
 
@@ -6167,6 +6552,7 @@ struct ec_params_fp_passthru {
 			FP_MODE_ENROLL_IMAGE   | \
 			FP_MODE_MATCH          | \
 			FP_MODE_RESET_SENSOR   | \
+			FP_MODE_SENSOR_MAINTENANCE | \
 			FP_MODE_DONT_CHANGE)
 
 /* Capture types defined in bits [30..28] */

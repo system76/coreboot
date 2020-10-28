@@ -115,7 +115,7 @@ static void pch_pirq_init(struct device *dev)
 	 */
 
 	for (irq_dev = all_devices; irq_dev; irq_dev = irq_dev->next) {
-		u8 int_pin=0, int_line=0;
+		u8 int_pin = 0, int_line = 0;
 
 		if (!irq_dev->enabled || irq_dev->path.type != DEVICE_PATH_PCI)
 			continue;
@@ -138,10 +138,8 @@ static void pch_pirq_init(struct device *dev)
 	}
 }
 
-static void pch_gpi_routing(struct device *dev)
+static void pch_gpi_routing(struct device *dev, config_t *config)
 {
-	/* Get the chip configuration */
-	config_t *config = dev->chip_info;
 	u32 reg32 = 0;
 
 	/* An array would be much nicer here, or some
@@ -173,8 +171,6 @@ static void pch_power_options(struct device *dev)
 	u16 reg16;
 	u32 reg32;
 	const char *state;
-	/* Get the chip configuration */
-	config_t *config = dev->chip_info;
 	u16 pmbase = get_pmbase();
 	int pwr_on = CONFIG_MAINBOARD_POWER_FAILURE_STATE;
 	int nmi_option;
@@ -243,19 +239,23 @@ static void pch_power_options(struct device *dev)
 	reg16 &= ~(1 << 10);	// Disable BIOS_PCI_EXP_EN for native PME
 	pci_write_config16(dev, GEN_PMCON_1, reg16);
 
-	/*
-	 * Set the board's GPI routing on LynxPoint-H.
-	 * This is done as part of GPIO configuration on LynxPoint-LP.
-	 */
-	if (pch_is_lp())
-		pch_gpi_routing(dev);
+	if (dev->chip_info) {
+		config_t *config = dev->chip_info;
 
-	/* GPE setup based on device tree configuration */
-	enable_all_gpe(config->gpe0_en_1, config->gpe0_en_2,
-		       config->gpe0_en_3, config->gpe0_en_4);
+		/*
+		 * Set the board's GPI routing on LynxPoint-H.
+		 * This is done as part of GPIO configuration on LynxPoint-LP.
+		 */
+		if (pch_is_lp())
+			pch_gpi_routing(dev, config);
 
-	/* SMI setup based on device tree configuration */
-	enable_alt_smi(config->alt_gp_smi_en);
+		/* GPE setup based on device tree configuration */
+		enable_all_gpe(config->gpe0_en_1, config->gpe0_en_2,
+			       config->gpe0_en_3, config->gpe0_en_4);
+
+		/* SMI setup based on device tree configuration */
+		enable_alt_smi(config->alt_gp_smi_en);
+	}
 
 	/* Set up power management block and determine sleep mode */
 	reg32 = inl(pmbase + 0x04); // PM1_CNT
@@ -265,7 +265,7 @@ static void pch_power_options(struct device *dev)
 
 	/* Clear magic status bits to prevent unexpected wake */
 	reg32 = RCBA32(0x3310);
-	reg32 |= (1 << 4)|(1 << 5)|(1 << 0);
+	reg32 |= (1 << 4) | (1 << 5) | (1 << 0);
 	RCBA32(0x3310) = reg32;
 
 	reg16 = RCBA16(0x3f02);
@@ -345,10 +345,10 @@ static void lpt_lp_pm_init(struct device *dev)
 	/* Set RCBA CIR28 0x3A84 based on SATA port enables */
 	data = 0x00001005;
 	/* Port 3 and 2 disabled */
-	if ((config->sata_port_map & ((1 << 3)|(1 << 2))) == 0)
+	if (config && (config->sata_port_map & ((1 << 3) | (1 << 2))) == 0)
 		data |= (1 << 24) | (1 << 26);
 	/* Port 1 and 0 disabled */
-	if ((config->sata_port_map & ((1 << 1)|(1 << 0))) == 0)
+	if (config && (config->sata_port_map & ((1 << 1) | (1 << 0))) == 0)
 		data |= (1 << 20) | (1 << 18);
 	RCBA32(0x3a84) = data;
 
@@ -446,7 +446,7 @@ static void enable_lp_clock_gating(struct device *dev)
 		reg32 &= ~(1 << 29); // LPC Dynamic
 	else
 		reg32 |= (1 << 29); // LPC Dynamic
-	reg32 |= (1UL << 31); // LP LPC
+	reg32 |= (1 << 31); // LP LPC
 	reg32 |= (1 << 30); // LP BLA
 	reg32 |= (1 << 28); // GPIO Dynamic
 	reg32 |= (1 << 27); // HPET Dynamic
@@ -489,7 +489,7 @@ static void pch_fixups(struct device *dev)
 	 * Enable DMI ASPM in the PCH
 	 */
 	RCBA32_AND_OR(0x2304, ~(1 << 10), 0);
-	RCBA32_OR(0x21a4, (1 << 11)|(1 << 10));
+	RCBA32_OR(0x21a4, (1 << 11) | (1 << 10));
 	RCBA32_OR(0x21a8, 0x3);
 }
 
@@ -565,7 +565,7 @@ static void pch_lpc_add_mmio_resources(struct device *dev)
 		res->base = (resource_t)(uintptr_t)DEFAULT_RCBA;
 		res->size = 16 * 1024;
 		res->flags = IORESOURCE_MEM | IORESOURCE_ASSIGNED |
-		             IORESOURCE_FIXED | IORESOURCE_RESERVE;
+			     IORESOURCE_FIXED | IORESOURCE_RESERVE;
 	}
 
 	/* Check LPC Memory Decode register. */
@@ -577,7 +577,7 @@ static void pch_lpc_add_mmio_resources(struct device *dev)
 			res->base = reg;
 			res->size = 16 * 1024;
 			res->flags = IORESOURCE_MEM | IORESOURCE_ASSIGNED |
-			             IORESOURCE_FIXED | IORESOURCE_RESERVE;
+				     IORESOURCE_FIXED | IORESOURCE_RESERVE;
 		}
 	}
 }
@@ -636,7 +636,6 @@ static void pch_lpc_add_gen_io_resources(struct device *dev, int reg_value,
 static void pch_lpc_add_io_resources(struct device *dev)
 {
 	struct resource *res;
-	config_t *config = dev->chip_info;
 
 	/* Add the default claimed IO range for the LPC device. */
 	res = new_resource(dev, 0);
@@ -645,17 +644,19 @@ static void pch_lpc_add_io_resources(struct device *dev)
 	res->flags = IORESOURCE_IO | IORESOURCE_ASSIGNED | IORESOURCE_FIXED;
 
 	/* GPIOBASE */
-	pch_lpc_add_io_resource(dev, get_gpiobase(), DEFAULT_GPIOSIZE,
-	                        GPIO_BASE);
+	pch_lpc_add_io_resource(dev, get_gpiobase(), DEFAULT_GPIOSIZE, GPIO_BASE);
 
 	/* PMBASE */
 	pch_lpc_add_io_resource(dev, get_pmbase(), 256, PMBASE);
 
 	/* LPC Generic IO Decode range. */
-	pch_lpc_add_gen_io_resources(dev, config->gen1_dec, LPC_GEN1_DEC);
-	pch_lpc_add_gen_io_resources(dev, config->gen2_dec, LPC_GEN2_DEC);
-	pch_lpc_add_gen_io_resources(dev, config->gen3_dec, LPC_GEN3_DEC);
-	pch_lpc_add_gen_io_resources(dev, config->gen4_dec, LPC_GEN4_DEC);
+	if (dev->chip_info) {
+		config_t *config = dev->chip_info;
+		pch_lpc_add_gen_io_resources(dev, config->gen1_dec, LPC_GEN1_DEC);
+		pch_lpc_add_gen_io_resources(dev, config->gen2_dec, LPC_GEN2_DEC);
+		pch_lpc_add_gen_io_resources(dev, config->gen3_dec, LPC_GEN3_DEC);
+		pch_lpc_add_gen_io_resources(dev, config->gen4_dec, LPC_GEN4_DEC);
+	}
 }
 
 static void pch_lpc_read_resources(struct device *dev)
@@ -716,7 +717,7 @@ void southbridge_inject_dsdt(const struct device *dev)
 
 		/* Add it to DSDT.  */
 		acpigen_write_scope("\\");
-		acpigen_write_name_dword("NVSA", (u32) gnvs);
+		acpigen_write_name_dword("NVSA", (u32)gnvs);
 		acpigen_pop_len();
 	}
 }
@@ -749,7 +750,7 @@ static unsigned long southbridge_write_acpi_tables(const struct device *device,
 	 */
 	printk(BIOS_DEBUG, "ACPI:    * HPET\n");
 
-	hpet = (acpi_hpet_t *) current;
+	hpet = (acpi_hpet_t *)current;
 	current += sizeof(acpi_hpet_t);
 	current = acpi_align_current(current);
 	acpi_create_intel_hpet(hpet);

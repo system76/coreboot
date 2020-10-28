@@ -126,8 +126,6 @@ chip soc/intel/cannonlake
 	# Thermal
 	register "tcc_offset" = "6"     # TCC of 94C
 
-	# Enable "Intel Speed Shift Technology"
-	register "speed_shift_enable" = "1"
 
 	# Disable S0ix
 	register "s0ix_enable" = "0"
@@ -166,7 +164,7 @@ chip soc/intel/cannonlake
 		device pci 02.0 on      # Integrated Graphics Device
 			register "InternalGfx" = "1"
 		end
-		chip drivers/intel/wifi
+		chip drivers/wifi/generic
 			register "wake" = "PME_B0_EN_BIT"
 			device pci 14.3 on  end # CNVi wifi
 		end

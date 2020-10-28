@@ -8,6 +8,7 @@ config BOARD_GOOGLE_BASEBOARD_VOLTEER
 	select DRIVERS_I2C_SX9310
 	select DRIVERS_INTEL_DPTF
 	select DRIVERS_INTEL_PMC
+	select DRIVERS_INTEL_USB4_RETIMER
 	select DRIVERS_I2C_MAX98373
 	select DRIVERS_INTEL_SOUNDWIRE
 	select DRIVERS_SPI_ACPI
@@ -92,6 +93,7 @@ config MAINBOARD_PART_NUMBER
 	default "Volteer2" if BOARD_GOOGLE_VOLTEER2
 	default "Voxel" if BOARD_GOOGLE_VOXEL
 	default "Boldar" if BOARD_GOOGLE_BOLDAR
+	default "Elemi" if BOARD_GOOGLE_ELEMI
 
 config MAX_CPUS
 	int
@@ -129,6 +131,7 @@ config VARIANT_DIR
 	default "volteer2" if BOARD_GOOGLE_VOLTEER2
 	default "voxel" if BOARD_GOOGLE_VOXEL
 	default "boldar" if BOARD_GOOGLE_BOLDAR
+	default "elemi" if BOARD_GOOGLE_ELEMI
 
 config VARIANT_HAS_MIPI_CAMERA
 	bool

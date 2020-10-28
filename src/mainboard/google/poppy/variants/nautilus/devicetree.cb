@@ -268,7 +268,6 @@ chip soc/intel/skylake
 		[PchSerialIoIndexUart2] = PchSerialIoSkipInit,
 	}"
 
-	register "speed_shift_enable" = "1"
 	# PL2 override 15W for KBL-Y
 	register "power_limits_config" = "{
 		.tdp_pl2_override = 15,
@@ -388,7 +387,7 @@ chip soc/intel/skylake
 			end
 		end # I2C #4
 		device pci 1c.0 on
-			chip drivers/intel/wifi
+			chip drivers/wifi/generic
 				register "wake" = "GPE0_DW0_00"
 				device pci 00.0 on end
 			end

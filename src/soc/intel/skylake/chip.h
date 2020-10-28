@@ -262,7 +262,15 @@ struct soc_intel_skylake_config {
 		AspmL1,
 		AspmL0sL1,
 		AspmAutoConfig,
-	} PcieRpAspm[CONFIG_MAX_ROOT_PORTS];
+	} pcie_rp_aspm[CONFIG_MAX_ROOT_PORTS];
+
+	/* PCIe RP L1 substate */
+	enum {
+		L1SS_Default,
+		L1SS_Disabled,
+		L1SS_L1_1,
+		L1SS_L1_2,
+	} pcie_rp_l1substates[CONFIG_MAX_ROOT_PORTS];
 
 	/* USB related */
 	struct usb2_port_config usb2_ports[16];
@@ -453,8 +461,7 @@ struct soc_intel_skylake_config {
 	 */
 	u8 HeciEnabled;
 	u8 PmTimerDisabled;
-	/* Intel Speed Shift Technology */
-	u8 speed_shift_enable;
+
 	/*
 	 * Enable VR specific mailbox command
 	 * 000b - Don't Send any VR command

@@ -20,6 +20,14 @@
 
 #include "registers/host_bridge.h"
 
+/* Device 0:1.0 PCI configuration space (PCIe Graphics) */
+
+#define PEG_DCAP2	0xc4	/* 32bit */
+
+#define PEG_ESD		0x144	/* 32bit */
+#define PEG_LE1D	0x150	/* 32bit */
+#define PEG_LE1A	0x158	/* 64bit */
+
 /* Device 0:2.0 PCI configuration space (Graphics Device) */
 
 #define MSAC		0x62	/* Multi Size Aperture Control */
@@ -59,6 +67,7 @@
 #define EPBAR8(x)  *((volatile u8  *)(DEFAULT_EPBAR + (x)))
 #define EPBAR16(x) *((volatile u16 *)(DEFAULT_EPBAR + (x)))
 #define EPBAR32(x) *((volatile u32 *)(DEFAULT_EPBAR + (x)))
+#define EPBAR64(x) *((volatile u64 *)(DEFAULT_EPBAR + (x)))
 
 #include "registers/epbar.h"
 
@@ -69,6 +78,7 @@
 #define DMIBAR8(x)  *((volatile u8  *)(DEFAULT_DMIBAR + (x)))
 #define DMIBAR16(x) *((volatile u16 *)(DEFAULT_DMIBAR + (x)))
 #define DMIBAR32(x) *((volatile u32 *)(DEFAULT_DMIBAR + (x)))
+#define DMIBAR64(x) *((volatile u64 *)(DEFAULT_DMIBAR + (x)))
 
 #include "registers/dmibar.h"
 
@@ -80,7 +90,6 @@ void mb_late_romstage_setup(void); /* optional */
 
 void haswell_early_initialization(void);
 void haswell_late_initialization(void);
-void set_translation_table(int start, int end, u64 base, int inc);
 void haswell_unhide_peg(void);
 
 void report_platform_info(void);

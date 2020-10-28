@@ -6,7 +6,6 @@
  * Chapter number: 4, 29
  */
 
-#include <arch/io.h>
 #include <device/mmio.h>
 #include <bootstate.h>
 #include <console/console.h>
@@ -50,10 +49,6 @@ static void pch_finalize(void)
 	config = config_of_soc();
 	if (config->PmTimerDisabled)
 		pmc_disable_acpi_timer();
-
-	/* Disable XTAL shutdown qualification for low power idle. */
-	if (config->s0ix_enable)
-		pmc_ignore_xtal_shutdown();
 
 	pmc_clear_pmcon_sts();
 }

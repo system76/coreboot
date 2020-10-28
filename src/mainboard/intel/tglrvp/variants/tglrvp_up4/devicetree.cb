@@ -20,7 +20,7 @@ chip soc/intel/tigerlake
 	register "SmbusEnable" = "1"
 
 	register "usb2_ports[0]" = "USB2_PORT_MID(OC3)"		# Type-C Port1
-	register "usb2_ports[1]" = "USB2_PORT_MID(OC_SKIP)"	# M.2 WWAN
+	register "usb2_ports[1]" = "USB2_PORT_EMPTY"		# M.2 WWAN
 	register "usb2_ports[2]" = "USB2_PORT_MID(OC0)"		# M.2 Bluetooth, USB3/2 Type A Port1
 	register "usb2_ports[3]" = "USB2_PORT_MID(OC3)"		# USB3/2 Type A Port 1
 	register "usb2_ports[4]" = "USB2_PORT_MID(OC3)"		# Type-C Port2
@@ -118,9 +118,6 @@ chip soc/intel/tigerlake
 	# TCSS USB3
 	register "TcssXhciEn" = "1"
 	register "TcssAuxOri" = "0"
-
-	# Enable "Intel Speed Shift Technology"
-	register "speed_shift_enable" = "1"
 
 	# Enable S0ix
 	register "s0ix_enable" = "1"
@@ -234,7 +231,7 @@ chip soc/intel/tigerlake
 		device pci 14.0 on  end # USB3.1 xHCI		0xA0ED
 		device pci 14.1 on  end # USB3.1 xDCI		0xA0EE
 		device pci 14.2 on  end # Shared RAM		0xA0EF
-		chip drivers/intel/wifi
+		chip drivers/wifi/generic
 			register "wake" = "GPE0_PME_B0"
 			device pci 14.3 on end # CNVi: WiFi		0xA0F0 - A0F3
 		end

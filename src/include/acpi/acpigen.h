@@ -158,6 +158,10 @@ enum {
 					  .name = X, \
 					  .bits = Y, \
 					}
+#define FIELDLIST_RESERVED(X)		{ .type = RESERVED, \
+					  .name = "", \
+					  .bits = X, \
+					}
 
 #define FIELD_ANYACC			0
 #define FIELD_BYTEACC			1
@@ -174,6 +178,7 @@ enum {
 enum field_type {
 	OFFSET,
 	NAME_STRING,
+	RESERVED,
 	FIELD_TYPE_MAX,
 };
 
@@ -356,6 +361,8 @@ void acpigen_write_power_res(const char *name, uint8_t level, uint16_t order,
 			     const char * const dev_states[], size_t dev_states_count);
 void acpigen_write_sleep(uint64_t sleep_ms);
 void acpigen_write_store(void);
+void acpigen_write_store_int_to_namestr(uint64_t src, const char *dst);
+void acpigen_write_store_int_to_op(uint64_t src, uint8_t dst);
 void acpigen_write_store_ops(uint8_t src, uint8_t dst);
 void acpigen_write_store_op_to_namestr(uint8_t src, const char *dst);
 void acpigen_write_or(uint8_t arg1, uint8_t arg2, uint8_t res);
@@ -371,6 +378,7 @@ void acpigen_write_if_lequal_op_op(uint8_t op, uint8_t val);
 void acpigen_write_if_lequal_op_int(uint8_t op, uint64_t val);
 void acpigen_write_if_lequal_namestr_int(const char *namestr, uint64_t val);
 void acpigen_write_else(void);
+void acpigen_write_shiftleft_op_int(uint8_t src_result, uint64_t count);
 void acpigen_write_to_buffer(uint8_t src, uint8_t dst);
 void acpigen_write_to_integer(uint8_t src, uint8_t dst);
 void acpigen_write_to_integer_from_namestring(const char *source, uint8_t dst_op);
@@ -421,7 +429,7 @@ void acpigen_write_rom(void *bios, const size_t length);
  * This function takes input region name, region space, region offset & region
  * length.
  */
-void acpigen_write_opregion(struct opregion *opreg);
+void acpigen_write_opregion(const struct opregion *opreg);
 /*
  * Generate ACPI AML code for Mutex
  * This function takes mutex name and initial value.
@@ -491,8 +499,8 @@ int acpigen_soc_clear_tx_gpio(unsigned int gpio_num);
  *
  * Returns 0 on success and -1 on error.
  */
-int acpigen_enable_tx_gpio(struct acpi_gpio *gpio);
-int acpigen_disable_tx_gpio(struct acpi_gpio *gpio);
+int acpigen_enable_tx_gpio(const struct acpi_gpio *gpio);
+int acpigen_disable_tx_gpio(const struct acpi_gpio *gpio);
 
 /*
  *  Helper function for getting a RX GPIO value based on the GPIO polarity.
@@ -500,7 +508,7 @@ int acpigen_disable_tx_gpio(struct acpi_gpio *gpio);
  *  This function ends up calling acpigen_soc_get_rx_gpio to make callbacks
  *  into SoC acpigen code
  */
-void acpigen_get_rx_gpio(struct acpi_gpio *gpio);
+void acpigen_get_rx_gpio(const struct acpi_gpio *gpio);
 
 /*
  *  Helper function for getting a TX GPIO value based on the GPIO polarity.
@@ -508,7 +516,7 @@ void acpigen_get_rx_gpio(struct acpi_gpio *gpio);
  *  This function ends up calling acpigen_soc_get_tx_gpio to make callbacks
  *  into SoC acpigen code
  */
-void acpigen_get_tx_gpio(struct acpi_gpio *gpio);
+void acpigen_get_tx_gpio(const struct acpi_gpio *gpio);
 
 /* refer to ACPI 6.4.3.5.3 Word Address Space Descriptor section for details */
 void acpigen_resource_word(u16 res_type, u16 gen_flags, u16 type_flags, u16 gran,

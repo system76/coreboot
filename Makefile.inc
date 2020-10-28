@@ -80,7 +80,7 @@ subdirs-y := src/lib src/commonlib/ src/console src/device src/acpi
 subdirs-y += src/ec/acpi $(wildcard src/ec/*/*) $(wildcard src/southbridge/*/*)
 subdirs-y += $(wildcard src/soc/*/*) $(wildcard src/northbridge/*/*)
 subdirs-y += src/superio
-subdirs-y += $(wildcard src/drivers/*) $(wildcard src/drivers/*/*)
+subdirs-y += $(wildcard src/drivers/*) $(wildcard src/drivers/*/*) $(wildcard src/drivers/*/*/*)
 subdirs-y += src/cpu src/vendorcode
 subdirs-y += util/cbfstool util/sconfig util/nvramtool util/pgtblgen util/amdfwtool
 subdirs-y += util/futility util/marvell util/bincfg util/supermicro
@@ -610,6 +610,12 @@ SCONFIG_OPTIONS += --output_c=$(DEVICETREE_STATIC_C)
 
 DEVICETREE_STATIC_H := $(obj)/static.h
 SCONFIG_OPTIONS += --output_h=$(DEVICETREE_STATIC_H)
+
+DEVICETREE_DEVICENAMES_H := $(obj)/static_devices.h
+SCONFIG_OPTIONS += --output_d=$(DEVICETREE_DEVICENAMES_H)
+
+DEVICETREE_FWCONFIG_H := $(obj)/static_fw_config.h
+SCONFIG_OPTIONS += --output_f=$(DEVICETREE_FWCONFIG_H)
 
 $(DEVICETREE_STATIC_C): $(DEVICETREE_FILE) $(OVERRIDE_DEVICETREE_FILE) $(CHIPSET_DEVICETREE_FILE) $(objutil)/sconfig/sconfig
 	@printf "    SCONFIG    $(subst $(src)/,,$(<))\n"

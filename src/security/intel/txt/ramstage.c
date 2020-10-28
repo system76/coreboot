@@ -8,10 +8,12 @@
 #include <console/console.h>
 #include <cpu/intel/common/common.h>
 #include <cpu/x86/msr.h>
+#include <cpu/x86/smm.h>
 #include <device/pci_ops.h>
 #include <types.h>
 
 #include "txt.h"
+#include "txt_platform.h"
 #include "txt_register.h"
 #include "txt_getsec.h"
 
@@ -149,29 +151,33 @@ static void init_intel_txt(void *unused)
 		return;
 	}
 
-	printk(BIOS_INFO, "TEE-TXT: Testing BIOS ACM calling code...\n");
+	if (CONFIG(INTEL_TXT_TEST_BIOS_ACM_CALLING_CODE)) {
+		printk(BIOS_INFO, "TEE-TXT: Testing BIOS ACM calling code...\n");
 
-	/*
-	 * Test BIOS ACM code.
-	 * ACM should do nothing on reserved functions, and return an error code
-	 * in TXT_BIOSACM_ERRORCODE. Tests showed that this is not true.
-	 * Use special function "NOP" that does 'nothing'.
-	 */
-	if (intel_txt_run_bios_acm(ACMINPUT_NOP) < 0) {
-		printk(BIOS_ERR, "TEE-TXT: Error calling BIOS ACM with NOP function.\n");
-		return;
+		/*
+		 * Test BIOS ACM code.
+		 * ACM should do nothing on reserved functions, and return an error code
+		 * in TXT_BIOSACM_ERRORCODE. Tests showed that this is not true.
+		 * Use special function "NOP" that does 'nothing'.
+		 */
+		if (intel_txt_run_bios_acm(ACMINPUT_NOP) < 0) {
+			printk(BIOS_ERR,
+				"TEE-TXT: Error calling BIOS ACM with NOP function.\n");
+			return;
+		}
 	}
 
 	if (status & (ACMSTS_BIOS_TRUSTED | ACMSTS_IBB_MEASURED)) {
+		printk(BIOS_INFO, "TEE-TXT: Logging IBB measurements...\n");
 		log_ibb_measurements();
+	}
 
-		int s3resume = acpi_is_wakeup_s3();
-		if (!s3resume) {
-			printk(BIOS_INFO, "TEE-TXT: Scheck...\n");
-			if (intel_txt_run_bios_acm(ACMINPUT_SCHECK) < 0) {
-				printk(BIOS_ERR, "TEE-TXT: Error calling BIOS ACM.\n");
-				return;
-			}
+	int s3resume = acpi_is_wakeup_s3();
+	if (!s3resume) {
+		printk(BIOS_INFO, "TEE-TXT: Scheck...\n");
+		if (intel_txt_run_bios_acm(ACMINPUT_SCHECK) < 0) {
+			printk(BIOS_ERR, "TEE-TXT: Error calling BIOS ACM.\n");
+			return;
 		}
 	}
 }
@@ -192,73 +198,8 @@ static void push_sinit_heap(u8 **heap_ptr, void *data, size_t data_length)
 	}
 }
 
-/**
- * Finalize the TXT device.
- *
- * - Lock TXT register.
- * - Protect TSEG using DMA protected regions.
- * - Setup TXT regions.
- * - Place SINIT ACM in TXT_SINIT memory segment.
- * - Fill TXT BIOSDATA region.
- */
-static void lockdown_intel_txt(void *unused)
+static void txt_initialize_heap(void)
 {
-	const uint64_t status = read64((void *)TXT_SPAD);
-	uintptr_t tseg = 0;
-
-	if (status & ACMSTS_TXT_DISABLED)
-		return;
-
-	printk(BIOS_INFO, "TEE-TXT: Locking TEE...\n");
-
-	/* Lock TXT config, unlocks TXT_HEAP_BASE */
-	if (intel_txt_run_bios_acm(ACMINPUT_LOCK_CONFIG) < 0) {
-		printk(BIOS_ERR, "TEE-TXT: Failed to lock registers.\n");
-		printk(BIOS_ERR, "TEE-TXT: SINIT won't be supported.\n");
-		return;
-	}
-
-	/*
-	 * Document Number: 558294
-	 * Chapter 5.5.6.1 DMA Protection Memory Region
-	 */
-
-	const u8 dpr_capable = !!(read64((void *)TXT_CAPABILITIES) &
-				  TXT_CAPABILITIES_DPR);
-	printk(BIOS_INFO, "TEE-TXT: DPR capable %x\n", dpr_capable);
-
-	if (dpr_capable) {
-		/* Protect 3 MiB below TSEG and lock register */
-		union dpr_register dpr = {
-			.lock = 1,
-			.size = 3,
-			.top  = tseg,
-		};
-		write64((void *)TXT_DPR, dpr.raw);
-
-		// DPR TODO: implement SA_ENABLE_DPR in the intelblocks
-
-		printk(BIOS_INFO, "TEE-TXT: TXT.DPR 0x%08x\n",
-		       read32((void *)TXT_DPR));
-	}
-
-	/*
-	 * Document Number: 558294
-	 * Chapter 5.5.6.3 Intel TXT Heap Memory Region
-	 */
-	write64((void *)TXT_HEAP_SIZE, 0xE0000);
-	write64((void *)TXT_HEAP_BASE,
-		ALIGN_DOWN((tseg * MiB) - read64((void *)TXT_HEAP_SIZE), 4096));
-
-	/*
-	 * Document Number: 558294
-	 * Chapter 5.5.6.2 SINIT Memory Region
-	 */
-	write64((void *)TXT_SINIT_SIZE, 0x20000);
-	write64((void *)TXT_SINIT_BASE,
-		ALIGN_DOWN(read64((void *)TXT_HEAP_BASE) -
-			   read64((void *)TXT_SINIT_SIZE), 4096));
-
 	/*
 	 * BIOS Data Format
 	 * Chapter C.2
@@ -266,6 +207,7 @@ static void lockdown_intel_txt(void *unused)
 	 */
 	struct {
 		struct txt_biosdataregion bdr;
+		struct txt_bios_spec_ver_element spec;
 		struct txt_heap_acm_element heap_acm;
 		struct txt_extended_data_element_header end;
 	} __packed data = {0};
@@ -318,6 +260,13 @@ static void lockdown_intel_txt(void *unused)
 	data.bdr.support_acpi_ppi = 0;
 	data.bdr.platform_type = 0;
 
+	/* Fill in the version of the used TXT BIOS Specification */
+	data.spec.header.type = HEAP_EXTDATA_TYPE_BIOS_SPEC_VER;
+	data.spec.header.size = sizeof(data.spec);
+	data.spec.ver_major = 2;
+	data.spec.ver_minor = 1;
+	data.spec.ver_revision = 0;
+
 	/* Extended elements - ACM addresses */
 	data.heap_acm.header.type = HEAP_EXTDATA_TYPE_ACM;
 	data.heap_acm.header.size = sizeof(data.heap_acm);
@@ -352,6 +301,116 @@ static void lockdown_intel_txt(void *unused)
 	/* SinitMLEData */
 	/* FIXME: Does firmware need to write this? */
 	push_sinit_heap(&heap_struct, NULL, 0);
+}
+
+/**
+ * Finalize the TXT device.
+ *
+ * - Lock TXT register.
+ * - Protect TSEG using DMA protected regions.
+ * - Setup TXT regions.
+ * - Place SINIT ACM in TXT_SINIT memory segment.
+ * - Fill TXT BIOSDATA region.
+ */
+static void lockdown_intel_txt(void *unused)
+{
+	const uint64_t status = read64((void *)TXT_SPAD);
+
+	uint32_t txt_feature_flags = 0;
+	uintptr_t tseg_base;
+	size_t tseg_size;
+
+	smm_region(&tseg_base, &tseg_size);
+
+	if (status & ACMSTS_TXT_DISABLED)
+		return;
+
+	/*
+	 * Document Number: 558294
+	 * Chapter 5.4.3 Detection of Intel TXT Capability
+	 */
+
+	if (!getsec_parameter(NULL, NULL, NULL, NULL, NULL, &txt_feature_flags))
+		return;
+
+	/* LockConfig only exists on Intel TXT for Servers */
+	if (txt_feature_flags & GETSEC_PARAMS_TXT_EXT_CRTM_SUPPORT) {
+		printk(BIOS_INFO, "TEE-TXT: Locking TEE...\n");
+
+		/* Lock TXT config, unlocks TXT_HEAP_BASE */
+		if (intel_txt_run_bios_acm(ACMINPUT_LOCK_CONFIG) < 0) {
+			printk(BIOS_ERR, "TEE-TXT: Failed to lock registers.\n");
+			printk(BIOS_ERR, "TEE-TXT: SINIT won't be supported.\n");
+			return;
+		}
+	}
+
+	/*
+	 * Document Number: 558294
+	 * Chapter 5.5.6.1 DMA Protection Memory Region
+	 */
+
+	const u8 dpr_capable = !!(read64((void *)TXT_CAPABILITIES) &
+				  TXT_CAPABILITIES_DPR);
+	printk(BIOS_INFO, "TEE-TXT: DPR capable %x\n", dpr_capable);
+
+	if (dpr_capable) {
+		/* Verify the DPR settings on the MCH and mirror them to TXT public space */
+		union dpr_register dpr = txt_get_chipset_dpr();
+
+		printk(BIOS_DEBUG, "TEE-TXT: MCH DPR 0x%08x\n", dpr.raw);
+
+		printk(BIOS_DEBUG, "TEE-TXT: MCH DPR base @ 0x%08x size %u MiB\n",
+			(dpr.top - dpr.size) * MiB, dpr.size);
+
+		// DPR TODO: implement SA_ENABLE_DPR in the intelblocks
+
+		if (!dpr.lock) {
+			printk(BIOS_ERR, "TEE-TXT: MCH DPR not locked.\n");
+			return;
+		}
+
+		if (!dpr.epm || !dpr.prs) {
+			printk(BIOS_ERR, "TEE-TXT: MCH DPR protection not active.\n");
+			return;
+		}
+
+		if (dpr.size < CONFIG_INTEL_TXT_DPR_SIZE) {
+			printk(BIOS_ERR, "TEE-TXT: MCH DPR configured size is too small.\n");
+			return;
+		}
+
+		if (dpr.top * MiB != tseg_base) {
+			printk(BIOS_ERR, "TEE-TXT: MCH DPR top does not equal TSEG base.\n");
+			return;
+		}
+
+		/* Clear reserved bits */
+		dpr.prs = 0;
+		dpr.epm = 0;
+
+		write64((void *)TXT_DPR, dpr.raw);
+
+		printk(BIOS_INFO, "TEE-TXT: TXT.DPR 0x%08x\n",
+		       read32((void *)TXT_DPR));
+	}
+
+	/*
+	 * Document Number: 558294
+	 * Chapter 5.5.6.3 Intel TXT Heap Memory Region
+	 */
+	write64((void *)TXT_HEAP_SIZE, 0xE0000);
+	write64((void *)TXT_HEAP_BASE,
+		ALIGN_DOWN(tseg_base - read64((void *)TXT_HEAP_SIZE), 4096));
+
+	/*
+	 * Document Number: 558294
+	 * Chapter 5.5.6.2 SINIT Memory Region
+	 */
+	write64((void *)TXT_SINIT_SIZE, 0x20000);
+	write64((void *)TXT_SINIT_BASE,
+		ALIGN_DOWN(read64((void *)TXT_HEAP_BASE) -
+			   read64((void *)TXT_SINIT_SIZE), 4096));
 
 	/*
 	 * FIXME: Server-TXT capable platforms need to install an STM in SMM and set up MSEG.
@@ -363,6 +422,10 @@ static void lockdown_intel_txt(void *unused)
 	 */
 	write64((void *)TXT_MSEG_SIZE, 0);
 	write64((void *)TXT_MSEG_BASE, 0);
+
+	/* Only initialize the heap on regular boots */
+	if (!acpi_is_wakeup_s3())
+		txt_initialize_heap();
 
 	if (CONFIG(INTEL_TXT_LOGGING))
 		txt_dump_regions();

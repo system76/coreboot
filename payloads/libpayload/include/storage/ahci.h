@@ -26,9 +26,11 @@
  * SUCH DAMAGE.
  */
 
+#include <pci/pci.h>
+
 #ifndef _STORAGE_AHCI_H
 #define _STORAGE_AHCI_H
 
-void ahci_initialize(void);
+void ahci_initialize(struct pci_dev *dev);
 
 #endif

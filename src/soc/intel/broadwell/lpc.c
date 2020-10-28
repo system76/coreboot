@@ -7,14 +7,12 @@
 #include <option.h>
 #include <pc80/isa-dma.h>
 #include <pc80/i8259.h>
-#include <arch/io.h>
 #include <device/pci_ops.h>
 #include <arch/ioapic.h>
 #include <acpi/acpi.h>
 #include <acpi/acpi_gnvs.h>
 #include <cpu/x86/smm.h>
 #include <cbmem.h>
-#include <reg_script.h>
 #include <string.h>
 #include <soc/gpio.h>
 #include <soc/iobp.h>
@@ -172,88 +170,132 @@ static void pch_power_options(struct device *dev)
 	enable_alt_smi(config->alt_gp_smi_en);
 }
 
-static const struct reg_script pch_misc_init_script[] = {
-	/* Setup SLP signal assertion, SLP_S4=4s, SLP_S3=50ms */
-	REG_PCI_RMW16(GEN_PMCON_3, ~((3 << 4)|(1 << 10)),
-		      (1 << 3)|(1 << 11)|(1 << 12)),
+static void pch_misc_init(struct device *dev)
+{
+	u8 reg8;
+	u16 reg16;
+	u32 reg32;
+
+	reg16 = pci_read_config16(dev, GEN_PMCON_3);
+
+	reg16 &= ~(3 << 4);	/* SLP_S4# Assertion Stretch 4s */
+	reg16 |= (1 << 3);	/* SLP_S4# Assertion Stretch Enable */
+
+	reg16 &= ~(1 << 10);
+	reg16 |= (1 << 11);	/* SLP_S3# Min Assertion Width 50ms */
+
+	reg16 |= (1 << 12);	/* Disable SLP stretch after SUS well */
+
+	pci_write_config16(dev, GEN_PMCON_3, reg16);
+
 	/* Prepare sleep mode */
-	REG_IO_RMW32(ACPI_BASE_ADDRESS + PM1_CNT, ~SLP_TYP, SCI_EN),
-	/* Setup NMI on errors, disable SERR */
-	REG_IO_RMW8(0x61, ~0xf0, (1 << 2)),
+	reg32 = inl(ACPI_BASE_ADDRESS + PM1_CNT);
+	reg32 &= ~SLP_TYP;
+	reg32 |= SCI_EN;
+	outl(reg32, ACPI_BASE_ADDRESS + PM1_CNT);
+
+	/* Set up NMI on errors */
+	reg8 = inb(0x61);
+	reg8 &= ~0xf0;		/* Higher nibble must be 0 */
+	reg8 |= (1 << 2);	/* PCI SERR# disable for now */
+	outb(reg8, 0x61);
+
 	/* Disable NMI sources */
-	REG_IO_OR8(0x70, (1 << 7)),
+	reg8 = inb(0x70);
+	reg8 |= (1 << 7);	/* Can't mask NMI from PCI-E and NMI_NOW */
+	outb(reg8, 0x70);
+
 	/* Indicate DRAM init done for MRC */
-	REG_PCI_OR8(GEN_PMCON_2, (1 << 7)),
+	pci_or_config8(dev, GEN_PMCON_2, 1 << 7);
+
 	/* Enable BIOS updates outside of SMM */
-	REG_PCI_RMW8(0xdc, ~(1 << 5), 0),
+	pci_and_config8(dev, BIOS_CNTL, ~(1 << 5));
+
 	/* Clear status bits to prevent unexpected wake */
-	REG_MMIO_OR32(RCBA_BASE_ADDRESS + 0x3310, 0x0000002f),
-	REG_MMIO_RMW32(RCBA_BASE_ADDRESS + 0x3f02, ~0x0000000f, 0),
+	RCBA32_OR(0x3310, 0x2f);
+
+	RCBA32_AND_OR(0x3f02, ~0xf, 0);
+
 	/* Enable PCIe Releaxed Order */
-	REG_MMIO_OR32(RCBA_BASE_ADDRESS + 0x2314, (1 << 31) | (1 << 7)),
-	REG_MMIO_OR32(RCBA_BASE_ADDRESS + 0x1114, (1 << 15) | (1 << 14)),
+	RCBA32_OR(0x2314, (1 << 31) | (1 << 7)),
+	RCBA32_OR(0x1114, (1 << 15) | (1 << 14)),
+
 	/* Setup SERIRQ, enable continuous mode */
-	REG_PCI_OR8(SERIRQ_CNTL, (1 << 7) | (1 << 6)),
-#if !CONFIG(SERIRQ_CONTINUOUS_MODE)
-	REG_PCI_RMW8(SERIRQ_CNTL, ~(1 << 6), 0),
-#endif
-	REG_SCRIPT_END
-};
+	reg8 = pci_read_config8(dev, SERIRQ_CNTL);
+	reg8 |= 1 << 7;
+
+	if (CONFIG(SERIRQ_CONTINUOUS_MODE))
+		reg8 |= 1 << 6;
+
+	pci_write_config8(dev, SERIRQ_CNTL, reg8);
+}
 
 /* Magic register settings for power management */
-static const struct reg_script pch_pm_init_script[] = {
-	REG_PCI_WRITE8(0xa9, 0x46),
-	REG_MMIO_RMW32(RCBA_BASE_ADDRESS + 0x232c, ~1, 0),
-	REG_MMIO_OR32(RCBA_BASE_ADDRESS + 0x1100, 0x0000c13f),
-	REG_MMIO_RMW32(RCBA_BASE_ADDRESS + 0x2320, ~0x60, 0x10),
-	REG_MMIO_WRITE32(RCBA_BASE_ADDRESS + 0x3314, 0x00012fff),
-	REG_MMIO_RMW32(RCBA_BASE_ADDRESS + 0x3318, ~0x000f0330, 0x0dcf0400),
-	REG_MMIO_WRITE32(RCBA_BASE_ADDRESS + 0x3324, 0x04000000),
-	REG_MMIO_WRITE32(RCBA_BASE_ADDRESS + 0x3368, 0x00041400),
-	REG_MMIO_WRITE32(RCBA_BASE_ADDRESS + 0x3388, 0x3f8ddbff),
-	REG_MMIO_WRITE32(RCBA_BASE_ADDRESS + 0x33ac, 0x00007001),
-	REG_MMIO_WRITE32(RCBA_BASE_ADDRESS + 0x33b0, 0x00181900),
-	REG_MMIO_WRITE32(RCBA_BASE_ADDRESS + 0x33c0, 0x00060A00),
-	REG_MMIO_WRITE32(RCBA_BASE_ADDRESS + 0x33d0, 0x06200840),
-	REG_MMIO_WRITE32(RCBA_BASE_ADDRESS + 0x3a28, 0x01010101),
-	REG_MMIO_WRITE32(RCBA_BASE_ADDRESS + 0x3a2c, 0x040c0404),
-	REG_MMIO_WRITE32(RCBA_BASE_ADDRESS + 0x3a9c, 0x9000000a),
-	REG_MMIO_WRITE32(RCBA_BASE_ADDRESS + 0x2b1c, 0x03808033),
-	REG_MMIO_WRITE32(RCBA_BASE_ADDRESS + 0x2b34, 0x80000009),
-	REG_MMIO_WRITE32(RCBA_BASE_ADDRESS + 0x3348, 0x022ddfff),
-	REG_MMIO_WRITE32(RCBA_BASE_ADDRESS + 0x334c, 0x00000001),
-	REG_MMIO_WRITE32(RCBA_BASE_ADDRESS + 0x3358, 0x0001c000),
-	REG_MMIO_WRITE32(RCBA_BASE_ADDRESS + 0x3380, 0x3f8ddbff),
-	REG_MMIO_WRITE32(RCBA_BASE_ADDRESS + 0x3384, 0x0001c7e1),
-	REG_MMIO_WRITE32(RCBA_BASE_ADDRESS + 0x338c, 0x0001c7e1),
-	REG_MMIO_WRITE32(RCBA_BASE_ADDRESS + 0x3398, 0x0001c000),
-	REG_MMIO_WRITE32(RCBA_BASE_ADDRESS + 0x33a8, 0x00181900),
-	REG_MMIO_WRITE32(RCBA_BASE_ADDRESS + 0x33dc, 0x00080000),
-	REG_MMIO_WRITE32(RCBA_BASE_ADDRESS + 0x33e0, 0x00000001),
-	REG_MMIO_WRITE32(RCBA_BASE_ADDRESS + 0x3a20, 0x0000040c),
-	REG_MMIO_WRITE32(RCBA_BASE_ADDRESS + 0x3a24, 0x01010101),
-	REG_MMIO_WRITE32(RCBA_BASE_ADDRESS + 0x3a30, 0x01010101),
-	REG_PCI_RMW32(0xac, ~0x00200000, 0),
-	REG_MMIO_OR32(RCBA_BASE_ADDRESS + 0x0410, 0x00000003),
-	REG_MMIO_OR32(RCBA_BASE_ADDRESS + 0x2618, 0x08000000),
-	REG_MMIO_OR32(RCBA_BASE_ADDRESS + 0x2300, 0x00000002),
-	REG_MMIO_OR32(RCBA_BASE_ADDRESS + 0x2600, 0x00000008),
-	REG_MMIO_WRITE32(RCBA_BASE_ADDRESS + 0x33b4, 0x00007001),
-	REG_MMIO_WRITE32(RCBA_BASE_ADDRESS + 0x3350, 0x022ddfff),
-	REG_MMIO_WRITE32(RCBA_BASE_ADDRESS + 0x3354, 0x00000001),
+static void pch_pm_init_magic(struct device *dev)
+{
+	pci_write_config8(dev, 0xa9, 0x46);
+
+	RCBA32_AND_OR(0x232c, ~1, 0);
+
+	RCBA32_OR(0x1100, 0x0000c13f);
+
+	RCBA32_AND_OR(0x2320, ~0x60, 0x10);
+
+	RCBA32(0x3314) = 0x00012fff;
+
+	RCBA32_AND_OR(0x3318, ~0x000f0330, 0x0dcf0400);
+
+	RCBA32(0x3324) = 0x04000000;
+	RCBA32(0x3368) = 0x00041400;
+	RCBA32(0x3388) = 0x3f8ddbff;
+	RCBA32(0x33ac) = 0x00007001;
+	RCBA32(0x33b0) = 0x00181900;
+	RCBA32(0x33c0) = 0x00060A00;
+	RCBA32(0x33d0) = 0x06200840;
+	RCBA32(0x3a28) = 0x01010101;
+	RCBA32(0x3a2c) = 0x040c0404;
+	RCBA32(0x3a9c) = 0x9000000a;
+	RCBA32(0x2b1c) = 0x03808033;
+	RCBA32(0x2b34) = 0x80000009;
+	RCBA32(0x3348) = 0x022ddfff;
+	RCBA32(0x334c) = 0x00000001;
+	RCBA32(0x3358) = 0x0001c000;
+	RCBA32(0x3380) = 0x3f8ddbff;
+	RCBA32(0x3384) = 0x0001c7e1;
+	RCBA32(0x338c) = 0x0001c7e1;
+	RCBA32(0x3398) = 0x0001c000;
+	RCBA32(0x33a8) = 0x00181900;
+	RCBA32(0x33dc) = 0x00080000;
+	RCBA32(0x33e0) = 0x00000001;
+	RCBA32(0x3a20) = 0x0000040c;
+	RCBA32(0x3a24) = 0x01010101;
+	RCBA32(0x3a30) = 0x01010101;
+
+	pci_update_config32(dev, 0xac, ~0x00200000, 0);
+
+	RCBA32_OR(0x0410, 0x00000003);
+	RCBA32_OR(0x2618, 0x08000000);
+	RCBA32_OR(0x2300, 0x00000002);
+	RCBA32_OR(0x2600, 0x00000008);
+
+	RCBA32(0x33b4) = 0x00007001;
+	RCBA32(0x3350) = 0x022ddfff;
+	RCBA32(0x3354) = 0x00000001;
+
 	/* Power Optimizer */
-	REG_MMIO_OR32(RCBA_BASE_ADDRESS + 0x33d4, 0x08000000),
-	REG_MMIO_OR32(RCBA_BASE_ADDRESS + 0x33c8, 0x00000080),
-	REG_MMIO_WRITE32(RCBA_BASE_ADDRESS + 0x2b10, 0x0000883c),
-	REG_MMIO_WRITE32(RCBA_BASE_ADDRESS + 0x2b14, 0x1e0a4616),
-	REG_MMIO_WRITE32(RCBA_BASE_ADDRESS + 0x2b24, 0x40000005),
-	REG_MMIO_WRITE32(RCBA_BASE_ADDRESS + 0x2b20, 0x0005db01),
-	REG_MMIO_WRITE32(RCBA_BASE_ADDRESS + 0x3a80, 0x05145005),
-	REG_MMIO_WRITE32(RCBA_BASE_ADDRESS + 0x3a84, 0x00001005),
-	REG_MMIO_OR32(RCBA_BASE_ADDRESS + 0x33d4, 0x2fff2fb1),
-	REG_MMIO_OR32(RCBA_BASE_ADDRESS + 0x33c8, 0x00008000),
-	REG_SCRIPT_END
-};
+	RCBA32_OR(0x33d4, 0x08000000);
+	RCBA32_OR(0x33c8, 0x00000080);
+
+	RCBA32(0x2b10) = 0x0000883c;
+	RCBA32(0x2b14) = 0x1e0a4616;
+	RCBA32(0x2b24) = 0x40000005;
+	RCBA32(0x2b20) = 0x0005db01;
+	RCBA32(0x3a80) = 0x05145005;
+	RCBA32(0x3a84) = 0x00001005;
+
+	RCBA32_OR(0x33d4, 0x2fff2fb1);
+	RCBA32_OR(0x33c8, 0x00008000);
+}
 
 static void pch_enable_mphy(void)
 {
@@ -320,7 +362,7 @@ static void pch_pm_init(struct device *dev)
 
 	pch_enable_mphy();
 
-	reg_script_run_on_dev(dev, pch_pm_init_script);
+	pch_pm_init_magic(dev);
 
 	if (pch_is_wpt()) {
 		RCBA32_OR(0x33e0, (1 << 4) | (1 << 1));
@@ -415,7 +457,7 @@ static void lpc_init(struct device *dev)
 	/* Legacy initialization */
 	isa_dma_init();
 	sb_rtc_init();
-	reg_script_run_on_dev(dev, pch_misc_init_script);
+	pch_misc_init(dev);
 
 	/* Interrupt configuration */
 	pch_enable_ioapic(dev);
@@ -609,7 +651,7 @@ static struct device_operations device_ops = {
 	.write_acpi_tables      = broadwell_write_acpi_tables,
 	.init			= &lpc_init,
 	.scan_bus		= &scan_static_bus,
-	.ops_pci		= &broadwell_pci_ops,
+	.ops_pci		= &pci_dev_ops_pci,
 };
 
 static const unsigned short pci_device_ids[] = {

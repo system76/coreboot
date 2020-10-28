@@ -1,6 +1,5 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#include <arch/io.h>
 #include <device/mmio.h>
 #include <device/pci_ops.h>
 #include <bootstate.h>
@@ -72,10 +71,6 @@ static void pch_finalize_script(struct device *dev)
 
 	if (config->PmTimerDisabled)
 		pmc_disable_acpi_timer();
-
-	/* Disable XTAL shutdown qualification for low power idle. */
-	if (config->s0ix_enable)
-		pmc_ignore_xtal_shutdown();
 
 	/* we should disable Heci1 based on the devicetree policy */
 	if (config->HeciEnabled == 0)

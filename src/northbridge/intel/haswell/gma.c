@@ -21,10 +21,6 @@
 #include "chip.h"
 #include "haswell.h"
 
-#if CONFIG(CHROMEOS)
-#include <vendorcode/google/chromeos/chromeos.h>
-#endif
-
 struct gt_reg {
 	u32 reg;
 	u32 andmask;
@@ -118,47 +114,6 @@ u32 map_oprom_vendev(u32 vendev)
 	}
 
 	return new_vendev;
-}
-
-/** FIXME: Seems to be outdated. */
-/*
- * GTT is the Global Translation Table for the graphics pipeline. It is used to translate
- * graphics addresses to physical memory addresses. As in the CPU, GTTs map 4K pages.
- *
- * The setgtt function adds a further bit of flexibility: it allows you to set a range (the
- * first two parameters) to point to a physical address (third parameter); the physical address
- * is incremented by a count (fourth parameter) for each GTT in the range.
- *
- * Why do it this way? For ultrafast startup, we can point all the GTT entries to point to one
- * page, and set that page to 0s:
- *
- *   memset(physbase, 0, 4096);
- *   setgtt(0, 4250, physbase, 0);
- *
- * this takes about 2 ms, and is a win because zeroing the page takes up to 200 ms.
- *
- * This call sets the GTT to point to a linear range of pages starting at physbase.
- */
-
-#define GTT_PTE_BASE (2 << 20)
-
-void set_translation_table(int start, int end, u64 base, int inc)
-{
-	int i;
-
-	for (i = start; i < end; i++){
-		u64 physical_address = base + i * inc;
-
-		/* swizzle the 32:39 bits to 4:11 */
-		u32 word = physical_address | ((physical_address >> 28) & 0xff0) | 1;
-
-		/*
-		 * Note: we've confirmed by checking the values that MRC does no useful
-		 * setup before we run this.
-		 */
-		gtt_write(GTT_PTE_BASE + i * 4, word);
-		gtt_read(GTT_PTE_BASE + i * 4);
-	}
 }
 
 static struct resource *gtt_res = NULL;
@@ -287,10 +242,8 @@ static void init_display_planes(void)
 
 static void gma_setup_panel(struct device *dev)
 {
-	struct northbridge_intel_haswell_config *conf = dev->chip_info;
+	struct northbridge_intel_haswell_config *conf = config_of(dev);
 	u32 reg32;
-
-	printk(BIOS_DEBUG, "GT Power Management Init (post VBIOS)\n");
 
 	/* Setup Digital Port Hotplug */
 	reg32 = gtt_read(PCH_PORT_HOTPLUG);
@@ -487,13 +440,14 @@ static void gma_func0_init(struct device *dev)
 		}
 	}
 
-	if (! lightup_ok) {
+	if (!lightup_ok) {
 		printk(BIOS_SPEW, "FUI did not run; using VBIOS\n");
 		mdelay(CONFIG_PRE_GRAPHICS_DELAY);
 		pci_dev_init(dev);
 	}
 
-	/* Post panel init */
+	printk(BIOS_DEBUG, "GT Power Management Init (post VBIOS)\n");
+
 	gma_pm_init_post_vbios(dev);
 
 	gma_enable_swsci();

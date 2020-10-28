@@ -13,8 +13,6 @@ config INTEL_TXT
 
 if INTEL_TXT
 
-menu "Intel"
-
 config INTEL_TXT_BIOSACM_FILE
 	string "BIOS ACM file"
 	default "3rdparty/blobs/soc/intel/skylake/biosacm.bin" if SOC_INTEL_COMMON_SKYLAKE_BASE
@@ -30,6 +28,21 @@ config INTEL_TXT_SINITACM_FILE
 	  Intel TXT SINIT ACM file. This file can be obtained through privileged
 	  access to Intel resources. Or for some platforms found inside the
 	  blob repository.
+
+config INTEL_TXT_DPR_SIZE
+	int
+	range 0 255
+	default 3
+	help
+	  Specify the size the DPR region needs to have. On at least Haswell,
+	  the MRC does not have an input to specify the size of DPR, so this
+	  field is only used to check if the programmed size is large enough.
+
+config INTEL_TXT_TEST_BIOS_ACM_CALLING_CODE
+	bool "Test BIOS ACM calling code with NOP function"
+	help
+	  Run a NOP function of the BIOS ACM to check that the ACM calling code
+	  is functioning properly. Use in pre-production environments only!
 
 config INTEL_TXT_LOGGING
 	bool "Enable verbose logging"
@@ -55,7 +68,5 @@ config INTEL_TXT_CBFS_BIOS_ACM
 config INTEL_TXT_CBFS_SINIT_ACM
 	string
 	default "txt_sinit_acm.bin"
-
-endmenu # Intel
 
 endif

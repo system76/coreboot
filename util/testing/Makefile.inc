@@ -79,8 +79,10 @@ COREBOOT_BUILD_DIR?=coreboot-builds
 
 what-jenkins-does:
 	rm -rf $(COREBOOT_BUILD_DIR)/chromeos $(COREBOOT_BUILD_DIR)/default
+ifneq ($(JENKINS_SKIP_LINT_TESTS),y)
 	util/lint/lint lint-stable --junit
 	util/lint/lint lint-extended --junit
+endif
 	util/abuild/abuild -o $(COREBOOT_BUILD_DIR)/chromeos $(ABUILD_OPTIONS) -x -X $(top)/abuild-chromeos.xml
 	util/abuild/abuild -o $(COREBOOT_BUILD_DIR)/default $(ABUILD_OPTIONS)
 	$(foreach tool, $(TOOLLIST), $(MAKE) CPUS=$(CPUS) V=$(V) Q=$(Q) BLD_DIR="util/$(tool)" BLD="$(tool)" MFLAGS= MAKEFLAGS= MAKETARGET= junit.xml; )
@@ -99,8 +101,8 @@ test-lint:
 
 test-abuild:
 	rm -rf coreboot-builds-chromeos coreboot-builds
-	export COREBOOT_BUILD_DIR=coreboot-builds-chromeos; util/abuild/abuild -B -e $(if $(TEST_NOCCACHE),,-y) -c $(CPUS) -p $(TEST_PAYLOAD) -x
-	util/abuild/abuild -B -e $(if $(TEST_NOCCACHE),,-y) -c $(CPUS) -p $(TEST_PAYLOAD)
+	util/abuild/abuild -o $(COREBOOT_BUILD_DIR)/chromeos -B -e $(if $(TEST_NOCCACHE),,-y) -c $(CPUS) -p $(TEST_PAYLOAD) -x
+	util/abuild/abuild -o $(COREBOOT_BUILD_DIR)/default -B -e $(if $(TEST_NOCCACHE),,-y) -c $(CPUS) -p $(TEST_PAYLOAD)
 
 test-payloads:
 	$(MAKE) -C payloads/libpayload test-configs -j $(CPUS) V=$(V) Q=$(Q) MFLAGS= MAKEFLAGS= $(if $(TEST_NOCCACHE),,CONFIG_LP_CCACHE=y)
@@ -115,8 +117,6 @@ test-tools:
 	@echo "Build testing $(TOOLLIST)"
 	$(foreach tool, $(TOOLLIST), $(MAKE) -C util/$(tool) clean ; )
 	$(foreach tool, $(TOOLLIST), echo "Building $(tool)";export MFLAGS= ;export MAKEFLAGS= ;$(MAKE) -C util/$(tool) all V=$(V) Q=$(Q) || exit 1; )
-	echo "Testing broadcom/secimage"
-	$(MAKE) -C util/broadcom/secimage test
 	@echo "Running gitconfig tests"
 	@for test in $$(find util/gitconfig/test -maxdepth 1 \
 		-type f -executable); do \

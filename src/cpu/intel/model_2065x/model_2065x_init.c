@@ -148,15 +148,6 @@ static void configure_misc(void)
 	wrmsr(IA32_THERM_INTERRUPT, msr);
 }
 
-static void enable_lapic_tpr(void)
-{
-	msr_t msr;
-
-	msr = rdmsr(MSR_PIC_MSG_CONTROL);
-	msr.lo &= ~(1 << 10);	/* Enable APIC TPR updates */
-	wrmsr(MSR_PIC_MSG_CONTROL, msr);
-}
-
 static void set_max_ratio(void)
 {
 	msr_t msr, perf_ctl;
@@ -215,6 +206,8 @@ static void model_2065x_init(struct device *cpu)
 
 	/* Set virtualization based on Kconfig option */
 	set_vmx_and_lock();
+
+	set_aesni_lock();
 
 	/* Configure Enhanced SpeedStep and Thermal Sensors */
 	configure_misc();
