@@ -237,7 +237,7 @@ chip soc/intel/tigerlake
 			chip drivers/i2c/hid
 				register "generic.hid" = ""PNP0C50""
 				register "generic.desc" = ""TODO Touchpad""
-				register "generic.irq" = "ACPI_IRQ_EDGE_LOW(GPP_B3_IRQ)"
+				register "generic.irq_gpio" = "ACPI_GPIO_IRQ_LEVEL_LOW(GPP_B3)"
 				register "generic.probed" = "1"
 				register "hid_desc_reg_offset" = "0x01"
 				device i2c 38 on end

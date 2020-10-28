@@ -105,7 +105,7 @@ static const struct pad_config gpio_table[] = {
 		// VRALERT#_PD
 		PAD_CFG_GPI(GPP_B2, UP_20K, DEEP),
 		// GPP_B3 - touchpad interrupt
-		PAD_CFG_GPI_APIC_EDGE_LOW(GPP_B3, NONE, PLTRST),
+		PAD_CFG_GPI_INT(GPP_B3, NONE, PLTRST, LEVEL),
 		// NC
 		PAD_NC(GPP_B4, NONE),
 		// Test point
