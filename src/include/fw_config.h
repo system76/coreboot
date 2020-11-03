@@ -8,6 +8,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#define UNDEFINED_FW_CONFIG	~((uint64_t)0)
+
 /**
  * struct fw_config - Firmware configuration field and option.
  * @field_name: Name of the field that this option belongs to.
@@ -18,8 +20,8 @@
 struct fw_config {
 	const char *field_name;
 	const char *option_name;
-	uint32_t mask;
-	uint32_t value;
+	uint64_t mask;
+	uint64_t value;
 };
 
 /* Generate a pointer to a compound literal of the fw_config structure. */
@@ -29,6 +31,13 @@ struct fw_config {
 	.mask = FW_CONFIG_FIELD_##__field##_MASK,				\
 	.value = FW_CONFIG_FIELD_##__field##_OPTION_##__option##_VALUE		\
 })
+
+/**
+ * fw_config_get() - Provide firmware configuration value.
+ *
+ * Return 64bit firmware configuration value determined for the system.
+ */
+uint64_t fw_config_get(void);
 
 #if CONFIG(FW_CONFIG)
 
@@ -53,7 +62,7 @@ void fw_config_for_each_found(void (*cb)(const struct fw_config *config, void *a
  *
  * Return pointer to cached `struct fw_config` if successfully probed, otherwise NULL.
 */
-const struct fw_config *fw_config_get_found(uint32_t field_mask);
+const struct fw_config *fw_config_get_found(uint64_t field_mask);
 
 #else
 

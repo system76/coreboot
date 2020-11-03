@@ -16,12 +16,13 @@ static const struct mb_ddr4_cfg board_cfg = {
 };
 
 static const struct spd_info spd = {
-	.topology = MIXED,
+	//.topology = MIXED,
+	.topology = MEMORY_DOWN,
 	.md_spd_loc = SPD_CBFS,
 	.cbfs_index = 0,
-	.smbus_info[1] = {
-		.addr_dimm0 = 0x52,
-	},
+	//.smbus_info[1] = {
+	//	.addr_dimm0 = 0x52,
+	//},
 };
 
 void mainboard_memory_init_params(FSPM_UPD *mupd) {

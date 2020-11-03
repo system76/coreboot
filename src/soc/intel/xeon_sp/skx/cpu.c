@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #include <console/console.h>
+#include <console/debug.h>
 #include <intelblocks/cpulib.h>
 #include <cpu/cpu.h>
 #include <cpu/x86/mtrr.h>
@@ -243,35 +244,4 @@ void xeon_sp_init_cpus(struct device *dev)
 	xeonsp_init_cpu_config();
 
 	FUNC_EXIT();
-}
-
-msr_t read_msr_ppin(void)
-{
-	msr_t ppin = {0};
-	msr_t msr;
-
-	/* If MSR_PLATFORM_INFO PPIN_CAP is 0, PPIN capability is not supported */
-	msr = rdmsr(MSR_PLATFORM_INFO);
-	if ((msr.lo & MSR_PPIN_CAP) == 0) {
-		printk(BIOS_ERR, "MSR_PPIN_CAP is 0, PPIN is not supported\n");
-		return ppin;
-	}
-
-	/* Access to MSR_PPIN is permitted only if MSR_PPIN_CTL LOCK is 0 and ENABLE is 1 */
-	msr = rdmsr(MSR_PPIN_CTL);
-	if (msr.lo & MSR_PPIN_CTL_LOCK) {
-		printk(BIOS_ERR, "MSR_PPIN_CTL_LOCK is 1, PPIN access is not allowed\n");
-		return ppin;
-	}
-
-	if ((msr.lo & MSR_PPIN_CTL_ENABLE) == 0) {
-		/* Set MSR_PPIN_CTL ENABLE to 1 */
-		msr.lo |= MSR_PPIN_CTL_ENABLE;
-		wrmsr(MSR_PPIN_CTL, msr);
-	}
-	ppin = rdmsr(MSR_PPIN);
-	/* Set enable to 0 after reading MSR_PPIN */
-	msr.lo &= ~MSR_PPIN_CTL_ENABLE;
-	wrmsr(MSR_PPIN_CTL, msr);
-	return ppin;
 }

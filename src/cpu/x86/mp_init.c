@@ -112,7 +112,7 @@ extern char _binary_sipi_vector_start[];
 /* The SIPI vector is loaded at the SMM_DEFAULT_BASE. The reason is at the
  * memory range is already reserved so the OS cannot use it. That region is
  * free to use for AP bringup before SMM is initialized. */
-static const uint32_t sipi_vector_location = SMM_DEFAULT_BASE;
+static const uintptr_t sipi_vector_location = SMM_DEFAULT_BASE;
 static const int sipi_vector_location_size = SMM_DEFAULT_SIZE;
 
 struct mp_flight_plan {
@@ -338,16 +338,16 @@ static atomic_t *load_sipi_vector(struct mp_params *mp_params)
 
 	setup_default_sipi_vector_params(sp);
 	/* Setup MSR table. */
-	sp->msr_table_ptr = (uint32_t)&mod_loc[module_size];
+	sp->msr_table_ptr = (uintptr_t)&mod_loc[module_size];
 	sp->msr_count = num_msrs;
 	/* Provide pointer to microcode patch. */
-	sp->microcode_ptr = (uint32_t)mp_params->microcode_pointer;
+	sp->microcode_ptr = (uintptr_t)mp_params->microcode_pointer;
 	/* Pass on ability to load microcode in parallel. */
 	if (mp_params->parallel_microcode_load)
 		sp->microcode_lock = 0;
 	else
 		sp->microcode_lock = ~0;
-	sp->c_handler = (uint32_t)&ap_init;
+	sp->c_handler = (uintptr_t)&ap_init;
 	ap_count = &sp->ap_count;
 	atomic_set(ap_count, 0);
 
@@ -434,7 +434,7 @@ static int start_aps(struct bus *cpu_bus, int ap_count, atomic_t *num_aps)
 	if ((lapic_read(LAPIC_ICR) & LAPIC_ICR_BUSY)) {
 		printk(BIOS_DEBUG, "Waiting for ICR not to be busy...");
 		if (apic_wait_timeout(1000 /* 1 ms */, 50)) {
-			printk(BIOS_DEBUG, "timed out. Aborting.\n");
+			printk(BIOS_ERR, "timed out. Aborting.\n");
 			return -1;
 		}
 		printk(BIOS_DEBUG, "done.\n");
@@ -451,7 +451,7 @@ static int start_aps(struct bus *cpu_bus, int ap_count, atomic_t *num_aps)
 	if ((lapic_read(LAPIC_ICR) & LAPIC_ICR_BUSY)) {
 		printk(BIOS_DEBUG, "Waiting for ICR not to be busy...");
 		if (apic_wait_timeout(1000 /* 1 ms */, 50)) {
-			printk(BIOS_DEBUG, "timed out. Aborting.\n");
+			printk(BIOS_ERR, "timed out. Aborting.\n");
 			return -1;
 		}
 		printk(BIOS_DEBUG, "done.\n");
@@ -462,7 +462,7 @@ static int start_aps(struct bus *cpu_bus, int ap_count, atomic_t *num_aps)
 			   LAPIC_DM_STARTUP | sipi_vector);
 	printk(BIOS_DEBUG, "Waiting for 1st SIPI to complete...");
 	if (apic_wait_timeout(10000 /* 10 ms */, 50 /* us */)) {
-		printk(BIOS_DEBUG, "timed out.\n");
+		printk(BIOS_ERR, "timed out.\n");
 		return -1;
 	}
 	printk(BIOS_DEBUG, "done.\n");
@@ -477,7 +477,7 @@ static int start_aps(struct bus *cpu_bus, int ap_count, atomic_t *num_aps)
 	if ((lapic_read(LAPIC_ICR) & LAPIC_ICR_BUSY)) {
 		printk(BIOS_DEBUG, "Waiting for ICR not to be busy...");
 		if (apic_wait_timeout(1000 /* 1 ms */, 50)) {
-			printk(BIOS_DEBUG, "timed out. Aborting.\n");
+			printk(BIOS_ERR, "timed out. Aborting.\n");
 			return -1;
 		}
 		printk(BIOS_DEBUG, "done.\n");
@@ -488,14 +488,14 @@ static int start_aps(struct bus *cpu_bus, int ap_count, atomic_t *num_aps)
 			   LAPIC_DM_STARTUP | sipi_vector);
 	printk(BIOS_DEBUG, "Waiting for 2nd SIPI to complete...");
 	if (apic_wait_timeout(10000 /* 10 ms */, 50 /* us */)) {
-		printk(BIOS_DEBUG, "timed out.\n");
+		printk(BIOS_ERR, "timed out.\n");
 		return -1;
 	}
 	printk(BIOS_DEBUG, "done.\n");
 
 	/* Wait for CPUs to check in. */
-	if (wait_for_aps(num_aps, ap_count, 10000 /* 10 ms */, 50 /* us */)) {
-		printk(BIOS_DEBUG, "Not all APs checked in: %d/%d.\n",
+	if (wait_for_aps(num_aps, ap_count, 100000 /* 100 ms */, 50 /* us */)) {
+		printk(BIOS_ERR, "Not all APs checked in: %d/%d.\n",
 		       atomic_read(num_aps), ap_count);
 		return -1;
 	}

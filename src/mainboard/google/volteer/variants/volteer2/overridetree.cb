@@ -4,6 +4,52 @@ chip soc/intel/tigerlake
 	register "IomTypeCPortPadCfg[1]" = "0x090E000D"
 	register "DdiPort1Hpd" = "0"
 	register "DdiPort2Hpd" = "0"
+	#+-------------------+---------------------------+
+	#| Field             |  Value                    |
+	#+-------------------+---------------------------+
+	#| chipset_lockdown  | CHIPSET_LOCKDOWN_COREBOOT |
+	#| GSPI0             | cr50 TPM. Early init is   |
+	#|                   | required to set up a BAR  |
+	#|                   | for TPM communication     |
+	#|                   | before memory is up       |
+	#| GSPI1             | Fingerprint MCU           |
+	#| I2C0              | Audio                     |
+	#| I2C1              | Touchscreen               |
+	#| I2C2              | WLAN, SAR0                |
+	#| I2C3              | Camera, SAR1              |
+	#| I2C5              | Trackpad                  |
+	#+-------------------+---------------------------+
+	# Depending on whether we use I2C bus 1 or SPI bus 0 for TPM
+	# communication, that one needs early initialization.
+	register "common_soc_config" = "{
+		.chipset_lockdown = CHIPSET_LOCKDOWN_COREBOOT,
+		.gspi[0] = {
+			.speed_mhz = 1,
+			.early_init = CONFIG(MAINBOARD_HAS_SPI_TPM_CR50),
+		},
+		.i2c[0] = {
+			.speed = I2C_SPEED_FAST,
+		},
+		.i2c[1] = {
+			.speed = I2C_SPEED_FAST,
+			.early_init = CONFIG(MAINBOARD_HAS_I2C_TPM_CR50),
+		},
+		.i2c[2] = {
+			.speed = I2C_SPEED_FAST,
+		},
+		.i2c[3] = {
+			.speed = I2C_SPEED_FAST,
+		},
+		.i2c[5] = {
+			.speed = I2C_SPEED_FAST,
+			.speed_config[0] = {
+				.speed = I2C_SPEED_FAST,
+				.scl_lcnt = 163,
+				.scl_hcnt = 75,
+				.sda_hold = 36,
+			},
+		},
+	}"
 
 	register "HybridStorageMode" = "1"
 
@@ -55,7 +101,7 @@ chip soc/intel/tigerlake
 							      TEMP_PCT(42, 36),}}}"
 				device generic 0 on end
 			end
-		end # DPTF				0x9A03
+		end
 		device ref ipu on end # IPU                           0x9A19
 		device ref i2c0 on
 			chip drivers/i2c/generic
@@ -216,6 +262,13 @@ chip soc/intel/tigerlake
 				end
 			end
 		end
+		device ref pch_espi on
+			chip ec/google/chromeec
+				use conn0 as mux_conn[0]
+				use conn1 as mux_conn[1]
+				device pnp 0c09.0 on end
+			end
+		end
 		device ref pmc hidden
 			# The pmc_mux chip driver is a placeholder for the
 			# PMC.MUX device in the ACPI hierarchy.
@@ -225,27 +278,115 @@ chip soc/intel/tigerlake
 						register "usb2_port_number" = "9"
 						register "usb3_port_number" = "1"
 						# SBU & HSL follow CC
-						device generic 0 on end
+						device generic 0 alias conn0 on end
 					end
 					chip drivers/intel/pmc_mux/conn
 						register "usb2_port_number" = "4"
 						register "usb3_port_number" = "2"
-						# SBU is fixed, HSL follows CC
-						register "sbu_orientation" = "TYPEC_ORIENTATION_NORMAL"
-						device generic 1 on
-							probe DB_USB USB4_GEN2
+						device generic 1 alias conn1 on end
+					end
+				end
+			end
+		end
+		device ref north_xhci on
+			chip drivers/usb/acpi
+				device ref tcss_root_hub on
+					chip drivers/usb/acpi
+						register "desc" = ""USB3 Type-C Port C0 (MLB)""
+						register "type" = "UPC_TYPE_C_USB2_SS_SWITCH"
+						register "group" = "ACPI_PLD_GROUP(4, 2)"
+						device ref tcss_usb3_port1 on end
+					end
+					chip drivers/usb/acpi
+						register "desc" = ""USB3 Type-C Port C1 (DB)""
+						register "type" = "UPC_TYPE_C_USB2_SS_SWITCH"
+						register "group" = "ACPI_PLD_GROUP(3, 2)"
+						device ref tcss_usb3_port2 on
 							probe DB_USB USB3_ACTIVE
-							probe DB_USB USB4_GEN3
 							probe DB_USB USB3_NO_A
+							probe DB_USB USB3_PASSIVE
+							probe DB_USB USB4_GEN2
+							probe DB_USB USB4_GEN3
 						end
 					end
-					chip drivers/intel/pmc_mux/conn
-						register "usb2_port_number" = "4"
-						register "usb3_port_number" = "2"
-						# SBU & HSL follow CC
-						device generic 1 on
+				end
+			end
+		end
+		device ref south_xhci on
+			chip drivers/usb/acpi
+				device ref xhci_root_hub on
+					chip drivers/usb/acpi
+						register "desc" = ""USB2 Type-A Port A0 (MLB)""
+						register "type" = "UPC_TYPE_A"
+						register "group" = "ACPI_PLD_GROUP(1, 1)"
+						device ref usb2_port1 on end
+					end
+					chip drivers/usb/acpi
+						register "desc" = ""USB2 Type-A Port A1 (DB)""
+						register "type" = "UPC_TYPE_A"
+						register "group" = "ACPI_PLD_GROUP(2, 1)"
+						device ref usb2_port2 on
+							probe DB_USB USB3_ACTIVE
 							probe DB_USB USB3_PASSIVE
+							probe DB_USB USB4_GEN2
+							probe DB_USB USB4_GEN3
 						end
+					end
+					chip drivers/usb/acpi
+						register "desc" = ""USB2 WWAN""
+						register "type" = "UPC_TYPE_INTERNAL"
+						device ref usb2_port3 on end
+					end
+					chip drivers/usb/acpi
+						register "desc" = ""USB2 Type-C Port C1 (DB)""
+						register "type" = "UPC_TYPE_C_USB2_SS_SWITCH"
+						register "group" = "ACPI_PLD_GROUP(3, 1)"
+						device ref usb2_port4 on
+							probe DB_USB USB3_ACTIVE
+							probe DB_USB USB3_NO_A
+							probe DB_USB USB3_PASSIVE
+							probe DB_USB USB4_GEN2
+							probe DB_USB USB4_GEN3
+						end
+					end
+					chip drivers/usb/acpi
+						register "desc" = ""USB2 Camera""
+						register "type" = "UPC_TYPE_INTERNAL"
+						device ref usb2_port5 on end
+					end
+					chip drivers/usb/acpi
+						register "desc" = ""USB2 Type-C Port C0 (MLB)""
+						register "type" = "UPC_TYPE_C_USB2_SS_SWITCH"
+						register "group" = "ACPI_PLD_GROUP(4, 1)"
+						device ref usb2_port9 on end
+					end
+					chip drivers/usb/acpi
+						register "desc" = ""USB2 Bluetooth""
+						register "type" = "UPC_TYPE_INTERNAL"
+						register "reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_A13)"
+						device ref usb2_port10 on end
+					end
+					chip drivers/usb/acpi
+						register "desc" = ""USB3 Type-A Port A0 (MLB)""
+						register "type" = "UPC_TYPE_USB3_A"
+						register "group" = "ACPI_PLD_GROUP(1, 2)"
+						device ref usb3_port1 on end
+					end
+					chip drivers/usb/acpi
+						register "desc" = ""USB3 Type-A Port A1 (DB)""
+						register "type" = "UPC_TYPE_USB3_A"
+						register "group" = "ACPI_PLD_GROUP(2, 2)"
+						device ref usb3_port2 on
+							probe DB_USB USB3_ACTIVE
+							probe DB_USB USB3_PASSIVE
+							probe DB_USB USB4_GEN2
+							probe DB_USB USB4_GEN3
+						end
+					end
+					chip drivers/usb/acpi
+						register "desc" = ""USB3 WWAN""
+						register "type" = "UPC_TYPE_INTERNAL"
+						device ref usb3_port3 on end
 					end
 				end
 			end
