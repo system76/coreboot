@@ -8,8 +8,10 @@ static const struct mb_ddr4_cfg board_cfg = {
 	// dq_map unused on DDR4
 	// dqs_map unused on DDR4
 
+	// TGL-U does not support interleaved memory
 	.dq_pins_interleaved = 0,
 
+	//TODO: can we use early command training?
 	.ect = 0,
 };
 
@@ -31,6 +33,5 @@ void mainboard_memory_init_params(FSPM_UPD *mupd) {
 
 	//TODO: what is this for?
 	const bool half_populated = false;
-
 	meminit_ddr4(&mupd->FspmConfig, &board_cfg, &spd, half_populated);
 }

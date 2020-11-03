@@ -26,6 +26,9 @@ static const struct spd_info spd = {
 };
 
 void mainboard_memory_init_params(FSPM_UPD *mupd) {
+	//TODO: Allow memory clocks higher than 2933 MHz
+	mupd->FspmConfig.SaOcSupport = 1;
+
 	//TODO: what is this for?
 	const bool half_populated = false;
 	meminit_ddr4(&mupd->FspmConfig, &board_cfg, &spd, half_populated);
