@@ -53,7 +53,8 @@ static const struct pad_config gpio_table[] = {
 		PAD_CFG_NF(GPP_B0, NONE, DEEP, NF1),
 		PAD_CFG_NF(GPP_B1, NONE, DEEP, NF1),
 		PAD_CFG_GPI(GPP_B2, UP_20K, DEEP),
-		_PAD_CFG_STRUCT(GPP_B3, 0x80800100, 0x0000),
+		// GPP_B3 - touchpad interrupt
+		PAD_CFG_GPI_INT(GPP_B3, NONE, PLTRST, LEVEL),
 		PAD_NC(GPP_B4, NONE),
 		PAD_NC(GPP_B5, NONE),
 		PAD_NC(GPP_B6, NONE),
