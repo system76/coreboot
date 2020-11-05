@@ -368,8 +368,20 @@ static void pciexp_enable_aspm(struct device *root, unsigned int root_cap,
 	if (endp->disable_pcie_aspm)
 		return;
 
-	/* Get endpoint device capabilities for acceptable limits */
-	devcap = pci_read_config32(endp, endp_cap + PCI_EXP_DEVCAP);
+	const uint16_t xcap = pci_read_config16(endp, endp_cap + PCI_EXP_FLAGS);
+	const uint8_t type = (xcap & PCI_EXP_FLAGS_TYPE) >> 4;
+
+	/*
+	 * PCI_EXP_DEVCAP_L0S and PCI_EXP_DEVCAP_L1 are only valid for PCIe endpoints.
+	 * Refer to "PCI Express Base Specification Revision 2.0" Chapter 7.8.3
+	 */
+	if (type != PCI_EXP_TYPE_ENDPOINT && type != PCI_EXP_TYPE_LEG_END) {
+		/* Set no limit in acceptable latency */
+		devcap = (0x7 << 6) | (0x7 << 9);
+	} else {
+		/* Get endpoint device capabilities for acceptable limits */
+		devcap = pci_read_config32(endp, endp_cap + PCI_EXP_DEVCAP);
+	}
 
 	/* Enable L0s if it is within endpoint acceptable limit */
 	ok_latency = (devcap & PCI_EXP_DEVCAP_L0S) >> 6;
