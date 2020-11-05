@@ -257,6 +257,63 @@ typedef struct acpi_madt {
 	u32 flags;			/* Multiple APIC flags */
 } __packed acpi_madt_t;
 
+/*******************************************************************************
+ *
+ * LPIT - Low Power Idle Table
+ *
+ * Conforms to "ACPI Low Power Idle Table (LPIT)" July 2014.
+ *
+ ******************************************************************************/
+
+typedef struct acpi_lpi_state_flags {
+	u32 disabled:1;
+	u32 counterunavailable:1;
+	u32 reserved:30;
+} __packed acpi_lpi_state_flags;
+
+/* LPIT subtable header */
+
+typedef struct acpi_lpit_header {
+	u32 type;               /* Subtable type */
+	u32 length;             /* Subtable length */
+	u16 unique_id;
+	u16 reserved;
+	acpi_lpi_state_flags flags;
+} __packed acpi_lpit_header;
+
+/* Values for subtable Type above */
+
+enum acpi_lpit_type {
+	ACPI_LPIT_TYPE_NATIVE_CSTATE = 0x00,
+	ACPI_LPIT_TYPE_RESERVED = 0x01  /* 1 and above are reserved */
+};
+
+/* Masks for Flags field above  */
+
+#define ACPI_LPIT_STATE_DISABLED    (1)
+#define ACPI_LPIT_NO_COUNTER        (1<<1)
+
+/*
+ * LPIT subtables, correspond to Type in struct acpi_lpit_header
+ */
+
+/* 0x00: Native C-state instruction based LPI structure */
+
+struct acpi_lpit_native {
+	struct acpi_lpit_header header;
+	struct acpi_gen_regaddr entry_trigger;
+	u32 residency;
+	u32 latency;
+	struct acpi_gen_regaddr residency_counter;
+	u64 counter_frequency;
+};
+
+typedef struct acpi_table_lpit {
+	struct acpi_table_header header;        /* Common ACPI table header */
+	struct acpi_lpit_native lpit_soc;
+	struct acpi_lpit_native lpit_system;
+} __packed acpi_table_lpit;
+
 /* VFCT image header */
 typedef struct acpi_vfct_image_hdr {
 	u32 PCIBus;
@@ -896,6 +953,9 @@ struct acpi_spmi {
 } __packed;
 
 unsigned long fw_cfg_acpi_tables(unsigned long start);
+
+void soc_residency_counter(struct acpi_lpit_native *lpit_soc);
+void system_residency_counter(struct acpi_lpit_native *lpit_system);
 
 /* These are implemented by the target port or north/southbridge. */
 unsigned long write_acpi_tables(unsigned long addr);

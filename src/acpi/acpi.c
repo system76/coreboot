@@ -1271,6 +1271,78 @@ void acpi_create_fadt(acpi_fadt_t *fadt, acpi_facs_t *facs, void *dsdt)
 	    acpi_checksum((void *) fadt, header->length);
 }
 
+/*
+ * The value of residency couneter register address is MSR value and
+ * implementation specific.e.e.g, scenerios:
+ * 1. For CNL: space_id:0,residency_counter.addrl:0x632 and ACPI_LPIT
+ * selected in soc Kconfig sysfs file thet kernel creates is
+ * /sys/devices/system/cpu/cpuidle/low_power_idle_cpu_residency_us.
+ * 2. For CNL: space_id:0, residency_counter.addrl:0xfe000000 + 0x193C
+ * and ACPI_LPIT elected in soc Kconfig sysfs file thet kernel creates is
+ * /sys/devices/system/cpu/cpuidle/low_power_idle_system_residency_us
+ * which gets populated with integer values whenever system goes in s0ix.
+ */
+__weak void soc_residency_counter(struct acpi_lpit_native *lpit_soc)
+{
+	lpit_soc->header.unique_id = 0;
+
+	lpit_soc->residency = 0x7530;
+	lpit_soc->latency = 0xBB8;
+
+	lpit_soc->entry_trigger.space_id = 0x7f;
+	lpit_soc->entry_trigger.bit_width = 0x01;
+	lpit_soc->entry_trigger.bit_offset = 0x02;
+	lpit_soc->entry_trigger.addrl = 0x60;
+
+	lpit_soc->residency_counter.space_id = 0x7f;
+	lpit_soc->residency_counter.bit_width = 0x40;
+	lpit_soc->residency_counter.addrl = 0x632;
+}
+
+__weak void system_residency_counter(struct acpi_lpit_native *lpit_system)
+{
+	lpit_system->header.unique_id = 1;
+
+	lpit_system->counter_frequency = 0x256c;
+	lpit_system->residency = 0x7530;
+	lpit_system->latency = 0xBB8;
+
+	lpit_system->entry_trigger.space_id = 0x7f;
+	lpit_system->entry_trigger.bit_width = 0x01;
+	lpit_system->entry_trigger.bit_offset = 0x02;
+	lpit_system->entry_trigger.addrl = 0x60;
+
+	lpit_system->residency_counter.space_id = 0x00;
+	lpit_system->residency_counter.bit_width = 0x20;
+	lpit_system->residency_counter.access_size = 0x03;
+	lpit_system->residency_counter.addrl = 0xfe00193c;
+}
+
+static void acpi_create_lpit_generator(acpi_table_lpit *lpit)
+{
+	acpi_header_t *header = &(lpit->header);
+
+	memset((void *)lpit, 0, sizeof(acpi_table_lpit));
+
+	memcpy(header->signature, "LPIT", 4);
+	header->revision = 2; /* ACPI 1.0/2.0: ?, ACPI 3.0/4.0: 2 */
+	memcpy(header->oem_id, OEM_ID, 6);
+	memcpy(header->oem_table_id, ACPI_TABLE_CREATOR, 8);
+	header->oem_revision = 42;
+	memcpy(header->asl_compiler_id, ASLC, 4);
+	header->asl_compiler_revision = 0;
+	header->length = sizeof(acpi_table_lpit);
+	lpit->lpit_soc.header.length = sizeof(struct acpi_lpit_native);
+	lpit->lpit_system.header.length = sizeof(struct acpi_lpit_native);
+
+	soc_residency_counter(&lpit->lpit_soc);
+	system_residency_counter(&lpit->lpit_system);
+
+
+	/* (Re)calculate length and checksum. */
+	header->checksum = acpi_checksum((void *)lpit, header->length);
+}
+
 unsigned long __weak fw_cfg_acpi_tables(unsigned long start)
 {
 	return 0;
@@ -1291,6 +1363,7 @@ unsigned long write_acpi_tables(unsigned long start)
 	acpi_tcpa_t *tcpa;
 	acpi_tpm2_t *tpm2;
 	acpi_madt_t *madt;
+	acpi_table_lpit *lpit;
 	struct device *dev;
 	unsigned long fw;
 	size_t slic_size, dsdt_size;
@@ -1496,6 +1569,18 @@ unsigned long write_acpi_tables(unsigned long start)
 		current += madt->header.length;
 		acpi_add_table(rsdp, madt);
 	}
+
+	if (CONFIG(ACPI_LPIT)) {
+		printk(BIOS_DEBUG, "ACPI:     * LPIT\n");
+
+		lpit = (acpi_table_lpit *)current;
+		acpi_create_lpit_generator(lpit);
+		if (lpit->header.length >= sizeof(acpi_table_lpit)) {
+			current += lpit->header.length;
+			acpi_add_table(rsdp, lpit);
+		}
+	}
+
 	current = acpi_align_current(current);
 
 	printk(BIOS_DEBUG, "current = %lx\n", current);
