@@ -16,8 +16,7 @@ static const struct mb_ddr4_cfg board_cfg = {
 };
 
 static const struct spd_info spd = {
-	//.topology = MIXED,
-	.topology = SODIMM,
+	.topology = MIXED,
 	.md_spd_loc = SPD_CBFS,
 	.cbfs_index = 0,
 	.smbus_info[1] = {
