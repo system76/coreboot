@@ -26,7 +26,7 @@ static const struct pad_config early_gpio_table[] = {
 
 /* Pad configuration in ramstage. */
 static const struct pad_config gpio_table[] = {
-		// PM_BATLOW #
+		// PM_BATLOW#
 		PAD_CFG_NF(GPD0, UP_20K, PWROK, NF1),
 		// AC_PRESENT
 		PAD_CFG_NF(GPD1, NATIVE, PWROK, NF1),
@@ -38,7 +38,7 @@ static const struct pad_config gpio_table[] = {
 		PAD_CFG_NF(GPD4, NONE, PWROK, NF1),
 		// SUSC#_PCH
 		PAD_CFG_NF(GPD5, NONE, PWROK, NF1),
-		// SLP_A# test point
+		// SLP_A# - test point
 		PAD_CFG_NF(GPD6, NONE, DEEP, NF1),
 		// GPD7_REST
 		PAD_CFG_TERM_GPO(GPD7, 1, NONE, PWROK),
@@ -46,7 +46,7 @@ static const struct pad_config gpio_table[] = {
 		PAD_CFG_NF(GPD8, NONE, PWROK, NF1),
 		// GPD9_RTD3
 		PAD_CFG_TERM_GPO(GPD9, 0, NONE, PWROK),
-		// SLP_S5# test point
+		// SLP_S5# - test point
 		PAD_CFG_NF(GPD10, UP_20K, DEEP, NF1),
 		// LAN_DISABLE#
 		PAD_CFG_GPI(GPD11, UP_20K, DEEP),
@@ -108,9 +108,9 @@ static const struct pad_config gpio_table[] = {
 		PAD_CFG_GPI_INT(GPP_B3, NONE, PLTRST, LEVEL),
 		// NC
 		PAD_NC(GPP_B4, NONE),
-		// Test point
+		// test point
 		PAD_NC(GPP_B5, NONE),
-		// Test point
+		// test point
 		PAD_NC(GPP_B6, NONE),
 		// NC
 		PAD_NC(GPP_B7, NONE),
