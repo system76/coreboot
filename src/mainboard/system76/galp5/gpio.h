@@ -413,10 +413,8 @@ static const struct pad_config gpio_table[] = {
 		PAD_NC(GPP_T2, NONE),
 		// NC
 		PAD_NC(GPP_T3, NONE),
-		// DGPU_RST#_PCH
-		PAD_CFG_TERM_GPO(GPP_U4, 1, NONE, DEEP),
-		// DGPU_PWR_EN
-		PAD_CFG_TERM_GPO(GPP_U5, 1, NONE, DEEP),
+		// DGPU_RST#_PCH - handled in bootblock.c
+		// DGPU_PWR_EN - handled in bootblock.c
 };
 
 #endif

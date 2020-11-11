@@ -1,7 +1,9 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+/*TODO: TGL-U not yet supported
 #include "../gpio.h"
 #include <drivers/system76/dgpu/acpi/dgpu.asl>
+*/
 
 #define EC_GPE_SCI 0x6E
 #define EC_GPE_SWI 0x6B
