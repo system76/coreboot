@@ -46,8 +46,8 @@ chip soc/intel/tigerlake
 	register "gen4_dec" = "0x00fc0F01"
 
 # Finalize (soc/intel/tigerlake/finalize.c)
-	# PM Timer Enabled
-	register "PmTimerDisabled" = "0"
+	# PM Timer Disabled
+	register "PmTimerDisabled" = "1"
 
 # FSP Memory (soc/intel/tigerlake/romstage/fsp_params.c)
 	# DDIA is eDP
