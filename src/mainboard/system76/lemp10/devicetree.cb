@@ -79,8 +79,41 @@ chip soc/intel/tigerlake
 	# Enable DPTF device
 	register "Device4Enable" = "1"
 
+	# FIVR configuration
+	#   Read EXT_RAIL_CONFIG to determine bitmaps
+	#     sudo devmem2 0xfe0011b8
+	#     0x0
+	#   Read EXT_V1P05_VR_CONFIG
+	#     sudo devmem2 0xfe0011c0
+	#     0x1a42000
+	#   Read EXT_VNN_VR_CONFIG0
+	#     sudo devmem2 0xfe0011c4
+	#     0x1a42000
+	# TODO: v1p05 voltage and vnn icc max?
+	register "ext_fivr_settings" = "{
+		.configure_ext_fivr = 1,
+		.v1p05_enable_bitmap = 0,
+		.vnn_enable_bitmap = 0,
+		.v1p05_supported_voltage_bitmap = 0,
+		.vnn_supported_voltage_bitmap = 0,
+		.v1p05_icc_max_ma = 500,
+		.vnn_sx_voltage_mv = 1050,
+	}"
+
 	#TODO: Hybrid storage mode
 	register "HybridStorageMode" = "0"
+
+	# Read LPM_EN, make sure to invert the bits
+	# sudo devmem2 0xfe001c78
+	# 0x9
+	register "LpmStateDisableMask" = "
+		LPM_S0i2_1 |
+		LPM_S0i2_2 |
+		LPM_S0i3_1 |
+		LPM_S0i3_2 |
+		LPM_S0i3_3 |
+		LPM_S0i3_4
+	"
 
 	# SATA1 (SSD2)
 	register "SataPortsEnable[1]" = "1"
