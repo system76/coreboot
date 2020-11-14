@@ -16,8 +16,8 @@ chip soc/intel/tigerlake
 	# Enable Enhanced Intel SpeedStep
 	register "eist_enable" = "1"
 
-	# Disable s0ix
-	register "s0ix_enable" = "0"
+	# Enable s0ix, required for TGL-U
+	register "s0ix_enable" = "1"
 
 # CPU (soc/intel/tigerlake/cpu.c)
 	# Power limits
@@ -46,7 +46,7 @@ chip soc/intel/tigerlake
 	register "gen4_dec" = "0x00fc0F01"
 
 # Finalize (soc/intel/tigerlake/finalize.c)
-	# PM Timer Disabled
+	# PM Timer Disabled, saves power
 	register "PmTimerDisabled" = "1"
 
 # FSP Memory (soc/intel/tigerlake/romstage/fsp_params.c)
