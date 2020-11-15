@@ -254,7 +254,12 @@ chip soc/intel/tigerlake
 		device pci 0a.0 on  end # Crash-log SRAM	0x9A0D
 		device pci 0d.0 on  end # USB xHCI		0x9A13
 		device pci 0d.1 off end # USB xDCI (OTG)	0x9A15
-		device pci 0d.2 on  end # TBT DMA0		0x9A1B
+		device pci 0d.2 on
+			chip drivers/intel/usb4/retimer
+				register "power_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_A23)"
+				device generic 0 on end
+			end
+		end # TBT DMA0		0x9A1B
 		device pci 0d.3 off end # TBT DMA1		0x9A1D
 		device pci 0e.0 off end # VMD			0x9A0B
 
