@@ -237,7 +237,7 @@ static const struct pad_config gpio_table[] = {
 		// DEVSLP0
 		PAD_NC(GPP_E4, NONE),
 		// DEVSLP1
-		PAD_NC(GPP_E5, NONE),
+		PAD_CFG_NF(GPP_E5, NONE, DEEP, NF1),
 		// PCH_GPP_E6 - reserved strap
 		PAD_NC(GPP_E6, NONE),
 		// NC
