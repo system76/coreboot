@@ -14,6 +14,7 @@
 #include <intelblocks/xdci.h>
 #include <intelpch/lockdown.h>
 #include <security/vboot/vboot_common.h>
+#include <soc/early_tcss.h>
 #include <soc/gpio_soc_defs.h>
 #include <soc/intel/common/vbt.h>
 #include <soc/pci_devs.h>
@@ -370,6 +371,10 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 
 	/* EnableMultiPhaseSiliconInit for running MultiPhaseSiInit */
 	params->EnableMultiPhaseSiliconInit = 1;
+
+	/* Disable C1 C-state Demotion */
+	params->C1StateAutoDemotion = 0;
+
 	mainboard_silicon_init_params(params);
 }
 
@@ -385,6 +390,11 @@ void platform_fsp_multi_phase_init_cb(uint32_t phase_index)
 	switch (phase_index) {
 	case 1:
 		/* TCSS specific initialization here */
+		printk(BIOS_DEBUG, "FSP MultiPhaseSiInit %s/%s called\n",
+			__FILE__, __func__);
+		if (CONFIG(EARLY_TCSS_DISPLAY) && (vboot_recovery_mode_enabled() ||
+			vboot_developer_mode_enabled()))
+			mainboard_early_tcss_enable();
 		break;
 	default:
 		break;

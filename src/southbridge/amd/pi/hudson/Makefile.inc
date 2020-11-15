@@ -78,26 +78,26 @@ endif
 ifeq ($(CONFIG_HUDSON_PSP), y)
 
 ifeq ($(CONFIG_CPU_AMD_PI_00730F01), y)
-FIRMWARE_LOCATE=$(shell grep -e FIRMWARE_LOCATE $(CONFIG_AMDFW_CONFIG_FILE) | awk '{print $$2}')
+FIRMWARE_LOCATION=$(shell grep -e FIRMWARE_LOCATION $(CONFIG_AMDFW_CONFIG_FILE) | awk '{print $$2}')
 FIRMWARE_TYPE=
 
 endif
 
 ifeq ($(CONFIG_CPU_AMD_PI_00660F01), y)
-FIRMWARE_LOCATE=$(dir $(call strip_quotes, $(CONFIG_AMD_PUBKEY_FILE)))
+FIRMWARE_LOCATION=$(dir $(call strip_quotes, $(CONFIG_AMD_PUBKEY_FILE)))
 FIRMWARE_TYPE=CZ
 
-PSPBTLDR_FILE=$(top)/$(FIRMWARE_LOCATE)/PspBootLoader_prod_CZ.sbin
-PSPRCVR_FILE=$(top)/$(FIRMWARE_LOCATE)/PspRecoveryBootLoader_prod_CZ.sbin
-PSPSECUREOS_FILE=$(top)/$(FIRMWARE_LOCATE)/PspSecureOs_prod_CZ.csbin
-PSPTRUSTLETS_FILE=$(top)/$(FIRMWARE_LOCATE)/PspTrustlets_prod_CZ.cbin
-TRUSTLETKEY_FILE=$(top)/$(FIRMWARE_LOCATE)/TrustletKey_prod_CZ.sbin
-SMUFIRMWARE2_FILE=$(top)/$(FIRMWARE_LOCATE)/SmuFirmware2_prod_CZ.sbin
+PSPBTLDR_FILE=$(top)/$(FIRMWARE_LOCATION)/PspBootLoader_prod_CZ.sbin
+PSPRCVR_FILE=$(top)/$(FIRMWARE_LOCATION)/PspRecoveryBootLoader_prod_CZ.sbin
+PSPSECUREOS_FILE=$(top)/$(FIRMWARE_LOCATION)/PspSecureOs_prod_CZ.csbin
+PSPTRUSTLETS_FILE=$(top)/$(FIRMWARE_LOCATION)/PspTrustlets_prod_CZ.cbin
+TRUSTLETKEY_FILE=$(top)/$(FIRMWARE_LOCATION)/TrustletKey_prod_CZ.sbin
+SMUFIRMWARE2_FILE=$(top)/$(FIRMWARE_LOCATION)/SmuFirmware2_prod_CZ.sbin
 endif
 
-#PUBSIGNEDKEY_FILE=$(top)/$(FIRMWARE_LOCATE)/RtmPubSigned$(FIRMWARE_TYPE).key
-#PSPNVRAM_FILE=$(top)/$(FIRMWARE_LOCATE)/PspNvram$(FIRMWARE_TYPE).bin
-#PSPSECUREDEBUG_FILE=$(top)/$(FIRMWARE_LOCATE)/PspSecureDebug$(FIRMWARE_TYPE).Key
+#PUBSIGNEDKEY_FILE=$(top)/$(FIRMWARE_LOCATION)/RtmPubSigned$(FIRMWARE_TYPE).key
+#PSPNVRAM_FILE=$(top)/$(FIRMWARE_LOCATION)/PspNvram$(FIRMWARE_TYPE).bin
+#PSPSECUREDEBUG_FILE=$(top)/$(FIRMWARE_LOCATION)/PspSecureDebug$(FIRMWARE_TYPE).Key
 
 endif
 
@@ -121,7 +121,8 @@ OPT_SMUFIRMWARE2_FILE=$(call add_opt_prefix, $(SMUFIRMWARE2_FILE), --smufirmware
 OPT_SMUSCS_FILE=$(call add_opt_prefix, $(SMUSCS_FILE), --smuscs)
 
 # Add all the files listed in the config file
-DEP_FILES=$(shell $(AMDFWTOOL) --config $(CONFIG_AMDFW_CONFIG_FILE) --depend)
+POUND_SIGN=$(call strip_quotes, "\#")
+DEP_FILES= $(patsubst %,$(FIRMWARE_LOCATION)/%, $(shell sed -e /^$(POUND_SIGN)/d -e /^FIRMWARE_LOCATION/d $(CONFIG_AMDFW_CONFIG_FILE) | awk '{print $$2}' ))
 
 $(obj)/amdfw.rom:	$(call strip_quotes, $(CONFIG_HUDSON_XHCI_FWM_FILE)) \
 			$(call strip_quotes, $(CONFIG_HUDSON_IMC_FWM_FILE)) \

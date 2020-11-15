@@ -41,9 +41,6 @@ static void pch_enable_ioapic(struct device *dev)
 	pci_write_config16(dev, LPC_IBDF,
 		PCH_IOAPIC_PCI_BUS << 8 | PCH_IOAPIC_PCI_SLOT << 3);
 
-	/* Enable ACPI I/O range decode */
-	pci_write_config8(dev, ACPI_CNTL, ACPI_EN);
-
 	set_ioapic_id(VIO_APIC_VADDR, 0x02);
 
 	/* affirm full set of redirection table entries ("write once") */
@@ -71,6 +68,25 @@ static void pch_enable_serial_irqs(struct device *dev)
 	pci_write_config8(dev, SERIRQ_CNTL,
 			  (1 << 7) | (0 << 6) | ((21 - 17) << 2) | (0 << 0));
 #endif
+}
+
+static void enable_hpet(struct device *const dev)
+{
+	u32 reg32;
+	size_t i;
+
+	/* Assign unique bus/dev/fn for each HPET */
+	for (i = 0; i < 8; ++i)
+		pci_write_config16(dev, LPC_HnBDF(i),
+			PCH_HPET_PCI_BUS << 8 | PCH_HPET_PCI_SLOT << 3 | i);
+
+	/* Move HPET to default address 0xfed00000 and enable it */
+	reg32 = RCBA32(HPTC);
+	reg32 |= (1 << 7); // HPET Address Enable
+	reg32 &= ~(3 << 0);
+	RCBA32(HPTC) = reg32;
+	/* Read it back to stick. It's affected by posted write syndrome. */
+	RCBA32(HPTC);
 }
 
 /* PIRQ[n]_ROUT[3:0] - PIRQ Routing Control
@@ -246,7 +262,7 @@ static void pch_power_options(struct device *dev)
 		 * Set the board's GPI routing on LynxPoint-H.
 		 * This is done as part of GPIO configuration on LynxPoint-LP.
 		 */
-		if (pch_is_lp())
+		if (!pch_is_lp())
 			pch_gpi_routing(dev, config);
 
 		/* GPE setup based on device tree configuration */
@@ -374,25 +390,6 @@ static void lpt_lp_pm_init(struct device *dev)
 	RCBA32_OR(0x33c8, (1 << 15));
 }
 
-static void enable_hpet(struct device *const dev)
-{
-	u32 reg32;
-	size_t i;
-
-	/* Assign unique bus/dev/fn for each HPET */
-	for (i = 0; i < 8; ++i)
-		pci_write_config16(dev, LPC_HnBDF(i),
-			PCH_HPET_PCI_BUS << 8 | PCH_HPET_PCI_SLOT << 3 | i);
-
-	/* Move HPET to default address 0xfed00000 and enable it */
-	reg32 = RCBA32(HPTC);
-	reg32 |= (1 << 7); // HPET Address Enable
-	reg32 &= ~(3 << 0);
-	RCBA32(HPTC) = reg32;
-	/* Read it back to stick. It's affected by posted write syndrome. */
-	RCBA32(HPTC);
-}
-
 static void enable_clock_gating(struct device *dev)
 {
 	/* LynxPoint Mobile */
@@ -504,11 +501,6 @@ static void pch_fixups(struct device *dev)
 static void lpc_init(struct device *dev)
 {
 	printk(BIOS_DEBUG, "pch: %s\n", __func__);
-
-	/* Set the value for PCI command register. */
-	pci_write_config16(dev, PCI_COMMAND,
-			   PCI_COMMAND_MASTER | PCI_COMMAND_SPECIAL |
-			   PCI_COMMAND_MEMORY | PCI_COMMAND_IO);
 
 	/* IO APIC initialization. */
 	pch_enable_ioapic(dev);

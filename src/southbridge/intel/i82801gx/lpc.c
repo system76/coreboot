@@ -35,9 +35,6 @@
  */
 static void i82801gx_enable_ioapic(struct device *dev)
 {
-	/* Enable ACPI I/O range decode */
-	pci_write_config8(dev, ACPI_CNTL, ACPI_EN);
-
 	set_ioapic_id(VIO_APIC_VADDR, 0x02);
 
 	/*
@@ -340,11 +337,6 @@ static void i82801gx_fixups(struct device *dev)
 static void lpc_init(struct device *dev)
 {
 	printk(BIOS_DEBUG, "i82801gx: %s\n", __func__);
-
-	/* Set the value for PCI command register. */
-	pci_write_config16(dev, PCI_COMMAND,
-			   PCI_COMMAND_MASTER | PCI_COMMAND_SPECIAL |
-			   PCI_COMMAND_MEMORY | PCI_COMMAND_IO);
 
 	/* IO APIC initialization. */
 	i82801gx_enable_ioapic(dev);

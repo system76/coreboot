@@ -13,6 +13,27 @@ Update this document with changes that should be in the release notes.
 Significant changes
 -------------------
 
+### Native refcode implementation for Bay Trail
+
+Bay Trail no longer needs a refcode binary to function properly. The refcode
+was reimplemented as coreboot code, which should be functionally equivalent.
+Thus, coreboot only needs to run the MRC.bin to successfully boot Bay Trail.
+
+### Unusual config files to build test more code
+
+There's some new highly-unusual config files, whose only purpose is to coerce
+Jenkins into build-testing several disabled-by-default coreboot config options.
+This prevents them from silently decaying over time because of build failures.
+
+### Initial support for Intel Trusted eXecution Technology
+
+coreboot now supports enabling Intel TXT. Though it's not feature-complete yet,
+the code allows successfully launching tboot, a Measured Launch Environment. It
+was tested on Haswell using an Asrock B85M Pro4 mainboard with TPM 2.0 on LPC.
+Though support for other platforms is still not ready, it is being worked on.
+The Haswell MRC.bin needs to be patched so as to enable DPR. Given that the MRC
+binary cannot be redistributed, the best long-term solution is to replace it.
+
 ### Hidden PCI devices
 
 This new functionality takes advantage of the existing 'hidden' keyword in the
@@ -48,6 +69,15 @@ segment and only a limited number of CPU threads can fit into one segment
 the 64K segment to accomodate additional CPUs and in theory allows as many
 CPU threads as possible limited only by SMRAM space and not by 64K. By default
 this loader version is disabled. Please see cpu/x86/Kconfig for more info.
+
+### Address Sanitizer
+
+coreboot now has an in-built Address Sanitizer, a runtime memory debugger
+designed to find out-of-bounds access and use-after-scope bugs. It is made
+available on all x86 platforms in ramstage and on QEMU i440fx, Intel Apollo
+Lake, and Haswell in romstage. Further, it can be enabled in romstage on other
+x86 platforms as well. Refer [ASan documentation](../technotes/asan.md) for
+more info.
 
 ### Initial support for x86_64
 

@@ -9,24 +9,24 @@ chip soc/amd/picasso
 	register "system_config" = "2"
 
 	# Set STAPM confiuration. All of these fields must be set >0 to take affect
-	register "slow_ppt_limit" = "20000" #mw
-	register "fast_ppt_limit" = "24000" #mw
-	register "slow_ppt_time_constant" = "5" #second
-	register "stapm_time_constant" = "200" #second
-	register "sustained_power_limit" = "12000" #mw
-	register "thermctl_limit" = "100" #degrees C
+	register "slow_ppt_limit_mW" = "20000"
+	register "fast_ppt_limit_mW" = "24000"
+	register "slow_ppt_time_constant_s" = "5"
+	register "stapm_time_constant_s" = "200"
+	register "sustained_power_limit_mW" = "12000"
+	register "thermctl_limit_degreeC" = "100"
 
-	register "telemetry_vddcr_vdd_slope" = "62641" #mA
+	register "telemetry_vddcr_vdd_slope_mA" = "62641"
 	register "telemetry_vddcr_vdd_offset" = "0"
-	register "telemetry_vddcr_soc_slope" = "28333" #mA
+	register "telemetry_vddcr_soc_slope_mA" = "28333"
 	register "telemetry_vddcr_soc_offset" = "0"
 
 	# Set STAPM confiuration for tablet mode
 	register "dptc_enable" = "1"
-	register "slow_ppt_limit_tablet_mode" = "20000" #mw
-	register "fast_ppt_limit_tablet_mode" = "24000" #mw
-	register "sustained_power_limit_tablet_mode" = "12000" #mw
-	register "thermctl_limit_tablet_mode" = "70" #degrees C
+	register "slow_ppt_limit_tablet_mode_mW" = "20000"
+	register "fast_ppt_limit_tablet_mode_mW" = "24000"
+	register "sustained_power_limit_tablet_mode_mW" = "12000"
+	register "thermctl_limit_tablet_mode_degreeC" = "70"
 
 	# End : OPN Performance Configuration
 
@@ -86,7 +86,7 @@ chip soc/amd/picasso
 		chip drivers/i2c/hid
 			register "generic.hid" = ""PNP0C50""
 			register "generic.desc" = ""Synaptics Touchpad""
-			register "generic.irq_gpio" = "ACPI_GPIO_IRQ_EDGE_LOW(GPIO_9)"
+			register "generic.irq_gpio" = "ACPI_GPIO_IRQ_LEVEL_LOW(GPIO_9)"
 			register "generic.wake" = "GEVENT_22"
 			register "generic.probed" = "1"
 			register "hid_desc_reg_offset" = "0x20"
@@ -95,7 +95,7 @@ chip soc/amd/picasso
 		chip drivers/i2c/hid
 			register "generic.hid" = ""GDIX0000""
 			register "generic.desc" = ""Goodix Touchscreen""
-			register "generic.irq_gpio" = "ACPI_GPIO_IRQ_EDGE_LOW(GPIO_12)"
+			register "generic.irq_gpio" = "ACPI_GPIO_IRQ_LEVEL_LOW(GPIO_12)"
 			register "generic.probed" = "1"
 			register "generic.enable_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPIO_90)"
 			register "generic.enable_delay_ms" = "10"

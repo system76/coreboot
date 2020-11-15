@@ -235,6 +235,8 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 	/* Legacy 8254 timer support */
 	params->Early8254ClockGatingEnable = !CONFIG(USE_LEGACY_8254_TIMER);
 
+	params->EnableTcoTimer = CONFIG(USE_PM_ACPI_TIMER);
+
 	memcpy(params->SerialIoDevMode, config->SerialIoDevMode,
 	       sizeof(params->SerialIoDevMode));
 
@@ -295,7 +297,8 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 
 	dev = pcidev_path_on_root(SA_DEVFN_TS);
 	params->Device4Enable = dev && dev->enabled;
-	params->EnableTcoTimer = !config->PmTimerDisabled;
+	dev = pcidev_path_on_root(PCH_DEVFN_THERMAL);
+	params->PchThermalDeviceEnable = dev && dev->enabled;
 
 	tconfig->PchLockDownGlobalSmi = config->LockDownConfigGlobalSmi;
 	tconfig->PchLockDownRtcLock = config->LockDownConfigRtcLock;

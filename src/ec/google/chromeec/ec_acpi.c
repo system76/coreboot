@@ -140,10 +140,6 @@ static void fill_ssdt_typec_device(const struct device *dev)
 		if (rv)
 			continue;
 
-		if (!config->mux_conn[i])
-			printk(BIOS_ERR, "ERROR: Mux connector info missing for Type-C port "
-			       "#%d\n", i);
-
 		usb2_port = NULL;
 		usb3_port = NULL;
 		usb4_port = NULL;
@@ -226,9 +222,6 @@ void google_chromeec_fill_ssdt_generator(const struct device *dev)
 {
 	struct device_path path;
 	struct device *ec;
-
-	if (!dev->enabled)
-		return;
 
 	/* Set up a minimal EC0 device to pass to the DPTF helpers */
 	path.type = DEVICE_PATH_GENERIC;

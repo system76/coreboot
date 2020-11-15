@@ -38,7 +38,7 @@ void compile_reg_expr(int cflags, const char *expr, regex_t *reg)
 	result = regcomp(reg, expr, cflags);
 	if (result != 0) {
 		regerror(result, reg, error_msg, ERROR_BUF_SIZE);
-		printf("%s\n", error_msg);
+		fprintf(stderr, "%s\n", error_msg);
 	}
 }
 
@@ -304,7 +304,7 @@ int get_input_file_line(FILE *f, char line[], int line_buf_size)
 	line[strlen(line) - 1] = '\0';
 
 	if (strlen(line) == ((size_t) (line_buf_size - 1))) {
-		printf("The line size in config file should be lower than %d bytes.\n",
+		fprintf(stderr, "The line size in config file should be lower than %d bytes.\n",
 			MAX_LINE_SIZE);
 		exit(1);
 	}
@@ -359,13 +359,13 @@ uint8_t process_config(FILE *config, amd_cb_config *cb_config, uint8_t print_dep
 		entries_line_regex, &entries_line_expr);
 
 	/* Get a line */
-	/* Get FIRMWARE_LOCATE in the first loop */
+	/* Get FIRMWARE_LOCATION in the first loop */
 	while (get_input_file_line(config, oneline, MAX_LINE_SIZE) == OK) {
 		/* get a line */
 		if (skip_comment_blank_line(oneline))
 			continue;
 		if (is_valid_entry(oneline, match)) {
-			if (strcmp(&(oneline[match[1].rm_so]), "FIRMWARE_LOCATE") == 0) {
+			if (strcmp(&(oneline[match[1].rm_so]), "FIRMWARE_LOCATION") == 0) {
 				strcpy(dir, &(oneline[match[2].rm_so]));
 				break;
 			}
@@ -384,7 +384,7 @@ uint8_t process_config(FILE *config, amd_cb_config *cb_config, uint8_t print_dep
 		if (skip_comment_blank_line(oneline))
 			continue;
 		if (is_valid_entry(oneline, match)) {
-			if (strcmp(&(oneline[match[1].rm_so]), "FIRMWARE_LOCATE") == 0) {
+			if (strcmp(&(oneline[match[1].rm_so]), "FIRMWARE_LOCATION") == 0) {
 				continue;
 			} else {
 				path_filename = malloc(MAX_LINE_SIZE);

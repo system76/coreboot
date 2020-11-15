@@ -1,302 +1,26 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-Name(_HID,EISAID("PNP0A08"))	// PCIe
-Name(_CID,EISAID("PNP0A03"))	// PCI
+#include "../haswell.h"
+#include <southbridge/intel/common/rcba.h>
 
-Name(_BBN, 0)
+Name (_HID, EISAID ("PNP0A08"))	// PCIe
+Name (_CID, EISAID ("PNP0A03"))	// PCI
+
+Name (_BBN, 0)
 
 Device (MCHC)
 {
-	Name(_ADR, 0x00000000)	// 0:0.0
+	Name (_ADR, 0x00000000)	// 0:0.0
 
-	OperationRegion(MCHP, PCI_Config, 0x00, 0x100)
+	OperationRegion (MCHP, PCI_Config, 0x00, 0x100)
 	Field (MCHP, DWordAcc, NoLock, Preserve)
 	{
-		Offset (0x40),	// EPBAR
-		EPEN,	 1,	// Enable
-		,	11,	//
-		EPBR,	27,	// EPBAR
-
-		Offset (0x48),	// MCHBAR
-		MHEN,	 1,	// Enable
-		,	14,	//
-		MHBR,	24,	// MCHBAR
-		Offset (0x54),
-		DVEN,	32,
-		Offset (0x60),	// PCIe BAR
-		PXEN,	 1,	// Enable
-		PXSZ,	 2,	// BAR size
-		,	23,	//
-		PXBR,	13,	// PCIe BAR
-
-		Offset (0x68),	// DMIBAR
-		DMEN,	 1,	// Enable
-		,	11,	//
-		DMBR,	27,	// DMIBAR
-
 		Offset (0x70),	// ME Base Address
 		MEBA,	 64,
-
-		// ...
-
-		Offset (0x80),	// PAM0
-		,	 4,
-		PM0H,	 2,
-		,	 2,
-		Offset (0x81),	// PAM1
-		PM1L,	 2,
-		,	 2,
-		PM1H,	 2,
-		,	 2,
-		Offset (0x82),	// PAM2
-		PM2L,	 2,
-		,	 2,
-		PM2H,	 2,
-		,	 2,
-		Offset (0x83),	// PAM3
-		PM3L,	 2,
-		,	 2,
-		PM3H,	 2,
-		,	 2,
-		Offset (0x84),	// PAM4
-		PM4L,	 2,
-		,	 2,
-		PM4H,	 2,
-		,	 2,
-		Offset (0x85),	// PAM5
-		PM5L,	 2,
-		,	 2,
-		PM5H,	 2,
-		,	 2,
-		Offset (0x86),	// PAM6
-		PM6L,	 2,
-		,	 2,
-		PM6H,	 2,
-		,	 2,
-
 		Offset (0xa0),	// Top of Used Memory
 		TOM,	 64,
-
 		Offset (0xbc),	// Top of Low Used Memory
 		TLUD,	 32,
-	}
-
-	Mutex (CTCM, 1)		/* CTDP Switch Mutex (sync level 1) */
-	Name (CTCC, 0)		/* CTDP Current Selection */
-	Name (CTCN, 0)		/* CTDP Nominal Select */
-	Name (CTCD, 1)		/* CTDP Down Select */
-	Name (CTCU, 2)		/* CTDP Up Select */
-	Name (SPL1, 0)		/* Saved PL1 value */
-
-	OperationRegion (MCHB, SystemMemory, DEFAULT_MCHBAR + 0x5000, 0x1000)
-	Field (MCHB, DWordAcc, Lock, Preserve)
-	{
-		Offset (0x930), /* PACKAGE_POWER_SKU */
-		CTDN, 15,	/* CTDP Nominal PL1 */
-		Offset (0x938), /* PACKAGE_POWER_SKU_UNIT */
-		PUNI, 4,	/* Power Units */
-		,     4,
-		EUNI, 5,	/* Energy Units */
-		,     3,
-		TUNI, 4,	/* Time Units */
-		Offset (0x958), /* PLATFORM_INFO */
-		,     40,
-		LFM_, 8,	/* Maximum Efficiency Ratio (LFM) */
-		Offset (0x9a0), /* TURBO_POWER_LIMIT1 */
-		PL1V, 15,	/* Power Limit 1 Value */
-		PL1E, 1,	/* Power Limit 1 Enable */
-		PL1C, 1,	/* Power Limit 1 Clamp */
-		PL1T, 7,	/* Power Limit 1 Time */
-		Offset (0x9a4), /* TURBO_POWER_LIMIT2 */
-		PL2V, 15,	/* Power Limit 2 Value */
-		PL2E, 1,	/* Power Limit 2 Enable */
-		PL2C, 1,	/* Power Limit 2 Clamp */
-		PL2T, 7,	/* Power Limit 2 Time */
-		Offset (0xf3c), /* CONFIG_TDP_NOMINAL */
-		TARN, 8,	/* CTDP Nominal Turbo Activation Ratio */
-		Offset (0xf40), /* CONFIG_TDP_LEVEL1 */
-		CTDD, 15,	/* CTDP Down PL1 */
-		,     1,
-		TARD, 8,	/* CTDP Down Turbo Activation Ratio */
-		Offset (0xf48), /* MSR_CONFIG_TDP_LEVEL2 */
-		CTDU, 15,	/* CTDP Up PL1 */
-		,     1,
-		TARU, 8,	/* CTDP Up Turbo Activation Ratio */
-		Offset (0xf50), /* CONFIG_TDP_CONTROL */
-		CTCS, 2,	/* CTDP Select */
-		Offset (0xf54), /* TURBO_ACTIVATION_RATIO */
-		TARS, 8,	/* Turbo Activation Ratio Select */
-	}
-
-	/*
-	 * Search CPU0 _PSS looking for control = arg0 and then
-	 * return previous P-state entry number for new _PPC
-	 *
-	 * Format of _PSS:
-	 *   Name (_PSS, Package () {
-	 *     Package (6) { freq, power, tlat, blat, control, status }
-	 *   }
-	 */
-	External (\_SB.CP00._PSS)
-	Method (PSSS, 1, NotSerialized)
-	{
-		Local0 = 1 /* Start at P1 */
-		Local1 = SizeOf (\_SB.CP00._PSS)
-
-		While (Local0 < Local1) {
-			/* Store _PSS entry Control value to Local2 */
-			Local2 = DeRefOf (Index (DeRefOf (Index (\_SB.CP00._PSS, Local0)), 4)) >> 8
-			If (Local2 == Arg0) {
-				Return (Local0 - 1)
-			}
-			Local0++
-		}
-
-		Return (0)
-	}
-
-	/* Calculate PL2 based on chip type */
-	Method (CPL2, 1, NotSerialized)
-	{
-		If (\ISLP ()) {
-			/* Haswell ULT PL2 = 25W */
-			Return (25 * 8)
-		} Else {
-			/* Haswell Mobile PL2 = 1.25 * PL1 */
-			Return ((Arg0 * 125) / 100)
-		}
-	}
-
-	/* Set Config TDP Down */
-	Method (STND, 0, Serialized)
-	{
-		If (Acquire (CTCM, 100)) {
-			Return (0)
-		}
-		If (CTCD == CTCC) {
-			Release (CTCM)
-			Return (0)
-		}
-
-		Debug = "Set TDP Down"
-
-		/* Set CTC */
-		CTCS = CTCD
-
-		/* Set TAR */
-		TARS = TARD
-
-		/* Set PPC limit and notify OS */
-		PPCM = PSSS (TARD)
-		PPCN ()
-
-		/* Set PL2 */
-		PL2V = CPL2 (CTDD)
-
-		/* Set PL1 */
-		PL1V = CTDD
-
-		/* Store the new TDP Down setting */
-		CTCC = CTCD
-
-		Release (CTCM)
-		Return (1)
-	}
-
-	/* Set Config TDP Nominal from Down */
-	Method (STDN, 0, Serialized)
-	{
-		If (Acquire (CTCM, 100)) {
-			Return (0)
-		}
-		If (CTCN == CTCC) {
-			Release (CTCM)
-			Return (0)
-		}
-
-		Debug = "Set TDP Nominal"
-
-		/* Set PL1 */
-		PL1V = CTDN
-
-		/* Set PL2 */
-		PL2V = CPL2 (CTDN)
-
-		/* Set PPC limit and notify OS */
-		PPCM = PSSS (TARN)
-		PPCN ()
-
-		/* Set TAR */
-		TARS = TARN
-
-		/* Set CTC */
-		CTCS = CTCN
-
-		/* Store the new TDP Nominal setting */
-		CTCC = CTCN
-
-		Release (CTCM)
-		Return (1)
-	}
-
-	/* Calculate PL1 value based on requested TDP */
-	Method (TDPP, 1, NotSerialized)
-	{
-		Return (((PUNI - 1) << 2) * Arg0)
-	}
-
-	/* Enable Controllable TDP to limit PL1 to requested value */
-	Method (CTLE, 1, Serialized)
-	{
-		If (Acquire (CTCM, 100)) {
-			Return (0)
-		}
-
-		Debug = "Enable PL1 Limit"
-
-		/* Set _PPC to LFM */
-		Local0 = PSSS (LFM_)
-		PPCM = Local0 + 1
-		\PPCN ()
-
-		/* Set TAR to LFM-1 */
-		TARS = LFM_ - 1
-
-		/* Set PL1 to desired value */
-		SPL1 = PL1V
-		PL1V = TDPP (Arg0)
-
-		/* Set PL1 CLAMP bit */
-		PL1C = 1
-
-		Release (CTCM)
-		Return (1)
-	}
-
-	/* Disable Controllable TDP */
-	Method (CTLD, 0, Serialized)
-	{
-		If (Acquire (CTCM, 100)) {
-			Return (0)
-		}
-
-		Debug = "Disable PL1 Limit"
-
-		/* Clear PL1 CLAMP bit */
-		PL1C = 0
-
-		/* Set PL1 to normal value */
-		PL1V = SPL1
-
-		/* Set TAR to 0 */
-		TARS = 0
-
-		/* Set _PPC to 0 */
-		PPCM = 0
-		\PPCN ()
-
-		Release (CTCM)
-		Return (1)
 	}
 }
 
@@ -418,9 +142,9 @@ Name (MCRS, ResourceTemplate()
 Method (_CRS, 0, Serialized)
 {
 	// Find PCI resource area in MCRS
-	CreateDwordField(MCRS, ^PM01._MIN, PMIN)
-	CreateDwordField(MCRS, ^PM01._MAX, PMAX)
-	CreateDwordField(MCRS, ^PM01._LEN, PLEN)
+	CreateDwordField (MCRS, ^PM01._MIN, PMIN)
+	CreateDwordField (MCRS, ^PM01._MAX, PMAX)
+	CreateDwordField (MCRS, ^PM01._LEN, PLEN)
 
 	// Fix up PCI memory region
 	// Start with Top of Lower Usable DRAM
@@ -439,7 +163,44 @@ Method (_CRS, 0, Serialized)
 
 	PMIN = Local0
 	PMAX = CONFIG_MMCONF_BASE_ADDRESS - 1
-	PLEN = PMAX - PMIN + 1
+	PLEN = (PMAX - PMIN) + 1
 
 	Return (MCRS)
 }
+
+/* PCI Device Resource Consumption */
+Device (PDRC)
+{
+	Name (_HID, EISAID ("PNP0C02"))
+	Name (_UID, 1)
+
+	Name (PDRS, ResourceTemplate () {
+		Memory32Fixed (ReadWrite, DEFAULT_RCBA, 0x00004000)
+		Memory32Fixed (ReadWrite, DEFAULT_MCHBAR,   0x00008000)
+		Memory32Fixed (ReadWrite, DEFAULT_DMIBAR,   0x00001000)
+		Memory32Fixed (ReadWrite, DEFAULT_EPBAR,    0x00001000)
+		Memory32Fixed (ReadWrite, CONFIG_MMCONF_BASE_ADDRESS, 0x04000000)
+		Memory32Fixed (ReadWrite, 0xfed20000, 0x00020000) // Misc ICH
+		Memory32Fixed (ReadWrite, 0xfed40000, 0x00005000) // Misc ICH
+		Memory32Fixed (ReadWrite, 0xfed45000, 0x0004b000) // Misc ICH
+
+#if CONFIG(CHROMEOS_RAMOOPS)
+		Memory32Fixed (ReadWrite, CONFIG_CHROMEOS_RAMOOPS_RAM_START,
+					  CONFIG_CHROMEOS_RAMOOPS_RAM_SIZE)
+#endif
+	})
+
+	// Current Resource Settings
+	Method (_CRS, 0, Serialized)
+	{
+		Return (PDRS)
+	}
+}
+
+/* Configurable TDP */
+#include "ctdp.asl"
+
+#if !CONFIG(INTEL_LYNXPOINT_LP)
+/* PCI Express Graphics */
+#include "peg.asl"
+#endif

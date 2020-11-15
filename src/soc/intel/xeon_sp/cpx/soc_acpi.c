@@ -16,6 +16,7 @@
 #include <soc/pci_devs.h>
 #include <soc/pm.h>
 #include <soc/soc_util.h>
+#include <soc/util.h>
 
 /* TODO: Check if the common/acpi weak function can be used */
 unsigned long acpi_fill_mcfg(unsigned long current)
@@ -59,6 +60,10 @@ void soc_fill_fadt(acpi_fadt_t *fadt)
 void uncore_inject_dsdt(const struct device *device)
 {
 	struct iiostack_resource stack_info = {0};
+
+	/* Only add RTxx entries once. */
+	if (device->bus->secondary != 0)
+		return;
 
 	get_iiostack_info(&stack_info);
 

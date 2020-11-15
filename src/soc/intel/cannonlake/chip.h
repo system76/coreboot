@@ -231,7 +231,6 @@ struct soc_intel_cannonlake_config {
 
 	/* Gfx related */
 	uint8_t IgdDvmt50PreAlloc;
-	uint8_t InternalGfx;
 	uint8_t SkipExtGfxScan;
 
 	uint32_t GraphicsConfigPtr;
@@ -255,9 +254,6 @@ struct soc_intel_cannonlake_config {
 	 * 0 = System Agent, 1 = IA Core, 2 = Ring,
 	 * 3 = GT unsliced,  4 = GT sliced */
 	struct vr_config domain_vr_config[NUM_VR_DOMAINS];
-	/* HeciEnabled decides the state of Heci1 at end of boot
-	 * Setting to 0 (default) disables Heci1 and hides the device from OS */
-	uint8_t HeciEnabled;
 
 	/* Enables support for Teton Glacier hybrid storage device */
 	uint8_t TetonGlacierMode;
@@ -274,8 +270,6 @@ struct soc_intel_cannonlake_config {
 
 	/* Enable C6 DRAM */
 	uint8_t enable_c6dram;
-
-	uint8_t PmTimerDisabled;
 
 	/*
 	 * SLP_S3 Minimum Assertion Width Policy

@@ -124,7 +124,7 @@ chip soc/intel/cannonlake
 	register "usb2_ports[13]" = "USB2_PORT_MID(OC_SKIP)"
 
 	# Thermal
-	register "tcc_offset" = "6"     # TCC of 94C
+	register "tcc_offset" = "1"     # TCC of 99C
 
 
 	# Disable S0ix
@@ -161,9 +161,7 @@ chip soc/intel/cannonlake
 
 
 	device domain 0 on
-		device pci 02.0 on      # Integrated Graphics Device
-			register "InternalGfx" = "1"
-		end
+		device pci 02.0 on end	# Integrated Graphics Device
 		device pci 14.3 on
 			chip drivers/wifi/generic
 				register "wake" = "PME_B0_EN_BIT"

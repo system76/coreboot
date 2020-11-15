@@ -1,24 +1,16 @@
 ifeq ($(CONFIG_SOC_INTEL_BROADWELL),y)
 
-subdirs-y += romstage
-subdirs-y += ../../../cpu/x86/lapic
-subdirs-y += ../../../cpu/x86/mtrr
-subdirs-y += ../../../cpu/x86/smm
-subdirs-y += ../../../cpu/x86/tsc
-subdirs-y += ../../../cpu/intel/microcode
-subdirs-y += ../../../cpu/intel/turbo
-subdirs-y += ../../../cpu/intel/common
-
+subdirs-y += cpu
 subdirs-y += pch
 
-bootblock-y += bootblock/cpu.c
-bootblock-y += bootblock/systemagent.c
-bootblock-y += ../../../cpu/intel/car/bootblock.c
-bootblock-y += ../../../cpu/intel/car/non-evict/cache_as_ram.S
-bootblock-y += ../../../cpu/x86/early_reset.S
+bootblock-y += bootblock.c
+
+romstage-y += early_init.c
+romstage-y += raminit.c
+romstage-y += report_platform.c
+romstage-y += romstage.c
 
 ramstage-y += acpi.c
-ramstage-y += cpu.c
 ramstage-y += finalize.c
 ramstage-y += gma.c
 ramstage-y += memmap.c
@@ -29,18 +21,7 @@ ramstage-y += pei_data.c
 romstage-y += pei_data.c
 ramstage-y += ramstage.c
 ramstage-$(CONFIG_HAVE_REFCODE_BLOB) += refcode.c
-ramstage-y += smmrelocate.c
 ramstage-y += systemagent.c
-bootblock-y += tsc_freq.c
-ramstage-y += tsc_freq.c
-romstage-y += tsc_freq.c
-smm-y      += tsc_freq.c
-postcar-y  += tsc_freq.c
-verstage-y += tsc_freq.c
-
-postcar-y += ../../../cpu/intel/car/non-evict/exit_car.S
-
-cpu_microcode_bins += 3rdparty/blobs/soc/intel/broadwell/microcode.bin
 
 CPPFLAGS_common += -Isrc/soc/intel/broadwell/include
 

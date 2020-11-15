@@ -28,7 +28,6 @@ config VBOOT
 	select EC_GOOGLE_CHROMEEC_SWITCHES
 	select HAS_RECOVERY_MRC_CACHE
 	select VBOOT_LID_SWITCH
-	select MRC_CLEAR_NORMAL_CACHE_ON_RECOVERY_RETRAIN
 
 config CHROMEOS
 	select DSAR_ENABLE
@@ -76,4 +75,7 @@ config INCLUDE_NHLT_BLOBS
 config UART_FOR_CONSOLE
 	int
 	default 2
+
+config USE_PM_ACPI_TIMER
+	default n
 endif

@@ -44,8 +44,11 @@ static void emit_sar_acpi_structures(const struct device *dev)
 	struct wifi_sar_limits sar_limits;
 	struct wifi_sar_delta_table *wgds;
 
-	/* CBFS SAR and SAR ACPI tables are currently used only by Intel WiFi devices. */
-	if (dev->vendor != PCI_VENDOR_ID_INTEL)
+	/*
+	 * If device type is PCI, ensure that the device has Intel vendor ID. CBFS SAR and SAR
+	 * ACPI tables are currently used only by Intel WiFi devices.
+	 */
+	if (dev->path.type == DEVICE_PATH_PCI && dev->vendor != PCI_VENDOR_ID_INTEL)
 		return;
 
 	/* Retrieve the sar limits data */
@@ -222,9 +225,6 @@ void wifi_pcie_fill_ssdt(const struct device *dev)
 {
 	const char *path;
 
-	if (!is_dev_enabled(dev))
-		return;
-
 	path = acpi_device_path(dev);
 	if (!path)
 		return;
@@ -246,9 +246,6 @@ const char *wifi_pcie_acpi_name(const struct device *dev)
 void wifi_cnvi_fill_ssdt(const struct device *dev)
 {
 	const char *path;
-
-	if (!is_dev_enabled(dev))
-		return;
 
 	path = acpi_device_path(dev->bus->dev);
 	if (!path)

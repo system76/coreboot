@@ -17,6 +17,7 @@
 #include <soc/pci_devs.h>
 #include <soc/pm.h>
 #include <soc/soc_util.h>
+#include <soc/util.h>
 
 /* TODO: Check if the common/acpi weak function can be used */
 unsigned long acpi_fill_mcfg(unsigned long current)
@@ -99,10 +100,11 @@ void soc_fill_fadt(acpi_fadt_t *fadt)
 
 void uncore_inject_dsdt(const struct device *device)
 {
-	size_t hob_size;
-	const uint8_t uds_guid[16] = FSP_HOB_IIO_UNIVERSAL_DATA_GUID;
-	const IIO_UDS *hob = fsp_find_extension_hob_by_guid(uds_guid, &hob_size);
-	assert(hob != NULL && hob_size != 0);
+	const IIO_UDS *hob = get_iio_uds();
+
+	/* Only add RTxx entries once. */
+	if (device->bus->secondary != 0)
+		return;
 
 	acpigen_write_scope("\\_SB");
 	for (int socket = 0; socket < hob->PlatformData.numofIIO; ++socket) {
@@ -178,7 +180,7 @@ void soc_power_states_generation(int core, int cores_per_package)
 unsigned long xeonsp_acpi_create_madt_lapics(unsigned long current)
 {
 	struct device *cpu;
-	int num_cpus = 0;
+	uint8_t num_cpus = 0;
 
 	for (cpu = all_devices; cpu; cpu = cpu->next) {
 		if ((cpu->path.type != DEVICE_PATH_APIC) ||
@@ -189,6 +191,7 @@ unsigned long xeonsp_acpi_create_madt_lapics(unsigned long current)
 			continue;
 		current += acpi_create_madt_lapic((acpi_madt_lapic_t *)current,
 			num_cpus, cpu->path.apic.apic_id);
+		num_cpus++;
 	}
 
 	return current;

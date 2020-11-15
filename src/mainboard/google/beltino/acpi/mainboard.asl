@@ -14,11 +14,11 @@ Scope (\_SB.PCI0.RP01)
 
 		Method (_DSW, 3, NotSerialized)
 		{
-			Store (NIC_WAKE_GPIO, Local0)
+			Local0 = NIC_WAKE_GPIO
 
-			If (LEqual (Arg0, 1)) {
+			If (Arg0 == 1) {
 				// Enable GPIO as wake source
-				\_SB.PCI0.LPCB.GWAK (Local0)
+				\_SB.PCI0.LPCB.GPIO.GWAK (Local0)
 			}
 		}
 	}
@@ -36,11 +36,11 @@ Scope (\_SB.PCI0.RP02)
 
 		Method (_DSW, 3, NotSerialized)
 		{
-			Store (WLAN_WAKE_GPIO, Local0)
+			Local0 = WLAN_WAKE_GPIO
 
-			If (LEqual (Arg0, 1)) {
+			If (Arg0 == 1) {
 				// Enable GPIO as wake source
-				\_SB.PCI0.LPCB.GWAK (Local0)
+				\_SB.PCI0.LPCB.GPIO.GWAK (Local0)
 			}
 		}
 	}

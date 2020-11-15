@@ -11,6 +11,7 @@
 #include <soc/iomap.h>
 #include <soc/pci_devs.h>
 #include <soc/soc_util.h>
+#include <soc/util.h>
 
 #include "chip.h"
 
@@ -143,62 +144,20 @@ static unsigned long acpi_fill_slit(unsigned long current)
 }
 
 /*
- * EX: CPX-SP
- * Ports    Stack   Stack(HOB)  IioConfigIou
- * ==========================================
- * 0        CSTACK      stack 0     IOU0
- * 1A..1D   PSTACKZ     stack 1     IOU1
- * 2A..2D   PSTACK1     stack 2     IOU2
- * 3A..3D   PSTACK2     stack 4     IOU3
- */
-static int get_stack_for_port(int port)
-{
-#if (CONFIG(SOC_INTEL_COOPERLAKE_SP))
-	if (port == PORT_0)
-		return CSTACK;
-	else if (port >= PORT_1A && port <= PORT_1D)
-		return PSTACK0;
-	else if (port >= PORT_2A && port <= PORT_2D)
-		return PSTACK1;
-	else if (port >= PORT_3A && port <= PORT_3D)
-		return PSTACK2;
-	else
-		return -1;
-#endif /* SOC_INTEL_COOPERLAKE_SP */
-
-#if (CONFIG(SOC_INTEL_SKYLAKE_SP))
-	if (port == PORT_0)
-		return CSTACK;
-	else if (port >= PORT_1A && port <= PORT_1D)
-		return PSTACK0;
-	else if (port >= PORT_2A && port <= PORT_2D)
-		return PSTACK1;
-	else if (port >= PORT_3A && port <= PORT_3D)
-		return PSTACK2;
-	else if (port >= PORT_4A && port <= PORT_4D)
-		return PSTACK3; // MCP0
-	else if (port >= PORT_5A && port <= PORT_5D)
-		return PSTACK4; // MCP1
-	else
-		return -1;
-#endif /* SOC_INTEL_SKYLAKE_SP */
-}
-
-/*
  * This function adds PCIe bridge device entry in DMAR table. If it is called
  * in the context of ATSR subtable, it adds ATSR subtable when it is first called.
  */
 static unsigned long acpi_create_dmar_ds_pci_br_for_port(unsigned long current,
-	int port, int stack, IIO_RESOURCE_INSTANCE iio_resource, uint32_t pcie_seg,
+	int port, int stack, const IIO_RESOURCE_INSTANCE *iio_resource, uint32_t pcie_seg,
 	bool is_atsr, bool *first)
 {
 
-	if (get_stack_for_port(port) != stack)
+	if (soc_get_stack_for_port(port) != stack)
 		return 0;
 
-	const uint32_t bus = iio_resource.StackRes[stack].BusBase;
-	const uint32_t dev = iio_resource.PcieInfo.PortInfo[port].Device;
-	const uint32_t func = iio_resource.PcieInfo.PortInfo[port].Function;
+	const uint32_t bus = iio_resource->StackRes[stack].BusBase;
+	const uint32_t dev = iio_resource->PcieInfo.PortInfo[port].Device;
+	const uint32_t func = iio_resource->PcieInfo.PortInfo[port].Function;
 
 	const uint32_t id = pci_mmio_read_config32(PCI_DEV(bus, dev, func),
 		PCI_VENDOR_ID);
@@ -295,7 +254,7 @@ static unsigned long acpi_create_drhd(unsigned long current, int socket,
 			hob->PlatformData.IIO_resource[socket];
 		for (int p = PORT_0; p < MAX_PORTS; ++p)
 			current += acpi_create_dmar_ds_pci_br_for_port(current, p, stack,
-				iio_resource, pcie_seg, false, NULL);
+				&iio_resource, pcie_seg, false, NULL);
 
 		// Add VMD
 		if (hob->PlatformData.VMDStackEnable[socket][stack] &&
@@ -359,7 +318,7 @@ static unsigned long acpi_create_atsr(unsigned long current, const IIO_UDS *hob)
 				if (socket == 0 && p == PORT_0)
 					continue;
 				current += acpi_create_dmar_ds_pci_br_for_port(current, p,
-					stack, iio_resource, pcie_seg, true, &first);
+					stack, &iio_resource, pcie_seg, true, &first);
 			}
 		}
 		if (tmp != current)
@@ -403,10 +362,7 @@ static unsigned long acpi_create_rmrr(unsigned long current)
 
 static unsigned long acpi_create_rhsa(unsigned long current)
 {
-	size_t hob_size;
-	const uint8_t uds_guid[16] = FSP_HOB_IIO_UNIVERSAL_DATA_GUID;
-	const IIO_UDS *hob = fsp_find_extension_hob_by_guid(uds_guid, &hob_size);
-	assert(hob != NULL && hob_size != 0);
+	const IIO_UDS *hob = get_iio_uds();
 
 	for (int socket = 0; socket < hob->PlatformData.numofIIO; ++socket) {
 		IIO_RESOURCE_INSTANCE iio_resource =
@@ -427,10 +383,7 @@ static unsigned long acpi_create_rhsa(unsigned long current)
 
 static unsigned long acpi_fill_dmar(unsigned long current)
 {
-	size_t hob_size;
-	const uint8_t uds_guid[16] = FSP_HOB_IIO_UNIVERSAL_DATA_GUID;
-	const IIO_UDS *hob = fsp_find_extension_hob_by_guid(uds_guid, &hob_size);
-	assert(hob != NULL && hob_size != 0);
+	const IIO_UDS *hob = get_iio_uds();
 
 	// DRHD
 	for (int iio = 1; iio <= hob->PlatformData.numofIIO; ++iio) {

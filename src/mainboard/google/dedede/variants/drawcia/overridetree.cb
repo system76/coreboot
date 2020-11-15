@@ -115,7 +115,7 @@ chip soc/intel/jasperlake
 						.granularity = 200,
 					},
 					.pl2 = {
-						.min_power = 6000,
+						.min_power = 20000,
 						.max_power = 20000,
 						.time_window_min = 1 * MSECS_PER_SEC,
 						.time_window_max = 1 * MSECS_PER_SEC,
@@ -171,7 +171,7 @@ chip soc/intel/jasperlake
 			chip drivers/i2c/hid
 				register "generic.hid" = ""GTCH7503""
 				register "generic.desc" = ""G2TOUCH Touchscreen""
-				register "generic.irq" = "ACPI_IRQ_EDGE_LOW(GPP_D4_IRQ)"
+				register "generic.irq" = "ACPI_IRQ_LEVEL_LOW(GPP_D4_IRQ)"
 				register "generic.probed" = "1"
 				register "generic.reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_D5)"
 				register "generic.reset_delay_ms" = "50"
@@ -185,7 +185,7 @@ chip soc/intel/jasperlake
 			chip drivers/i2c/hid
 				register "generic.hid" = ""GDIX0000""
 				register "generic.desc" = ""Goodix Touchscreen""
-				register "generic.irq" = "ACPI_IRQ_EDGE_LOW(GPP_D4_IRQ)"
+				register "generic.irq" = "ACPI_IRQ_LEVEL_LOW(GPP_D4_IRQ)"
 				register "generic.probed" = "1"
 				register "generic.reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_D5)"
 				register "generic.reset_delay_ms" = "120"
@@ -199,7 +199,7 @@ chip soc/intel/jasperlake
 			chip drivers/i2c/hid
 				register "generic.hid" = ""ELAN2513""
 				register "generic.desc" = ""ELAN Touchscreen""
-				register "generic.irq" = "ACPI_IRQ_EDGE_LOW(GPP_D4_IRQ)"
+				register "generic.irq" = "ACPI_IRQ_LEVEL_LOW(GPP_D4_IRQ)"
 				register "generic.probed" = "1"
 				register "generic.reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_D5)"
 				register "generic.reset_delay_ms" = "20"
@@ -273,8 +273,6 @@ chip soc/intel/jasperlake
 				register "acpi_name" = ""NVM0""
 				register "chip_name" = ""GT24C08""
 				register "device_type" = "INTEL_ACPI_CAMERA_NVM"
-
-				register "pr0" = ""\\_SB.PCI0.I2C3.CAM1.PRIC""
 
 				register "nvm_size" = "0x0400"
 				register "nvm_pagesize" = "1"
