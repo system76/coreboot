@@ -129,6 +129,7 @@ chip soc/intel/tigerlake
 	register "SataPortsEnable[1]" = "1"
 	register "SataPortsDevSlp[1]" = "1"
 	register "SataPortsEnableDitoConfig[1]" = "1"
+	register "SataSalpSupport" = "1"
 
 	# I2C channels
 	register "SerialIoI2cMode" = "{
