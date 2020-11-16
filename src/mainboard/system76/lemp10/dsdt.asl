@@ -31,8 +31,6 @@ DefinitionBlock(
 		}
 	}
 
-	#include <soc/intel/common/acpi/lpit.asl>
-
 	Scope (\_SB.PCI0.LPCB) {
 		#include <drivers/pc80/pc/ps2_controller.asl>
 	}
