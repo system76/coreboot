@@ -446,7 +446,7 @@ static void pciexp_tune_dev(struct device *dev)
 	unsigned int root_cap, cap;
 
 	cap = pci_find_capability(dev, PCI_CAP_ID_PCIE);
-	if (!cap)
+	if (!cap && (dev->path.type != DEVICE_PATH_GENERIC))
 		return;
 
 	root_cap = pci_find_capability(root, PCI_CAP_ID_PCIE);
@@ -480,7 +480,8 @@ void pciexp_scan_bus(struct bus *bus, unsigned int min_devfn,
 	pci_scan_bus(bus, min_devfn, max_devfn);
 
 	for (child = bus->children; child; child = child->sibling) {
-		if (child->path.type != DEVICE_PATH_PCI)
+		if ((child->path.type != DEVICE_PATH_PCI) &&
+		     (child->path.type != DEVICE_PATH_GENERIC))
 			continue;
 		if ((child->path.pci.devfn < min_devfn) ||
 		    (child->path.pci.devfn > max_devfn)) {
