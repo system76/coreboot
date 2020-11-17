@@ -10,10 +10,6 @@
 
 /* Pad configuration in romstage. */
 static const struct pad_config early_gpio_table[] = {
-		// UART2_RXD
-		PAD_NC(GPP_C20, NONE),
-		// UART2_TXD
-		PAD_CFG_NF(GPP_C21, UP_20K, DEEP, NF1),
 };
 
 /* Pad configuration in ramstage. */
