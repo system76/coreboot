@@ -331,9 +331,9 @@ static const struct pad_config gpio_table[] = {
 		// NC
 		PAD_CFG_GPI(GPP_H3, DN_20K, DEEP),
 		// NC
-		PAD_CFG_NF(GPP_H4, NONE, DEEP, NF1),
+		PAD_NC(GPP_H4, NONE),
 		// NC
-		PAD_CFG_NF(GPP_H5, NONE, DEEP, NF1),
+		PAD_NC(GPP_H5, NONE),
 		// test point
 		PAD_CFG_GPI(GPP_H6, NONE, DEEP),
 		// test point

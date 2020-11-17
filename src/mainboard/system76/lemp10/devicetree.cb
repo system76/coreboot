@@ -261,7 +261,7 @@ chip soc/intel/tigerlake
 		device pci 07.1 off end # TBT_PCIe1		0x9A25
 		device pci 07.2 off end # TBT_PCIe2		0x9A27
 		device pci 07.3 off end # TBT_PCIe3		0x9A29
-		device pci 08.0 off end # GNA			0x9A11
+		device pci 08.0 on  end # GNA			0x9A11
 		device pci 09.0 off end # NPK			0x9A33
 		device pci 0a.0 on  end # Crash-log SRAM	0x9A0D
 		device pci 0d.0 on  end # USB xHCI		0x9A13
