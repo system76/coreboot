@@ -216,8 +216,8 @@ static void pcie_rtd3_acpi_fill_ssdt(const struct device *dev)
 	/* Port number is 1-based, PMC IPC method expects 0-based. */
 	pcie_rp--;
 
-	printk(BIOS_INFO, "%s: Enable RTD3 for %s (%s)\n", scope, dev_path(parent),
-	       config->desc ?: dev->chip_ops->name);
+	printk(BIOS_INFO, "%s: Enable RTD3 for %s (%s) on RP #%d\n", scope, dev_path(parent),
+	       config->desc ?: dev->chip_ops->name, pcie_rp + 1);
 
 	/* The RTD3 power resource is added to the root port, not the device. */
 	acpigen_write_scope(scope);
