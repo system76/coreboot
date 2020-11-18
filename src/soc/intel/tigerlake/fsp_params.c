@@ -197,6 +197,7 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 	/* TODO: CPU RP Configs */
 	for (i = 0; i < 4; i++) {
 		params->CpuPcieRpAdvancedErrorReporting[i] = 0;
+		params->CpuPcieRpPtmEnabled[i] = 0;
 	}
 
 	/* Enable xDCI controller if enabled in devicetree and allowed */
