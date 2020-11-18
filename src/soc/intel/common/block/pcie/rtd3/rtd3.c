@@ -80,6 +80,8 @@ pcie_rtd3_acpi_method_on(unsigned int pcie_rp,
 {
 	acpigen_write_method_serialized("_ON", 0);
 
+	acpigen_write_debug_string("PCIe RTD3 _ON");
+
 	/* Assert enable GPIO to turn on device power. */
 	if (config->enable_gpio.pin_count) {
 		acpigen_enable_tx_gpio(&config->enable_gpio);
@@ -110,6 +112,8 @@ pcie_rtd3_acpi_method_off(int pcie_rp,
 			  const struct soc_intel_common_block_pcie_rtd3_config *config)
 {
 	acpigen_write_method_serialized("_OFF", 0);
+
+	acpigen_write_debug_string("PCIe RTD3 _OFF");
 
 	/* Trigger L23 ready entry flow unless disabled by config. */
 	if (!config->disable_l23)
