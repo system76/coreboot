@@ -228,6 +228,7 @@ chip soc/intel/tigerlake
 # PM Util (soc/intel/tigerlake/pmutil.c)
 	# GPE configuration
 	# sudo devmem2 0xfe001920 (pmc_bar + GPIO_GPE_CFG)
+	# TODO: 0x703
 	register "pmc_gpe0_dw0" = "PMC_GPP_R"
 	register "pmc_gpe0_dw1" = "PMC_GPP_B"
 	register "pmc_gpe0_dw2" = "PMC_GPP_D"

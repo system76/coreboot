@@ -79,8 +79,51 @@ chip soc/intel/tigerlake
 	# Enable DPTF device
 	register "Device4Enable" = "1"
 
+	# FIVR configuration
+	#   Read EXT_RAIL_CONFIG to determine bitmaps
+	#     sudo devmem2 0xfe0011b8
+	#     0x0
+	#   Read EXT_V1P05_VR_CONFIG
+	#     sudo devmem2 0xfe0011c0
+	#     0x1a42000
+	#   Read EXT_VNN_VR_CONFIG0
+	#     sudo devmem2 0xfe0011c4
+	#     0x1a42000
+	# TODO: v1p05 voltage and vnn icc max?
+	register "ext_fivr_settings" = "{
+		.configure_ext_fivr = 1,
+		.v1p05_enable_bitmap = 0,
+		.vnn_enable_bitmap = 0,
+		.v1p05_supported_voltage_bitmap = 0,
+		.vnn_supported_voltage_bitmap = 0,
+		.v1p05_icc_max_ma = 500,
+		.vnn_sx_voltage_mv = 1050,
+	}"
+
 	#TODO: Hybrid storage mode
 	register "HybridStorageMode" = "0"
+
+	# Default IOM Port Config
+	register "IomTypeCPortPadCfg[0]" = "0x09000000"
+	register "IomTypeCPortPadCfg[1]" = "0x09000000"
+	register "IomTypeCPortPadCfg[2]" = "0x09000000"
+	register "IomTypeCPortPadCfg[3]" = "0x09000000"
+	register "IomTypeCPortPadCfg[4]" = "0x09000000"
+	register "IomTypeCPortPadCfg[5]" = "0x09000000"
+	register "IomTypeCPortPadCfg[6]" = "0x09000000"
+	register "IomTypeCPortPadCfg[7]" = "0x09000000"
+
+	# Read LPM_EN, make sure to invert the bits
+	# sudo devmem2 0xfe001c78
+	# 0x9
+	register "LpmStateDisableMask" = "
+		LPM_S0i2_1 |
+		LPM_S0i2_2 |
+		LPM_S0i3_1 |
+		LPM_S0i3_2 |
+		LPM_S0i3_3 |
+		LPM_S0i3_4
+	"
 
 	# I2C channels
 	register "SerialIoI2cMode" = "{
@@ -187,6 +230,7 @@ chip soc/intel/tigerlake
 # PM Util (soc/intel/tigerlake/pmutil.c)
 	# GPE configuration
 	# sudo devmem2 0xfe001920 (pmc_bar + GPIO_GPE_CFG)
+	# 0x432
 	register "pmc_gpe0_dw0" = "PMC_GPP_A"
 	register "pmc_gpe0_dw1" = "PMC_GPP_R"
 	register "pmc_gpe0_dw2" = "PMC_GPD"
@@ -207,17 +251,30 @@ chip soc/intel/tigerlake
 		device pci 02.0 on  end # Graphics
 		device pci 04.0 on  end # DPTF			0x9A03
 		device pci 05.0 off end # IPU			0x9A19
-		device pci 06.0 on  end # PEG60			0x9A09
+		device pci 06.0 on
+			chip soc/intel/common/block/pcie/rtd3
+				register "enable_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_D14)" # SSD1_PWR_DN#
+				register "reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_H0)" # GPP_H0_RTD3
+				#TODO: Support disable/enable CPU RP clock
+				register "srcclk_pin" = "-1" # SSD1_CLKREQ#
+				device generic 0 on end
+			end
+		end # PEG60			0x9A09
 		device pci 07.0 on  end # TBT_PCIe0		0x9A23
 		device pci 07.1 off end # TBT_PCIe1		0x9A25
 		device pci 07.2 off end # TBT_PCIe2		0x9A27
 		device pci 07.3 off end # TBT_PCIe3		0x9A29
-		device pci 08.0 off end # GNA			0x9A11
+		device pci 08.0 on  end # GNA			0x9A11
 		device pci 09.0 off end # NPK			0x9A33
 		device pci 0a.0 on  end # Crash-log SRAM	0x9A0D
 		device pci 0d.0 on  end # USB xHCI		0x9A13
 		device pci 0d.1 off end # USB xDCI (OTG)	0x9A15
-		device pci 0d.2 on  end # TBT DMA0		0x9A1B
+		device pci 0d.2 on
+			chip drivers/intel/usb4/retimer
+				register "power_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_A23)"
+				device generic 0 on end
+			end
+		end # TBT DMA0		0x9A1B
 		device pci 0d.3 off end # TBT DMA1		0x9A1D
 		device pci 0e.0 off end # VMD			0x9A0B
 
@@ -265,12 +322,27 @@ chip soc/intel/tigerlake
 		device pci 1c.1 off end # RP2			0xA0B9
 		device pci 1c.2 off end # RP3			0xA0BA
 		device pci 1c.3 off end # RP4			0xA0BB
-		device pci 1c.4 on  end # RP5			0xA0BC
+		device pci 1c.4 on
+			chip soc/intel/common/block/pcie/rtd3
+				register "enable_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_U5)" # DGPU_PWR_EN
+				register "reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_U4)" # DGPU_RST#_PCH
+				register "srcclk_pin" = "2" # PEG_CLKREQ#
+				device generic 0 on end
+			end
+		end # RP5			0xA0BC
 		device pci 1c.5 off end # RP6			0xA0BD
 		device pci 1c.6 off end # RP7			0xA0BE
 		device pci 1c.7 off end # RP8			0xA0BF
 		device pci 1d.0 on  end # RP9			0xA0B0
-		device pci 1d.1 on  end # RP10			0xA0B1
+		device pci 1d.1 on
+			chip soc/intel/common/block/pcie/rtd3
+				register "enable_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_F9)" # GPIO_LAN_EN
+				#TODO: should this be GPIO_LANRTD3 or LAN_PLT_RST# ?
+				register "reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_F7)" # GPIO_LANRTD3
+				register "srcclk_pin" = "4" # LAN_CLKREQ#
+				device generic 0 on end
+			end
+		end # RP10			0xA0B1
 		device pci 1d.2 on  end # RP11			0xA0B2
 		device pci 1d.3 off end # RP12			0xA0B3
 		device pci 1e.0 off end # UART0			0xA0A8
