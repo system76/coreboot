@@ -160,11 +160,11 @@ chip soc/intel/tigerlake
 
 	# USB2
 	register "usb2_ports[0]" = "USB2_PORT_MID(OC_SKIP)" # USB Type-A Port 1 TODO
-	register "usb2_ports[1]" = "USB2_PORT_TYPE_C(OC_SKIP)" # USB Type-C Port 2 TODO
-	register "usb2_ports[2]" = "USB2_PORT_MID(OC_SKIP)" # USB Type-A Port 3 TODO
+	register "usb2_ports[1]" = "USB2_PORT_MID(OC_SKIP)" # USB Type-A Port 2 TODO
+	register "usb2_ports[2]" = "USB2_PORT_TYPE_C(OC_SKIP)" # USB Type-C Port 3 TODO
 	register "usb2_ports[3]" = "USB2_PORT_EMPTY"
-	register "usb2_ports[4]" = "USB2_PORT_MID(OC_SKIP)" # Fingerprint
-	register "usb2_ports[5]" = "USB2_PORT_TYPE_C(OC_SKIP)" # USB Type-C Port 4 TODO
+	register "usb2_ports[4]" = "USB2_PORT_EMPTY"
+	register "usb2_ports[5]" = "USB2_PORT_EMPTY"
 	register "usb2_ports[6]" = "USB2_PORT_MID(OC_SKIP)" # Camera
 	register "usb2_ports[7]" = "USB2_PORT_EMPTY"
 	register "usb2_ports[8]" = "USB2_PORT_EMPTY"
@@ -172,9 +172,9 @@ chip soc/intel/tigerlake
 
 	# USB3
 	register "usb3_ports[0]" = "USB3_PORT_DEFAULT(OC_SKIP)" # USB Type-A Port 1 TODO
-	register "usb3_ports[1]" = "USB3_PORT_DEFAULT(OC_SKIP)" # USB Type-C Port 2 TODO
-	register "usb3_ports[2]" = "USB3_PORT_DEFAULT(OC_SKIP)" # USB Type-A Port 3 TODO
-	register "usb3_ports[3]" = "USB3_PORT_DEFAULT(OC_SKIP)" # USB Type-C Port 4 TODO
+	register "usb3_ports[1]" = "USB3_PORT_DEFAULT(OC_SKIP)" # USB Type-A Port 2 TODO
+	register "usb3_ports[2]" = "USB3_PORT_EMPTY"
+	register "usb3_ports[3]" = "USB3_PORT_EMPTY"
 
 	# PCIe root ports:
 	# PCIe 4 x4 - SSD1
