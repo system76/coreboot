@@ -23,15 +23,15 @@ chip soc/intel/tigerlake
 	# Power limits
 	register "power_limits_config[POWER_LIMITS_U_4_CORE]" = "{
 		// /sys/class/powercap/intel-rapl:0/constraint_0_power_limit_uw
-		.tdp_pl1_override = 28,
+		.tdp_pl1_override = 20,
 		// /sys/class/powercap/intel-rapl:0/constraint_1_power_limit_uw
-		.tdp_pl2_override = 46,
+		.tdp_pl2_override = 30,
 	}"
 	register "power_limits_config[POWER_LIMITS_U_2_CORE]" = "{
 		// /sys/class/powercap/intel-rapl:0/constraint_0_power_limit_uw
-		.tdp_pl1_override = 28,
+		.tdp_pl1_override = 20,
 		// /sys/class/powercap/intel-rapl:0/constraint_1_power_limit_uw
-		.tdp_pl2_override = 46,
+		.tdp_pl2_override = 30,
 	}"
 
 # eSPI (soc/intel/tigerlake/espi.c)
@@ -212,7 +212,7 @@ chip soc/intel/tigerlake
 
 	# Thermal
 	# rdmsr --bitfield 31:24 --decimal 0x1A2
-	register "tcc_offset" = "8"
+	register "tcc_offset" = "12"
 
 # Graphics (soc/intel/tigerlake/graphics.c)
 	register "gfx" = "GMA_STATIC_DISPLAYS(0)"
