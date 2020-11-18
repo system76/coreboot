@@ -212,6 +212,9 @@ static void soc_memory_init_params(FSP_M_CONFIG *m_cfg,
 	dev = pcidev_path_on_root(SA_DEVFN_CPU_PCIE);
 	m_cfg->CpuPcieRpEnableMask = dev && dev->enabled;
 
+	/* Disable clock req messaging */
+	m_cfg->CpuPcieRpClockReqMsgEnable = 0;
+
 	/* Change TmeEnable UPD value according to INTEL_TME Kconfig */
 	m_cfg->TmeEnable = CONFIG(INTEL_TME);
 }
