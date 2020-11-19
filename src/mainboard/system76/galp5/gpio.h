@@ -97,7 +97,7 @@ static const struct pad_config gpio_table[] = {
 		// NC
 		PAD_NC(GPP_A22, NONE),
 		// GPPC_A23_TBT_FORCE_PWR
-		PAD_CFG_TERM_GPO(GPP_A23, 0, NONE, PLTRST),
+		PAD_CFG_TERM_GPO(GPP_A23, 1, NONE, PLTRST),
 		// VCCIN_AUX_VID0
 		PAD_CFG_NF(GPP_B0, NONE, DEEP, NF1),
 		// VCCIN_AUX_VID1
@@ -269,10 +269,10 @@ static const struct pad_config gpio_table[] = {
 		PAD_CFG_GPI(GPP_E16, DN_20K, DEEP),
 		// NC
 		PAD_NC(GPP_E17, NONE),
-		// GPP_E18_TBT_LSX0_TXD - TODO
-		PAD_NC(GPP_E18, NATIVE),
-		// GPP_E19_TBT_LSX0_RXD - TODO
-		PAD_NC(GPP_E19, NATIVE),
+		// GPP_E18_TBT_LSX0_TXD
+		PAD_CFG_NF(GPP_E18, NATIVE, DEEP, NF4),
+		// GPP_E19_TBT_LSX0_RXD
+		PAD_CFG_NF(GPP_E19, NATIVE, DEEP, NF4),
 		// NC
 		PAD_NC(GPP_E20, NONE),
 		// NC
