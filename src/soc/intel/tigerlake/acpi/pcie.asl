@@ -96,6 +96,11 @@ Method (IRQM, 1, Serialized) {
 	}
 }
 
+Device (PEG0)
+{
+	Name (_ADR, 0x00060000)
+}
+
 Device (RP01)
 {
 	Name (_ADR, 0x001C0000)
