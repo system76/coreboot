@@ -25,13 +25,13 @@ chip soc/intel/tigerlake
 		// /sys/class/powercap/intel-rapl:0/constraint_0_power_limit_uw
 		.tdp_pl1_override = 28,
 		// /sys/class/powercap/intel-rapl:0/constraint_1_power_limit_uw
-		.tdp_pl2_override = 60,
+		.tdp_pl2_override = 51,
 	}"
 	register "power_limits_config[POWER_LIMITS_U_2_CORE]" = "{
 		// /sys/class/powercap/intel-rapl:0/constraint_0_power_limit_uw
 		.tdp_pl1_override = 28,
 		// /sys/class/powercap/intel-rapl:0/constraint_1_power_limit_uw
-		.tdp_pl2_override = 60,
+		.tdp_pl2_override = 51,
 	}"
 
 # Finalize (soc/intel/tigerlake/finalize.c)
@@ -67,9 +67,6 @@ chip soc/intel/tigerlake
 		.vnn_sx_voltage_mv = 1050,
 	}"
 
-	#TODO: Hybrid storage mode
-	register "HybridStorageMode" = "0"
-
 	# Default IOM Port Config
 	register "IomTypeCPortPadCfg[0]" = "0x09000000"
 	register "IomTypeCPortPadCfg[1]" = "0x09000000"
@@ -94,7 +91,7 @@ chip soc/intel/tigerlake
 
 	# Thermal
 	# rdmsr --bitfield 31:24 --decimal 0x1A2
-	register "tcc_offset" = "13"
+	register "tcc_offset" = "12"
 
 # PM Util (soc/intel/tigerlake/pmutil.c)
 	# GPE configuration
@@ -126,7 +123,6 @@ chip soc/intel/tigerlake
 			register "gfx" = "GMA_STATIC_DISPLAYS(0)"
 		end
 		device ref dptf on
-			# Enable DPTF device
 			register "Device4Enable" = "1"
 		end
 		device ref peg on
@@ -141,6 +137,9 @@ chip soc/intel/tigerlake
 			# 	register "srcclk_pin" = "-1" # SSD1_CLKREQ#
 			# 	device generic 0 on end
 			# end
+
+			#TODO: Hybrid storage mode?
+			register "HybridStorageMode" = "0"
 		end
 		device ref tbt_pcie_rp0 on end # J_TYPEC2
 		device ref gna on end
@@ -148,7 +147,7 @@ chip soc/intel/tigerlake
 			register "TcssXhciEn" = "1"
 			# TODO: usb/acpi
 		end
-		device ref tbt_dma0 on
+		device ref tbt_dma0 on # J_TYPEC2
 			chip drivers/intel/usb4/retimer
 				register "power_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_A23)"
 				device generic 0 on end
@@ -222,7 +221,7 @@ chip soc/intel/tigerlake
 			end
 		end
 		device ref pcie_rp9 on
-			# PCIe root port #9 x1, Clock 3 (Card Reader)
+			# PCIe root port #9 x1, Clock 3 (CARD)
 			register "PcieRpEnable[8]" = "1"
 			register "PcieRpLtrEnable[8]" = "1"
 			register "PcieClkSrcUsage[3]" = "8"
