@@ -96,16 +96,6 @@ Method (IRQM, 1, Serialized) {
 	}
 }
 
-Device (PEG0)
-{
-	Name (_ADR, 0x00060000)
-
-	Method (_PRT)
-	{
-		Return (IRQM (1))
-	}
-}
-
 Device (RP01)
 {
 	Name (_ADR, 0x001C0000)
