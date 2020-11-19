@@ -271,6 +271,6 @@ chip soc/intel/tigerlake
 		device ref smbus on
 			register "SmbusEnable" = "1"
 		end
-		device ref fast_spi end
+		device ref fast_spi on end
 	end
 end
