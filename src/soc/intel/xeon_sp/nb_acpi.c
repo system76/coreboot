@@ -12,6 +12,7 @@
 #include <soc/pci_devs.h>
 #include <soc/soc_util.h>
 #include <soc/util.h>
+#include <intelblocks/p2sb.h>
 
 #include "chip.h"
 
@@ -184,15 +185,6 @@ static unsigned long acpi_create_dmar_ds_pci_br_for_port(unsigned long current,
 static unsigned long acpi_create_drhd(unsigned long current, int socket,
 	int stack, const IIO_UDS *hob)
 {
-	int IoApicID[] = {
-		// socket 0
-		PC00_IOAPIC_ID, PC01_IOAPIC_ID, PC02_IOAPIC_ID, PC03_IOAPIC_ID,
-		PC04_IOAPIC_ID, PC05_IOAPIC_ID,
-		// socket 1
-		PC06_IOAPIC_ID, PC07_IOAPIC_ID, PC08_IOAPIC_ID, PC09_IOAPIC_ID,
-		PC10_IOAPIC_ID, PC11_IOAPIC_ID,
-	};
-
 	uint32_t enum_id;
 	unsigned long tmp = current;
 
@@ -222,16 +214,16 @@ static unsigned long acpi_create_drhd(unsigned long current, int socket,
 
 	// Add PCH IOAPIC
 	if (socket == 0 && stack == CSTACK) {
+		union p2sb_bdf ioapic_bdf = p2sb_get_ioapic_bdf();
 		printk(BIOS_DEBUG, "    [IOAPIC Device] Enumeration ID: 0x%x, PCI Bus Number: 0x%x, "
 			"PCI Path: 0x%x, 0x%x\n",
-			PCH_IOAPIC_ID, PCH_IOAPIC_BUS_NUMBER,
-			PCH_IOAPIC_DEV_NUM, PCH_IOAPIC_FUNC_NUM);
+		       PCH_IOAPIC_ID, ioapic_bdf.bus, ioapic_bdf.dev, ioapic_bdf.fn);
 		current += acpi_create_dmar_ds_ioapic(current, PCH_IOAPIC_ID,
-			PCH_IOAPIC_BUS_NUMBER, PCH_IOAPIC_DEV_NUM, PCH_IOAPIC_FUNC_NUM);
+						      ioapic_bdf.bus, ioapic_bdf.dev, ioapic_bdf.fn);
 	}
 
 	// Add IOAPIC entry
-	enum_id = IoApicID[(socket*MAX_IIO_STACK)+stack];
+	enum_id = soc_get_iio_ioapicid(socket, stack);
 	printk(BIOS_DEBUG, "    [IOAPIC Device] Enumeration ID: 0x%x, PCI Bus Number: 0x%x, "
 		"PCI Path: 0x%x, 0x%x\n", enum_id, bus, APIC_DEV_NUM, APIC_FUNC_NUM);
 	current += acpi_create_dmar_ds_ioapic(current, enum_id, bus,
@@ -276,11 +268,12 @@ static unsigned long acpi_create_drhd(unsigned long current, int socket,
 		//BIT 15
 		if (num_hpets && (num_hpets != 0x1f) &&
 			(read32((void *)(HPET_BASE_ADDRESS + 0x100)) & (0x00008000))) {
+			union p2sb_bdf hpet_bdf = p2sb_get_hpet_bdf();
 			printk(BIOS_DEBUG, "    [Message-capable HPET Device] Enumeration ID: 0x%x, "
 				"PCI Bus Number: 0x%x, PCI Path: 0x%x, 0x%x\n",
-				0, HPET_BUS_NUM, HPET_DEV_NUM, HPET0_FUNC_NUM);
-			current += acpi_create_dmar_ds_msi_hpet(current, 0, HPET_BUS_NUM,
-				HPET_DEV_NUM, HPET0_FUNC_NUM);
+				0, hpet_bdf.bus, hpet_bdf.dev, hpet_bdf.fn);
+			current += acpi_create_dmar_ds_msi_hpet(current, 0, hpet_bdf.bus,
+				hpet_bdf.dev, hpet_bdf.fn);
 		}
 	}
 
@@ -443,9 +436,15 @@ unsigned long northbridge_write_acpi_tables(const struct device *device,
 	if (config->vtd_support) {
 		current = ALIGN(current, 8);
 		dmar = (acpi_dmar_t *)current;
+		enum dmar_flags flags = DMAR_INTR_REMAP;
+
+		/* SKX FSP doesn't support X2APIC, but CPX FSP does */
+		if (CONFIG(SOC_INTEL_SKYLAKE_SP))
+			flags |= DMAR_X2APIC_OPT_OUT;
+
 		printk(BIOS_DEBUG, "ACPI:    * DMAR\n");
-		printk(BIOS_DEBUG, "[DMA Remapping table] Flags: 0x%x\n", DMAR_INTR_REMAP);
-		acpi_create_dmar(dmar, DMAR_INTR_REMAP, acpi_fill_dmar);
+		printk(BIOS_DEBUG, "[DMA Remapping table] Flags: 0x%x\n", flags);
+		acpi_create_dmar(dmar, flags, acpi_fill_dmar);
 		current += dmar->header.length;
 		current = acpi_align_current(current);
 		acpi_add_table(rsdp, dmar);

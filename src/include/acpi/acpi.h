@@ -1077,6 +1077,7 @@ unsigned long acpi_create_hest_error_source(acpi_hest_t *hest,
 void __noreturn acpi_resume(void *wake_vec);
 void mainboard_suspend_resume(void);
 void *acpi_find_wakeup_vector(void);
+int acpi_handoff_wakeup_s3(void);
 
 /* ACPI_Sn assignments are defined to always equal the sleep state numbers */
 enum {
@@ -1104,6 +1105,8 @@ static inline int acpi_sleep_from_pm1(uint32_t pm1_cnt)
 }
 #endif
 
+uint8_t acpi_get_preferred_pm_profile(void);
+
 /* Returns ACPI_Sx values. */
 int acpi_get_sleep_type(void);
 
@@ -1122,24 +1125,16 @@ static inline int acpi_s3_resume_allowed(void)
 	return CONFIG(HAVE_ACPI_RESUME);
 }
 
-#if CONFIG(HAVE_ACPI_RESUME)
-
-#if ENV_ROMSTAGE_OR_BEFORE
 static inline int acpi_is_wakeup_s3(void)
 {
-	return (acpi_get_sleep_type() == ACPI_S3);
-}
-#else
-int acpi_is_wakeup(void);
-int acpi_is_wakeup_s3(void);
-int acpi_is_wakeup_s4(void);
-#endif
+	if (!acpi_s3_resume_allowed())
+		return 0;
 
-#else
-static inline int acpi_is_wakeup(void) { return 0; }
-static inline int acpi_is_wakeup_s3(void) { return 0; }
-static inline int acpi_is_wakeup_s4(void) { return 0; }
-#endif
+	if (ENV_ROMSTAGE_OR_BEFORE)
+		return (acpi_get_sleep_type() == ACPI_S3);
+
+	return acpi_handoff_wakeup_s3();
+}
 
 static inline uintptr_t acpi_align_current(uintptr_t current)
 {

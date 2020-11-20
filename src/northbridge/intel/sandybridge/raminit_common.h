@@ -98,6 +98,25 @@ struct iosav_ssq {
 	} addr_update;
 };
 
+typedef struct ramctr_timing_st ramctr_timing;
+
+void iosav_write_sequence(const int ch, const struct iosav_ssq *seq, const unsigned int length);
+void iosav_run_queue(const int ch, const u8 loops, const u8 as_timer);
+void iosav_run_once(const int ch);
+void wait_for_iosav(int channel);
+
+void iosav_write_zqcs_sequence(int channel, int slotrank, u32 gap, u32 post, u32 wrap);
+void iosav_write_prea_sequence(int channel, int slotrank, u32 post, u32 wrap);
+void iosav_write_read_mpr_sequence(
+	int channel, int slotrank, u32 tMOD, u32 loops, u32 gap, u32 loops2, u32 post2);
+void iosav_write_misc_write_sequence(ramctr_timing *ctrl, int channel, int slotrank,
+				     u32 gap0, u32 loops0, u32 gap1, u32 loops2, u32 wrap2);
+void iosav_write_command_training_sequence(
+	ramctr_timing *ctrl, int channel, int slotrank, unsigned int address);
+void iosav_write_data_write_sequence(ramctr_timing *ctrl, int channel, int slotrank);
+void iosav_write_aggressive_write_read_sequence(ramctr_timing *ctrl, int channel, int slotrank);
+void iosav_write_memory_test_sequence(ramctr_timing *ctrl, int channel, int slotrank);
+
 /* FIXME: Vendor BIOS uses 64 but our algorithms are less
    performant and even 1 seems to be enough in practice.  */
 #define NUM_PATTERNS	4
@@ -227,7 +246,6 @@ typedef struct ramctr_timing_st {
 #define MAKE_ERR		((channel << 16) | (slotrank << 8) | 1)
 #define GET_ERR_CHANNEL(x)	(x >> 16)
 
-u8 get_CWL(u32 tCK);
 void dram_mrscommands(ramctr_timing *ctrl);
 void program_timings(ramctr_timing *ctrl, int channel);
 void dram_find_common_params(ramctr_timing *ctrl);
@@ -241,11 +259,10 @@ void dram_jedecreset(ramctr_timing *ctrl);
 int read_training(ramctr_timing *ctrl);
 int write_training(ramctr_timing *ctrl);
 int command_training(ramctr_timing *ctrl);
-int discover_edges(ramctr_timing *ctrl);
+int read_mpr_training(ramctr_timing *ctrl);
 int discover_edges_write(ramctr_timing *ctrl);
 int discover_timC_write(ramctr_timing *ctrl);
 void normalize_training(ramctr_timing *ctrl);
-void write_controller_mr(ramctr_timing *ctrl);
 int channel_test(ramctr_timing *ctrl);
 void set_scrambling_seed(ramctr_timing *ctrl);
 void set_wmm_behavior(const u32 cpu);

@@ -511,7 +511,6 @@ M:	David Guckian <david.guckian@intel.com>
 S:	Odd Fixes
 F:	src/mainboard/intel/harcuvar/
 F:	src/soc/intel/denverton_ns/
-F:	src/vendorcode/intel/fsp/fsp2_0/denverton_ns/
 
 INTEL FSP 1.1
 M:	Lee Leahy <leroy.p.leahy@intel.com>
@@ -528,6 +527,14 @@ F:	src/drivers/intel/fsp2_0/
 ################################################################################
 # Systems on a Chip
 ################################################################################
+
+AMD Picasso
+M:	Marshall Dawson <marshalldawson3rd@gmail.com>
+M:	Felix Held <felix-coreboot@felixheld.de>
+M:	Jason Glenesk <jason.glenesk@gmail.com>
+S:	Maintained
+F:	src/soc/amd/picasso
+F:	src/vendorcode/amd/fsp/picasso
 
 INTEL APOLLOLAKE_SOC
 M:	Andrey Petrov <andrey.petrov@gmail.com>

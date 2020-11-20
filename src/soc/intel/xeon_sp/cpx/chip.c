@@ -10,9 +10,12 @@
 #include <soc/acpi.h>
 #include <soc/chip_common.h>
 #include <soc/cpu.h>
+#include <soc/pch.h>
 #include <soc/ramstage.h>
+#include <soc/p2sb.h>
 #include <soc/soc_util.h>
 #include <soc/util.h>
+#include <soc/pci_devs.h>
 
 /* UPD parameters to be initialized before SiliconInit */
 void platform_fsp_silicon_init_params_cb(FSPS_UPD *silupd)
@@ -63,6 +66,8 @@ static void chip_enable_dev(struct device *dev)
 
 static void chip_final(void *data)
 {
+	/* Lock SBI */
+	pci_or_config32(PCH_DEV_P2SB, P2SBC, SBILOCK);
 	p2sb_hide();
 
 	set_bios_init_completion();
@@ -72,6 +77,7 @@ static void chip_init(void *data)
 {
 	printk(BIOS_DEBUG, "coreboot: calling fsp_silicon_init\n");
 	fsp_silicon_init(false);
+	override_hpet_ioapic_bdf();
 	pch_enable_ioapic();
 	setup_lapic();
 	p2sb_unhide();

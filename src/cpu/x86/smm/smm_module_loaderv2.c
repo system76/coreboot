@@ -134,6 +134,12 @@ static int smm_create_map(uintptr_t smbase, unsigned int num_cpus,
 		return 0;
 	}
 
+	if (stub_size > ss_size) {
+		printk(BIOS_ERR, "%s: Save state larger than SMM stub size\n", __func__);
+		printk(BIOS_ERR, "    Decrease stub size or increase the size allocated for the save state\n");
+		return 0;
+	}
+
 	for (i = 0; i < num_cpus; i++) {
 		cpus[i].smbase = base;
 		cpus[i].entry = base + smm_entry_offset;
@@ -407,12 +413,14 @@ static int smm_module_setup_stub(void *smbase, size_t smm_size,
 	 * for default handler, but for relocated handler it lives at the beginning
 	 * of SMRAM which is TSEG base
 	 */
-	size = params->num_concurrent_stacks * params->per_cpu_stack_size;
-	stacks_top = smm_stub_place_stacks((char *)params->smram_start, size, params);
+	const size_t total_stack_size = params->num_concurrent_stacks *
+		params->per_cpu_stack_size;
+	stacks_top = smm_stub_place_stacks((char *)params->smram_start, total_stack_size,
+					   params);
 	if (stacks_top == NULL) {
 		printk(BIOS_ERR, "%s: not enough space for stacks\n", __func__);
 		printk(BIOS_ERR, "%s: ....need -> %p : available -> %zx\n", __func__,
-			base, size);
+			base, total_stack_size);
 		return -1;
 	}
 	params->stack_top = stacks_top;
@@ -440,8 +448,8 @@ static int smm_module_setup_stub(void *smbase, size_t smm_size,
 	stub_params->runtime.save_state_size = params->per_cpu_save_state_size;
 	stub_params->runtime.num_cpus = params->num_concurrent_stacks;
 
-	printk(BIOS_DEBUG, "%s: stack_end = 0x%x\n",
-		__func__, stub_params->runtime.smbase);
+	printk(BIOS_DEBUG, "%s: stack_end = 0x%lx\n",
+		__func__, stub_params->stack_top - total_stack_size);
 	printk(BIOS_DEBUG,
 		"%s: stack_top = 0x%x\n", __func__, stub_params->stack_top);
 	printk(BIOS_DEBUG, "%s: stack_size = 0x%x\n",

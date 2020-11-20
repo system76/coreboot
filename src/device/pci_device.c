@@ -542,7 +542,8 @@ static void pci_set_resource(struct device *dev, struct resource *resource)
 			dev->command |= PCI_COMMAND_MEMORY;
 		if (resource->flags & IORESOURCE_IO)
 			dev->command |= PCI_COMMAND_IO;
-		if (resource->flags & IORESOURCE_PCI_BRIDGE)
+		if (resource->flags & IORESOURCE_PCI_BRIDGE &&
+		    CONFIG(PCI_SET_BUS_MASTER_PCI_BRIDGES))
 			dev->command |= PCI_COMMAND_MASTER;
 	}
 
@@ -953,11 +954,14 @@ static void set_pci_ops(struct device *dev)
 		if ((driver->vendor == dev->vendor) &&
 		    device_id_match(driver, dev->device)) {
 			dev->ops = (struct device_operations *)driver->ops;
-			printk(BIOS_SPEW, "%s [%04x/%04x] %sops\n",
-			       dev_path(dev), driver->vendor, driver->device,
-			       (driver->ops->scan_bus ? "bus " : ""));
-			return;
+			break;
 		}
+	}
+
+	if (dev->ops) {
+		printk(BIOS_SPEW, "%s [%04x/%04x] %sops\n", dev_path(dev),
+		       driver->vendor, driver->device, (driver->ops->scan_bus ? "bus " : ""));
+		return;
 	}
 
 	/* If I don't have a specific driver use the default operations. */
@@ -1128,7 +1132,8 @@ struct device *pci_probe_dev(struct device *dev, struct bus *bus,
 	dev->class = class >> 8;
 
 	/* Architectural/System devices always need to be bus masters. */
-	if ((dev->class >> 16) == PCI_BASE_CLASS_SYSTEM)
+	if ((dev->class >> 16) == PCI_BASE_CLASS_SYSTEM &&
+	    CONFIG(PCI_ALLOW_BUS_MASTER_ANY_DEVICE))
 		dev->command |= PCI_COMMAND_MASTER;
 
 	/*
