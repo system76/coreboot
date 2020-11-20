@@ -170,10 +170,10 @@ chip soc/intel/tigerlake
 		end
 		device ref shared_ram on end
 		device ref cnvi_wifi on
-			chip drivers/wifi/generic
-				register "wake" = "GPE0_PME_B0"
-				device generic 0 on end
-			end
+			# chip drivers/wifi/generic
+			# 	register "wake" = "GPE0_PME_B0"
+			# 	device generic 0 on end
+			# end
 		end
 		device ref i2c0 on
 			# Touchpad I2C bus
