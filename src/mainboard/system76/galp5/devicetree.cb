@@ -46,6 +46,17 @@ chip soc/intel/tigerlake
 	register "SaGv" = "SaGv_Enabled"
 
 # FSP Silicon (soc/intel/tigerlake/fsp_params.c)
+	# Acoustic settings
+	register "AcousticNoiseMitigation" = "1"
+	register "SlowSlewRate[VR_DOMAIN_IA]" = "SLEW_FAST_8"
+	register "SlowSlewRate[VR_DOMAIN_GT]" = "SLEW_FAST_8"
+	register "SlowSlewRate[VR_DOMAIN_SA]" = "SLEW_FAST_8"
+	register "SlowSlewRate[VR_DOMAIN_VLCC]" = "SLEW_FAST_8"
+	register "FastPkgCRampDisable[VR_DOMAIN_IA]" = "1"
+	register "FastPkgCRampDisable[VR_DOMAIN_GT]" = "1"
+	register "FastPkgCRampDisable[VR_DOMAIN_SA]" = "1"
+	register "FastPkgCRampDisable[VR_DOMAIN_VLCC]" = "1"
+	
 	# FIVR configuration
 	#   Read EXT_RAIL_CONFIG to determine bitmaps
 	#     sudo devmem2 0xfe0011b8
