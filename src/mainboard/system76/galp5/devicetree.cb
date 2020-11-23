@@ -214,10 +214,6 @@ chip soc/intel/tigerlake
 			#TODO Disable ME and HECI
 			register "HeciEnabled" = "1"
 		end
-		device ref uart2 on
-			# Debug console
-			register "SerialIoUartMode[PchSerialIoIndexUART2]" = "PchSerialIoPci"
-		end
 		device ref pcie_rp5 on
 			# PCIe root port #5 x4, Clock 2 (NVIDIA GPU)
 			register "PcieRpEnable[4]" = "1"

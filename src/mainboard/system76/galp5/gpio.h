@@ -14,10 +14,6 @@
 
 /* Pad configuration in romstage. */
 static const struct pad_config early_gpio_table[] = {
-		// UART2_RXD
-		PAD_NC(GPP_C20, NONE),
-		// UART2_TXD
-		PAD_CFG_NF(GPP_C21, UP_20K, DEEP, NF1),
 		// DGPU_RST#_PCH
 		PAD_CFG_TERM_GPO(GPP_U4, 0, NONE, DEEP),
 		// DGPU_PWR_EN
@@ -97,7 +93,7 @@ static const struct pad_config gpio_table[] = {
 		// NC
 		PAD_NC(GPP_A22, NONE),
 		// GPPC_A23_TBT_FORCE_PWR
-		PAD_CFG_TERM_GPO(GPP_A23, 1, NONE, PLTRST),
+		PAD_CFG_TERM_GPO(GPP_A23, 0, NONE, PLTRST),
 		// VCCIN_AUX_VID0
 		PAD_CFG_NF(GPP_B0, NONE, DEEP, NF1),
 		// VCCIN_AUX_VID1
@@ -189,7 +185,7 @@ static const struct pad_config gpio_table[] = {
 		// UART2_RXD
 		PAD_NC(GPP_C20, NONE),
 		// UART2_TXD
-		PAD_CFG_NF(GPP_C21, UP_20K, DEEP, NF1),
+		PAD_NC(GPP_C21, NONE),
 		// LAN_PLT_RST#
 		PAD_CFG_TERM_GPO(GPP_C22, 1, NONE, PLTRST),
 		// PCH_GPP_C23 - 4.7k pull-down
@@ -270,9 +266,9 @@ static const struct pad_config gpio_table[] = {
 		// NC
 		PAD_NC(GPP_E17, NONE),
 		// GPP_E18_TBT_LSX0_TXD
-		PAD_CFG_NF(GPP_E18, NATIVE, DEEP, NF4),
+		_PAD_CFG_STRUCT(GPP_E18, 0x44001700, 0x3c00),
 		// GPP_E19_TBT_LSX0_RXD
-		PAD_CFG_NF(GPP_E19, NATIVE, DEEP, NF4),
+		_PAD_CFG_STRUCT(GPP_E19, 0x44001600, 0x3c00),
 		// NC
 		PAD_NC(GPP_E20, NONE),
 		// NC
