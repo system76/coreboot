@@ -98,6 +98,167 @@ struct iosav_ssq {
 	} addr_update;
 };
 
+union gdcr_cmd_pi_coding_reg {
+	struct {
+		u32 cmd_pi_code         : 6; /* [ 5.. 0] */
+		u32 ctl_pi_code_d0      : 6; /* [11.. 6] */
+		u32 cmd_logic_delay     : 1; /* [12..12] */
+		u32 cmd_phase_delay     : 1; /* [13..13] */
+		u32 cmd_xover_enable    : 1; /* [14..14] */
+		u32 ctl_logic_delay_d0  : 1; /* [15..15] */
+		u32 ctl_phase_delay_d0  : 1; /* [16..16] */
+		u32 ctl_xover_enable_d0 : 1; /* [17..17] */
+		u32 ctl_pi_code_d1      : 6; /* [23..18] */
+		u32 ctl_logic_delay_d1  : 1; /* [24..24] */
+		u32 ctl_phase_delay_d1  : 1; /* [25..25] */
+		u32 ctl_xover_enable_d1 : 1; /* [26..26] */
+		u32                     : 5;
+	};
+	u32 raw;
+};
+
+union gdcr_training_mod_reg {
+	struct {
+		u32 receive_enable_mode : 1; /* [ 0.. 0] */
+		u32 write_leveling_mode : 1; /* [ 1.. 1] */
+		u32 training_rank_sel   : 2; /* [ 3.. 2] */
+		u32 enable_dqs_wl       : 4; /* [ 7.. 4] */
+		u32 dqs_logic_delay_wl  : 1; /* [ 8.. 8] */
+		u32 dq_dqs_training_res : 1; /* [ 9.. 9] */
+		u32                     : 4;
+		u32 delay_dq            : 1; /* [14..14] */
+		u32 odt_always_on       : 1; /* [15..15] */
+		u32                     : 4;
+		u32 force_drive_enable  : 1; /* [20..20] */
+		u32 dft_tx_pi_clk_view  : 1; /* [21..21] */
+		u32 dft_tx_pi_clk_swap  : 1; /* [22..22] */
+		u32 early_odt_en        : 1; /* [23..23] */
+		u32 vref_gen_ctl        : 6; /* [29..24] */
+		u32 ext_vref_sel        : 1; /* [30..30] */
+		u32 tx_fifo_always_on   : 1; /* [31..31] */
+	};
+	u32 raw;
+};
+
+union comp_ofst_1_reg {
+	struct {
+		u32 dq_odt_down  : 3; /* [ 2.. 0] */
+		u32 dq_odt_up    : 3; /* [ 5.. 3] */
+		u32 clk_odt_down : 3; /* [ 8.. 6] */
+		u32 clk_odt_up   : 3; /* [11.. 9] */
+		u32 dq_drv_down  : 3; /* [14..12] */
+		u32 dq_drv_up    : 3; /* [17..15] */
+		u32 clk_drv_down : 3; /* [20..18] */
+		u32 clk_drv_up   : 3; /* [23..21] */
+		u32 ctl_drv_down : 3; /* [26..24] */
+		u32 ctl_drv_up   : 3; /* [29..27] */
+		u32              : 2;
+	};
+	u32 raw;
+};
+
+union tc_dbp_reg {
+	struct {
+		u32 tRCD : 4; /* [ 3.. 0] */
+		u32 tRP  : 4; /* [ 7.. 4] */
+		u32 tAA  : 4; /* [11.. 8] */
+		u32 tCWL : 4; /* [15..12] */
+		u32 tRAS : 8; /* [23..16] */
+		u32      : 8;
+	};
+	u32 raw;
+};
+
+union tc_rap_reg {
+	struct {
+		u32 tRRD    : 4; /* [ 3.. 0] */
+		u32 tRTP    : 4; /* [ 7.. 4] */
+		u32 tCKE    : 4; /* [11.. 8] */
+		u32 tWTR    : 4; /* [15..12] */
+		u32 tFAW    : 8; /* [23..16] */
+		u32 tWR     : 5; /* [28..24] */
+		u32 dis_3st : 1; /* [29..29] */
+		u32 tCMD    : 2; /* [31..30] */
+	};
+	u32 raw;
+};
+
+union tc_rwp_reg {
+	struct {
+		u32 tRRDR   : 3; /* [ 2.. 0] */
+		u32         : 1;
+		u32 tRRDD   : 3; /* [ 6.. 4] */
+		u32         : 1;
+		u32 tWWDR   : 3; /* [10.. 8] */
+		u32         : 1;
+		u32 tWWDD   : 3; /* [14..12] */
+		u32         : 1;
+		u32 tRWDRDD : 3; /* [18..16] */
+		u32         : 1;
+		u32 tWRDRDD : 3; /* [22..20] */
+		u32         : 1;
+		u32 tRWSR   : 3; /* [26..24] */
+		u32 dec_wrd : 1; /* [27..27] */
+		u32         : 4;
+	};
+	u32 raw;
+};
+
+union tc_othp_reg {
+	struct {
+		u32 tXPDLL       :  5; /* [ 4.. 0] */
+		u32 tXP          :  3; /* [ 7.. 5] */
+		u32 tAONPD       :  4; /* [11.. 8] */
+		u32 tCPDED       :  2; /* [13..12] */
+		u32 tPRPDEN      :  2; /* [15..14] */
+		u32 odt_delay_d0 :  2; /* [17..16] */
+		u32 odt_delay_d1 :  2; /* [19..18] */
+		u32              : 12;
+	};
+	u32 raw;
+};
+
+union tc_dtp_reg {
+	struct {
+		u32                  : 12;
+		u32 overclock_tXP    :  1; /* [12..12] */
+		u32 overclock_tXPDLL :  1; /* [13..13] */
+		u32                  : 18;
+	};
+	u32 raw;
+};
+
+union tc_rfp_reg {
+	struct {
+		u32 oref_ri            :  8; /* [ 7.. 0] */
+		u32 refresh_high_wm    :  4; /* [11.. 8] */
+		u32 refresh_panic_wm   :  4; /* [15..12] */
+		u32 refresh_2x_control :  2; /* [17..16] */
+		u32                    : 14;
+	};
+	u32 raw;
+};
+
+union tc_rftp_reg {
+	struct {
+		u32 tREFI   : 16; /* [15.. 0] */
+		u32 tRFC    :  9; /* [24..16] */
+		u32 tREFIx9 :  7; /* [31..25] */
+	};
+	u32 raw;
+};
+
+union tc_srftp_reg {
+	struct {
+		u32 tXSDLL     : 12; /* [11.. 0] */
+		u32 tXS_offset :  4; /* [15..12] */
+		u32 tZQOPER    : 10; /* [25..16] */
+		u32            :  2;
+		u32 tMOD       :  4; /* [31..28] */
+	};
+	u32 raw;
+};
+
 typedef struct ramctr_timing_st ramctr_timing;
 
 void iosav_write_sequence(const int ch, const struct iosav_ssq *seq, const unsigned int length);
@@ -109,6 +270,9 @@ void iosav_write_zqcs_sequence(int channel, int slotrank, u32 gap, u32 post, u32
 void iosav_write_prea_sequence(int channel, int slotrank, u32 post, u32 wrap);
 void iosav_write_read_mpr_sequence(
 	int channel, int slotrank, u32 tMOD, u32 loops, u32 gap, u32 loops2, u32 post2);
+void iosav_write_prea_act_read_sequence(ramctr_timing *ctrl, int channel, int slotrank);
+void iosav_write_jedec_write_leveling_sequence(
+	ramctr_timing *ctrl, int channel, int slotrank, int bank, u32 mr1reg);
 void iosav_write_misc_write_sequence(ramctr_timing *ctrl, int channel, int slotrank,
 				     u32 gap0, u32 loops0, u32 gap1, u32 loops2, u32 wrap2);
 void iosav_write_command_training_sequence(
@@ -125,6 +289,15 @@ void iosav_write_memory_test_sequence(ramctr_timing *ctrl, int channel, int slot
  * WARNING: Do not forget to increase MRC_CACHE_VERSION when the saved data is changed!
  */
 #define MRC_CACHE_VERSION 5
+
+enum pdwm_mode {
+	PDM_NONE        = 0,
+	PDM_APD         = 1,
+	PDM_PPD         = 2,
+	PDM_APD_PPD     = 3,
+	PDM_DLL_OFF     = 6,
+	PDM_APD_DLL_OFF = 7,
+};
 
 typedef struct odtmap_st {
 	u16 rttwr;
@@ -256,12 +429,12 @@ void dram_dimm_set_mapping(ramctr_timing *ctrl, int training);
 void dram_zones(ramctr_timing *ctrl, int training);
 void dram_memorymap(ramctr_timing *ctrl, int me_uma_size);
 void dram_jedecreset(ramctr_timing *ctrl);
-int read_training(ramctr_timing *ctrl);
+int receive_enable_calibration(ramctr_timing *ctrl);
 int write_training(ramctr_timing *ctrl);
 int command_training(ramctr_timing *ctrl);
 int read_mpr_training(ramctr_timing *ctrl);
-int discover_edges_write(ramctr_timing *ctrl);
-int discover_timC_write(ramctr_timing *ctrl);
+int aggressive_read_training(ramctr_timing *ctrl);
+int aggressive_write_training(ramctr_timing *ctrl);
 void normalize_training(ramctr_timing *ctrl);
 int channel_test(ramctr_timing *ctrl);
 void set_scrambling_seed(ramctr_timing *ctrl);

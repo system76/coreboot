@@ -157,14 +157,60 @@ static u8 get_AONPD(u32 FRQ, u8 base_freq)
 		return frq_aonpd_map[0][FRQ - 3];
 }
 
-/* Get COMP2 based on frequency index */
-static u32 get_COMP2(u32 FRQ, u8 base_freq)
+/* Get COMP2 based on CPU generation and clock speed */
+static u32 get_COMP2(const ramctr_timing *ctrl)
 {
-	if (base_freq == 100)
-		return frq_comp2_map[1][FRQ - 7];
+	const bool is_ivybridge = IS_IVY_CPU(ctrl->cpu);
 
+	if (ctrl->tCK <= TCK_1066MHZ)
+		return is_ivybridge ? 0x0C235924 : 0x0C21410C;
+	else if (ctrl->tCK <= TCK_933MHZ)
+		return is_ivybridge ? 0x0C446964 : 0x0C42514C;
+	else if (ctrl->tCK <= TCK_800MHZ)
+		return is_ivybridge ? 0x0C6671E4 : 0x0C6369CC;
+	else if (ctrl->tCK <= TCK_666MHZ)
+		return is_ivybridge ? 0x0CA8C264 : 0x0CA57A4C;
+	else if (ctrl->tCK <= TCK_533MHZ)
+		return is_ivybridge ? 0x0CEBDB64 : 0x0CE7C34C;
 	else
-		return frq_comp2_map[0][FRQ - 3];
+		return is_ivybridge ? 0x0D6FF5E4 : 0x0D6BEDCC;
+}
+
+/* Get updated COMP1 based on CPU generation and stepping */
+static u32 get_COMP1(ramctr_timing *ctrl, const int channel)
+{
+	const union comp_ofst_1_reg orig_comp = {
+		.raw = MCHBAR32(CRCOMPOFST1_ch(channel)),
+	};
+
+	if (IS_SANDY_CPU(ctrl->cpu) && !IS_SANDY_CPU_D2(ctrl->cpu)) {
+		union comp_ofst_1_reg comp_ofst_1 = orig_comp;
+
+		comp_ofst_1.clk_odt_up = 1;
+		comp_ofst_1.clk_drv_up = 1;
+		comp_ofst_1.ctl_drv_up = 1;
+
+		return comp_ofst_1.raw;
+	}
+
+	/* Fix PCODE COMP offset bug: revert to default values */
+	union comp_ofst_1_reg comp_ofst_1 = {
+		.dq_odt_down  = 4,
+		.dq_odt_up    = 4,
+		.clk_odt_down = 4,
+		.clk_odt_up   = orig_comp.clk_odt_up,
+		.dq_drv_down  = 4,
+		.dq_drv_up    = orig_comp.dq_drv_up,
+		.clk_drv_down = 4,
+		.clk_drv_up   = orig_comp.clk_drv_up,
+		.ctl_drv_down = 4,
+		.ctl_drv_up   = orig_comp.ctl_drv_up,
+	};
+
+	if (IS_IVY_CPU(ctrl->cpu))
+		comp_ofst_1.dq_drv_up = 2;	/* 28p6 ohms */
+
+	return comp_ofst_1.raw;
 }
 
 static void normalize_tclk(ramctr_timing *ctrl, bool ref_100mhz_support)
@@ -559,8 +605,6 @@ static void dram_freq(ramctr_timing *ctrl)
 
 static void dram_ioregs(ramctr_timing *ctrl)
 {
-	u32 reg;
-
 	int channel;
 
 	/* IO clock */
@@ -586,16 +630,12 @@ static void dram_ioregs(ramctr_timing *ctrl)
 	printram("done\n");
 
 	/* Set COMP2 */
-	MCHBAR32(CRCOMPOFST2) = get_COMP2(ctrl->FRQ, ctrl->base_freq);
+	MCHBAR32(CRCOMPOFST2) = get_COMP2(ctrl);
 	printram("COMP2 done\n");
 
 	/* Set COMP1 */
 	FOR_ALL_POPULATED_CHANNELS {
-		reg = MCHBAR32(CRCOMPOFST1_ch(channel));
-		reg = (reg & ~0x00000e00) | (1 <<  9);	/* ODT */
-		reg = (reg & ~0x00e00000) | (1 << 21);	/* clk drive up */
-		reg = (reg & ~0x38000000) | (1 << 27);	/* ctl drive up */
-		MCHBAR32(CRCOMPOFST1_ch(channel)) = reg;
+		MCHBAR32(CRCOMPOFST1_ch(channel)) = get_COMP1(ctrl, channel);
 	}
 	printram("COMP1 done\n");
 
@@ -680,7 +720,11 @@ int try_init_dram_ddr3(ramctr_timing *ctrl, int fast_boot, int s3resume, int me_
 		/* Prepare for memory training */
 		prepare_training(ctrl);
 
-		err = read_training(ctrl);
+		err = receive_enable_calibration(ctrl);
+		if (err)
+			return err;
+
+		err = read_mpr_training(ctrl);
 		if (err)
 			return err;
 
@@ -690,10 +734,6 @@ int try_init_dram_ddr3(ramctr_timing *ctrl, int fast_boot, int s3resume, int me_
 
 		printram("CP5a\n");
 
-		err = read_mpr_training(ctrl);
-		if (err)
-			return err;
-
 		printram("CP5b\n");
 
 		err = command_training(ctrl);
@@ -702,11 +742,11 @@ int try_init_dram_ddr3(ramctr_timing *ctrl, int fast_boot, int s3resume, int me_
 
 		printram("CP5c\n");
 
-		err = discover_edges_write(ctrl);
+		err = aggressive_read_training(ctrl);
 		if (err)
 			return err;
 
-		err = discover_timC_write(ctrl);
+		err = aggressive_write_training(ctrl);
 		if (err)
 			return err;
 

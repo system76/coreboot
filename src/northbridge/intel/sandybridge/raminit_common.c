@@ -135,97 +135,107 @@ static void dram_odt_stretch(ramctr_timing *ctrl, int channel)
 		printk(RAM_DEBUG, "OTHP Workaround [%x] = %x\n", addr, MCHBAR32(addr));
 	} else {
 		addr = TC_OTHP_ch(channel);
-		MCHBAR32_AND_OR(addr, ~(0xf << 16), (stretch << 16) | (stretch << 18));
+		union tc_othp_reg tc_othp = {
+			.raw = MCHBAR32(addr),
+		};
+		tc_othp.odt_delay_d0 = stretch;
+		tc_othp.odt_delay_d1 = stretch;
+		MCHBAR32(addr) = tc_othp.raw;
 		printk(RAM_DEBUG, "OTHP [%x] = %x\n", addr, MCHBAR32(addr));
 	}
 }
 
 void dram_timing_regs(ramctr_timing *ctrl)
 {
-	u32 reg, addr, val32;
 	int channel;
 
+	/* BIN parameters */
+	const union tc_dbp_reg tc_dbp = {
+		.tRCD = ctrl->tRCD,
+		.tRP  = ctrl->tRP,
+		.tAA  = ctrl->CAS,
+		.tCWL = ctrl->CWL,
+		.tRAS = ctrl->tRAS,
+	};
+
+	/* Regular access parameters */
+	const union tc_rap_reg tc_rap = {
+		.tRRD = ctrl->tRRD,
+		.tRTP = ctrl->tRTP,
+		.tCKE = ctrl->tCKE,
+		.tWTR = ctrl->tWTR,
+		.tFAW = ctrl->tFAW,
+		.tWR  = ctrl->tWR,
+		.tCMD = 3,
+	};
+
+	/* Other parameters */
+	const union tc_othp_reg tc_othp = {
+		.tXPDLL  = ctrl->tXPDLL,
+		.tXP     = ctrl->tXP,
+		.tAONPD  = ctrl->tAONPD,
+		.tCPDED  = 2,
+		.tPRPDEN = 1,
+	};
+
+	/*
+	 * If tXP and tXPDLL are very high, we need to increase them by one.
+	 * This can only happen on Ivy Bridge, and when overclocking the RAM.
+	 */
+	const union tc_dtp_reg tc_dtp = {
+		.overclock_tXP    = ctrl->tXP >= 8,
+		.overclock_tXPDLL = ctrl->tXPDLL >= 32,
+	};
+
+	/*
+	 * TC-Refresh timing parameters:
+	 *   The tREFIx9 field should be programmed to minimum of 8.9 * tREFI (to allow
+	 *   for possible delays from ZQ or isoc) and tRASmax (70us) divided by 1024.
+	 */
+	const u32 val32 = MIN((ctrl->tREFI * 89) / 10, (70000 << 8) / ctrl->tCK);
+
+	const union tc_rftp_reg tc_rftp = {
+		.tREFI   = ctrl->tREFI,
+		.tRFC    = ctrl->tRFC,
+		.tREFIx9 = val32 / 1024,
+	};
+
+	/* Self-refresh timing parameters */
+	const union tc_srftp_reg tc_srftp = {
+		.tXSDLL     = tDLLK,
+		.tXS_offset = ctrl->tXSOffset,
+		.tZQOPER    = tDLLK - ctrl->tXSOffset,
+		.tMOD       = ctrl->tMOD - 8,
+	};
+
 	FOR_ALL_CHANNELS {
-		/* BIN parameters */
-		reg = 0;
-		reg |= (ctrl->tRCD <<  0);
-		reg |= (ctrl->tRP  <<  4);
-		reg |= (ctrl->CAS  <<  8);
-		reg |= (ctrl->CWL  << 12);
-		reg |= (ctrl->tRAS << 16);
-		printram("DBP [%x] = %x\n", TC_DBP_ch(channel), reg);
-		MCHBAR32(TC_DBP_ch(channel)) = reg;
+		printram("DBP [%x] = %x\n", TC_DBP_ch(channel), tc_dbp.raw);
+		MCHBAR32(TC_DBP_ch(channel)) = tc_dbp.raw;
 
-		/* Regular access parameters */
-		reg = 0;
-		reg |= (ctrl->tRRD <<  0);
-		reg |= (ctrl->tRTP <<  4);
-		reg |= (ctrl->tCKE <<  8);
-		reg |= (ctrl->tWTR << 12);
-		reg |= (ctrl->tFAW << 16);
-		reg |= (ctrl->tWR  << 24);
-		reg |= (3 << 30);
-		printram("RAP [%x] = %x\n", TC_RAP_ch(channel), reg);
-		MCHBAR32(TC_RAP_ch(channel)) = reg;
+		printram("RAP [%x] = %x\n", TC_RAP_ch(channel), tc_rap.raw);
+		MCHBAR32(TC_RAP_ch(channel)) = tc_rap.raw;
 
-		/* Other parameters */
-		addr = TC_OTHP_ch(channel);
-		reg = 0;
-		reg |= (ctrl->tXPDLL << 0);
-		reg |= (ctrl->tXP    << 5);
-		reg |= (ctrl->tAONPD << 8);
-		reg |= 0xa0000;
-		printram("OTHP [%x] = %x\n", addr, reg);
-		MCHBAR32(addr) = reg;
+		printram("OTHP [%x] = %x\n", TC_OTHP_ch(channel), tc_othp.raw);
+		MCHBAR32(TC_OTHP_ch(channel)) = tc_othp.raw;
 
-		/* Debug parameters - only applies to Ivy Bridge */
 		if (IS_IVY_CPU(ctrl->cpu)) {
-			reg = 0;
-
-			/*
-			 * If tXP and tXPDLL are very high, we need to increase them by one.
-			 * This can only happen on Ivy Bridge, and when overclocking the RAM.
-			 */
-			if (ctrl->tXP >= 8)
-				reg |= (1 << 12);
-
-			if (ctrl->tXPDLL >= 32)
-				reg |= (1 << 13);
-
-			MCHBAR32(TC_DTP_ch(channel)) = reg;
+			/* Debug parameters - only applies to Ivy Bridge */
+			MCHBAR32(TC_DTP_ch(channel)) = tc_dtp.raw;
 		}
-
-		MCHBAR32_OR(addr, 0x00020000);
 
 		dram_odt_stretch(ctrl, channel);
 
-		/*
-		 * TC-Refresh timing parameters:
-		 *   The tREFIx9 field should be programmed to minimum of 8.9 * tREFI (to allow
-		 *   for possible delays from ZQ or isoc) and tRASmax (70us) divided by 1024.
-		 */
-		val32 = MIN((ctrl->tREFI * 89) / 10, (70000 << 8) / ctrl->tCK);
+		printram("REFI [%x] = %x\n", TC_RFTP_ch(channel), tc_rftp.raw);
+		MCHBAR32(TC_RFTP_ch(channel)) = tc_rftp.raw;
 
-		reg = ((ctrl->tREFI & 0xffff) <<  0) |
-		      ((ctrl->tRFC  & 0x01ff) << 16) | (((val32 / 1024) & 0x7f) << 25);
+		union tc_rfp_reg tc_rfp = {
+			.raw = MCHBAR32(TC_RFP_ch(channel)),
+		};
+		tc_rfp.oref_ri = 0xff;
+		MCHBAR32(TC_RFP_ch(channel)) = tc_rfp.raw;
 
-		printram("REFI [%x] = %x\n", TC_RFTP_ch(channel), reg);
-		MCHBAR32(TC_RFTP_ch(channel)) = reg;
-
-		MCHBAR32_OR(TC_RFP_ch(channel), 0xff);
-
-		/* Self-refresh timing parameters */
-		reg = 0;
-		val32 = tDLLK;
-		reg   = (reg & ~0x00000fff) | (val32 <<  0);
-		val32 = ctrl->tXSOffset;
-		reg   = (reg & ~0x0000f000) | (val32 << 12);
-		val32 = tDLLK - ctrl->tXSOffset;
-		reg   = (reg & ~0x03ff0000) | (val32 << 16);
-		val32 = ctrl->tMOD - 8;
-		reg   = (reg & ~0xf0000000) | (val32 << 28);
-		printram("SRFTP [%x] = %x\n", TC_SRFTP_ch(channel), reg);
-		MCHBAR32(TC_SRFTP_ch(channel)) = reg;
+		printram("SRFTP [%x] = %x\n", TC_SRFTP_ch(channel), tc_srftp.raw);
+		MCHBAR32(TC_SRFTP_ch(channel)) = tc_srftp.raw;
 	}
 }
 
@@ -678,11 +688,29 @@ static void write_mrreg(ramctr_timing *ctrl, int channel, int slotrank, int reg,
 	iosav_run_once(channel);
 }
 
+/* Obtain optimal power down mode for current configuration */
+static enum pdwm_mode get_power_down_mode(ramctr_timing *ctrl)
+{
+	if (ctrl->tXP > 8)
+		return PDM_NONE;
+
+	if (ctrl->tXPDLL > 32)
+		return PDM_PPD;
+
+	if (CONFIG(RAMINIT_ALWAYS_ALLOW_DLL_OFF) || get_platform_type() == PLATFORM_MOBILE)
+		return PDM_DLL_OFF;
+
+	return PDM_APD_PPD;
+}
+
 static u32 make_mr0(ramctr_timing *ctrl, u8 rank)
 {
 	u16 mr0reg, mch_cas, mch_wr;
 	static const u8 mch_wr_t[12] = { 1, 2, 3, 4, 0, 5, 0, 6, 0, 7, 0, 0 };
-	const size_t is_mobile = get_platform_type() == PLATFORM_MOBILE;
+
+	const enum pdwm_mode power_down = get_power_down_mode(ctrl);
+
+	const bool slow_exit = power_down == PDM_DLL_OFF || power_down == PDM_APD_DLL_OFF;
 
 	/* Convert CAS to MCH register friendly */
 	if (ctrl->CAS < 12) {
@@ -702,8 +730,8 @@ static u32 make_mr0(ramctr_timing *ctrl, u8 rank)
 	mr0reg |= (mch_cas & 0xe) << 3;
 	mr0reg |= mch_wr << 9;
 
-	/* Precharge PD - Fast (desktop) 1 or slow (mobile) 0 - mostly power-saving feature */
-	mr0reg |= !is_mobile << 12;
+	/* Precharge PD - Use slow exit when DLL-off is used - mostly power-saving feature */
+	mr0reg |= !slow_exit << 12;
 	return mr0reg;
 }
 
@@ -907,7 +935,7 @@ static const u32 lane_base[] = {
 
 void program_timings(ramctr_timing *ctrl, int channel)
 {
-	u32 reg32, reg_roundtrip_latency, reg_pi_code, reg_logic_delay, reg_io_latency;
+	u32 reg_roundtrip_latency, reg_pi_code, reg_logic_delay, reg_io_latency;
 	int lane;
 	int slotrank, slot;
 	int full_shift = 0;
@@ -940,13 +968,18 @@ void program_timings(ramctr_timing *ctrl, int channel)
 		}
 
 	/* Enable CMD XOVER */
-	reg32 = get_XOVER_CMD(ctrl->rankmap[channel]);
-	reg32 |= (pi_coding_ctrl[0] & 0x3f) <<  6;
-	reg32 |= (pi_coding_ctrl[0] & 0x40) <<  9;
-	reg32 |= (pi_coding_ctrl[1] & 0x7f) << 18;
-	reg32 |= (full_shift & 0x3f) | ((full_shift & 0x40) << 6);
+	union gdcr_cmd_pi_coding_reg cmd_pi_coding = {
+		.raw = get_XOVER_CMD(ctrl->rankmap[channel]),
+	};
+	cmd_pi_coding.cmd_pi_code = full_shift & 0x3f;
+	cmd_pi_coding.cmd_logic_delay = !!(full_shift & 0x40);
 
-	MCHBAR32(GDCRCMDPICODING_ch(channel)) = reg32;
+	cmd_pi_coding.ctl_pi_code_d0 = pi_coding_ctrl[0] & 0x3f;
+	cmd_pi_coding.ctl_pi_code_d1 = pi_coding_ctrl[1] & 0x3f;
+	cmd_pi_coding.ctl_logic_delay_d0 = !!(pi_coding_ctrl[0] & 0x40);
+	cmd_pi_coding.ctl_logic_delay_d1 = !!(pi_coding_ctrl[1] & 0x40);
+
+	MCHBAR32(GDCRCMDPICODING_ch(channel)) = cmd_pi_coding.raw;
 
 	/* Enable CLK XOVER */
 	reg_pi_code = get_XOVER_CLK(ctrl->rankmap[channel]);
@@ -1301,25 +1334,7 @@ static void compute_final_logic_delay(ramctr_timing *ctrl, int channel, int slot
 	printram("4028 -= %d;\n", logic_delay_min);
 }
 
-/*
- * Compensate the skew between DQS and DQs.
- *
- * To ease PCB design, a small skew between Data Strobe signals and Data Signals is allowed.
- * The controller has to measure and compensate this skew for every byte-lane. By delaying
- * either all DQ signals or DQS signal, a full phase shift can be introduced. It is assumed
- * that one byte-lane's DQs signals have the same routing delay.
- *
- * To measure the actual skew, the DRAM is placed in "read leveling" mode. In read leveling
- * mode the DRAM-chip outputs an alternating periodic pattern. The memory controller iterates
- * over all possible values to do a full phase shift and issues read commands. With DQS and
- * DQ in phase the data being read is expected to alternate on every byte:
- *
- *   0xFF 0x00 0xFF ...
- *
- * Once the controller has detected this pattern a bit in the result register is set for the
- * current phase shift.
- */
-int read_training(ramctr_timing *ctrl)
+int receive_enable_calibration(ramctr_timing *ctrl)
 {
 	int channel, slotrank, lane;
 	int err;
@@ -1336,7 +1351,12 @@ int read_training(ramctr_timing *ctrl)
 		/* Execute command queue */
 		iosav_run_once(channel);
 
-		MCHBAR32(GDCRTRAININGMOD) = (slotrank << 2) | 0x8001;
+		const union gdcr_training_mod_reg training_mod = {
+			.receive_enable_mode = 1,
+			.training_rank_sel   = slotrank,
+			.odt_always_on       = 1,
+		};
+		MCHBAR32(GDCRTRAININGMOD) = training_mod.raw;
 
 		ctrl->timings[channel][slotrank].io_latency = 4;
 		ctrl->timings[channel][slotrank].roundtrip_latency = 55;
@@ -1403,9 +1423,7 @@ int read_training(ramctr_timing *ctrl)
 	FOR_ALL_POPULATED_CHANNELS {
 		program_timings(ctrl, channel);
 	}
-	FOR_ALL_POPULATED_CHANNELS FOR_ALL_LANES {
-		MCHBAR32(IOSAV_By_BW_MASK_ch(channel, lane)) = 0;
-	}
+
 	return 0;
 }
 
@@ -1428,99 +1446,7 @@ static void test_tx_dq(ramctr_timing *ctrl, int channel, int slotrank)
 
 	wait_for_iosav(channel);
 
-	const struct iosav_ssq rd_sequence[] = {
-		/* DRAM command PREA */
-		[0] = {
-			.sp_cmd_ctrl = {
-				.command    = IOSAV_PRE,
-				.ranksel_ap = 1,
-			},
-			.subseq_ctrl = {
-				.cmd_executions = 1,
-				.cmd_delay_gap  = 3,
-				.post_ssq_wait  = ctrl->tRP,
-				.data_direction = SSQ_NA,
-			},
-			.sp_cmd_addr = {
-				.address = 1024,
-				.rowbits = 6,
-				.bank    = 0,
-				.rank    = slotrank,
-			},
-			.addr_update = {
-				.addr_wrap = 18,
-			},
-		},
-		/* DRAM command ACT */
-		[1] = {
-			.sp_cmd_ctrl = {
-				.command    = IOSAV_ACT,
-				.ranksel_ap = 1,
-			},
-			.subseq_ctrl = {
-				.cmd_executions = 8,
-				.cmd_delay_gap  = MAX(ctrl->tRRD, (ctrl->tFAW >> 2) + 1),
-				.post_ssq_wait  = ctrl->CAS,
-				.data_direction = SSQ_NA,
-			},
-			.sp_cmd_addr = {
-				.address = 0,
-				.rowbits = 6,
-				.bank    = 0,
-				.rank    = slotrank,
-			},
-			.addr_update = {
-				.inc_bank  = 1,
-				.addr_wrap = 18,
-			},
-		},
-		/* DRAM command RD */
-		[2] = {
-			.sp_cmd_ctrl = {
-				.command    = IOSAV_RD,
-				.ranksel_ap = 1,
-			},
-			.subseq_ctrl = {
-				.cmd_executions = 500,
-				.cmd_delay_gap  = 4,
-				.post_ssq_wait  = MAX(ctrl->tRTP, 8),
-				.data_direction = SSQ_RD,
-			},
-			.sp_cmd_addr = {
-				.address = 0,
-				.rowbits = 0,
-				.bank    = 0,
-				.rank    = slotrank,
-			},
-			.addr_update = {
-				.inc_addr_8 = 1,
-				.addr_wrap  = 18,
-			},
-		},
-		/* DRAM command PREA */
-		[3] = {
-			.sp_cmd_ctrl = {
-				.command    = IOSAV_PRE,
-				.ranksel_ap = 1,
-			},
-			.subseq_ctrl = {
-				.cmd_executions = 1,
-				.cmd_delay_gap  = 3,
-				.post_ssq_wait  = ctrl->tRP,
-				.data_direction = SSQ_NA,
-			},
-			.sp_cmd_addr = {
-				.address = 1024,
-				.rowbits = 6,
-				.bank    = 0,
-				.rank    = slotrank,
-			},
-			.addr_update = {
-				.addr_wrap = 18,
-			},
-		},
-	};
-	iosav_write_sequence(channel, rd_sequence, ARRAY_SIZE(rd_sequence));
+	iosav_write_prea_act_read_sequence(ctrl, channel, slotrank);
 
 	/* Execute command queue */
 	iosav_run_once(channel);
@@ -1649,117 +1575,30 @@ static void fill_pattern1(ramctr_timing *ctrl, int channel)
 	program_wdb_pattern_length(channel, 16);
 }
 
-static void precharge(ramctr_timing *ctrl)
-{
-	int channel, slotrank, lane;
-
-	FOR_ALL_POPULATED_CHANNELS {
-		FOR_ALL_POPULATED_RANKS FOR_ALL_LANES {
-			ctrl->timings[channel][slotrank].lanes[lane].falling = 16;
-			ctrl->timings[channel][slotrank].lanes[lane].rising = 16;
-		}
-
-		program_timings(ctrl, channel);
-
-		FOR_ALL_POPULATED_RANKS {
-			wait_for_iosav(channel);
-
-			iosav_write_read_mpr_sequence(
-				channel, slotrank, ctrl->tMOD, 3, 4, 1, ctrl->CAS + 8);
-
-			/* Execute command queue */
-			iosav_run_once(channel);
-
-			wait_for_iosav(channel);
-		}
-
-		FOR_ALL_POPULATED_RANKS FOR_ALL_LANES {
-			ctrl->timings[channel][slotrank].lanes[lane].falling = 48;
-			ctrl->timings[channel][slotrank].lanes[lane].rising = 48;
-		}
-
-		program_timings(ctrl, channel);
-
-		FOR_ALL_POPULATED_RANKS {
-			wait_for_iosav(channel);
-
-			iosav_write_read_mpr_sequence(
-				channel, slotrank, ctrl->tMOD, 3, 4, 1, ctrl->CAS + 8);
-
-			/* Execute command queue */
-			iosav_run_once(channel);
-
-			wait_for_iosav(channel);
-		}
-	}
-}
-
-static void test_timB(ramctr_timing *ctrl, int channel, int slotrank)
-{
-	/* enable DQs on this slotrank */
-	write_mrreg(ctrl, channel, slotrank, 1, make_mr1(ctrl, slotrank, channel) | 1 << 7);
-
-	wait_for_iosav(channel);
-
-	const struct iosav_ssq sequence[] = {
-		/* DRAM command NOP */
-		[0] = {
-			.sp_cmd_ctrl = {
-				.command    = IOSAV_NOP,
-				.ranksel_ap = 1,
-			},
-			.subseq_ctrl = {
-				.cmd_executions = 1,
-				.cmd_delay_gap  = 3,
-				.post_ssq_wait  = ctrl->CWL + ctrl->tWLO,
-				.data_direction = SSQ_WR,
-			},
-			.sp_cmd_addr = {
-				.address = 8,
-				.rowbits = 0,
-				.bank    = 0,
-				.rank    = slotrank,
-			},
-		},
-		/* DRAM command NOP */
-		[1] = {
-			.sp_cmd_ctrl = {
-				.command    = IOSAV_NOP_ALT,
-				.ranksel_ap = 1,
-			},
-			.subseq_ctrl = {
-				.cmd_executions = 1,
-				.cmd_delay_gap  = 3,
-				.post_ssq_wait  = ctrl->CAS + 38,
-				.data_direction = SSQ_RD,
-			},
-			.sp_cmd_addr = {
-				.address = 4,
-				.rowbits = 0,
-				.bank    = 0,
-				.rank    = slotrank,
-			},
-		},
-	};
-	iosav_write_sequence(channel, sequence, ARRAY_SIZE(sequence));
-
-	/* Execute command queue */
-	iosav_run_once(channel);
-
-	wait_for_iosav(channel);
-
-	/* disable DQs on this slotrank */
-	write_mrreg(ctrl, channel, slotrank, 1,
-		make_mr1(ctrl, slotrank, channel) | 1 << 12 | 1 << 7);
-}
-
-static int discover_timB(ramctr_timing *ctrl, int channel, int slotrank)
+static int write_level_rank(ramctr_timing *ctrl, int channel, int slotrank)
 {
 	int timB;
 	int statistics[NUM_LANES][128];
 	int lane;
 
-	MCHBAR32(GDCRTRAININGMOD) = 0x108052 | (slotrank << 2);
+	const union gdcr_training_mod_reg training_mod = {
+		.write_leveling_mode = 1,
+		.training_rank_sel   = slotrank,
+		.enable_dqs_wl       = 5,
+		.odt_always_on       = 1,
+		.force_drive_enable  = 1,
+	};
+	MCHBAR32(GDCRTRAININGMOD) = training_mod.raw;
+
+	u32 mr1reg = make_mr1(ctrl, slotrank, channel) | 1 << 7;
+	int bank = 1;
+
+	if (ctrl->rank_mirror[channel][slotrank])
+		ddr3_mirror_mrreg(&bank, &mr1reg);
+
+	wait_for_iosav(channel);
+
+	iosav_write_jedec_write_leveling_sequence(ctrl, channel, slotrank, bank, mr1reg);
 
 	for (timB = 0; timB < 128; timB++) {
 		FOR_ALL_LANES {
@@ -1767,7 +1606,10 @@ static int discover_timB(ramctr_timing *ctrl, int channel, int slotrank)
 		}
 		program_timings(ctrl, channel);
 
-		test_timB(ctrl, channel, slotrank);
+		/* Execute command queue */
+		iosav_run_once(channel);
+
+		wait_for_iosav(channel);
 
 		FOR_ALL_LANES {
 			statistics[lane][timB] =  !((MCHBAR32(lane_base[lane] +
@@ -1804,14 +1646,12 @@ static int discover_timB(ramctr_timing *ctrl, int channel, int slotrank)
 	return 0;
 }
 
-static int get_timB_high_adjust(u64 val)
+static int get_dqs_flyby_adjust(u64 val)
 {
 	int i;
-
 	/* DQS is good enough */
 	if (val == 0xffffffffffffffffLL)
 		return 0;
-
 	if (val >= 0xf000000000000000LL) {
 		/* DQS is late, needs negative adjustment */
 		for (i = 0; i < 8; i++)
@@ -1829,7 +1669,12 @@ static int get_timB_high_adjust(u64 val)
 static void train_write_flyby(ramctr_timing *ctrl)
 {
 	int channel, slotrank, lane, old;
-	MCHBAR32(GDCRTRAININGMOD) = 0x200;
+
+	const union gdcr_training_mod_reg training_mod = {
+		.dq_dqs_training_res = 1,
+	};
+	MCHBAR32(GDCRTRAININGMOD) = training_mod.raw;
+
 	FOR_ALL_POPULATED_CHANNELS {
 		fill_pattern1(ctrl, channel);
 	}
@@ -1921,9 +1766,10 @@ static void train_write_flyby(ramctr_timing *ctrl)
 			u64 res = MCHBAR32(lane_base[lane] + GDCRTRAININGRESULT1(channel));
 			res |= ((u64) MCHBAR32(lane_base[lane] +
 				GDCRTRAININGRESULT2(channel))) << 32;
+
 			old = ctrl->timings[channel][slotrank].lanes[lane].timB;
 			ctrl->timings[channel][slotrank].lanes[lane].timB +=
-				get_timB_high_adjust(res) * 64;
+				get_dqs_flyby_adjust(res) * 64;
 
 			printram("High adjust %d:%016llx\n", lane, res);
 			printram("Bval+: %d, %d, %d, %x -> %x\n", channel, slotrank, lane,
@@ -1933,21 +1779,33 @@ static void train_write_flyby(ramctr_timing *ctrl)
 	MCHBAR32(GDCRTRAININGMOD) = 0;
 }
 
-static void write_op(ramctr_timing *ctrl, int channel)
+static void disable_refresh_machine(ramctr_timing *ctrl)
 {
-	int slotrank;
+	int channel;
 
-	wait_for_iosav(channel);
+	FOR_ALL_POPULATED_CHANNELS {
+		/* choose an existing rank */
+		const int slotrank = !(ctrl->rankmap[channel] & 1) ? 2 : 0;
 
-	/* choose an existing rank.  */
-	slotrank = !(ctrl->rankmap[channel] & 1) ? 2 : 0;
+		iosav_write_zqcs_sequence(channel, slotrank, 4, 4, 31);
 
-	iosav_write_zqcs_sequence(channel, slotrank, 4, 4, 31);
+		/* Execute command queue */
+		iosav_run_once(channel);
 
-	/* Execute command queue */
-	iosav_run_once(channel);
+		wait_for_iosav(channel);
 
-	wait_for_iosav(channel);
+		MCHBAR32_OR(SCHED_CBIT_ch(channel), 1 << 21);
+	}
+
+	/* Refresh disable */
+	MCHBAR32_AND(MC_INIT_STATE_G, ~(1 << 3));
+
+	FOR_ALL_POPULATED_CHANNELS {
+		/* Execute the same command queue */
+		iosav_run_once(channel);
+
+		wait_for_iosav(channel);
+	}
 }
 
 /*
@@ -1962,24 +1820,11 @@ static void write_op(ramctr_timing *ctrl, int channel)
  * the DRAM-chip samples the CLK on every DQS edge and feeds back the sampled value on the data
  * lanes (DQ).
  */
-int write_training(ramctr_timing *ctrl)
+static int jedec_write_leveling(ramctr_timing *ctrl)
 {
-	int channel, slotrank, lane;
-	int err;
+	int channel, slotrank;
 
-	FOR_ALL_POPULATED_CHANNELS
-		MCHBAR32_OR(TC_RWP_ch(channel), 1 << 27);
-
-	FOR_ALL_POPULATED_CHANNELS {
-		write_op(ctrl, channel);
-		MCHBAR32_OR(SCHED_CBIT_ch(channel), 1 << 21);
-	}
-
-	/* Refresh disable */
-	MCHBAR32_AND(MC_INIT_STATE_G, ~(1 << 3));
-	FOR_ALL_POPULATED_CHANNELS {
-		write_op(ctrl, channel);
-	}
+	disable_refresh_machine(ctrl);
 
 	/* Enable write leveling on all ranks
 	   Disable all DQ outputs
@@ -1988,13 +1833,20 @@ int write_training(ramctr_timing *ctrl)
 		write_mrreg(ctrl, channel, slotrank, 1,
 				make_mr1(ctrl, slotrank, channel) | 1 << 12 | 1 << 7);
 
-	MCHBAR32(GDCRTRAININGMOD) = 0x108052;
+	/* Needs to be programmed before I/O reset below */
+	const union gdcr_training_mod_reg training_mod = {
+		.write_leveling_mode = 1,
+		.enable_dqs_wl       = 5,
+		.odt_always_on       = 1,
+		.force_drive_enable  = 1,
+	};
+	MCHBAR32(GDCRTRAININGMOD) = training_mod.raw;
 
 	toggle_io_reset();
 
 	/* Set any valid value for timB, it gets corrected later */
 	FOR_ALL_CHANNELS FOR_ALL_POPULATED_RANKS {
-		err = discover_timB(ctrl, channel, slotrank);
+		const int err = write_level_rank(ctrl, channel, slotrank);
 		if (err)
 			return err;
 	}
@@ -2026,13 +1878,24 @@ int write_training(ramctr_timing *ctrl)
 
 	toggle_io_reset();
 
-	printram("CPE\n");
-	precharge(ctrl);
-	printram("CPF\n");
+	return 0;
+}
 
-	FOR_ALL_POPULATED_CHANNELS FOR_ALL_LANES {
-		MCHBAR32(IOSAV_By_BW_MASK_ch(channel, lane)) = 0;
-	}
+int write_training(ramctr_timing *ctrl)
+{
+	int channel, slotrank;
+	int err;
+
+	FOR_ALL_POPULATED_CHANNELS
+		MCHBAR32_OR(TC_RWP_ch(channel), 1 << 27);
+
+	printram("CPE\n");
+
+	err = jedec_write_leveling(ctrl);
+	if (err)
+		return err;
+
+	printram("CPF\n");
 
 	FOR_ALL_POPULATED_CHANNELS {
 		fill_pattern0(ctrl, channel, 0xaaaaaaaa, 0x55555555);
@@ -2053,9 +1916,6 @@ int write_training(ramctr_timing *ctrl)
 	FOR_ALL_POPULATED_CHANNELS
 		program_timings(ctrl, channel);
 
-	FOR_ALL_POPULATED_CHANNELS FOR_ALL_LANES {
-		MCHBAR32(IOSAV_By_BW_MASK_ch(channel, lane)) = 0;
-	}
 	return 0;
 }
 
@@ -2142,38 +2002,7 @@ static void fill_pattern5(ramctr_timing *ctrl, int channel, int patno)
 
 static void reprogram_320c(ramctr_timing *ctrl)
 {
-	int channel, slotrank;
-
-	FOR_ALL_POPULATED_CHANNELS {
-		wait_for_iosav(channel);
-
-		/* Choose an existing rank */
-		slotrank = !(ctrl->rankmap[channel] & 1) ? 2 : 0;
-
-		iosav_write_zqcs_sequence(channel, slotrank, 4, 4, 31);
-
-		/* Execute command queue */
-		iosav_run_once(channel);
-
-		wait_for_iosav(channel);
-		MCHBAR32_OR(SCHED_CBIT_ch(channel), 1 << 21);
-	}
-
-	/* refresh disable */
-	MCHBAR32_AND(MC_INIT_STATE_G, ~(1 << 3));
-	FOR_ALL_POPULATED_CHANNELS {
-		wait_for_iosav(channel);
-
-		/* choose an existing rank.  */
-		slotrank = !(ctrl->rankmap[channel] & 1) ? 2 : 0;
-
-		iosav_write_zqcs_sequence(channel, slotrank, 4, 4, 31);
-
-		/* Execute command queue */
-		iosav_run_once(channel);
-
-		wait_for_iosav(channel);
-	}
+	disable_refresh_machine(ctrl);
 
 	/* JEDEC reset */
 	dram_jedecreset(ctrl);
@@ -2206,14 +2035,16 @@ static int try_cmd_stretch(ramctr_timing *ctrl, int channel, int cmd_stretch)
 
 	ctrl->cmd_stretch[channel] = cmd_stretch;
 
-	MCHBAR32(TC_RAP_ch(channel)) =
-		  (ctrl->tRRD <<  0)
-		| (ctrl->tRTP <<  4)
-		| (ctrl->tCKE <<  8)
-		| (ctrl->tWTR << 12)
-		| (ctrl->tFAW << 16)
-		| (ctrl->tWR  << 24)
-		| (ctrl->cmd_stretch[channel] << 30);
+	const union tc_rap_reg tc_rap = {
+		.tRRD    = ctrl->tRRD,
+		.tRTP    = ctrl->tRTP,
+		.tCKE    = ctrl->tCKE,
+		.tWTR    = ctrl->tWTR,
+		.tFAW    = ctrl->tFAW,
+		.tWR     = ctrl->tWR,
+		.tCMD    = ctrl->cmd_stretch[channel],
+	};
+	MCHBAR32(TC_RAP_ch(channel)) = tc_rap.raw;
 
 	if (ctrl->cmd_stretch[channel] == 2)
 		delta = 2;
@@ -2310,14 +2141,14 @@ int command_training(ramctr_timing *ctrl)
 
 static int find_read_mpr_margin(ramctr_timing *ctrl, int channel, int slotrank, int *edges)
 {
-	int edge;
+	int dqs_pi;
 	int stats[NUM_LANES][MAX_EDGE_TIMING + 1];
 	int lane;
 
-	for (edge = 0; edge <= MAX_EDGE_TIMING; edge++) {
+	for (dqs_pi = 0; dqs_pi <= MAX_EDGE_TIMING; dqs_pi++) {
 		FOR_ALL_LANES {
-			ctrl->timings[channel][slotrank].lanes[lane].rising  = edge;
-			ctrl->timings[channel][slotrank].lanes[lane].falling = edge;
+			ctrl->timings[channel][slotrank].lanes[lane].rising  = dqs_pi;
+			ctrl->timings[channel][slotrank].lanes[lane].falling = dqs_pi;
 		}
 		program_timings(ctrl, channel);
 
@@ -2337,7 +2168,7 @@ static int find_read_mpr_margin(ramctr_timing *ctrl, int channel, int slotrank, 
 		wait_for_iosav(channel);
 
 		FOR_ALL_LANES {
-			stats[lane][edge] = MCHBAR32(IOSAV_By_ERROR_COUNT_ch(channel, lane));
+			stats[lane][dqs_pi] = MCHBAR32(IOSAV_By_ERROR_COUNT_ch(channel, lane));
 		}
 	}
 
@@ -2361,6 +2192,7 @@ static void find_predefined_pattern(ramctr_timing *ctrl, const int channel)
 
 	fill_pattern0(ctrl, channel, 0, 0);
 	FOR_ALL_LANES {
+		MCHBAR32(IOSAV_By_BW_MASK_ch(channel, lane)) = 0;
 		MCHBAR32(IOSAV_By_BW_SERROR_C_ch(channel, lane));
 	}
 
@@ -2424,10 +2256,6 @@ int read_mpr_training(ramctr_timing *ctrl)
 	toggle_io_reset();
 
 	FOR_ALL_POPULATED_CHANNELS {
-		FOR_ALL_LANES {
-			MCHBAR32(IOSAV_By_BW_MASK_ch(channel, lane)) = 0;
-		}
-
 		find_predefined_pattern(ctrl, channel);
 
 		fill_pattern0(ctrl, channel, 0, 0xffffffff);
@@ -2476,36 +2304,37 @@ int read_mpr_training(ramctr_timing *ctrl)
 	return 0;
 }
 
-static int discover_edges_write_real(ramctr_timing *ctrl, int channel, int slotrank, int *edges)
+static int find_agrsv_read_margin(ramctr_timing *ctrl, int channel, int slotrank, int *edges)
 {
-	int edge;
+	const int rd_vref_offsets[] = { 0, 0xc, 0x2c };
+
 	u32 raw_stats[MAX_EDGE_TIMING + 1];
-	int stats[MAX_EDGE_TIMING + 1];
-	const int reg3000b24[] = { 0, 0xc, 0x2c };
-	int lane, i;
 	int lower[NUM_LANES];
 	int upper[NUM_LANES];
-	int pat;
+	int lane, i, read_pi, pat;
 
 	FOR_ALL_LANES {
 		lower[lane] = 0;
 		upper[lane] = MAX_EDGE_TIMING;
 	}
 
-	for (i = 0; i < 3; i++) {
-		MCHBAR32(GDCRTRAININGMOD_ch(channel)) = reg3000b24[i] << 24;
-		printram("[%x] = 0x%08x\n", GDCRTRAININGMOD_ch(channel), reg3000b24[i] << 24);
+	for (i = 0; i < ARRAY_SIZE(rd_vref_offsets); i++) {
+		const union gdcr_training_mod_reg training_mod = {
+			.vref_gen_ctl = rd_vref_offsets[i],
+		};
+		MCHBAR32(GDCRTRAININGMOD_ch(channel)) = training_mod.raw;
+		printram("[%x] = 0x%08x\n", GDCRTRAININGMOD_ch(channel), training_mod.raw);
 
 		for (pat = 0; pat < NUM_PATTERNS; pat++) {
 			fill_pattern5(ctrl, channel, pat);
 			printram("using pattern %d\n", pat);
 
-			for (edge = 0; edge <= MAX_EDGE_TIMING; edge++) {
+			for (read_pi = 0; read_pi <= MAX_EDGE_TIMING; read_pi++) {
 				FOR_ALL_LANES {
 					ctrl->timings[channel][slotrank].lanes[lane].
-						rising = edge;
+						rising = read_pi;
 					ctrl->timings[channel][slotrank].lanes[lane].
-						falling = edge;
+						falling = read_pi;
 				}
 				program_timings(ctrl, channel);
 
@@ -2526,13 +2355,15 @@ static int discover_edges_write_real(ramctr_timing *ctrl, int channel, int slotr
 				}
 
 				/* FIXME: This register only exists on Ivy Bridge */
-				raw_stats[edge] = MCHBAR32(IOSAV_BYTE_SERROR_C_ch(channel));
+				raw_stats[read_pi] = MCHBAR32(IOSAV_BYTE_SERROR_C_ch(channel));
 			}
 
 			FOR_ALL_LANES {
+				int stats[MAX_EDGE_TIMING + 1];
 				struct run rn;
-				for (edge = 0; edge <= MAX_EDGE_TIMING; edge++)
-					stats[edge] = !!(raw_stats[edge] & (1 << lane));
+
+				for (read_pi = 0; read_pi <= MAX_EDGE_TIMING; read_pi++)
+					stats[read_pi] = !!(raw_stats[read_pi] & (1 << lane));
 
 				rn = get_longest_zero_run(stats, MAX_EDGE_TIMING + 1);
 
@@ -2561,7 +2392,7 @@ static int discover_edges_write_real(ramctr_timing *ctrl, int channel, int slotr
 	return 0;
 }
 
-int discover_edges_write(ramctr_timing *ctrl)
+int aggressive_read_training(ramctr_timing *ctrl)
 {
 	int falling_edges[NUM_CHANNELS][NUM_SLOTRANKS][NUM_LANES];
 	int  rising_edges[NUM_CHANNELS][NUM_SLOTRANKS][NUM_LANES];
@@ -2572,20 +2403,20 @@ int discover_edges_write(ramctr_timing *ctrl)
 	 *        also use a single loop. It would seem that it is a debugging configuration.
 	 */
 	MCHBAR32(IOSAV_DC_MASK) = 0x300;
-	printram("discover falling edges write:\n[%x] = %x\n", IOSAV_DC_MASK, 0x300);
+	printram("discover falling edges aggressive:\n[%x] = %x\n", IOSAV_DC_MASK, 0x300);
 
 	FOR_ALL_CHANNELS FOR_ALL_POPULATED_RANKS {
-		err = discover_edges_write_real(ctrl, channel, slotrank,
+		err = find_agrsv_read_margin(ctrl, channel, slotrank,
 					falling_edges[channel][slotrank]);
 		if (err)
 			return err;
 	}
 
 	MCHBAR32(IOSAV_DC_MASK) = 0x200;
-	printram("discover rising edges write:\n[%x] = %x\n", IOSAV_DC_MASK, 0x200);
+	printram("discover rising edges aggressive:\n[%x] = %x\n", IOSAV_DC_MASK, 0x200);
 
 	FOR_ALL_CHANNELS FOR_ALL_POPULATED_RANKS {
-		err = discover_edges_write_real(ctrl, channel, slotrank,
+		err = find_agrsv_read_margin(ctrl, channel, slotrank,
 					 rising_edges[channel][slotrank]);
 		if (err)
 			return err;
@@ -2604,13 +2435,10 @@ int discover_edges_write(ramctr_timing *ctrl)
 	FOR_ALL_POPULATED_CHANNELS
 		program_timings(ctrl, channel);
 
-	FOR_ALL_POPULATED_CHANNELS FOR_ALL_LANES {
-		MCHBAR32(IOSAV_By_BW_MASK_ch(channel, lane)) = 0;
-	}
 	return 0;
 }
 
-static void test_timC_write(ramctr_timing *ctrl, int channel, int slotrank)
+static void test_aggressive_write(ramctr_timing *ctrl, int channel, int slotrank)
 {
 	wait_for_iosav(channel);
 
@@ -2622,35 +2450,44 @@ static void test_timC_write(ramctr_timing *ctrl, int channel, int slotrank)
 	wait_for_iosav(channel);
 }
 
-int discover_timC_write(ramctr_timing *ctrl)
+static void set_write_vref(const int channel, const u8 wr_vref)
 {
-	const u8 rege3c_b24[3] = { 0, 0x0f, 0x2f };
+	MCHBAR32_AND_OR(GDCRCMDDEBUGMUXCFG_Cz_S(channel), ~(0x3f << 24), wr_vref << 24);
+	udelay(2);
+}
+
+int aggressive_write_training(ramctr_timing *ctrl)
+{
+	const u8 wr_vref_offsets[3] = { 0, 0x0f, 0x2f };
 	int i, pat;
 
 	int lower[NUM_CHANNELS][NUM_SLOTRANKS][NUM_LANES];
 	int upper[NUM_CHANNELS][NUM_SLOTRANKS][NUM_LANES];
 	int channel, slotrank, lane;
 
+	/* Changing the write Vref is only supported on some Ivy Bridge SKUs */
+	if (!IS_IVY_CPU(ctrl->cpu))
+		return 0;
+
+	if (!(pci_read_config32(HOST_BRIDGE, CAPID0_A) & CAPID_WRTVREF))
+		return 0;
+
 	FOR_ALL_CHANNELS FOR_ALL_POPULATED_RANKS FOR_ALL_LANES {
 		lower[channel][slotrank][lane] = 0;
 		upper[channel][slotrank][lane] = MAX_TIMC;
 	}
 
-	/*
-	 * Enable IOSAV_n_SPECIAL_COMMAND_ADDR optimization.
-	 * FIXME: This must only be done on Ivy Bridge.
-	 */
-	MCHBAR32(MCMNTS_SPARE) = 1;
+	/* Only enable IOSAV_n_SPECIAL_COMMAND_ADDR optimization on later steppings */
+	const bool enable_iosav_opt = IS_IVY_CPU_D(ctrl->cpu) || IS_IVY_CPU_E(ctrl->cpu);
+
+	if (enable_iosav_opt)
+		MCHBAR32(MCMNTS_SPARE) = 1;
+
 	printram("discover timC write:\n");
 
-	for (i = 0; i < 3; i++)
+	for (i = 0; i < ARRAY_SIZE(wr_vref_offsets); i++) {
 		FOR_ALL_POPULATED_CHANNELS {
-
-			/* FIXME: Setting the Write VREF must only be done on Ivy Bridge */
-			MCHBAR32_AND_OR(GDCRCMDDEBUGMUXCFG_Cz_S(channel),
-					~0x3f000000, rege3c_b24[i] << 24);
-
-			udelay(2);
+			set_write_vref(channel, wr_vref_offsets[i]);
 
 			for (pat = 0; pat < NUM_PATTERNS; pat++) {
 				FOR_ALL_POPULATED_RANKS {
@@ -2670,9 +2507,8 @@ int discover_timC_write(ramctr_timing *ctrl)
 						}
 						program_timings(ctrl, channel);
 
-						test_timC_write (ctrl, channel, slotrank);
+						test_aggressive_write(ctrl, channel, slotrank);
 
-						/* FIXME: Another IVB-only register! */
 						raw_stats[timC] = MCHBAR32(
 							IOSAV_BYTE_SERROR_C_ch(channel));
 					}
@@ -2711,18 +2547,16 @@ int discover_timC_write(ramctr_timing *ctrl)
 				}
 			}
 		}
-
-	FOR_ALL_CHANNELS {
-		/* FIXME: Setting the Write VREF must only be done on Ivy Bridge */
-		MCHBAR32_AND(GDCRCMDDEBUGMUXCFG_Cz_S(channel), ~0x3f000000);
-		udelay(2);
 	}
 
-	/*
-	 * Disable IOSAV_n_SPECIAL_COMMAND_ADDR optimization.
-	 * FIXME: This must only be done on Ivy Bridge.
-	 */
-	MCHBAR32(MCMNTS_SPARE) = 0;
+	FOR_ALL_CHANNELS {
+		/* Restore nominal write Vref after training */
+		set_write_vref(channel, 0);
+	}
+
+	/* Disable IOSAV_n_SPECIAL_COMMAND_ADDR optimization */
+	if (enable_iosav_opt)
+		MCHBAR32(MCMNTS_SPARE) = 0;
 
 	printram("CPB\n");
 
@@ -2968,10 +2802,12 @@ void prepare_training(ramctr_timing *ctrl)
 
 void set_read_write_timings(ramctr_timing *ctrl)
 {
+	/* Use a larger delay when running fast to improve stability */
+	const u32 tRWDRDD_inc = ctrl->tCK <= TCK_1066MHZ ? 4 : 2;
+
 	int channel, slotrank;
 
 	FOR_ALL_POPULATED_CHANNELS {
-		u32 b20, b4_8_12;
 		int min_pi = 10000;
 		int max_pi = -10000;
 
@@ -2980,14 +2816,23 @@ void set_read_write_timings(ramctr_timing *ctrl)
 			min_pi = MIN(ctrl->timings[channel][slotrank].pi_coding, min_pi);
 		}
 
-		b20 = (max_pi - min_pi > 51) ? 0 : ctrl->ref_card_offset[channel];
+		const u32 tWRDRDD = (max_pi - min_pi > 51) ? 0 : ctrl->ref_card_offset[channel];
 
-		b4_8_12 = (ctrl->pi_coding_threshold < max_pi - min_pi) ? 0x3330 : 0x2220;
+		const u32 val = (ctrl->pi_coding_threshold < max_pi - min_pi) ? 3 : 2;
 
 		dram_odt_stretch(ctrl, channel);
 
-		MCHBAR32(TC_RWP_ch(channel)) = (1 << 27) | (2 << 24) | (b20 << 20) |
-			((ctrl->ref_card_offset[channel] + 2) << 16) | b4_8_12;
+		const union tc_rwp_reg tc_rwp = {
+			.tRRDR   = 0,
+			.tRRDD   = val,
+			.tWWDR   = val,
+			.tWWDD   = val,
+			.tRWDRDD = ctrl->ref_card_offset[channel] + tRWDRDD_inc,
+			.tWRDRDD = tWRDRDD,
+			.tRWSR   = 2,
+			.dec_wrd = 1,
+		};
+		MCHBAR32(TC_RWP_ch(channel)) = tc_rwp.raw;
 	}
 }
 
@@ -3009,8 +2854,6 @@ static int encode_wm(int ns)
 /* FIXME: values in this function should be hardware revision-dependent */
 void final_registers(ramctr_timing *ctrl)
 {
-	const bool is_mobile = get_platform_type() == PLATFORM_MOBILE;
-
 	int channel;
 	int t1_cycles = 0, t1_ns = 0, t2_ns;
 	int t3_ns;
@@ -3019,15 +2862,16 @@ void final_registers(ramctr_timing *ctrl)
 	/* FIXME: This register only exists on Ivy Bridge */
 	MCHBAR32(WMM_READ_CONFIG) = 0x46;
 
-	FOR_ALL_CHANNELS
-		MCHBAR32_AND_OR(TC_OTHP_ch(channel), ~(3 << 12), 1 << 12);
+	FOR_ALL_CHANNELS {
+		union tc_othp_reg tc_othp = {
+			.raw = MCHBAR32(TC_OTHP_ch(channel)),
+		};
+		tc_othp.tCPDED = 1;
+		MCHBAR32(TC_OTHP_ch(channel)) = tc_othp.raw;
+	}
 
-	if (is_mobile)
-		/* APD - DLL Off, 64 DCLKs until idle, decision per rank */
-		MCHBAR32(PM_PDWN_CONFIG) = 0x00000740;
-	else
-		/* APD - PPD,     64 DCLKs until idle, decision per rank */
-		MCHBAR32(PM_PDWN_CONFIG) = 0x00000340;
+	/* 64 DCLKs until idle, decision per rank */
+	MCHBAR32(PM_PDWN_CONFIG) = get_power_down_mode(ctrl) << 8 | 64;
 
 	FOR_ALL_CHANNELS
 		MCHBAR32(PM_TRML_M_CONFIG_ch(channel)) = 0x00000aaa;
@@ -3058,8 +2902,13 @@ void final_registers(ramctr_timing *ctrl)
 	MCHBAR32_AND_OR(MEM_TRML_THRESHOLDS_CONFIG, ~0x00ffffff, 0x00e4d5d0);
 	MCHBAR32_AND(MEM_TRML_INTERRUPT, ~0x1f);
 
-	FOR_ALL_CHANNELS
-		MCHBAR32_AND_OR(TC_RFP_ch(channel), ~(3 << 16), 1 << 16);
+	FOR_ALL_CHANNELS {
+		union tc_rfp_reg tc_rfp = {
+			.raw = MCHBAR32(TC_RFP_ch(channel)),
+		};
+		tc_rfp.refresh_2x_control = 1;
+		MCHBAR32(TC_RFP_ch(channel)) = tc_rfp.raw;
+	}
 
 	MCHBAR32_OR(MC_INIT_STATE_G, 1 << 0);
 	MCHBAR32_OR(MC_INIT_STATE_G, 1 << 7);
@@ -3095,27 +2944,25 @@ void final_registers(ramctr_timing *ctrl)
 
 void restore_timings(ramctr_timing *ctrl)
 {
-	int channel, lane;
+	int channel;
 
 	FOR_ALL_POPULATED_CHANNELS {
-		MCHBAR32(TC_RAP_ch(channel)) =
-			  (ctrl->tRRD <<  0)
-			| (ctrl->tRTP <<  4)
-			| (ctrl->tCKE <<  8)
-			| (ctrl->tWTR << 12)
-			| (ctrl->tFAW << 16)
-			| (ctrl->tWR  << 24)
-			| (ctrl->cmd_stretch[channel] << 30);
+		const union tc_rap_reg tc_rap = {
+			.tRRD    = ctrl->tRRD,
+			.tRTP    = ctrl->tRTP,
+			.tCKE    = ctrl->tCKE,
+			.tWTR    = ctrl->tWTR,
+			.tFAW    = ctrl->tFAW,
+			.tWR     = ctrl->tWR,
+			.tCMD    = ctrl->cmd_stretch[channel],
+		};
+		MCHBAR32(TC_RAP_ch(channel)) = tc_rap.raw;
 	}
 
 	udelay(1);
 
 	FOR_ALL_POPULATED_CHANNELS {
 		wait_for_iosav(channel);
-	}
-
-	FOR_ALL_POPULATED_CHANNELS FOR_ALL_LANES {
-		MCHBAR32(IOSAV_By_BW_MASK_ch(channel, lane)) = 0;
 	}
 
 	FOR_ALL_POPULATED_CHANNELS
