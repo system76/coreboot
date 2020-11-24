@@ -5,7 +5,6 @@
 #include <ec/system76/ec/acpi/ec.asl>
 
 Scope (\_SB) {
-	#include "gpio.asl"
 	#include "sleep.asl"
 	Scope (PCI0) {
 		#include "backlight.asl"
