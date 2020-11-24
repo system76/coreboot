@@ -265,10 +265,10 @@ static const struct pad_config gpio_table[] = {
 		PAD_CFG_GPI(GPP_E16, DN_20K, DEEP),
 		// NC
 		PAD_NC(GPP_E17, NONE),
-		// GPP_E18_TBT_LSX0_TXD
-		_PAD_CFG_STRUCT(GPP_E18, 0x44001700, 0x3c00),
-		// GPP_E19_TBT_LSX0_RXD
-		_PAD_CFG_STRUCT(GPP_E19, 0x44001600, 0x3c00),
+		// GPP_E18_TBT_LSX0_TXD - programmed by FSP, see Intel document 617016
+		PAD_NC(GPP_E18, NONE),
+		// GPP_E19_TBT_LSX0_RXD - programmed by FSP, see Intel document 617016
+		PAD_NC(GPP_E19, NONE),
 		// NC
 		PAD_NC(GPP_E20, NONE),
 		// NC

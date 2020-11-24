@@ -11,6 +11,8 @@ void mainboard_silicon_init_params(FSP_S_CONFIG *params) {
 
 	// IOM config
 	params->PchUsbOverCurrentEnable = 0;
+	params->PortResetMessageEnable[2] = 1; // J_TYPEC1
+	params->UsbTcPortEn = 1;
 
 	gpio_configure_pads(gpio_table, ARRAY_SIZE(gpio_table));
 }
