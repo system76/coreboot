@@ -185,17 +185,17 @@ chip soc/intel/tigerlake
 		end
 		device ref shared_ram on end
 		device ref cnvi_wifi on
-			# chip drivers/wifi/generic
-			# 	register "wake" = "GPE0_PME_B0"
-			# 	device generic 0 on end
-			# end
+			chip drivers/wifi/generic
+				register "wake" = "GPE0_PME_B0"
+				device generic 0 on end
+			end
 		end
 		device ref i2c0 on
 			# Touchpad I2C bus
 			register "SerialIoI2cMode[PchSerialIoIndexI2C0]" = "PchSerialIoPci"
 			chip drivers/i2c/hid
 				register "generic.hid" = ""PNP0C50""
-				register "generic.desc" = ""TODO Touchpad""
+				register "generic.desc" = ""FocalTech Touchpad""
 				register "generic.irq_gpio" = "ACPI_GPIO_IRQ_LEVEL_LOW(GPP_B3)"
 				register "generic.probed" = "1"
 				register "hid_desc_reg_offset" = "0x01"

@@ -142,8 +142,8 @@ chip soc/intel/tigerlake
 			register "PcieClkSrcClkReq[3]" = "3"
 			#TODO
 			# chip soc/intel/common/block/pcie/rtd3
-			# 	register "enable_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_C13)"
-			# 	register "reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_C22)"
+			# 	register "enable_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_C13)" # SSD1_PWR_DN#
+			# 	register "reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_C22)" # GPP_C12_RTD3 (labeled incorrectly)
 			# 	#TODO: Support disable/enable CPU RP clock
 			# 	register "srcclk_pin" = "-1"
 			# 	device generic 0 on end
@@ -181,10 +181,10 @@ chip soc/intel/tigerlake
 		end
 		device ref shared_ram on end
 		device ref cnvi_wifi on
-			# chip drivers/wifi/generic
-			# 	register "wake" = "GPE0_PME_B0"
-			# 	device generic 0 on end
-			# end
+			chip drivers/wifi/generic
+				register "wake" = "GPE0_PME_B0"
+				device generic 0 on end
+			end
 		end
 		device ref i2c0 on
 			# Touchpad I2C bus
@@ -225,7 +225,8 @@ chip soc/intel/tigerlake
 			register "PcieRpEnable[5]" = "1"
 			register "PcieRpLtrEnable[5]" = "1"
 			register "PcieClkSrcUsage[2]" = "5"
-			register "PcieClkSrcClkReq[2]" = "2"		end
+			register "PcieClkSrcClkReq[2]" = "2"
+		end
 		device ref pcie_rp9 on
 			# PCIe root port #9 x4, Clock 0 (SSD2)
 			register "PcieRpEnable[8]" = "1"
@@ -233,8 +234,8 @@ chip soc/intel/tigerlake
 			register "PcieClkSrcUsage[0]" = "8"
 			register "PcieClkSrcClkReq[0]" = "0"
 			chip soc/intel/common/block/pcie/rtd3
-				register "enable_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_D14)"
-				register "reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_D9)"
+				register "enable_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_D14)" # SSD2_PWR_DN#
+				register "reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_D9)" # GPP_D13_RTD3 (labeled incorrectly)
 				register "srcclk_pin" = "0"
 				device generic 0 on end
 			end
