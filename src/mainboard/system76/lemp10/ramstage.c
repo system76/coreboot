@@ -9,5 +9,8 @@ void mainboard_silicon_init_params(FSP_S_CONFIG *params) {
 	params->CpuPcieRpLtrEnable[0] = 1;
 	params->CpuPcieRpPtmEnabled[0] = 0;
 
+	// IOM config
+	params->PchUsbOverCurrentEnable = 0;
+
 	gpio_configure_pads(gpio_table, ARRAY_SIZE(gpio_table));
 }
