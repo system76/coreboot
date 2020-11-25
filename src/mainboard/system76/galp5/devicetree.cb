@@ -56,7 +56,7 @@ chip soc/intel/tigerlake
 	register "FastPkgCRampDisable[VR_DOMAIN_GT]" = "1"
 	register "FastPkgCRampDisable[VR_DOMAIN_SA]" = "1"
 	register "FastPkgCRampDisable[VR_DOMAIN_VLCC]" = "1"
-	
+
 	# FIVR configuration
 	#   Read EXT_RAIL_CONFIG to determine bitmaps
 	#     sudo devmem2 0xfe0011b8
@@ -146,7 +146,16 @@ chip soc/intel/tigerlake
 		device ref gna on end
 		device ref north_xhci on # J_TYPEC2
 			register "TcssXhciEn" = "1"
-			# TODO: usb/acpi
+			chip drivers/usb/acpi
+				device ref tcss_root_hub on
+					chip drivers/usb/acpi
+						register "desc" = ""USB3 J_TYPEC2""
+						register "type" = "UPC_TYPE_C_USB2_SS_SWITCH"
+						register "group" = "ACPI_PLD_GROUP(1, 1)"
+						device ref tcss_usb3_port1 on end
+					end
+				end
+			end
 		end
 		device ref tbt_dma0 on # J_TYPEC2
 			chip drivers/intel/usb4/retimer
@@ -171,7 +180,74 @@ chip soc/intel/tigerlake
 			register "usb3_ports[1]" = "USB3_PORT_DEFAULT(OC_SKIP)" # J_TYPEC1 Channel 0
 			register "usb3_ports[2]" = "USB3_PORT_DEFAULT(OC_SKIP)" # J_USB3_1
 			register "usb3_ports[3]" = "USB3_PORT_DEFAULT(OC_SKIP)" # J_TYPEC1 Channel 0
-			# TODO: usb/acpi
+			# ACPI
+			chip drivers/usb/acpi
+				device ref xhci_root_hub on
+					chip drivers/usb/acpi
+						register "desc" = ""USB2 J_USB3_2""
+						register "type" = "UPC_TYPE_A"
+						register "group" = "ACPI_PLD_GROUP(1, 2)"
+						device ref usb2_port1 on end
+					end
+					chip drivers/usb/acpi
+						register "desc" = ""USB2 J_TYPEC1""
+						register "type" = "UPC_TYPE_C_USB2_SS_SWITCH"
+						register "group" = "ACPI_PLD_GROUP(2, 1)"
+						device ref usb2_port2 on end
+					end
+					chip drivers/usb/acpi
+						register "desc" = ""USB2 J_USB3_1""
+						register "type" = "UPC_TYPE_A"
+						register "group" = "ACPI_PLD_GROUP(2, 2)"
+						device ref usb2_port3 on end
+					end
+					chip drivers/usb/acpi
+						register "desc" = ""USB2 Fingerprint""
+						register "type" = "UPC_TYPE_INTERNAL"
+						device ref usb2_port5 on end
+					end
+					chip drivers/usb/acpi
+						register "desc" = ""USB2 J_TYPEC2""
+						register "type" = "UPC_TYPE_C_USB2_SS_SWITCH"
+						register "group" = "ACPI_PLD_GROUP(1, 1)"
+						device ref usb2_port6 on end
+					end
+					chip drivers/usb/acpi
+						register "desc" = ""USB2 Camera""
+						register "type" = "UPC_TYPE_INTERNAL"
+						device ref usb2_port7 on end
+					end
+					chip drivers/usb/acpi
+						register "desc" = ""USB2 Bluetooth""
+						register "type" = "UPC_TYPE_INTERNAL"
+						device ref usb2_port10 on end
+					end
+					chip drivers/usb/acpi
+						register "desc" = ""USB3 J_USB3_2""
+						register "type" = "UPC_TYPE_A"
+						register "group" = "ACPI_PLD_GROUP(1, 2)"
+						device ref usb3_port1 on end
+					end
+					chip drivers/usb/acpi
+						register "desc" = ""USB3 J_TYPEC1 CH0""
+						register "type" = "UPC_TYPE_A"
+						register "group" = "ACPI_PLD_GROUP(2, 1)"
+						device ref usb3_port2 on end
+					end
+					chip drivers/usb/acpi
+						register "desc" = ""USB3 J_USB3_1""
+						register "type" = "UPC_TYPE_A"
+						register "group" = "ACPI_PLD_GROUP(2, 2)"
+						device ref usb3_port3 on end
+					end
+					chip drivers/usb/acpi
+						register "desc" = ""USB3 J_TYPEC1 CH1""
+						register "type" = "UPC_TYPE_A"
+						register "group" = "ACPI_PLD_GROUP(2, 1)"
+						device ref usb3_port4 on end
+					end
+				end
+			end
 		end
 		device ref shared_ram on end
 		device ref cnvi_wifi on
@@ -261,6 +337,21 @@ chip soc/intel/tigerlake
 			end
 		end
 		device ref p2sb on end
+		device ref pmc hidden
+			# The pmc_mux chip driver is a placeholder for the
+			# PMC.MUX device in the ACPI hierarchy.
+			chip drivers/intel/pmc_mux
+				device generic 0 on
+					chip drivers/intel/pmc_mux/conn
+						# J_TYPEC2
+						register "usb2_port_number" = "6"
+						register "usb3_port_number" = "1"
+						# SBU & HSL follow CC
+						device generic 0 alias conn0 on end
+					end
+				end
+			end
+		end
 		device ref hda on
 			register "PchHdaAudioLinkHdaEnable" = "1"
 		end
