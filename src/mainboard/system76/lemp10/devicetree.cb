@@ -149,9 +149,9 @@ chip soc/intel/tigerlake
 			chip drivers/usb/acpi
 				device ref tcss_root_hub on
 					chip drivers/usb/acpi
-						register "desc" = ""J_TYPEC1""
+						register "desc" = ""USB3 J_TYPEC1""
 						register "type" = "UPC_TYPE_C_USB2_SS_SWITCH"
-						register "group" = "ACPI_PLD_GROUP(1, 2)"
+						register "group" = "ACPI_PLD_GROUP(1, 1)"
 						device ref tcss_usb3_port1 on end
 					end
 				end
@@ -180,21 +180,21 @@ chip soc/intel/tigerlake
 			chip drivers/usb/acpi
 				device ref xhci_root_hub on
 					chip drivers/usb/acpi
-						register "desc" = ""J_USB3_1""
+						register "desc" = ""USB2 J_USB3_1""
 						register "type" = "UPC_TYPE_A"
-						register "group" = "ACPI_PLD_GROUP(1, 1)"
+						register "group" = "ACPI_PLD_GROUP(1, 2)"
 						device ref usb2_port1 on end
 					end
 					chip drivers/usb/acpi
-						register "desc" = ""J_USB3_2""
+						register "desc" = ""USB2 J_USB3_2""
 						register "type" = "UPC_TYPE_A"
 						register "group" = "ACPI_PLD_GROUP(2, 1)"
 						device ref usb2_port2 on end
 					end
 					chip drivers/usb/acpi
-						register "desc" = ""J_TYPEC1""
+						register "desc" = ""USB2 J_TYPEC1""
 						register "type" = "UPC_TYPE_C_USB2_SS_SWITCH"
-						register "group" = "ACPI_PLD_GROUP(1, 2)"
+						register "group" = "ACPI_PLD_GROUP(1, 1)"
 						device ref usb2_port3 on end
 					end
 					chip drivers/usb/acpi
@@ -203,18 +203,18 @@ chip soc/intel/tigerlake
 						device ref usb2_port7 on end
 					end
 					chip drivers/usb/acpi
-						register "desc" = ""USB2 Camera""
+						register "desc" = ""USB2 Bluetooth""
 						register "type" = "UPC_TYPE_INTERNAL"
 						device ref usb2_port10 on end
 					end
 					chip drivers/usb/acpi
-						register "desc" = ""J_USB3_1""
+						register "desc" = ""USB3 J_USB3_1""
 						register "type" = "UPC_TYPE_A"
 						register "group" = "ACPI_PLD_GROUP(1, 1)"
 						device ref usb3_port1 on end
 					end
 					chip drivers/usb/acpi
-						register "desc" = ""J_USB3_2""
+						register "desc" = ""USB3 J_USB3_2""
 						register "type" = "UPC_TYPE_A"
 						register "group" = "ACPI_PLD_GROUP(2, 1)"
 						device ref usb3_port2 on end
@@ -305,6 +305,7 @@ chip soc/intel/tigerlake
 			chip drivers/intel/pmc_mux
 				device generic 0 on
 					chip drivers/intel/pmc_mux/conn
+						# J_TYPEC1
 						register "usb2_port_number" = "3"
 						register "usb3_port_number" = "1"
 						# SBU & HSL follow CC
