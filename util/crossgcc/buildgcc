@@ -38,13 +38,13 @@ MPFR_VERSION=4.1.0
 MPC_VERSION=1.2.0
 GCC_VERSION=8.3.0
 GCC_AUTOCONF_VERSION=2.69
-BINUTILS_VERSION=2.35
+BINUTILS_VERSION=2.35.1
 GDB_VERSION=9.2
 IASL_VERSION=20200925
 PYTHON_VERSION=3.8.5
 EXPAT_VERSION=2.2.9
 # CLANG version number
-CLANG_VERSION=10.0.1
+CLANG_VERSION=11.0.0
 CMAKE_VERSION=3.18.1
 NASM_VERSION=2.15.05
 
@@ -1066,7 +1066,7 @@ elif searchtool curl "^curl " > /dev/null; then
 	download_showing_percentage() {
 		url=$1
 		echo
-		curl --progress-bar --location --retry 3 "$url"
+		curl -O --progress-bar --location --retry 3 "$url"
 	}
 fi
 

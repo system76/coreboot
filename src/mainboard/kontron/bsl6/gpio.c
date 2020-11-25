@@ -1,14 +1,9 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#ifndef MAINBOARD_GPIO_H
-#define MAINBOARD_GPIO_H
-
+#include <mainboard/gpio.h>
 #include <soc/gpe.h>
 #include <soc/gpio.h>
 
-#ifndef __ACPI__
-
-/* Pad configuration in ramstage. */
 static const struct pad_config gpio_table[] = {
 	PAD_CFG_NF(GPP_A0, NONE, PLTRST, NF1),
 	PAD_CFG_NF(GPP_A1, UP_20K, PLTRST, NF1),
@@ -225,6 +220,7 @@ static const struct pad_config gpio_table[] = {
 	PAD_CFG_NF(GPP_I10, NONE, PLTRST, NF1),
 };
 
-#endif
-
-#endif
+void mainboard_configure_gpios(void)
+{
+	gpio_configure_pads(gpio_table, ARRAY_SIZE(gpio_table));
+}
