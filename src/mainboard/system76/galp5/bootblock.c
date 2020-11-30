@@ -7,5 +7,5 @@
 
 void bootblock_mainboard_init(void) {
 	gpio_configure_pads(early_gpio_table, ARRAY_SIZE(early_gpio_table));
-	dgpu_power_enable(1);
+	dgpu_power_enable(0);
 }
