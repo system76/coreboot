@@ -249,6 +249,10 @@ chip soc/intel/tigerlake
 			#TODO Disable ME and HECI
 			register "HeciEnabled" = "1"
 		end
+		device ref uart2 on
+			# Debug console
+			register "SerialIoUartMode[PchSerialIoIndexUART2]" = "PchSerialIoSkipInit"
+		end
 		device ref sata on
 			# SATA1 (SSD2)
 			register "SataPortsEnable[1]" = "1"

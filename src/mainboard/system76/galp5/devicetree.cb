@@ -282,7 +282,7 @@ chip soc/intel/tigerlake
 		end
 		device ref uart2 on
 			# Debug console
-			register "SerialIoUartMode[PchSerialIoIndexUART2]" = "PchSerialIoPci"
+			register "SerialIoUartMode[PchSerialIoIndexUART2]" = "PchSerialIoSkipInit"
 		end
 		device ref pcie_rp5 on
 			# PCIe root port #5 x4, Clock 2 (NVIDIA GPU)
