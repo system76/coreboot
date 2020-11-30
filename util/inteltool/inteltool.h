@@ -380,8 +380,6 @@ typedef struct { uint32_t hi, lo; } msr_t;
 #define rdmsr freebsd_rdmsr
 #define wrmsr freebsd_wrmsr
 typedef struct { uint32_t hi, lo; } msr_t;
-msr_t freebsd_rdmsr(int addr);
-int freebsd_wrmsr(int addr, msr_t msr);
 #endif
 typedef struct { uint16_t addr; int size; char *name; } io_register_t;
 typedef struct {
@@ -413,6 +411,7 @@ int print_spi(struct pci_dev *sb);
 int print_gfx(struct pci_dev *gfx);
 int print_ahci(struct pci_dev *ahci);
 int print_sgx(void);
+void print_tme(void);
 void ivybridge_dump_timings(const char *dump_spd_file);
 
 #endif

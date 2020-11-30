@@ -5,21 +5,18 @@
 #include "variants/baseboard/include/eeprom.h"
 
 static fsp_params parmas_list[] = {
-	// FIXME: Fill with additional options
+	/* FIXME: Fill with additional options */
 };
 
 void mainboard_silicon_init_params(FSP_S_CONFIG *params)
 {
-	size_t num = 0;
-	const struct pad_config *gpio_table = get_gpio_table(&num);
-
 	/* Configure pads prior to SiliconInit() in case there's any
 	   dependencies during hardware initialization. */
-	gpio_configure_pads(gpio_table, num);
+	program_gpio_pads();
 
 	params->SataLedEnable = 1;
 
-	// Overwrite params
+	/* Overwrite params */
 	if (!check_signature(I2C_ADDR_EEPROM))
 		return;
 

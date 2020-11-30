@@ -1,8 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#ifndef _GPIO_X11SSM_F_H
-#define _GPIO_X11SSM_F_H
-
+#include <mainboard/gpio.h>
 #include <soc/gpe.h>
 #include <soc/gpio.h>
 
@@ -232,17 +230,7 @@ static const struct pad_config gpio_table[] = {
 	PAD_NC(GPD11, NONE),
 };
 
-static const struct pad_config early_gpio_table[] = {
-	/* Early LPC configuration in romstage */
-	PAD_CFG_NF(GPP_A1, NONE, DEEP, NF1),
-	PAD_CFG_NF(GPP_A2, NONE, DEEP, NF1),
-	PAD_CFG_NF(GPP_A3, NONE, DEEP, NF1),
-	PAD_CFG_NF(GPP_A4, NONE, DEEP, NF1),
-	PAD_CFG_NF(GPP_A5, NONE, DEEP, NF1),
-	PAD_CFG_NF(GPP_A8, NONE, DEEP, NF1),
-	PAD_CFG_NF(GPP_A9, NONE, DEEP, NF1),
-	PAD_CFG_NF(GPP_A10, NONE, DEEP, NF1),
-	PAD_CFG_NF(GPP_A6, NONE, DEEP, NF1),
-};
-
-#endif /* _GPIO_X11SSM_F_H */
+void mainboard_configure_gpios(void)
+{
+	gpio_configure_pads(gpio_table, ARRAY_SIZE(gpio_table));
+}
