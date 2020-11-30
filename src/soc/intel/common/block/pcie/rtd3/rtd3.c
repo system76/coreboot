@@ -80,8 +80,6 @@ pcie_rtd3_acpi_method_on(unsigned int pcie_rp,
 {
 	acpigen_write_method_serialized("_ON", 0);
 
-	acpigen_write_debug_string("PCIe RTD3 _ON");
-
 	/* Assert enable GPIO to turn on device power. */
 	if (config->enable_gpio.pin_count) {
 		acpigen_enable_tx_gpio(&config->enable_gpio);
@@ -112,8 +110,6 @@ pcie_rtd3_acpi_method_off(int pcie_rp,
 			  const struct soc_intel_common_block_pcie_rtd3_config *config)
 {
 	acpigen_write_method_serialized("_OFF", 0);
-
-	acpigen_write_debug_string("PCIe RTD3 _OFF");
 
 	/* Trigger L23 ready entry flow unless disabled by config. */
 	if (!config->disable_l23)
@@ -173,7 +169,7 @@ pcie_rtd3_acpi_method_status(int pcie_rp,
 static void pcie_rtd3_acpi_fill_ssdt(const struct device *dev)
 {
 	const struct soc_intel_common_block_pcie_rtd3_config *config = config_of(dev);
-	static const char *const power_res_states[] = {"_PR0", "_PR3"};
+	static const char *const power_res_states[] = {"_PR0"};
 	const struct device *parent = dev->bus->dev;
 	const char *scope = acpi_device_path(parent);
 	const struct opregion opregion = OPREGION("PXCS", PCI_CONFIG, 0, 0xff);
@@ -220,8 +216,8 @@ static void pcie_rtd3_acpi_fill_ssdt(const struct device *dev)
 	/* Port number is 1-based, PMC IPC method expects 0-based. */
 	pcie_rp--;
 
-	printk(BIOS_INFO, "%s: Enable RTD3 for %s (%s) on RP #%d\n", scope, dev_path(parent),
-	       config->desc ?: dev->chip_ops->name, pcie_rp + 1);
+	printk(BIOS_INFO, "%s: Enable RTD3 for %s (%s)\n", scope, dev_path(parent),
+	       config->desc ?: dev->chip_ops->name);
 
 	/* The RTD3 power resource is added to the root port, not the device. */
 	acpigen_write_scope(scope);
