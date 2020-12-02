@@ -720,6 +720,12 @@ config ACPI_NHLT
 	help
 	  Build support for NHLT (non HD Audio) ACPI table generation.
 
+config ACPI_LPIT
+	bool
+	default y
+	help
+	  Build an ACPI Low Power Idle Table.
+
 #These Options are here to avoid "undefined" warnings.
 #The actual selection and help texts are in the following menu.
 
