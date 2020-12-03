@@ -51,22 +51,6 @@ config CONSOLE_POST
 	bool
 	default y
 
-config DRIVERS_SYSTEM76_DGPU_DEVICE
-	hex
-	default 0x1c
-
-config ONBOARD_VGA_IS_PRIMARY
-	bool
-	default y
-
-config UART_FOR_CONSOLE
-	int
-	default 2
-
-config MAX_CPUS
-	int
-	default 8
-
 config DIMM_MAX
 	int
 	default 4 # Hack to make soc code work
@@ -75,8 +59,28 @@ config DIMM_SPD_SIZE
 	int
 	default 512
 
+config DRIVERS_SYSTEM76_DGPU_DEVICE
+	hex
+	default 0x1c
+
+config MAX_CPUS
+	int
+	default 8
+
+config ONBOARD_VGA_IS_PRIMARY
+	bool
+	default y
+
 config POST_DEVICE
 	bool
 	default n
+
+config VBT_DATA_SIZE_KB
+	int
+	default 8
+
+config UART_FOR_CONSOLE
+	int
+	default 2
 
 endif

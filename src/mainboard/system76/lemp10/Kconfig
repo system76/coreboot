@@ -50,14 +50,6 @@ config CONSOLE_POST
 	bool
 	default y
 
-config UART_FOR_CONSOLE
-	int
-	default 2
-
-config MAX_CPUS
-	int
-	default 8
-
 config DIMM_MAX
 	int
 	default 4 # Hack to make soc code work
@@ -66,8 +58,20 @@ config DIMM_SPD_SIZE
 	int
 	default 512
 
+config MAX_CPUS
+	int
+	default 8
+
 config POST_DEVICE
 	bool
 	default n
+
+config VBT_DATA_SIZE_KB
+	int
+	default 8
+
+config UART_FOR_CONSOLE
+	int
+	default 2
 
 endif

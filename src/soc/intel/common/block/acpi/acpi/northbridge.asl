@@ -265,10 +265,12 @@ Device (PDRC)
 			 */
 			Memory32Fixed (ReadWrite, 0, EP_BASE_SIZE, EGPB)
 
+#if !CONFIG(SOC_INTEL_TIGERLAKE)
 			/* PCI Express BAR _BAS and _LEN will be updated in
 			 * _CRS below according to B0:D0:F0:Reg.60h
 			 */
 			Memory32Fixed (ReadWrite, 0, 0, PCIX)
+#endif
 
 			/* VTD engine memory range. */
 			Memory32Fixed (ReadOnly, VTD_BASE_ADDRESS, VTD_BASE_SIZE)
@@ -292,11 +294,13 @@ Device (PDRC)
 		CreateDwordField (BUF0, EGPB._BAS, EBR0)
 		EBR0 = \_SB.PCI0.GEPB ()
 
+#if !CONFIG(SOC_INTEL_TIGERLAKE)
 		CreateDwordField (BUF0, PCIX._BAS, XBR0)
 		XBR0 = \_SB.PCI0.GPCB ()
 
 		CreateDwordField (BUF0, PCIX._LEN, XSZ0)
 		XSZ0 = \_SB.PCI0.GPCL ()
+#endif
 
 		CreateDwordField (BUF0, FIOH._BAS, FBR0)
 		FBR0 = 0x100000000 - CONFIG_ROM_SIZE

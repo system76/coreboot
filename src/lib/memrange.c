@@ -252,6 +252,17 @@ static void collect_ranges(void *gp, struct device *dev, struct resource *res)
 	if (res->size == 0)
 		return;
 
+#if CONFIG(SOC_INTEL_TIGERLAKE)
+    if (
+        ctx->tag == 0x10002 && /* BM_MEM_RESERVED */
+        res->base == CONFIG_MMCONF_BASE_ADDRESS &&
+        res->size == CONFIG_SA_PCIEX_LENGTH
+    ) {
+        printk(BIOS_WARNING, "Skipping MMCONF region\n");
+        return;
+    }
+#endif
+
 	if (ctx->filter == NULL || ctx->filter(dev, res))
 		memranges_insert(ctx->ranges, res->base, res->size, ctx->tag);
 }
