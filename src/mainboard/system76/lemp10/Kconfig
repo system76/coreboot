@@ -66,10 +66,6 @@ config POST_DEVICE
 	bool
 	default n
 
-config VBT_DATA_SIZE_KB
-	int
-	default 8
-
 config UART_FOR_CONSOLE
 	int
 	default 2
