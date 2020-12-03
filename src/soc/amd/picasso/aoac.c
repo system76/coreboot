@@ -21,7 +21,7 @@
  * waiting for each device to become available, a single delay will be
  * executed.  The console UART is handled separately from this table.
  */
-const static int aoac_devs[] = {
+const static unsigned int aoac_devs[] = {
 	FCH_AOAC_DEV_AMBA,
 	FCH_AOAC_DEV_I2C2,
 	FCH_AOAC_DEV_I2C3,
@@ -45,7 +45,7 @@ void power_off_aoac_device(unsigned int dev)
 {
 	uint8_t byte;
 
-	/* Power on the UART and AMBA devices */
+	/* Power off the UART and AMBA devices */
 	byte = aoac_read8(AOAC_DEV_D3_CTL(dev));
 	byte &= ~FCH_AOAC_PWR_ON_DEV;
 	aoac_write8(AOAC_DEV_D3_CTL(dev), byte);

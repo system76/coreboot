@@ -376,12 +376,6 @@ config DRIVERS_I2C_DESIGNWARE_CLOCK_MHZ
 	int
 	default 150
 
-config PICASSO_LPC_IOMUX
-	bool
-	help
-	  Picasso's LPC bus signals are MUXed with some of the EMMC signals.
-	  Select this option if LPC signals are required.
-
 config DISABLE_SPI_FLASH_ROM_SHARING
 	def_bool n
 	help
@@ -405,14 +399,6 @@ config FSP_TEMP_RAM_SIZE
 	  The amount of coreboot-allocated heap and stack usage by the FSP.
 
 menu "PSP Configuration Options"
-
-config AMDFW_OUTSIDE_CBFS
-	bool
-	default n
-	help
-	  The AMDFW (PSP) is typically locatable in cbfs.  Select this
-	  option to manually attach the generated amdfw.rom outside of
-	  cbfs.  The location is selected by the FWM position.
 
 config AMD_FWM_POSITION_INDEX
 	int "Firmware Directory Table location (0 to 5)"
