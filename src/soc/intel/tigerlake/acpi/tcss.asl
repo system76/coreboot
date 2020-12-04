@@ -354,12 +354,6 @@ Scope (\_SB.PCI0)
 		Offset(0x10),
 		RBAR, 64        /* RegBar, offset 0x7110 in MCHBAR */
 	}
-	Field (MBAR, DWordAcc, NoLock, Preserve)
-	{
-		Offset(0x304),  /* PRIMDN_MASK1_0_0_0_MCHBAR_IMPH, offset 0x7404 */
-		,     31,
-		TCD3, 1         /* [31:31] TCSS IN D3 bit */
-	}
 
 	/*
 	 * Operation region defined to access the pCode mailbox interface. Get the MCHBAR
@@ -635,13 +629,13 @@ Scope (\_SB.PCI0)
 
 		Method (_ON, 0)
 		{
-			//TODO TG0N()
+			TG0N()
 		}
 
 		Method (_OFF, 0)
 		{
 			If (\_SB.PCI0.TDM0.SD3C == 0) {
-				//TODO TG0F()
+				TG0F()
 			}
 		}
 	}
@@ -655,13 +649,13 @@ Scope (\_SB.PCI0)
 
 		Method (_ON, 0)
 		{
-			//TODO TG1N()
+			TG1N()
 		}
 
 		Method (_OFF, 0)
 		{
 			If (\_SB.PCI0.TDM1.SD3C == 0) {
-				//TODO TG1F()
+				TG1F()
 			}
 		}
 	}
@@ -689,11 +683,6 @@ Scope (\_SB.PCI0)
 			}
 			Else
 			{
-				/*
-				 * Program IOP MCTP Drop (TCSS_IN_D3) after D3 cold exit and
-				 * acknowledgement by IOM.
-				 */
-				TCD3 = 0
 				/*
 				 * If the TCSS Deven is cleared by BIOS Mailbox request, then
 				 * restore to previously saved value of TCSS DEVNE.
@@ -741,11 +730,6 @@ Scope (\_SB.PCI0)
 			}
 		}
 
-		/*
-		 * Program IOM MCTP Drop (TCSS_IN_D3) in D3Cold entry before entering D3 cold.
-		 */
-		TCD3 = 1
-
 		/* Request IOM for D3 cold entry sequence. */
 		TD3C = 1
 	}
@@ -766,13 +750,13 @@ Scope (\_SB.PCI0)
 
 		Method (_ON, 0)
 		{
-			//TODO \_SB.PCI0.TCON()
+			\_SB.PCI0.TCON()
 			STAT = 1
 		}
 
 		Method (_OFF, 0)
 		{
-			//TODO \_SB.PCI0.TCOF()
+			\_SB.PCI0.TCOF()
 			STAT = 0
 		}
 	}
