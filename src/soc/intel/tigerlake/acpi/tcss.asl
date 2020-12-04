@@ -635,13 +635,13 @@ Scope (\_SB.PCI0)
 
 		Method (_ON, 0)
 		{
-			TG0N()
+			//TODO TG0N()
 		}
 
 		Method (_OFF, 0)
 		{
 			If (\_SB.PCI0.TDM0.SD3C == 0) {
-				TG0F()
+				//TODO TG0F()
 			}
 		}
 	}
@@ -655,13 +655,13 @@ Scope (\_SB.PCI0)
 
 		Method (_ON, 0)
 		{
-			TG1N()
+			//TODO TG1N()
 		}
 
 		Method (_OFF, 0)
 		{
 			If (\_SB.PCI0.TDM1.SD3C == 0) {
-				TG1F()
+				//TODO TG1F()
 			}
 		}
 	}
@@ -766,13 +766,13 @@ Scope (\_SB.PCI0)
 
 		Method (_ON, 0)
 		{
-			\_SB.PCI0.TCON()
+			//TODO \_SB.PCI0.TCON()
 			STAT = 1
 		}
 
 		Method (_OFF, 0)
 		{
-			\_SB.PCI0.TCOF()
+			//TODO \_SB.PCI0.TCOF()
 			STAT = 0
 		}
 	}
