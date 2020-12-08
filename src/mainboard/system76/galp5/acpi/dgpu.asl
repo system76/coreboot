@@ -9,11 +9,6 @@ Device (\_SB.PCI0.RP01.DEV0) {
 
     Method (_PS0, 0) {
         Debug = "GPU _PS0"
-        STXS (DGPU_EVENT_N)
-        Sleep (1)
-        CTXS (DGPU_EVENT_N)
-        Sleep (1)
-        STXS (DGPU_EVENT_N)
     }
 
     Method (_PS3, 0) {
