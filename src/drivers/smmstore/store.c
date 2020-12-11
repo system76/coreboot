@@ -8,6 +8,8 @@
 #include <console/console.h>
 #include <smmstore.h>
 #include <types.h>
+#include <bootstate.h>
+#include <option.h>
 
 /*
  * The region format is still not finalized, but so far it looks like this:
@@ -262,3 +264,28 @@ int smmstore_clear_region(void)
 
 	return 0;
 }
+
+static void clear_store_on_reset(void *unused)
+{
+	int preserve = 1;
+	int ret;
+
+	ret = get_option(&preserve, "preserve_smmstore");
+	if (ret != CB_SUCCESS) {
+		/*
+		 * If the RTC cleared the CMOS earlier we will get an invalid
+		 * checksum error.
+		 */
+		preserve = ret != CB_CMOS_CHECKSUM_INVALID;
+	}
+
+	if (!preserve) {
+		printk(BIOS_DEBUG, "SMMSTORE: CMOS reset, clearing store\n");
+		if (smmstore_clear_region() == 0) {
+			preserve = 1;
+			set_option("preserve_smmstore", &preserve);
+		}
+	}
+}
+
+BOOT_STATE_INIT_ENTRY(BS_PAYLOAD_LOAD, BS_ON_EXIT, clear_store_on_reset, NULL);
