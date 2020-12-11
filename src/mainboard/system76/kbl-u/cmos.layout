@@ -19,6 +19,7 @@ entries
 #start  length  type    id      name
 0       384     r       0       reserved_memory
 384     1       e       1       DisplayPort_Output
+408     1       h       1       preserve_smmstore
 984     16      h       0       check_sum
 
 enumerations
