@@ -1,17 +1,17 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
-External (\_SB.PCI0.RP01.RTD3)
 
-Device (\_SB.PCI0.RP01.DEV0) {
+#define DGPU_RP \_SB.PCI0.RP01
+
+External (DGPU_RP.RTD3)
+
+Device (DGPU_RP.DEV0) {
 	Name(_ADR, 0x00000000)
 
-    Name (_PR0, Package() { \_SB.PCI0.RP01.RTD3 })
-    Name (_PR3, Package() { \_SB.PCI0.RP01.RTD3 })
+	Method (_PS0, 0) {
+		Debug = "GPU _PS0"
+	}
 
-    Method (_PS0, 0) {
-        Debug = "GPU _PS0"
-    }
-
-    Method (_PS3, 0) {
-        Debug = "GPU _PS3"
-    }
+	Method (_PS3, 0) {
+		Debug = "GPU _PS3"
+	}
 }
