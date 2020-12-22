@@ -235,7 +235,7 @@ chip soc/intel/tigerlake
 					chip drivers/usb/acpi
 						register "desc" = ""USB3 J_TYPEC1 CH1""
 						register "type" = "UPC_TYPE_A"
-						register "group" = "ACPI_PLD_GROUP(1, 2)"
+						#TODO register "group" = "ACPI_PLD_GROUP(1, 2)"
 						device ref usb3_port4 on end
 					end
 				end
