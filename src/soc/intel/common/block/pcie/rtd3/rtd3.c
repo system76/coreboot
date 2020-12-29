@@ -144,6 +144,8 @@ pcie_rtd3_acpi_method_on(unsigned int pcie_rp,
 
 	acpigen_write_method_serialized("_ON", 0);
 
+	acpigen_write_debug_string("PCIe RTD3 _ON");
+
 	/* When this feature is enabled, ONSK indicates if the previous _OFF was
 	 * skipped. If so, since the device was not in Off state, and the current
 	 * _ON can be skipped as well.
@@ -167,9 +169,12 @@ pcie_rtd3_acpi_method_on(unsigned int pcie_rp,
 	acpigen_write_return_op(ONE_OP);
 	acpigen_write_if_end();
 
-	if (config->use_rp_mutex)
-		acpigen_write_acquire(acpi_device_path_join(parent, RP_MUTEX_NAME),
-			ACPI_MUTEX_NO_TIMEOUT);
+	/* When this feature is enabled, ONSK indicates if the previous _OFF was
+	 * skipped. If so, since the device was not in Off state, and the current
+	 * _ON can be skipped as well.
+	 */
+	if (config->skip_on_off_support)
+		acpigen_write_if_lequal_namestr_int("ONSK", 0);
 
 	/* Disable modPHY power gating for PCH RPs. */
 	if (rp_type == PCIE_RP_PCH)
@@ -227,6 +232,8 @@ pcie_rtd3_acpi_method_off(int pcie_rp,
 	const struct device *parent = dev->upstream->dev;
 
 	acpigen_write_method_serialized("_OFF", 0);
+
+	acpigen_write_debug_string("PCIe RTD3 _OFF");
 
 	/* When this feature is enabled, ONSK is checked to see if the device
 	 * wants _OFF to be skipped for once. ONSK is normally incremented in the
@@ -448,8 +455,8 @@ static void pcie_rtd3_acpi_fill_ssdt(const struct device *dev)
 		}
 	}
 
-	printk(BIOS_INFO, "%s: Enable RTD3 for %s (%s)\n", scope, dev_path(parent),
-	       config->desc ?: dev->chip_ops->name);
+	printk(BIOS_INFO, "%s: Enable RTD3 for %s (%s) on RP #%d\n", scope, dev_path(parent),
+	       config->desc ?: dev->chip_ops->name, pcie_rp + 1);
 
 	/* Create a mutex for exclusive access to the PMC registers. */
 	if (rp_type == PCIE_RP_PCH && !mutex_created) {
