@@ -1,92 +1,85 @@
-if BOARD_SYSTEM76_LEMP9
+if BOARD_SYSTEM76_GALP5
 
 config BOARD_SPECIFIC_OPTIONS
 	def_bool y
 	select BOARD_ROMSIZE_KB_16384
 	select DRIVERS_I2C_HID
+	select DRIVERS_INTEL_PMC
+	select DRIVERS_INTEL_USB4_RETIMER
+	select DRIVERS_SYSTEM76_DGPU
 	select EC_SYSTEM76_EC
 	select EC_SYSTEM76_EC_BAT_THRESHOLDS
-	select HAVE_ACPI_RESUME
+	select EC_SYSTEM76_EC_DGPU
 	select HAVE_ACPI_TABLES
 	select HAVE_CMOS_DEFAULT
 	select HAVE_OPTION_TABLE
 	select HAVE_SMI_HANDLER
-	select HAVE_SPD_IN_CBFS
 	select INTEL_GMA_HAVE_VBT
 	select INTEL_LPSS_UART_FOR_CONSOLE
 	select MAINBOARD_HAS_LPC_TPM
 	select MAINBOARD_HAS_TPM2
 	select NO_UART_ON_SUPERIO
-	select SOC_INTEL_COMETLAKE_1
+	select PCIEXP_HOTPLUG
+	select SOC_INTEL_TIGERLAKE
+	select SOC_INTEL_COMMON_BLOCK_HDA
 	select SOC_INTEL_COMMON_BLOCK_HDA_VERB
 	select SPD_READ_BY_WORD
 	select SYSTEM_TYPE_LAPTOP
 	select TPM_RDRESP_NEED_DELAY
 	select USE_OPTION_TABLE
-	select USE_LEGACY_8254_TIMER # Fix failure to boot GRUB
 
 config MAINBOARD_DIR
 	string
-	default "system76/lemp9"
+	default "system76/galp5"
 
 config MAINBOARD_PART_NUMBER
 	string
-	default "lemp9"
+	default "galp5"
 
 config MAINBOARD_SMBIOS_PRODUCT_NAME
 	string
-	default "Lemur Pro"
+	default "Galago Pro"
 
 config MAINBOARD_VERSION
 	string
-	default "lemp9"
+	default "galp5"
+
+#TODO: subsystem IDs
 
 config CBFS_SIZE
 	hex
-	default 0xc00000
-
-config SUBSYSTEM_VENDOR_ID
-	hex
-	default 0x1558
-
-config SUBSYSTEM_DEVICE_ID
-	hex
-	default 0x1401
+	default 0xA00000
 
 config CONSOLE_POST
 	bool
 	default y
 
-config UART_FOR_CONSOLE
-	int
-	default 2
-
-config MAX_CPUS
-	int
-	default 8
-
 config DIMM_MAX
 	int
-	default 2
+	default 4 # Hack to make soc code work
 
 config DIMM_SPD_SIZE
 	int
 	default 512
 
-config VGA_BIOS_FILE
-	string
-	default "pci8086,9b41.rom"
-
-config VGA_BIOS_ID
-	string
-	default "8086,9b41"
-
-config TPM_PIRQ
+config DRIVERS_SYSTEM76_DGPU_DEVICE
 	hex
-	default 0x10 # GPP_A7/PIRQA#
+	default 0x1c
+
+config MAX_CPUS
+	int
+	default 8
+
+config ONBOARD_VGA_IS_PRIMARY
+	bool
+	default y
 
 config POST_DEVICE
 	bool
 	default n
+
+config UART_FOR_CONSOLE
+	int
+	default 2
 
 endif
