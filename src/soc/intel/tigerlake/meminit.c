@@ -378,7 +378,7 @@ void meminit_ddr4(FSP_M_CONFIG *mem_cfg, const struct mb_ddr4_cfg *board_cfg,
 		read_sodimm_spd(info, &spd_sodimm_blk);
 		if ((info->topology == MIXED) &&
 		    (mem_cfg->MemorySpdDataLen != spd_sodimm_blk.len))
-			die("Mixed topology has incorrect length.\n");
+			printk(BIOS_ERR, "Mixed topology has incorrect length: %d != %d.\n", mem_cfg->MemorySpdDataLen, spd_sodimm_blk.len);
 		else
 			mem_cfg->MemorySpdDataLen = spd_sodimm_blk.len;
 	}
