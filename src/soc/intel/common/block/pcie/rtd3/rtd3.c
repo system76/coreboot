@@ -331,7 +331,7 @@ static void pcie_rtd3_acpi_fill_ssdt(const struct device *dev)
 	static bool mutex_created = false;
 
 	const struct soc_intel_common_block_pcie_rtd3_config *config = config_of(dev);
-	static const char *const power_res_states[] = {"_PR0"};
+	static const char *const power_res_states[] = {"_PR0", "_PR3"};
 	const struct device *parent = dev->bus->dev;
 	const char *scope = acpi_device_path(parent);
 	const struct opregion opregion = OPREGION("PXCS", PCI_CONFIG, 0, 0xff);
