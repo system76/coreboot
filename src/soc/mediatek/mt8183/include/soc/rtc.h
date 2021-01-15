@@ -3,7 +3,9 @@
 #ifndef SOC_MEDIATEK_MT8183_RTC_H
 #define SOC_MEDIATEK_MT8183_RTC_H
 
+#include <soc/pmic_wrap_common.h>
 #include <soc/rtc_common.h>
+#include <stdbool.h>
 
 /* RTC registers */
 enum {
@@ -203,9 +205,32 @@ enum {
 
 /* external API */
 void rtc_bbpu_power_on(void);
-void rtc_osc_init(void);
-int rtc_init(u8 recover);
+int rtc_init(int recover);
+bool rtc_gpio_init(void);
 void rtc_boot(void);
+u16 rtc_get_frequency_meter(u16 val, u16 measure_src, u16 window_size);
 void mt6358_dcxo_disable_unused(void);
+
+static inline s32 rtc_read(u16 addr, u16 *rdata)
+{
+	s32 ret;
+
+	ret = pwrap_read(addr, rdata);
+	if (ret < 0)
+		rtc_info("pwrap_read failed: ret=%d\n", ret);
+
+	return ret;
+}
+
+static inline s32 rtc_write(u16 addr, u16 wdata)
+{
+	s32 ret;
+
+	ret = pwrap_write(addr, wdata);
+	if (ret < 0)
+		rtc_info("pwrap_write failed: ret=%d\n", ret);
+
+	return ret;
+}
 
 #endif /* SOC_MEDIATEK_MT8183_RTC_H */

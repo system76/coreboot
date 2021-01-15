@@ -16,6 +16,13 @@ struct tpm2_info {
 	uint16_t revision;
 };
 
+/* Structure describing the elements of Cr50 firmware version. */
+struct cr50_firmware_version {
+	int epoch;
+	int major;
+	int minor;
+};
+
 /*
  * Initialize a TPM2 device: read its id, claim locality of zero, verify that
  * this indeed is a TPM2 device. Use the passed in handle to access the right
@@ -24,7 +31,6 @@ struct tpm2_info {
  * Return 0 on success, non-zero on failure.
  */
 int tpm2_init(struct spi_slave *spi_if);
-
 
 /*
  * Each command processing consists of sending the command to the TPM, by
@@ -40,5 +46,11 @@ size_t tpm2_process_command(const void *tpm2_command, size_t command_size,
 
 /* Get information about previously initialized TPM device. */
 void tpm2_get_info(struct tpm2_info *info);
+
+/* Indicates whether Cr50 ready pulses are guaranteed to be at least 100us. */
+bool cr50_is_long_interrupt_pulse_enabled(void);
+
+/* Get the cr50 firmware version information. */
+void cr50_get_firmware_version(struct cr50_firmware_version *version);
 
 #endif  /* ! __COREBOOT_SRC_DRIVERS_SPI_TPM_TPM_H */

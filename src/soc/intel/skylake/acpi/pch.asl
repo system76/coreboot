@@ -36,7 +36,7 @@
 #include "serialio.asl"
 
 /* SMBus 0:1f.3 */
-#include "smbus.asl"
+#include <soc/intel/common/block/acpi/acpi/smbus.asl>
 
 /* Storage Controllers */
 #include "scs.asl"
@@ -65,3 +65,6 @@ Method (_OSC, 4)
 #if CONFIG(SOC_INTEL_COMMON_BLOCK_SGX)
 #include <soc/intel/common/acpi/sgx.asl>
 #endif
+
+/* Integrated graphics 0:2.0 */
+#include <drivers/intel/gma/acpi/gfx.asl>

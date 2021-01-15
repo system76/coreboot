@@ -72,8 +72,7 @@ int pci_write_long(struct pci_dev *dev, int pos, u32 data)
 
 struct pci_access *pci_alloc(void)
 {
-	struct pci_access *pacc = malloc(sizeof(*pacc));
-	return pacc;
+	return malloc(sizeof(struct pci_access));
 }
 
 void pci_init(struct pci_access *pacc)
@@ -179,6 +178,7 @@ static struct pci_dev *pci_scan_single_bus(struct pci_dev *dev, uint8_t bus)
 		dev->func = func;
 		dev->vendor_id = val & 0xffff;
 		dev->device_id = (uint16_t)(val >> 16);
+		dev->device_class = pci_read_config16(PCI_DEV(bus, slot, func), PCI_CLASS_DEVICE);
 		dev->next = 0;
 
 		hdr = pci_read_config8(PCI_DEV(bus, slot, func),

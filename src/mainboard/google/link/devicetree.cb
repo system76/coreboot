@@ -6,7 +6,7 @@ chip northbridge/intel/sandybridge
 	register "gpu_dp_d_hotplug" = "0x06"
 
 	# Enable Panel as eDP and configure power delays
-	register "gpu_panel_port_select" = "1"			# eDP_A
+	register "gpu_panel_port_select" = "PANEL_PORT_DP_A"
 	register "gpu_panel_power_cycle_delay" = "6"		# 500ms
 	register "gpu_panel_power_up_delay" = "2000"		# 200ms
 	register "gpu_panel_power_down_delay" = "500"		# 50ms
@@ -25,13 +25,9 @@ chip northbridge/intel/sandybridge
 			device lapic 0x0 on end
 			device lapic 0xacac off end
 
-			register "c1_acpower" = "1"	# ACPI(C1) = MWAIT(C1)
-			register "c2_acpower" = "3"	# ACPI(C2) = MWAIT(C3)
-			register "c3_acpower" = "5"	# ACPI(C3) = MWAIT(C7)
-
-			register "c1_battery" = "1"	# ACPI(C1) = MWAIT(C1)
-			register "c2_battery" = "3"	# ACPI(C2) = MWAIT(C3)
-			register "c3_battery" = "5"	# ACPI(C3) = MWAIT(C7)
+			register "acpi_c1" = "1"	# ACPI(C1) = MWAIT(C1)
+			register "acpi_c2" = "3"	# ACPI(C2) = MWAIT(C3)
+			register "acpi_c3" = "5"	# ACPI(C3) = MWAIT(C7)
 		end
 	end
 

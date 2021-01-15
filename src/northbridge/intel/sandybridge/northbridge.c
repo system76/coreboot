@@ -2,32 +2,28 @@
 
 #include <console/console.h>
 #include <acpi/acpi.h>
+#include <commonlib/helpers.h>
 #include <device/pci_ops.h>
-#include <stdint.h>
 #include <delay.h>
 #include <cpu/intel/model_206ax/model_206ax.h>
 #include <cpu/x86/msr.h>
 #include <device/device.h>
 #include <device/pci.h>
 #include <device/pci_ids.h>
+#include <types.h>
 #include "chip.h"
 #include "sandybridge.h"
 #include <cpu/intel/smm_reloc.h>
-
-static int bridge_revision_id = -1;
 
 /* IGD UMA memory */
 static uint64_t uma_memory_base = 0;
 static uint64_t uma_memory_size = 0;
 
-int bridge_silicon_revision(void)
+bool is_sandybridge(void)
 {
-	if (bridge_revision_id < 0) {
-		uint8_t stepping = cpuid_eax(1) & 0x0f;
-		uint8_t bridge_id = pci_read_config16(pcidev_on_root(0, 0), PCI_DEVICE_ID);
-		bridge_revision_id = (bridge_id & 0xf0) | stepping;
-	}
-	return bridge_revision_id;
+	const uint16_t bridge_id = pci_read_config16(pcidev_on_root(0, 0), PCI_DEVICE_ID);
+
+	return (bridge_id & BASE_REV_MASK) == BASE_REV_SNB;
 }
 
 /* Reserve everything between A segment and 1MB:
@@ -39,18 +35,16 @@ int bridge_silicon_revision(void)
 static const int legacy_hole_base_k = 0xa0000 / 1024;
 static const int legacy_hole_size_k = 384;
 
-static int get_pcie_bar(u32 *base)
+int decode_pcie_bar(u32 *const base, u32 *const len)
 {
-	struct device *dev;
-	u32 pciexbar_reg;
-
 	*base = 0;
+	*len = 0;
 
-	dev = pcidev_on_root(0, 0);
+	struct device *dev = pcidev_on_root(0, 0);
 	if (!dev)
 		return 0;
 
-	pciexbar_reg = pci_read_config32(dev, PCIEXBAR);
+	const u32 pciexbar_reg = pci_read_config32(dev, PCIEXBAR);
 
 	/* MMCFG not supported or not enabled */
 	if (!(pciexbar_reg & (1 << 0)))
@@ -58,14 +52,17 @@ static int get_pcie_bar(u32 *base)
 
 	switch ((pciexbar_reg >> 1) & 3) {
 	case 0: /* 256MB */
-		*base = pciexbar_reg & (0xffffffffULL << 28);
-		return 256;
+		*base = pciexbar_reg & (0x0f << 28);
+		*len = 256 * MiB;
+		return 1;
 	case 1: /* 128M */
-		*base = pciexbar_reg & (0xffffffffULL << 27);
-		return 128;
+		*base = pciexbar_reg & (0x1f << 27);
+		*len = 128 * MiB;
+		return 1;
 	case 2: /* 64M */
-		*base = pciexbar_reg & (0xffffffffULL << 26);
-		return 64;
+		*base = pciexbar_reg & (0x3f << 26);
+		*len = 64 * MiB;
+		return 1;
 	}
 
 	return 0;
@@ -113,7 +110,7 @@ static void add_fixed_resources(struct device *dev, int index)
 			CONFIG_CHROMEOS_RAMOOPS_RAM_SIZE  >> 10);
 #endif
 
-	if ((bridge_silicon_revision() & BASE_REV_MASK) == BASE_REV_SNB) {
+	if (is_sandybridge()) {
 		/* Required for SandyBridge sighting 3715511 */
 		bad_ram_resource(dev, index++, 0x20000000 >> 10, 0x00200000 >> 10);
 		bad_ram_resource(dev, index++, 0x40000000 >> 10, 0x00200000 >> 10);
@@ -129,8 +126,7 @@ static void add_fixed_resources(struct device *dev, int index)
 
 static void mc_read_resources(struct device *dev)
 {
-	u32 pcie_config_base;
-	int buses;
+	u32 pcie_config_base, pcie_config_len;
 	uint64_t tom, me_base, touud;
 	uint32_t tseg_base, uma_size, tolud;
 	uint16_t ggc;
@@ -139,8 +135,8 @@ static void mc_read_resources(struct device *dev)
 
 	pci_dev_read_resources(dev);
 
-	buses = get_pcie_bar(&pcie_config_base);
-	if (buses) {
+	if (decode_pcie_bar(&pcie_config_base, &pcie_config_len)) {
+		const int buses = pcie_config_len / MiB;
 		struct resource *resource = new_resource(dev, PCIEXBAR);
 		mmconf_resource_init(resource, pcie_config_base, buses);
 	}
@@ -258,30 +254,32 @@ static void mc_read_resources(struct device *dev)
 
 static void northbridge_dmi_init(struct device *dev)
 {
+	const bool is_sandy = is_sandybridge();
+
 	u32 reg32;
 
 	/* Clear error status bits */
-	DMIBAR32(0x1c4) = 0xffffffff;
-	DMIBAR32(0x1d0) = 0xffffffff;
+	DMIBAR32(DMIUESTS) = 0xffffffff;
+	DMIBAR32(DMICESTS) = 0xffffffff;
 
 	/* Steps prior to DMI ASPM */
-	if ((bridge_silicon_revision() & BASE_REV_MASK) == BASE_REV_SNB) {
+	if (is_sandy) {
 		reg32 = DMIBAR32(0x250);
 		reg32 &= ~((1 << 22) | (1 << 20));
 		reg32 |= (1 << 21);
 		DMIBAR32(0x250) = reg32;
 	}
 
-	reg32 = DMIBAR32(0x238);
+	reg32 = DMIBAR32(DMILLTC);
 	reg32 |= (1 << 29);
-	DMIBAR32(0x238) = reg32;
+	DMIBAR32(DMILLTC) = reg32;
 
-	if (bridge_silicon_revision() >= SNB_STEP_D0) {
+	if (!is_sandy || cpu_stepping() >= SNB_STEP_D0) {
 		reg32 = DMIBAR32(0x1f8);
 		reg32 |= (1 << 16);
 		DMIBAR32(0x1f8) = reg32;
 
-	} else if (bridge_silicon_revision() >= SNB_STEP_D1) {
+	} else if (!is_sandy || cpu_stepping() >= SNB_STEP_D1) {
 		reg32 = DMIBAR32(0x1f8);
 		reg32 &= ~(1 << 26);
 		reg32 |= (1 << 16);
@@ -293,15 +291,15 @@ static void northbridge_dmi_init(struct device *dev)
 	}
 
 	/* Enable ASPM on SNB link, should happen before PCH link */
-	if ((bridge_silicon_revision() & BASE_REV_MASK) == BASE_REV_SNB) {
+	if (is_sandy) {
 		reg32 = DMIBAR32(0xd04);
 		reg32 |= (1 << 4);
 		DMIBAR32(0xd04) = reg32;
 	}
 
-	reg32 = DMIBAR32(0x88);
+	reg32 = DMIBAR32(DMILCTL);
 	reg32 |= (1 << 1) | (1 << 0);
-	DMIBAR32(0x88) = reg32;
+	DMIBAR32(DMILCTL) = reg32;
 }
 
 /* Disable unused PEG devices based on devicetree */
@@ -375,7 +373,10 @@ static void northbridge_init(struct device *dev)
 	bridge_type = MCHBAR32(SAPMTIMERS);
 	bridge_type &= ~0xff;
 
-	if ((bridge_silicon_revision() & BASE_REV_MASK) == BASE_REV_IVB) {
+	if (is_sandybridge()) {
+		/* 20h for Sandybridge */
+		bridge_type |= 0x20;
+	} else {
 		/* Enable Power Aware Interrupt Routing */
 		u8 pair = MCHBAR8(INTRDIRCTL);
 		pair &= ~0x0f;	/* Clear 3:0 */
@@ -384,9 +385,6 @@ static void northbridge_init(struct device *dev)
 
 		/* 30h for IvyBridge */
 		bridge_type |= 0x30;
-	} else {
-		/* 20h for Sandybridge */
-		bridge_type |= 0x20;
 	}
 	MCHBAR32(SAPMTIMERS) = bridge_type;
 

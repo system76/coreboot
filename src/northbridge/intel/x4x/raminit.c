@@ -14,7 +14,7 @@
 #include <timestamp.h>
 #include <types.h>
 
-#include "iomap.h"
+#include "raminit.h"
 #include "x4x.h"
 
 #define MRC_CACHE_VERSION 0
@@ -99,7 +99,6 @@ static void select_cas_dramfreq_ddr2(struct sysinfo *s,
 		try_cas--;
 	}
 
-
 	if ((s->selected_timings.CAS < 3) || (s->selected_timings.tclk == 0))
 		die("Could not find common memory frequency and CAS\n");
 
@@ -122,11 +121,11 @@ static void mchinfo_ddr2(struct sysinfo *s)
 	const u32 eax = cpuid_ext(0x04, 0).eax;
 	printk(BIOS_WARNING, "%d CPU cores\n", ((eax >> 26) & 0x3f) + 1);
 
-	u32 capid = pci_read_config16(PCI_DEV(0, 0, 0), 0xe8);
+	u32 capid = pci_read_config16(HOST_BRIDGE, 0xe8);
 	if (!(capid & (1<<(79-64))))
 		printk(BIOS_WARNING, "iTPM enabled\n");
 
-	capid = pci_read_config32(PCI_DEV(0, 0, 0), 0xe4);
+	capid = pci_read_config32(HOST_BRIDGE, 0xe4);
 	if (!(capid & (1<<(57-32))))
 		printk(BIOS_WARNING, "ME enabled\n");
 
@@ -246,7 +245,7 @@ static void select_cas_dramfreq_ddr3(struct sysinfo *s,
 
 	u32 min_tCLK;
 	u8 try_CAS;
-	u16 capid = (pci_read_config16(PCI_DEV(0, 0, 0), 0xea) >> 4) & 0x3f;
+	u16 capid = (pci_read_config16(HOST_BRIDGE, 0xea) >> 4) & 0x3f;
 
 	switch (s->max_fsb) {
 	default:
@@ -344,7 +343,7 @@ static void workaround_stacked_mode(struct sysinfo *s)
 	if (s->selected_timings.mem_clk != MEM_CLOCK_1066MHz)
 		return;
 	/* IGD0EN gets disabled if not present before this code runs */
-	deven = pci_read_config32(PCI_DEV(0, 0, 0), D0F0_DEVEN);
+	deven = pci_read_config32(HOST_BRIDGE, D0F0_DEVEN);
 	if (deven & IGD0EN)
 		s->stacked_mode = 1;
 }
@@ -410,7 +409,6 @@ static int ddr3_save_dimminfo(u8 dimm_idx, u8 *raw_spd,
 
 	return CB_SUCCESS;
 }
-
 
 static void select_discrete_timings(struct sysinfo *s,
 				const struct abs_timings *timings)
@@ -593,9 +591,9 @@ static void checkreset_ddr2(int boot_path)
 		pci_write_config8(PCI_DEV(0, 0x1f, 0), 0xa2, pmcon2);
 
 		/* do magic 0xf0 thing. */
-		pci_and_config8(PCI_DEV(0, 0, 0), 0xf0, ~(1 << 2));
+		pci_and_config8(HOST_BRIDGE, 0xf0, ~(1 << 2));
 
-		pci_or_config8(PCI_DEV(0, 0, 0), 0xf0, (1 << 2));
+		pci_or_config8(HOST_BRIDGE, 0xf0, (1 << 2));
 
 		full_reset();
 	}
@@ -610,20 +608,21 @@ void sdram_initialize(int boot_path, const u8 *spd_map)
 {
 	struct sysinfo s, *ctrl_cached;
 	u8 reg8;
-	int fast_boot, cbmem_was_inited, cache_not_found;
-	struct region_device rdev;
+	int fast_boot, cbmem_was_inited;
+	size_t mrc_size;
 
 	timestamp_add_now(TS_BEFORE_INITRAM);
 	printk(BIOS_DEBUG, "Setting up RAM controller.\n");
 
-	pci_write_config8(PCI_DEV(0, 0, 0), 0xdf, 0xff);
+	pci_write_config8(HOST_BRIDGE, 0xdf, 0xff);
 
 	memset(&s, 0, sizeof(struct sysinfo));
 
-	cache_not_found = mrc_cache_get_current(MRC_TRAINING_DATA,
-						MRC_CACHE_VERSION, &rdev);
+	ctrl_cached = mrc_cache_current_mmap_leak(MRC_TRAINING_DATA,
+						  MRC_CACHE_VERSION,
+						  &mrc_size);
 
-	if (cache_not_found || (region_device_sz(&rdev) < sizeof(s))) {
+	if (!ctrl_cached || mrc_size < sizeof(s)) {
 		if (boot_path == BOOT_PATH_RESUME) {
 			/* Failed S3 resume, reset to come up cleanly */
 			system_reset();
@@ -632,15 +631,11 @@ void sdram_initialize(int boot_path, const u8 *spd_map)
 			   and therefore requiring valid cached settings */
 			full_reset();
 		}
-		ctrl_cached = NULL;
-	} else {
-		ctrl_cached = rdev_mmap_full(&rdev);
 	}
 
 	/* verify MRC cache for fast boot */
 	if (boot_path != BOOT_PATH_RESUME && ctrl_cached) {
-		/* check SPD checksum to make sure the DIMMs haven't been
-		 * replaced */
+		/* check SPD checksum to make sure the DIMMs haven't been replaced */
 		fast_boot = verify_spds(spd_map, ctrl_cached) == CB_SUCCESS;
 		if (!fast_boot) {
 			printk(BIOS_DEBUG, "SPD checksums don't match,"
@@ -671,7 +666,7 @@ void sdram_initialize(int boot_path, const u8 *spd_map)
 		checkreset_ddr2(s.boot_path);
 
 		/* Detect dimms per channel */
-		reg8 = pci_read_config8(PCI_DEV(0, 0, 0), 0xe9);
+		reg8 = pci_read_config8(HOST_BRIDGE, 0xe9);
 		printk(BIOS_DEBUG, "Dimms per channel: %d\n",
 			(reg8 & 0x10) ? 1 : 2);
 
@@ -687,7 +682,7 @@ void sdram_initialize(int boot_path, const u8 *spd_map)
 
 	pci_and_config8(PCI_DEV(0, 0x1f, 0), 0xa2, (u8)~0x80);
 
-	pci_or_config8(PCI_DEV(0, 0, 0), 0xf4, 1);
+	pci_or_config8(HOST_BRIDGE, 0xf4, 1);
 
 	printk(BIOS_DEBUG, "RAM initialization finished.\n");
 

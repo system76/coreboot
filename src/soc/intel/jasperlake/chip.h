@@ -10,7 +10,6 @@
 #include <intelblocks/power_limit.h>
 #include <soc/gpe.h>
 #include <soc/gpio.h>
-#include <soc/gpio_defs.h>
 #include <soc/pch.h>
 #include <soc/pci_devs.h>
 #include <soc/pmc.h>
@@ -62,16 +61,15 @@ struct soc_intel_jasperlake_config {
 	/* TCC activation offset */
 	uint32_t tcc_offset;
 
-	/* System Agent dynamic frequency support. Only effects ULX/ULT CPUs.
-	 * When enabled memory will be training at two different frequencies.
-	 * 0:Disabled, 1:FixedPoint0, 2:FixedPoint1, 3:FixedPoint2,
-	 * 4:FixedPoint3, 5:Enabled */
+	/* System Agent dynamic frequency support.
+	 * When enabled memory will be training at different frequencies.
+	 * 0:Disabled, 1:FixedPoint0(low), 2:FixedPoint1(mid), 3:FixedPoint2
+	 * (high), 4:Enabled */
 	enum {
 		SaGv_Disabled,
 		SaGv_FixedPoint0,
 		SaGv_FixedPoint1,
 		SaGv_FixedPoint2,
-		SaGv_FixedPoint3,
 		SaGv_Enabled,
 	} SaGv;
 
@@ -132,25 +130,16 @@ struct soc_intel_jasperlake_config {
 	/* Enable if SD Card Power Enable Signal is Active High */
 	uint8_t SdCardPowerEnableActiveHigh;
 
-	/* Integrated Sensor */
-	uint8_t PchIshEnable;
-
-	/* Heci related */
-	uint8_t Heci3Enabled;
+	/* VR Config Settings for IA Core */
+	uint16_t ImonSlope;
+	uint16_t ImonOffset;
 
 	/* Gfx related */
-	uint8_t IgdDvmt50PreAlloc;
-	uint8_t InternalGfx;
 	uint8_t SkipExtGfxScan;
-
-	uint32_t GraphicsConfigPtr;
-	uint8_t Device4Enable;
 
 	/* HeciEnabled decides the state of Heci1 at end of boot
 	 * Setting to 0 (default) disables Heci1 and hides the device from OS */
 	uint8_t HeciEnabled;
-	/* Intel Speed Shift Technology */
-	uint8_t speed_shift_enable;
 
 	/* Enable/Disable EIST. 1b:Enabled, 0b:Disabled */
 	uint8_t eist_enable;
@@ -283,6 +272,134 @@ struct soc_intel_jasperlake_config {
 	 * Only override CPU flex ratio to not boot with non-turbo max.
 	 */
 	uint8_t cpu_ratio_override;
+
+	/* Skip CPU replacement check
+	 * 0: disable
+	 * 1: enable
+	 * Setting this option to skip CPU replacement check to avoid the forced MRC training
+	 * for the platforms with soldered down SOC.
+	 */
+	uint8_t SkipCpuReplacementCheck;
+
+	/*
+	 * SLP_S3 Minimum Assertion Width Policy
+	 *  1 = 60us
+	 *  2 = 1ms
+	 *  3 = 50ms (default)
+	 *  4 = 2s
+	 */
+	uint8_t PchPmSlpS3MinAssert;
+
+	/*
+	 * SLP_S4 Minimum Assertion Width Policy
+	 *  1 = 1s (default)
+	 *  2 = 2s
+	 *  3 = 3s
+	 *  4 = 4s
+	 */
+	uint8_t PchPmSlpS4MinAssert;
+
+	/*
+	 * SLP_SUS Minimum Assertion Width Policy
+	 *  1 = 0ms
+	 *  2 = 500ms
+	 *  3 = 1s
+	 *  4 = 4s (default)
+	 */
+	uint8_t PchPmSlpSusMinAssert;
+
+	/*
+	 * SLP_A Minimum Assertion Width Policy
+	 *  1 = 0ms
+	 *  2 = 4s
+	 *  3 = 98ms
+	 *  4 = 2s (default)
+	 */
+	uint8_t PchPmSlpAMinAssert;
+
+	/*
+	 * PCH PM Reset Power Cycle Duration
+	 *  0 = 4s (default)
+	 *  1 = 1s
+	 *  2 = 2s
+	 *  3 = 3s
+	 *  4 = 4s
+	 *
+	 * NOTE: Duration programmed in the PchPmPwrCycDur should never be smaller than the
+	 * stretch duration programmed in the following registers:
+	 *  - GEN_PMCON_A.SLP_S3_MIN_ASST_WDTH (PchPmSlpS3MinAssert)
+	 *  - GEN_PMCON_A.S4MAW (PchPmSlpS4MinAssert)
+	 *  - PM_CFG.SLP_A_MIN_ASST_WDTH (PchPmSlpAMinAssert)
+	 *  - PM_CFG.SLP_LAN_MIN_ASST_WDTH
+	 */
+	uint8_t PchPmPwrCycDur;
+
+	/*
+	 * FIVR RFI Frequency
+	 * PCODE MMIO Mailbox: Set the desired RFI frequency, in increments of 100KHz.
+	 * 0: Auto.
+	 * Range varies based on XTAL clock:
+	 *    0-1918 (Up to 191.8HMz) for 24MHz clock;
+	 *    0-1535 (Up to 153.5MHz) for 19MHz clock.
+	 */
+	uint16_t FivrRfiFrequency;
+
+	/*
+	 * FIVR RFI Spread Spectrum
+	 * Set the Spread Spectrum Range. <b>0: 0%</b>;
+	 * FIVR RFI Spread Spectrum, in 0.1% increments.
+	 * Range: 0.0% to 10.0% (0-100)
+	 */
+	uint8_t FivrSpreadSpectrum;
+
+	/*
+	 * Disable Fast Slew Rate for Deep Package C States for VCCIN VR domain
+	 * Disable Fast Slew Rate for Deep Package C States based on
+	 * Acoustic Noise Mitigation feature enabled.
+	 */
+	uint8_t FastPkgCRampDisable;
+
+	/*
+	 * Slew Rate configuration for Deep Package C States for VCCIN VR domain
+	 * based on Acoustic Noise Mitigation feature enabled.
+	 * 0: Fast/2 ; 1: Fast/4; 2: Fast/8; 3: Fast/16
+	 */
+	enum {
+		SlewRateFastBy2 = 0,
+		SlewRateFastBy4,
+		SlewRateFastBy8,
+		SlewRateFastBy16
+	} SlowSlewRate;
+
+	/*
+	 * Enable or Disable Acoustic Noise Mitigation feature.
+	 * 0: Disabled ; 1: Enabled
+	 */
+	uint8_t AcousticNoiseMitigation;
+
+	/*
+	 * Acoustic Noise Mitigation Range.Defines the maximum Pre-Wake
+	 * randomization time in micro ticks.This can be programmed only
+	 * if AcousticNoiseMitigation is enabled.
+	 * Range 0-255
+	 */
+	uint8_t PreWake;
+
+	/*
+	 * Acoustic Noise Mitigation Range.Defines the maximum Ramp Up
+	 * randomization time in micro ticks.This can be programmed only
+	 * if AcousticNoiseMitigation is enabled.
+	 * Range 0-255
+	 */
+	uint8_t RampUp;
+
+	/*
+	 * Acoustic Noise Mitigation Range.Defines the maximum Ramp Down
+	 * randomization time in micro ticks.This can be programmed only
+	 * if AcousticNoiseMitigation is enabled.
+	 * Range 0-255
+	 */
+	uint8_t RampDown;
 
 };
 

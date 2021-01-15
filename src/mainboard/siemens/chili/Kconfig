@@ -1,0 +1,82 @@
+# SPDX-License-Identifier: GPL-2.0-only
+
+config BOARD_SIEMENS_CHILI_COMMON
+	def_bool n
+	select BOARD_ROMSIZE_KB_32768
+	select DRIVERS_I2C_GENERIC
+	select DRIVERS_I2C_HID
+	select EC_ACPI
+	select HAVE_ACPI_RESUME
+	select HAVE_ACPI_TABLES
+	select HAVE_OPTION_TABLE
+	select INTEL_GMA_HAVE_VBT
+	select MAINBOARD_HAS_LIBGFXINIT
+	select MAINBOARD_HAS_LPC_TPM
+	select MAINBOARD_HAS_TPM2
+	select MAINBOARD_USES_IFD_GBE_REGION
+	select SOC_INTEL_CANNONLAKE_PCH_H
+	select SOC_INTEL_COFFEELAKE
+
+config BOARD_SIEMENS_CHILI_BASE_OPTIONS
+	bool
+	select BOARD_SIEMENS_CHILI_COMMON
+	select DRIVERS_UART_8250IO
+
+config BOARD_SIEMENS_CHILI_CHILI_OPTIONS
+	bool
+	select BOARD_SIEMENS_CHILI_COMMON
+	select DRIVERS_I2C_LM96000
+	select INTEL_LPSS_UART_FOR_CONSOLE
+	select SECUNET_DMI
+	select SMBIOS_PROVIDED_BY_MOBO
+	select SOC_INTEL_COMMON_BLOCK_HDA_VERB
+
+if BOARD_SIEMENS_CHILI_COMMON
+
+config MAINBOARD_DIR
+	string
+	default "siemens/chili"
+
+config MAINBOARD_FAMILY
+	string
+	default "Chili"
+
+config MAINBOARD_PART_NUMBER
+	string
+	default "Chili base board" if BOARD_SIEMENS_CHILI_BASE
+	default "Chili" if BOARD_SIEMENS_CHILI_CHILI
+
+config VARIANT_DIR
+	string
+	default "base" if BOARD_SIEMENS_CHILI_BASE
+	default "chili" if BOARD_SIEMENS_CHILI_CHILI
+
+config DEVICETREE
+	string
+	default "variants/$(CONFIG_VARIANT_DIR)/devicetree.cb"
+
+config INTEL_GMA_VBT_FILE
+	string
+	default "src/mainboard/$(MAINBOARDDIR)/variants/$(CONFIG_VARIANT_DIR)/data.vbt"
+
+config DIMM_SPD_SIZE
+	int
+	default 512
+
+config CBFS_SIZE
+	hex
+	default 0xb00000
+
+config POST_DEVICE
+	bool
+	default n
+
+config SIEMENS_CHILI_DEBUG_USB
+	bool "Enable debug USB port"
+	depends on BOARD_SIEMENS_CHILI_CHILI
+
+config DRIVERS_INTEL_WIFI
+	bool
+	default n if BOARD_SIEMENS_CHILI_CHILI
+
+endif

@@ -37,86 +37,71 @@ chip northbridge/amd/agesa/family15tn/root_complex
 							irq 0x70 = 4
 						end
 						device pnp 2e.3 off end # COM2/IR
-						device pnp 2e.5 off end # Keyboard
+						device pnp 2e.5 on      # Keyboard
+							io 0x60 = 0x0060        # KBC1 base
+							io 0x62 = 0x0064        # KBC2 base
+							irq 0x70 = 1
+							irq 0x72 = 12
+						end
 						device pnp 2e.6 off end # CIR
 						device pnp 2e.7 on	# GPIO6, GPIO7, GPIO8
-							io 0xe0 = 0x7f
-							io 0xe1 = 0x10
-							io 0xe2 = 0x00
-							io 0xe3 = 0x00
-							io 0xe4 = 0xff
-							io 0xe5 = 0xff
-							io 0xe6 = 0xff
-							io 0xe7 = 0xff
-							io 0xec = 0x00
-							io 0xed = 0xff
-							io 0xf4 = 0xff
-							io 0xf5 = 0xff
-							io 0xf6 = 0x00
-							io 0xf7 = 0x00
-							io 0xf8 = 0x00
+							irq 0xf4 = 0xff # GPIO6 i/o
+
+							irq 0xe0 = 0x7f # GPIO7 i/o
+							irq 0xe1 = 0x00 # GPIO7 data
 						end
-						device pnp 2e.8 on	# WDT1, GPIO0, GPIO1
-							io 0x30 = 0x00
-							io 0x60 = 0x00
-							io 0x61 = 0x00
-							io 0xe0 = 0xff
-							io 0xe1 = 0xff
-							io 0xe2 = 0xff
-							io 0xe3 = 0xff
-							io 0xe4 = 0xff
-							io 0xf0 = 0xff
-							io 0xf1 = 0x28
-							io 0xf2 = 0x00
-							io 0xf3 = 0x00
-							io 0xf4 = 0x08
-							io 0xf5 = 0xff
-							io 0xf6 = 0x00
-							io 0xf7 = 0xff
+						device pnp 2e.008 off	# WDT1
 						end
-						device pnp 2e.9 on	# GPIO1, GPIO2, GPIO3, GPIO4, GPIO5, GPIO6, GPIO7, GPIO8
-							io 0x30 = 0xfe
-							io 0xe0 = 0xff
-							io 0xe1 = 0x90
-							io 0xe2 = 0x00
-							io 0xe3 = 0x00
-							io 0xe4 = 0x7f
-							io 0xe5 = 0x76
-							io 0xe6 = 0x00
-							io 0xe7 = 0x00
-							io 0xe8 = 0x00
-							io 0xe9 = 0x00
-							io 0xea = 0x00
-							io 0xeb = 0x00
-							io 0xee = 0x00
-							io 0xf0 = 0xff
-							io 0xf1 = 0x7b
-							io 0xf2 = 0x00
-							io 0xf4 = 0xff
-							io 0xf5 = 0xef
-							io 0xf6 = 0x00
-							io 0xf7 = 0x00
-							io 0xfe = 0x00
+						device pnp 2e.108 on	# GPIO0, GPIO1
+							irq 0xe0 = 0xff # GPIO0 i/o
+							irq 0xe2 = 0xff # GPIO0 inversion
+							irq 0xe4 = 0xff # GPIO0 multiplex
+
+							irq 0xf0 = 0xff # GPIO1 i/o
+							irq 0xf4 = 0x08 # GPIO1 multiplex
+
+							irq 0xf5 = 0xff # WDT1 control mode
+							irq 0xf6 = 0x00 # WDT1 counter
+							irq 0xf7 = 0xff # WDT1 control / status
+						end
+						device pnp 2e.009 off	# GPIO8
+						end
+						device pnp 2e.109 on	# GPIO1
+						end
+						device pnp 2e.209 on	# GPIO2
+							irq 0xe0 = 0xff # GPIO2 i/o
+						end
+						device pnp 2e.309 on	# GPIO3
+							irq 0xe4 = 0x7f # GPIO3 i/o
+							irq 0xe5 = 0x00 # GPIO3 data
+						end
+						device pnp 2e.409 on	# GPIO4
+							irq 0xf0 = 0xff # GPIO4 i/o
+						end
+						device pnp 2e.509 on	# GPIO5
+							irq 0xf4 = 0xff # GPIO5 i/o
+						end
+						device pnp 2e.609 on	# GPIO6
+						end
+						device pnp 2e.709 on	# GPIO7
 						end
 						device pnp 2e.a on	# ACPI
-							io 0xe6 = 0x4c
-							io 0xe7 = 0x11
-							io 0xf2 = 0x5d
+							irq 0xe6 = 0x4c
+							irq 0xe7 = 0x11
+							irq 0xf2 = 0x5d
 						end
 						device pnp 2e.b on	# Hardware Monitor, Front Panel LED
-							io 0x30 = 0x01
-							io 0x60 = 0x02
-							io 0x61 = 0x90
-							io 0xe2 = 0x7f
-							io 0xe4 = 0xf1
+							io  0x60 = 0x0290
+							irq 0xe2 = 0x7f
+							irq 0xe4 = 0xf1
 						end
 						device pnp 2e.d off end	# WDT1
 						device pnp 2e.e off end # CIR WAKE-UP
-						device pnp 2e.f off	# GPIO Push-pull/Open-drain selection
-							io 0xe6 = 7f
+						device pnp 2e.f on	# GPIO Push-pull/Open-drain selection
+							irq 0xe6 = 7f
 						end
-						device pnp 2e.14 off # PORT80 UART
-							io 0xe0 = 0x00
+						device pnp 2e.14 on	# PORT80 UART
+							irq 0xe0 = 0x00
 						end
 						device pnp 2e.16 off end # Deep Sleep
 					end
@@ -126,7 +111,9 @@ chip northbridge/amd/agesa/family15tn/root_complex
 				device pci 14.7 off end # Not present with BIOS ([AMD] FCH SD Flash Controller [1022:7806])
 				device pci 15.0 on end # PCI bridge
 				device pci 15.1 on end # PCI bridge
-				device pci 15.2 on end # PCI bridge # Only present with the original boot firmware
+				# FIXME: serial console stops working when enabling resources
+				# for 15.2, and payloads hang
+				device pci 15.2 off end # PCI bridge
 			end	#chip southbridge/amd/hudson
 
 			device pci 18.0 on end

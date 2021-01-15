@@ -1,11 +1,11 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
 #include <console/console.h>
-#include <arch/io.h>
 #include <device/pci_ops.h>
 #include <device/device.h>
 #include <device/pci_def.h>
 #include <device/smbus_host.h>
+#include <southbridge/intel/common/pmbase.h>
 #include <southbridge/intel/common/pmclib.h>
 #include <elog.h>
 #include "pch.h"
@@ -34,21 +34,15 @@ enum pch_platform_type get_pch_platform_type(void)
 	return PCH_TYPE_DESKTOP;
 }
 
-int pch_is_lp(void)
-{
-	return get_pch_platform_type() == PCH_TYPE_ULT;
-}
-
 static void pch_enable_bars(void)
 {
-	/* Setting up Southbridge. In the northbridge code. */
 	pci_write_config32(PCH_LPC_DEV, RCBA, (uintptr_t)DEFAULT_RCBA | 1);
 
 	pci_write_config32(PCH_LPC_DEV, PMBASE, DEFAULT_PMBASE | 1);
 	/* Enable ACPI BAR */
-	pci_write_config8(PCH_LPC_DEV, ACPI_CNTL, 0x80);
+	pci_write_config8(PCH_LPC_DEV, ACPI_CNTL, ACPI_EN);
 
-	pci_write_config32(PCH_LPC_DEV, GPIO_BASE, DEFAULT_GPIOBASE|1);
+	pci_write_config32(PCH_LPC_DEV, GPIO_BASE, DEFAULT_GPIOBASE | 1);
 
 	/* Enable GPIO functionality. */
 	pci_write_config8(PCH_LPC_DEV, GPIO_CNTL, 0x10);
@@ -58,7 +52,7 @@ static void pch_generic_setup(void)
 {
 	printk(BIOS_DEBUG, "Disabling Watchdog reboot...");
 	RCBA32(GCS) = RCBA32(GCS) | (1 << 5);	/* No reset */
-	outw((1 << 11), DEFAULT_PMBASE | 0x60 | 0x08);	/* halt timer */
+	write_pmbase16(0x60 | 0x08, (1 << 11));	/* halt timer */
 	printk(BIOS_DEBUG, " done.\n");
 }
 
@@ -113,7 +107,7 @@ int early_pch_init(void)
 	RCBA16(OIC) = 0x0100;
 
 	/* PCH BWG says to read back the IOAPIC enable register */
-	(void) RCBA16(OIC);
+	(void)RCBA16(OIC);
 
 	/* Mainboard RCBA settings */
 	mainboard_config_rcba();

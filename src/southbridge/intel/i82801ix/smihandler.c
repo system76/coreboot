@@ -14,10 +14,6 @@
 struct global_nvs *gnvs;
 #endif
 
-/* This implementation was removed since it was invalid. There will be one shared
-   approach to set GNVS pointer into SMM without the 0xEA PM Trap mentioned above. */
-void southbridge_update_gnvs(u8 apm_cnt, int *smm_done) { }
-
 int southbridge_io_trap_handler(int smif)
 {
 	switch (smif) {
@@ -50,7 +46,6 @@ void southbridge_smi_monitor(void)
 		if (trap_cycle & (1 << i))
 			mask |= (0xff << ((i - 16) << 3));
 	}
-
 
 	/* IOTRAP(3) SMI function call */
 	if (IOTRAP(3)) {

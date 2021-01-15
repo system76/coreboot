@@ -169,7 +169,6 @@ static void busmaster_disable_on_bus(int bus)
 	}
 }
 
-
 void smihandler_southbridge_sleep(
 	const struct smm_save_state_ops *save_state_ops)
 {
@@ -201,8 +200,8 @@ void smihandler_southbridge_sleep(
 		break;
 	case ACPI_S3:
 		printk(BIOS_DEBUG, "SMI#: Entering S3 (Suspend-To-RAM)\n");
-
-		gnvs->uior = uart_is_controller_initialized();
+		if (CONFIG(SOC_INTEL_COMMON_BLOCK_UART))
+			gnvs->uior = uart_is_controller_initialized();
 
 		/* Invalidate the cache before going to S3 */
 		wbinvd();
@@ -305,7 +304,7 @@ static void southbridge_smi_store(
 	reg_ebx = save_state_ops->get_reg(io_smi, RBX);
 
 	/* drivers/smmstore/smi.c */
-	ret = smmstore_exec(sub_command, (void *)reg_ebx);
+	ret = smmstore_exec(sub_command, (void *)(uintptr_t)reg_ebx);
 	save_state_ops->set_reg(io_smi, RAX, ret);
 }
 
@@ -331,8 +330,6 @@ void smihandler_southbridge_apmc(
 	const struct smm_save_state_ops *save_state_ops)
 {
 	uint8_t reg8;
-	void *state = NULL;
-	static int smm_initialized = 0;
 
 	/* Emulate B2 register as the FADT / Linux expects it */
 
@@ -361,21 +358,6 @@ void smihandler_southbridge_apmc(
 	case APM_CNT_ACPI_ENABLE:
 		pmc_enable_pm1_control(SCI_EN);
 		printk(BIOS_DEBUG, "SMI#: ACPI enabled.\n");
-		break;
-	case APM_CNT_GNVS_UPDATE:
-		if (smm_initialized) {
-			printk(BIOS_DEBUG,
-			       "SMI#: SMM structures already initialized!\n");
-			return;
-		}
-		state = find_save_state(save_state_ops, reg8);
-		if (state) {
-			/* EBX in the state save contains the GNVS pointer */
-			uint32_t reg_ebx = save_state_ops->get_reg(state, RBX);
-			gnvs = (struct global_nvs *)(uintptr_t)reg_ebx;
-			smm_initialized = 1;
-			printk(BIOS_DEBUG, "SMI#: Setting GNVS to %p\n", gnvs);
-		}
 		break;
 	case APM_CNT_ELOG_GSMI:
 		if (CONFIG(ELOG_GSMI))
@@ -406,7 +388,7 @@ void smihandler_southbridge_pm1(
 	if ((pm1_sts & PWRBTN_STS) && (pm1_en & PWRBTN_EN)) {
 		/* power button pressed */
 		elog_gsmi_add_event(ELOG_TYPE_POWER_BUTTON);
-		pmc_disable_pm1_control(-1UL);
+		pmc_disable_pm1_control(~0);
 		pmc_enable_pm1_control(SLP_EN | (SLP_TYP_S5 << SLP_TYP_SHIFT));
 	}
 }

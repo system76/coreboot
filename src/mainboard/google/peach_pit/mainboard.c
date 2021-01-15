@@ -9,7 +9,6 @@
 #include <device/i2c_simple.h>
 #include <drivers/parade/ps8625/ps8625.h>
 #include <ec/google/chromeec/ec.h>
-#include <edid.h>
 #include <soc/tmu.h>
 #include <soc/clk.h>
 #include <soc/cpu.h>
@@ -23,19 +22,11 @@
 #include <string.h>
 #include <symbols.h>
 #include <vbe.h>
+#include <framebuffer_info.h>
 
 /* convenient shorthand (in MB) */
 #define DRAM_START	((uintptr_t)_dram/MiB)
 #define DRAM_SIZE	CONFIG_DRAM_SIZE_MB
-
-static struct edid edid = {
-	.mode.ha = 1366,
-	.mode.va = 768,
-	.framebuffer_bits_per_pixel = 16,
-	.x_resolution = 1366,
-	.y_resolution = 768,
-	.bytes_per_line = 2 * 1366
-};
 
 /* from the fdt */
 static struct vidinfo vidinfo = {
@@ -231,7 +222,6 @@ static void parade_dp_bridge_setup(void)
 	udelay(10);
 	gpio_set_value(dp_rst_l, 1);
 
-
 	gpio_set_pull(dp_hpd, GPIO_PULL_NONE);
 	gpio_cfg_pin(dp_hpd, GPIO_INPUT);
 
@@ -254,7 +244,7 @@ static void parade_dp_bridge_setup(void)
 	 * we're out of here.
 	 * If it's not ready after a second, then we're in big trouble.
 	 */
-	for(i = 0; i < 1000; i++){
+	for (i = 0; i < 1000; i++){
 		if (gpio_get_value(dp_hpd))
 			break;
 		mdelay(1);
@@ -403,7 +393,7 @@ static void mainboard_init(struct device *dev)
 
 	sdmmc_vdd();
 
-	set_vbe_mode_info_valid(&edid, (uintptr_t)fb_addr);
+	fb_add_framebuffer_info((uintptr_t)fb_addr, 1366, 768, 2 * 1366, 16);
 
 	/*
 	 * The reset value for FIMD SYSMMU register MMU_CTRL:0x14640000

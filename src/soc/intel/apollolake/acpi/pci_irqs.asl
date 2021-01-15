@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 
-#include "soc_int.asl"
+#include <soc/irq.h>
 
 Method(_PRT)
 {
@@ -15,7 +15,7 @@ Method(_PRT)
 		Package(){0x000FFFFF, 0, 0, CSE_INT},
 		Package(){0x0011FFFF, 0, 0, ISH_INT},
 		Package(){0x0012FFFF, 0, 0, SATA_INT},
-#if CONFIG(SOC_INTEL_GLK)
+#if CONFIG(SOC_INTEL_GEMINILAKE)
 		Package(){0x000CFFFF, 0, 0, CNVI_INT},
 		Package(){0x0013FFFF, 0, 0, PIRQF_INT},
 		Package(){0x0013FFFF, 1, 0, PIRQF_INT},
@@ -43,10 +43,10 @@ Method(_PRT)
 		Package(){0x0017FFFF, 1, 0, I2C5_INT},
 		Package(){0x0017FFFF, 2, 0, I2C6_INT},
 		Package(){0x0017FFFF, 3, 0, I2C7_INT},
-		Package(){0x0018FFFF, 0, 0, UART0_INT},
-		Package(){0x0018FFFF, 1, 0, UART1_INT},
-		Package(){0x0018FFFF, 2, 0, UART2_INT},
-		Package(){0x0018FFFF, 3, 0, UART3_INT},
+		Package(){0x0018FFFF, 0, 0, LPSS_UART0_IRQ},
+		Package(){0x0018FFFF, 1, 0, LPSS_UART1_IRQ},
+		Package(){0x0018FFFF, 2, 0, LPSS_UART2_IRQ},
+		Package(){0x0018FFFF, 3, 0, LPSS_UART3_IRQ},
 		Package(){0x0019FFFF, 0, 0, SPI0_INT},
 		Package(){0x0019FFFF, 1, 0, SPI1_INT},
 		Package(){0x0019FFFF, 2, 0, SPI2_INT},

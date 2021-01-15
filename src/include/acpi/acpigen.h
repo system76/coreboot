@@ -3,6 +3,7 @@
 #ifndef __ACPI_ACPIGEN_H__
 #define __ACPI_ACPIGEN_H__
 
+#include <stddef.h>
 #include <stdint.h>
 #include <acpi/acpi.h>
 #include <acpi/acpi_device.h>
@@ -157,6 +158,10 @@ enum {
 					  .name = X, \
 					  .bits = Y, \
 					}
+#define FIELDLIST_RESERVED(X)		{ .type = RESERVED, \
+					  .name = "", \
+					  .bits = X, \
+					}
 
 #define FIELD_ANYACC			0
 #define FIELD_BYTEACC			1
@@ -173,6 +178,7 @@ enum {
 enum field_type {
 	OFFSET,
 	NAME_STRING,
+	RESERVED,
 	FIELD_TYPE_MAX,
 };
 
@@ -225,6 +231,10 @@ struct dsm_uuid {
 	void *arg;
 };
 
+#define CPPC_VERSION_1	1
+#define CPPC_VERSION_2	2
+#define CPPC_VERSION_3	3
+
 /*version 1 has 15 fields, version 2 has 19, and version 3 has 21 */
 enum cppc_fields {
 	CPPC_HIGHEST_PERF, /* can be DWORD */
@@ -276,6 +286,7 @@ struct cppc_config {
 };
 
 void acpigen_write_return_integer(uint64_t arg);
+void acpigen_write_return_namestr(const char *arg);
 void acpigen_write_return_string(const char *arg);
 void acpigen_write_len_f(void);
 void acpigen_pop_len(void);
@@ -323,6 +334,7 @@ void acpigen_write_STA_ext(const char *namestring);
 void acpigen_write_TPC(const char *gnvs_tpc_limit);
 void acpigen_write_PSS_package(u32 coreFreq, u32 power, u32 transLat,
 			u32 busmLat, u32 control, u32 status);
+void acpigen_write_pss_object(const struct acpi_sw_pstate *pstate_values, size_t nentries);
 typedef enum { SW_ALL = 0xfc, SW_ANY = 0xfd, HW_ALL = 0xfe } PSD_coord;
 void acpigen_write_PSD_package(u32 domain, u32 numprocs, PSD_coord coordtype);
 void acpigen_write_CST_package_entry(acpi_cstate_t *cstate);
@@ -330,6 +342,10 @@ void acpigen_write_CST_package(acpi_cstate_t *entry, int nentries);
 typedef enum { CSD_HW_ALL = 0xfe } CSD_coord;
 void acpigen_write_CSD_package(u32 domain, u32 numprocs, CSD_coord coordtype,
 				u32 index);
+void acpigen_write_pct_package(const acpi_addr_t *perf_ctrl, const acpi_addr_t *perf_sts);
+void acpigen_write_xpss_package(const struct acpi_xpss_sw_pstate *pstate_value);
+void acpigen_write_xpss_object(const struct acpi_xpss_sw_pstate *pstate_values,
+			       size_t nentries);
 void acpigen_write_processor(u8 cpuindex, u32 pblock_addr, u8 pblock_len);
 void acpigen_write_processor_package(const char *name,
 				     unsigned int first_core,
@@ -350,6 +366,8 @@ void acpigen_write_power_res(const char *name, uint8_t level, uint16_t order,
 			     const char * const dev_states[], size_t dev_states_count);
 void acpigen_write_sleep(uint64_t sleep_ms);
 void acpigen_write_store(void);
+void acpigen_write_store_int_to_namestr(uint64_t src, const char *dst);
+void acpigen_write_store_int_to_op(uint64_t src, uint8_t dst);
 void acpigen_write_store_ops(uint8_t src, uint8_t dst);
 void acpigen_write_store_op_to_namestr(uint8_t src, const char *dst);
 void acpigen_write_or(uint8_t arg1, uint8_t arg2, uint8_t res);
@@ -357,6 +375,7 @@ void acpigen_write_xor(uint8_t arg1, uint8_t arg2, uint8_t res);
 void acpigen_write_and(uint8_t arg1, uint8_t arg2, uint8_t res);
 void acpigen_write_not(uint8_t arg, uint8_t res);
 void acpigen_write_debug_string(const char *str);
+void acpigen_write_debug_namestr(const char *str);
 void acpigen_write_debug_integer(uint64_t val);
 void acpigen_write_debug_op(uint8_t op);
 void acpigen_write_if(void);
@@ -365,8 +384,10 @@ void acpigen_write_if_lequal_op_op(uint8_t op, uint8_t val);
 void acpigen_write_if_lequal_op_int(uint8_t op, uint64_t val);
 void acpigen_write_if_lequal_namestr_int(const char *namestr, uint64_t val);
 void acpigen_write_else(void);
+void acpigen_write_shiftleft_op_int(uint8_t src_result, uint64_t count);
 void acpigen_write_to_buffer(uint8_t src, uint8_t dst);
 void acpigen_write_to_integer(uint8_t src, uint8_t dst);
+void acpigen_write_to_integer_from_namestring(const char *source, uint8_t dst_op);
 void acpigen_write_byte_buffer(uint8_t *arr, size_t size);
 void acpigen_write_return_byte_buffer(uint8_t *arr, size_t size);
 void acpigen_write_return_singleton_buffer(uint8_t arg);
@@ -379,6 +400,10 @@ void acpigen_write_ADR_pci_devfn(pci_devfn_t devfn);
 void acpigen_write_ADR_pci_device(const struct device *dev);
 struct soundwire_address;
 void acpigen_write_ADR_soundwire_device(const struct soundwire_address *address);
+void acpigen_write_create_byte_field(uint8_t op, size_t byte_offset, const char *name);
+void acpigen_write_create_word_field(uint8_t op, size_t byte_offset, const char *name);
+void acpigen_write_create_dword_field(uint8_t op, size_t byte_offset, const char *name);
+void acpigen_write_create_qword_field(uint8_t op, size_t byte_offset, const char *name);
 /*
  * Generate ACPI AML code for _DSM method.
  * This function takes as input uuid for the device, set of callbacks and
@@ -410,7 +435,7 @@ void acpigen_write_rom(void *bios, const size_t length);
  * This function takes input region name, region space, region offset & region
  * length.
  */
-void acpigen_write_opregion(struct opregion *opreg);
+void acpigen_write_opregion(const struct opregion *opreg);
 /*
  * Generate ACPI AML code for Mutex
  * This function takes mutex name and initial value.
@@ -443,13 +468,32 @@ int get_cst_entries(acpi_cstate_t **);
 
 /*
  * Get element from package into specified destination op:
- *   <dest_op> = DeRefOf (<package_op>[<element])
+ *   <dest_op> = DeRefOf (<package_op>[<element>])
  *
  * Example:
  *  acpigen_get_package_op_element(ARG0_OP, 0, LOCAL0_OP)
  *  Local0 = DeRefOf (Arg0[0])
  */
 void acpigen_get_package_op_element(uint8_t package_op, unsigned int element, uint8_t dest_op);
+
+/* Set element of package op to specified op:  DeRefOf (<package>[<element>]) = <src> */
+void acpigen_set_package_op_element_int(uint8_t package_op, unsigned int element, uint64_t src);
+
+/* Get element from package to specified op:  <dest_op> = <package>[<element>] */
+void acpigen_get_package_element(const char *package, unsigned int element, uint8_t dest_op);
+
+/* Set element of package to specified op:  <package>[<element>] = <src> */
+void acpigen_set_package_element_int(const char *package, unsigned int element, uint64_t src);
+
+/* Set element of package to specified namestr:  <package>[<element>] = <src> */
+void acpigen_set_package_element_namestr(const char *package, unsigned int element,
+					 const char *src);
+
+/*
+ * Delay up to wait_ms milliseconds until the provided name matches the expected value.
+ * If wait_ms is >= 32ms then it will wait in 16ms chunks.  This function uses LOCAL7_OP.
+ */
+void acpigen_write_delay_until_namestr_int(uint32_t wait_ms, const char *name, uint64_t value);
 
 /*
  * Soc-implemented functions for generating ACPI AML code for GPIO handling. All
@@ -480,8 +524,8 @@ int acpigen_soc_clear_tx_gpio(unsigned int gpio_num);
  *
  * Returns 0 on success and -1 on error.
  */
-int acpigen_enable_tx_gpio(struct acpi_gpio *gpio);
-int acpigen_disable_tx_gpio(struct acpi_gpio *gpio);
+int acpigen_enable_tx_gpio(const struct acpi_gpio *gpio);
+int acpigen_disable_tx_gpio(const struct acpi_gpio *gpio);
 
 /*
  *  Helper function for getting a RX GPIO value based on the GPIO polarity.
@@ -489,7 +533,7 @@ int acpigen_disable_tx_gpio(struct acpi_gpio *gpio);
  *  This function ends up calling acpigen_soc_get_rx_gpio to make callbacks
  *  into SoC acpigen code
  */
-void acpigen_get_rx_gpio(struct acpi_gpio *gpio);
+void acpigen_get_rx_gpio(const struct acpi_gpio *gpio);
 
 /*
  *  Helper function for getting a TX GPIO value based on the GPIO polarity.
@@ -497,7 +541,7 @@ void acpigen_get_rx_gpio(struct acpi_gpio *gpio);
  *  This function ends up calling acpigen_soc_get_tx_gpio to make callbacks
  *  into SoC acpigen code
  */
-void acpigen_get_tx_gpio(struct acpi_gpio *gpio);
+void acpigen_get_tx_gpio(const struct acpi_gpio *gpio);
 
 /* refer to ACPI 6.4.3.5.3 Word Address Space Descriptor section for details */
 void acpigen_resource_word(u16 res_type, u16 gen_flags, u16 type_flags, u16 gran,

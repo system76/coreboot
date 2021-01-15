@@ -1,7 +1,4 @@
-/*
- *
- * SPDX-License-Identifier: GPL-2.0-or-later
- */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 OperationRegion (PXCS, SystemMemory, BASE(_ADR), 0x800)
 Field (PXCS, AnyAcc, NoLock, Preserve)
@@ -79,10 +76,14 @@ Device (PXSX)
 
 Method (_DSW, 3)
 {
-	C2PM (Arg0, Arg1, Arg2, DCPM)
 	/* If entering Sx (Arg1 > 1), need to skip TCSS D3Cold & TBT RTD3/D3Cold. */
-	\_SB.PCI0.TDM0.SD3C = Arg1
-	\_SB.PCI0.TDM1.SD3C = Arg1
+	If ((TUID == 0) || (TUID == 1)) {
+		\_SB.PCI0.TDM0.SD3C = Arg1
+	} Else {
+		\_SB.PCI0.TDM1.SD3C = Arg1
+	}
+
+	C2PM (Arg0, Arg1, Arg2, DCPM)
 }
 
 Method (_PRW, 0)
@@ -219,85 +220,6 @@ Method (_PS3, 0, Serialized)
 	}
 }
 
-Method (_DSD, 0) {
-	If ((TUID == 0) || (TUID == 1)) {
-		Return ( Package() {
-			/* acpi_pci_bridge_d3 at ../drivers/pci/pci-acpi.c */
-			ToUUID("6211E2C0-58A3-4AF3-90E1-927A4E0C55A4"),
-			Package ()
-			{
-				Package (2) { "HotPlugSupportInD3", 1 },
-			},
-
-			/* pci_acpi_set_untrusted at ../drivers/pci/pci-acpi.c */
-			ToUUID("EFCC06CC-73AC-4BC3-BFF0-76143807C389"),
-			Package () {
-				Package (2) { "ExternalFacingPort", 1 },  /* TBT/CIO port */
-				/*
-				 * UID of the TBT RP on platform, range is: 0, 1 ...,
-				 * (NumOfTBTRP - 1).
-				 */
-				Package (2) { "UID", TUID },
-			},
-			ToUUID("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
-			Package () {
-				Package (2) { "usb4-host-interface", \_SB.PCI0.TDM0 },
-				Package (2) { "usb4-port-number", TUID },
-			}
-		})
-	} ElseIf (TUID == 2) {
-		Return ( Package () {
-			/* acpi_pci_bridge_d3 at ../drivers/pci/pci-acpi.c */
-			ToUUID("6211E2C0-58A3-4AF3-90E1-927A4E0C55A4"),
-			Package ()
-			{
-				Package (2) { "HotPlugSupportInD3", 1 },
-			},
-
-			/* pci_acpi_set_untrusted at ../drivers/pci/pci-acpi.c */
-			ToUUID("EFCC06CC-73AC-4BC3-BFF0-76143807C389"),
-			Package () {
-				Package (2) { "ExternalFacingPort", 1 },  /* TBT/CIO port */
-				/*
-				 * UID of the TBT RP on platform, range is: 0, 1 ...,
-				 * (NumOfTBTRP - 1).
-				 */
-				Package (2) { "UID", TUID },
-			},
-			ToUUID("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
-			Package () {
-				Package (2) { "usb4-host-interface", \_SB.PCI0.TDM1 },
-				Package (2) { "usb4-port-number", 0 },
-			}
-		})
-	} Else {  /* TUID == 3 */
-		Return ( Package () {
-			/* acpi_pci_bridge_d3 at ../drivers/pci/pci-acpi.c */
-			ToUUID("6211E2C0-58A3-4AF3-90E1-927A4E0C55A4"),
-			Package ()
-			{
-				Package (2) { "HotPlugSupportInD3", 1 },
-			},
-
-			/* pci_acpi_set_untrusted at ../drivers/pci/pci-acpi.c */
-			ToUUID("EFCC06CC-73AC-4BC3-BFF0-76143807C389"),
-			Package () {
-				Package (2) { "ExternalFacingPort", 1 },  /* TBT/CIO port */
-				/*
-				 * UID of the TBT RP on platform, range is: 0, 1 ...,
-				 * (NumOfTBTRP - 1).
-				 */
-				Package (2) { "UID", TUID },
-			},
-			ToUUID("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
-			Package () {
-				Package (2) { "usb4-host-interface", \_SB.PCI0.TDM1 },
-				Package (2) { "usb4-port-number", 1 },
-			}
-		})
-	}
-}
-
 Method (_S0W, 0x0, NotSerialized)
 {
 	Return (0x4)
@@ -305,20 +227,12 @@ Method (_S0W, 0x0, NotSerialized)
 
 Method (_PR0)
 {
-	If ((TUID == 0) || (TUID == 1)) {
-		Return (Package() { \_SB.PCI0.D3C, \_SB.PCI0.TBT0 })
-	} Else {
-		Return (Package() { \_SB.PCI0.D3C, \_SB.PCI0.TBT1 })
-	}
+	Return (Package() { \_SB.PCI0.D3C })
 }
 
 Method (_PR3)
 {
-	If ((TUID == 0) || (TUID == 1)) {
-		Return (Package() { \_SB.PCI0.D3C, \_SB.PCI0.TBT0 })
-	} Else {
-		Return (Package() { \_SB.PCI0.D3C, \_SB.PCI0.TBT1 })
-	}
+	Return (Package() { \_SB.PCI0.D3C })
 }
 
 /*

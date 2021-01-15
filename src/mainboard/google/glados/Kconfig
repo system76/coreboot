@@ -21,6 +21,7 @@ config BOARD_GOOGLE_BASEBOARD_GLADOS
 	select SYSTEM_TYPE_LAPTOP
 	select MAINBOARD_HAS_LIBGFXINIT
 	select MAINBOARD_NO_FSP_GOP if !BOARD_GOOGLE_GLADOS
+	select HAVE_SPD_IN_CBFS
 
 if BOARD_GOOGLE_BASEBOARD_GLADOS
 
@@ -64,10 +65,6 @@ config OVERRIDE_DEVICETREE
 	string
 	default "variants/\$(CONFIG_VARIANT_DIR)/overridetree.cb"
 
-config MAX_CPUS
-	int
-	default 8
-
 config TPM_PIRQ
 	hex
 	default 0x18  # GPP_E0_IRQ
@@ -83,6 +80,9 @@ config UART_FOR_CONSOLE
 
 config CONSOLE_SERIAL
 	bool
+	default n
+
+config USE_PM_ACPI_TIMER
 	default n
 
 endif

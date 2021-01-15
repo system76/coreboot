@@ -57,7 +57,7 @@ void usb_xhci_disable_unused(bool (*ext_usb_xhci_en_cb)(unsigned int port_type,
 							unsigned int port_id))
 {
 	struct device *xhci, *hub = NULL, *port = NULL;
-	const struct xhci_usb_info *info = soc_get_xhci_usb_info();
+	const struct xhci_usb_info *info = soc_get_xhci_usb_info(PCH_DEVFN_XHCI);
 	struct drivers_usb_acpi_config *config;
 	bool enable;
 
@@ -121,6 +121,8 @@ static const unsigned short pci_device_ids[] = {
 	PCI_DEVICE_ID_INTEL_TGP_LP_XHCI,
 	PCI_DEVICE_ID_INTEL_MCC_XHCI,
 	PCI_DEVICE_ID_INTEL_JSP_XHCI,
+	PCI_DEVICE_ID_INTEL_ADP_P_XHCI,
+	PCI_DEVICE_ID_INTEL_ADP_S_XHCI,
 	0
 };
 

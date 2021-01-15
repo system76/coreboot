@@ -33,5 +33,6 @@ int mainboard_smi_apmc(u8 apmc)
 	if (CONFIG(EC_GOOGLE_CHROMEEC))
 		chromeec_smi_apmc(apmc, MAINBOARD_EC_SCI_EVENTS,
 					MAINBOARD_EC_SMI_EVENTS);
+
 	return 0;
 }

@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+#include <amdblocks/spi.h>
 #include <console/console.h>
 #include <device/mmio.h>
 #include <bootstate.h>
@@ -11,10 +12,13 @@
 #include <acpi/acpi_gnvs.h>
 #include <amdblocks/amd_pci_util.h>
 #include <amdblocks/agesawrapper.h>
+#include <amdblocks/aoac.h>
 #include <amdblocks/reset.h>
 #include <amdblocks/acpimmio.h>
 #include <amdblocks/lpc.h>
 #include <amdblocks/acpi.h>
+#include <amdblocks/smbus.h>
+#include <amdblocks/smi.h>
 #include <soc/southbridge.h>
 #include <soc/smi.h>
 #include <soc/amd_pci_int_defs.h>
@@ -30,14 +34,13 @@
  * waiting for each device to become available, a single delay will be
  * executed.
  */
-static const struct stoneyridge_aoac aoac_devs[] = {
-	{ (FCH_AOAC_D3_CONTROL_UART0 + CONFIG_UART_FOR_CONSOLE * 2),
-		(FCH_AOAC_D3_STATE_UART0 + CONFIG_UART_FOR_CONSOLE * 2) },
-	{ FCH_AOAC_D3_CONTROL_AMBA, FCH_AOAC_D3_STATE_AMBA },
-	{ FCH_AOAC_D3_CONTROL_I2C0, FCH_AOAC_D3_STATE_I2C0 },
-	{ FCH_AOAC_D3_CONTROL_I2C1, FCH_AOAC_D3_STATE_I2C1 },
-	{ FCH_AOAC_D3_CONTROL_I2C2, FCH_AOAC_D3_STATE_I2C2 },
-	{ FCH_AOAC_D3_CONTROL_I2C3, FCH_AOAC_D3_STATE_I2C3 }
+static const unsigned int aoac_devs[] = {
+	FCH_AOAC_DEV_UART0 + CONFIG_UART_FOR_CONSOLE * 2,
+	FCH_AOAC_DEV_AMBA,
+	FCH_AOAC_DEV_I2C0,
+	FCH_AOAC_DEV_I2C1,
+	FCH_AOAC_DEV_I2C2,
+	FCH_AOAC_DEV_I2C3,
 };
 
 static int is_sata_config(void)
@@ -145,42 +148,20 @@ const struct irq_idx_name *sb_get_apic_reg_association(size_t *size)
 	return irq_association;
 }
 
-static void power_on_aoac_device(int aoac_device_control_register)
-{
-	uint8_t byte;
-
-	/* Power on the UART and AMBA devices */
-	byte = aoac_read8(aoac_device_control_register);
-	byte |= FCH_AOAC_PWR_ON_DEV;
-	aoac_write8(aoac_device_control_register, byte);
-}
-
-static bool is_aoac_device_enabled(int aoac_device_status_register)
-{
-	uint8_t byte;
-
-	byte = aoac_read8(aoac_device_status_register);
-	byte &= (FCH_AOAC_PWR_RST_STATE | FCH_AOAC_RST_CLK_OK_STATE);
-	if (byte == (FCH_AOAC_PWR_RST_STATE | FCH_AOAC_RST_CLK_OK_STATE))
-		return true;
-	else
-		return false;
-}
-
 void enable_aoac_devices(void)
 {
 	bool status;
 	int i;
 
 	for (i = 0; i < ARRAY_SIZE(aoac_devs); i++)
-		power_on_aoac_device(aoac_devs[i].enable);
+		power_on_aoac_device(aoac_devs[i]);
 
 	/* Wait for AOAC devices to indicate power and clock OK */
 	do {
 		udelay(100);
 		status = true;
 		for (i = 0; i < ARRAY_SIZE(aoac_devs); i++)
-			status &= is_aoac_device_enabled(aoac_devs[i].status);
+			status &= is_aoac_device_enabled(aoac_devs[i]);
 	} while (!status);
 }
 
@@ -219,20 +200,6 @@ static void sb_lpc_decode(void)
 	lpc_enable_decode(tmp);
 }
 
-static void sb_enable_cf9_io(void)
-{
-	uint32_t reg = pm_read32(PM_DECODE_EN);
-
-	pm_write32(PM_DECODE_EN, reg | CF9_IO_EN);
-}
-
-static void sb_enable_legacy_io(void)
-{
-	uint32_t reg = pm_read32(PM_DECODE_EN);
-
-	pm_write32(PM_DECODE_EN, reg | LEGACY_IO_EN);
-}
-
 void sb_clk_output_48Mhz(u32 osc)
 {
 	u32 ctrl;
@@ -256,47 +223,34 @@ void sb_clk_output_48Mhz(u32 osc)
 	misc_write32(MISC_CLK_CNTL1, ctrl);
 }
 
-static uintptr_t sb_init_spi_base(void)
+static void sb_init_spi_base(void)
 {
-	uintptr_t base;
-
 	/* Make sure the base address is predictable */
-	base = lpc_get_spibase();
-
-	if (base)
-		return base;
-
-	lpc_set_spibase(SPI_BASE_ADDRESS);
+	if (ENV_X86)
+		lpc_set_spibase(SPI_BASE_ADDRESS);
 	lpc_enable_spi_rom(SPI_ROM_ENABLE);
-
-	return SPI_BASE_ADDRESS;
 }
 
 void sb_set_spi100(u16 norm, u16 fast, u16 alt, u16 tpm)
 {
-	uintptr_t base = sb_init_spi_base();
-	write16((void *)(base + SPI100_SPEED_CONFIG),
+	spi_write16(SPI100_SPEED_CONFIG,
 				(norm << SPI_NORM_SPEED_NEW_SH) |
 				(fast << SPI_FAST_SPEED_NEW_SH) |
 				(alt << SPI_ALT_SPEED_NEW_SH) |
 				(tpm << SPI_TPM_SPEED_NEW_SH));
-	write16((void *)(base + SPI100_ENABLE), SPI_USE_SPI100);
+	spi_write16(SPI100_ENABLE, SPI_USE_SPI100);
 }
 
-void sb_disable_4dw_burst(void)
+static void sb_disable_4dw_burst(void)
 {
-	uintptr_t base = sb_init_spi_base();
-	write16((void *)(base + SPI100_HOST_PREF_CONFIG),
-			read16((void *)(base + SPI100_HOST_PREF_CONFIG))
-					& ~SPI_RD4DW_EN_HOST);
+	spi_write16(SPI100_HOST_PREF_CONFIG,
+			spi_read16(SPI100_HOST_PREF_CONFIG) & ~SPI_RD4DW_EN_HOST);
 }
 
 void sb_read_mode(u32 mode)
 {
-	uintptr_t base = sb_init_spi_base();
-	write32((void *)(base + SPI_CNTRL0),
-			(read32((void *)(base + SPI_CNTRL0))
-					& ~SPI_READ_MODE_MASK) | mode);
+	spi_write32(SPI_CNTRL0,
+			(spi_read32(SPI_CNTRL0) & ~SPI_READ_MODE_MASK) | mode);
 }
 
 static void setup_spread_spectrum(int *reboot)
@@ -365,20 +319,6 @@ static void setup_misc(int *reboot)
 	}
 }
 
-static void fch_smbus_init(void)
-{
-	/* 400 kHz smbus speed. */
-	const uint8_t smbus_speed = (66000000 / (400000 * 4));
-
-	pm_write8(SMB_ASF_IO_BASE, SMB_BASE_ADDR >> 8);
-	smbus_write8(SMBTIMING, smbus_speed);
-	/* Clear all SMBUS status bits */
-	smbus_write8(SMBHSTSTAT, SMBHST_STAT_CLEAR);
-	smbus_write8(SMBSLVSTAT, SMBSLV_STAT_CLEAR);
-	asf_write8(SMBHSTSTAT, SMBHST_STAT_CLEAR);
-	asf_write8(SMBSLVSTAT, SMBSLV_STAT_CLEAR);
-}
-
 /* Before console init */
 void bootblock_fch_early_init(void)
 {
@@ -393,73 +333,21 @@ void bootblock_fch_early_init(void)
 	sb_disable_4dw_burst(); /* Must be disabled on CZ(ST) */
 	enable_acpimmio_decode_pm04();
 	fch_smbus_init();
-	sb_enable_cf9_io();
+	fch_enable_cf9_io();
 	setup_spread_spectrum(&reboot);
 	setup_misc(&reboot);
 
 	if (reboot)
 		warm_reset();
 
-	sb_enable_legacy_io();
+	fch_enable_legacy_io();
 	enable_aoac_devices();
-}
-
-static void print_num_status_bits(int num_bits, uint32_t status,
-				  const char *const bit_names[])
-{
-	int i;
-
-	if (!status)
-		return;
-
-	for (i = num_bits - 1; i >= 0; i--) {
-		if (status & (1 << i)) {
-			if (bit_names[i])
-				printk(BIOS_DEBUG, "%s ", bit_names[i]);
-			else
-				printk(BIOS_DEBUG, "BIT%d ", i);
-		}
-	}
-}
-
-static void sb_print_pmxc0_status(void)
-{
-	/* PMxC0 S5/Reset Status shows the source of previous reset. */
-	uint32_t pmxc0_status = pm_read32(PM_RST_STATUS);
-
-	static const char *const pmxc0_status_bits[32] = {
-		[0] = "ThermalTrip",
-		[1] = "FourSecondPwrBtn",
-		[2] = "Shutdown",
-		[3] = "ThermalTripFromTemp",
-		[4] = "RemotePowerDownFromASF",
-		[5] = "ShutDownFan0",
-		[16] = "UserRst",
-		[17] = "SoftPciRst",
-		[18] = "DoInit",
-		[19] = "DoReset",
-		[20] = "DoFullReset",
-		[21] = "SleepReset",
-		[22] = "KbReset",
-		[23] = "LtReset",
-		[24] = "FailBootRst",
-		[25] = "WatchdogIssueReset",
-		[26] = "RemoteResetFromASF",
-		[27] = "SyncFlood",
-		[28] = "HangReset",
-		[29] = "EcWatchdogRst",
-	};
-
-	printk(BIOS_DEBUG, "PMxC0 STATUS: 0x%x ", pmxc0_status);
-	print_num_status_bits(ARRAY_SIZE(pmxc0_status_bits), pmxc0_status,
-			      pmxc0_status_bits);
-	printk(BIOS_DEBUG, "\n");
 }
 
 /* After console init */
 void bootblock_fch_init(void)
 {
-	sb_print_pmxc0_status();
+	fch_print_pmxc0_status();
 }
 
 void sb_enable(struct device *dev)
@@ -513,59 +401,32 @@ static void sb_init_acpi_ports(void)
 				PM_ACPI_TIMER_EN_EN);
 }
 
-static int get_index_bit(uint32_t value, uint16_t limit)
-{
-	uint16_t i;
-	uint32_t t;
-
-	if (limit >= TOTAL_BITS(uint32_t))
-		return -1;
-
-	/* get a mask of valid bits. Ex limit = 3, set bits 0-2 */
-	t = (1 << limit) - 1;
-	if ((value & t) == 0)
-		return -1;
-	t = 1;
-	for (i = 0; i < limit; i++) {
-		if (value & t)
-			break;
-		t <<= 1;
-	}
-	return i;
-}
-
 static void set_nvs_sws(void *unused)
 {
-	struct soc_power_reg *sws;
-	struct global_nvs *gnvs;
-	int index;
+	struct acpi_pm_gpe_state *state;
 
-	sws = cbmem_find(CBMEM_ID_POWER_STATE);
-	if (sws == NULL)
-		return;
-	gnvs = acpi_get_gnvs();
-	if (gnvs == NULL)
+	state = cbmem_find(CBMEM_ID_POWER_STATE);
+	if (state == NULL)
 		return;
 
-	index = get_index_bit(sws->pm1_sts & sws->pm1_en, PM1_LIMIT);
-	if (index < 0)
-		gnvs->pm1i = ~0ULL;
-	else
-		gnvs->pm1i = index;
-
-	index = get_index_bit(sws->gpe0_sts & sws->gpe0_en, GPE0_LIMIT);
-	if (index < 0)
-		gnvs->gpei = ~0ULL;
-	else
-		gnvs->gpei = index;
+	pm_fill_gnvs(state);
 }
 
 BOOT_STATE_INIT_ENTRY(BS_OS_RESUME, BS_ON_ENTRY, set_nvs_sws, NULL);
 
 void southbridge_init(void *chip_info)
 {
+	struct acpi_pm_gpe_state *state;
+
 	sb_init_acpi_ports();
-	acpi_clear_pm1_status();
+
+	state = cbmem_add(CBMEM_ID_POWER_STATE, sizeof(*state));
+	if (state) {
+		acpi_fill_pm_gpe_state(state);
+		acpi_pm_gpe_add_events_print_events(state);
+	}
+
+	acpi_clear_pm_gpe_status();
 }
 
 static void set_sb_final_nvs(void)
@@ -580,14 +441,14 @@ static void set_sb_final_nvs(void)
 	if (gnvs == NULL)
 		return;
 
-	gnvs->aoac.ic0e = is_aoac_device_enabled(FCH_AOAC_D3_STATE_I2C0);
-	gnvs->aoac.ic1e = is_aoac_device_enabled(FCH_AOAC_D3_STATE_I2C1);
-	gnvs->aoac.ic2e = is_aoac_device_enabled(FCH_AOAC_D3_STATE_I2C2);
-	gnvs->aoac.ic3e = is_aoac_device_enabled(FCH_AOAC_D3_STATE_I2C3);
-	gnvs->aoac.ut0e = is_aoac_device_enabled(FCH_AOAC_D3_STATE_UART0);
-	gnvs->aoac.ut1e = is_aoac_device_enabled(FCH_AOAC_D3_STATE_UART1);
-	gnvs->aoac.ehce = is_aoac_device_enabled(FCH_AOAC_D3_STATE_USB2);
-	gnvs->aoac.xhce = is_aoac_device_enabled(FCH_AOAC_D3_STATE_USB3);
+	gnvs->aoac.ic0e = is_aoac_device_enabled(FCH_AOAC_DEV_I2C0);
+	gnvs->aoac.ic1e = is_aoac_device_enabled(FCH_AOAC_DEV_I2C1);
+	gnvs->aoac.ic2e = is_aoac_device_enabled(FCH_AOAC_DEV_I2C2);
+	gnvs->aoac.ic3e = is_aoac_device_enabled(FCH_AOAC_DEV_I2C3);
+	gnvs->aoac.ut0e = is_aoac_device_enabled(FCH_AOAC_DEV_UART0);
+	gnvs->aoac.ut1e = is_aoac_device_enabled(FCH_AOAC_DEV_UART1);
+	gnvs->aoac.ehce = is_aoac_device_enabled(FCH_AOAC_DEV_USB2);
+	gnvs->aoac.xhce = is_aoac_device_enabled(FCH_AOAC_DEV_USB3);
 	/* Rely on these being in sync with devicetree */
 	sd = pcidev_path_on_root(SD_DEVFN);
 	gnvs->aoac.sd_e = sd && sd->enabled ? 1 : 0;

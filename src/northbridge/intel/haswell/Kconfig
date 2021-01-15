@@ -6,7 +6,6 @@ config NORTHBRIDGE_INTEL_HASWELL
 	select CACHE_MRC_SETTINGS
 	select INTEL_DDI
 	select INTEL_GMA_ACPI
-	select BOOTBLOCK_CONSOLE
 
 if NORTHBRIDGE_INTEL_HASWELL
 
@@ -78,6 +77,15 @@ config MRC_FILE
 	help
 	  The path and filename of the file to use as System Agent
 	  binary.
+
+config HASWELL_HIDE_PEG_FROM_MRC
+	bool "Hide PEG devices from MRC to work around hardcoded MRC behavior"
+	default y
+	help
+	  If set, hides all PEG devices from MRC. This allows the iGPU
+	  to be used even when a dedicated graphics card is present.
+	  However, it prevents MRC from programming PEG AFE registers,
+	  which can make PEG devices unstable. When unsure, choose N.
 
 config PRE_GRAPHICS_DELAY
 	int "Graphics initialization delay in ms"

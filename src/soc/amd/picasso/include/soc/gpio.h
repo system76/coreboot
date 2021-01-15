@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#ifndef __PICASSO_GPIO_H__
-#define __PICASSO_GPIO_H__
+#ifndef AMD_PICASSO_GPIO_H
+#define AMD_PICASSO_GPIO_H
 
 #define GPIO_DEVICE_NAME	"AMD0030"
 #define GPIO_DEVICE_DESC	"GPIO Controller"
@@ -14,7 +14,7 @@
 
 #define SOC_GPIO_TOTAL_PINS		145
 
-/* Bank 0: GPIO_0 - GPIO_62 */
+/* Bank 0: GPIO_0 - GPIO_63 */
 #define GPIO_0				0
 #define GPIO_1				1
 #define GPIO_2				2
@@ -79,7 +79,7 @@
 #define GPIO_120			120
 #define GPIO_121			121
 
-/* Bank 2: GPIO_128 - GPIO_183 */
+/* Bank 2: GPIO_128 - GPIO_191 */
 #define GPIO_129			129
 #define GPIO_130			130
 #define GPIO_131			131
@@ -146,7 +146,7 @@
 #define GPIO_21_IOMUX_EMMC_CMD 1
 #define GPIO_21_IOMUX_GPIOxx 2
 #define GPIO_22_IOMUX_LPC_PME_L 0
-#define GPIO_22_IOMUX_EMMC_PRW_CTRL 1
+#define GPIO_22_IOMUX_EMMC_PWR_CTRL 1
 #define GPIO_22_IOMUX_GPIOxx 2
 #define GPIO_23_IOMUX_AC_PRES 0
 #define GPIO_23_IOMUX_SGPIO_LOAD 1
@@ -297,4 +297,4 @@
 #define GPIO_2_EVENT GEVENT_8
 
 #endif /* __ACPI__ */
-#endif /* __PICASSO_GPIO_H__ */
+#endif /* AMD_PICASSO_GPIO_H */

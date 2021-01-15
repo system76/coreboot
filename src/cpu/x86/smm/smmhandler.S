@@ -46,9 +46,9 @@
 #if defined(__x86_64__)
 .bss
 ia32efer_backup_eax:
-.long
+.long 0
 ia32efer_backup_edx:
-.long
+.long 0
 #endif
 
 /* initially SMM is some sort of real mode. Let gcc know
@@ -165,10 +165,6 @@ untampered_lapic:
 	addl	$SMM_STACK_SIZE, %ebx
 	movl	%ebx, %esp
 
-	/* Get SMM revision */
-	movl	$0xa8000 + 0x7efc, %ebx	/* core 0 address */
-	subl	%ebp, %ebx		/* subtract core X offset */
-
 #if defined(__x86_64__)
 	/* Backup IA32_EFER. Preserves ebx. */
 	movl	$(IA32_EFER), %ecx
@@ -179,13 +175,7 @@ untampered_lapic:
 	/* Enable long mode. Preserves ebx. */
 #include <cpu/x86/64bit/entry64.inc>
 
-	mov	(%ebx), %rdi
-
-#else
-	movl	(%ebx), %eax
-	pushl	%eax
 #endif
-
 	/* Call C handler */
 	call	smi_handler
 

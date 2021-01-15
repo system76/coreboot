@@ -1,6 +1,5 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#include <types.h>
 #include <console/console.h>
 #include <acpi/acpi.h>
 #include <acpi/acpigen.h>
@@ -9,23 +8,15 @@
 #include <cpu/intel/speedstep.h>
 #include <cpu/intel/turbo.h>
 #include <device/device.h>
+#include <stdint.h>
+
 #include "model_206ax.h"
 #include "chip.h"
 
-static int get_cores_per_package(void)
+static int get_logical_cores_per_package(void)
 {
-	struct cpuinfo_x86 c;
-	struct cpuid_result result;
-	int cores = 1;
-
-	get_fms(&c, cpuid_eax(1));
-	if (c.x86 != 6)
-		return 1;
-
-	result = cpuid_ext(0xb, 1);
-	cores = result.ebx & 0xff;
-
-	return cores;
+	msr_t msr = rdmsr(MSR_CORE_THREAD_COUNT);
+	return msr.lo & 0xffff;
 }
 
 static void generate_cstate_entries(acpi_cstate_t *cstates,
@@ -40,8 +31,6 @@ static void generate_cstate_entries(acpi_cstate_t *cstates,
 		++cstate_count;
 	if (c3 > 0)
 		++cstate_count;
-	if (!cstate_count)
-		return;
 
 	acpigen_write_package(cstate_count + 1);
 	acpigen_write_byte(cstate_count);
@@ -87,20 +76,8 @@ static void generate_C_state_entries(void)
 		return;
 
 	acpigen_write_method("_CST", 0);
-
-	/* If running on AC power */
-	acpigen_emit_byte(0xa0);		/* IfOp */
-	acpigen_write_len_f();		/* PkgLength */
-	acpigen_emit_namestring("PWRS");
-	acpigen_emit_byte(0xa4);	/* ReturnOp */
-	generate_cstate_entries(cpu->cstates, conf->c1_acpower,
-				conf->c2_acpower, conf->c3_acpower);
-	acpigen_pop_len();
-
-	/* Else on battery power */
-	acpigen_emit_byte(0xa4);	/* ReturnOp */
-	generate_cstate_entries(cpu->cstates, conf->c1_battery,
-				conf->c2_battery, conf->c3_battery);
+	acpigen_emit_byte(RETURN_OP);
+	generate_cstate_entries(cpu->cstates, conf->acpi_c1, conf->acpi_c2, conf->acpi_c3);
 	acpigen_pop_len();
 }
 
@@ -287,7 +264,7 @@ void generate_cpu_entries(const struct device *device)
 {
 	int coreID, cpuID, pcontrol_blk = PMB0_BASE, plen = 6;
 	int totalcores = dev_count_cpu();
-	int cores_per_package = get_cores_per_package();
+	int cores_per_package = get_logical_cores_per_package();
 	int numcpus = totalcores/cores_per_package;
 
 	printk(BIOS_DEBUG, "Found %d CPU(s) with %d core(s) each.\n",

@@ -55,6 +55,9 @@ chip soc/intel/jasperlake
 	# EC memory map range is 0x900-0x9ff
 	register "gen3_dec" = "0x00fc0901"
 
+	# Skip the CPU repalcement check
+	register "SkipCpuReplacementCheck" = "1"
+
 	register "PchHdaDspEnable" = "1"
 	register "PchHdaAudioLinkHdaEnable" = "0"
 	register "PchHdaAudioLinkSspEnable[0]" = "1"
@@ -91,7 +94,7 @@ chip soc/intel/jasperlake
 		[PchSerialIoIndexI2C1]  = PchSerialIoDisabled,
 		[PchSerialIoIndexI2C2]  = PchSerialIoDisabled,
 		[PchSerialIoIndexI2C3]  = PchSerialIoDisabled,
-		[PchSerialIoIndexI2C4]  = PchSerialIoDisabled,
+		[PchSerialIoIndexI2C4]  = PchSerialIoPci,
 		[PchSerialIoIndexI2C5]  = PchSerialIoPci,
 	}"
 
@@ -119,11 +122,14 @@ chip soc/intel/jasperlake
 		[PchSerialIoIndexUART2] = PchSerialIoSkipInit,
 	}"
 
-	# Enable "Intel Speed Shift Technology"
-	register "speed_shift_enable" = "1"
-
 	# Enable DPTF
 	register "dptf_enable" = "1"
+
+	# Add PL1 and PL2 values
+	register "power_limits_config" = "{
+		.tdp_pl1_override = 6,
+		.tdp_pl2_override = 20,
+	}"
 
 	# Enable S0ix
 	register "s0ix_enable" = "1"
@@ -146,16 +152,67 @@ chip soc/intel/jasperlake
 				.sda_hold = 36,
 			}
 		},
+		.i2c[4] = {
+			.speed = I2C_SPEED_FAST,
+		},
 		.i2c[5] = {
-                        .speed = I2C_SPEED_FAST,
-                },
+			.speed = I2C_SPEED_FAST,
+		},
 	}"
+
+	# Set the minimum assertion width
+	register "PchPmSlpS3MinAssert"  = "3"  # 50ms
+	register "PchPmSlpS4MinAssert"  = "1"  # 1s
+	register "PchPmSlpSusMinAssert" = "3"  # 1s
+	register "PchPmSlpAMinAssert"   = "3"  # 98ms
+
+	# NOTE: Duration programmed in the below register should never be smaller than the
+	# stretch duration programmed in the following registers -
+	#       - GEN_PMCON_A.SLP_S3_MIN_ASST_WDTH (PchPmSlpS3MinAssert)
+	#       - GEN_PMCON_A.S4MAW (PchPmSlpS4MinAssert)
+	#       - PM_CFG.SLP_A_MIN_ASST_WDTH (PchPmSlpAMinAssert)
+	#       - PM_CFG.SLP_LAN_MIN_ASST_WDTH
+	register "PchPmPwrCycDur" = "1"       # 1s
 
 	device domain 0 on
 		device pci 00.0 on  end # Host Bridge
 		device pci 02.0 on  end # Integrated Graphics Device
-		device pci 04.0 off end # SA Thermal device
-		device pci 05.0 on  end #IPU
+		device pci 04.0 on
+			chip drivers/intel/dptf
+				register "policies.passive[0]" = "DPTF_PASSIVE(CPU, CPU, 95, 1000)"
+				register "policies.critical[0]" = "DPTF_CRITICAL(CPU, 119, SHUTDOWN)"
+
+				register "controls.power_limits.pl1" = "{
+					.min_power = 3000,
+					.max_power = 6000,
+					.time_window_min = 1 * MSECS_PER_SEC,
+					.time_window_max = 1 * MSECS_PER_SEC,
+					.granularity = 200,}"
+				register "controls.power_limits.pl2" = "{
+					.min_power = 20000,
+					.max_power = 20000,
+					.time_window_min = 1 * MSECS_PER_SEC,
+					.time_window_max = 1 * MSECS_PER_SEC,
+					.granularity = 1000,}"
+				device generic 0 on end
+			end
+		end # SA Thermal device
+
+		device pci 05.0 on
+			chip drivers/intel/mipi_camera
+				register "acpi_uid" = "0x50000"
+				register "acpi_name" = ""IPU0""
+				register "device_type" = "INTEL_ACPI_CAMERA_CIO2"
+
+				register "cio2_num_ports" = "2"
+				register "cio2_lanes_used" = "{2,2}"
+				register "cio2_lane_endpoint[0]" = ""^I2C4.CAM0""
+				register "cio2_lane_endpoint[1]" = ""^I2C5.CAM1""
+				register "cio2_prt[0]" = "0"
+				register "cio2_prt[1]" = "2"
+				device generic 0 on end
+			end
+		end
 		device pci 12.0 off end # Thermal Subsystem
 		device pci 12.5 off end # UFS SCS
 		device pci 12.6 off end # GSPI #2
@@ -239,45 +296,47 @@ chip soc/intel/jasperlake
 		end # USB xHCI
 		device pci 14.1 off end # USB xDCI (OTG)
 		device pci 14.2 off end # PMC SRAM
-		chip drivers/intel/wifi
-			register "wake" = "GPE0_PME_B0"
-			device pci 14.3 on  end # CNVi wifi
-		end
+		device pci 14.3 on
+			chip drivers/wifi/generic
+				register "wake" = "GPE0_PME_B0"
+				device generic 0 on end
+			end
+		end # CNVi wifi
 		device pci 14.5 on  end # SDCard
 		device pci 15.0 on
-                       chip drivers/i2c/max98373
-                                register "vmon_slot_no" = "4"
-                                register "imon_slot_no" = "5"
-                                register "uid" = "0"
-                                register "desc" = ""RIGHT SPEAKER AMP""
-                                register "name" = ""MAXR""
-                                device i2c 31 on end
-                        end
-                        chip drivers/i2c/max98373
-                                register "vmon_slot_no" = "6"
-                                register "imon_slot_no" = "7"
-                                register "uid" = "1"
-                                register "desc" = ""LEFT SPEAKER AMP""
-                                register "name" = ""MAXL""
-                                device i2c 32 on end
-                        end
-                        chip drivers/i2c/da7219
-                                register "irq" = "ACPI_IRQ_LEVEL_LOW(GPP_H16_IRQ)"
-                                register "btn_cfg" = "50"
-                                register "mic_det_thr" = "500"
-                                register "jack_ins_deb" = "20"
-                                register "jack_det_rate" = ""32ms_64ms""
-                                register "jack_rem_deb" = "1"
-                                register "a_d_btn_thr" = "0xa"
-                                register "d_b_btn_thr" = "0x16"
-                                register "b_c_btn_thr" = "0x21"
-                                register "c_mic_btn_thr" = "0x3e"
-                                register "btn_avg" = "4"
-                                register "adc_1bit_rpt" = "1"
-                                register "micbias_lvl" = "2600"
-                                register "mic_amp_in_sel" = ""diff""
-                                device i2c 1a on end
-                        end
+			chip drivers/i2c/max98373
+				register "vmon_slot_no" = "4"
+				register "imon_slot_no" = "5"
+				register "uid" = "0"
+				register "desc" = ""RIGHT SPEAKER AMP""
+				register "name" = ""MAXR""
+				device i2c 31 on end
+			end
+			chip drivers/i2c/max98373
+				register "vmon_slot_no" = "6"
+				register "imon_slot_no" = "7"
+				register "uid" = "1"
+				register "desc" = ""LEFT SPEAKER AMP""
+				register "name" = ""MAXL""
+				device i2c 32 on end
+			end
+			chip drivers/i2c/da7219
+				register "irq" = "ACPI_IRQ_LEVEL_LOW(GPP_H16_IRQ)"
+				register "btn_cfg" = "50"
+				register "mic_det_thr" = "500"
+				register "jack_ins_deb" = "20"
+				register "jack_det_rate" = ""32ms_64ms""
+				register "jack_rem_deb" = "1"
+				register "a_d_btn_thr" = "0xa"
+				register "d_b_btn_thr" = "0x16"
+				register "b_c_btn_thr" = "0x21"
+				register "c_mic_btn_thr" = "0x3e"
+				register "btn_avg" = "4"
+				register "adc_1bit_rpt" = "1"
+				register "micbias_lvl" = "2600"
+				register "mic_amp_in_sel" = ""diff""
+				device i2c 1a on end
+			end
 		end # I2C #0 Audio
 		device pci 15.1 off end # I2C #1
 		device pci 15.2 off end # I2C #2
@@ -289,18 +348,110 @@ chip soc/intel/jasperlake
 		device pci 16.4 off end # Management Engine Interface 3
 		device pci 16.5 off end # Management Engine Interface 4
 		device pci 17.0 off end # SATA
-		device pci 19.0 off end # I2C #4 Cam 0
-		device pci 19.1 on  end # I2C #5 Cam 1 and VCM
+		device pci 19.0 on # I2C #4 Cam 0
+			chip drivers/intel/mipi_camera
+				register "acpi_hid" = ""OVTI2740""
+				register "acpi_uid" = "0"
+				register "acpi_name" = ""CAM0""
+				register "chip_name" = ""Ov 2740 Camera""
+				register "device_type" = "INTEL_ACPI_CAMERA_SENSOR"
+				register "has_power_resource" = "1"
+
+				register "ssdb.lanes_used" = "2"
+				register "num_freq_entries" = "1"
+				register "link_freq[0]" = "360000000"
+				register "remote_name" = ""IPU0""
+
+				#Controls
+				register "clk_panel.clks[0].clknum" = "0" #IMGCLKOUT_3
+				register "clk_panel.clks[0].freq" = "1" #19.2 Mhz
+
+				register "gpio_panel.gpio[0].gpio_num" = "GPP_D5" #reset
+				register "gpio_panel.gpio[1].gpio_num" = "GPP_B14" #power
+
+				#_ON
+				register "on_seq.ops_cnt" = "4"
+				register "on_seq.ops[0]" = "SEQ_OPS_CLK_ENABLE(0, 0)"
+				register "on_seq.ops[1]" = "SEQ_OPS_GPIO_ENABLE(0, 5)"
+				register "on_seq.ops[2]" = "SEQ_OPS_GPIO_DISABLE(1, 5)"
+				register "on_seq.ops[3]" = "SEQ_OPS_GPIO_ENABLE(1, 5)"
+
+				#_OFF
+				register "off_seq.ops_cnt" = "3"
+				register "off_seq.ops[0]" = "SEQ_OPS_GPIO_DISABLE(1, 0)"
+				register "off_seq.ops[1]" = "SEQ_OPS_GPIO_DISABLE(0, 0)"
+				register "off_seq.ops[2]" = "SEQ_OPS_CLK_DISABLE(0, 0)"
+
+				device i2c 10 on end
+			end
+		end
+		device pci 19.1 on # I2C #5 Cam 1 and VCM
+			chip drivers/intel/mipi_camera
+				register "acpi_hid" = ""OVTI5675""
+				register "acpi_uid" = "0"
+				register "acpi_name" = ""CAM1""
+				register "chip_name" = ""Ov 5675 Camera""
+				register "device_type" = "INTEL_ACPI_CAMERA_SENSOR"
+
+				register "ssdb.lanes_used" = "2"
+				register "ssdb.link_used" = "1"
+				register "ssdb.vcm_type" = "0x0C"
+				register "vcm_name" = ""VCM0""
+				register "num_freq_entries" = "1"
+				register "link_freq[0]" = "DEFAULT_LINK_FREQ"
+				register "remote_name" = ""IPU0""
+
+				register "has_power_resource" = "1"
+				#Controls
+				register "clk_panel.clks[0].clknum" = "1" #IMGCLKOUT_3
+				register "clk_panel.clks[0].freq" = "1" #19.2 Mhz
+
+				register "gpio_panel.gpio[0].gpio_num" = "GPP_D4" #power_enable
+				register "gpio_panel.gpio[1].gpio_num" = "GPP_C19" #reset
+
+				#_ON
+				register "on_seq.ops_cnt" = "4"
+				register "on_seq.ops[0]" = "SEQ_OPS_CLK_ENABLE(0, 0)"
+				register "on_seq.ops[1]" = "SEQ_OPS_GPIO_ENABLE(0, 5)"
+				register "on_seq.ops[2]" = "SEQ_OPS_GPIO_DISABLE(1, 5)"
+				register "on_seq.ops[3]" = "SEQ_OPS_GPIO_ENABLE(1, 5)"
+
+				#_OFF
+				register "off_seq.ops_cnt" = "3"
+				register "off_seq.ops[0]" = "SEQ_OPS_GPIO_DISABLE(1, 0)"
+				register "off_seq.ops[1]" = "SEQ_OPS_GPIO_DISABLE(0, 0)"
+				register "off_seq.ops[2]" = "SEQ_OPS_CLK_DISABLE(0, 0)"
+
+				device i2c 36 on end
+			end
+			chip drivers/intel/mipi_camera
+				register "acpi_hid" = "ACPI_DT_NAMESPACE_HID"
+				register "acpi_uid" = "3"
+				register "acpi_name" = ""VCM0""
+				register "chip_name" = ""DW AF DAC""
+				register "device_type" = "INTEL_ACPI_CAMERA_VCM"
+
+				register "pr0" = ""\\_SB.PCI0.I2C5.CAM1.PRIC""
+				register "vcm_compat" = ""dongwoon,dw9714""
+
+				register "ssdb.lanes_used" = "2"
+				register "num_freq_entries" = "1"
+				register "link_freq[0]" = "DEFAULT_LINK_FREQ"
+				register "remote_name" = ""IPU0""
+				device i2c 0C on end
+			end
+		end
+
 		device pci 19.2 on  end # UART #2
 		device pci 1a.0 on  end # eMMC
-	        device pci 1c.0 on  end # PCI Express Port 1
-	        device pci 1c.1 off end # PCI Express Port 2
-	        device pci 1c.2 off end # PCI Express Port 3
-	        device pci 1c.3 off end # PCI Express Port 4
-	        device pci 1c.4 off end # PCI Express Port 5
-	        device pci 1c.5 on  end # PCI Express Port 6
-	        device pci 1c.6 off end # PCI Express Port 7
-	        device pci 1c.7 off end # PCI Express Port 8
+		device pci 1c.0 off end # PCI Express Port 1
+		device pci 1c.1 on  end # PCI Express Port 2 - WLAN
+		device pci 1c.2 off end # PCI Express Port 3
+		device pci 1c.3 off end # PCI Express Port 4
+		device pci 1c.4 on  end # PCI Express Port 5 - NVMe
+		device pci 1c.5 off end # PCI Express Port 6
+		device pci 1c.6 off end # PCI Express Port 7
+		device pci 1c.7 off end # PCI Express Port 8
 		device pci 1e.0 on  end # UART #0
 		device pci 1e.1 off end # UART #1
 		device pci 1e.2 off end # GSPI #0
@@ -314,7 +465,7 @@ chip soc/intel/jasperlake
 		end # GSPI #1
 		device pci 1f.0 on  end # eSPI Interface
 		device pci 1f.1 on  end # P2SB
-		device pci 1f.2 on  end # Power Management Controller
+		device pci 1f.2 hidden end # Power Management Controller
 		device pci 1f.3 on  end # Intel HDA
 		device pci 1f.4 on  end # SMBus
 		device pci 1f.5 on  end # PCH SPI

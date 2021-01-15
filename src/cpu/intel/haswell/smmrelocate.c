@@ -17,24 +17,6 @@
 #include <smp/node.h>
 #include "haswell.h"
 
-#define MSR_PRMRR_PHYS_BASE 0x1f4
-#define MSR_PRMRR_PHYS_MASK 0x1f5
-#define MSR_UNCORE_PRMRR_PHYS_BASE 0x2f4
-#define MSR_UNCORE_PRMRR_PHYS_MASK 0x2f5
-#define SMM_MCA_CAP_MSR 0x17d
-#define   SMM_CPU_SVRSTR_BIT 57
-#define   SMM_CPU_SVRSTR_MASK (1 << (SMM_CPU_SVRSTR_BIT - 32))
-#define SMM_FEATURE_CONTROL_MSR 0x4e0
-#define   SMM_CPU_SAVE_EN (1 << 1)
-/* SMM save state MSRs */
-#define SMBASE_MSR 0xc20
-#define IEDBASE_MSR 0xc22
-
-#define SMRR_SUPPORTED (1 << 11)
-#define PRMRR_SUPPORTED (1 << 12)
-
-
-
 static void update_save_state(int cpu, uintptr_t curr_smbase,
 				uintptr_t staggered_smbase,
 				struct smm_relocation_params *relo_params)
@@ -111,7 +93,7 @@ void smm_relocation_handler(int cpu, uintptr_t curr_smbase,
 	msr_t mtrr_cap;
 	struct smm_relocation_params *relo_params = &smm_reloc_params;
 
-	printk(BIOS_DEBUG, "In relocation handler: cpu %d\n", cpu);
+	printk(BIOS_DEBUG, "In relocation handler: CPU %d\n", cpu);
 
 	/* Determine if the processor supports saving state in MSRs. If so,
 	 * enable it before the non-BSPs run so that SMM relocation can occur
@@ -158,7 +140,6 @@ static void fill_in_relocation_params(struct smm_relocation_params *params)
 {
 	uintptr_t tseg_base;
 	size_t tseg_size;
-
 	u32 prmrr_base;
 	u32 prmrr_size;
 	int phys_bits;
@@ -199,7 +180,7 @@ static void fill_in_relocation_params(struct smm_relocation_params *params)
 	params->uncore_prmrr_base.lo = prmrr_base;
 	params->uncore_prmrr_base.hi = 0;
 	params->uncore_prmrr_mask.lo = (~(prmrr_size - 1) & rmask) |
-				      MTRR_PHYS_MASK_VALID;
+					MTRR_PHYS_MASK_VALID;
 	params->uncore_prmrr_mask.hi = (1 << (39 - 32)) - 1;
 }
 
@@ -284,6 +265,5 @@ void smm_lock(void)
 	 * make the SMM registers writable again.
 	 */
 	printk(BIOS_DEBUG, "Locking SMM.\n");
-	pci_write_config8(pcidev_on_root(0, 0), SMRAM,
-			D_LCK | G_SMRAME | C_BASE_SEG);
+	pci_write_config8(pcidev_on_root(0, 0), SMRAM, D_LCK | G_SMRAME | C_BASE_SEG);
 }

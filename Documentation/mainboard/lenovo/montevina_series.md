@@ -9,6 +9,15 @@ the chip in your machine through flashrom:
 Note that this does not allow you to determine whether the chip is in a SOIC-8
 or a SOIC-16 package.
 
+## Installing with ME firmware
+
+To install coreboot and keep ME working, you don't need to do anything special
+with the flash descriptor. Only flash the `bios` region externally and don't
+touch any other regions:
+```console
+# flashrom -p YOUR_PROGRAMMER -w coreboot.rom --ifd -i bios
+```
+
 ## Installing without ME firmware
 
 ```eval_rst
@@ -89,7 +98,7 @@ $ make
 ```
 
 If your flash is not 8 MB, you need to change values of `flcomp_density1` and
-`flreg1_limit` in the ifd-x200.set file according to following table:
+`flreg1_limit` in the `ifd-x200.set` file according to following table:
 
 ```eval_rst
 +-----------------+-------+-------+--------+
@@ -126,15 +135,6 @@ Chipset --->
 ```
 
 Then build coreboot and flash whole `build/coreboot.rom` to the chip.
-
-## Installing with ME firmware
-
-To install coreboot and keep ME working, you don't need to do anything special
-with the flash descriptor. Just flash only `bios` externally and don't touch any
-other regions:
-```console
-# flashrom -p YOUR_PROGRAMMER -w coreboot.rom --ifd -i bios
-```
 
 ## Flash layout
 

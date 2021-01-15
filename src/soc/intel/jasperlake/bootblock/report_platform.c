@@ -3,7 +3,9 @@
 #include <arch/cpu.h>
 #include <device/pci_ops.h>
 #include <console/console.h>
+#include <cpu/intel/microcode.h>
 #include <cpu/x86/msr.h>
+#include <cpu/x86/name.h>
 #include <device/pci.h>
 #include <device/pci_ids.h>
 #include <intelblocks/mp_init.h>
@@ -11,8 +13,6 @@
 #include <soc/pch.h>
 #include <soc/pci_devs.h>
 #include <string.h>
-
-#define BIOS_SIGN_ID	0x8B
 
 static struct {
 	u32 cpuid;
@@ -29,6 +29,7 @@ static struct {
 	{ PCI_DEVICE_ID_INTEL_JSL_ID_2, "Jasperlake SKU4-2" },
 	{ PCI_DEVICE_ID_INTEL_JSL_ID_3, "Jasperlake SKU2-1" },
 	{ PCI_DEVICE_ID_INTEL_JSL_ID_4, "Jasperlake SKU2-2" },
+	{ PCI_DEVICE_ID_INTEL_JSL_ID_5, "Jasperlake SKU4-3" },
 };
 
 static struct {
@@ -44,6 +45,8 @@ static struct {
 } igd_table[] = {
 	{ PCI_DEVICE_ID_INTEL_JSL_GT1, "Jasperlake GT1" },
 	{ PCI_DEVICE_ID_INTEL_JSL_GT2, "Jasperlake GT2" },
+	{ PCI_DEVICE_ID_INTEL_JSL_GT3, "Jasperlake GT3" },
+	{ PCI_DEVICE_ID_INTEL_JSL_GT4, "Jasperlake GT4" },
 };
 
 static inline uint8_t get_dev_revision(pci_devfn_t dev)
@@ -58,41 +61,14 @@ static inline uint16_t get_dev_id(pci_devfn_t dev)
 
 static void report_cpu_info(void)
 {
-	struct cpuid_result cpuidr;
-	u32 i, index, cpu_id, cpu_feature_flag;
-	const char cpu_not_found[] = "Platform info not available";
-	const char *cpu_name = cpu_not_found; /* 48 bytes are reported */
+	u32 i, cpu_id, cpu_feature_flag;
+	char cpu_name[49];
 	int vt, txt, aes;
-	msr_t microcode_ver;
 	static const char *const mode[] = {"NOT ", ""};
 	const char *cpu_type = "Unknown";
-	u32 p[13];
 
-	index = 0x80000000;
-	cpuidr = cpuid(index);
-	if (cpuidr.eax >= 0x80000004) {
-		int j = 0;
-
-		for (i = 2; i <= 4; i++) {
-			cpuidr = cpuid(index + i);
-			p[j++] = cpuidr.eax;
-			p[j++] = cpuidr.ebx;
-			p[j++] = cpuidr.ecx;
-			p[j++] = cpuidr.edx;
-		}
-		p[12] = 0;
-		cpu_name = (char *)p;
-
-		/* Skip leading spaces in CPU name string */
-		while (cpu_name[0] == ' ' && strlen(cpu_name) > 0)
-			cpu_name++;
-	}
-
-	microcode_ver.lo = 0;
-	microcode_ver.hi = 0;
-	wrmsr(BIOS_SIGN_ID, microcode_ver);
+	fill_processor_name(cpu_name);
 	cpu_id = cpu_get_cpuid();
-	microcode_ver = rdmsr(BIOS_SIGN_ID);
 
 	/* Look for string to match the name */
 	for (i = 0; i < ARRAY_SIZE(cpu_table); i++) {
@@ -104,7 +80,7 @@ static void report_cpu_info(void)
 
 	printk(BIOS_DEBUG, "CPU: %s\n", cpu_name);
 	printk(BIOS_DEBUG, "CPU: ID %x, %s, ucode: %08x\n",
-	       cpu_id, cpu_type, microcode_ver.hi);
+	       cpu_id, cpu_type, get_current_microcode_rev());
 
 	cpu_feature_flag = cpu_get_feature_flags_ecx();
 	aes = (cpu_feature_flag & CPUID_AES) ? 1 : 0;

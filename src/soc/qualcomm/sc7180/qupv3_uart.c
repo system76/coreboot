@@ -34,7 +34,7 @@
 #define UART_RX_PACK_VECTOR0	0xF
 #define UART_RX_PACK_VECTOR2	0x00
 
-void uart_tx_flush(int idx)
+void uart_tx_flush(unsigned int idx)
 {
 	struct qup_regs *regs = qup[idx].regs;
 
@@ -43,7 +43,7 @@ void uart_tx_flush(int idx)
 		;
 }
 
-void uart_init(int idx)
+void uart_init(unsigned int idx)
 {
 	struct qup_regs *regs = qup[idx].regs;
 	unsigned int reg_value;
@@ -71,7 +71,7 @@ void uart_init(int idx)
 	/* sc7180 requires 16 clock pulses to sample 1 bit of data */
 	uart_freq = baud_rate * 16;
 
-	div = DIV_ROUND_CLOSEST(QUPV3_UART_SRC_HZ, uart_freq);
+	div = DIV_ROUND_CLOSEST(SRC_XO_HZ, uart_freq);
 	write32(&regs->geni_ser_m_clk_cfg, (div << 4) | 1);
 	write32(&regs->geni_ser_s_clk_cfg, (div << 4) | 1);
 
@@ -113,7 +113,7 @@ void uart_init(int idx)
 	write32(&regs->geni_s_cmd0, START_UART_RX);
 }
 
-unsigned char uart_rx_byte(int idx)
+unsigned char uart_rx_byte(unsigned int idx)
 {
 	struct qup_regs *regs = qup[idx].regs;
 
@@ -122,7 +122,7 @@ unsigned char uart_rx_byte(int idx)
 	return 0;
 }
 
-void uart_tx_byte(int idx, unsigned char data)
+void uart_tx_byte(unsigned int idx, unsigned char data)
 {
 	struct qup_regs *regs = qup[idx].regs;
 
@@ -134,7 +134,7 @@ void uart_tx_byte(int idx, unsigned char data)
 	write32(&regs->geni_tx_fifon, data);
 }
 
-uintptr_t uart_platform_base(int idx)
+uintptr_t uart_platform_base(unsigned int idx)
 {
 	return (uintptr_t)qup[idx].regs;
 }
@@ -147,7 +147,7 @@ void uart_fill_lb(void *data)
 	serial.baseaddr = (uint32_t)uart_platform_base(CONFIG_UART_FOR_CONSOLE);
 	serial.baud = get_uart_baudrate();
 	serial.regwidth = 4;
-	serial.input_hertz = QUPV3_UART_SRC_HZ;
+	serial.input_hertz = SRC_XO_HZ;
 
 	lb_add_serial(&serial, data);
 }

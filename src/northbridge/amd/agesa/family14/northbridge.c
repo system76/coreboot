@@ -8,13 +8,12 @@
 #include <device/device.h>
 #include <device/pci.h>
 #include <device/pci_ids.h>
-#include <device/hypertransport.h>
 #include <string.h>
 #include <lib.h>
 #include <cpu/cpu.h>
 #include <cpu/amd/msr.h>
 #include <cpu/amd/mtrr.h>
-#include <northbridge/amd/agesa/nb_common.h>
+#include <northbridge/amd/nb_common.h>
 #include <northbridge/amd/agesa/state_machine.h>
 #include <northbridge/amd/agesa/agesa_helper.h>
 #include <sb_cimx.h>
@@ -26,7 +25,6 @@ static struct device *__f1_dev[FX_DEVS];
 static struct device *__f2_dev[FX_DEVS];
 static struct device *__f4_dev[FX_DEVS];
 static unsigned int fx_devs = 0;
-
 
 struct dram_base_mask_t {
 	u32 base; //[47:27] at [28:8]

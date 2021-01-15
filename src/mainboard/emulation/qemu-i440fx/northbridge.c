@@ -3,6 +3,7 @@
 #include <console/console.h>
 #include <cpu/cpu.h>
 #include <cpu/x86/lapic_def.h>
+#include <cpu/x86/mp.h>
 #include <arch/io.h>
 #include <device/pci_def.h>
 #include <device/pci_ops.h>
@@ -192,10 +193,10 @@ static int qemu_get_smbios_data17(int handle, int parent_handle, unsigned long *
 	t->size = qemu_get_memory_size() / 1024;
 	t->data_width = 64;
 	t->total_width = 64;
-	t->form_factor = 9; /* DIMM */
+	t->form_factor = MEMORY_FORMFACTOR_DIMM;
 	t->device_locator = smbios_add_string(t->eos, "Virtual");
-	t->memory_type = 0x12; /* DDR */
-	t->type_detail = 0x80; /* Synchronous */
+	t->memory_type = MEMORY_TYPE_DDR;
+	t->type_detail = MEMORY_TYPE_DETAIL_SYNCHRONOUS;
 	t->speed = 200;
 	t->clock_speed = 200;
 	t->manufacturer = smbios_add_string(t->eos, CONFIG_MAINBOARD_VENDOR);
@@ -244,9 +245,22 @@ static struct device_operations pci_domain_ops = {
 #endif
 };
 
+static const struct mp_ops mp_ops_no_smm = {
+	.get_cpu_count = fw_cfg_max_cpus,
+};
+
+void mp_init_cpus(struct bus *cpu_bus)
+{
+	if (mp_init_with_smm(cpu_bus, &mp_ops_no_smm))
+		printk(BIOS_ERR, "MP initialization failure.\n");
+}
+
 static void cpu_bus_init(struct device *dev)
 {
-	initialize_cpus(dev->link_list);
+	if (CONFIG(PARALLEL_MP))
+		mp_cpu_bus_init(dev);
+	else
+		initialize_cpus(dev->link_list);
 }
 
 static void cpu_bus_scan(struct device *bus)

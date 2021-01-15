@@ -7,7 +7,7 @@ ifeq ($(CONFIG_HAVE_INTEL_FIRMWARE),y)
 # image outside of CBFS
 
 ifeq ($(CONFIG_HAVE_IFD_BIN),y)
-INTERMEDIATE+=add_intel_firmware
+$(call add_intermediate, add_intel_firmware)
 else ifeq ($(CONFIG_INTEL_DESCRIPTOR_MODE_REQUIRED),y)
 files_added:: warn_intel_firmware
 endif
@@ -15,6 +15,12 @@ endif
 IFD_BIN_PATH := $(CONFIG_IFD_BIN_PATH)
 ifneq ($(call strip_quotes,$(CONFIG_IFD_CHIPSET)),)
 IFDTOOL_USE_CHIPSET := -p $(CONFIG_IFD_CHIPSET)
+endif
+
+ifeq ($(CONFIG_ME_REGION_ALLOW_CPU_READ_ACCESS),y)
+IFDTOOL_LOCK_ME_MODE := -lr
+else
+IFDTOOL_LOCK_ME_MODE := -l
 endif
 
 add_intel_firmware: $(call strip_quotes,$(CONFIG_IFD_BIN_PATH))
@@ -29,7 +35,7 @@ add_intel_firmware: $(call strip_quotes,$(CONFIG_EC_BIN_PATH))
 endif
 add_intel_firmware: $(obj)/coreboot.pre $(IFDTOOL)
 	printf "    DD         Adding Intel Firmware Descriptor\n"
-	dd if=$(IFD_BIN_PATH) \
+	flock $< dd if=$(IFD_BIN_PATH) \
 		of=$(obj)/coreboot.pre conv=notrunc >/dev/null 2>&1
 ifeq ($(CONFIG_VALIDATE_INTEL_DESCRIPTOR),y)
 	$(objutil)/ifdtool/ifdtool \
@@ -73,7 +79,7 @@ endif
 ifeq ($(CONFIG_LOCK_MANAGEMENT_ENGINE),y)
 	printf "    IFDTOOL    Locking Management Engine\n"
 	$(objutil)/ifdtool/ifdtool \
-		$(IFDTOOL_USE_CHIPSET) -l \
+		$(IFDTOOL_USE_CHIPSET) $(IFDTOOL_LOCK_ME_MODE) \
 		-O $(obj)/coreboot.pre \
 		$(obj)/coreboot.pre
 endif
@@ -100,6 +106,6 @@ warn_intel_firmware:
 	printf "board's flash chip! You can use flashrom's IFD or layout\n"
 	printf "parameters to flash only to the BIOS region.\n\n"
 
-PHONY+=add_intel_firmware warn_intel_firmware
+PHONY+=warn_intel_firmware
 
 endif

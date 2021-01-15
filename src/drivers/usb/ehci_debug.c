@@ -421,8 +421,6 @@ static int ehci_wait_for_port(struct ehci_regs *ehci_regs, int port)
 	return -1; //-ENOTCONN;
 }
 
-
-
 static int usbdebug_init_(uintptr_t ehci_bar, unsigned int offset, struct ehci_debug_info *info)
 {
 	struct ehci_caps *ehci_caps;
@@ -436,7 +434,7 @@ static int usbdebug_init_(uintptr_t ehci_bar, unsigned int offset, struct ehci_d
 	int playtimes = 3;
 
 	/* Keep all endpoints disabled before any printk() call. */
-	memset(info, 0, sizeof (*info));
+	memset(info, 0, sizeof(*info));
 	info->ehci_base = ehci_bar;
 	info->ehci_debug = ehci_bar + offset;
 	info->ep_pipe[0].status	|= DBGP_EP_NOT_PRESENT;
@@ -549,7 +547,6 @@ try_next_port:
 	}
 	dprintk(BIOS_INFO, "EHCI done waiting for port.\n");
 
-
 	/* Enable the debug port */
 	ctrl = read32(&ehci_debug->control);
 	ctrl |= DBGP_CLAIM;
@@ -600,7 +597,7 @@ next_debug_port:
 			goto try_next_time;
 	}
 
-	return -10;
+	return ret;
 }
 
 static int dbgp_enabled(void)

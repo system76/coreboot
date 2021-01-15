@@ -4,7 +4,7 @@
 DefinitionBlock(
 	"dsdt.aml",
 	"DSDT",
-	0x02,		// DSDT revision: ACPI v2.0 and up
+	ACPI_DSDT_REV_2,
 	OEM_ID,
 	ACPI_TABLE_CREATOR,
 	0x20110725	// OEM revision
@@ -14,10 +14,16 @@ DefinitionBlock(
 	#include "acpi/platform.asl"
 
 	// global NVS and variables
-	#include <soc/intel/xeon_sp/cpx/acpi/globalnvs.asl>
+	#include <soc/intel/common/block/acpi/acpi/globalnvs.asl>
 
 	#include <cpu/intel/common/acpi/cpu.asl>
 
 	// CPX-SP ACPI tables
-	#include <soc/intel/xeon_sp/cpx/acpi/uncore.asl>
+	#include <soc/intel/xeon_sp/acpi/uncore.asl>
+
+	// LPC related entries
+	Scope (\_SB.PC00)
+	{
+		#include <soc/intel/xeon_sp/acpi/pch.asl>
+	}
 }

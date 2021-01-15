@@ -9,18 +9,22 @@ chip soc/amd/picasso
 	register "system_config" = "2"
 
 	# Set STAPM confiuration. All of these fields must be set >0 to take affect
-	register "slow_ppt_limit" = "25000" #mw
-	register "fast_ppt_limit" = "30000" #mw
-	register "slow_ppt_time_constant" = "5" #second
-	register "stapm_time_constant" = "200" #second
-	register "sustained_power_limit" = "15000" #mw
+	register "slow_ppt_limit_mW" = "25000"
+	register "fast_ppt_limit_mW" = "30000"
+	register "slow_ppt_time_constant_s" = "5"
+	register "stapm_time_constant_s" = "200"
+	register "sustained_power_limit_mW" = "15000"
 
-	register "telemetry_vddcr_vdd_slope" = "71222" #mA
+	register "telemetry_vddcr_vdd_slope_mA" = "71222"
 	register "telemetry_vddcr_vdd_offset" = "0"
-	register "telemetry_vddcr_soc_slope" = "28977" #mA
+	register "telemetry_vddcr_soc_slope_mA" = "28977"
 	register "telemetry_vddcr_soc_offset" = "0"
 
 	# End : OPN Performance Configuration
+
+	# USB OC pin mapping: existing trembyle boards are based on old schematics version
+	register "usb_port_overcurrent_pin[1]" = "USB_OC_PIN_2"	# USB A0
+	register "usb_port_overcurrent_pin[2]" = "USB_OC_PIN_4"	# USB A1
 
 	# Enable I2C2 for trackpad, touchscreen, pen at 400kHz
 	register "i2c[2]" = "{
@@ -54,7 +58,7 @@ chip soc/amd/picasso
 		chip drivers/i2c/hid
 			register "generic.hid" = ""PNP0C50""
 			register "generic.desc" = ""Synaptics Touchpad""
-			register "generic.irq_gpio" = "ACPI_GPIO_IRQ_EDGE_LOW(GPIO_9)"
+			register "generic.irq_gpio" = "ACPI_GPIO_IRQ_LEVEL_LOW(GPIO_9)"
 			register "generic.wake" = "GEVENT_22"
 			register "generic.probed" = "1"
 			register "hid_desc_reg_offset" = "0x20"
@@ -65,9 +69,14 @@ chip soc/amd/picasso
 			register "desc" = ""Raydium Touchscreen""
 			register "probed" = "1"
 			register "irq_gpio" = "ACPI_GPIO_IRQ_EDGE_LOW(GPIO_12)"
-			register "reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPIO_140)"
-			register "reset_delay_ms" = "20"
+			register "reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPIO_140)"
+			# 32ms: Rise time of the reset line
+			# 20ms: Firmware ready time
+			register "reset_delay_ms" = "32 + 20"
+			register "stop_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPIO_144)"
+			register "stop_off_delay_ms" = "1"
 			register "has_power_resource" = "1"
+			register "disable_gpio_export_in_crs" = "1"
 			device i2c 39 on end
 		end
 		chip drivers/i2c/generic
@@ -75,7 +84,7 @@ chip soc/amd/picasso
 			register "desc" = ""ELAN Touchscreen""
 			register "probed" = "1"
 			register "irq_gpio" = "ACPI_GPIO_IRQ_EDGE_LOW(GPIO_12)"
-			register "reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPIO_140)"
+			register "reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPIO_140)"
 			register "reset_delay_ms" = "20"
 			register "has_power_resource" = "1"
 			device i2c 10 on end
@@ -88,7 +97,7 @@ chip soc/amd/picasso
 			register "desc" = ""Fingerprint Reader""
 			register "hid" = "ACPI_DT_NAMESPACE_HID"
 			register "compat_string" = ""google,cros-ec-uart""
-			register "irq_gpio" = "ACPI_GPIO_IRQ_LEVEL_LOW_WAKE(GPIO_6)"
+			register "irq_gpio" = "ACPI_GPIO_IRQ_LEVEL_LOW(GPIO_6)"
 			register "wake" = "GEVENT_10"
 			register "uart" = "ACPI_UART_RAW_DEVICE(3000000, 64)"
 			device generic 0 on end

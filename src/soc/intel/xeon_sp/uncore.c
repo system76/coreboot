@@ -5,11 +5,14 @@
 #include <cpu/x86/lapic_def.h>
 #include <device/pci.h>
 #include <device/pci_ids.h>
+#include <soc/acpi.h>
 #include <soc/iomap.h>
 #include <soc/pci_devs.h>
 #include <soc/ramstage.h>
 #include <soc/util.h>
 #include <fsp/util.h>
+#include <security/intel/txt/txt_platform.h>
+#include <soc/pci_devs.h>
 
 struct map_entry {
 	uint32_t    reg;
@@ -87,6 +90,20 @@ static void mc_report_map_entries(struct device *dev, uint64_t *values)
 	}
 }
 
+static void configure_dpr(struct device *dev)
+{
+	const uintptr_t cbmem_top_mb = ALIGN_UP((uintptr_t)cbmem_top(), MiB) / MiB;
+	union dpr_register dpr = { .raw = pci_read_config32(dev, VTD_LTDPR) };
+
+	/* The DPR lock bit has to be set sufficiently early. It looks like
+	 * it cannot be set anymore after FSP-S.
+	 */
+	dpr.lock = 1;
+	dpr.epm = 1;
+	dpr.size = dpr.top - cbmem_top_mb;
+	pci_write_config32(dev, VTD_LTDPR, dpr.raw);
+}
+
 /*
  * Host Memory Map:
  *
@@ -126,6 +143,8 @@ static void mc_report_map_entries(struct device *dev, uint64_t *values)
  * |     MEseg (relocatable)  | 32, 64, 128 or 256 MB (0x78000000 - 0x7fffffff, 0x20000)
  * +--------------------------+
  * |     Tseg (relocatable)   | N x 8MB (0x70000000 - 0x77ffffff, 0x20000)
+ * +--------------------------+
+ * |     DPR                  |
  * +--------------------------+ cbmem_top
  * |     Reserved - CBMEM     | (0x6fffe000 - 0x6fffffff, 0x2000)
  * +--------------------------+
@@ -154,6 +173,10 @@ static void mc_add_dram_resources(struct device *dev, int *res_count)
 	struct resource *resource;
 	int index = *res_count;
 
+	/* Only add dram resources once. */
+	if (dev->bus->secondary != 0)
+		return;
+
 	fsp_find_reserved_memory(&fsp_mem);
 
 	/* Read in the MAP registers and report their values. */
@@ -177,6 +200,11 @@ static void mc_add_dram_resources(struct device *dev, int *res_count)
 	LOG_MEM_RESOURCE("low_ram", dev, index, base_kb, size_kb);
 	ram_resource(dev, index++, base_kb, size_kb);
 
+	/* fsp_mem_base -> cbmem_top */
+	base_kb = top_of_ram / KiB;
+	size_kb = ((uintptr_t)cbmem_top() - top_of_ram) / KiB;
+	reserved_ram_resource(dev, index++, base_kb, size_kb);
+
 	/*
 	 * FSP meomoy, CBMem regions are already added as reserved
 	 * Add TSEG and MESEG Regions as reserved memory
@@ -197,6 +225,16 @@ static void mc_add_dram_resources(struct device *dev, int *res_count)
 	size_kb = (mc_values[TSEG_LIMIT_REG] - mc_values[TSEG_BASE_REG] + 1) >> 10;
 	LOG_MEM_RESOURCE("mmio_tseg", dev, index, base_kb, size_kb);
 	reserved_ram_resource(dev, index++, base_kb, size_kb);
+
+	/* Reserve and set up DPR */
+	configure_dpr(dev);
+	union dpr_register dpr = { .raw = pci_read_config32(dev, VTD_LTDPR) };
+	if (dpr.size) {
+		uint64_t dpr_base_k = (dpr.top - dpr.size) << 10;
+		uint64_t dpr_size_k = dpr.size << 10;
+		reserved_ram_resource(dev, index++, dpr_base_k, dpr_size_k);
+		LOG_MEM_RESOURCE("dpr", dev, index, dpr_base_k, dpr_size_k);
+	}
 
 	/* Mark region between TSEG - TOLM (eg. MESEG) as reserved */
 	if (mc_values[TSEG_LIMIT_REG] < mc_values[TOLM_REG]) {
@@ -274,6 +312,9 @@ static struct device_operations mmapvtd_ops = {
 	.enable_resources  = pci_dev_enable_resources,
 	.init              = mmapvtd_init,
 	.ops_pci           = &soc_pci_ops,
+#if CONFIG(HAVE_ACPI_TABLES)
+	.acpi_inject_dsdt  = uncore_inject_dsdt,
+#endif
 };
 
 static const unsigned short mmapvtd_ids[] = {
@@ -285,4 +326,82 @@ static const struct pci_driver mmapvtd_driver __pci_driver = {
 	.ops      = &mmapvtd_ops,
 	.vendor   = PCI_VENDOR_ID_INTEL,
 	.devices  = mmapvtd_ids
+};
+
+static void vtd_read_resources(struct device *dev)
+{
+	pci_dev_read_resources(dev);
+
+	configure_dpr(dev);
+}
+
+static struct device_operations vtd_ops = {
+	.read_resources    = vtd_read_resources,
+	.set_resources     = pci_dev_set_resources,
+	.enable_resources  = pci_dev_enable_resources,
+	.ops_pci           = &soc_pci_ops,
+};
+
+/* VTD devices on other stacks */
+static const struct pci_driver vtd_driver __pci_driver = {
+	.ops      = &vtd_ops,
+	.vendor   = PCI_VENDOR_ID_INTEL,
+	.device   = MMAP_VTD_STACK_CFG_REG_DEVID,
+};
+
+static void dmi3_init(struct device *dev)
+{
+	/* Disable error injection */
+	pci_or_config16(dev, ERRINJCON, 1 << 0);
+
+	/*
+	 * DMIRCBAR registers are not TXT lockable, but the BAR enable
+	 * bit is. TXT requires that DMIRCBAR be disabled for security.
+	 */
+	pci_and_config32(dev, DMIRCBAR, ~(1 << 0));
+}
+
+static struct device_operations dmi3_ops = {
+	.read_resources		= pci_dev_read_resources,
+	.set_resources		= pci_dev_set_resources,
+	.enable_resources	= pci_dev_enable_resources,
+	.init			= dmi3_init,
+	.ops_pci		= &soc_pci_ops,
+};
+
+static const struct pci_driver dmi3_driver __pci_driver = {
+	.ops		= &dmi3_ops,
+	.vendor		= PCI_VENDOR_ID_INTEL,
+	.device		= DMI3_DEVID,
+};
+
+static void iio_dfx_global_init(struct device *dev)
+{
+	uint16_t reg16;
+	pci_or_config16(dev, IIO_DFX_LCK_CTL, 0x3ff);
+	reg16 = pci_read_config16(dev, IIO_DFX_TSWCTL0);
+	reg16 &= ~(1 << 4); // allow ib mmio cfg
+	reg16 &= ~(1 << 5); // ignore acs p2p ma lpbk
+	reg16 |= (1 << 3); // me disable
+	pci_write_config16(dev, IIO_DFX_TSWCTL0, reg16);
+}
+
+static const unsigned short iio_dfx_global_ids[] = {
+	0x202d,
+	0x203d,
+	0
+};
+
+static struct device_operations iio_dfx_global_ops = {
+	.read_resources		= pci_dev_read_resources,
+	.set_resources		= pci_dev_set_resources,
+	.enable_resources	= pci_dev_enable_resources,
+	.init			= iio_dfx_global_init,
+	.ops_pci		= &soc_pci_ops,
+};
+
+static const struct pci_driver iio_dfx_global_driver __pci_driver = {
+	.ops		= &iio_dfx_global_ops,
+	.vendor		= PCI_VENDOR_ID_INTEL,
+	.devices	= iio_dfx_global_ids,
 };

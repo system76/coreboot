@@ -1,17 +1,20 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 
+#include <acpi/acpi_gnvs.h>
 #include <acpi/acpigen.h>
+#include <arch/cpu.h>
 #include <arch/ioapic.h>
 #include <arch/smp/mpspec.h>
 #include <bootstate.h>
 #include <cbmem.h>
 #include <cf9_reset.h>
-#include <acpi/acpi_gnvs.h>
 #include <console/console.h>
 #include <cpu/intel/turbo.h>
+#include <cpu/intel/msr.h>
+#include <cpu/intel/common/common.h>
 #include <cpu/x86/smm.h>
 #include <intelblocks/acpi.h>
-#include <intelblocks/msr.h>
+#include <intelblocks/lpc_lib.h>
 #include <intelblocks/pmclib.h>
 #include <intelblocks/uart.h>
 #include <soc/gpio.h>
@@ -19,6 +22,8 @@
 #include <soc/nvs.h>
 #include <soc/pm.h>
 #include <string.h>
+
+#define  CPUID_6_EAX_ISST	(1 << 7)
 
 __attribute__((weak)) unsigned long acpi_fill_mcfg(unsigned long current)
 {
@@ -75,16 +80,40 @@ static unsigned long acpi_madt_irq_overrides(unsigned long current)
 	current +=
 	    acpi_create_madt_irqoverride((void *)current, 0, sci, sci, flags);
 
+	/* NMI */
+	current += acpi_create_madt_lapic_nmi((acpi_madt_lapic_nmi_t *)current, 0xff, 5, 1);
+
 	return current;
+}
+
+__weak const struct madt_ioapic_info *soc_get_ioapic_info(size_t *entries)
+{
+	*entries = 0;
+	return NULL;
 }
 
 unsigned long acpi_fill_madt(unsigned long current)
 {
+	const struct madt_ioapic_info *ioapic_table;
+	size_t ioapic_entries;
+
 	/* Local APICs */
 	current = acpi_create_madt_lapics(current);
 
 	/* IOAPIC */
-	current += acpi_create_madt_ioapic((void *)current, 2, IO_APIC_ADDR, 0);
+	ioapic_table = soc_get_ioapic_info(&ioapic_entries);
+	if (ioapic_entries) {
+		for (int i = 0; i < ioapic_entries; i++) {
+			current += acpi_create_madt_ioapic(
+					(void *)current,
+					ioapic_table[i].id,
+					ioapic_table[i].addr,
+					ioapic_table[i].gsi_base);
+		}
+	} else {
+		/* Default SOC IOAPIC entry */
+		current += acpi_create_madt_ioapic((void *)current, 2, IO_APIC_ADDR, 0);
+	}
 
 	return acpi_madt_irq_overrides(current);
 }
@@ -122,12 +151,12 @@ void acpi_fill_fadt(acpi_fadt_t *fadt)
 			ACPI_FADT_SEALED_CASE | ACPI_FADT_S4_RTC_WAKE |
 			ACPI_FADT_PLATFORM_CLOCK;
 
-	fadt->x_pm1a_evt_blk.space_id = 1;
+	fadt->x_pm1a_evt_blk.space_id = ACPI_ADDRESS_SPACE_IO;
 	fadt->x_pm1a_evt_blk.bit_width = fadt->pm1_evt_len * 8;
 	fadt->x_pm1a_evt_blk.addrl = pmbase + PM1_STS;
 	fadt->x_pm1a_evt_blk.access_size = ACPI_ACCESS_SIZE_WORD_ACCESS;
 
-	fadt->x_pm1a_cnt_blk.space_id = 1;
+	fadt->x_pm1a_cnt_blk.space_id = ACPI_ADDRESS_SPACE_IO;
 	fadt->x_pm1a_cnt_blk.bit_width = fadt->pm1_cnt_len * 8;
 	fadt->x_pm1a_cnt_blk.addrl = pmbase + PM1_CNT;
 	fadt->x_pm1a_cnt_blk.access_size = ACPI_ACCESS_SIZE_WORD_ACCESS;
@@ -150,9 +179,12 @@ unsigned long southbridge_write_acpi_tables(const struct device *device,
 					    unsigned long current,
 					    struct acpi_rsdp *rsdp)
 {
-	current = acpi_write_dbg2_pci_uart(rsdp, current,
-					   uart_get_device(),
-					   ACPI_ACCESS_SIZE_DWORD_ACCESS);
+	if (CONFIG(SOC_INTEL_COMMON_BLOCK_UART)) {
+		current = acpi_write_dbg2_pci_uart(rsdp, current,
+						uart_get_device(),
+						ACPI_ACCESS_SIZE_DWORD_ACCESS);
+	}
+
 	return acpi_write_hpet(device, current, rsdp);
 }
 
@@ -204,34 +236,7 @@ static int acpi_fill_wake(uint32_t *pm1, uint32_t **gpe0)
 }
 #endif
 
-__weak void acpi_create_gnvs(struct global_nvs *gnvs)
-{
-}
-
-void southbridge_inject_dsdt(const struct device *device)
-{
-	struct global_nvs *gnvs;
-
-	gnvs = cbmem_find(CBMEM_ID_ACPI_GNVS);
-	if (!gnvs) {
-		gnvs = cbmem_add(CBMEM_ID_ACPI_GNVS, sizeof(*gnvs));
-		if (gnvs)
-			memset(gnvs, 0, sizeof(*gnvs));
-	}
-
-	if (gnvs) {
-		acpi_create_gnvs(gnvs);
-		/* And tell SMI about it */
-		apm_control(APM_CNT_GNVS_UPDATE);
-
-		/* Add it to DSDT.  */
-		acpigen_write_scope("\\");
-		acpigen_write_name_dword("NVSA", (uintptr_t) gnvs);
-		acpigen_pop_len();
-	}
-}
-
-static int calculate_power(int tdp, int p1_ratio, int ratio)
+int common_calculate_power_ratio(int tdp, int p1_ratio, int ratio)
 {
 	u32 m;
 	u32 power;
@@ -250,22 +255,6 @@ static int calculate_power(int tdp, int p1_ratio, int ratio)
 	power /= 1000;
 
 	return power;
-}
-
-static int get_cores_per_package(void)
-{
-	struct cpuinfo_x86 c;
-	struct cpuid_result result;
-	int cores = 1;
-
-	get_fms(&c, cpuid_eax(1));
-	if (c.x86 != 6)
-		return 1;
-
-	result = cpuid_ext(0xb, 1);
-	cores = result.ebx & 0xff;
-
-	return cores;
 }
 
 static void generate_c_state_entries(void)
@@ -349,7 +338,7 @@ void generate_p_state_entries(int core, int cores_per_package)
 	     ratio >= ratio_min; ratio -= ratio_step) {
 
 		/* Calculate power at this ratio */
-		power = calculate_power(power_max, ratio_max, ratio);
+		power = common_calculate_power_ratio(power_max, ratio_max, ratio);
 		clock = (ratio * cpu_get_bus_clock()) / KHz;
 
 		acpigen_write_PSS_package(clock,		/* MHz */
@@ -391,6 +380,23 @@ void generate_t_state_entries(int core, int cores_per_package)
 	acpigen_write_TSS_package(entries, soc_tss_table);
 }
 
+static void generate_cppc_entries(int core_id)
+{
+	if (!(CONFIG(SOC_INTEL_COMMON_BLOCK_ACPI_CPPC) &&
+	      cpuid_eax(6) & CPUID_6_EAX_ISST))
+		return;
+
+	/* Generate GCPC package in first logical core */
+	if (core_id == 0) {
+		struct cppc_config cppc_config;
+		cpu_init_cppc_config(&cppc_config, CPPC_VERSION_2);
+		acpigen_write_CPPC_package(&cppc_config);
+	}
+
+	/* Write _CPC entry for each logical core */
+	acpigen_write_CPPC_method();
+}
+
 __weak void soc_power_states_generation(int core_id,
 						int cores_per_package)
 {
@@ -401,38 +407,44 @@ void generate_cpu_entries(const struct device *device)
 	int core_id, cpu_id, pcontrol_blk = ACPI_BASE_ADDRESS;
 	int plen = 6;
 	int totalcores = dev_count_cpu();
-	int cores_per_package = get_cores_per_package();
-	int numcpus = totalcores / cores_per_package;
+	unsigned int num_virt;
+	unsigned int num_phys;
 
-	printk(BIOS_DEBUG, "Found %d CPU(s) with %d core(s) each.\n",
-	       numcpus, cores_per_package);
+	cpu_read_topology(&num_phys, &num_virt);
+
+	int numcpus = totalcores / num_virt;
+
+	printk(BIOS_DEBUG, "Found %d CPU(s) with %d/%d physical/logical core(s) each.\n",
+	       numcpus, num_phys, num_virt);
 
 	for (cpu_id = 0; cpu_id < numcpus; cpu_id++) {
-		for (core_id = 0; core_id < cores_per_package; core_id++) {
+		for (core_id = 0; core_id < num_virt; core_id++) {
 			if (core_id > 0) {
 				pcontrol_blk = 0;
 				plen = 0;
 			}
 
 			/* Generate processor \_SB.CPUx */
-			acpigen_write_processor((cpu_id) * cores_per_package +
+			acpigen_write_processor((cpu_id) * num_virt +
 						core_id, pcontrol_blk, plen);
 
 			/* Generate C-state tables */
 			generate_c_state_entries();
 
+			generate_cppc_entries(core_id);
+
 			/* Soc specific power states generation */
-			soc_power_states_generation(core_id, cores_per_package);
+			soc_power_states_generation(core_id, num_virt);
 
 			acpigen_pop_len();
 		}
 	}
 	/* PPKG is usually used for thermal management
 	   of the first and only package. */
-	acpigen_write_processor_package("PPKG", 0, cores_per_package);
+	acpigen_write_processor_package("PPKG", 0, num_virt);
 
 	/* Add a method to notify processor nodes */
-	acpigen_write_processor_cnot(cores_per_package);
+	acpigen_write_processor_cnot(num_virt);
 }
 
 #if CONFIG(SOC_INTEL_COMMON_ACPI_WAKE_SOURCE)

@@ -7,15 +7,16 @@ pci$(stripped_ahcibios_id).rom-file := $(call strip_quotes,$(CONFIG_AHCI_BIOS_FI
 pci$(stripped_ahcibios_id).rom-type := optionrom
 endif
 
-bootblock-y += bootblock.c
+bootblock-y += variants/$(VARIANT_DIR)/bootblock.c
 
 romstage-y += buildOpts.c
-romstage-y += BiosCallOuts.c
-romstage-y += OemCustomize.c
+romstage-y += variants/$(VARIANT_DIR)/BiosCallOuts.c
+romstage-y += variants/$(VARIANT_DIR)/OemCustomize.c
 
 ramstage-y += buildOpts.c
-ramstage-y += BiosCallOuts.c
-ramstage-y += OemCustomize.c
+ramstage-y += variants/$(VARIANT_DIR)/BiosCallOuts.c
+ramstage-y += variants/$(VARIANT_DIR)/OemCustomize.c
+ramstage-y += variants/$(VARIANT_DIR)/mainboard.c
 
 # Minimal SEMA watchdog support
 romstage-y += sema.c

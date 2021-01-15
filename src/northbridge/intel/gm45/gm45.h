@@ -3,20 +3,16 @@
 #ifndef __NORTHBRIDGE_INTEL_GM45_GM45_H__
 #define __NORTHBRIDGE_INTEL_GM45_GM45_H__
 
-#include <southbridge/intel/i82801ix/i82801ix.h>
-
-#ifndef __ACPI__
-
 #include <stdint.h>
 
 typedef enum {
-	FSB_CLOCK_1067MHz	= 0,
-	FSB_CLOCK_800MHz	= 1,
-	FSB_CLOCK_667MHz	= 2,
+	FSB_CLOCK_1067MHz = 0,
+	FSB_CLOCK_800MHz  = 1,
+	FSB_CLOCK_667MHz  = 2,
 } fsb_clock_t;
 
 typedef enum { /* Steppings below B1 were pre-production,
-		  conversion stepping A1 is... ?
+		  conversion stepping A1 is a newer GL40 with support for 800 MT/s on FSB/DDR.
 		  We'll support B1, B2, B3, and conversion stepping A1. */
 	STEPPING_A0 = 0,
 	STEPPING_A1 = 1,
@@ -43,12 +39,12 @@ typedef enum {
 } gmch_gfx_t;
 
 typedef enum {
-	MEM_CLOCK_533MHz  = 0,
-	MEM_CLOCK_400MHz  = 1,
-	MEM_CLOCK_333MHz  = 2,
-	MEM_CLOCK_1067MT  = 0,
-	MEM_CLOCK_800MT   = 1,
-	MEM_CLOCK_667MT   = 2,
+	MEM_CLOCK_533MHz = 0,
+	MEM_CLOCK_400MHz = 1,
+	MEM_CLOCK_333MHz = 2,
+	MEM_CLOCK_1067MT = 0,
+	MEM_CLOCK_800MT  = 1,
+	MEM_CLOCK_667MT  = 2,
 } mem_clock_t;
 
 typedef enum {
@@ -132,6 +128,7 @@ typedef struct {
 	int		gs45_low_power_mode; /* low power mode of GMCH_GS45 */
 	int		sff; /* small form factor option (soldered down DIMM) */
 } sysinfo_t;
+
 #define TOTAL_CHANNELS 2
 #define CHANNEL_IS_POPULATED(dimms, idx) (dimms[idx].card_type != 0)
 #define CHANNEL_IS_CARDF(dimms, idx) (dimms[idx].card_type == 0xf)
@@ -162,64 +159,46 @@ enum {
 	VCO_5333 = 2,
 };
 
-#endif
-
 /* Offsets of read/write training results in CMOS.
    They will be restored upon S3 resumes. */
 #define CMOS_READ_TRAINING	0x80 /* 16 bytes */
-#define CMOS_WRITE_TRAINING	0x90 /* 16 bytes
-					(could be reduced to 10 bytes) */
+#define CMOS_WRITE_TRAINING	0x90 /* 16 bytes (could be reduced to 10 bytes) */
 
-
-#ifndef __ACPI__
-#define DEFAULT_MCHBAR		((u8 *)0xfed14000)
-#define DEFAULT_DMIBAR		((u8 *)0xfed18000)
-#else
-#define DEFAULT_MCHBAR		0xfed14000
-#define DEFAULT_DMIBAR		0xfed18000
-#endif
-#define DEFAULT_EPBAR		0xfed19000
-#define DEFAULT_HECIBAR		((u8 *)0xfed1a000)
-
-
-#define IOMMU_BASE1 0xfed90000
-#define IOMMU_BASE2 0xfed91000
-#define IOMMU_BASE3 0xfed92000
-#define IOMMU_BASE4 0xfed93000
+#include "memmap.h"
 
 /*
  * D0:F0
  */
-#define D0F0_EPBAR_LO 0x40
-#define D0F0_EPBAR_HI 0x44
-#define D0F0_MCHBAR_LO 0x48
-#define D0F0_MCHBAR_HI 0x4c
-#define D0F0_GGC 0x52
-#define D0F0_DEVEN 0x54
-#define D0F0_PCIEXBAR_LO 0x60
-#define D0F0_PCIEXBAR_HI 0x64
-#define D0F0_DMIBAR_LO 0x68
-#define D0F0_DMIBAR_HI 0x6c
-#define D0F0_PMBASE 0x78
-#define D0F0_PAM(x) (0x90+(x)) /* 0-6*/
-#define D0F0_REMAPBASE 0x98
-#define D0F0_REMAPLIMIT 0x9a
-#define D0F0_SMRAM 0x9d
-#define D0F0_ESMRAMC 0x9e
-#define D0F0_TOM 0xa0
-#define D0F0_TOUUD 0xa2
-#define D0F0_TOLUD 0xb0
-#define D0F0_SKPD 0xdc /* Scratchpad Data */
-#define D0F0_CAPID0 0xe0
+#define D0F0_EPBAR_LO		0x40
+#define D0F0_EPBAR_HI		0x44
+#define D0F0_MCHBAR_LO		0x48
+#define D0F0_MCHBAR_HI		0x4c
+#define D0F0_GGC		0x52
+#define D0F0_DEVEN		0x54
+#define D0F0_PCIEXBAR_LO	0x60
+#define D0F0_PCIEXBAR_HI	0x64
+#define D0F0_DMIBAR_LO		0x68
+#define D0F0_DMIBAR_HI		0x6c
+#define D0F0_PMBASE		0x78
+#define D0F0_PAM(x)		(0x90 + (x)) /* 0-6 */
+#define D0F0_REMAPBASE		0x98
+#define D0F0_REMAPLIMIT		0x9a
+#define D0F0_SMRAM		0x9d
+#define D0F0_ESMRAMC		0x9e
+#define D0F0_TOM		0xa0
+#define D0F0_TOUUD		0xa2
+#define D0F0_TOLUD		0xb0
+#define D0F0_SKPD		0xdc /* Scratchpad Data */
+#define D0F0_CAPID0		0xe0
 
 /*
  * D1:F0 PEG
  */
-#define PEG_CAP 0xa2
-#define SLOTCAP 0xb4
-#define PEGLC 0xec
-#define D1F0_VCCAP 0x104
-#define D1F0_VC0RCTL 0x114
+#define PEG_CAP			0xa2
+#define SLOTCAP			0xb4
+#define PEGLC			0xec
+#define D1F0_VCCAP		0x104
+#define D1F0_VC0RCTL		0x114
 
 /*
  * Graphics frequencies
@@ -239,9 +218,9 @@ enum {
  * MCHBAR
  */
 
-#define MCHBAR8(x) *((volatile u8 *)(DEFAULT_MCHBAR + x))
-#define MCHBAR16(x) *((volatile u16 *)(DEFAULT_MCHBAR + x))
-#define MCHBAR32(x) *((volatile u32 *)(DEFAULT_MCHBAR + x))
+#define MCHBAR8(x)  (*((volatile u8  *)(DEFAULT_MCHBAR + (x))))
+#define MCHBAR16(x) (*((volatile u16 *)(DEFAULT_MCHBAR + (x))))
+#define MCHBAR32(x) (*((volatile u32 *)(DEFAULT_MCHBAR + (x))))
 
 #define HPLLVCO_MCHBAR		0x0c0f
 
@@ -272,47 +251,47 @@ enum {
 #define DCC_SET_EREG		(4 << DCC_CMD_SHIFT)
 #define DCC_SET_EREG_SHIFT	21
 #define DCC_SET_EREG_MASK	(DCC_CMD_MASK | (3 << DCC_SET_EREG_SHIFT))
-#define DCC_SET_EREGx(x)	((DCC_SET_EREG |			   \
-					((x - 1) << DCC_SET_EREG_SHIFT)) & \
+#define DCC_SET_EREGx(x)	((DCC_SET_EREG |			     \
+					(((x) - 1) << DCC_SET_EREG_SHIFT)) & \
 				 DCC_SET_EREG_MASK)
 
 /* Per channel DRAM Row Attribute registers (32-bit) */
-#define CxDRA_MCHBAR(x)		(0x1208 + (x * 0x0100))
-#define CxDRA_PAGESIZE_SHIFT(r)	(r * 4)		/* Per rank r */
+#define CxDRA_MCHBAR(x)		(0x1208 + ((x) * 0x0100))
+#define CxDRA_PAGESIZE_SHIFT(r)	((r) * 4)	/* Per rank r */
 #define CxDRA_PAGESIZE_MASKr(r)	(0x7 << CxDRA_PAGESIZE_SHIFT(r))
 #define CxDRA_PAGESIZE_MASK	0x0000ffff
 #define CxDRA_PAGESIZE(r, p)	/* for log2(dimm page size in bytes) p */ \
-	(((p - 10) << CxDRA_PAGESIZE_SHIFT(r)) & CxDRA_PAGESIZE_MASKr(r))
-#define CxDRA_BANKS_SHIFT(r)	((r * 3) + 16)
+	((((p) - 10) << CxDRA_PAGESIZE_SHIFT(r)) & CxDRA_PAGESIZE_MASKr(r))
+#define CxDRA_BANKS_SHIFT(r)	(((r) * 3) + 16)
 #define CxDRA_BANKS_MASKr(r)	(0x3 << CxDRA_BANKS_SHIFT(r))
 #define CxDRA_BANKS_MASK	0x07ff0000
 #define CxDRA_BANKS(r, b)	/* for number of banks b */ \
-	((b << (CxDRA_BANKS_SHIFT(r) - 3)) & CxDRA_BANKS_MASKr(r))
+	(((b) << (CxDRA_BANKS_SHIFT(r) - 3)) & CxDRA_BANKS_MASKr(r))
 
 /*
  * Per channel DRAM Row Boundary registers (32-bit)
  * Every two ranks share one register and must be programmed at the same time.
  * All registers (4 ranks per channel) have to be set.
  */
-#define CxDRBy_MCHBAR(x, r)	(0x1200 + (x * 0x0100) + ((r/2) * 4))
-#define CxDRBy_BOUND_SHIFT(r)	((r % 2) * 16)
+#define CxDRBy_MCHBAR(x, r)	(0x1200 + ((x) * 0x0100) + (((r) / 2) * 4))
+#define CxDRBy_BOUND_SHIFT(r)	(((r) % 2) * 16)
 #define CxDRBy_BOUND_MASK(r)	(0x1fc << CxDRBy_BOUND_SHIFT(r))
 #define CxDRBy_BOUND_MB(r, b)	/* for boundary in MB b */ \
-	(((b >> 5) << CxDRBy_BOUND_SHIFT(r)) & CxDRBy_BOUND_MASK(r))
+	((((b) >> 5) << CxDRBy_BOUND_SHIFT(r)) & CxDRBy_BOUND_MASK(r))
 
-#define CxDRC0_MCHBAR(x)	(0x1230 + (x * 0x0100))
+#define CxDRC0_MCHBAR(x)	(0x1230 + ((x) * 0x0100))
 #define CxDRC0_RANKEN0		(1 << 24)	/* Rank Enable */
 #define CxDRC0_RANKEN1		(1 << 25)
 #define CxDRC0_RANKEN2		(1 << 26)
 #define CxDRC0_RANKEN3		(1 << 27)
-#define CxDRC0_RANKEN(r)	(1 << (24 + r))
+#define CxDRC0_RANKEN(r)	(1 << (24 + (r)))
 #define CxDRC0_RANKEN_MASK	(0xf << 24)
 #define CxDRC0_RMS_SHIFT	8		/* Refresh Mode Select */
 #define CxDRC0_RMS_MASK		(7 << CxDRC0_RMS_SHIFT)
 #define CxDRC0_RMS_78US		(2 << CxDRC0_RMS_SHIFT)
 #define CxDRC0_RMS_39US		(3 << CxDRC0_RMS_SHIFT)
 
-#define CxDRC1_MCHBAR(x)	(0x1234 + (x * 0x0100))
+#define CxDRC1_MCHBAR(x)	(0x1234 + ((x) * 0x0100))
 #define CxDRC1_SSDS_SHIFT	24
 #define CxDRC1_SSDS_MASK	(0xff << CxDRC1_SSDS_SHIFT)
 #define CxDRC1_DS		(0x91 << CxDRC1_SSDS_SHIFT)
@@ -321,77 +300,109 @@ enum {
 #define CxDRC1_NOTPOP_MASK	(0xf << 16)
 #define CxDRC1_MUSTWR		(3 << 11)
 
-#define CxDRC2_MCHBAR(x)	(0x1238 + (x * 0x0100))
-#define CxDRC2_NOTPOP(r)	(1 << (24 + r)) /* Write 1 for Not Populated */
+#define CxDRC2_MCHBAR(x)	(0x1238 + ((x) * 0x0100))
+#define CxDRC2_NOTPOP(r)	(1 << (24 + (r))) /* Write 1 for Not Populated */
 #define CxDRC2_NOTPOP_MASK	(0xf << 24)
 #define CxDRC2_MUSTWR		(1 << 12)
 #define CxDRC2_CLK1067MT	(1 << 0)
 
 /* DRAM Timing registers (32-bit each) */
-#define CxDRT0_MCHBAR(x)	(0x1210 + (x * 0x0100))
+#define CxDRT0_MCHBAR(x)	(0x1210 + ((x) * 0x0100))
 #define CxDRT0_BtB_WtP_SHIFT	26
 #define CxDRT0_BtB_WtP_MASK	(0x1f << CxDRT0_BtB_WtP_SHIFT)
 #define CxDRT0_BtB_WtR_SHIFT	20
 #define CxDRT0_BtB_WtR_MASK	(0x1f << CxDRT0_BtB_WtR_SHIFT)
-#define CxDRT1_MCHBAR(x)	(0x1214 + (x * 0x0100))
-#define CxDRT2_MCHBAR(x)	(0x1218 + (x * 0x0100))
-#define CxDRT3_MCHBAR(x)	(0x121c + (x * 0x0100))
-#define CxDRT4_MCHBAR(x)	(0x1220 + (x * 0x0100))
-#define CxDRT5_MCHBAR(x)	(0x1224 + (x * 0x0100))
-#define CxDRT6_MCHBAR(x)	(0x1228 + (x * 0x0100))
+#define CxDRT1_MCHBAR(x)	(0x1214 + ((x) * 0x0100))
+#define CxDRT2_MCHBAR(x)	(0x1218 + ((x) * 0x0100))
+#define CxDRT3_MCHBAR(x)	(0x121c + ((x) * 0x0100))
+#define CxDRT4_MCHBAR(x)	(0x1220 + ((x) * 0x0100))
+#define CxDRT5_MCHBAR(x)	(0x1224 + ((x) * 0x0100))
+#define CxDRT6_MCHBAR(x)	(0x1228 + ((x) * 0x0100))
 
 /* Clock disable registers (32-bit each) */
-#define CxDCLKDIS_MCHBAR(x)	(0x120c + (x * 0x0100))
+#define CxDCLKDIS_MCHBAR(x)	(0x120c + ((x) * 0x0100))
 #define CxDCLKDIS_MASK		3
 #define CxDCLKDIS_ENABLE	3 /* Always enable both clock pairs. */
 
 /* On-Die-Termination registers (2x 32-bit per channel) */
-#define CxODT_HIGH(x)		(0x124c + (x * 0x0100))
-#define CxODT_LOW(x)		(0x1248 + (x * 0x0100))
+#define CxODT_HIGH(x)		(0x124c + ((x) * 0x0100))
+#define CxODT_LOW(x)		(0x1248 + ((x) * 0x0100))
 
 /* Write Training registers. */
-#define CxWRTy_MCHBAR(ch, s)	(0x1470 + (ch * 0x0100) + ((3 - s) * 4))
+#define CxWRTy_MCHBAR(ch, s)	(0x1470 + ((ch) * 0x0100) + ((3 - (s)) * 4))
 
-#define CxGTEW(x)		(0x1270+(x*0x100))
-#define CxGTC(x)		(0x1274+(x*0x100))
-#define CxDTPEW(x)		(0x1278+(x*0x100))
-#define CxDTAEW(x)		(0x1280+(x*0x100))
-#define CxDTC(x)		(0x1288+(x*0x100))
+#define CxGTEW(x)		(0x1270 + ((x) * 0x100))
+#define CxGTC(x)		(0x1274 + ((x) * 0x100))
+#define CxDTPEW(x)		(0x1278 + ((x) * 0x100))
+#define CxDTAEW(x)		(0x1280 + ((x) * 0x100))
+#define CxDTC(x)		(0x1288 + ((x) * 0x100))
 
 
 /*
  * DMIBAR
  */
 
-#define DMIBAR8(x) *((volatile u8 *)(DEFAULT_DMIBAR + x))
-#define DMIBAR16(x) *((volatile u16 *)(DEFAULT_DMIBAR + x))
-#define DMIBAR32(x) *((volatile u32 *)(DEFAULT_DMIBAR + x))
+#define DMIBAR8(x)  (*((volatile u8  *)(DEFAULT_DMIBAR + (x))))
+#define DMIBAR16(x) (*((volatile u16 *)(DEFAULT_DMIBAR + (x))))
+#define DMIBAR32(x) (*((volatile u32 *)(DEFAULT_DMIBAR + (x))))
 
-#define DMIVC0RCTL 0x14
-#define DMIVC1RCTL 0x20
-#define DMIVC1RSTS 0x26
-#define DMIESD  0x44
-#define DMILE1D 0x50
-#define DMILE1A 0x58
-#define DMILE2D 0x60
-#define DMILE2A 0x68
+#define DMIVCECH	0x000	/* 32bit */
+#define DMIPVCCAP1	0x004	/* 32bit */
 
+#define DMIVC0RCAP	0x010	/* 32bit */
+#define DMIVC0RCTL	0x014	/* 32bit */
+#define DMIVC0RSTS	0x01a	/* 16bit */
+#define  VC0NP		(1 << 1)
+
+#define DMIVC1RCAP	0x01c	/* 32bit */
+#define DMIVC1RCTL	0x020	/* 32bit */
+#define DMIVC1RSTS	0x026	/* 16bit */
+#define  VC1NP		(1 << 1)
+
+#define DMIESD		0x044	/* 32bit */
+
+#define DMILE1D		0x050	/* 32bit */
+#define DMILE1A		0x058	/* 64bit */
+#define DMILE2D		0x060	/* 32bit */
+#define DMILE2A		0x068	/* 64bit */
+
+#define DMILCAP		0x084	/* 32bit */
+#define DMILCTL		0x088	/* 16bit */
+#define DMILSTS		0x08a	/* 16bit */
 
 /*
  * EPBAR
  */
 
-#define EPBAR8(x) *((volatile u8 *)(DEFAULT_EPBAR + x))
-#define EPBAR16(x) *((volatile u16 *)(DEFAULT_EPBAR + x))
-#define EPBAR32(x) *((volatile u32 *)(DEFAULT_EPBAR + x))
+#define EPBAR8(x)  (*((volatile u8  *)(DEFAULT_EPBAR + (x))))
+#define EPBAR16(x) (*((volatile u16 *)(DEFAULT_EPBAR + (x))))
+#define EPBAR32(x) (*((volatile u32 *)(DEFAULT_EPBAR + (x))))
 
-#define EPESD 0x44
-#define EPLE1D 0x50
-#define EPLE1A 0x58
-#define EPLE2D 0x60
+#define EPPVCCAP1	0x004	/* 32bit */
+#define EPPVCCTL	0x00c	/* 32bit */
 
+#define EPVC0RCAP	0x010	/* 32bit */
+#define EPVC0RCTL	0x014	/* 32bit */
+#define EPVC0RSTS	0x01a	/* 16bit */
 
-#ifndef __ACPI__
+#define EPVC1RCAP	0x01c	/* 32bit */
+#define EPVC1RCTL	0x020	/* 32bit */
+#define EPVC1RSTS	0x026	/* 16bit */
+
+#define EPVC1MTS	0x028	/* 32bit */
+#define EPVC1ITC	0x02c	/* 32bit */
+
+#define EPVC1IST	0x038	/* 64bit */
+
+#define EPESD		0x044	/* 32bit */
+
+#define EPLE1D		0x050	/* 32bit */
+#define EPLE1A		0x058	/* 64bit */
+#define EPLE2D		0x060	/* 32bit */
+#define EPLE2A		0x068	/* 64bit */
+
+#define EP_PORTARB(x)	(0x100 + 4 * (x))	/* 256bit */
+
 void gm45_early_init(void);
 void gm45_early_reset(void);
 
@@ -433,6 +444,7 @@ struct blc_pwm_t {
 int get_blc_values(const struct blc_pwm_t **entries);
 u16 get_blc_pwm_freq_value(const char *edid_ascii_string);
 
+int decode_pcie_bar(u32 *const base, u32 *const len);
 
 #include <device/device.h>
 
@@ -440,5 +452,4 @@ struct acpi_rsdp;
 unsigned long northbridge_write_acpi_tables(const struct device *device, unsigned long start,
 						struct acpi_rsdp *rsdp);
 
-#endif /* !__ACPI__ */
 #endif /* __NORTHBRIDGE_INTEL_GM45_GM45_H__ */

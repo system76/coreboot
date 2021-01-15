@@ -44,7 +44,28 @@ struct drivers_usb_acpi_config {
 	bool use_custom_pld;
 	struct acpi_pld custom_pld;
 
+	/* Does the device have a power resource? */
+	bool has_power_resource;
+
+	/* GPIO used to take device out of reset or to put it into reset. */
 	struct acpi_gpio reset_gpio;
+	/* Delay to be inserted after device is taken out of reset. */
+	unsigned int reset_delay_ms;
+	/* Delay to be inserted after device is put into reset. */
+	unsigned int reset_off_delay_ms;
+	/* GPIO used to enable device. */
+	struct acpi_gpio enable_gpio;
+	/* Delay to be inserted after device is enabled. */
+	unsigned int enable_delay_ms;
+	/* Delay to be inserted after device is disabled. */
+	unsigned int enable_off_delay_ms;
+
+	/*
+	 * Define a GPIO that shows the privacy status of the USB device.
+	 * E.g. On a camera: if it is one, it is recording black frames.
+	 * E.g. On a mic: if it is one, it is recording white-noise.
+	 */
+	struct acpi_gpio privacy_gpio;
 };
 
 #endif /* __USB_ACPI_CHIP_H__ */

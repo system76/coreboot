@@ -11,8 +11,6 @@
 /*
  * Port ids
  */
-#define PID_SDX		0x53
-
 #define PID_GPIOCOM0	0x6e
 #define PID_GPIOCOM1	0x6d
 #define PID_GPIOCOM2	0x6c
@@ -32,5 +30,10 @@
 #define PID_ITSS	0xc4
 #define PID_ESPI	0xc7
 #define PID_SERIALIO	0xcb
+
+/*
+ * SPI - DMI Destination ID
+ */
+#define SPI_DMI_DESTINATION_ID	0x23a8
 
 #endif

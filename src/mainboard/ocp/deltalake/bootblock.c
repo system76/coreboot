@@ -3,7 +3,6 @@
 #include <bootblock_common.h>
 #include <device/pci_def.h>
 #include <device/pci_ops.h>
-#include <device/pnp_ops.h>
 #include <intelblocks/lpc_lib.h>
 #include <intelblocks/pcr.h>
 #include <soc/intel/common/block/lpc/lpc_def.h>
@@ -11,6 +10,7 @@
 #include <soc/pcr_ids.h>
 #include <superio/aspeed/ast2400/ast2400.h>
 #include <superio/aspeed/common/aspeed.h>
+#include <cpxsp_dl_gpio.h>
 
 #define ASPEED_SIO_PORT 0x2E
 
@@ -52,6 +52,9 @@ static uint8_t com_to_ast_sio(uint8_t com)
 
 void bootblock_mainboard_early_init(void)
 {
+	/* pre-configure Lewisburg PCH GPIO pads */
+	gpio_configure_pads(early_gpio_table, ARRAY_SIZE(early_gpio_table));
+
 	/* Open IO windows */
 	enable_espi_lpc_io_windows();
 

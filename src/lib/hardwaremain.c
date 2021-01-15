@@ -7,6 +7,7 @@
 
 #include <adainit.h>
 #include <acpi/acpi.h>
+#include <acpi/acpi_gnvs.h>
 #include <arch/exception.h>
 #include <bootstate.h>
 #include <console/console.h>
@@ -169,9 +170,9 @@ static boot_state_t bs_os_resume(void *wake_vector)
 	if (CONFIG(HAVE_ACPI_RESUME)) {
 		arch_bootstate_coreboot_exit();
 		acpi_resume(wake_vector);
+		/* We will not come back. */
 	}
-
-	return BS_WRITE_TABLES;
+	die("Failed OS resume\n");
 }
 
 static boot_state_t bs_write_tables(void *arg)
@@ -444,8 +445,12 @@ void main(void)
 	post_code(POST_ENTRY_RAMSTAGE);
 
 	/* Handoff sleep type from romstage. */
-	acpi_is_wakeup();
+	acpi_is_wakeup_s3();
 	threads_initialize();
+
+	/* Initialise GNVS early. */
+	if (CONFIG(HAVE_ACPI_TABLES))
+		gnvs_get_or_create();
 
 	/* Schedule the static boot state entries. */
 	boot_state_schedule_static_entries();

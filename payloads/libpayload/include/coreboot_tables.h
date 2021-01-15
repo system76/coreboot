@@ -31,6 +31,7 @@
 
 #include <arch/types.h>
 #include <ipchksum.h>
+#include <stdint.h>
 
 enum {
 	CB_TAG_UNUSED			= 0x0000,
@@ -78,6 +79,8 @@ enum {
 	CB_TAG_MMC_INFO			= 0x0035,
 	CB_TAG_TCPA_LOG			= 0x0036,
 	CB_TAG_FMAP			= 0x0037,
+	CB_TAG_SMMSTOREV2		= 0x0039,
+	CB_TAG_BOARD_CONFIG		= 0x0040,
 	CB_TAG_CMOS_OPTION_TABLE	= 0x00c8,
 	CB_TAG_OPTION			= 0x00c9,
 	CB_TAG_OPTION_ENUM		= 0x00ca,
@@ -258,10 +261,11 @@ struct cb_x86_rom_mtrr {
 	uint32_t index;
 };
 
-struct cb_strapping_id {
-	uint32_t tag;
+/* Memory map windows to translate addresses between SPI flash space and host address space. */
+struct flash_mmap_window {
+	uint32_t flash_base;
+	uint32_t host_base;
 	uint32_t size;
-	uint32_t id_code;
 };
 
 struct cb_spi_flash {
@@ -270,6 +274,12 @@ struct cb_spi_flash {
 	uint32_t flash_size;
 	uint32_t sector_size;
 	uint32_t erase_cmd;
+	/*
+	 * Number of mmap windows used by the platform to decode addresses between SPI flash
+	 * space and host address space. This determines the number of entries in mmap_table.
+	 */
+	uint32_t mmap_count;
+	struct flash_mmap_window mmap_table[0];
 };
 
 struct cb_boot_media_params {
@@ -313,6 +323,16 @@ struct cb_mmc_info {
 	 * passes 1 on success
 	 */
 	int32_t early_cmd1_status;
+};
+
+struct cb_board_config {
+	uint32_t tag;
+	uint32_t size;
+
+	struct cbuint64 fw_config;
+	uint32_t board_id;
+	uint32_t ram_code;
+	uint32_t sku_id;
 };
 
 #define CB_MAX_SERIALNO_LENGTH	32
@@ -395,5 +415,5 @@ static inline const char *cb_mb_part_string(const struct cb_mainboard *cbm)
 		+ (sizeof((_rec)->map[0]) * (_idx)))
 
 /* Helper functions */
-void *get_cbmem_ptr(unsigned char *ptr);
+uintptr_t get_cbmem_addr(const void *cbmem_tab_entry);
 #endif

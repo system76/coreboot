@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#ifndef __AMDBLOCKS_ESPI_H__
-#define __AMDBLOCKS_ESPI_H__
+#ifndef AMD_BLOCK_ESPI_H
+#define AMD_BLOCK_ESPI_H
 
 #include <stdint.h>
 #include <stddef.h>
@@ -118,4 +118,4 @@ void espi_update_static_bar(uintptr_t bar);
  */
 int espi_setup(void);
 
-#endif /* __AMDBLOCKS_ESPI_H__ */
+#endif /* AMD_BLOCK_ESPI_H */

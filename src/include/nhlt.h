@@ -187,6 +187,7 @@ enum {
 
 enum {
 	NHLT_PDM_DEV,
+	NHLT_PDM_DEV_CAVS15,	// NHLT_PDM_DEV on cAVS1.5 (KBL) based platforms
 };
 
 /* Endpoint direction. */
@@ -218,7 +219,6 @@ enum {
 	SPEAKER_TOP_BACK_CENTER = 1 << 16,
 	SPEAKER_TOP_BACK_RIGHT = 1 << 17,
 };
-
 
 /* Supporting structures. Only SoC/chipset and the library code directly should
  * be manipulating these structures. */

@@ -4,8 +4,12 @@
 #include <acpi/acpi.h>
 #include <assert.h>
 #include <console/console.h>
+#include <console/debug.h>
 #include <cpu/cpu.h>
+#include <cpu/intel/common/common.h>
+#include <cpu/intel/em64t101_save_state.h>
 #include <cpu/intel/microcode.h>
+#include <cpu/intel/smm_reloc.h>
 #include <cpu/intel/turbo.h>
 #include <cpu/x86/lapic.h>
 #include <cpu/x86/mp.h>
@@ -15,6 +19,9 @@
 #include <soc/cpu.h>
 #include <soc/msr.h>
 #include <soc/soc_util.h>
+#include <soc/smmrelocate.h>
+#include <soc/util.h>
+
 #include "chip.h"
 
 static const void *microcode_patch;
@@ -44,7 +51,6 @@ static void xeon_configure_mca(void)
 	mca_configure();
 }
 
-
 void get_microcode_info(const void **microcode, int *parallel)
 {
 	*microcode = intel_mp_current_microcode();
@@ -64,6 +70,18 @@ static void each_cpu_init(struct device *cpu)
 		__func__, dev_path(cpu), cpu_index(), cpu->path.apic.apic_id);
 	setup_lapic();
 
+	/*
+	 * Set HWP base feature, EPP reg enumeration, lock thermal and msr
+	 * This is package level MSR. Need to check if it updates correctly on
+	 * multi-socket platform.
+	 */
+	msr = rdmsr(MSR_MISC_PWR_MGMT);
+	if (!(msr.lo & LOCK_MISC_PWR_MGMT_MSR)) { /* if already locked skip update */
+		msr.lo = (HWP_ENUM_ENABLE | HWP_EPP_ENUM_ENABLE | LOCK_MISC_PWR_MGMT_MSR |
+			LOCK_THERM_INT);
+		wrmsr(MSR_MISC_PWR_MGMT, msr);
+	}
+
 	/* Enable Fast Strings */
 	msr = rdmsr(IA32_MISC_ENABLE);
 	msr.lo |= FAST_STRINGS_ENABLE_BIT;
@@ -80,6 +98,9 @@ static void each_cpu_init(struct device *cpu)
 
 	/* Clear out pending MCEs */
 	xeon_configure_mca();
+
+	/* Enable Vmx */
+	set_vmx_and_lock();
 }
 
 static struct device_operations cpu_dev_ops = {
@@ -88,6 +109,7 @@ static struct device_operations cpu_dev_ops = {
 
 static const struct cpu_device_id cpu_table[] = {
 	{X86_VENDOR_INTEL, CPUID_COOPERLAKE_SP_A0},
+	{X86_VENDOR_INTEL, CPUID_COOPERLAKE_SP_A1},
 	{0, 0},
 };
 
@@ -119,7 +141,7 @@ static void set_max_turbo_freq(void)
 	wrmsr(IA32_PERF_CTL, perf_ctl);
 
 	printk(BIOS_DEBUG, "cpu: frequency set to %d\n",
-	       ((perf_ctl.lo >> 8) & 0xff) * CPU_BCLK);
+	       ((perf_ctl.lo >> 8) & 0xff) * CONFIG_CPU_BCLK_MHZ);
 	FUNC_EXIT();
 }
 
@@ -153,16 +175,16 @@ static void post_mp_init(void)
 	/* Set Max Ratio */
 	set_max_turbo_freq();
 
-	/*
-	 * TODO: Now that all APs have been relocated as well as the BSP let SMIs
-	 * start flowing.
-	 */
-	if (0) global_smi_enable();
+	if (CONFIG(HAVE_SMI_HANDLER))
+		global_smi_enable();
 }
 
 static const struct mp_ops mp_ops = {
 	.pre_mp_init = pre_mp_init,
 	.get_cpu_count = get_thread_count,
+	.get_smm_info = get_smm_info,
+	.pre_mp_smm_init = smm_initialize,
+	.relocation_handler = smm_relocation_handler,
 	.get_microcode_info = get_microcode_info,
 	.post_mp_init = post_mp_init,
 };
@@ -187,35 +209,4 @@ void cpx_init_cpus(struct device *dev)
 
 	/* update numa domain for all cpu devices */
 	xeonsp_init_cpu_config();
-}
-
-msr_t read_msr_ppin(void)
-{
-	msr_t ppin = {0};
-	msr_t msr;
-
-	/* If MSR_PLATFORM_INFO PPIN_CAP is 0, PPIN capability is not supported */
-	msr = rdmsr(MSR_PLATFORM_INFO);
-	if ((msr.lo & MSR_PPIN_CAP) == 0) {
-		printk(BIOS_ERR, "MSR_PPIN_CAP is 0, PPIN is not supported\n");
-		return ppin;
-	}
-
-	/* Access to MSR_PPIN is permitted only if MSR_PPIN_CTL LOCK is 0 and ENABLE is 1 */
-	msr = rdmsr(MSR_PPIN_CTL);
-	if (msr.lo & MSR_PPIN_CTL_LOCK) {
-		printk(BIOS_ERR, "MSR_PPIN_CTL_LOCK is 1, PPIN access is not allowed\n");
-		return ppin;
-	}
-
-	if ((msr.lo & MSR_PPIN_CTL_ENABLE) == 0) {
-		/* Set MSR_PPIN_CTL ENABLE to 1 */
-		msr.lo |= MSR_PPIN_CTL_ENABLE;
-		wrmsr(MSR_PPIN_CTL, msr);
-	}
-	ppin = rdmsr(MSR_PPIN);
-	/* Set enable to 0 after reading MSR_PPIN */
-	msr.lo &= ~MSR_PPIN_CTL_ENABLE;
-	wrmsr(MSR_PPIN_CTL, msr);
-	return ppin;
 }

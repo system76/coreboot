@@ -8,28 +8,25 @@
 #include <device/pci_ehci.h>
 #include <device/mmio.h>
 #include <device/pci_ops.h>
+#include "iobp.h"
 #include "pch.h"
 
 #ifdef __SIMPLE_DEVICE__
 
 void usb_ehci_disable(pci_devfn_t dev)
 {
-	u16 reg16;
-
 	/* Set 0xDC[0]=1 */
 	pci_or_config32(dev, 0xdc, (1 << 0));
 
 	/* Set D3Hot state and disable PME */
-	reg16 = pci_read_config16(dev, EHCI_PWR_CTL_STS);
-	reg16 &= ~(PWR_CTL_ENABLE_PME | PWR_CTL_SET_MASK);
-	reg16 |= PWR_CTL_SET_D3;
-	pci_write_config16(dev, EHCI_PWR_CTL_STS, reg16);
+	pci_update_config16(dev, EHCI_PWR_CTL_STS, ~(PWR_CTL_ENABLE_PME | PWR_CTL_SET_MASK),
+			    PWR_CTL_SET_D3);
 
 	/* Clear memory and bus master */
 	pci_write_config32(dev, PCI_BASE_ADDRESS_0, 0);
-	reg16 = pci_read_config16(dev, PCI_COMMAND);
-	reg16 &= ~(PCI_COMMAND_IO | PCI_COMMAND_MEMORY | PCI_COMMAND_MASTER);
-	pci_write_config16(dev, PCI_COMMAND, reg16);
+
+	pci_and_config16(dev, PCI_COMMAND,
+			~(PCI_COMMAND_MASTER | PCI_COMMAND_MEMORY | PCI_COMMAND_IO));
 
 	/* Disable device */
 	switch (dev) {
@@ -121,21 +118,15 @@ void usb_ehci_sleep_prepare(pci_devfn_t dev, u8 slp_typ)
 
 static void usb_ehci_clock_gating(struct device *dev)
 {
-	u32 reg32;
-
 	/* IOBP 0xE5004001[7:6] = 11b */
-	pch_iobp_update(0xe5004001, ~0, (1 << 7)|(1 << 6));
+	pch_iobp_update(0xe5004001, ~0, (1 << 7) | (1 << 6));
 
 	/* Dx:F0:DCh[5,2,1] = 111b
 	 * Dx:F0:DCh[0] = 1b when EHCI controller is disabled */
-	reg32 = pci_read_config32(dev, 0xdc);
-	reg32 |= (1 << 5) | (1 << 2) | (1 << 1);
-	pci_write_config32(dev, 0xdc, reg32);
+	pci_or_config32(dev, 0xdc, (1 << 5) | (1 << 2) | (1 << 1));
 
 	/* Dx:F0:78h[1:0] = 11b */
-	reg32 = pci_read_config32(dev, 0x78);
-	reg32 |= (1 << 1) | (1 << 0);
-	pci_write_config32(dev, 0x78, reg32);
+	pci_or_config32(dev, 0x78, (1 << 1) | (1 << 0));
 }
 
 static void usb_ehci_init(struct device *dev)
@@ -178,7 +169,12 @@ static struct device_operations usb_ehci_ops = {
 	.ops_pci		= &lops_pci,
 };
 
-static const unsigned short pci_device_ids[] = { 0x9c26, 0x8c26, 0x8c2d, 0 };
+static const unsigned short pci_device_ids[] = {
+	PCI_DEVICE_ID_INTEL_LPT_LP_EHCI,
+	PCI_DEVICE_ID_INTEL_LPT_H_EHCI_1,
+	PCI_DEVICE_ID_INTEL_LPT_H_EHCI_2,
+	0
+};
 
 static const struct pci_driver pch_usb_ehci __pci_driver = {
 	.ops	 = &usb_ehci_ops,

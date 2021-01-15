@@ -40,50 +40,27 @@ enum {
 	/* SD controller type */
 	FW_CONFIG_MASK_SD_CTRLR = 0x7,
 	FW_CONFIG_SHIFT_SD_CTRLR = 20,
-	/* SPI speed value */
-	FW_CONFIG_MASK_SPI_SPEED = 0xf,
-	FW_CONFIG_SHIFT_SPI_SPEED = 23,
+	/* SAR presence */
+	FW_CONFIG_MASK_SAR = 0x7,
+	FW_CONFIG_SHIFT_SAR = 23,
 	/* Fan information */
 	FW_CONFIG_MASK_FAN = 0x3,
 	FW_CONFIG_SHIFT_FAN = 27,
+	/* WWAN presence */
+	FW_CONFIG_MASK_WWAN = 0x1,
+	FW_CONFIG_SHIFT_WWAN = 29,
 };
 
-int variant_fw_config_valid(void)
+static int get_fw_config(uint64_t *val)
 {
-	static uint32_t board_version;
-	const uint32_t bv_valid = CONFIG_VARIANT_BOARD_VER_FW_CONFIG_VALID;
-
-	if (!CONFIG(VARIANT_HAS_FW_CONFIG))
-		return 0;
-
-	/* Fast path for non-zero board version. */
-	if (board_version >= bv_valid)
-		return 1;
-
-	if (google_chromeec_cbi_get_board_version(&board_version)) {
-		printk(BIOS_ERR, "Unable to obtain board version for FW_CONFIG\n");
-		return 0;
-	}
-
-	if (board_version >= bv_valid)
-		return 1;
-
-	return 0;
-}
-
-static int get_fw_config(uint32_t *val)
-{
-	static uint32_t known_value;
-
-	if (!variant_fw_config_valid())
-		return -1;
+	static uint64_t known_value;
 
 	if (known_value) {
 		*val = known_value;
 		return 0;
 	}
 
-	if (google_chromeec_cbi_get_fw_config(&known_value)) {
+	if (google_chromeec_cbi_get_fw_config(&known_value) != 0) {
 		printk(BIOS_ERR, "FW_CONFIG not set in CBI\n");
 		return -1;
 	}
@@ -93,15 +70,20 @@ static int get_fw_config(uint32_t *val)
 	return 0;
 }
 
-static unsigned int extract_field(uint32_t mask, int shift)
+static unsigned int extract_field(uint64_t mask, int shift)
 {
-	uint32_t fw_config;
+	uint64_t fw_config;
 
 	/* On errors nothing is assumed to be set. */
 	if (get_fw_config(&fw_config))
 		return 0;
 
 	return (fw_config >> shift) & mask;
+}
+
+int variant_gets_sar_config(void)
+{
+	return extract_field(FW_CONFIG_MASK_SAR, FW_CONFIG_SHIFT_SAR);
 }
 
 int variant_has_emmc(void)
@@ -114,6 +96,11 @@ int variant_has_nvme(void)
 	return !!extract_field(FW_CONFIG_MASK_NVME, FW_CONFIG_SHIFT_NVME);
 }
 
+int variant_has_wwan(void)
+{
+	return !!extract_field(FW_CONFIG_MASK_WWAN, FW_CONFIG_SHIFT_WWAN);
+}
+
 bool variant_uses_v3_schematics(void)
 {
 	uint32_t board_version;
@@ -121,13 +108,38 @@ bool variant_uses_v3_schematics(void)
 	if (!CONFIG(VARIANT_SUPPORTS_PRE_V3_SCHEMATICS))
 		return true;
 
-	if (google_chromeec_cbi_get_board_version(&board_version))
+	if (google_chromeec_cbi_get_board_version(&board_version) != 0)
 		return false;
 
 	if ((int)board_version < CONFIG_VARIANT_MIN_BOARD_ID_V3_SCHEMATICS)
 		return false;
 
 	return true;
+}
+
+bool variant_uses_v3_6_schematics(void)
+{
+	uint32_t board_version;
+
+	if (!CONFIG(VARIANT_SUPPORTS_PRE_V3_6_SCHEMATICS))
+		return true;
+
+	if (google_chromeec_cbi_get_board_version(&board_version) != 0)
+		return false;
+
+	if ((int)board_version < CONFIG_VARIANT_MIN_BOARD_ID_V3_6_SCHEMATICS)
+		return false;
+
+	return true;
+}
+
+/*
+ * pre-v3.6, CODEC_GPI was used as headphone jack interrupt.
+ * Starting v3.6 this was changed to a separate GPIO.
+ */
+bool variant_uses_codec_gpi(void)
+{
+	return !variant_uses_v3_6_schematics();
 }
 
 bool variant_has_active_low_wifi_power(void)
@@ -137,11 +149,44 @@ bool variant_has_active_low_wifi_power(void)
 	if (!CONFIG(VARIANT_SUPPORTS_WIFI_POWER_ACTIVE_HIGH))
 		return true;
 
-	if (google_chromeec_cbi_get_board_version(&board_version))
+	if (google_chromeec_cbi_get_board_version(&board_version) != 0)
 		return false;
 
 	if ((int)board_version < CONFIG_VARIANT_MIN_BOARD_ID_WIFI_POWER_ACTIVE_LOW)
 		return false;
 
 	return true;
+}
+
+int variant_get_daughterboard_id(void)
+{
+	return extract_field(FW_CONFIG_MASK_DB_INDEX, FW_CONFIG_DB_INDEX_SHIFT);
+}
+
+bool variant_has_fingerprint(void)
+{
+	if (CONFIG(VARIANT_HAS_FPMCU))
+		return true;
+
+	return false;
+}
+
+bool fpmcu_needs_delay(void)
+{
+	/*
+	 *  Older board versions need an extra delay here to finish resetting
+	 *  the FPMCU.  The resistor value in the glitch prevention circuit was
+	 *  sized so that the FPMCU doesn't turn of for ~1 second.  On newer
+	 *  boards, that's been updated to ~30ms, which allows the FPMCU's
+	 *  reset to be completed in the time between bootblock and finalize.
+	 */
+	uint32_t board_version;
+
+	if (google_chromeec_cbi_get_board_version(&board_version))
+		board_version = 1;
+
+	if (board_version <= CONFIG_VARIANT_MAX_BOARD_ID_BROKEN_FMPCU_POWER)
+		return true;
+
+	return false;
 }

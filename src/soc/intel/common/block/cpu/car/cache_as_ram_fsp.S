@@ -10,6 +10,8 @@
 #define CBFS_FILE_CHECKSUM (CBFS_FILE_TYPE + 4)
 #define CBFS_FILE_OFFSET (CBFS_FILE_CHECKSUM + 4)
 
+.section .init, "ax", @progbits
+
 .extern	temp_ram_init_params
 
 .global	bootblock_pre_c_entry
@@ -71,7 +73,14 @@ CAR_init_done:
 	jnz	.halt_forever
 
 	/* Setup bootblock stack */
-	mov	%edx, %esp
+	movl	$_ecar_stack, %esp
+	/*
+	 * temp_memory_start/end reside in the .bss section, which gets cleared
+	 * below. Save the FSP return value to the stack before writing those
+	 * variables.
+	 */
+	push	%ecx
+	push	%edx
 
 	/* clear .bss section as it is not shared */
 	cld
@@ -81,6 +90,11 @@ CAR_init_done:
 	sub	%edi, %ecx
 	shrl	$2, %ecx
 	rep	stosl
+
+	pop	%edx
+	movl	%edx, temp_memory_end
+	pop	%ecx
+	movl	%ecx, temp_memory_start
 
 	/* Restore the timestamp from bootblock_crt0.S (ebp:mm1) */
 	push	%ebp

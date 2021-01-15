@@ -10,8 +10,6 @@
 #include <symbols.h>
 #include <timestamp.h>
 
-DECLARE_OPTIONAL_REGION(timestamp);
-
 __weak void bootblock_mainboard_early_init(void) { /* no-op */ }
 __weak void bootblock_soc_early_init(void) { /* do nothing */ }
 __weak void bootblock_soc_init(void) { /* do nothing */ }
@@ -25,7 +23,7 @@ __weak void bootblock_mainboard_init(void) { /* do nothing */ }
  * entered from C code. This function assumes that the timer has already been
  * initialized, so it does not call init_timer().
  */
-static void bootblock_main_with_timestamp(uint64_t base_timestamp,
+void bootblock_main_with_timestamp(uint64_t base_timestamp,
 	struct timestamp_entry *timestamps, size_t num_timestamps)
 {
 	/* Initialize timestamps if we have TIMESTAMP region in memlayout.ld. */

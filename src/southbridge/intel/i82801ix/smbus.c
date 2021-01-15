@@ -4,59 +4,17 @@
 #include <device/path.h>
 #include <device/smbus.h>
 #include <device/pci.h>
+#include <device/pci_def.h>
 #include <device/pci_ids.h>
 #include <device/pci_ops.h>
 #include <device/smbus_host.h>
+#include <southbridge/intel/common/smbus_ops.h>
 #include "i82801ix.h"
 
 static void pch_smbus_init(struct device *dev)
 {
 	/* Enable clock gating */
 	pci_and_config16(dev, 0x80, ~((1 << 8) | (1 << 10) | (1 << 12) | (1 << 14)));
-}
-
-static int lsmbus_read_byte(struct device *dev, u8 address)
-{
-	u16 device;
-	struct resource *res;
-	struct bus *pbus;
-
-	device = dev->path.i2c.device;
-	pbus = get_pbus_smbus(dev);
-	res = find_resource(pbus->dev, 0x20);
-
-	return do_smbus_read_byte(res->base, device, address);
-}
-
-static int lsmbus_write_byte(struct device *dev, u8 address, u8 val)
-{
-	u16 device;
-	struct resource *res;
-	struct bus *pbus;
-
-	device = dev->path.i2c.device;
-	pbus = get_pbus_smbus(dev);
-	res = find_resource(pbus->dev, 0x20);
-
-	return do_smbus_write_byte(res->base, device, address, val);
-}
-
-static struct smbus_bus_operations lops_smbus_bus = {
-	.read_byte	= lsmbus_read_byte,
-	.write_byte	= lsmbus_write_byte,
-};
-
-static void smbus_read_resources(struct device *dev)
-{
-	struct resource *res = new_resource(dev, PCI_BASE_ADDRESS_4);
-	res->base = SMBUS_IO_BASE;
-	res->size = 32;
-	res->limit = res->base + res->size - 1;
-	res->flags = IORESOURCE_IO | IORESOURCE_FIXED | IORESOURCE_RESERVE |
-		     IORESOURCE_STORED | IORESOURCE_ASSIGNED;
-
-	/* Also add MMIO resource */
-	res = pci_get_resource(dev, PCI_BASE_ADDRESS_0);
 }
 
 static struct device_operations smbus_ops = {

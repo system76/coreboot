@@ -3,7 +3,6 @@
 #include <stdint.h>
 #include <string.h>
 #include <assert.h>
-#include <cbmem.h>
 #include <console/console.h>
 #include <delay.h>
 #include <device/device.h>
@@ -393,7 +392,14 @@ void google_chromeec_log_events(uint64_t mask)
 		return;
 
 	events = google_chromeec_get_events_b() & mask;
-	for (i = 0; i < sizeof(events) * 8; i++) {
+
+	/*
+	 * This loop starts at 1 because the EC_HOST_EVENT_MASK macro subtracts
+	 * 1 from its argument before applying the left-shift operator. This
+	 * prevents a left-shift of -1 happening, and covers the entire 64-bit
+	 * range of the event mask.
+	 */
+	for (i = 1; i <= sizeof(events) * 8; i++) {
 		if (EC_HOST_EVENT_MASK(i) & events)
 			elog_add_event_byte(ELOG_TYPE_EC_EVENT, i);
 	}
@@ -835,9 +841,16 @@ int google_chromeec_cbi_get_sku_id(uint32_t *id)
 	return cbi_get_uint32(id, CBI_TAG_SKU_ID);
 }
 
-int google_chromeec_cbi_get_fw_config(uint32_t *fw_config)
+int google_chromeec_cbi_get_fw_config(uint64_t *fw_config)
 {
-	return cbi_get_uint32(fw_config, CBI_TAG_FW_CONFIG);
+	uint32_t config;
+
+	if (cbi_get_uint32(&config, CBI_TAG_FW_CONFIG))
+		return -1;
+
+	/* FIXME: Yet to determine source of other 32 bits... */
+	*fw_config = (uint64_t)config;
+	return 0;
 }
 
 int google_chromeec_cbi_get_oem_id(uint32_t *id)
@@ -848,6 +861,11 @@ int google_chromeec_cbi_get_oem_id(uint32_t *id)
 int google_chromeec_cbi_get_board_version(uint32_t *version)
 {
 	return cbi_get_uint32(version, CBI_TAG_BOARD_VERSION);
+}
+
+int google_chromeec_cbi_get_ssfc(uint32_t *ssfc)
+{
+	return cbi_get_uint32(ssfc, CBI_TAG_SSFC);
 }
 
 static int cbi_get_string(char *buf, size_t bufsize, uint32_t tag)
@@ -980,9 +998,24 @@ static uint16_t google_chromeec_get_uptime_info(
 
 bool google_chromeec_get_ap_watchdog_flag(void)
 {
+	int i;
 	struct ec_response_uptime_info resp;
-	return (!google_chromeec_get_uptime_info(&resp) &&
-		(resp.ec_reset_flags & EC_RESET_FLAG_AP_WATCHDOG));
+
+	if (google_chromeec_get_uptime_info(&resp))
+		return false;
+
+	if (resp.ec_reset_flags & EC_RESET_FLAG_AP_WATCHDOG)
+		return true;
+
+	/* Find the last valid entry */
+	for (i = ARRAY_SIZE(resp.recent_ap_reset) - 1; i >= 0; i--) {
+		if (resp.recent_ap_reset[i].reset_time_ms == 0)
+			continue;
+		return (resp.recent_ap_reset[i].reset_cause ==
+			CHIPSET_RESET_AP_WATCHDOG);
+	}
+
+	return false;
 }
 
 int google_chromeec_i2c_xfer(uint8_t chip, uint8_t addr, int alen,
@@ -1374,11 +1407,11 @@ enum ec_image google_chromeec_get_current_image(void)
 	return ec_image_type;
 }
 
-int google_chromeec_get_num_pd_ports(int *num_ports)
+int google_chromeec_get_num_pd_ports(unsigned int *num_ports)
 {
 	struct ec_response_charge_port_count resp = {};
 	struct chromeec_command cmd = {
-		.cmd_code = EC_CMD_CHARGE_PORT_COUNT,
+		.cmd_code = EC_CMD_USB_PD_PORTS,
 		.cmd_version = 0,
 		.cmd_data_out = &resp,
 		.cmd_size_in = 0,
@@ -1433,6 +1466,65 @@ void google_chromeec_init(void)
 int google_ec_running_ro(void)
 {
 	return (google_chromeec_get_current_image() == EC_IMAGE_RO);
+}
+
+int google_chromeec_usb_pd_control(int port, bool *ufp, bool *dbg_acc, uint8_t *dp_mode)
+{
+	struct ec_params_usb_pd_control pd_control = {
+		.port = port,
+		.role = USB_PD_CTRL_ROLE_NO_CHANGE,
+		.mux = USB_PD_CTRL_ROLE_NO_CHANGE,
+		.swap = USB_PD_CTRL_SWAP_NONE,
+	};
+	struct ec_response_usb_pd_control_v2 resp = {};
+	struct chromeec_command cmd = {
+		.cmd_code = EC_CMD_USB_PD_CONTROL,
+		.cmd_version = 2,
+		.cmd_data_in = &pd_control,
+		.cmd_size_in = sizeof(pd_control),
+		.cmd_data_out = &resp,
+		.cmd_size_out = sizeof(resp),
+		.cmd_dev_index = 0,
+	};
+
+	if (google_chromeec_command(&cmd) < 0)
+		return -1;
+
+	*ufp = (resp.cc_state == PD_CC_DFP_ATTACHED);
+	*dbg_acc = (resp.cc_state == PD_CC_DFP_DEBUG_ACC);
+	*dp_mode = resp.dp_mode;
+
+	return 0;
+}
+
+/**
+ * Check for the current mux state in EC. Flags representing the mux state found
+ * in ec_commands.h
+ */
+int google_chromeec_usb_get_pd_mux_info(int port, uint8_t *flags)
+{
+	struct ec_params_usb_pd_mux_info req_mux = {
+		.port = port,
+	};
+	struct ec_response_usb_pd_mux_info resp_mux = {};
+	struct chromeec_command cmd = {
+		.cmd_code = EC_CMD_USB_PD_MUX_INFO,
+		.cmd_version = 0,
+		.cmd_data_in = &req_mux,
+		.cmd_size_in = sizeof(req_mux),
+		.cmd_data_out = &resp_mux,
+		.cmd_size_out = sizeof(resp_mux),
+		.cmd_dev_index = 0,
+	};
+
+	if (port < 0)
+		return -1;
+
+	if (google_chromeec_command(&cmd) < 0)
+		return -1;
+
+	*flags = resp_mux.flags;
+	return 0;
 }
 
 /**
@@ -1531,5 +1623,117 @@ int google_chromeec_get_keybd_config(struct ec_response_keybd_config *keybd)
 	if (google_chromeec_command(&cmd))
 		return -1;
 
+	return 0;
+}
+
+int google_chromeec_ap_reset(void)
+{
+	struct chromeec_command cmd = {
+		.cmd_code = EC_CMD_AP_RESET,
+		.cmd_version = 0,
+		.cmd_data_in = NULL,
+		.cmd_size_in = 0,
+		.cmd_data_out = NULL,
+		.cmd_size_out = 0,
+		.cmd_dev_index = 0,
+	};
+
+	if (google_chromeec_command(&cmd))
+		return -1;
+
+	return 0;
+}
+
+int google_chromeec_regulator_enable(uint32_t index, uint8_t enable)
+{
+	struct ec_params_regulator_enable params = {
+		.index = index,
+		.enable = enable,
+	};
+	struct chromeec_command cmd = {
+		.cmd_code = EC_CMD_REGULATOR_ENABLE,
+		.cmd_version = 0,
+		.cmd_data_in = &params,
+		.cmd_size_in = sizeof(params),
+		.cmd_data_out = NULL,
+		.cmd_size_out = 0,
+		.cmd_dev_index = 0,
+	};
+
+	if (google_chromeec_command(&cmd))
+		return -1;
+
+	return 0;
+}
+
+int google_chromeec_regulator_is_enabled(uint32_t index, uint8_t *enabled)
+{
+
+	struct ec_params_regulator_is_enabled params = {
+		.index = index,
+	};
+	struct ec_response_regulator_is_enabled resp = {};
+	struct chromeec_command cmd = {
+		.cmd_code = EC_CMD_REGULATOR_IS_ENABLED,
+		.cmd_version = 0,
+		.cmd_data_in = &params,
+		.cmd_size_in = sizeof(params),
+		.cmd_data_out = &resp,
+		.cmd_size_out = sizeof(resp),
+		.cmd_dev_index = 0,
+	};
+
+	if (google_chromeec_command(&cmd))
+		return -1;
+
+	*enabled = resp.enabled;
+
+	return 0;
+}
+
+int google_chromeec_regulator_set_voltage(uint32_t index, uint32_t min_mv,
+					  uint32_t max_mv)
+{
+	struct ec_params_regulator_set_voltage params = {
+		.index = index,
+		.min_mv = min_mv,
+		.max_mv = max_mv,
+	};
+	struct chromeec_command cmd = {
+		.cmd_code = EC_CMD_REGULATOR_SET_VOLTAGE,
+		.cmd_version = 0,
+		.cmd_data_in = &params,
+		.cmd_size_in = sizeof(params),
+		.cmd_data_out = NULL,
+		.cmd_size_out = 0,
+		.cmd_dev_index = 0,
+	};
+
+	if (google_chromeec_command(&cmd))
+		return -1;
+
+	return 0;
+}
+
+int google_chromeec_regulator_get_voltage(uint32_t index, uint32_t *voltage_mv)
+{
+	struct ec_params_regulator_get_voltage params = {
+		.index = index,
+	};
+	struct ec_response_regulator_get_voltage resp = {};
+	struct chromeec_command cmd = {
+		.cmd_code = EC_CMD_REGULATOR_GET_VOLTAGE,
+		.cmd_version = 0,
+		.cmd_data_in = &params,
+		.cmd_size_in = sizeof(params),
+		.cmd_data_out = &resp,
+		.cmd_size_out = sizeof(resp),
+		.cmd_dev_index = 0,
+	};
+
+	if (google_chromeec_command(&cmd))
+		return -1;
+
+	*voltage_mv = resp.voltage_mv;
 	return 0;
 }

@@ -9,45 +9,43 @@ if SOC_AMD_STONEYRIDGE
 
 config CPU_SPECIFIC_OPTIONS
 	def_bool y
-	select ARCH_BOOTBLOCK_X86_32
-	select ARCH_VERSTAGE_X86_32
-	select ARCH_ROMSTAGE_X86_32
-	select ARCH_RAMSTAGE_X86_32
-	select X86_AMD_FIXED_MTRRS
 	select ACPI_AMD_HARDWARE_SLEEP_VALUES
+	select ACPI_SOC_NVS
+	select ARCH_ALL_STAGES_X86_32
+	select BOOT_DEVICE_SUPPORTS_WRITES if BOOT_DEVICE_SPI_FLASH
 	select COLLECT_TIMESTAMPS_NO_TSC
 	select DRIVERS_I2C_DESIGNWARE
 	select GENERIC_GPIO_LIB
 	select GENERIC_UDELAY
-	select IOAPIC
 	select HAVE_CF9_RESET
+	select HAVE_SMI_HANDLER
 	select HAVE_USBDEBUG_OPTIONS
-	select SOC_AMD_COMMON_BLOCK_SPI
-	select TSC_SYNC_LFENCE
-	select SOC_AMD_PI
-	select SOC_AMD_COMMON
-	select SOC_AMD_COMMON_BLOCK
-	select SOC_AMD_COMMON_BLOCK_IOMMU
-	select SOC_AMD_COMMON_BLOCK_ACPIMMIO
-	select SOC_AMD_COMMON_BLOCK_BANKED_GPIOS
-	select SOC_AMD_COMMON_BLOCK_ACPI
-	select SOC_AMD_COMMON_BLOCK_LPC
-	select SOC_AMD_COMMON_BLOCK_PCI
-	select SOC_AMD_COMMON_BLOCK_HDA
-	select SOC_AMD_COMMON_BLOCK_SATA
-	select SOC_AMD_COMMON_BLOCK_PI
-	select SOC_AMD_COMMON_BLOCK_PSP_GEN1
-	select SOC_AMD_COMMON_BLOCK_CAR
-	select SOC_AMD_COMMON_BLOCK_S3
-	select SOC_AMD_COMMON_BLOCK_SMBUS
-	select BOOT_DEVICE_SUPPORTS_WRITES if BOOT_DEVICE_SPI_FLASH
-	select BOOT_DEVICE_SPI_FLASH_RW_NOMMAP_EARLY if BOOT_DEVICE_SPI_FLASH
+	select IOAPIC
 	select PARALLEL_MP
 	select PARALLEL_MP_AP_WORK
-	select HAVE_SMI_HANDLER
-	select SSE2
 	select RTC
-	select ACPI_NO_SMI_GNVS
+	select SOC_AMD_PI
+	select SOC_AMD_COMMON
+	select SOC_AMD_COMMON_BLOCK_ACPI
+	select SOC_AMD_COMMON_BLOCK_ACPIMMIO
+	select SOC_AMD_COMMON_BLOCK_AOAC
+	select SOC_AMD_COMMON_BLOCK_BANKED_GPIOS
+	select SOC_AMD_COMMON_BLOCK_CAR
+	select SOC_AMD_COMMON_BLOCK_HDA
+	select SOC_AMD_COMMON_BLOCK_IOMMU
+	select SOC_AMD_COMMON_BLOCK_LPC
+	select SOC_AMD_COMMON_BLOCK_PCI
+	select SOC_AMD_COMMON_BLOCK_PI
+	select SOC_AMD_COMMON_BLOCK_PSP_GEN1
+	select SOC_AMD_COMMON_BLOCK_S3
+	select SOC_AMD_COMMON_BLOCK_SATA
+	select SOC_AMD_COMMON_BLOCK_SMBUS
+	select SOC_AMD_COMMON_BLOCK_SMI
+	select SOC_AMD_COMMON_BLOCK_SPI
+	select SOC_AMD_COMMON_BLOCK_UART
+	select SSE2
+	select TSC_SYNC_LFENCE
+	select X86_AMD_FIXED_MTRRS
 
 config AMD_APU_STONEYRIDGE
 	bool
@@ -144,7 +142,6 @@ config VGA_BIOS_ID
 
 config VGA_BIOS_FILE
 	string
-	default "" if !USE_AMD_BLOBS
 	default "3rdparty/amd_blobs/stoneyridge/CarrizoGenericVbios.bin" if AMD_APU_MERLINFALCON
 	default "3rdparty/amd_blobs/stoneyridge/StoneyGenericVbios.bin" if AMD_APU_PRAIRIEFALCON
 	default "3rdparty/amd_blobs/stoneyridge/StoneyGenericVbios.bin" if AMD_APU_STONEYRIDGE
@@ -186,7 +183,6 @@ config STONEYRIDGE_GEC_FWM
 
 config STONEYRIDGE_XHCI_FWM_FILE
 	string "XHCI firmware path and filename"
-	default "" if !USE_AMD_BLOBS
 	default "3rdparty/amd_blobs/stoneyridge/xhci.bin"
 	depends on STONEYRIDGE_XHCI_FWM
 
@@ -194,12 +190,12 @@ config STONEYRIDGE_GEC_FWM_FILE
 	string "GEC firmware path and filename"
 	depends on STONEYRIDGE_GEC_FWM
 
-config AMD_PUBKEY_FILE
-	string "AMD public Key"
-	default "" if !USE_AMD_BLOBS
-	default "3rdparty/amd_blobs/stoneyridge/PSP/CZ/AmdPubKeyCZ.bin" if AMD_APU_MERLINFALCON
-	default "3rdparty/amd_blobs/stoneyridge/PSP/ST/AmdPubKeyST.bin" if AMD_APU_PRAIRIEFALCON
-	default "3rdparty/amd_blobs/stoneyridge/PSP/ST/AmdPubKeyST.bin" if AMD_APU_STONEYRIDGE
+config AMDFW_CONFIG_FILE
+	string
+	string "AMD PSP Firmware config file"
+	default "src/soc/amd/stoneyridge/fw_cz.cfg" if AMD_APU_MERLINFALCON
+	default "src/soc/amd/stoneyridge/fw_st.cfg" if AMD_APU_PRAIRIEFALCON
+	default "src/soc/amd/stoneyridge/fw_st.cfg" if AMD_APU_STONEYRIDGE
 
 config STONEYRIDGE_SATA_MODE
 	int "SATA Mode"
@@ -262,20 +258,6 @@ config STONEYRIDGE_ACPI_IO_BASE
 	help
 	  Base address for the ACPI registers.
 	  This value must match the hardcoded value of AGESA.
-
-config STONEYRIDGE_UART
-	bool "UART controller on Stoney Ridge"
-	default n
-	select DRIVERS_UART_8250MEM
-	select DRIVERS_UART_8250MEM_32
-	select NO_UART_ON_SUPERIO
-	select UART_OVERRIDE_REFCLK
-	help
-	  There are two UART controllers in Stoney Ridge.
-	  The UART registers are memory-mapped. UART
-	  controller 0 registers range from FEDC_6000h
-	  to FEDC_6FFFh. UART controller 1 registers
-	  range from FEDC_8000h to FEDC_8FFFh.
 
 config CONSOLE_UART_BASE_ADDRESS
 	depends on CONSOLE_SERIAL

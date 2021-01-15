@@ -3,36 +3,27 @@
 #ifndef _XEON_SP_SOC_UTIL_H_
 #define _XEON_SP_SOC_UTIL_H_
 
-#include <console/console.h>
+#include <cpu/x86/msr.h>
 #include <hob_iiouds.h>
 
 void get_cpubusnos(uint32_t *bus0, uint32_t *bus1, uint32_t *bus2, uint32_t *bus3);
 void unlock_pam_regions(void);
 void get_stack_busnos(uint32_t *bus);
+msr_t read_msr_ppin(void);
+int get_threads_per_package(void);
+int get_platform_thread_count(void);
+const IIO_UDS *get_iio_uds(void);
+unsigned int soc_get_num_cpus(void);
+void xeonsp_init_cpu_config(void);
+void set_bios_init_completion(void);
+uint8_t soc_get_iio_ioapicid(int socket, int stack);
 
-#define LOG_MEM_RESOURCE(type, dev, index, base_kb, size_kb) \
-	printk(BIOS_SPEW, "%s:%d res: %s, dev: %s, index: 0x%x, base: 0x%llx, " \
-		"end: 0x%llx, size_kb: 0x%llx\n", \
-		__func__, __LINE__, type, dev_path(dev), index, (base_kb << 10), \
-		(base_kb << 10) + (size_kb << 10) - 1, size_kb)
+struct iiostack_resource {
+	uint8_t     no_of_stacks;
+	STACK_RES   res[CONFIG_MAX_SOCKET * MAX_IIO_STACK];
+};
 
-#define LOG_IO_RESOURCE(type, dev, index, base, size) \
-	printk(BIOS_SPEW, "%s:%d res: %s, dev: %s, index: 0x%x, base: 0x%llx, " \
-		"end: 0x%llx, size: 0x%llx\n", \
-		__func__, __LINE__, type, dev_path(dev), index, base, base + size - 1, size)
-
-#define DEV_FUNC_ENTER(dev) \
-	printk(BIOS_SPEW, "%s:%s:%d: ENTER (dev: %s)\n", \
-		__FILE__, __func__, __LINE__, dev_path(dev))
-
-#define DEV_FUNC_EXIT(dev) \
-	printk(BIOS_SPEW, "%s:%s:%d: EXIT (dev: %s)\n", __FILE__, \
-		__func__, __LINE__, dev_path(dev))
-
-#define FUNC_ENTER() \
-	printk(BIOS_SPEW, "%s:%s:%d: ENTER\n", __FILE__, __func__, __LINE__)
-
-#define FUNC_EXIT() \
-	printk(BIOS_SPEW, "%s:%s:%d: EXIT\n", __FILE__, __func__, __LINE__)
+void get_iiostack_info(struct iiostack_resource *info);
+bool is_iio_stack_res(const STACK_RES *res);
 
 #endif

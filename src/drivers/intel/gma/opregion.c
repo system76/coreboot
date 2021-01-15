@@ -19,7 +19,7 @@ const char *mainboard_vbt_filename(void)
 	return "vbt.bin";
 }
 
-static char vbt_data[8 * KiB];
+static char vbt_data[CONFIG_VBT_DATA_SIZE_KB * KiB];
 static size_t vbt_data_sz;
 
 void *locate_vbt(size_t *vbt_size)
@@ -34,8 +34,7 @@ void *locate_vbt(size_t *vbt_size)
 
 	const char *filename = mainboard_vbt_filename();
 
-	size_t file_size = cbfs_boot_load_file(filename,
-		vbt_data, sizeof(vbt_data), CBFS_TYPE_RAW);
+	size_t file_size = cbfs_load(filename, vbt_data, sizeof(vbt_data));
 
 	if (file_size == 0)
 		return NULL;

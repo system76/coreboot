@@ -54,21 +54,21 @@ void mainboard_fill_pei_data(struct pei_data *pei_data)
 {
 	struct pei_data pei_data_template = {
 		.pei_version = PEI_VERSION,
-		.mchbar = (uintptr_t)DEFAULT_MCHBAR,
-		.dmibar = (uintptr_t)DEFAULT_DMIBAR,
+		.mchbar = DEFAULT_MCHBAR,
+		.dmibar = DEFAULT_DMIBAR,
 		.epbar = DEFAULT_EPBAR,
 		.pciexbar = CONFIG_MMCONF_BASE_ADDRESS,
-		.smbusbar = SMBUS_IO_BASE,
+		.smbusbar = CONFIG_FIXED_SMBUS_IO_BASE,
 		.wdbbar = 0x4000000,
 		.wdbsize = 0x1000,
 		.hpet_address = CONFIG_HPET_ADDRESS,
-		.rcba = (uintptr_t)DEFAULT_RCBABASE,
+		.rcba = (uintptr_t)DEFAULT_RCBA,
 		.pmbase = DEFAULT_PMBASE,
 		.gpiobase = DEFAULT_GPIOBASE,
 		.thermalbase = 0xfed08000,
 		.system_type = 0, // 0 Mobile, 1 Desktop/Server
 		.tseg_size = CONFIG_SMM_TSEG_SIZE,
-		.spd_addresses = { 0xA0, 0x00,0xA4,0x00 },
+		.spd_addresses = { 0xA0, 0x00, 0xA4, 0x00 },
 		.ts_addresses = { 0x00, 0x00, 0x00, 0x00 },
 		.ec_present = 1,
 		// 0 = leave channel enabled

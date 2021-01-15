@@ -1,32 +1,10 @@
 chip soc/intel/skylake
 
-	register "deep_s5_enable_ac" = "0"
-	register "deep_s5_enable_dc" = "0"
-
-	# Enable "Intel Speed Shift Technology"
-	register "speed_shift_enable" = "1"
-
 	# FSP Configuration
-	register "SmbusEnable" = "1"
-	register "ScsEmmcEnabled" = "0"
-	register "ScsEmmcHs400Enabled" = "0"
-	register "ScsSdCardEnabled" = "0"
 	register "SkipExtGfxScan" = "1"
-	register "Device4Enable" = "1"
 	register "SaGv" = "SaGv_Disabled"
 
-	register "pirqa_routing" = "PCH_IRQ11"
-	register "pirqb_routing" = "PCH_IRQ10"
-	register "pirqc_routing" = "PCH_IRQ11"
-	register "pirqd_routing" = "PCH_IRQ11"
-	register "pirqe_routing" = "PCH_IRQ11"
-	register "pirqf_routing" = "PCH_IRQ11"
-	register "pirqg_routing" = "PCH_IRQ11"
-	register "pirqh_routing" = "PCH_IRQ11"
-
 	# SATA configuration
-	register "SataMode" = "KBLFSP_SATA_MODE_AHCI"
-	register "EnableSata" = "1"
 	register "SataSalpSupport" = "1"
 	register "SataPortsEnable" = "{ \
 		[0]	= 1, \
@@ -39,50 +17,6 @@ chip soc/intel/skylake
 		[7]	= 1, \
 	}"
 
-	register "SataPortsDevSlp" = "{\
-		[0]	= 0, \
-		[1]	= 0, \
-		[2]	= 0, \
-		[3]	= 0, \
-		[4]	= 0, \
-		[5]	= 0, \
-		[6]	= 0, \
-		[7]	= 0, \
-	}"
-
-	# superspeed_inter-chip_supplement (SSIC) disabled
-	register "SsicPortEnable" = "0"
-
-	# USB
-	register "usb2_ports" = "{
-		[0]	= USB2_PORT_EMPTY,
-		[1]	= USB2_PORT_EMPTY,
-		[2]	= USB2_PORT_EMPTY,
-		[3]	= USB2_PORT_EMPTY,
-		[4]	= USB2_PORT_EMPTY,
-		[5]	= USB2_PORT_EMPTY,
-		[6]	= USB2_PORT_EMPTY,
-		[7]	= USB2_PORT_EMPTY,
-		[8]	= USB2_PORT_EMPTY,
-		[9]	= USB2_PORT_EMPTY,
-		[10]	= USB2_PORT_EMPTY,
-		[11]	= USB2_PORT_EMPTY,
-		[12]	= USB2_PORT_EMPTY,
-		[13]	= USB2_PORT_EMPTY,
-	}"
-	register "usb3_ports" = "{
-		[0]	= USB3_PORT_EMPTY,
-		[1]	= USB3_PORT_EMPTY,
-		[2]	= USB3_PORT_EMPTY,
-		[3]	= USB3_PORT_EMPTY,
-		[4]	= USB3_PORT_EMPTY,
-		[5]	= USB3_PORT_EMPTY,
-		[6]	= USB3_PORT_EMPTY,
-		[7]	= USB3_PORT_EMPTY,
-		[8]	= USB3_PORT_EMPTY,
-		[9]	= USB3_PORT_EMPTY,
-	}"
-
 	# LPC
 	register "serirq_mode" = "SERIRQ_CONTINUOUS"
 
@@ -92,9 +26,6 @@ chip soc/intel/skylake
 	register "PmConfigSlpS4MinAssert"	= "SLP_S4_MIN_ASSERT_4S"
 	register "PmConfigSlpSusMinAssert"	= "SLP_SUS_MIN_ASSERT_4S"
 	register "PmConfigSlpAMinAssert"	= "SLP_A_MIN_ASSERT_2S"
-
-	# No extra VR mailbox command
-	register "SendVrMbxCmd" = "0"
 
 	# Lock Down
 	register "common_soc_config" = "{
@@ -153,6 +84,7 @@ chip soc/intel/skylake
 		device pci 1e.0 off end	# UART #0
 		device pci 1e.1 off end	# UART #1
 		device pci 1e.2 off end	# SPI #0
+		device pci 1e.6 off end # SDXC
 		device pci 1f.0 on	# LPC Interface
 			chip superio/common
 				device pnp 2e.0 on  end

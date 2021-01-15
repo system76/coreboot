@@ -1,9 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-Device (GFX0)
+Scope (GFX0)
 {
-	Name (_ADR, 0x00020000)
-
 	OperationRegion (GFXC, PCI_Config, 0x00, 0x0100)
 	Field (GFXC, DWordAcc, NoLock, Preserve)
 	{
@@ -20,6 +18,9 @@ Device (GFX0)
 	{
 		Offset (CONFIG_INTEL_GMA_BCLV_OFFSET),
 		BCLV, CONFIG_INTEL_GMA_BCLV_WIDTH,
+	}
+	Field (GFRG, DWordAcc, NoLock, Preserve)
+	{
 		Offset (CONFIG_INTEL_GMA_BCLM_OFFSET),
 		BCLM, CONFIG_INTEL_GMA_BCLM_WIDTH
 	}

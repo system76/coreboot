@@ -8,7 +8,7 @@
 void spiconsole_init(void);
 void spiconsole_tx_byte(unsigned char c);
 
-#define __CONSOLE_SPI_ENABLE__	(CONFIG(SPI_CONSOLE) && \
+#define __CONSOLE_SPI_ENABLE__	(CONFIG(EM100PRO_SPI_CONSOLE) && \
 	(ENV_RAMSTAGE || (ENV_SMM && CONFIG(DEBUG_SMI))))
 
 #if __CONSOLE_SPI_ENABLE__
@@ -51,7 +51,5 @@ struct em100_msg {
 	struct em100_msg_header header;
 	char data[MAX_MSG_LENGTH];
 } __packed;
-
-
 
 #endif /* CONSOLE_SPI_H */

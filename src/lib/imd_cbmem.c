@@ -30,6 +30,8 @@ void *cbmem_top(void)
 	dead_code();
 }
 
+int cbmem_initialized;
+
 static inline const struct cbmem_entry *imd_to_cbmem(const struct imd_entry *e)
 {
 	return (const struct cbmem_entry *)e;
@@ -79,6 +81,8 @@ void cbmem_initialize_empty_id_size(u32 id, u64 size)
 
 	/* Complete migration to CBMEM. */
 	cbmem_run_init_hooks(no_recovery);
+
+	cbmem_initialized = 1;
 }
 
 int cbmem_initialize(void)
@@ -111,6 +115,8 @@ int cbmem_initialize_id_size(u32 id, u64 size)
 
 	/* Complete migration to CBMEM. */
 	cbmem_run_init_hooks(recovery);
+
+	cbmem_initialized = 1;
 
 	/* Recovery successful. */
 	return 0;
@@ -178,7 +184,7 @@ int cbmem_entry_remove(const struct cbmem_entry *entry)
 
 u64 cbmem_entry_size(const struct cbmem_entry *entry)
 {
-	return imd_entry_size(&imd, cbmem_to_imd(entry));
+	return imd_entry_size(cbmem_to_imd(entry));
 }
 
 void *cbmem_entry_start(const struct cbmem_entry *entry)
@@ -232,7 +238,7 @@ void cbmem_add_records_to_cbtable(struct lb_header *header)
 		if (e == NULL)
 			break;
 
-		id = imd_entry_id(&imd, e);
+		id = imd_entry_id(e);
 		/* Don't add these metadata entries. */
 		if (id == CBMEM_ID_IMD_ROOT || id == CBMEM_ID_IMD_SMALL)
 			continue;
@@ -241,7 +247,7 @@ void cbmem_add_records_to_cbtable(struct lb_header *header)
 		lbe->tag = LB_TAG_CBMEM_ENTRY;
 		lbe->size = sizeof(*lbe);
 		lbe->address = (uintptr_t)imd_entry_at(&imd, e);
-		lbe->entry_size = imd_entry_size(&imd, e);
+		lbe->entry_size = imd_entry_size(e);
 		lbe->id = id;
 	}
 }

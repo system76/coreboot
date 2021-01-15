@@ -4,6 +4,7 @@ config ARCH_X86
 	bool
 	select PCI
 	select RELOCATABLE_MODULES
+	select HAVE_ASAN_IN_RAMSTAGE
 
 # stage selectors for x86
 
@@ -27,6 +28,13 @@ config ARCH_RAMSTAGE_X86_32
 	bool
 	select ARCH_X86
 
+config ARCH_ALL_STAGES_X86_32
+	bool
+	select ARCH_BOOTBLOCK_X86_32
+	select ARCH_VERSTAGE_X86_32
+	select ARCH_ROMSTAGE_X86_32
+	select ARCH_RAMSTAGE_X86_32
+
 # stage selectors for x64
 
 config ARCH_BOOTBLOCK_X86_64
@@ -49,12 +57,19 @@ config ARCH_RAMSTAGE_X86_64
 	bool
 	select ARCH_X86
 
+config ARCH_ALL_STAGES_X86_64
+	bool
+	select ARCH_BOOTBLOCK_X86_64
+	select ARCH_VERSTAGE_X86_64
+	select ARCH_ROMSTAGE_X86_64
+	select ARCH_RAMSTAGE_X86_64
+
 if ARCH_X86
 
 config ARCH_X86_64_PGTBL_LOC
 	hex "x86_64 page table location in CBFS"
 	depends on ARCH_BOOTBLOCK_X86_64
-	default 0xfffea000
+	default 0xfffe9000
 	help
 	  The position where to place pagetables. Needs to be known at
 	  compile time. Must not overlap other files in CBFS.
@@ -72,16 +87,6 @@ config AP_IN_SIPI_WAIT
 	bool
 	default n
 	depends on ARCH_X86 && SMP
-
-config X86_RESET_VECTOR
-	hex
-	depends on ARCH_X86
-	default 0xfffffff0
-	help
-	  Specify the location of the x86 reset vector.  In traditional devices
-	  this must match the architectural reset vector to produce a bootable
-	  image.  Nontraditional designs may use this to position the reset
-	  vector into its desired location.
 
 config RESET_VECTOR_IN_RAM
 	bool
@@ -139,6 +144,13 @@ config PRERAM_CBMEM_CONSOLE_SIZE
 	help
 	  Increase this value if preram cbmem console is getting truncated
 
+config CBFS_MCACHE_SIZE
+	hex
+	depends on !NO_CBFS_MCACHE
+	default 0x2000
+	help
+	  Increase this value if you see CBFS mcache overflow warnings.
+
 config PC80_SYSTEM
 	bool
 	default y if ARCH_X86
@@ -173,10 +185,6 @@ config HPET_ADDRESS_OVERRIDE
 config HPET_ADDRESS
 	hex
 	default 0xfed00000 if !HPET_ADDRESS_OVERRIDE
-
-config ID_SECTION_OFFSET
-	hex
-	default 0x80
 
 # 64KiB default bootblock size
 config C_ENV_BOOTBLOCK_SIZE

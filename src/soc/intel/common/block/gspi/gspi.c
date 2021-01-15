@@ -2,6 +2,7 @@
 
 #include <device/mmio.h>
 #include <assert.h>
+#include <bootstate.h>
 #include <console/console.h>
 #include <delay.h>
 #include <device/device.h>
@@ -257,6 +258,17 @@ static uintptr_t gspi_get_bus_base_addr(unsigned int gspi_bus)
 	return gspi_base[gspi_bus];
 }
 
+/*
+ * PCI resource allocation will likely change the base address of the mapped
+ * I/O registers.  Clearing the cached value after the allocation step will
+ * cause it to be recomputed by gspi_calc_base_addr() on next access.
+ */
+static void gspi_clear_cached_base(void *unused)
+{
+	memset(gspi_base, 0, sizeof(gspi_base));
+}
+BOOT_STATE_INIT_ENTRY(BS_DEV_RESOURCES, BS_ON_EXIT, gspi_clear_cached_base, NULL);
+
 /* Parameters for GSPI controller operation. */
 struct gspi_ctrlr_params {
 	uintptr_t mmio_base;
@@ -436,7 +448,6 @@ static int gspi_ctrlr_setup(const struct spi_slave *dev)
 	int devfn;
 	uint32_t cs_ctrl, sscr0, sscr1, clocks, sitf, sirf, pol;
 	struct gspi_ctrlr_params params, *p = &params;
-	const struct device *device;
 
 	/* Only chip select 0 is supported. */
 	if (dev->cs != 0) {
@@ -456,14 +467,9 @@ static int gspi_ctrlr_setup(const struct spi_slave *dev)
 	}
 
 	devfn = gspi_soc_bus_to_devfn(p->gspi_bus);
-	/*
-	 * devfn is already validated as part of gspi_ctrlr_params_init.
-	 * No need to revalidate it again.
-	 */
-	device = pcidev_path_on_root(devfn);
 
 	/* Ensure controller is in D0 state */
-	lpss_set_power_state(device, STATE_D0);
+	lpss_set_power_state(PCI_DEV(0, PCI_SLOT(devfn), PCI_FUNC(devfn)), STATE_D0);
 
 	/* Take controller out of reset, keeping DMA in reset. */
 	gspi_write_mmio_reg(p, RESETS, CTRLR_ACTIVE | DMA_RESET);

@@ -7,13 +7,13 @@ config SOC_INTEL_DENVERTON_NS
 
 if SOC_INTEL_DENVERTON_NS
 
+config CPU_INTEL_NUM_FIT_ENTRIES
+	int
+	default 1
+
 config CPU_SPECIFIC_OPTIONS
 	def_bool y
-	select ARCH_BOOTBLOCK_X86_32
-	select ARCH_RAMSTAGE_X86_32
-	select ARCH_ROMSTAGE_X86_32
-	select ARCH_VERSTAGE_X86_32
-	select BOOT_DEVICE_SPI_FLASH_RW_NOMMAP_EARLY if BOOT_DEVICE_SPI_FLASH
+	select ARCH_ALL_STAGES_X86_32
 	select BOOT_DEVICE_SUPPORTS_WRITES
 	select DEBUG_GPIO
 	select SOC_INTEL_COMMON
@@ -25,7 +25,7 @@ config CPU_SPECIFIC_OPTIONS
 	select CACHE_MRC_SETTINGS
 	select PARALLEL_MP
 	select PCR_COMMON_IOSF_1_0
-	select SMP
+	select SUPPORT_CPU_UCODE_IN_CBFS
 	select INTEL_DESCRIPTOR_MODE_CAPABLE
 	select SOC_INTEL_COMMON_BLOCK
 	select SOC_INTEL_COMMON_BLOCK_CPU
@@ -39,6 +39,7 @@ config CPU_SPECIFIC_OPTIONS
 	select TSC_SYNC_MFENCE
 	select UDELAY_TSC
 	select UDK_2015_BINDING
+	select CPU_INTEL_COMMON
 	select CPU_INTEL_FIRMWARE_INTERFACE_TABLE
 	select SUPPORT_CPU_UCODE_IN_CBFS
 
@@ -121,13 +122,6 @@ config IQAT_ENABLE
 	bool "Enable IQAT"
 	default y
 
-config IQAT_MEMORY_REGION_SIZE
-	depends on IQAT_ENABLE
-	hex
-	default 0x100000
-	help
-	  Do not change this value
-
 config HSUART_DEV
 	hex
 	default 0x1a
@@ -145,6 +139,9 @@ config LEGACY_UART_MODE
 	bool "Legacy Mode"
 	help
 	  Enable legacy UART mode
+	select CONSOLE_SERIAL
+	select DRIVERS_UART
+	select DRIVERS_UART_8250IO
 endchoice
 
 config ENABLE_HSUART
@@ -164,10 +161,14 @@ config C_ENV_BOOTBLOCK_SIZE
 	hex
 	default 0x8000
 
-config DENVERTON_NS_CAR_NEM_ENHANCED
+choice
+	prompt "Cache-as-ram implementation"
+	default USE_DENVERTON_NS_CAR_NEM_ENHANCED
+	help
+	  This option allows you to select how cache-as-ram (CAR) is set up.
+
+config USE_DENVERTON_NS_CAR_NEM_ENHANCED
 	bool "Enhanced Non-evict mode"
-	depends on !FSP_CAR
-	default y
 	select SOC_INTEL_COMMON_BLOCK_CAR
 	select INTEL_CAR_NEM_ENHANCED
 	help
@@ -177,5 +178,13 @@ config DENVERTON_NS_CAR_NEM_ENHANCED
 	  the modified data will be lost and NEM results will be inconsistent.
 	  ENHANCED NEM guarantees that modified data is always
 	  kept in cache while clean data is replaced.
+
+config USE_DENVERTON_NS_FSP_CAR
+	bool "Use FSP CAR"
+	select FSP_CAR
+	help
+	  Use FSP APIs to initialize and tear down the Cache-As-Ram.
+
+endchoice
 
 endif ## SOC_INTEL_DENVERTON_NS

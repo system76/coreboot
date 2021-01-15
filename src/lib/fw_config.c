@@ -1,22 +1,20 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+#include <assert.h>
 #include <bootstate.h>
 #include <cbfs.h>
 #include <console/console.h>
 #include <device/device.h>
 #include <ec/google/chromeec/ec.h>
 #include <fw_config.h>
+#include <inttypes.h>
+#include <lib.h>
 #include <stdbool.h>
 #include <stdint.h>
 
-/**
- * fw_config_get() - Provide firmware configuration value.
- *
- * Return 32bit firmware configuration value determined for the system.
- */
-static uint32_t fw_config_get(void)
+uint64_t fw_config_get(void)
 {
-	static uint32_t fw_config_value;
+	static uint64_t fw_config_value;
 	static bool fw_config_value_initialized;
 
 	/* Nothing to prepare if setup is already done. */
@@ -26,14 +24,13 @@ static uint32_t fw_config_get(void)
 
 	/* Look in CBFS to allow override of value. */
 	if (CONFIG(FW_CONFIG_SOURCE_CBFS)) {
-		if (cbfs_boot_load_file(CONFIG_CBFS_PREFIX "/fw_config",
-					&fw_config_value, sizeof(fw_config_value),
-					CBFS_TYPE_RAW) != sizeof(fw_config_value)) {
+		if (cbfs_load(CONFIG_CBFS_PREFIX "/fw_config", &fw_config_value,
+			      sizeof(fw_config_value)) != sizeof(fw_config_value)) {
 			printk(BIOS_WARNING, "%s: Could not get fw_config from CBFS\n",
 			       __func__);
-			fw_config_value = 0;
+			fw_config_value = UNDEFINED_FW_CONFIG;
 		} else {
-			printk(BIOS_INFO, "FW_CONFIG value from CBFS is 0x%08x\n",
+			printk(BIOS_INFO, "FW_CONFIG value from CBFS is 0x%" PRIx64 "\n",
 			       fw_config_value);
 			return fw_config_value;
 		}
@@ -41,11 +38,13 @@ static uint32_t fw_config_get(void)
 
 	/* Read the value from EC CBI. */
 	if (CONFIG(FW_CONFIG_SOURCE_CHROMEEC_CBI)) {
-		if (google_chromeec_cbi_get_fw_config(&fw_config_value))
+		if (google_chromeec_cbi_get_fw_config(&fw_config_value)) {
 			printk(BIOS_WARNING, "%s: Could not get fw_config from EC\n", __func__);
+			fw_config_value = UNDEFINED_FW_CONFIG;
+		}
 	}
 
-	printk(BIOS_INFO, "FW_CONFIG value is 0x%08x\n", fw_config_value);
+	printk(BIOS_INFO, "FW_CONFIG value is 0x%" PRIx64 "\n", fw_config_value);
 	return fw_config_value;
 }
 
@@ -57,7 +56,8 @@ bool fw_config_probe(const struct fw_config *match)
 			printk(BIOS_INFO, "fw_config match found: %s=%s\n", match->field_name,
 			       match->option_name);
 		else
-			printk(BIOS_INFO, "fw_config match found: mask=0x%08x value=0x%08x\n",
+			printk(BIOS_INFO, "fw_config match found: mask=0x%" PRIx64 " value=0x%"
+			       PRIx64 "\n",
 			       match->mask, match->value);
 		return true;
 	}
@@ -65,7 +65,46 @@ bool fw_config_probe(const struct fw_config *match)
 	return false;
 }
 
+bool fw_config_is_provisioned(void)
+{
+	return fw_config_get() != UNDEFINED_FW_CONFIG;
+}
+
 #if ENV_RAMSTAGE
+
+/*
+ * The maximum number of fw_config fields is limited by the 64-bit mask that is used to
+ * represent them.
+ */
+#define MAX_CACHE_ELEMENTS	(8 * sizeof(uint64_t))
+
+static const struct fw_config *cached_configs[MAX_CACHE_ELEMENTS];
+
+static size_t probe_index(uint64_t mask)
+{
+	assert(mask);
+	return __ffs64(mask);
+}
+
+const struct fw_config *fw_config_get_found(uint64_t field_mask)
+{
+	const struct fw_config *config;
+	config = cached_configs[probe_index(field_mask)];
+	if (config && config->mask == field_mask)
+		return config;
+
+	return NULL;
+}
+
+void fw_config_for_each_found(void (*cb)(const struct fw_config *config, void *arg), void *arg)
+{
+	size_t i;
+
+	for (i = 0; i < MAX_CACHE_ELEMENTS; ++i)
+		if (cached_configs[i])
+			cb(cached_configs[i], arg);
+}
+
 static void fw_config_init(void *unused)
 {
 	struct device *dev;
@@ -80,6 +119,7 @@ static void fw_config_init(void *unused)
 		for (probe = dev->probe_list; probe && probe->mask != 0; probe++) {
 			if (fw_config_probe(probe)) {
 				match = true;
+				cached_configs[probe_index(probe->mask)] = probe;
 				break;
 			}
 		}
@@ -90,5 +130,5 @@ static void fw_config_init(void *unused)
 		}
 	}
 }
-BOOT_STATE_INIT_ENTRY(BS_DEV_ENUMERATE, BS_ON_ENTRY, fw_config_init, NULL);
+BOOT_STATE_INIT_ENTRY(BS_DEV_INIT_CHIPS, BS_ON_ENTRY, fw_config_init, NULL);
 #endif

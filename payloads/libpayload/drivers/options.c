@@ -26,8 +26,11 @@
  * SUCH DAMAGE.
  */
 
+#define __STDC_FORMAT_MACROS
+
 #include <libpayload.h>
 #include <coreboot_tables.h>
+#include <inttypes.h>
 
 u8 *mem_accessor_base;
 
@@ -53,7 +56,7 @@ struct nvram_accessor *use_mem = &(struct nvram_accessor) {
 
 struct cb_cmos_option_table *get_system_option_table(void)
 {
-	return lib_sysinfo.option_table;
+	return phys_to_virt(lib_sysinfo.cmos_option_table);
 }
 
 int options_checksum_valid(const struct nvram_accessor *nvram)
@@ -325,7 +328,7 @@ int get_option_as_string(const struct nvram_accessor *nvram, struct cb_cmos_opti
 			/* only works on little endian.
 			   26 bytes is enough for a 64bit value in decimal */
 			*dest = malloc(26);
-			sprintf(*dest, "%llu", *(u64*)raw);
+			sprintf(*dest, "%" PRIu64, *(u64 *)raw);
 			break;
 		case 's':
 			*dest = strdup(raw);

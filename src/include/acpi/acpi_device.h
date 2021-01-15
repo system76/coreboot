@@ -4,8 +4,8 @@
 #define __ACPI_ACPI_DEVICE_H__
 
 #include <device/i2c.h>
-#include <stdint.h>
 #include <spi-generic.h>
+#include <types.h>
 
 enum acpi_dp_type {
 	ACPI_DP_TYPE_UNKNOWN,
@@ -544,6 +544,22 @@ struct acpi_dp *acpi_dp_add_integer_array(struct acpi_dp *dp, const char *name,
 struct acpi_dp *acpi_dp_add_gpio(struct acpi_dp *dp, const char *name,
 				 const char *ref, int index, int pin,
 				 int active_low);
+
+struct acpi_gpio_res_params {
+	/* Reference to the parent device. */
+	const char *ref;
+	/* Index to the GpioIo resource within the _CRS. */
+	int index;
+	/* Index to the pin within the GpioIo resource, usually 0. */
+	int pin;
+	/* Flag to indicate if pin is active low. */
+	int active_low;
+};
+
+/* Add a GPIO binding device property for array of GPIOs */
+struct acpi_dp *acpi_dp_add_gpio_array(struct acpi_dp *dp, const char *name,
+				       const struct acpi_gpio_res_params *params,
+				       size_t param_count);
 
 /* Add a child table of Device Properties */
 struct acpi_dp *acpi_dp_add_child(struct acpi_dp *dp, const char *name,

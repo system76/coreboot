@@ -41,6 +41,7 @@ config HAVE_INTEL_FSP_REPO
 config FSP_USE_REPO
 	bool "Use binaries of the Intel FSP repository on GitHub"
 	depends on HAVE_INTEL_FSP_REPO
+	select FSP_FULL_FD
 	default y
 	help
 	  Select this option to use the default FSP headers and binaries
@@ -54,13 +55,6 @@ config FSP_HEADER_PATH
 	string "Location of FSP headers" if !FSP_USE_REPO
 	help
 	  Include directory with the FSP ABI header files.
-
-config FSP_FD_PATH
-	string
-	depends on FSP_USE_REPO
-	help
-	  Path to the FSP FD file that contains the individual FSP-T, FSP-M
-	  and FSP-S binaries.
 
 config ADD_FSP_BINARIES
 	bool "Add Intel FSP 2.0 binaries to CBFS" if !FSP_USE_REPO
@@ -81,31 +75,45 @@ config FSP_M_CBFS
 	string "Name of FSP-M in CBFS"
 	default "fspm.bin"
 
+config FSP_FULL_FD
+	bool "Use a combined FSP FD file" if !FSP_USE_REPO
+	depends on ADD_FSP_BINARIES
+	help
+	  Use a combined FSP FD file instead of specifying individual, already split
+	  binaries and split the file at build-time.
+
+config FSP_FD_PATH
+	string "Location of FSP FD file" if FSP_FULL_FD && !FSP_USE_REPO
+	help
+	  Path to the FSP FD file that contains the individual FSP-T, FSP-M
+	  and FSP-S binaries. The file gets split at build-time.
+
 config FSP_T_FILE
-	string "Intel FSP-T (temp RAM init) binary path and filename" if !FSP_USE_REPO
+	string "Intel FSP-T (temp RAM init) binary path and filename" if !FSP_FULL_FD
 	depends on ADD_FSP_BINARIES
 	depends on FSP_CAR
-	default "\$(obj)/Fsp_T.fd" if FSP_USE_REPO
+	default "\$(obj)/Fsp_T.fd" if FSP_FULL_FD
 	help
 	  The path and filename of the Intel FSP-T binary for this platform.
 
 config FSP_M_FILE
-	string "Intel FSP-M (memory init) binary path and filename" if !FSP_USE_REPO
+	string "Intel FSP-M (memory init) binary path and filename" if !FSP_FULL_FD
 	depends on ADD_FSP_BINARIES
-	default "\$(obj)/Fsp_M.fd" if FSP_USE_REPO
+	default "\$(obj)/Fsp_M.fd" if FSP_FULL_FD
 	help
 	  The path and filename of the Intel FSP-M binary for this platform.
 
 config FSP_S_FILE
-	string "Intel FSP-S (silicon init) binary path and filename" if !FSP_USE_REPO
+	string "Intel FSP-S (silicon init) binary path and filename" if !FSP_FULL_FD
 	depends on ADD_FSP_BINARIES
-	default "\$(obj)/Fsp_S.fd" if FSP_USE_REPO
+	default "\$(obj)/Fsp_S.fd" if FSP_FULL_FD
 	help
 	  The path and filename of the Intel FSP-S binary for this platform.
 
 config FSP_CAR
 	bool
 	default n
+	select NO_CBFS_MCACHE
 	help
 	  Use FSP APIs to initialize & Tear Down the Cache-As-Ram
 
@@ -132,29 +140,14 @@ config FSP_USES_CB_STACK
 
 config FSP_TEMP_RAM_SIZE
 	hex
-	depends on FSP_USES_CB_STACK
 	help
-	  The amount of anticipated heap usage in CAR by FSP to setup HOB.
-	  This configuration is applicable for FSP specification using shared
-	  stack with coreboot/bootloader.
-	  Sync this value with Platform FSP integration guide recommendation.
-
-config FSP2_0_USES_TPM_MRC_HASH
-	bool
-	depends on TPM1 || TPM2
-	depends on VBOOT && VBOOT_STARTS_IN_BOOTBLOCK
-	default y if HAS_RECOVERY_MRC_CACHE
-	default n
-	select VBOOT_HAS_REC_HASH_SPACE
-	help
-	  Store hash of trained recovery MRC cache in NVRAM space in TPM.
-	  Use the hash to validate recovery MRC cache before using it.
-	  This hash needs to be updated every time recovery mode training
-	  is recomputed, or if the hash does not match recovery MRC cache.
-	  Selecting this option requires that TPM already be setup by this
-	  point in time.  Thus it is only compatible when the option
-	  VBOOT_STARTS_IN_BOOTBLOCK is selected, which causes verstage and
-	  TPM setup to occur prior to memory initialization.
+	  The amount of memory coreboot reserves for the FSP to use. In the
+	  case of FSP 2.1 and newer that share the stack with coreboot instead
+	  of having its own stack, this is the amount of anticipated heap usage
+	  in CAR by FSP to setup HOB and needs to be the recommended value from
+	  the Platform FSP integration guide. In the case of the FSP having its
+	  own stack that will be placed in DRAM and not in CAR, this is the
+	  amount of memory the FSP needs for its stack and heap.
 
 config FSP_PLATFORM_MEMORY_SETTINGS_VERSIONS
 	bool
@@ -210,6 +203,58 @@ config FSP_M_ADDR
 	hex
 	help
 	  The address FSP-M will be relocated to during build time
+
+config FSP_STATUS_GLOBAL_RESET_REQUIRED_3
+	bool
+	help
+	  FSP Reset Status code used for global reset as per FSP EAS v2.0 section 11.2.2
+
+config FSP_STATUS_GLOBAL_RESET_REQUIRED_4
+	bool
+	help
+	  FSP Reset Status code used for global reset as per FSP EAS v2.0 section 11.2.2
+
+config FSP_STATUS_GLOBAL_RESET_REQUIRED_5
+	bool
+	help
+	  FSP Reset Status code used for global reset as per FSP EAS v2.0 section 11.2.2
+
+config FSP_STATUS_GLOBAL_RESET_REQUIRED_6
+	bool
+	help
+	  FSP Reset Status code used for global reset as per FSP EAS v2.0 section 11.2.2
+
+config FSP_STATUS_GLOBAL_RESET_REQUIRED_7
+	bool
+	help
+	  FSP Reset Status code used for global reset as per FSP EAS v2.0 section 11.2.2
+
+config FSP_STATUS_GLOBAL_RESET_REQUIRED_8
+	bool
+	help
+	  FSP Reset Status code used for global reset as per FSP EAS v2.0 section 11.2.2
+
+config FSP_STATUS_GLOBAL_RESET
+	hex
+	depends on SOC_INTEL_COMMON_FSP_RESET
+	default 0x40000003 if FSP_STATUS_GLOBAL_RESET_REQUIRED_3
+	default 0x40000004 if FSP_STATUS_GLOBAL_RESET_REQUIRED_4
+	default 0x40000005 if FSP_STATUS_GLOBAL_RESET_REQUIRED_5
+	default 0x40000006 if FSP_STATUS_GLOBAL_RESET_REQUIRED_6
+	default 0x40000007 if FSP_STATUS_GLOBAL_RESET_REQUIRED_7
+	default 0x40000008 if FSP_STATUS_GLOBAL_RESET_REQUIRED_8
+	default 0xffffffff
+	help
+	  If global reset is supported by SoC then select the correct status value for global
+	  reset type from SoC Kconfig based on available Kconfig options
+	  FSP_STATUS_GLOBAL_RESET_REQUIRED_X. Default is unsupported.
+
+config SOC_INTEL_COMMON_FSP_RESET
+	bool
+	help
+	  Common code block to handle platform reset request raised by FSP. The FSP
+	  will use the FSP EAS v2.0 section 12.2.2 (OEM Status Code) to indicate that
+	  a reset is required.
 
 if FSP_PEIM_TO_PEIM_INTERFACE
 source "src/drivers/intel/fsp2_0/ppi/Kconfig"

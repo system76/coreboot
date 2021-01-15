@@ -15,6 +15,7 @@ config BOARD_GOOGLE_BASEBOARD_AURON
 	select MAINBOARD_HAS_TPM1
 	select INTEL_INT15
 	select SYSTEM_TYPE_LAPTOP if !BOARD_GOOGLE_BUDDY
+	select HAVE_SPD_IN_CBFS if !BOARD_GOOGLE_BUDDY
 
 if BOARD_GOOGLE_BASEBOARD_AURON
 
@@ -56,10 +57,6 @@ config EC_GOOGLE_CHROMEEC_BOARDNAME
 	string
 	default "samus" if BOARD_GOOGLE_SAMUS
 	default ""
-
-config MAX_CPUS
-	int
-	default 8
 
 config VGA_BIOS_FILE
 	string

@@ -48,11 +48,12 @@
 #define  ENERGY_POLICY_PERFORMANCE	0
 #define  ENERGY_POLICY_NORMAL		6
 #define  ENERGY_POLICY_POWERSAVE	15
+#define  ENERGY_POLICY_MASK		0xf
 #define IA32_PACKAGE_THERM_INTERRUPT	0x1b2
-#define IA32_PLATFORM_DCA_CAP		0x1f8
 #define SMRR_PHYSBASE_MSR		0x1F2
 #define SMRR_PHYSMASK_MSR		0x1F3
 #define IA32_PLATFORM_DCA_CAP		0x1f8
+#define  DCA_TYPE0_EN			(1 << 0)
 #define IA32_PAT			0x277
 #define IA32_MC0_CTL			0x400
 #define IA32_MC0_STATUS			0x401
@@ -89,6 +90,9 @@
 #define   IA32_PQR_ASSOC_MASK	(1 << 0 | 1 << 1)
 #define IA32_L3_MASK_1			0xc91
 #define IA32_L3_MASK_2			0xc92
+
+#define IA32_CR_SF_QOS_MASK_1           0x1891
+#define IA32_CR_SF_QOS_MASK_2           0x1892
 
 #ifndef __ASSEMBLER__
 #include <types.h>
@@ -296,25 +300,46 @@ static inline enum mca_err_code_types mca_err_type(msr_t reg)
 	return MCA_ERRTYPE_UNKNOWN;
 }
 
-
-/* Helper for setting single MSR bits */
-static inline void msr_set_bit(unsigned int reg, unsigned int bit)
+/**
+ * Helper for (un)setting MSR bitmasks
+ *
+ * @param[in] reg	The MSR.
+ * @param[in] unset	Bitmask with ones to the bits to unset from the MSR.
+ * @param[in] set	Bitmask with ones to the bits to set from the MSR.
+ */
+static inline void msr_unset_and_set(unsigned int reg, uint64_t unset, uint64_t set)
 {
-	msr_t msr = rdmsr(reg);
+	msr_t msr;
 
-	if (bit < 32) {
-		if (msr.lo & (1 << bit))
-			return;
-		msr.lo |= 1 << bit;
-	} else {
-		if (msr.hi & (1 << (bit - 32)))
-			return;
-		msr.hi |= 1 << (bit - 32);
-	}
-
+	msr = rdmsr(reg);
+	msr.lo &= (unsigned int)~unset;
+	msr.hi &= (unsigned int)~(unset >> 32);
+	msr.lo |= (unsigned int)set;
+	msr.hi |= (unsigned int)(set >> 32);
 	wrmsr(reg, msr);
 }
 
+/**
+ * Helper for setting MSR bitmasks
+ *
+ * @param[in] reg	The MSR.
+ * @param[in] set	Bitmask with ones to the bits to set from the MSR.
+ */
+static inline void msr_set(unsigned int reg, uint64_t set)
+{
+	msr_unset_and_set(reg, 0, set);
+}
+
+/**
+ * Helper for unsetting MSR bitmasks
+ *
+ * @param[in] reg	The MSR.
+ * @param[in] unset	Bitmask with ones to the bits to unset from the MSR.
+ */
+static inline void msr_unset(unsigned int reg, uint64_t unset)
+{
+	msr_unset_and_set(reg, unset, 0);
+}
 
 #endif /* __ASSEMBLER__ */
 #endif /* CPU_X86_MSR_H */

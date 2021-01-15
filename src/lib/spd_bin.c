@@ -2,6 +2,7 @@
 
 #include <cbfs.h>
 #include <console/console.h>
+#include <memory_info.h>
 #include <spd_bin.h>
 #include <string.h>
 #include <device/dram/ddr3.h>
@@ -15,6 +16,12 @@ void dump_spd_info(struct spd_block *blk)
 			printk(BIOS_DEBUG, "SPD @ 0x%02X\n", blk->addr_map[i]);
 			print_spd_info(blk->spd_array[i]);
 		}
+}
+
+const char * __weak mainboard_get_dram_part_num(void)
+{
+	/* Default weak implementation, no need to override part number. */
+	return NULL;
 }
 
 static bool use_ddr4_params(int dram_type)
@@ -136,33 +143,41 @@ static int spd_get_busw(const uint8_t spd[], int dram_type)
 	return spd_busw[index];
 }
 
-static void spd_get_name(const uint8_t spd[], char spd_name[], int dram_type)
+static void spd_get_name(const uint8_t spd[], int type, const char **spd_name, size_t *len)
 {
-	switch (dram_type) {
+	*spd_name = mainboard_get_dram_part_num();
+	if (*spd_name != NULL) {
+		*len = strlen(*spd_name);
+		return;
+	}
+
+	switch (type) {
 	case SPD_DRAM_DDR3:
-		memcpy(spd_name, &spd[DDR3_SPD_PART_OFF], DDR3_SPD_PART_LEN);
-		spd_name[DDR3_SPD_PART_LEN] = 0;
+		*spd_name = (const char *) &spd[DDR3_SPD_PART_OFF];
+		*len = DDR3_SPD_PART_LEN;
 		break;
 	case SPD_DRAM_LPDDR3_INTEL:
-		memcpy(spd_name, &spd[LPDDR3_SPD_PART_OFF],
-			LPDDR3_SPD_PART_LEN);
-		spd_name[LPDDR3_SPD_PART_LEN] = 0;
+		*spd_name = (const char *) &spd[LPDDR3_SPD_PART_OFF];
+		*len = LPDDR3_SPD_PART_LEN;
 		break;
-	/* LPDDR3, LPDDR4 and DDR4 have the same part number offset */
+	/* LPDDR3, LPDDR4 and DDR4 have same part number offset and length */
 	case SPD_DRAM_LPDDR3_JEDEC:
 	case SPD_DRAM_DDR4:
 	case SPD_DRAM_LPDDR4:
-		memcpy(spd_name, &spd[DDR4_SPD_PART_OFF], DDR4_SPD_PART_LEN);
-		spd_name[DDR4_SPD_PART_LEN] = 0;
+	case SPD_DRAM_LPDDR4X:
+		*spd_name = (const char *) &spd[DDR4_SPD_PART_OFF];
+		*len = DDR4_SPD_PART_LEN;
 		break;
 	default:
+		*len = 0;
 		break;
 	}
 }
 
 void print_spd_info(uint8_t spd[])
 {
-	char spd_name[DDR4_SPD_PART_LEN + 1] = { 0 };
+	const char *nameptr = NULL;
+	size_t len;
 	int type  = spd[SPD_DRAM_TYPE];
 	int banks = spd_get_banks(spd, type);
 	int capmb = spd_get_capmb(spd);
@@ -176,9 +191,9 @@ void print_spd_info(uint8_t spd[])
 	printk(BIOS_INFO, "SPD: module type is %s\n",
 		spd_get_module_type_string(type));
 	/* Module Part Number */
-	spd_get_name(spd, spd_name, type);
-
-	printk(BIOS_INFO, "SPD: module part number is %s\n", spd_name);
+	spd_get_name(spd, type, &nameptr, &len);
+	if (nameptr)
+		printk(BIOS_INFO, "SPD: module part number is %.*s\n", (int) len, nameptr);
 
 	printk(BIOS_INFO,
 		"SPD: banks %d, ranks %d, rows %d, columns %d, density %d Mb\n",
@@ -212,12 +227,11 @@ int read_ddr3_spd_from_cbfs(u8 *buf, int idx)
 	const int SPD_CRC_HI = 127;
 	const int SPD_CRC_LO = 126;
 
-	const char *spd_file;
+	char *spd_file;
 	size_t spd_file_len = 0;
 	size_t min_len = (idx + 1) * CONFIG_DIMM_SPD_SIZE;
 
-	spd_file = cbfs_boot_map_with_leak("spd.bin", CBFS_TYPE_SPD,
-						&spd_file_len);
+	spd_file = cbfs_map("spd.bin", &spd_file_len);
 	if (!spd_file)
 		printk(BIOS_EMERG, "file [spd.bin] not found in CBFS");
 	if (spd_file_len < min_len)
@@ -227,6 +241,7 @@ int read_ddr3_spd_from_cbfs(u8 *buf, int idx)
 
 	memcpy(buf, spd_file + (idx * CONFIG_DIMM_SPD_SIZE),
 		CONFIG_DIMM_SPD_SIZE);
+	cbfs_unmap(spd_file);
 
 	u16 crc = spd_ddr3_calc_crc(buf, CONFIG_DIMM_SPD_SIZE);
 

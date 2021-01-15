@@ -1,16 +1,10 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#ifndef __PI_PICASSO_PCI_DEVS_H__
-#define __PI_PICASSO_PCI_DEVS_H__
+#ifndef AMD_PICASSO_PCI_DEVS_H
+#define AMD_PICASSO_PCI_DEVS_H
 
 #include <device/pci_def.h>
-
-#if !defined(__SIMPLE_DEVICE__)
-#include <device/device.h>
-#define _SOC_DEV(slot, func)	pcidev_on_root(slot, func)
-#else
-#define _SOC_DEV(slot, func)	PCI_DEV(0, slot, func)
-#endif
+#include <amdblocks/pci_devs.h>
 
 /* GNB Root Complex */
 #define GNB_DEV			0x0
@@ -124,4 +118,4 @@
 #define LPC_DEVFN		PCI_DEVFN(PCU_DEV, LPC_FUNC)
 #define SOC_LPC_DEV		_SOC_DEV(PCU_DEV, LPC_FUNC)
 
-#endif /* __PI_PICASSO_PCI_DEVS_H__ */
+#endif /* AMD_PICASSO_PCI_DEVS_H */

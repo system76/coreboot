@@ -41,6 +41,8 @@
 
 #define ACPI_TABLE_CREATOR	"COREBOOT"  /* Must be exactly 8 bytes long! */
 #define OEM_ID			"COREv4"    /* Must be exactly 6 bytes long! */
+#define ACPI_DSDT_REV_1		0x01        /* DSDT revision: ACPI v1 */
+#define ACPI_DSDT_REV_2		0x02        /* DSDT revision: ACPI v2.0 and greater */
 
 #if !defined(__ASSEMBLER__) && !defined(__ACPI__)
 #include <commonlib/helpers.h>
@@ -69,9 +71,9 @@ enum coreboot_acpi_ids {
 enum acpi_tables {
 	/* Tables defined by ACPI and used by coreboot */
 	BERT, DBG2, DMAR, DSDT, FACS, FADT, HEST, HPET, IVRS, MADT, MCFG,
-	RSDP, RSDT, SLIT, SRAT, SSDT, TCPA, TPM2, XSDT, ECDT,
+	RSDP, RSDT, SLIT, SRAT, SSDT, TCPA, TPM2, XSDT, ECDT, LPIT,
 	/* Additional proprietary tables used by coreboot */
-	VFCT, NHLT, SPMI
+	VFCT, NHLT, SPMI, CRAT
 };
 
 /* RSDP (Root System Description Pointer) */
@@ -97,19 +99,24 @@ typedef struct acpi_gen_regaddr {
 	u32 addrh;		/* Register address, high 32 bits */
 } __packed acpi_addr_t;
 
-#define ACPI_ADDRESS_SPACE_MEMORY	   0	/* System memory */
-#define ACPI_ADDRESS_SPACE_IO		   1	/* System I/O */
-#define ACPI_ADDRESS_SPACE_PCI		   2	/* PCI config space */
-#define ACPI_ADDRESS_SPACE_EC		   3	/* Embedded controller */
-#define ACPI_ADDRESS_SPACE_SMBUS	   4	/* SMBus */
-#define ACPI_ADDRESS_SPACE_PCC		0x0A	/* Platform Comm. Channel */
-#define ACPI_ADDRESS_SPACE_FIXED	0x7f	/* Functional fixed hardware */
-#define  ACPI_FFIXEDHW_VENDOR_INTEL	   1	/* Intel */
-#define  ACPI_FFIXEDHW_CLASS_HLT	   0	/* C1 Halt */
-#define  ACPI_FFIXEDHW_CLASS_IO_HLT	   1	/* C1 I/O then Halt */
-#define  ACPI_FFIXEDHW_CLASS_MWAIT	   2	/* MWAIT Native C-state */
-#define  ACPI_FFIXEDHW_FLAG_HW_COORD	   1	/* Hardware Coordination bit */
-#define  ACPI_FFIXEDHW_FLAG_BM_STS	   2	/* BM_STS avoidance bit */
+#define ACPI_ADDRESS_SPACE_MEMORY		0	/* System memory */
+#define ACPI_ADDRESS_SPACE_IO			1	/* System I/O */
+#define ACPI_ADDRESS_SPACE_PCI			2	/* PCI config space */
+#define ACPI_ADDRESS_SPACE_EC			3	/* Embedded controller */
+#define ACPI_ADDRESS_SPACE_SMBUS		4	/* SMBus */
+#define ACPI_ADDRESS_SPACE_CMOS			5	/* SystemCMOS */
+#define ACPI_ADDRESS_SPACE_PCI_BAR_TARGET	6	/* PciBarTarget */
+#define ACPI_ADDRESS_SPACE_IPMI			7	/* IPMI */
+#define ACPI_ADDRESS_SPACE_GENERAL_PURPOSE_IO	8	/* GeneralPurposeIO */
+#define ACPI_ADDRESS_SPACE_GENERIC_SERIAL_BUS	9	/* GenericSerialBus  */
+#define ACPI_ADDRESS_SPACE_PCC			0x0A	/* Platform Comm. Channel */
+#define ACPI_ADDRESS_SPACE_FIXED		0x7f	/* Functional fixed hardware */
+#define  ACPI_FFIXEDHW_VENDOR_INTEL		1	/* Intel */
+#define  ACPI_FFIXEDHW_CLASS_HLT		0	/* C1 Halt */
+#define  ACPI_FFIXEDHW_CLASS_IO_HLT		1	/* C1 I/O then Halt */
+#define  ACPI_FFIXEDHW_CLASS_MWAIT		2	/* MWAIT Native C-state */
+#define  ACPI_FFIXEDHW_FLAG_HW_COORD		1	/* Hardware Coordination bit */
+#define  ACPI_FFIXEDHW_FLAG_BM_STS		2	/* BM_STS avoidance bit */
 /* 0x80-0xbf: Reserved */
 /* 0xc0-0xff: OEM defined */
 
@@ -250,6 +257,48 @@ typedef struct acpi_madt {
 	u32 flags;			/* Multiple APIC flags */
 } __packed acpi_madt_t;
 
+/*
+ * LPIT (Low Power Idle Table)
+ * Conforms to "Intel Low Power S0 Idle" specification, rev 002 from July 2017.
+ */
+typedef struct acpi_lpit {
+	acpi_header_t header;
+} __packed acpi_lpit_t;
+
+/* LPIT: LPI descriptor flags */
+typedef struct acpi_lpi_flags {
+	uint32_t disabled		:  1;
+	uint32_t counter_not_available	:  1;
+	uint32_t reserved		: 30;
+} __packed acpi_lpi_desc_flags_t;
+
+/* LPIT: LPI descriptor types */
+enum acpi_lpi_desc_type {
+	ACPI_LPI_DESC_TYPE_NATIVE_CSTATE = 0x00,
+	/* type >= 1 reserved */
+};
+
+/* LPIT: LPI descriptor header */
+typedef struct acpi_lpi_desc_hdr {
+	uint32_t type;
+	uint32_t length;
+	uint16_t uid;
+	uint16_t reserved;
+} __packed acpi_lpi_desc_hdr_t;
+
+#define ACPI_LPIT_CTR_FREQ_TSC 0
+
+/* LPIT: Native C-state instruction based LPI structure */
+typedef struct acpi_lpi_desc_ncst {
+	acpi_lpi_desc_hdr_t header;
+	acpi_lpi_desc_flags_t flags;
+	acpi_addr_t entry_trigger;	/* Entry trigger C-state */
+	uint32_t min_residency;		/* Minimum residency or "break-even" in microseconds */
+	uint32_t max_latency;		/* Worst case exit latency in microseconds */
+	acpi_addr_t residency_counter;
+	uint64_t counter_frequency;	/* Frequency in cycles per second - 0 means TSC freq */
+} __packed acpi_lpi_desc_ncst_t;
+
 /* VFCT image header */
 typedef struct acpi_vfct_image_hdr {
 	u32 PCIBus;
@@ -299,6 +348,14 @@ typedef struct acpi_ivrs {
 	uint32_t reserved[2];
 	struct acpi_ivrs_ivhd ivhd;
 } __packed acpi_ivrs_t;
+
+/* CRAT (Component Resource Affinity Table Structure) */
+struct acpi_crat_header {
+	acpi_header_t header;
+	uint32_t total_entries;
+	uint16_t num_nodes;
+	uint8_t reserved[6];
+} __packed;
 
 /* IVHD Type 11h IOMMU Attributes */
 typedef struct ivhd11_iommu_attr {
@@ -800,6 +857,26 @@ typedef struct acpi_cstate {
 	acpi_addr_t resource;
 } __packed acpi_cstate_t;
 
+struct acpi_sw_pstate {
+	u32 core_freq;
+	u32 power;
+	u32 transition_latency;
+	u32 bus_master_latency;
+	u32 control_value;
+	u32 status_value;
+} __packed;
+
+struct acpi_xpss_sw_pstate {
+	u64 core_freq;
+	u64 power;
+	u64 transition_latency;
+	u64 bus_master_latency;
+	u64 control_value;
+	u64 status_value;
+	u64 control_mask;
+	u64 status_mask;
+} __packed;
+
 typedef struct acpi_tstate {
 	u32 percent;
 	u32 power;
@@ -884,8 +961,12 @@ void arch_fill_fadt(acpi_fadt_t *fadt);
 void soc_fill_fadt(acpi_fadt_t *fadt);
 void mainboard_fill_fadt(acpi_fadt_t *fadt);
 
+void acpi_fill_gnvs(void);
+
 void update_ssdt(void *ssdt);
 void update_ssdtx(void *ssdtx, int i);
+
+unsigned long acpi_fill_lpit(unsigned long current);
 
 /* These can be used by the target port. */
 u8 acpi_checksum(u8 *table, u32 length);
@@ -937,6 +1018,10 @@ void acpi_create_ivrs(acpi_ivrs_t *ivrs,
 		      unsigned long (*acpi_fill_ivrs)(acpi_ivrs_t *ivrs_struct,
 		      unsigned long current));
 
+void acpi_create_crat(struct acpi_crat_header *crat,
+		      unsigned long (*acpi_fill_crat)(struct acpi_crat_header *crat_struct,
+		      unsigned long current));
+
 void acpi_create_hpet(acpi_hpet_t *hpet);
 unsigned long acpi_write_hpet(const struct device *device, unsigned long start,
 			      acpi_rsdp_t *rsdp);
@@ -986,10 +1071,14 @@ void acpi_write_hest(acpi_hest_t *hest,
 unsigned long acpi_create_hest_error_source(acpi_hest_t *hest,
 	acpi_hest_esd_t *esd, u16 type, void *data, u16 len);
 
+void acpi_create_lpit(acpi_lpit_t *lpit);
+unsigned long acpi_create_lpi_desc_ncst(acpi_lpi_desc_ncst_t *lpi_desc, uint16_t uid);
+
 /* For ACPI S3 support. */
-void acpi_resume(void *wake_vec);
+void __noreturn acpi_resume(void *wake_vec);
 void mainboard_suspend_resume(void);
 void *acpi_find_wakeup_vector(void);
+int acpi_handoff_wakeup_s3(void);
 
 /* ACPI_Sn assignments are defined to always equal the sleep state numbers */
 enum {
@@ -1017,6 +1106,8 @@ static inline int acpi_sleep_from_pm1(uint32_t pm1_cnt)
 }
 #endif
 
+uint8_t acpi_get_preferred_pm_profile(void);
+
 /* Returns ACPI_Sx values. */
 int acpi_get_sleep_type(void);
 
@@ -1035,24 +1126,16 @@ static inline int acpi_s3_resume_allowed(void)
 	return CONFIG(HAVE_ACPI_RESUME);
 }
 
-#if CONFIG(HAVE_ACPI_RESUME)
-
-#if ENV_ROMSTAGE_OR_BEFORE
 static inline int acpi_is_wakeup_s3(void)
 {
-	return (acpi_get_sleep_type() == ACPI_S3);
-}
-#else
-int acpi_is_wakeup(void);
-int acpi_is_wakeup_s3(void);
-int acpi_is_wakeup_s4(void);
-#endif
+	if (!acpi_s3_resume_allowed())
+		return 0;
 
-#else
-static inline int acpi_is_wakeup(void) { return 0; }
-static inline int acpi_is_wakeup_s3(void) { return 0; }
-static inline int acpi_is_wakeup_s4(void) { return 0; }
-#endif
+	if (ENV_ROMSTAGE_OR_BEFORE)
+		return (acpi_get_sleep_type() == ACPI_S3);
+
+	return acpi_handoff_wakeup_s3();
+}
 
 static inline uintptr_t acpi_align_current(uintptr_t current)
 {

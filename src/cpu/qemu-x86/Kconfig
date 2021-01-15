@@ -2,12 +2,60 @@
 
 config CPU_QEMU_X86
 	bool
-	select ARCH_BOOTBLOCK_X86_32
-	select ARCH_VERSTAGE_X86_32
-	select ARCH_ROMSTAGE_X86_32
-	select ARCH_RAMSTAGE_X86_32
-	select SMP
 	select UDELAY_TSC
 	select TSC_MONOTONIC_TIMER
 	select UNKNOWN_TSC_RATE
+
+if CPU_QEMU_X86
+
+# coreboot i440fx does not support SMM
+choice
+	prompt "AP init"
+	default CPU_QEMU_X86_LAPIC_INIT
+
+config CPU_QEMU_X86_LAPIC_INIT
+	bool "Legacy serial LAPIC init"
+
+config CPU_QEMU_X86_PARALLEL_MP
+	bool "Parallel MP init"
+	select PARALLEL_MP
+
+endchoice
+
+choice
+	prompt "SMM support"
+	default CPU_QEMU_X86_ASEG_SMM
+	depends on BOARD_EMULATION_QEMU_X86_Q35
+
+config CPU_QEMU_X86_NO_SMM
+	bool "No SMM"
+	select NO_SMM
+
+config CPU_QEMU_X86_ASEG_SMM
+	bool "SMM in ASEG"
+	depends on !PARALLEL_MP
 	select SMM_ASEG
+
+#config CPU_QEMU_X86_TSEG_SMM
+#	bool "SMM in TSEG"
+#	select SMM_TSEG
+
+endchoice
+
+config MAX_CPUS
+	int
+	default 4 if SMM_ASEG
+	default 32
+
+config CPU_QEMU_X86_64
+	bool "Experimental 64bit support"
+	select ARCH_ALL_STAGES_X86_64
+	select ARCH_POSTCAR_X86_64
+
+config CPU_QEMU_X86_32
+	bool
+	default n if CPU_QEMU_X86_64
+	default y
+	select ARCH_ALL_STAGES_X86_32
+	select ARCH_POSTCAR_X86_32
+endif

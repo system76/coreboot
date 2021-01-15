@@ -1,5 +1,5 @@
 ifeq ($(CONFIG_SOC_AMD_COMMON),y)
-
-subdirs-$(CONFIG_SOC_AMD_COMMON_BLOCK) += block
-
+subdirs-y += block
+subdirs-y += fsp
+subdirs-y += vboot
 endif

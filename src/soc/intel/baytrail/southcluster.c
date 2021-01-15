@@ -7,7 +7,6 @@
 #include <acpi/acpi.h>
 #include <acpi/acpi_gnvs.h>
 #include <bootstate.h>
-#include <cbmem.h>
 #include <console/console.h>
 #include <cpu/x86/smm.h>
 #include <device/device.h>
@@ -20,7 +19,6 @@
 #include <soc/iomap.h>
 #include <soc/irq.h>
 #include <soc/lpc.h>
-#include <soc/nvs.h>
 #include <soc/pci_devs.h>
 #include <soc/pm.h>
 #include <soc/ramstage.h>
@@ -28,9 +26,8 @@
 #include "chip.h"
 #include <acpi/acpigen.h>
 
-static inline void
-add_mmio_resource(struct device *dev, int i, unsigned long addr,
-		  unsigned long size)
+static inline void add_mmio_resource(struct device *dev, int i, unsigned long addr,
+				     unsigned long size)
 {
 	mmio_resource(dev, i, addr >> 10, size >> 10);
 }
@@ -58,8 +55,7 @@ static inline int io_range_in_default(int base, int size)
 		return 0;
 
 	/* Is it entirely contained? */
-	if (base >= LPC_DEFAULT_IO_RANGE_LOWER &&
-	    (base + size) < LPC_DEFAULT_IO_RANGE_UPPER)
+	if (base >= LPC_DEFAULT_IO_RANGE_LOWER && (base + size) < LPC_DEFAULT_IO_RANGE_UPPER)
 		return 1;
 
 	/* This will return not in range for partial overlaps */
@@ -70,8 +66,7 @@ static inline int io_range_in_default(int base, int size)
  * Note: this function assumes there is no overlap with the default LPC device's
  * claimed range: LPC_DEFAULT_IO_RANGE_LOWER -> LPC_DEFAULT_IO_RANGE_UPPER.
  */
-static void sc_add_io_resource(struct device *dev, int base, int size,
-			       int index)
+static void sc_add_io_resource(struct device *dev, int base, int size, int index)
 {
 	struct resource *res;
 
@@ -111,11 +106,6 @@ static void sc_read_resources(struct device *dev)
 
 	/* Add IO resources. */
 	sc_add_io_resources(dev);
-}
-
-static void sc_rtc_init(void)
-{
-	cmos_init(rtc_failure());
 }
 
 /*
@@ -176,15 +166,14 @@ static void sc_init(struct device *dev)
 	/* Route SCI to IRQ9 */
 	write32(actl, (read32(actl) & ~SCIS_MASK) | SCIS_IRQ9);
 
-	sc_rtc_init();
+	cmos_init(rtc_failure());
 
 	if (config->disable_slp_x_stretch_sus_fail) {
 		printk(BIOS_DEBUG, "Disabling slp_x stretching.\n");
-		write32(gen_pmcon1,
-			read32(gen_pmcon1) | DIS_SLP_X_STRCH_SUS_UP);
+		write32(gen_pmcon1, read32(gen_pmcon1) | DIS_SLP_X_STRCH_SUS_UP);
+
 	} else {
-		write32(gen_pmcon1,
-			read32(gen_pmcon1) & ~DIS_SLP_X_STRCH_SUS_UP);
+		write32(gen_pmcon1, read32(gen_pmcon1) & ~DIS_SLP_X_STRCH_SUS_UP);
 	}
 
 	if (acpi_is_wakeup_s3())
@@ -198,9 +187,9 @@ static void sc_init(struct device *dev)
 /* Set bit in function disable register to hide this device. */
 static void sc_disable_devfn(struct device *dev)
 {
-	u32 *func_dis = (u32 *)(PMC_BASE_ADDRESS + FUNC_DIS);
-	u32 *func_dis2 = (u32 *)(PMC_BASE_ADDRESS + FUNC_DIS2);
-	uint32_t mask = 0;
+	void *func_dis  = (void *)(PMC_BASE_ADDRESS + FUNC_DIS);
+	void *func_dis2 = (void *)(PMC_BASE_ADDRESS + FUNC_DIS2);
+	uint32_t mask  = 0;
 	uint32_t mask2 = 0;
 
 	switch (dev->path.pci.devfn) {
@@ -323,7 +312,7 @@ static inline void set_d3hot_bits(struct device *dev, int offset)
  */
 static void hda_work_around(struct device *dev)
 {
-	u32 *gctl = (u32 *)(TEMP_BASE_ADDRESS + 0x8);
+	void *gctl = (void *)(TEMP_BASE_ADDRESS + 0x8);
 
 	/* Need to set magic register 0x43 to 0xd7 in config space. */
 	pci_write_config8(dev, 0x43, 0xd7);
@@ -475,8 +464,7 @@ void southcluster_enable_dev(struct device *dev)
 
 		/* Ensure memory, io, and bus master are all disabled */
 		reg16 = pci_read_config16(dev, PCI_COMMAND);
-		reg16 &= ~(PCI_COMMAND_MASTER |
-			   PCI_COMMAND_MEMORY | PCI_COMMAND_IO);
+		reg16 &= ~(PCI_COMMAND_MASTER | PCI_COMMAND_MEMORY | PCI_COMMAND_IO);
 		pci_write_config16(dev, PCI_COMMAND, reg16);
 
 		/* Place device in D3Hot */
@@ -494,35 +482,10 @@ void southcluster_enable_dev(struct device *dev)
 	}
 }
 
-static void southcluster_inject_dsdt(const struct device *device)
-{
-	struct global_nvs *gnvs;
-
-	gnvs = cbmem_find(CBMEM_ID_ACPI_GNVS);
-	if (!gnvs) {
-		gnvs = cbmem_add(CBMEM_ID_ACPI_GNVS, sizeof (*gnvs));
-		if (gnvs)
-			memset(gnvs, 0, sizeof(*gnvs));
-	}
-
-	if (gnvs) {
-		acpi_create_gnvs(gnvs);
-		/* And tell SMI about it */
-		apm_control(APM_CNT_GNVS_UPDATE);
-
-		/* Add it to DSDT.  */
-		acpigen_write_scope("\\");
-		acpigen_write_name_dword("NVSA", (u32) gnvs);
-		acpigen_pop_len();
-	}
-}
-
-
 static struct device_operations device_ops = {
 	.read_resources		= sc_read_resources,
 	.set_resources		= pci_dev_set_resources,
-	.acpi_inject_dsdt	= southcluster_inject_dsdt,
-	.write_acpi_tables      = acpi_write_hpet,
+	.write_acpi_tables	= acpi_write_hpet,
 	.init			= sc_init,
 	.enable			= southcluster_enable_dev,
 	.scan_bus		= scan_static_bus,
@@ -542,11 +505,11 @@ int __weak mainboard_get_spi_config(struct spi_config *cfg)
 
 static void finalize_chipset(void *unused)
 {
-	u32 *bcr = (u32 *)(SPI_BASE_ADDRESS + BCR);
-	u32 *gcs = (u32 *)(RCBA_BASE_ADDRESS + GCS);
-	u32 *gen_pmcon2 = (u32 *)(PMC_BASE_ADDRESS + GEN_PMCON2);
-	u32 *etr = (u32 *)(PMC_BASE_ADDRESS + ETR);
-	u8 *spi = (u8 *)SPI_BASE_ADDRESS;
+	void *bcr = (void *)(SPI_BASE_ADDRESS + BCR);
+	void *gcs = (void *)(RCBA_BASE_ADDRESS + GCS);
+	void *gen_pmcon2 = (void *)(PMC_BASE_ADDRESS + GEN_PMCON2);
+	void *etr = (void *)(PMC_BASE_ADDRESS + ETR);
+	uint8_t *spi = (uint8_t *)SPI_BASE_ADDRESS;
 	struct spi_config cfg;
 
 	/* Set the lock enable on the BIOS control register */

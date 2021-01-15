@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 
-#ifndef __AMDBLOCKS_ACPIMMIO_MAP_H__
-#define __AMDBLOCKS_ACPIMMIO_MAP_H__
+#ifndef AMD_BLOCK_ACPIMMIO_MAP_H
+#define AMD_BLOCK_ACPIMMIO_MAP_H
 
 /*
  * The following AcpiMmio register block mapping represents definitions
@@ -95,13 +95,10 @@
 #define AMD_SB_ACPI_MMIO_ADDR		0xfed80000
 
 #ifdef __ACPI__
-
-/* ASL fails on additions. */
+/* ASL MemoryFixed32() fails if these are additions. */
 #define ACPIMMIO_MISC_BASE		0xfed80e00
 #define ACPIMMIO_GPIO0_BASE		0xfed81500
-#define ACPIMMIO_AOAC_BASE		0xfed81e00
-
-#else
+#endif
 
 #define ACPIMMIO_SM_PCI_BANK		0x0000
 #define ACPIMMIO_GPIO_100_BANK		0x0100
@@ -126,10 +123,6 @@
 #define ACPIMMIO_ACDCTMR_BANK		0x1d00
 #define ACPIMMIO_AOAC_BANK		0x1e00
 
-/* FIXME: Passing host base for SMBUS is not long-term solution. */
-#define ACPIMMIO_ASF_BASE	(AMD_SB_ACPI_MMIO_ADDR + ACPIMMIO_ASF_BANK)
-#define ACPIMMIO_SMBUS_BASE	(AMD_SB_ACPI_MMIO_ADDR + ACPIMMIO_SMBUS_BANK)
+#define ACPIMMIO_BASE(bank)	(AMD_SB_ACPI_MMIO_ADDR + ACPIMMIO_ ## bank ## _BANK)
 
-#endif
-
-#endif /* __AMDBLOCKS_ACPIMMIO_MAP_H__ */
+#endif /* AMD_BLOCK_ACPIMMIO_MAP_H */

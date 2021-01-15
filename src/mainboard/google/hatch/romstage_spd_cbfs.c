@@ -56,29 +56,3 @@ void mainboard_memory_init_params(FSPM_UPD *memupd)
 
 	cannonlake_memcfg_init(&memupd->FspmConfig, &memcfg);
 }
-
-void mainboard_get_dram_part_num(const char **part_num, size_t *len)
-{
-	static char part_num_store[DIMM_INFO_PART_NUMBER_SIZE];
-	static enum {
-		PART_NUM_NOT_READ,
-		PART_NUM_AVAILABLE,
-		PART_NUM_NOT_IN_CBI,
-	} part_num_state = PART_NUM_NOT_READ;
-
-	if (part_num_state == PART_NUM_NOT_READ) {
-		if (google_chromeec_cbi_get_dram_part_num(&part_num_store[0],
-						sizeof(part_num_store)) < 0) {
-			printk(BIOS_ERR, "No DRAM part number in CBI!\n");
-			part_num_state = PART_NUM_NOT_IN_CBI;
-		} else {
-			part_num_state = PART_NUM_AVAILABLE;
-		}
-	}
-
-	if (part_num_state == PART_NUM_NOT_IN_CBI)
-		return;
-
-	*part_num = &part_num_store[0];
-	*len = strlen(part_num_store) + 1;
-}

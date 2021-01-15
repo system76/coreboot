@@ -21,7 +21,6 @@
 #define SPD_DDR4_PART_OFF	329
 #define SPD_DDR4_PART_LEN	20
 
-
 /*
  * Module type (byte 3, bits 3:0) of SPD
  * This definition is specific to DDR4. DDR2/3 SPDs have a different structure.
@@ -69,5 +68,10 @@ int spd_decode_ddr4(dimm_attr *dimm, spd_raw_data spd);
 enum cb_err spd_add_smbios17_ddr4(const u8 channel, const u8 slot,
 				const u16 selected_freq,
 				const dimm_attr *info);
+
+/**
+ * Converts DDR4 clock speed in MHz to the standard reported speed in MT/s
+ */
+uint16_t ddr4_speed_mhz_to_reported_mts(uint16_t speed_mhz);
 
 #endif /* DEVICE_DRAM_DDR4L_H */

@@ -3,12 +3,15 @@
 #include <device/mmio.h>
 #include <device/device.h>
 #include <console/console.h>
+#include <elog.h>
 #include <gpio.h>
 #include <amdblocks/acpimmio.h>
 #include <amdblocks/gpio_banks.h>
+#include <amdblocks/smi.h>
 #include <soc/gpio.h>
 #include <soc/smi.h>
 #include <assert.h>
+#include <string.h>
 
 static int get_gpio_gevent(uint8_t gpio, const struct soc_amd_event *table,
 				size_t items)
@@ -28,7 +31,7 @@ static void program_smi(uint32_t flags, int gevent_num)
 
 	if (!is_gpio_event_level_triggered(flags)) {
 		printk(BIOS_ERR, "ERROR: %s - Only level trigger allowed for SMI!\n", __func__);
-		assert(0);
+		BUG();
 		return;
 	}
 
@@ -91,7 +94,7 @@ uintptr_t gpio_get_address(gpio_t gpio_num)
 	return (uintptr_t)gpio_ctrl_ptr(gpio_num);
 }
 
-static void __gpio_update32(gpio_t gpio_num, uint32_t mask, uint32_t or)
+static void gpio_update32(gpio_t gpio_num, uint32_t mask, uint32_t or)
 {
 	uint32_t reg;
 
@@ -102,31 +105,31 @@ static void __gpio_update32(gpio_t gpio_num, uint32_t mask, uint32_t or)
 }
 
 /* Set specified bits of a register to match those of ctrl. */
-static void __gpio_setbits32(gpio_t gpio_num, uint32_t mask, uint32_t ctrl)
+static void gpio_setbits32(gpio_t gpio_num, uint32_t mask, uint32_t ctrl)
 {
-	__gpio_update32(gpio_num, ~mask, ctrl & mask);
+	gpio_update32(gpio_num, ~mask, ctrl & mask);
 }
 
-static void __gpio_and32(gpio_t gpio_num, uint32_t mask)
+static void gpio_and32(gpio_t gpio_num, uint32_t mask)
 {
-	__gpio_update32(gpio_num, mask, 0);
+	gpio_update32(gpio_num, mask, 0);
 }
 
-static void __gpio_or32(gpio_t gpio_num, uint32_t or)
+static void gpio_or32(gpio_t gpio_num, uint32_t or)
 {
-	__gpio_update32(gpio_num, -1UL, or);
+	gpio_update32(gpio_num, -1UL, or);
 }
 
 static void master_switch_clr(uint32_t mask)
 {
 	const uint8_t master_reg = GPIO_MASTER_SWITCH / sizeof(uint32_t);
-	__gpio_and32(master_reg, ~mask);
+	gpio_and32(master_reg, ~mask);
 }
 
 static void master_switch_set(uint32_t or)
 {
 	const uint8_t master_reg = GPIO_MASTER_SWITCH / sizeof(uint32_t);
-	__gpio_or32(master_reg, or);
+	gpio_or32(master_reg, or);
 }
 
 int gpio_get(gpio_t gpio_num)
@@ -139,28 +142,29 @@ int gpio_get(gpio_t gpio_num)
 
 void gpio_set(gpio_t gpio_num, int value)
 {
-	__gpio_setbits32(gpio_num, GPIO_OUTPUT_VALUE, value ? GPIO_OUTPUT_VALUE : 0);
+	gpio_setbits32(gpio_num, GPIO_OUTPUT_VALUE, value ? GPIO_OUTPUT_VALUE : 0);
 }
 
 void gpio_input_pulldown(gpio_t gpio_num)
 {
-	__gpio_setbits32(gpio_num, GPIO_PULL_MASK, GPIO_PULLDOWN_ENABLE);
+	gpio_setbits32(gpio_num, GPIO_PULL_MASK | GPIO_OUTPUT_ENABLE, GPIO_PULLDOWN_ENABLE);
 }
 
 void gpio_input_pullup(gpio_t gpio_num)
 {
-	__gpio_setbits32(gpio_num, GPIO_PULL_MASK, GPIO_PULLUP_ENABLE);
+	gpio_setbits32(gpio_num, GPIO_PULL_MASK | GPIO_OUTPUT_ENABLE, GPIO_PULLUP_ENABLE);
 }
 
 void gpio_input(gpio_t gpio_num)
 {
-	__gpio_and32(gpio_num, ~GPIO_OUTPUT_ENABLE);
+	gpio_and32(gpio_num, ~(GPIO_PULL_MASK | GPIO_OUTPUT_ENABLE));
 }
 
 void gpio_output(gpio_t gpio_num, int value)
 {
-	__gpio_or32(gpio_num, GPIO_OUTPUT_ENABLE);
+	/* set GPIO output value before setting the direction to output to avoid glitches */
 	gpio_set(gpio_num, value);
+	gpio_or32(gpio_num, GPIO_OUTPUT_ENABLE);
 }
 
 const char *gpio_acpi_path(gpio_t gpio)
@@ -185,6 +189,8 @@ void program_gpios(const struct soc_amd_gpio *gpio_list_ptr, size_t size)
 	size_t gev_items;
 	const bool can_set_smi_flags = !(CONFIG(VBOOT_STARTS_BEFORE_BOOTBLOCK) &&
 			ENV_SEPARATE_VERSTAGE);
+	if (!gpio_list_ptr || !size)
+		return;
 
 	/*
 	 * Disable blocking wake/interrupt status generation while updating
@@ -212,10 +218,9 @@ void program_gpios(const struct soc_amd_gpio *gpio_list_ptr, size_t size)
 
 		soc_gpio_hook(gpio, mux);
 
+		gpio_setbits32(gpio, PAD_CFG_MASK, control);
 		/* Clear interrupt and wake status (write 1-to-clear bits) */
-		control |= GPIO_INT_STATUS | GPIO_WAKE_STATUS;
-		__gpio_setbits32(gpio, PAD_CFG_MASK, control);
-
+		gpio_or32(gpio, GPIO_INT_STATUS | GPIO_WAKE_STATUS);
 		if (control_flags == 0)
 			continue;
 
@@ -297,4 +302,73 @@ void gpio_configure_pads_with_override(const struct soc_amd_gpio *base_cfg,
 				override_num_pads);
 		program_gpios(c, 1);
 	}
+}
+
+static void check_and_add_wake_gpio(int begin, int end, struct gpio_wake_state *state)
+{
+	int i;
+	uint32_t reg;
+
+	for (i = begin; i < end; i++) {
+		reg = gpio_read32(i);
+		if (!(reg & GPIO_WAKE_STATUS))
+			continue;
+		printk(BIOS_INFO, "GPIO %d woke system.\n", i);
+		if (state->num_valid_wake_gpios >= ARRAY_SIZE(state->wake_gpios))
+			continue;
+		state->wake_gpios[state->num_valid_wake_gpios++] = i;
+	}
+}
+
+static void check_gpios(uint32_t wake_stat, int bit_limit, int gpio_base,
+			struct gpio_wake_state *state)
+{
+	int i;
+	int begin;
+	int end;
+
+	for (i = 0; i < bit_limit; i++) {
+		if (!(wake_stat & BIT(i)))
+			continue;
+		begin = gpio_base + i * 4;
+		end = begin + 4;
+		/* There is no gpio 63. */
+		if (begin == 60)
+			end = 63;
+		check_and_add_wake_gpio(begin, end, state);
+	}
+}
+
+void gpio_fill_wake_state(struct gpio_wake_state *state)
+{
+	/* Turn the wake registers into "gpio" index to conform to existing API. */
+	const uint8_t stat0 = GPIO_WAKE_STAT_0 / sizeof(uint32_t);
+	const uint8_t stat1 = GPIO_WAKE_STAT_1 / sizeof(uint32_t);
+	const uint8_t control_switch = GPIO_MASTER_SWITCH / sizeof(uint32_t);
+
+	/* Register fields and gpio availability need to be confirmed on other chipsets. */
+	if (!CONFIG(SOC_AMD_PICASSO))
+		dead_code();
+
+	memset(state, 0, sizeof(*state));
+
+	state->control_switch = gpio_read32(control_switch);
+	state->wake_stat[0] = gpio_read32(stat0);
+	state->wake_stat[1] = gpio_read32(stat1);
+
+	printk(BIOS_INFO, "GPIO Control Switch: 0x%08x, Wake Stat 0: 0x%08x, Wake Stat 1: 0x%08x\n",
+		state->control_switch, state->wake_stat[0], state->wake_stat[1]);
+
+	check_gpios(state->wake_stat[0], 32, 0, state);
+	check_gpios(state->wake_stat[1], 14, 128, state);
+}
+
+void gpio_add_events(const struct gpio_wake_state *state)
+{
+	int i;
+	int end;
+
+	end = MIN(state->num_valid_wake_gpios, ARRAY_SIZE(state->wake_gpios));
+	for (i = 0; i < end; i++)
+		elog_add_event_wake(ELOG_WAKE_SOURCE_GPIO, state->wake_gpios[i]);
 }

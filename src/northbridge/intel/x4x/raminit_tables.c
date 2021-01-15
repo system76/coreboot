@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #include <stdint.h>
-#include "x4x.h"
+#include "raminit.h"
 
 const struct dll_setting default_ddr2_667_ctrl[7] = {
 	/* tap  pi db  delay coarse*/
@@ -289,7 +289,6 @@ const u8 post_jedec_tab[3][4][2]= /* [FSB][DDR freq][17:13 or 12:8] */
 	{0x4, 0x7} /* 1333 1333 */
 	},
 };
-
 
 const u32 ddr3_c2_tab[2][3][6][2] = { /* [n-mode][ddr3 freq][CAS][reg] */
 		/* 115h[15:0]	117h[23:0] */

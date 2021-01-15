@@ -8,7 +8,6 @@
 #include <cpu/intel/speedstep.h>
 #include <cpu/x86/cache.h>
 #include <cpu/x86/name.h>
-#include <cpu/intel/common/common.h>
 
 #define HIGHEST_CLEVEL		3
 static void configure_c_states(void)
@@ -63,9 +62,6 @@ static void configure_misc(void)
 static void model_106cx_init(struct device *cpu)
 {
 	char processor_name[49];
-
-	/* Turn on caching if we haven't already */
-	x86_enable_cache();
 
 	/* Print processor name */
 	fill_processor_name(processor_name);

@@ -98,9 +98,12 @@
 #define   PCH2CPU_TT_EN			(1 << 26)
 
 #define PCH_PWRM_ACPI_TMR_CTL		0x18FC
+#define  ACPI_TIM_DIS			(1 << 1)
 #define GPIO_GPE_CFG			0x1920
 #define  GPE0_DWX_MASK			0xf
 #define  GPE0_DW_SHIFT(x)		(4*(x))
+
+#define SLP_S0_RES			0x193c
 
 #if CONFIG(SOC_INTEL_CANNONLAKE_PCH_H)
 /*

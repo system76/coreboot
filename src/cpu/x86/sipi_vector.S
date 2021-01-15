@@ -5,6 +5,8 @@
 #include <cpu/x86/msr.h>
 #include <arch/ram_segs.h>
 
+#define __RAMSTAGE__
+
 /* The SIPI vector is responsible for initializing the APs in the system. It
  * loads microcode, sets up MSRs, and enables caching before calling into
  * C code. */
@@ -82,10 +84,9 @@ _start:
 	mov	idt_ptr, %ebx
 	lidt	(%ebx)
 
-	/* Obtain CPU number. */
-	movl	ap_count, %eax
 1:
-	movl	%eax, %ecx
+	/* Obtain CPU number. */
+	movl	ap_count, %ecx
 	inc	%ecx
 	lock cmpxchg %ecx, ap_count
 	jnz	1b
@@ -101,6 +102,13 @@ _start:
 	/* Save CPU number. */
 	mov	%ecx, %esi
 
+	/*
+	 * The following code only needs to run on Intel platforms and thus the caller
+	 * doesn't provide a microcode_ptr if not on Intel.
+	 * On Intel platforms which update microcode using FIT the version check will
+	 * also skip the microcode update.
+	 */
+
 	/* Determine if one should check microcode versions. */
 	mov	microcode_ptr, %edi
 	test	%edi, %edi
@@ -115,13 +123,23 @@ _start:
 	test	%edx, %edx
 	jnz	microcode_done
 
+	/*
+	 * Intel SDM and various BWGs specify to use a semaphore to update microcode
+	 * on one thread per core on Hyper-Threading enabled CPUs. Due to this complex
+	 * code would be necessary to determine the core #ID, initializing and picking
+	 * the right semaphore out of CONFIG_MAX_CPUS / 2.
+	 * Instead of the per core approachm, as recommended, use one global spinlock.
+	 * Assuming that only pre-FIT platforms with Hyper-Threading enabled and at
+	 * most 8 threads will ever run into this condition, the boot delay is negligible.
+	 */
+
 	/* Determine if parallel microcode loading is allowed. */
 	cmpl	$0xffffffff, microcode_lock
 	je	load_microcode
 
 	/* Protect microcode loading. */
 lock_microcode:
-	lock bts $0, microcode_lock
+	lock btsl $0, microcode_lock
 	jc	lock_microcode
 
 load_microcode:
@@ -192,11 +210,24 @@ load_msr:
 	mov	%eax, %cr4
 #endif
 
+#ifdef __x86_64__
+	/* entry64.inc preserves ebx. */
+#include <cpu/x86/64bit/entry64.inc>
+
+	mov	%rsi, %rdi	/* cpu_num */
+
+	movl	c_handler, %eax
+	call	*%rax
+#else
 	/* c_handler(cpu_num), preserve proper stack alignment */
 	sub	$12, %esp
 	push	%esi	/* cpu_num */
+
 	mov	c_handler, %eax
 	call	*%eax
+#endif
+
+
 halt_jump:
 	hlt
 	jmp	halt_jump

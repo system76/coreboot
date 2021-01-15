@@ -5,7 +5,6 @@
 
 /* All these devices live on bus 0 with the associated device and function */
 
-
 #define _PCH_DEVFN(slot, func) PCI_DEVFN(PCH_DEV_SLOT_##slot, func)
 
 #if !defined(__SIMPLE_DEVICE__)
@@ -139,8 +138,17 @@
 
 #define PCH_DEV_SLOT_LPC 0x1f
 #define PCH_DEVFN_LPC _PCH_DEVFN(LPC, 0)
+#define PCH_DEVFN_PMC _PCH_DEVFN(LPC, 2)
 #define PCH_DEVFN_SPI _PCH_DEVFN(LPC, 5)
 #define PCH_DEV_LPC _PCH_DEV(LPC, 0)
 #define PCH_DEV_SPI _PCH_DEV(LPC, 5)
+
+/* VT-d support value to match FSP settings */
+/* "PCH IOAPIC Config" */
+#define PCH_IOAPIC_PCI_BUS	0xf0
+#define PCH_IOAPIC_PCI_SLOT	0x1f
+/* "PCH HPET Config" */
+#define PCH_HPET_PCI_BUS	0
+#define PCH_HPET_PCI_SLOT	0
 
 #endif /* _DENVERTON_NS_PCI_DEVS_H_ */

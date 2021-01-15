@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+#include <bootstate.h>
 #include <console/console.h>
 #include <device/mmio.h>
 #include <device/device.h>
@@ -13,6 +14,7 @@
 #include <soc/pci_devs.h>
 #include <string.h>
 #include <timer.h>
+#include <timestamp.h>
 #include <baseboard/variants.h>
 #include <types.h>
 
@@ -33,17 +35,15 @@
  * @param  mac  Buffer to the MAC address to check
  * @return 0    if address is not valid, otherwise 1
  */
-static uint8_t is_mac_adr_valid(uint8_t mac[6])
+static uint8_t is_mac_adr_valid(uint8_t mac[MAC_ADDR_LEN])
 {
-	uint8_t buf[6];
-
-	memset(buf, 0, sizeof(buf));
-	if (!memcmp(buf, mac, sizeof(buf)))
-		return 0;
-	memset(buf, 0xff, sizeof(buf));
-	if (!memcmp(buf, mac, sizeof(buf)))
-		return 0;
-	return 1;
+	for (size_t i = 0; i < MAC_ADDR_LEN; i++) {
+		if (mac[i] != 0x00 && mac[i] != 0xff)
+			return 1;
+		if (mac[i] != mac[0])
+			return 1;
+	}
+	return 0;
 }
 
 /** \brief This function will search for a MAC address which can be assigned
@@ -52,7 +52,7 @@ static uint8_t is_mac_adr_valid(uint8_t mac[6])
  * @param  mac     buffer where to store the MAC address
  * @return cb_err  CB_ERR or CB_SUCCESS
  */
-enum cb_err mainboard_get_mac_address(struct device *dev, uint8_t mac[6])
+enum cb_err mainboard_get_mac_address(struct device *dev, uint8_t mac[MAC_ADDR_LEN])
 {
 	struct bus *parent = dev->bus;
 	uint8_t buf[16], mapping[16], i = 0, chain_len = 0;
@@ -85,19 +85,18 @@ enum cb_err mainboard_get_mac_address(struct device *dev, uint8_t mac[6])
 	/* Open main hwinfo block */
 	if (hwilib_find_blocks("hwinfo.hex") != CB_SUCCESS)
 		return CB_ERR;
-	/* Now try to find a valid MAC address in hwinfo for this mapping.*/
+	/* Now try to find a valid MAC address in hwinfo for this mapping. */
 	for (i = 0; i < MAX_NUM_MAPPINGS; i++) {
-		if ((hwilib_get_field(XMac1Mapping + i, buf, 16) == 16) &&
-			!(memcmp(buf, mapping, chain_len + 4))) {
-		/* There is a matching mapping available, get MAC address. */
-			if ((hwilib_get_field(XMac1 + i, mac, 6) == 6) &&
-			    (is_mac_adr_valid(mac))) {
-				return CB_SUCCESS;
-			} else {
-				return CB_ERR;
-			}
-		} else
+		if (hwilib_get_field(XMac1Mapping + i, buf, 16) != 16)
 			continue;
+		if (memcmp(buf, mapping, chain_len + 4))
+			continue;
+		/* There is a matching mapping available, get MAC address. */
+		if (hwilib_get_field(XMac1 + i, mac, MAC_ADDR_LEN) == MAC_ADDR_LEN) {
+			if (is_mac_adr_valid(mac))
+				return CB_SUCCESS;
+		}
+		return CB_ERR;
 	}
 	/* No MAC address found for */
 	return CB_ERR;
@@ -187,7 +186,6 @@ static void mainboard_init(void *chip_info)
 
 static void mainboard_final(void *chip_info)
 {
-	uint16_t cmd = 0;
 	struct device *dev = NULL;
 
 	/* Do board specific things */
@@ -196,9 +194,7 @@ static void mainboard_final(void *chip_info)
 	/* Set Master Enable for on-board PCI device. */
 	dev = dev_find_device(PCI_VENDOR_ID_SIEMENS, 0x403f, 0);
 	if (dev) {
-		cmd = pci_read_config16(dev, PCI_COMMAND);
-		cmd |= PCI_COMMAND_MASTER;
-		pci_write_config16(dev, PCI_COMMAND, cmd);
+		pci_or_config16(dev, PCI_COMMAND, PCI_COMMAND_MASTER);
 	}
 	/* Set up SPI OPCODE menu before the controller is locked. */
 	fast_spi_set_opcode_menu();
@@ -228,3 +224,33 @@ struct chip_operations mainboard_ops = {
 	.init = mainboard_init,
 	.final = mainboard_final,
 };
+
+static void wait_for_legacy_dev(void *unused)
+{
+	uint32_t legacy_delay, us_since_boot;
+	struct stopwatch sw;
+
+	if (CONFIG(BOARD_SIEMENS_MC_APL4))
+		return;
+
+	/* Open main hwinfo block. */
+	if (hwilib_find_blocks("hwinfo.hex") != CB_SUCCESS)
+		return;
+
+	/* Get legacy delay parameter from hwinfo. */
+	if (hwilib_get_field(LegacyDelay, (uint8_t *) &legacy_delay,
+			      sizeof(legacy_delay)) != sizeof(legacy_delay))
+		return;
+
+	us_since_boot = get_us_since_boot();
+	/* No need to wait if the time since boot is already long enough.*/
+	if (us_since_boot > legacy_delay)
+		return;
+	stopwatch_init_msecs_expire(&sw, (legacy_delay - us_since_boot) / 1000);
+	printk(BIOS_NOTICE, "Wait remaining %d of %d us for legacy devices...",
+			legacy_delay - us_since_boot, legacy_delay);
+	stopwatch_wait_until_expired(&sw);
+	printk(BIOS_NOTICE, "done!\n");
+}
+
+BOOT_STATE_INIT_ENTRY(BS_DEV_ENUMERATE, BS_ON_ENTRY, wait_for_legacy_dev, NULL);

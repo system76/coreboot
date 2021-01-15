@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
 #include <amdblocks/gpio_banks.h>
+#include <amdblocks/smi.h>
 #include <bootstate.h>
 #include <device/device.h>
 #include <drivers/usb/pci_xhci/pci_xhci.h>
@@ -51,6 +52,5 @@ static void configure_xhci_sci(void *unused)
 	else
 		gpe_configure_sci(xhci_sci_sources, ARRAY_SIZE(xhci_sci_sources));
 }
-
 
 BOOT_STATE_INIT_ENTRY(BS_POST_DEVICE, BS_ON_ENTRY, configure_xhci_sci, NULL);

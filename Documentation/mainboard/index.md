@@ -16,6 +16,7 @@ This section contains documentation about coreboot on specific mainboards.
 
 ## ASUS
 
+- [A88XM-E](asus/a88xm-e.md)
 - [F2A85-M](asus/f2a85-m.md)
 - [P5Q](asus/p5q.md)
 - [P8H61-M LX](asus/p8h61-m_lx.md)
@@ -25,6 +26,10 @@ This section contains documentation about coreboot on specific mainboards.
 ## Cavium
 
 - [CN81XX EVB SFF](cavium/cn8100_sff_evb.md)
+
+## Clevo
+
+- [N130WU / N131WU](clevo/n130wu/index.md)
 
 ## Dell
 
@@ -37,6 +42,8 @@ The boards in this section are not real mainboards, but emulators.
 - [Spike RISC-V emulator](emulation/spike-riscv.md)
 - [Qemu RISC-V emulator](emulation/qemu-riscv.md)
 - [Qemu AArch64 emulator](emulation/qemu-aarch64.md)
+- [Qemu x86 Q35](emulation/qemu-q35.md)
+- [Qemu x86 PC](emulation/qemu-i440fx.md)
 
 ## Facebook
 
@@ -59,13 +66,20 @@ The boards in this section are not real mainboards, but emulators.
 ### EliteBook series
 
 - [HP Laptops with KBC1126 EC](hp/hp_kbc1126_laptops.md)
+- [HP Sure Start](hp/hp_sure_start.md)
+- [EliteBook 2560p](hp/2560p.md)
 - [EliteBook 8760w](hp/8760w.md)
+- [EliteBook Folio 9480m](hp/folio_9480m.md)
 
 ## Intel
 
 - [DG43GT](intel/dg43gt.md)
 - [IceLake RVP](intel/icelake_rvp.md)
 - [KBLRVP11](intel/kblrvp11.md)
+
+## Kontron
+
+- [mAL-10](kontron/mal10.md)
 
 ## Lenovo
 
@@ -76,14 +90,14 @@ The boards in this section are not real mainboards, but emulators.
 - [X2xx common](lenovo/x2xx_series.md)
 - [vboot](lenovo/vboot.md)
 
-### Arrandale series
-
-- [T410](lenovo/t410.md)
-
 ### GM45 series
 
 - [X200 / T400 / T500 / X301 common](lenovo/montevina_series.md)
 - [X301](lenovo/x301.md)
+
+### Arrandale series
+
+- [T410](lenovo/t410.md)
 
 ### Sandy Bridge series
 
@@ -115,6 +129,7 @@ The boards in this section are not real mainboards, but emulators.
 
 ## OCP
 
+- [Delta Lake](ocp/deltalake.md)
 - [Tioga Pass](ocp/tiogapass.md)
 
 ## Open Cellular
@@ -134,6 +149,10 @@ The boards in this section are not real mainboards, but emulators.
 ## Prodrive
 
 - [Hermes](prodrive/hermes.md)
+
+## Purism
+
+- [Librem Mini](purism/librem_mini.md)
 
 ## Protectli
 
@@ -157,6 +176,10 @@ The boards in this section are not real mainboards, but emulators.
 ## System76
 
 - [Lemur Pro](system76/lemp9.md)
+
+## Texas Instruments
+
+- [Beaglebone Black](ti/beaglebone-black.md)
 
 ## UP
 

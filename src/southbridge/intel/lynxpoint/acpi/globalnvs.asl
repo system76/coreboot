@@ -2,20 +2,20 @@
 
 /* Global Variables */
 
-Name(\PICM, 0)		// IOAPIC/8259
+Name (\PICM, 0)		// IOAPIC/8259
 
-/* Global ACPI memory region. This region is used for passing information
+/*
+ * Global ACPI memory region. This region is used for passing information
  * between coreboot (aka "the system bios"), ACPI, and the SMI handler.
  * Since we don't know where this will end up in memory at ACPI compile time,
  * we have to fix it up in coreboot's ACPI creation phase.
  */
 
-External(NVSA)
-OperationRegion (GNVS, SystemMemory, NVSA, 0xf00)
+External (NVSA)
+OperationRegion (GNVS, SystemMemory, NVSA, 0x1000)
 Field (GNVS, ByteAcc, NoLock, Preserve)
 {
 	/* Miscellaneous */
-	Offset (0x00),
 	OSYS,	16,	// 0x00 - Operating System
 	SMIF,	 8,	// 0x02 - SMI function
 	PRM0,	 8,	// 0x03 - SMI function parameter
@@ -31,9 +31,9 @@ Field (GNVS, ByteAcc, NoLock, Preserve)
 	PWRS,	 8,	// 0x10 - Power State (AC = 1)
 	/* Thermal policy */
 	Offset (0x11),
-	TLVL,    8,	// 0x11 - Throttle Level Limit
+	TLVL,	 8,	// 0x11 - Throttle Level Limit
 	FLVL,	 8,	// 0x12 - Current FAN Level
-	TCRT,    8,	// 0x13 - Critical Threshold
+	TCRT,	 8,	// 0x13 - Critical Threshold
 	TPSV,	 8,	// 0x14 - Passive Threshold
 	TMAX,	 8,	// 0x15 - CPU Tj_max
 	F0OF,	 8,	// 0x16 - FAN 0 OFF Threshold
@@ -51,7 +51,7 @@ Field (GNVS, ByteAcc, NoLock, Preserve)
 	F4OF,	 8,	// 0x22 - FAN 4 OFF Threshold
 	F4ON,	 8,	// 0x23 - FAN 4 ON Threshold
 	F4PW,	 8,	// 0x24 - FAN 4 PWM value
-	TMPS,    8,	// 0x25 - Temperature Sensor ID
+	TMPS,	 8,	// 0x25 - Temperature Sensor ID
 	/* Processor Identification */
 	Offset (0x28),
 	APIC,	 8,	// 0x28 - APIC Enabled by coreboot
@@ -111,41 +111,41 @@ Field (GNVS, ByteAcc, NoLock, Preserve)
 /* Set flag to enable USB charging in S3 */
 Method (S3UE)
 {
-	Store (One, \S3U0)
-	Store (One, \S3U1)
+	\S3U0 = 1
+	\S3U1 = 1
 }
 
 /* Set flag to disable USB charging in S3 */
 Method (S3UD)
 {
-	Store (Zero, \S3U0)
-	Store (Zero, \S3U1)
+	\S3U0 = 0
+	\S3U1 = 0
 }
 
 /* Set flag to enable USB charging in S5 */
 Method (S5UE)
 {
-	Store (One, \S5U0)
-	Store (One, \S5U1)
+	\S5U0 = 1
+	\S5U1 = 1
 }
 
 /* Set flag to disable USB charging in S5 */
 Method (S5UD)
 {
-	Store (Zero, \S5U0)
-	Store (Zero, \S5U1)
+	\S5U0 = 0
+	\S5U1 = 0
 }
 
 /* Set flag to enable 3G module in S3 */
 Method (S3GE)
 {
-	Store (One, \S33G)
+	\S33G = 1
 }
 
 /* Set flag to disable 3G module in S3 */
 Method (S3GD)
 {
-	Store (Zero, \S33G)
+	\S33G = 0
 }
 
 External (\_TZ.SKIN)
@@ -168,46 +168,46 @@ Method (TZUP)
 /* Update Fan 0 thresholds */
 Method (F0UT, 2)
 {
-	Store (Arg0, \F0OF)
-	Store (Arg1, \F0ON)
+	\F0OF = Arg0
+	\F0ON = Arg1
 	TZUP ()
 }
 
 /* Update Fan 1 thresholds */
 Method (F1UT, 2)
 {
-	Store (Arg0, \F1OF)
-	Store (Arg1, \F1ON)
+	\F1OF = Arg0
+	\F1ON = Arg1
 	TZUP ()
 }
 
 /* Update Fan 2 thresholds */
 Method (F2UT, 2)
 {
-	Store (Arg0, \F2OF)
-	Store (Arg1, \F2ON)
+	\F2OF = Arg0
+	\F2ON = Arg1
 	TZUP ()
 }
 
 /* Update Fan 3 thresholds */
 Method (F3UT, 2)
 {
-	Store (Arg0, \F3OF)
-	Store (Arg1, \F3ON)
+	\F3OF = Arg0
+	\F3ON = Arg1
 	TZUP ()
 }
 
 /* Update Fan 4 thresholds */
 Method (F4UT, 2)
 {
-	Store (Arg0, \F4OF)
-	Store (Arg1, \F4ON)
+	\F4OF = Arg0
+	\F4ON = Arg1
 	TZUP ()
 }
 
 /* Update Temperature Sensor ID */
 Method (TMPU, 1)
 {
-	Store (Arg0, \TMPS)
+	\TMPS = Arg0
 	TZUP ()
 }

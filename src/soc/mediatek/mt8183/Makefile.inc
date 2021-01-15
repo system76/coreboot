@@ -1,7 +1,7 @@
 ifeq ($(CONFIG_SOC_MEDIATEK_MT8183),y)
 
-bootblock-y += auxadc.c
 bootblock-y += bootblock.c
+bootblock-y += ../common/auxadc.c
 bootblock-y += ../common/gpio.c gpio.c
 bootblock-y += ../common/pll.c pll.c
 bootblock-$(CONFIG_SPI_FLASH) += ../common/spi.c spi.c
@@ -15,7 +15,7 @@ decompressor-y += decompressor.c
 decompressor-y += ../common/mmu_operations.c
 decompressor-y += ../common/timer.c
 
-verstage-y += auxadc.c
+verstage-y += ../common/auxadc.c
 verstage-y += ../common/gpio.c gpio.c
 verstage-$(CONFIG_SPI_FLASH) += ../common/spi.c spi.c
 verstage-y += mt8183.c
@@ -24,7 +24,7 @@ verstage-y += ../common/timer.c
 verstage-y += ../common/uart.c
 verstage-y += ../common/wdt.c
 
-romstage-y += auxadc.c
+romstage-y += ../common/auxadc.c
 romstage-y += ../common/cbmem.c emi.c
 romstage-y += dramc_init_setting.c
 romstage-y += dramc_param.c
@@ -37,23 +37,24 @@ romstage-y += ../common/gpio.c gpio.c
 romstage-y += ../common/mmu_operations.c mmu_operations.c
 romstage-y += ../common/pll.c pll.c
 romstage-y += ../common/pmic_wrap.c pmic_wrap.c mt6358.c
-romstage-y += ../common/rtc.c rtc.c
+romstage-y += ../common/rtc.c ../common/rtc_osc_init.c rtc.c
 romstage-$(CONFIG_SPI_FLASH) += ../common/spi.c spi.c
 romstage-y += ../common/i2c.c i2c.c
 romstage-y += ../common/timer.c
 romstage-y += ../common/uart.c
 romstage-y += ../common/wdt.c
 
-ramstage-y += auxadc.c
 ramstage-y += emi.c
+ramstage-y += ../common/auxadc.c
 ramstage-y += ../common/ddp.c ddp.c
-ramstage-y += ../common/dsi.c dsi.c
+ramstage-y += ../common/dsi.c ../common/mtk_mipi_dphy.c
 ramstage-y += ../common/gpio.c gpio.c
 ramstage-y += ../common/i2c.c i2c.c
+ramstage-y += ../common/mcu.c
 ramstage-y += ../common/mmu_operations.c mmu_operations.c
 ramstage-y += ../common/mtcmos.c mtcmos.c
 ramstage-y += ../common/pmic_wrap.c
-ramstage-y += ../common/rtc.c rtc.c
+ramstage-y += ../common/rtc.c ../common/rtc_osc_init.c rtc.c
 ramstage-y += soc.c
 ramstage-$(CONFIG_SPI_FLASH) += ../common/spi.c spi.c
 ramstage-y += spm.c

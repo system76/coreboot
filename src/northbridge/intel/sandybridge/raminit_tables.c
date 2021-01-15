@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+#include <stdint.h>
 #include "raminit_tables.h"
 
 const u32 frq_refi_map[2][8] = {
@@ -87,23 +88,6 @@ const u8 frq_aonpd_map[2][8] = {
 	{	/* 100 MHz */
 		/* FRQ: 7,  8,  9, 10, 11, 12, NA, NA, */
 			6,  8,  8,  9, 10, 11,  0,  0,
-	},
-};
-
-const u32 frq_comp2_map[2][8] = {
-	{	/* 133 MHz */
-		/* FRQ:          7,          8,          9,         10, */
-			0x0CA8C264, 0x0C6671E4, 0x0C6671E4, 0x0C446964,
-
-		/* FRQ:         11,         12,        N/A,        N/A, */
-			0x0C235924, 0x0C235924,          0,          0,
-	},
-	{	/* 100 MHz */
-		/* FRQ:          3,          4,          5,          6, */
-			0x0D6FF5E4, 0x0CEBDB64, 0x0CA8C264, 0x0C6671E4,
-
-		/* FRQ:          7,          8,          9,         10, */
-			0x0C446964, 0x0C235924, 0x0C235924, 0x0C235924,
 	},
 };
 

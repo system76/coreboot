@@ -126,6 +126,7 @@ enum pch_pmc_xtal {
 enum pch_pmc_xtal pmc_get_xtal_freq(void);
 
 #define PCH_PWRM_ACPI_TMR_CTL		0x18FC
+#define  ACPI_TIM_DIS			(1 << 1)
 #define GPIO_GPE_CFG			0x1920
 #define  GPE0_DWX_MASK			0xf
 #define  GPE0_DW_SHIFT(x)		(4*(x))
@@ -150,6 +151,8 @@ enum pch_pmc_xtal pmc_get_xtal_freq(void);
 #define   HPR_CAUSE0_MI_HRPD		(1 << 10)
 #define   HPR_CAUSE0_MI_HRPC		(1 << 9)
 #define   HPR_CAUSE0_MI_HR		(1 << 8)
+
+#define SLP_S0_RES			0x193c
 
 #define CPPMVRIC			0x1B1C
 #define   XTALSDQDIS			(1 << 22)

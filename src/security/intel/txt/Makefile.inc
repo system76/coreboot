@@ -1,22 +1,39 @@
 ifeq ($(CONFIG_INTEL_TXT),y)
 
-cbfs-files-y += txt_bios_acm.bin
-txt_bios_acm.bin-file := $(CONFIG_INTEL_TXT_BIOSACM_FILE)
-txt_bios_acm.bin-type := raw
-txt_bios_acm.bin-align := $(CONFIG_INTEL_TXT_BIOSACM_ALIGNMENT)
+romstage-y += romstage.c
+romstage-y += getsec_sclean.S
+romstage-y += getsec.c
+
+romstage-y += common.c
+romstage-$(CONFIG_INTEL_TXT_LOGGING) += logging.c
+
+ramstage-y += common.c
+ramstage-y += getsec.c
+ramstage-y += getsec_enteraccs.S
+ramstage-y += ramstage.c
+ramstage-$(CONFIG_INTEL_TXT_LOGGING) += logging.c
+
+cbfs-files-y += $(CONFIG_INTEL_TXT_CBFS_BIOS_ACM)
+$(CONFIG_INTEL_TXT_CBFS_BIOS_ACM)-file := $(CONFIG_INTEL_TXT_BIOSACM_FILE)
+$(CONFIG_INTEL_TXT_CBFS_BIOS_ACM)-type := raw
+$(CONFIG_INTEL_TXT_CBFS_BIOS_ACM)-align := $(CONFIG_INTEL_TXT_BIOSACM_ALIGNMENT)
 
 ifneq ($(CONFIG_INTEL_TXT_SINITACM_FILE),"")
-cbfs-files-y += txt_sinit_acm.bin
-txt_sinit_acm.bin-file := $(CONFIG_INTEL_TXT_SINITACM_FILE)
-txt_sinit_acm.bin-type := raw
-txt_sinit_acm.bin-align := 0x10
-txt_sinit_acm.bin-compression := lzma
+cbfs-files-y += $(CONFIG_INTEL_TXT_CBFS_SINIT_ACM)
+$(CONFIG_INTEL_TXT_CBFS_SINIT_ACM)-file := $(CONFIG_INTEL_TXT_SINITACM_FILE)
+$(CONFIG_INTEL_TXT_CBFS_SINIT_ACM)-type := raw
+$(CONFIG_INTEL_TXT_CBFS_SINIT_ACM)-align := 0x10
+$(CONFIG_INTEL_TXT_CBFS_SINIT_ACM)-compression := lzma
 endif
 
-INTERMEDIATE+=add_acm_fit
-add_acm_fit: $(obj)/coreboot.pre $(IFITTOOL)
-	$(IFITTOOL) -r COREBOOT -a -n txt_bios_acm.bin -t 2 -s $(CONFIG_CPU_INTEL_NUM_FIT_ENTRIES) -f $<
+ifeq ($(CONFIG_CPU_INTEL_FIRMWARE_INTERFACE_TABLE),y)
 
+$(call add_intermediate, add_acm_fit, $(obj)/coreboot.pre $(IFITTOOL))
+	$(IFITTOOL) -r COREBOOT -a -n $(CONFIG_INTEL_TXT_CBFS_BIOS_ACM) -t 2 \
+        	-s $(CONFIG_CPU_INTEL_NUM_FIT_ENTRIES) -f $<
+
+# CBnT does not use FIT for IBB
+ifneq ($(CONFIG_INTEL_CBNT_SUPPORT),y)
 # Initial BootBlock files
 ibb-files := $(foreach file,$(cbfs-files), \
         $(if $(shell echo '$(call extract_nth,7,$(file))'|grep -- --ibb), \
@@ -24,9 +41,12 @@ ibb-files := $(foreach file,$(cbfs-files), \
 
 ibb-files += bootblock
 
-INTERMEDIATE+=add_ibb_fit
-add_ibb_fit: $(obj)/coreboot.pre $(IFITTOOL)
-	$(foreach file, $(ibb-files), $(shell $(IFITTOOL) -f $< -a -n $(file) -t 7 -s $(CONFIG_CPU_INTEL_NUM_FIT_ENTRIES) \
-        -r COREBOOT)) true
+$(call add_intermediate, add_ibb_fit, $(obj)/coreboot.pre $(IFITTOOL))
+	$(foreach file, $(ibb-files), $(shell $(IFITTOOL) -f $< -a -n $(file) -t 7 \
+                -s $(CONFIG_CPU_INTEL_NUM_FIT_ENTRIES) -r COREBOOT)) true
 
-endif
+endif # INTEL_CBNT_SUPPORT
+
+endif # CPU_INTEL_FIRMWARE_INTERFACE_TABLE
+
+endif # INTEL_TXT

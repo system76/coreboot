@@ -27,11 +27,9 @@
  */
 
 #include <libpayload.h>
-#if CONFIG(LP_STORAGE_AHCI)
-# include <storage/ahci.h>
-#endif
+#include <pci/pci.h>
+#include <storage/ahci.h>
 #include <storage/storage.h>
-
 
 static storage_dev_t **devices = NULL;
 static size_t devices_length = 0;
@@ -109,7 +107,18 @@ ssize_t storage_read_blocks512(const size_t dev_num,
  */
 void storage_initialize(void)
 {
+#if CONFIG(LP_PCI)
+	struct pci_dev *dev;
+	for (dev = lib_sysinfo.pacc.devices; dev; dev = dev->next) {
+		switch (dev->device_class) {
 #if CONFIG(LP_STORAGE_AHCI)
-	ahci_initialize();
+		case PCI_CLASS_STORAGE_AHCI:
+			ahci_initialize(dev);
+			break;
+#endif
+		default:
+			break;
+		}
+	}
 #endif
 }

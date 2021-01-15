@@ -1,8 +1,4 @@
-/*
- *
- *
- * SPDX-License-Identifier: GPL-2.0-or-later
- */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #ifndef __BASEBOARD_VARIANTS_H__
 #define __BASEBOARD_VARIANTS_H__
@@ -25,7 +21,7 @@ const struct pad_config *variant_override_gpio_table(size_t *num);
  * @param fw_config	Address where the fw_config is stored.
  * @return 0 on success or negative integer for errors.
  */
-int board_info_get_fw_config(uint32_t *fw_config);
+int board_info_get_fw_config(uint64_t *fw_config);
 
 /* Return memory configuration structure. */
 const struct mb_cfg *variant_memcfg_config(void);
@@ -40,7 +36,7 @@ int variant_memory_sku(void);
  */
 bool variant_mem_is_half_populated(void);
 
-/* Variant Intel Speed Shift Technology override */
-void variant_isst_override(void);
+/* Allow each variants to customize SMI sleep flow. */
+void variant_smi_sleep(u8 slp_typ);
 
 #endif /*__BASEBOARD_VARIANTS_H__ */

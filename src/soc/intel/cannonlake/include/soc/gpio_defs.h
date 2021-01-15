@@ -6,7 +6,6 @@
 #ifndef __ACPI__
 #include <stddef.h>
 #endif
-#include <soc/gpio_common.h>
 #include <soc/gpio_soc_defs.h>
 
 #define GPIO_NUM_PAD_CFG_REGS   4 /* DW0, DW1, DW2, DW3 */
@@ -237,6 +236,8 @@
 #define GPI_INT_EN_0				0x120
 #define GPI_SMI_STS_0				0x180
 #define GPI_SMI_EN_0				0x1A0
+#define GPI_NMI_STS_0				0x1c0
+#define GPI_NMI_EN_0				0x1e0
 #define PAD_CFG_BASE				0x600
 
 #endif

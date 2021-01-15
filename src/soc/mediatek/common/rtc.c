@@ -2,11 +2,10 @@
 
 #include <soc/rtc_common.h>
 #include <soc/rtc.h>
-#include <soc/pmic_wrap.h>
 #include <timer.h>
 
 /* ensure rtc write success */
-int rtc_busy_wait(void)
+static bool rtc_busy_wait(void)
 {
 	struct stopwatch sw;
 	u16 bbpu;
@@ -18,30 +17,30 @@ int rtc_busy_wait(void)
 		/* Time > 1sec, time out and set recovery mode enable.*/
 		if (stopwatch_expired(&sw)) {
 			rtc_info("BBPU CBUSY time out !!\n");
-			return 0;
+			return false;
 		}
 	} while (bbpu & RTC_BBPU_CBUSY);
 
-	return 1;
+	return true;
 }
 
-int rtc_write_trigger(void)
+bool rtc_write_trigger(void)
 {
 	rtc_write(RTC_WRTGR, 1);
 	return rtc_busy_wait();
 }
 
 /* unlock rtc write interface */
-int rtc_writeif_unlock(void)
+bool rtc_writeif_unlock(void)
 {
 	rtc_write(RTC_PROT, RTC_PROT_UNLOCK1);
 	if (!rtc_write_trigger())
-		return 0;
+		return false;
 	rtc_write(RTC_PROT, RTC_PROT_UNLOCK2);
 	if (!rtc_write_trigger())
-		return 0;
+		return false;
 
-	return 1;
+	return true;
 }
 
 /* set rtc time */
@@ -72,20 +71,20 @@ int rtc_get(struct rtc_time *time)
 }
 
 /* set rtc xosc setting */
-int rtc_xosc_write(u16 val)
+bool rtc_xosc_write(u16 val)
 {
 	u16 bbpu;
 
 	rtc_write(RTC_OSC32CON, RTC_OSC32CON_UNLOCK1);
 	if (!rtc_busy_wait())
-		return 0;
+		return false;
 	rtc_write(RTC_OSC32CON, RTC_OSC32CON_UNLOCK2);
 	if (!rtc_busy_wait())
-		return 0;
+		return false;
 
 	rtc_write(RTC_OSC32CON, val);
 	if (!rtc_busy_wait())
-		return 0;
+		return false;
 
 	rtc_read(RTC_BBPU, &bbpu);
 	bbpu |= RTC_BBPU_KEY | RTC_BBPU_RELOAD;
@@ -94,8 +93,32 @@ int rtc_xosc_write(u16 val)
 	return rtc_write_trigger();
 }
 
+/* enable lpd subroutine */
+bool rtc_lpen(u16 con)
+{
+	con &= ~RTC_CON_LPRST;
+	rtc_write(RTC_CON, con);
+
+	if (!rtc_write_trigger())
+		return false;
+
+	con |= RTC_CON_LPRST;
+	rtc_write(RTC_CON, con);
+
+	if (!rtc_write_trigger())
+		return false;
+
+	con &= ~RTC_CON_LPRST;
+	rtc_write(RTC_CON, con);
+
+	if (!rtc_write_trigger())
+		return false;
+
+	return true;
+}
+
 /* initialize rtc related registers */
-int rtc_reg_init(void)
+bool rtc_reg_init(void)
 {
 	u16 irqsta;
 
@@ -113,7 +136,7 @@ int rtc_reg_init(void)
 	rtc_write(RTC_DIFF, 0);
 	rtc_write(RTC_CALI, 0);
 	if (!rtc_write_trigger())
-		return 0;
+		return false;
 
 	rtc_read(RTC_IRQ_STA, &irqsta);  /* read clear */
 
@@ -126,6 +149,14 @@ int rtc_reg_init(void)
 	rtc_write(RTC_TC_MIN, 0);
 	rtc_write(RTC_TC_SEC, 0);
 
+	return rtc_write_trigger();
+}
+
+/* write powerkeys to enable rtc functions */
+bool rtc_powerkey_init(void)
+{
+	rtc_write(RTC_POWERKEY1, RTC_POWERKEY1_KEY);
+	rtc_write(RTC_POWERKEY2, RTC_POWERKEY2_KEY);
 	return rtc_write_trigger();
 }
 
@@ -164,18 +195,21 @@ void rtc_boot_common(void)
 
 	switch (rtc_check_state()) {
 	case RTC_STATE_REBOOT:
-		pwrap_write_field(RTC_BBPU, RTC_BBPU_KEY | RTC_BBPU_RELOAD,
-				  0xFFFF, 0);
+		rtc_read(RTC_BBPU, &bbpu);
+		rtc_write(RTC_BBPU, bbpu | RTC_BBPU_KEY | RTC_BBPU_RELOAD);
 		rtc_write_trigger();
 		rtc_osc_init();
+		rtc_info("RTC_STATE_REBOOT\n");
 		break;
 	case RTC_STATE_RECOVER:
 		rtc_init(1);
+		rtc_info("RTC_STATE_RECOVER\n");
 		break;
 	case RTC_STATE_INIT:
 	default:
 		if (rtc_init(0))
 			rtc_init(1);
+		rtc_info("RTC_STATE_INIT\n");
 		break;
 	}
 

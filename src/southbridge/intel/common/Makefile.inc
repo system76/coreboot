@@ -5,8 +5,13 @@ subdirs-y += firmware
 
 all-$(CONFIG_SOUTHBRIDGE_INTEL_COMMON_RESET) += reset.c
 
+all-$(CONFIG_SOUTHBRIDGE_INTEL_COMMON_HPET) += hpet.c
+
+romstage-$(CONFIG_SOUTHBRIDGE_INTEL_COMMON_EARLY_SMBUS) += early_smbus.c
+
 romstage-$(CONFIG_SOUTHBRIDGE_INTEL_COMMON_SMBUS) += smbus.c
 ramstage-$(CONFIG_SOUTHBRIDGE_INTEL_COMMON_SMBUS) += smbus.c
+ramstage-$(CONFIG_SOUTHBRIDGE_INTEL_COMMON_SMBUS) += smbus_ops.c
 
 romstage-$(CONFIG_SOUTHBRIDGE_INTEL_COMMON_PMCLIB) += pmclib.c
 

@@ -9,9 +9,12 @@
 #include <fsp/util.h>
 #include <intelblocks/cse.h>
 #include <intelblocks/lpss.h>
+#include <intelblocks/mp_init.h>
+#include <intelblocks/pmclib.h>
 #include <intelblocks/xdci.h>
 #include <intelpch/lockdown.h>
 #include <security/vboot/vboot_common.h>
+#include <soc/early_tcss.h>
 #include <soc/gpio_soc_defs.h>
 #include <soc/intel/common/vbt.h>
 #include <soc/pci_devs.h>
@@ -81,15 +84,22 @@ static const pci_devfn_t serial_io_dev[] = {
 	PCH_DEVFN_UART2
 };
 
+__weak void mainboard_update_soc_chip_config(struct soc_intel_tigerlake_config *config)
+{
+	/* Override settings per board. */
+}
+
 /* UPD parameters to be initialized before SiliconInit */
 void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 {
 	int i;
+	uint32_t cpu_id;
 	FSP_S_CONFIG *params = &supd->FspsConfig;
 
 	struct device *dev;
 	struct soc_intel_tigerlake_config *config;
 	config = config_of_soc();
+	mainboard_update_soc_chip_config(config);
 
 	/* Parse device tree and enable/disable Serial I/O devices */
 	parse_devicetree(params);
@@ -99,23 +109,21 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 
 	/* Check if IGD is present and fill Graphics init param accordingly */
 	dev = pcidev_path_on_root(SA_DEVFN_IGD);
-	if (CONFIG(RUN_FSP_GOP) && dev && dev->enabled)
-		params->PeiGraphicsPeimInit = 1;
-	else
-		params->PeiGraphicsPeimInit = 0;
+	params->PeiGraphicsPeimInit = CONFIG(RUN_FSP_GOP) && is_dev_enabled(dev);
 
 	/* Use coreboot MP PPI services if Kconfig is enabled */
-	if (CONFIG(USE_INTEL_FSP_TO_CALL_COREBOOT_PUBLISH_MP_PPI)) {
+	if (CONFIG(USE_INTEL_FSP_TO_CALL_COREBOOT_PUBLISH_MP_PPI))
 		params->CpuMpPpi = (uintptr_t) mp_fill_ppi_services_data();
-		params->SkipMpInit = 0;
-	} else {
-		params->SkipMpInit = !CONFIG_USE_INTEL_FSP_MP_INIT;
-	}
 
 	/* D3Hot and D3Cold for TCSS */
-	params->D3HotEnable = config->TcssD3HotEnable;
-	params->D3ColdEnable = config->TcssD3ColdEnable;
+	params->D3HotEnable = !config->TcssD3HotDisable;
+	cpu_id = cpu_get_cpuid();
+	if (cpu_id == CPUID_TIGERLAKE_A0)
+		params->D3ColdEnable = 0;
+	else
+		params->D3ColdEnable = !config->TcssD3ColdDisable;
 
+	params->UsbTcPortEn = config->UsbTcPortEn;
 	params->TcssAuxOri = config->TcssAuxOri;
 	for (i = 0; i < 8; i++)
 		params->IomTypeCPortPadCfg[i] = config->IomTypeCPortPadCfg[i];
@@ -126,6 +134,9 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 	 * delay for command completion.
 	 */
 	params->ITbtConnectTopologyTimeoutInMs = 0;
+
+	/* Disable TcColdOnUsbConnect */
+	params->DisableTccoldOnUsbConnected = 1;
 
 	/* Chipset Lockdown */
 	if (get_lockdown_config() == CHIPSET_LOCKDOWN_COREBOOT) {
@@ -143,16 +154,27 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 	/* USB */
 	for (i = 0; i < ARRAY_SIZE(config->usb2_ports); i++) {
 		params->PortUsb20Enable[i] = config->usb2_ports[i].enable;
-		params->Usb2OverCurrentPin[i] = config->usb2_ports[i].ocpin;
 		params->Usb2PhyPetxiset[i] = config->usb2_ports[i].pre_emp_bias;
 		params->Usb2PhyTxiset[i] = config->usb2_ports[i].tx_bias;
 		params->Usb2PhyPredeemp[i] = config->usb2_ports[i].tx_emp_enable;
 		params->Usb2PhyPehalfbit[i] = config->usb2_ports[i].pre_emp_bit;
+
+		if (config->usb2_ports[i].enable)
+			params->Usb2OverCurrentPin[i] = config->usb2_ports[i].ocpin;
+		else
+			params->Usb2OverCurrentPin[i] = 0xff;
+
+		if (config->usb2_ports[i].type_c)
+			params->PortResetMessageEnable[i] = 1;
 	}
 
 	for (i = 0; i < ARRAY_SIZE(config->usb3_ports); i++) {
 		params->PortUsb30Enable[i] = config->usb3_ports[i].enable;
-		params->Usb3OverCurrentPin[i] = config->usb3_ports[i].ocpin;
+		if (config->usb3_ports[i].enable) {
+			params->Usb3OverCurrentPin[i] = config->usb3_ports[i].ocpin;
+		} else {
+			params->Usb3OverCurrentPin[i] = 0xff;
+		}
 		if (config->usb3_ports[i].tx_de_emp) {
 			params->Usb3HsioTxDeEmphEnable[i] = 1;
 			params->Usb3HsioTxDeEmph[i] = config->usb3_ports[i].tx_de_emp;
@@ -172,6 +194,7 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 		params->PcieRpAdvancedErrorReporting[i] =
 			config->PcieRpAdvancedErrorReporting[i];
 		params->PcieRpHotPlug[i] = config->PcieRpHotPlug[i];
+		params->PciePtm[i] = config->PciePtm[i];
 	}
 
 	/* Enable ClkReqDetect for enabled port */
@@ -195,10 +218,8 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 
 	/* SATA */
 	dev = pcidev_path_on_root(PCH_DEVFN_SATA);
-	if (!dev)
-		params->SataEnable = 0;
-	else {
-		params->SataEnable = dev->enabled;
+	params->SataEnable = is_dev_enabled(dev);
+	if (params->SataEnable) {
 		params->SataMode = config->SataMode;
 		params->SataSalpSupport = config->SataSalpSupport;
 		memcpy(params->SataPortsEnable, config->SataPortsEnable,
@@ -206,6 +227,14 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 		memcpy(params->SataPortsDevSlp, config->SataPortsDevSlp,
 			sizeof(params->SataPortsDevSlp));
 	}
+
+	/* S0iX: Selectively enable individual sub-states,
+	 * by default all are enabled.
+	 *
+	 * LPM0-s0i2.0, LPM1-s0i2.1, LPM2-s0i2.2, LPM3-s0i3.0,
+	 * LPM4-s0i3.1, LPM5-s0i3.2, LPM6-s0i3.3, LPM7-s0i3.4
+	 */
+	params->LpmStateEnableMask = LPM_S0iX_ALL & ~config->LpmStateDisableMask;
 
 	/*
 	 * Power Optimizer for DMI and SATA.
@@ -236,6 +265,14 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 		}
 	}
 
+	params->AcousticNoiseMitigation = config->AcousticNoiseMitigation;
+	memcpy(&params->SlowSlewRate, &config->SlowSlewRate,
+		ARRAY_SIZE(config->SlowSlewRate) * sizeof(config->SlowSlewRate[0]));
+
+	memcpy(&params->FastPkgCRampDisable, &config->FastPkgCRampDisable,
+		ARRAY_SIZE(config->FastPkgCRampDisable) *
+			sizeof(config->FastPkgCRampDisable[0]));
+
 	/* Enable TCPU for processor thermal control */
 	params->Device4Enable = config->Device4Enable;
 
@@ -244,41 +281,33 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 
 	/* LAN */
 	dev = pcidev_path_on_root(PCH_DEVFN_GBE);
-	if (!dev)
-		params->PchLanEnable = 0;
-	else
-		params->PchLanEnable = dev->enabled;
+	params->PchLanEnable = is_dev_enabled(dev);
 
 	/* CNVi */
 	dev = pcidev_path_on_root(PCH_DEVFN_CNVI_WIFI);
-	if (dev)
-		params->CnviMode = dev->enabled;
-	else
-		params->CnviMode = 0;
+	params->CnviMode = is_dev_enabled(dev);
+
+	/* CNVi BT Core */
+	dev = pcidev_path_on_root(PCH_DEVFN_CNVI_BT);
+	params->CnviBtCore = is_dev_enabled(dev);
+
+	/* CNVi BT Audio Offload */
+	params->CnviBtAudioOffload = config->CnviBtAudioOffload;
 
 	/* VMD */
 	dev = pcidev_path_on_root(SA_DEVFN_VMD);
-	if (dev)
-		params->VmdEnable = dev->enabled;
-	else
-		params->VmdEnable = 0;
+	params->VmdEnable = is_dev_enabled(dev);
 
 	/* THC */
 	dev = pcidev_path_on_root(PCH_DEVFN_THC0);
-	if (!dev)
-		params->ThcPort0Assignment = 0;
-	else
-		params->ThcPort0Assignment = dev->enabled ? THC_0 : THC_NONE;
+	params->ThcPort0Assignment = is_dev_enabled(dev) ? THC_0 : THC_NONE;
 
 	dev =  pcidev_path_on_root(PCH_DEVFN_THC1);
-	if (!dev)
-		params->ThcPort1Assignment = 0;
-	else
-		params->ThcPort1Assignment = dev->enabled ? THC_1 : THC_NONE;
+	params->ThcPort1Assignment = is_dev_enabled(dev) ? THC_1 : THC_NONE;
 
 	/* Legacy 8254 timer support */
-	params->Enable8254ClockGating = !CONFIG_USE_LEGACY_8254_TIMER;
-	params->Enable8254ClockGatingOnS3 = !CONFIG_USE_LEGACY_8254_TIMER;
+	params->Enable8254ClockGating = !CONFIG(USE_LEGACY_8254_TIMER);
+	params->Enable8254ClockGatingOnS3 = !CONFIG(USE_LEGACY_8254_TIMER);
 
 	/* Enable Hybrid storage auto detection */
 	if (CONFIG(SOC_INTEL_CSE_LITE_SKU) && cse_is_hfs3_fw_sku_lite()
@@ -327,7 +356,52 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 
 	}
 
+	/* Apply minimum assertion width settings if non-zero */
+	if (config->PchPmSlpS3MinAssert)
+		params->PchPmSlpS3MinAssert = config->PchPmSlpS3MinAssert;
+	if (config->PchPmSlpS4MinAssert)
+		params->PchPmSlpS4MinAssert = config->PchPmSlpS4MinAssert;
+	if (config->PchPmSlpSusMinAssert)
+		params->PchPmSlpSusMinAssert = config->PchPmSlpSusMinAssert;
+	if (config->PchPmSlpAMinAssert)
+		params->PchPmSlpAMinAssert = config->PchPmSlpAMinAssert;
+
+	/* Set Power Cycle Duration */
+	if (config->PchPmPwrCycDur)
+		params->PchPmPwrCycDur = get_pm_pwr_cyc_dur(config->PchPmSlpS4MinAssert,
+				config->PchPmSlpS3MinAssert, config->PchPmSlpAMinAssert,
+				config->PchPmPwrCycDur);
+
+	/* EnableMultiPhaseSiliconInit for running MultiPhaseSiInit */
+	params->EnableMultiPhaseSiliconInit = 1;
+
+	/* Disable C1 C-state Demotion */
+	params->C1StateAutoDemotion = 0;
+
 	mainboard_silicon_init_params(params);
+}
+
+/*
+ * Callbacks for SoC/Mainboard specific overrides for FspMultiPhaseSiInit
+ * This platform supports below MultiPhaseSIInit Phase(s):
+ * Phase   |  FSP return point                                |  Purpose
+ * ------- + ------------------------------------------------ + -------------------------------
+ *   1     |  After TCSS initialization completed             |  for TCSS specific init
+ */
+void platform_fsp_multi_phase_init_cb(uint32_t phase_index)
+{
+	switch (phase_index) {
+	case 1:
+		/* TCSS specific initialization here */
+		printk(BIOS_DEBUG, "FSP MultiPhaseSiInit %s/%s called\n",
+			__FILE__, __func__);
+		if (CONFIG(EARLY_TCSS_DISPLAY) && (vboot_recovery_mode_enabled() ||
+			vboot_developer_mode_enabled()))
+			mainboard_early_tcss_enable();
+		break;
+	default:
+		break;
+	}
 }
 
 /* Mainboard GPIO Configuration */

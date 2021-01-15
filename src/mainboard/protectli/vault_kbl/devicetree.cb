@@ -17,8 +17,6 @@ chip soc/intel/skylake
 	register "gen3_dec" = "0x000c03e1"
 	register "gen4_dec" = "0x001c02e1"
 
-	# Enable "Intel Speed Shift Technology"
-	register "speed_shift_enable" = "1"
 	register "eist_enable" = "1"
 
 	# Disable DPTF
@@ -33,41 +31,20 @@ chip soc/intel/skylake
 	register "tcc_offset" = "5" # TCC of 95C
 
 	# FSP Configuration
-	register "ProbelessTrace" = "0"
-	register "EnableLan" = "0"
-	register "EnableSata" = "1"
 	register "SataSalpSupport" = "0"
 	register "SataMode" = "0"
-	register "EnableAzalia" = "0"
 	register "DspEnable" = "0"
 	register "IoBufferOwnership" = "0"
-	register "EnableTraceHub" = "0"
 	register "SsicPortEnable" = "0"
-	register "SmbusEnable" = "1"
-	register "Cio2Enable" = "0"
-	register "ScsEmmcEnabled" = "0"
 	register "ScsEmmcHs400Enabled" = "0"
-	register "ScsSdCardEnabled" = "0"
 	register "SkipExtGfxScan" = "1"
-	register "Device4Enable" = "0"
 	register "HeciEnabled" = "1"
-	register "PmTimerDisabled" = "1"
 	register "SaGv" = "SaGv_Enabled"
-	register "SaImguEnable" = "0"
 	register "IslVrCmd" = "2"
 	register "PmConfigSlpS3MinAssert" = "2"		# 50ms
 	register "PmConfigSlpS4MinAssert" = "4"		# 4s
 	register "PmConfigSlpSusMinAssert" = "1"	# 500ms
 	register "PmConfigSlpAMinAssert" = "3"		# 2s
-
-	register "pirqa_routing" = "PCH_IRQ11"
-	register "pirqb_routing" = "PCH_IRQ10"
-	register "pirqc_routing" = "PCH_IRQ11"
-	register "pirqd_routing" = "PCH_IRQ11"
-	register "pirqe_routing" = "PCH_IRQ11"
-	register "pirqf_routing" = "PCH_IRQ11"
-	register "pirqg_routing" = "PCH_IRQ11"
-	register "pirqh_routing" = "PCH_IRQ11"
 
 	# VR Settings Configuration for 4 Domains
 	#+----------------+-------+-------+-------+-------+
@@ -196,18 +173,12 @@ chip soc/intel/skylake
 	register "usb2_ports[5]"  = "USB2_PORT_SHORT(OC_SKIP)"	# TYPE-A Port
 	register "usb2_ports[6]"  = "USB2_PORT_SHORT(OC_SKIP)"	# TYPE-A Port
 	register "usb2_ports[7]"  = "USB2_PORT_SHORT(OC_SKIP)"	# mPCIe slot
-	register "usb2_ports[8]"  = "USB2_PORT_EMPTY"		# Disabled
-	register "usb2_ports[9]"  = "USB2_PORT_EMPTY"		# Disabled
-	register "usb2_ports[10]" = "USB2_PORT_EMPTY"		# Disabled
-	register "usb2_ports[11]" = "USB2_PORT_EMPTY"		# Disabled
 
 	# USB 3.0 enable ports 1-4, disable ports 5-6
 	register "usb3_ports[0]" = "USB3_PORT_DEFAULT(OC_SKIP)"	# TYPE-A Port
 	register "usb3_ports[1]" = "USB3_PORT_DEFAULT(OC_SKIP)"	# TYPE-A Port
 	register "usb3_ports[2]" = "USB3_PORT_DEFAULT(OC_SKIP)"	# TYPE-A Port
 	register "usb3_ports[3]" = "USB3_PORT_DEFAULT(OC_SKIP)"	# TYPE-A Port
-	register "usb3_ports[4]" = "USB3_PORT_EMPTY"		# Disabled
-	register "usb3_ports[5]" = "USB3_PORT_EMPTY"		# Disabled
 
 	register "SerialIoDevMode" = "{ \
 		[PchSerialIoIndexI2C0]  = PchSerialIoDisabled, \
@@ -234,6 +205,8 @@ chip soc/intel/skylake
 	device domain 0 on
 		device pci 00.0 on  end # Host Bridge
 		device pci 02.0 on  end # Integrated Graphics Device
+		device pci 04.0 off end # SA thermal subsystem
+		device pci 05.0 off end # SA IMGU
 		device pci 08.0 off end # Gaussian Mixture Model
 		device pci 13.0 off end # Integrated Sensor Hub
 		device pci 14.0 on  end # USB xHCI

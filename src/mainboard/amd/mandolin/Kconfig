@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0-only
 
-if BOARD_AMD_MANDOLIN
+if BOARD_AMD_MANDOLIN || BOARD_AMD_CEREME
 
 config BOARD_SPECIFIC_OPTIONS
 	def_bool y
@@ -8,8 +8,11 @@ config BOARD_SPECIFIC_OPTIONS
 	select SOC_AMD_PICASSO
 	select HAVE_ACPI_TABLES
 	select BOARD_ROMSIZE_KB_8192 if BOARD_AMD_MANDOLIN
+	select BOARD_ROMSIZE_KB_16384 if BOARD_AMD_CEREME
 	select AZALIA_PLUGIN_SUPPORT
 	select HAVE_ACPI_RESUME
+	select DRIVERS_UART_ACPI
+	select AMD_SOC_CONSOLE_UART if !AMD_LPC_DEBUG_CARD
 
 config FMDFILE
 	string
@@ -18,17 +21,36 @@ config FMDFILE
 config AMD_LPC_DEBUG_CARD
 	bool "Enable LPC-Serial debug card on the debug header"
 	default n
-	select PICASSO_LPC_IOMUX
+	select MANDOLIN_LPC
 	select SUPERIO_SMSC_SIO1036
 	help
-	  AMD's debug card contains an SMSC SIO1036 device which provides
-	  an I/O-based UART in the system.  This feature is not compatible with
-	  CONFIG_HUDSON_UART enabling the memory-mapped UART in the chipset.
-	  Note that Kconfig does not currently enforce this restriction.
+	  AMD's debug card contains an SMSC SIO1036 device which provides an
+	  I/O-mapped UART in the system. This is mutually exclusive with
+	  AMD_SOC_CONSOLE_UART which selects the SoC's integrated memory-mapped
+	  UART for coreboot console output.
+
+choice
+	prompt "SMSC/Microchip 1036 SuperIO config address"
+	depends on SUPERIO_SMSC_SIO1036
+	default SMSC_SIO1036_BASE_164E
+
+config SMSC_SIO1036_BASE_4E
+	bool "0x4e/0x4d base address"
+
+config SMSC_SIO1036_BASE_164E
+	bool "0x164e/0x164d base address"
+
+endchoice
+
+config SUPERIO_ADDR_BASE
+	hex
+	default 0x4e 	if SMSC_SIO1036_BASE_4E
+	default 0x164e 	if SMSC_SIO1036_BASE_164E
 
 config CBFS_SIZE
 	hex
 	default 0x7cf000 if BOARD_AMD_MANDOLIN # Maximum size for the Mandolin FMAP
+	default 0xfcf000 if BOARD_AMD_CEREME # Maximum size for the Cereme FMAP
 
 config MAINBOARD_DIR
 	string
@@ -37,18 +59,16 @@ config MAINBOARD_DIR
 config VARIANT_DIR
 	string
 	default "mandolin" if BOARD_AMD_MANDOLIN
+	default "cereme" if BOARD_AMD_CEREME
 
 config MAINBOARD_PART_NUMBER
 	string
 	default "MANDOLIN" if BOARD_AMD_MANDOLIN
+	default "CEREME" if BOARD_AMD_CEREME
 
 config DEVICETREE
 	string
 	default "variants/\$(CONFIG_VARIANT_DIR)/devicetree.cb"
-
-config MAX_CPUS
-	int
-	default 8
 
 config ONBOARD_VGA_IS_PRIMARY
 	bool
@@ -57,6 +77,7 @@ config ONBOARD_VGA_IS_PRIMARY
 config AMD_FWM_POSITION_INDEX
 	int
 	default 3 if BOARD_AMD_MANDOLIN
+	default 4 if BOARD_AMD_CEREME
 	help
 	  TODO: might need to be adapted for better placement of files in cbfs
 
@@ -68,9 +89,13 @@ config MANDOLIN_MCHP_FW_FILE
 	string
 	depends on MANDOLIN_HAVE_MCHP_FW
 	default "3rdparty/blobs/mainboard/amd/mandolin/EC_mandolin.bin" if BOARD_AMD_MANDOLIN
+	default "3rdparty/blobs/mainboard/amd/mandolin/EC_cereme.bin" if BOARD_AMD_CEREME
+	help
+	  The EC firmware blob is usually the first 128kByte of the stock
+	  firmware image.
 
 if !AMD_LPC_DEBUG_CARD
-choice MANDOLIN_LPC_IOMUX
+choice
 	prompt "State of IOMux for LPC/eMMC signals"
 	default MANDOLIN_IOMUX_USE_EMMC
 	help
@@ -86,7 +111,7 @@ config MANDOLIN_IOMUX_USE_EMMC
 endchoice
 endif # !AMD_LPC_DEBUG_CARD
 
-config PICASSO_LPC_IOMUX
+config MANDOLIN_LPC
 	bool
 	default y if MANDOLIN_IOMUX_USE_LPC
 	help
@@ -104,5 +129,22 @@ config VGA_BIOS_DGPU_ID
 config VGA_BIOS_DGPU_FILE
 	string
 	default "3rdparty/amd_blobs/picasso/PicassoGenericVbios.bin" if BOARD_AMD_MANDOLIN
+	default "3rdparty/amd_blobs/picasso/Raven2GenericVbios.bin" if BOARD_AMD_CEREME
 
-endif # BOARD_AMD_MANDOLIN
+config EFS_SPI_READ_MODE
+	int
+	default 0 if EM100
+	default 0 if BOARD_AMD_CEREME
+	default 3
+
+config EFS_SPI_SPEED
+	int
+	default 3 if EM100
+	default 1 if BOARD_AMD_CEREME
+	default 0
+
+config EFS_SPI_MICRON_FLAG
+	int
+	default 0
+
+endif # BOARD_AMD_MANDOLIN || BOARD_AMD_CEREME

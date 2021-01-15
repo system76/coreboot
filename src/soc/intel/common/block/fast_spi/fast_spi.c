@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+#include <arch/romstage.h>
 #include <device/mmio.h>
 #include <assert.h>
 #include <device/pci_def.h>
@@ -7,6 +8,7 @@
 #include <commonlib/helpers.h>
 #include <cpu/x86/mtrr.h>
 #include <fast_spi_def.h>
+#include <intelblocks/dmi.h>
 #include <intelblocks/fast_spi.h>
 #include <lib.h>
 #include <soc/pci_devs.h>
@@ -61,19 +63,19 @@ void fast_spi_init(void)
 /*
  * Set FAST_SPIBAR BIOS Control register based on input bit field.
  */
-static void fast_spi_set_bios_control_reg(uint8_t bios_cntl_bit)
+static void fast_spi_set_bios_control_reg(uint32_t bios_cntl_bit)
 {
 #if defined(__SIMPLE_DEVICE__)
 	pci_devfn_t dev = PCH_DEV_SPI;
 #else
 	struct device *dev = PCH_DEV_SPI;
 #endif
-	uint8_t bc_cntl;
+	uint32_t bc_cntl;
 
 	assert((bios_cntl_bit & (bios_cntl_bit - 1)) == 0);
-	bc_cntl = pci_read_config8(dev, SPIBAR_BIOS_CONTROL);
+	bc_cntl = pci_read_config32(dev, SPIBAR_BIOS_CONTROL);
 	bc_cntl |= bios_cntl_bit;
-	pci_write_config8(dev, SPIBAR_BIOS_CONTROL, bc_cntl);
+	pci_write_config32(dev, SPIBAR_BIOS_CONTROL, bc_cntl);
 }
 
 /*
@@ -101,6 +103,18 @@ void fast_spi_set_lock_enable(void)
 {
 	fast_spi_set_bios_control_reg(SPIBAR_BIOS_CONTROL_LOCK_ENABLE);
 
+	fast_spi_read_post_write(SPIBAR_BIOS_CONTROL);
+}
+
+/*
+ * Set FAST_SPIBAR BIOS Control EXT BIOS LE bit.
+ */
+void fast_spi_set_ext_bios_lock_enable(void)
+{
+	if (!CONFIG(FAST_SPI_SUPPORTS_EXT_BIOS_WINDOW))
+		return;
+
+	fast_spi_set_bios_control_reg(SPIBAR_BIOS_CONTROL_EXT_BIOS_LOCK_ENABLE);
 
 	fast_spi_read_post_write(SPIBAR_BIOS_CONTROL);
 }
@@ -212,6 +226,53 @@ size_t fast_spi_get_bios_region(size_t *bios_size)
 	return bios_start;
 }
 
+static bool fast_spi_ext_bios_cache_range(uintptr_t *base, size_t *size)
+{
+	uint32_t alignment;
+	if (!CONFIG(FAST_SPI_SUPPORTS_EXT_BIOS_WINDOW))
+		return false;
+
+	fast_spi_get_ext_bios_window(base, size);
+
+	/* Enable extended bios only if Size of Bios region is greater than 16MiB */
+	if (*size == 0 || *base == 0)
+		return false;
+
+	/* Round to power of two */
+	alignment = 1UL << (log2_ceil(*size));
+	*size = ALIGN_UP(*size, alignment);
+	*base = ALIGN_DOWN(*base, *size);
+
+	return true;
+}
+
+static void fast_spi_cache_ext_bios_window(void)
+{
+	size_t ext_bios_size;
+	uintptr_t ext_bios_base;
+	const int type = MTRR_TYPE_WRPROT;
+
+	if (!fast_spi_ext_bios_cache_range(&ext_bios_base, &ext_bios_size))
+		return;
+
+	int mtrr = get_free_var_mtrr();
+	if (mtrr == -1)
+		return;
+	set_var_mtrr(mtrr, ext_bios_base, ext_bios_size, type);
+}
+
+void fast_spi_cache_ext_bios_postcar(struct postcar_frame *pcf)
+{
+	size_t ext_bios_size;
+	uintptr_t ext_bios_base;
+	const int type = MTRR_TYPE_WRPROT;
+
+	if (!fast_spi_ext_bios_cache_range(&ext_bios_base, &ext_bios_size))
+		return;
+
+	postcar_frame_add_mtrr(pcf, ext_bios_base, ext_bios_size, type);
+}
+
 void fast_spi_cache_bios_region(void)
 {
 	size_t bios_size;
@@ -245,6 +306,66 @@ void fast_spi_cache_bios_region(void)
 
 		set_var_mtrr(mtrr, base, bios_size, type);
 	}
+
+	/* Check if caching is needed for extended bios region if supported */
+	fast_spi_cache_ext_bios_window();
+}
+
+/*
+ * Enable extended BIOS support
+ * Checks BIOS region in the flashmap, if its more than 16Mib, enables extended BIOS
+ * region support.
+ */
+static void fast_spi_enable_ext_bios(void)
+{
+#if defined(__SIMPLE_DEVICE__)
+	pci_devfn_t dev = PCH_DEV_SPI;
+#else
+	struct device *dev = PCH_DEV_SPI;
+#endif
+	if (!CONFIG(FAST_SPI_SUPPORTS_EXT_BIOS_WINDOW))
+		return;
+
+#if CONFIG(FAST_SPI_SUPPORTS_EXT_BIOS_WINDOW)
+	/*
+	 * Ensure that the base for the extended window in host space is a multiple of 32 MiB
+	 * and size is fixed at 32 MiB. Controller assumes that the extended window has a fixed
+	 * size of 32 MiB even if the actual BIOS region is smaller. The mapping of the BIOS
+	 * region happens at the top of the extended window in this case.
+	 */
+	_Static_assert(ALIGN_UP(CONFIG_EXT_BIOS_WIN_BASE, 32 * MiB) == CONFIG_EXT_BIOS_WIN_BASE,
+		       "Extended BIOS window base must be a multiple of 32 * MiB!");
+	_Static_assert(CONFIG_EXT_BIOS_WIN_SIZE == (32 * MiB),
+		       "Only 32MiB windows are supported for extended BIOS!");
+#endif
+
+	/* Confgiure DMI Source decode for Extended BIOS Region */
+	if (dmi_enable_gpmr(CONFIG_EXT_BIOS_WIN_BASE, CONFIG_EXT_BIOS_WIN_SIZE,
+				soc_get_spi_dmi_destination_id()) == CB_ERR)
+		return;
+
+	/* Program EXT_BIOS_BAR1 with obtained ext_bios_base */
+	pci_write_config32(dev, SPI_CFG_BAR1,
+			   CONFIG_EXT_BIOS_WIN_BASE | PCI_BASE_ADDRESS_SPACE_MEMORY);
+
+	/*
+	 * Since the top 16MiB of the BIOS region is always decoded by the standard window
+	 * below the 4G boundary, we need to map the rest of the BIOS region that lies
+	 * below the top 16MiB in the extended window. Thus, EXT_BIOS_LIMIT will be set to
+	 * 16MiB. This determines the maximum address in the SPI flash space that is mapped
+	 * to the top of the extended window in the host address space. EXT_BIOS_LIMIT is
+	 * basically the offset from the end of the BIOS region that will be mapped to the top
+	 * of the extended window.
+	 * This enables the decoding as follows:
+		-Standard decode window: (bios_region_top - 16MiB) to bios_region_top
+		-Extended decode window:
+			(bios_region_top - 16MiB - MIN(extended_window_size, bios_size - 16MiB))
+			to (bios_region_top - 16MiB).
+	 */
+	pci_or_config32(dev, SPIBAR_BIOS_CONTROL, SPIBAR_BIOS_CONTROL_EXT_BIOS_LIMIT(16 * MiB));
+
+	/* Program EXT_BIOS EN */
+	pci_or_config32(dev, SPIBAR_BIOS_CONTROL, SPIBAR_BIOS_CONTROL_EXT_BIOS_ENABLE);
 }
 
 /*
@@ -270,6 +391,12 @@ void fast_spi_early_init(uintptr_t spi_base_address)
 	/* Program Temporary BAR for SPI */
 	pci_write_config32(dev, PCI_BASE_ADDRESS_0,
 		spi_base_address | PCI_BASE_ADDRESS_SPACE_MEMORY);
+
+	/*
+	 * Enable extended bios support. Since it configures memory BAR, this is done before
+	 * enabling MMIO space.
+	 */
+	fast_spi_enable_ext_bios();
 
 	/* Enable Bus Master and MMIO Space */
 	pci_or_config16(dev, PCI_COMMAND, PCI_COMMAND_MASTER | PCI_COMMAND_MEMORY);

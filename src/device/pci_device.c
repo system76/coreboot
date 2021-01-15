@@ -19,12 +19,10 @@
 #include <device/pci_ids.h>
 #include <device/pcix.h>
 #include <device/pciexp.h>
-#include <device/hypertransport.h>
 #include <pc80/i8259.h>
 #include <security/vboot/vbnv.h>
 #include <timestamp.h>
 #include <types.h>
-
 
 u8 pci_moving_config8(struct device *dev, unsigned int reg)
 {
@@ -543,7 +541,8 @@ static void pci_set_resource(struct device *dev, struct resource *resource)
 			dev->command |= PCI_COMMAND_MEMORY;
 		if (resource->flags & IORESOURCE_IO)
 			dev->command |= PCI_COMMAND_IO;
-		if (resource->flags & IORESOURCE_PCI_BRIDGE)
+		if (resource->flags & IORESOURCE_PCI_BRIDGE &&
+		    CONFIG(PCI_SET_BUS_MASTER_PCI_BRIDGES))
 			dev->command |= PCI_COMMAND_MASTER;
 	}
 
@@ -862,19 +861,6 @@ static struct device_operations *get_pci_bridge_ops(struct device *dev)
 		return &default_pcix_ops_bus;
 	}
 #endif
-#if CONFIG(HYPERTRANSPORT_PLUGIN_SUPPORT)
-	unsigned int htpos = 0;
-	while ((htpos = pci_find_next_capability(dev, PCI_CAP_ID_HT, htpos))) {
-		u16 flags;
-		flags = pci_read_config16(dev, htpos + PCI_CAP_FLAGS);
-		if ((flags >> 13) == 1) {
-			/* Host or Secondary Interface */
-			printk(BIOS_DEBUG, "%s subordinate bus HT\n",
-			       dev_path(dev));
-			return &default_ht_ops_bus;
-		}
-	}
-#endif
 #if CONFIG(PCIEXP_PLUGIN_SUPPORT)
 	unsigned int pciexpos;
 	pciexpos = pci_find_capability(dev, PCI_CAP_ID_PCIE);
@@ -954,11 +940,14 @@ static void set_pci_ops(struct device *dev)
 		if ((driver->vendor == dev->vendor) &&
 		    device_id_match(driver, dev->device)) {
 			dev->ops = (struct device_operations *)driver->ops;
-			printk(BIOS_SPEW, "%s [%04x/%04x] %sops\n",
-			       dev_path(dev), driver->vendor, driver->device,
-			       (driver->ops->scan_bus ? "bus " : ""));
-			return;
+			break;
 		}
+	}
+
+	if (dev->ops) {
+		printk(BIOS_SPEW, "%s [%04x/%04x] %sops\n", dev_path(dev),
+		       driver->vendor, driver->device, (driver->ops->scan_bus ? "bus " : ""));
+		return;
 	}
 
 	/* If I don't have a specific driver use the default operations. */
@@ -978,7 +967,7 @@ static void set_pci_ops(struct device *dev)
 		dev->ops = &default_cardbus_ops_bus;
 		break;
 #endif
-default:
+	default:
 bad:
 		if (dev->enabled) {
 			printk(BIOS_ERR, "%s [%04x/%04x/%06x] has unknown "
@@ -1007,16 +996,11 @@ static struct device *pci_scan_get_dev(struct bus *bus, unsigned int devfn)
 
 	prev = &bus->children;
 	for (dev = bus->children; dev; dev = dev->sibling) {
-		if (dev->path.type == DEVICE_PATH_PCI) {
-			if (dev->path.pci.devfn == devfn) {
-				/* Unlink from the list. */
-				*prev = dev->sibling;
-				dev->sibling = NULL;
-				break;
-			}
-		} else {
-			printk(BIOS_ERR, "child %s not a PCI device\n",
-			       dev_path(dev));
+		if (dev->path.type == DEVICE_PATH_PCI && dev->path.pci.devfn == devfn) {
+			/* Unlink from the list. */
+			*prev = dev->sibling;
+			dev->sibling = NULL;
+			break;
 		}
 		prev = &dev->sibling;
 	}
@@ -1134,7 +1118,8 @@ struct device *pci_probe_dev(struct device *dev, struct bus *bus,
 	dev->class = class >> 8;
 
 	/* Architectural/System devices always need to be bus masters. */
-	if ((dev->class >> 16) == PCI_BASE_CLASS_SYSTEM)
+	if ((dev->class >> 16) == PCI_BASE_CLASS_SYSTEM &&
+	    CONFIG(PCI_ALLOW_BUS_MASTER_ANY_DEVICE))
 		dev->command |= PCI_COMMAND_MASTER;
 
 	/*
@@ -1284,6 +1269,16 @@ void pci_scan_bus(struct bus *bus, unsigned int min_devfn,
 
 	prev = &bus->children;
 	for (dev = bus->children; dev; dev = dev->sibling) {
+
+		/*
+		 * If static device is not PCI then enable it here and don't
+		 * treat it as a leftover device.
+		 */
+		if (dev->path.type != DEVICE_PATH_PCI) {
+			enable_static_device(dev);
+			continue;
+		}
+
 		/*
 		 * The device is only considered leftover if it is not hidden
 		 * and it has a Vendor ID of 0 (the default for a device that

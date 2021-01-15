@@ -3,7 +3,7 @@
 #ifndef NORTHBRIDGE_INTEL_HASWELL_CHIP_H
 #define NORTHBRIDGE_INTEL_HASWELL_CHIP_H
 
-#include <drivers/intel/gma/i915.h>
+#include <drivers/intel/gma/gma.h>
 
 /*
  * Digital Port Hotplug Enable:
@@ -17,18 +17,8 @@ struct northbridge_intel_haswell_config {
 	u8 gpu_dp_c_hotplug; /* Digital Port C Hotplug Config */
 	u8 gpu_dp_d_hotplug; /* Digital Port D Hotplug Config */
 
-	u8 gpu_panel_port_select; /* 0=LVDS 1=DP_B 2=DP_C 3=DP_D */
-	u8 gpu_panel_power_cycle_delay;          /* T4 time sequence */
-	u16 gpu_panel_power_up_delay;            /* T1+T2 time sequence */
-	u16 gpu_panel_power_down_delay;          /* T3 time sequence */
-	u16 gpu_panel_power_backlight_on_delay;  /* T5 time sequence */
-	u16 gpu_panel_power_backlight_off_delay; /* Tx time sequence */
-
-	unsigned int gpu_pch_backlight_pwm_hz;
-	enum {
-		GPU_BACKLIGHT_POLARITY_HIGH = 0,
-		GPU_BACKLIGHT_POLARITY_LOW,
-	} gpu_pch_backlight_polarity;
+	/* IGD panel configuration */
+	struct i915_gpu_panel_config panel_cfg;
 
 	bool gpu_ddi_e_connected;
 

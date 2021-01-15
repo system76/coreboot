@@ -10,13 +10,21 @@ chip soc/amd/picasso
 	register "system_config" = "1"
 
 	# Set STAPM confiuration. All of these fields must be set >0 to take affect
-	register "slow_ppt_limit" = "6000" # mW
-	register "fast_ppt_limit" = "9000" # mW
-	register "slow_ppt_time_constant" = "5" # second
-	register "stapm_time_constant" = "2500" # second
-	register "sustained_power_limit" = "4800" # mW
+	register "slow_ppt_limit_mW" = "6000"
+	register "fast_ppt_limit_mW" = "9000"
+	register "slow_ppt_time_constant_s" = "5"
+	register "stapm_time_constant_s" = "1400"
+	register "sustained_power_limit_mW" = "4800"
 
 	# End : OPN Performance Configuration
+
+	register "telemetry_vddcr_vdd_slope_mA" = "26939"
+	register "telemetry_vddcr_vdd_offset" = "125"
+	register "telemetry_vddcr_soc_slope_mA" = "20001"
+	register "telemetry_vddcr_soc_offset" = "168"
+
+	# USB OC pin mapping
+	register "usb_port_overcurrent_pin[1]" = "USB_OC_NONE"	# LTE instead of USB C1
 
 	# I2C2 for touchscreen and trackpad
 	register "i2c[2]" = "{
@@ -28,9 +36,15 @@ chip soc/amd/picasso
 	# I2C3 for H1
 	register "i2c[3]" = "{
 		.speed = I2C_SPEED_FAST,
-		.rise_time_ns = 184, /* 0 to 1.26v (1.8 * .7) */
-		.fall_time_ns = 42,  /* 1.26v to 0 */
+		.rise_time_ns = 110,
+		.fall_time_ns = 5,
 		.early_init = true,
+	}"
+
+	register "emmc_config" = "{
+		.timing = SD_EMMC_EMMC_HS400,
+		.sdr104_hs400_driver_strength = SD_EMMC_DRIVE_STRENGTH_A,
+		.init_khz_preset = 400,
 	}"
 
 	# See AMD 55570-B1 Table 13: PCI Device ID Assignments.
@@ -86,13 +100,47 @@ chip soc/amd/picasso
 		chip drivers/i2c/hid
 			register "generic.hid" = ""GDIX0000""
 			register "generic.desc" = ""Goodix Touchscreen""
-			register "generic.irq_gpio" = "ACPI_GPIO_IRQ_EDGE_LOW(GPIO_12)"
+			register "generic.irq_gpio" = "ACPI_GPIO_IRQ_LEVEL_LOW(GPIO_12)"
 			register "generic.probed" = "1"
-			register "generic.reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPIO_140)"
-			register "generic.reset_delay_ms" = "120"
+			register "generic.enable_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPIO_32)"
+			register "generic.enable_delay_ms" = "10"
+			register "generic.reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPIO_140)"
+			register "generic.reset_off_delay_ms" = "2"
+			register "generic.reset_delay_ms" = "20"
+			register "generic.stop_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPIO_144)"
+			register "generic.stop_delay_ms" = "160"
+			register "generic.stop_off_delay_ms" = "2"
 			register "generic.has_power_resource" = "1"
 			register "hid_desc_reg_offset" = "0x01"
 			device i2c 5d on end
+		end
+		chip drivers/i2c/generic
+			register "hid" = ""ELAN0001""
+			register "desc" = ""ELAN Touchscreen""
+			register "probed" = "1"
+			register "irq_gpio" = "ACPI_GPIO_IRQ_EDGE_LOW(GPIO_12)"
+			register "enable_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPIO_32)"
+			register "enable_delay_ms" = "1"
+			register "reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPIO_140)"
+			register "reset_delay_ms" = "20"
+			register "reset_off_delay_ms" = "2"
+			register "stop_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPIO_144)"
+			register "stop_off_delay_ms" = "2"
+			register "has_power_resource" = "1"
+			register "disable_gpio_export_in_crs" = "1"
+			device i2c 10 on end
+		end
+		chip drivers/generic/gpio_keys
+			register "name" = ""PENH""
+			register "gpio" = "ACPI_GPIO_INPUT_ACTIVE_LOW(GPIO_4)"
+			register "key.dev_name" = ""EJCT""
+			register "key.wakeup_event_action" = "EV_ACT_DEASSERTED"
+			register "key.linux_code" = "SW_PEN_INSERTED"
+			register "key.linux_input_type" = "EV_SW"
+			register "key.label" = ""pen_eject""
+			register "key.debounce_interval" = "100"
+			register "key.wakeup_route" = "WAKEUP_ROUTE_GPIO_IRQ"
+			device generic 0 on end
 		end
 		chip drivers/i2c/generic
 			register "hid" = ""ELAN0000""
@@ -105,11 +153,58 @@ chip soc/amd/picasso
 		chip drivers/i2c/hid
 			register "generic.hid" = ""PNP0C50""
 			register "generic.desc" = ""Synaptics Touchpad""
-			register "generic.irq_gpio" = "ACPI_GPIO_IRQ_EDGE_LOW(GPIO_9)"
+			register "generic.irq_gpio" = "ACPI_GPIO_IRQ_LEVEL_LOW(GPIO_9)"
 			register "generic.wake" = "GEVENT_22"
 			register "generic.probed" = "1"
 			register "hid_desc_reg_offset" = "0x20"
 			device i2c 2c on end
+		end
+		chip drivers/i2c/sx9324
+			register "desc" = ""SAR Proximity Sensor""
+			register "irq_gpio" = "ACPI_GPIO_IRQ_LEVEL_LOW(GPIO_40)"
+			register "uid" = "2"
+			register "reg_gnrl_ctrl0" = "0x16"
+			register "reg_gnrl_ctrl1" = "0x21"
+			register "reg_afe_ctrl0" = "0x00"
+			register "reg_afe_ctrl1" = "0x10"
+			register "reg_afe_ctrl2" = "0x00"
+			register "reg_afe_ctrl3" = "0x00"
+			register "reg_afe_ctrl4" = "0x07"
+			register "reg_afe_ctrl5" = "0x00"
+			register "reg_afe_ctrl6" = "0x00"
+			register "reg_afe_ctrl7" = "0x07"
+			register "reg_afe_ctrl8" = "0x12"
+			register "reg_afe_ctrl9" = "0x0f"
+			register "reg_prox_ctrl0" = "0x12"
+			register "reg_prox_ctrl1" = "0x12"
+			register "reg_prox_ctrl2" = "0x90"
+			register "reg_prox_ctrl3" = "0x60"
+			register "reg_prox_ctrl4" = "0x0c"
+			register "reg_prox_ctrl5" = "0x12"
+			register "reg_prox_ctrl6" = "0x3c"
+			register "reg_prox_ctrl7" = "0x58"
+			register "reg_adv_ctrl0" = "0x00"
+			register "reg_adv_ctrl1" = "0x00"
+			register "reg_adv_ctrl2" = "0x00"
+			register "reg_adv_ctrl3" = "0x00"
+			register "reg_adv_ctrl4" = "0x00"
+			register "reg_adv_ctrl5" = "0x05"
+			register "reg_adv_ctrl6" = "0x00"
+			register "reg_adv_ctrl7" = "0x00"
+			register "reg_adv_ctrl8" = "0x00"
+			register "reg_adv_ctrl9" = "0x00"
+			register "reg_adv_ctrl10" = "0x5c"
+			register "reg_adv_ctrl11" = "0x52"
+			register "reg_adv_ctrl12" = "0xb5"
+			register "reg_adv_ctrl13" = "0x00"
+			register "reg_adv_ctrl14" = "0x80"
+			register "reg_adv_ctrl15" = "0x0c"
+			register "reg_adv_ctrl16" = "0x38"
+			register "reg_adv_ctrl17" = "0x56"
+			register "reg_adv_ctrl18" = "0x33"
+			register "reg_adv_ctrl19" = "0xf0"
+			register "reg_adv_ctrl20" = "0xf0"
+			device i2c 28 on end
 		end
 	end
 end	# chip soc/amd/picasso

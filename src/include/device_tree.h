@@ -4,6 +4,7 @@
 #ifndef __DEVICE_TREE_H__
 #define __DEVICE_TREE_H__
 
+#include <stddef.h>
 #include <stdint.h>
 #include <list.h>
 
@@ -41,8 +42,6 @@ struct fdt_property
 	void *data;
 	uint32_t size;
 };
-
-
 
 /*
  * Unflattened device tree structures.
@@ -87,8 +86,6 @@ struct device_tree
 	struct device_tree_node *root;
 };
 
-
-
 /*
  * Flattened device tree functions. These generally return the number of bytes
  * which were consumed reading the requested value.
@@ -107,8 +104,6 @@ int fdt_skip_node(const void *blob, uint32_t offset);
    the contents of the flattened tree in place. Modifying the flat tree
    invalidates the unflattened one. */
 struct device_tree *fdt_unflatten(const void *blob);
-
-
 
 /*
  * Unflattened device tree functions.

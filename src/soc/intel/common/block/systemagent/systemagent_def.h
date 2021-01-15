@@ -3,7 +3,6 @@
 #ifndef SOC_INTEL_COMMON_BLOCK_SA_DEF_H
 #define SOC_INTEL_COMMON_BLOCK_SA_DEF_H
 
-
 /* Device 0:0.0 PCI configuration space */
 
 /* GMCH Graphics Control Register */
@@ -40,7 +39,7 @@
 #define MCH_PAIR	0x5418
 
 /*
- * IMR register in case CONFIG_SA_ENABLE_IMR is selected by SoC.
+ * IMR register in case CONFIG(SA_ENABLE_IMR) is selected by SoC.
  *
  * IMR registers are found under MCHBAR.
  */

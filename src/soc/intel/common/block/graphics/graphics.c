@@ -11,11 +11,12 @@
 #include <drivers/intel/gma/libgfxinit.h>
 #include <drivers/intel/gma/opregion.h>
 #include <intelblocks/graphics.h>
+#include <fsp/graphics.h>
 #include <soc/pci_devs.h>
 #include <types.h>
 
 /* SoC Overrides */
-__weak void graphics_soc_init(struct device *dev)
+__weak void graphics_soc_panel_init(struct device *dev)
 {
 	/*
 	 * User needs to implement SoC override in case wishes
@@ -33,8 +34,12 @@ static void gma_init(struct device *const dev)
 {
 	intel_gma_init_igd_opregion();
 
-	/* SoC specific configuration. */
-	graphics_soc_init(dev);
+	/* SoC specific panel init/configuration.
+	   If FSP has already run/configured the IGD, we can assume the
+	   panel/backlight control have already been set up sufficiently
+	   and that we shouldn't attempt to reconfigure things. */
+	if (!CONFIG(RUN_FSP_GOP))
+		graphics_soc_panel_init(dev);
 
 	if (CONFIG(SOC_INTEL_CONFIGURE_DDI_A_4_LANES) && !acpi_is_wakeup_s3()) {
 		const u32 ddi_buf_ctl = graphics_gtt_read(DDI_BUF_CTL_A);
@@ -46,13 +51,15 @@ static void gma_init(struct device *const dev)
 	/*
 	 * GFX PEIM module inside FSP binary is taking care of graphics
 	 * initialization based on RUN_FSP_GOP Kconfig option and input
-	 * VBT file.
+	 * VBT file. Need to report the framebuffer info after PCI enumeration.
 	 *
 	 * In case of non-FSP solution, SoC need to select another
 	 * Kconfig to perform GFX initialization.
 	 */
-	if (CONFIG(RUN_FSP_GOP))
+	if (CONFIG(RUN_FSP_GOP)) {
+		fsp_report_framebuffer_info(graphics_get_memory_base());
 		return;
+	}
 
 	if (!CONFIG(NO_GFX_INIT))
 		pci_or_config16(dev, PCI_COMMAND, PCI_COMMAND_MASTER);
@@ -153,16 +160,6 @@ void graphics_gtt_rmw(unsigned long reg, uint32_t andmask, uint32_t ormask)
 	val &= andmask;
 	val |= ormask;
 	graphics_gtt_write(reg, val);
-}
-
-/*
- * fsp_soc_get_igd_bar() is declared in <fsp/util.h>,
- * but that draws incompatible UDK headers in.
- */
-uintptr_t fsp_soc_get_igd_bar(void);
-uintptr_t fsp_soc_get_igd_bar(void)
-{
-	return graphics_get_memory_base();
 }
 
 static const struct device_operations graphics_ops = {
@@ -282,6 +279,21 @@ static const unsigned short pci_device_ids[] = {
 	PCI_DEVICE_ID_INTEL_EHL_GT2_3,
 	PCI_DEVICE_ID_INTEL_JSL_GT1,
 	PCI_DEVICE_ID_INTEL_JSL_GT2,
+	PCI_DEVICE_ID_INTEL_JSL_GT3,
+	PCI_DEVICE_ID_INTEL_JSL_GT4,
+	PCI_DEVICE_ID_INTEL_ADL_GT0,
+	PCI_DEVICE_ID_INTEL_ADL_GT1,
+	PCI_DEVICE_ID_INTEL_ADL_GT1_1,
+	PCI_DEVICE_ID_INTEL_ADL_GT1_2,
+	PCI_DEVICE_ID_INTEL_ADL_GT1_3,
+	PCI_DEVICE_ID_INTEL_ADL_GT1_4,
+	PCI_DEVICE_ID_INTEL_ADL_GT1_5,
+	PCI_DEVICE_ID_INTEL_ADL_GT1_6,
+	PCI_DEVICE_ID_INTEL_ADL_GT1_7,
+	PCI_DEVICE_ID_INTEL_ADL_GT1_8,
+	PCI_DEVICE_ID_INTEL_ADL_GT1_9,
+	PCI_DEVICE_ID_INTEL_ADL_P_GT2,
+	PCI_DEVICE_ID_INTEL_ADL_S_GT1,
 	0,
 };
 

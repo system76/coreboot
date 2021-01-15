@@ -202,7 +202,7 @@ int chipset_volatile_group_begin(const struct spi_flash *flash);
 int chipset_volatile_group_end(const struct spi_flash *flash);
 
 /* Return spi_flash object reference for the boot device. This is only valid
- * if CONFIG_BOOT_DEVICE_SPI_FLASH is enabled. */
+ * if CONFIG(BOOT_DEVICE_SPI_FLASH) is enabled. */
 const struct spi_flash *boot_device_spi_flash(void);
 
 /* Protect a region of spi flash using its controller, if available. Returns
@@ -224,5 +224,13 @@ int spi_flash_vector_helper(const struct spi_slave *slave,
 	struct spi_op vectors[], size_t count,
 	int (*func)(const struct spi_slave *slave, const void *dout,
 		    size_t bytesout, void *din, size_t bytesin));
+
+/*
+ * Fill in the memory mapped windows used by the SPI flash device. This is useful for payloads
+ * to identify SPI flash to host space mapping.
+ *
+ * Returns number of windows added to the table.
+ */
+uint32_t spi_flash_get_mmap_windows(struct flash_mmap_window *table);
 
 #endif /* _SPI_FLASH_H_ */

@@ -8,7 +8,6 @@
 #include <cpu/intel/speedstep.h>
 #include <cpu/x86/cache.h>
 #include <cpu/x86/name.h>
-#include <cpu/intel/common/common.h>
 
 #define HIGHEST_CLEVEL		3
 static void configure_c_states(void)
@@ -147,7 +146,6 @@ static const struct cpu_device_id cpu_table[] = {
 	{ X86_VENDOR_INTEL, 0x06fb }, /* Intel Core 2 Solo/Core Duo */
 	{ X86_VENDOR_INTEL, 0x06fd }, /* Intel Core 2 Solo/Core Duo */
 	{ X86_VENDOR_INTEL, 0x10661 }, /* Intel Core 2 Celeron Conroe-L */
-	{ X86_VENDOR_INTEL, 0x10676 }, /* Core2 Duo E8200 */
 	{ 0, 0 },
 };
 

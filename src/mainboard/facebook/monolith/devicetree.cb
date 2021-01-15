@@ -29,47 +29,26 @@ chip soc/intel/skylake
 	# "Intel SpeedStep Technology"
 	register "eist_enable" = "1"
 
-	# "Intel Speed Shift Technology"
-	register "speed_shift_enable" = "1"
-
 	# DPTF
 	register "dptf_enable" = "1"
 
 	# FSP Configuration
-	register "EnableAzalia" = "1"
-	register "SmbusEnable" = "1"
-	register "ScsEmmcEnabled" = "1"
 	register "ScsEmmcHs400Enabled" = "1"
 	register "SkipExtGfxScan" = "1"
-	register "Device4Enable" = "1"
 	register "SaGv" = "SaGv_Enabled"
-	register "SaImguEnable" = "0"
-	register "Cio2Enable" = "0"
-	register "PmTimerDisabled" = "1"
 	register "HeciEnabled" = "0"
-	register "EnableLan" = "1"
 
-	register "EnableSata" = "1"
-		register "SataSalpSupport" = "1"
-		register "SataPortsEnable" = "{ \
-			[0]	= 1, \
-			[1]	= 0, \
-			[2]	= 0, \
-			[3]	= 0, \
-			[4]	= 0, \
-			[5]	= 0, \
-			[6]	= 0, \
-			[7]	= 0, \
-		}"
-
-	register "pirqa_routing" = "PCH_IRQ11"
-	register "pirqb_routing" = "PCH_IRQ10"
-	register "pirqc_routing" = "PCH_IRQ11"
-	register "pirqd_routing" = "PCH_IRQ11"
-	register "pirqe_routing" = "PCH_IRQ11"
-	register "pirqf_routing" = "PCH_IRQ11"
-	register "pirqg_routing" = "PCH_IRQ11"
-	register "pirqh_routing" = "PCH_IRQ11"
+	register "SataSalpSupport" = "1"
+	register "SataPortsEnable" = "{ \
+		[0]	= 1, \
+		[1]	= 0, \
+		[2]	= 0, \
+		[3]	= 0, \
+		[4]	= 0, \
+		[5]	= 0, \
+		[6]	= 0, \
+		[7]	= 0, \
+	}"
 
 	# Enabling SLP_S3#, SLP_S4#, SLP_SUS and SLP_A Stretch
 	# SLP_S3 Minimum Assertion Width. Values 0: 60us, 1: 1ms, 2: 50ms, 3: 2s
@@ -168,7 +147,7 @@ chip soc/intel/skylake
 	# Enable Advanced Error Reporting
 	register "PcieRpAdvancedErrorReporting[2]" = "1"
 	# Disable Aspm
-	register "PcieRpAspm[2]" = "AspmDisabled"
+	register "pcie_rp_aspm[2]" = "AspmDisabled"
 
 	# PCIE Port 4 disabled
 	# PCIE Port 5 x1 -> MODULE i219
@@ -183,7 +162,7 @@ chip soc/intel/skylake
 	# Enable Advanced Error Reporting
 	register "PcieRpAdvancedErrorReporting[5]" = "1"
 	# Disable Aspm
-	register "PcieRpAspm[5]" = "AspmDisabled"
+	register "pcie_rp_aspm[5]" = "AspmDisabled"
 
 	# PCIE Port 7 Disabled
 	# PCIE Port 8 Disabled
@@ -201,7 +180,7 @@ chip soc/intel/skylake
 	# Enable Advanced Error Reporting
 	register "PcieRpAdvancedErrorReporting[8]" = "1"
 	# Disable Aspm
-	register "PcieRpAspm[8]" = "AspmDisabled"
+	register "pcie_rp_aspm[8]" = "AspmDisabled"
 
 	# USB 2.0 Enable all ports
 	register "usb2_ports[0]" = "USB2_PORT_TYPE_C(OC_SKIP)"	# USB-C Port 2
@@ -209,21 +188,13 @@ chip soc/intel/skylake
 	register "usb2_ports[2]" = "USB2_PORT_MID(OC1)"		# USB3_TYPE-A Port 2
 	register "usb2_ports[3]" = "USB2_PORT_TYPE_C(OC_SKIP)"	# USB-C Port 1
 	register "usb2_ports[4]" = "USB2_PORT_SHORT(OC_SKIP)"	# M2 Port
-	register "usb2_ports[5]" = "USB2_PORT_EMPTY"		# Disabled
 	register "usb2_ports[6]" = "USB2_PORT_SHORT(OC_SKIP)"	# Audio board
-	register "usb2_ports[7]" = "USB2_PORT_EMPTY"		# Disabled
-	register "usb2_ports[8]" = "USB2_PORT_EMPTY"		# Disabled
-	register "usb2_ports[9]" = "USB2_PORT_EMPTY"		# Disabled
-	register "usb2_ports[10]" = "USB2_PORT_EMPTY"		# Disabled
-	register "usb2_ports[11]" = "USB2_PORT_EMPTY"		# Disabled
 
 	# USB 3.0 Enable Port 1-4. Port 5 & 6 Disabled
 	register "usb3_ports[0]" = "USB3_PORT_DEFAULT(OC_SKIP)"	# USB-C Port 2
 	register "usb3_ports[1]" = "USB3_PORT_DEFAULT(OC_SKIP)"	# USB3_TYPE-A Port 1
 	register "usb3_ports[2]" = "USB3_PORT_DEFAULT(OC_SKIP)"	# USB3_TYPE-A Port 2
 	register "usb3_ports[3]" = "USB3_PORT_DEFAULT(OC_SKIP)"	# USB-C Port 1
-	register "usb3_ports[4]" = "USB3_PORT_EMPTY"		# Disabled
-	register "usb3_ports[5]" = "USB3_PORT_EMPTY"		# Disabled
 
 	register "SsicPortEnable" = "0"
 
@@ -254,10 +225,12 @@ chip soc/intel/skylake
 		device pci 00.0 on  end # Host Bridge
 		device pci 02.0 on  end # Integrated Graphics Device
 		device pci 04.0 on  end # Thermal Subsystem
+		device pci 05.0 off end # SA IMGU
 		device pci 08.0 on  end # Gaussian Mixture Model
 		device pci 14.0 on  end # USB xHCI
 		device pci 14.1 on  end # USB xDCI (OTG)
 		device pci 14.2 on  end # Thermal Subsystem
+		device pci 14.3 off end # Camera
 		device pci 17.0 on  end # SATA
 		device pci 1c.2 on  end # PCI Express Port 3 x1 baseboard WWAN
 		device pci 1c.5 on  end # PCI Express Port 6 x1 baseboard i210

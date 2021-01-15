@@ -10,8 +10,6 @@
 #include <console/vtxprintf.h>
 #include <smp/spinlock.h>
 #include <smp/node.h>
-#include <stddef.h>
-#include <trace.h>
 #include <timer.h>
 
 DECLARE_SPIN_LOCK(console_lock)
@@ -82,7 +80,6 @@ int do_vprintk(int msg_level, const char *fmt, va_list args)
 	if (log_this < CONSOLE_LOG_FAST)
 		return 0;
 
-	DISABLE_TRACE;
 	spin_lock(&console_lock);
 
 	console_time_run();
@@ -97,7 +94,6 @@ int do_vprintk(int msg_level, const char *fmt, va_list args)
 	console_time_stop();
 
 	spin_unlock(&console_lock);
-	ENABLE_TRACE;
 
 	return i;
 }

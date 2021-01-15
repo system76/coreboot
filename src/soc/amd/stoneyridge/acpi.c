@@ -12,7 +12,6 @@
 #include <device/pci_ops.h>
 #include <arch/ioapic.h>
 #include <cpu/x86/smm.h>
-#include <cbmem.h>
 #include <device/device.h>
 #include <device/pci.h>
 #include <amdblocks/acpimmio.h>
@@ -119,14 +118,12 @@ void acpi_fill_fadt(acpi_fadt_t *fadt)
 	fadt->x_pm1a_cnt_blk.addrl = ACPI_PM1_CNT_BLK;
 	fadt->x_pm1a_cnt_blk.addrh = 0x0;
 
-
 	fadt->x_pm_tmr_blk.space_id = ACPI_ADDRESS_SPACE_IO;
 	fadt->x_pm_tmr_blk.bit_width = 32;
 	fadt->x_pm_tmr_blk.bit_offset = 0;
 	fadt->x_pm_tmr_blk.access_size = ACPI_ACCESS_SIZE_DWORD_ACCESS;
 	fadt->x_pm_tmr_blk.addrl = ACPI_PM_TMR_BLK;
 	fadt->x_pm_tmr_blk.addrh = 0x0;
-
 
 	fadt->x_gpe0_blk.space_id = ACPI_ADDRESS_SPACE_IO;
 	fadt->x_gpe0_blk.bit_width = 64; /* EventStatus + Event Enable */
@@ -164,42 +161,14 @@ unsigned long southbridge_write_acpi_tables(const struct device *device,
 	return acpi_write_hpet(device, current, rsdp);
 }
 
-void acpi_create_gnvs(struct global_nvs *gnvs)
+void soc_fill_gnvs(struct global_nvs *gnvs)
 {
-	/* Clear out GNVS. */
-	memset(gnvs, 0, sizeof(*gnvs));
-
-	if (CONFIG(CONSOLE_CBMEM))
-		gnvs->cbmc = (uintptr_t)cbmem_find(CBMEM_ID_CONSOLE);
-
-	if (CONFIG(CHROMEOS)) {
-		/* Initialize Verified Boot data */
-		chromeos_init_chromeos_acpi(&gnvs->chromeos);
-		gnvs->chromeos.vbt2 = ACTIVE_ECFW_RO;
-	}
-
 	/* Set unknown wake source */
 	gnvs->pm1i = ~0ULL;
 	gnvs->gpei = ~0ULL;
 
 	/* CPU core count */
 	gnvs->pcnt = dev_count_cpu();
-}
-
-void southbridge_inject_dsdt(const struct device *device)
-{
-	struct global_nvs *gnvs;
-
-	gnvs = cbmem_find(CBMEM_ID_ACPI_GNVS);
-
-	if (gnvs) {
-		acpi_create_gnvs(gnvs);
-
-		/* Add it to DSDT */
-		acpigen_write_scope("\\");
-		acpigen_write_name_dword("NVSA", (uintptr_t)gnvs);
-		acpigen_pop_len();
-	}
 }
 
 static void acpigen_soc_get_gpio_in_local5(uintptr_t addr)

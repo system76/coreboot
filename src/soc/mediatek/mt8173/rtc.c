@@ -1,17 +1,16 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
 #include <delay.h>
-#include <soc/rtc_common.h>
 #include <soc/rtc.h>
+#include <soc/rtc_common.h>
 #include <soc/mt6391.h>
 #include <soc/pmic_wrap.h>
 #include <types.h>
 
 #define RTC_GPIO_USER_MASK	  ((1 << 13) - (1 << 8))
 
-
 /* initialize rtc related gpio */
-static int rtc_gpio_init(void)
+static bool rtc_gpio_init(void)
 {
 	u16 con;
 
@@ -42,25 +41,25 @@ void rtc_osc_init(void)
 }
 
 /* low power detect setting */
-static int rtc_lpd_init(void)
+static bool rtc_lpd_init(void)
 {
 	pwrap_write_field(RTC_CON, RTC_CON_LPEN, RTC_CON_LPRST, 0);
 	if (!rtc_write_trigger())
-		return 0;
+		return false;
 
 	pwrap_write_field(RTC_CON, RTC_CON_LPRST, 0, 0);
 	if (!rtc_write_trigger())
-		return 0;
+		return false;
 
 	pwrap_write_field(RTC_CON, 0, RTC_CON_LPRST, 0);
 	if (!rtc_write_trigger())
-		return 0;
+		return false;
 
-	return 1;
+	return true;
 }
 
 /* rtc init check */
-int rtc_init(u8 recover)
+int rtc_init(int recover)
 {
 	int ret;
 
@@ -85,6 +84,7 @@ int rtc_init(u8 recover)
 		goto err;
 	}
 
+	/* In recovery mode, we need delay for register setting. */
 	if (recover)
 		mdelay(1000);
 

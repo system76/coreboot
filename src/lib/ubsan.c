@@ -68,7 +68,7 @@ struct ubsan_type_mismatch_data {
 	unsigned char type_check_kind;
 };
 
-void __ubsan_handle_type_mismatch(void *data_raw, void *pointer_raw)
+void __ubsan_handle_type_mismatch_v1(void *data_raw, void *pointer_raw)
 {
 	const struct ubsan_type_mismatch_data *data =
 		(struct ubsan_type_mismatch_data *)data_raw;
@@ -81,7 +81,7 @@ void __ubsan_handle_type_mismatch(void *data_raw, void *pointer_raw)
 	ubsan_abort(&data->location, violation);
 }
 
-ABORT_VARIANT_VP_VP(type_mismatch);
+ABORT_VARIANT_VP_VP(type_mismatch_v1);
 
 struct ubsan_overflow_data {
 	struct ubsan_source_location location;
@@ -156,6 +156,23 @@ void __ubsan_handle_divrem_overflow(void *data_raw, void *lhs_raw,
 
 ABORT_VARIANT_VP_VP_VP(divrem_overflow);
 
+struct ubsan_pointer_overflow_data {
+	struct ubsan_source_location location;
+};
+
+void __ubsan_handle_pointer_overflow(void *data_raw, void *base_raw, void *result_raw)
+{
+	const struct ubsan_pointer_overflow_data *data =
+		(struct ubsan_pointer_overflow_data *)data_raw;
+	ubsan_value_handle_t base   = (ubsan_value_handle_t)base_raw;
+	ubsan_value_handle_t result = (ubsan_value_handle_t)result_raw;
+	(void)base;
+	(void)result;
+	ubsan_abort(&data->location, "pointer overflow");
+}
+
+ABORT_VARIANT_VP_VP_VP(pointer_overflow);
+
 struct ubsan_shift_out_of_bounds_data {
 	struct ubsan_source_location location;
 	struct ubsan_type_descriptor *lhs_type;
@@ -228,15 +245,7 @@ void __ubsan_handle_vla_bound_not_positive(void *data_raw, void *bound_raw)
 ABORT_VARIANT_VP_VP(vla_bound_not_positive);
 
 struct ubsan_float_cast_overflow_data {
-/*
-* TODO: Remove this GCC 5.x compatibility after switching to GCC 6.x. The
-* GCC developers accidentally forgot the source location. Their
-* libubsan probes to see if it looks like a path, but we don't need
-* to maintain compatibility with multiple gcc releases. See below.
-*/
-#if !(defined(__GNUC__) && __GNUC__ < 6)
 	struct ubsan_source_location location;
-#endif
 	struct ubsan_type_descriptor *from_type;
 	struct ubsan_type_descriptor *to_type;
 };
@@ -247,11 +256,7 @@ void __ubsan_handle_float_cast_overflow(void *data_raw, void *from_raw)
 		(struct ubsan_float_cast_overflow_data *)data_raw;
 	ubsan_value_handle_t from = (ubsan_value_handle_t)from_raw;
 	(void) from;
-#if !(defined(__GNUC__) && __GNUC__ < 6)
 	ubsan_abort(&data->location, "float cast overflow");
-#else
-	ubsan_abort(((void) data, &unknown_location), "float cast overflow");
-#endif
 }
 
 ABORT_VARIANT_VP_VP(float_cast_overflow);

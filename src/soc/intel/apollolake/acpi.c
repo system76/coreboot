@@ -4,6 +4,7 @@
 #include <acpi/acpi_gnvs.h>
 #include <acpi/acpigen.h>
 #include <console/console.h>
+#include <device/device.h>
 #include <device/mmio.h>
 #include <arch/smp/mpspec.h>
 #include <assert.h>
@@ -71,22 +72,10 @@ acpi_cstate_t *soc_get_cstate_map(size_t *entries)
 	return cstate_map;
 }
 
-void acpi_create_gnvs(struct global_nvs *gnvs)
+void soc_fill_gnvs(struct global_nvs *gnvs)
 {
 	struct soc_intel_apollolake_config *cfg;
 	cfg = config_of_soc();
-
-	/* Clear out GNVS. */
-	memset(gnvs, 0, sizeof(*gnvs));
-
-	if (CONFIG(CONSOLE_CBMEM))
-		gnvs->cbmc = (uintptr_t) cbmem_find(CBMEM_ID_CONSOLE);
-
-	if (CONFIG(CHROMEOS)) {
-		/* Initialize Verified Boot data */
-		chromeos_init_chromeos_acpi(&gnvs->chromeos);
-		gnvs->chromeos.vbt2 = ACTIVE_ECFW_RO;
-	}
 
 	/* Set unknown wake source */
 	gnvs->pm1i = ~0ULL;
@@ -151,7 +140,7 @@ void soc_fill_fadt(acpi_fadt_t *fadt)
 
 	fadt->iapc_boot_arch = ACPI_FADT_LEGACY_DEVICES | ACPI_FADT_8042;
 
-	fadt->x_pm_tmr_blk.space_id = 1;
+	fadt->x_pm_tmr_blk.space_id = ACPI_ADDRESS_SPACE_IO;
 	fadt->x_pm_tmr_blk.bit_width = fadt->pm_tmr_len * 8;
 	fadt->x_pm_tmr_blk.addrl = ACPI_BASE_ADDRESS + PM1_TMR;
 	fadt->x_pm_tmr_blk.access_size = ACPI_ACCESS_SIZE_DWORD_ACCESS;
@@ -170,43 +159,40 @@ static unsigned long soc_fill_dmar(unsigned long current)
 	unsigned long tmp;
 
 	/* IGD has to be enabled, GFXVTBAR set and enabled. */
-	if (igfx_dev && igfx_dev->enabled && gfxvtbar && gfxvten) {
+	const bool emit_igd = is_dev_enabled(igfx_dev) && gfxvtbar && gfxvten;
+
+	/* First, add DRHD entries */
+	if (emit_igd) {
 		tmp = current;
 
 		current += acpi_create_dmar_drhd(current, 0, 0, gfxvtbar);
 		current += acpi_create_dmar_ds_pci(current, 0, 2, 0);
 		acpi_dmar_drhd_fixup(tmp, current);
-
-		/* Add RMRR entry */
-		tmp = current;
-		current += acpi_create_dmar_rmrr(current, 0,
-				sa_get_gsm_base(), sa_get_tolud_base() - 1);
-		current += acpi_create_dmar_ds_pci(current, 0, 2, 0);
-		acpi_dmar_rmrr_fixup(tmp, current);
 	}
 
 	/* DEFVTBAR has to be set and enabled. */
 	if (defvtbar && defvten) {
 		tmp = current;
-		/*
-		 * P2SB may already be hidden. There's no clear rule, when.
-		 * It is needed to get bus, device and function for IOAPIC and
-		 * HPET device which is stored in P2SB device. So unhide it to
-		 * get the info and hide it again when done.
-		 */
-		p2sb_unhide();
-		struct device *p2sb_dev = pcidev_path_on_root(PCH_DEVFN_P2SB);
-		uint16_t ibdf = pci_read_config16(p2sb_dev, PCH_P2SB_IBDF);
-		uint16_t hbdf = pci_read_config16(p2sb_dev, PCH_P2SB_HBDF);
+		union p2sb_bdf ibdf = p2sb_get_ioapic_bdf();
+		union p2sb_bdf hbdf = p2sb_get_hpet_bdf();
 		p2sb_hide();
 
 		current += acpi_create_dmar_drhd(current,
 				DRHD_INCLUDE_PCI_ALL, 0, defvtbar);
 		current += acpi_create_dmar_ds_ioapic(current,
-				2, ibdf >> 8, PCI_SLOT(ibdf), PCI_FUNC(ibdf));
+				2, ibdf.bus, ibdf.dev, ibdf.fn);
 		current += acpi_create_dmar_ds_msi_hpet(current,
-				0, hbdf >> 8, PCI_SLOT(hbdf), PCI_FUNC(hbdf));
+				0, hbdf.bus, hbdf.dev, hbdf.fn);
 		acpi_dmar_drhd_fixup(tmp, current);
+	}
+
+	/* Then, add RMRR entries after all DRHD entries */
+	if (emit_igd) {
+		tmp = current;
+		current += acpi_create_dmar_rmrr(current, 0,
+				sa_get_gsm_base(), sa_get_tolud_base() - 1);
+		current += acpi_create_dmar_ds_pci(current, 0, 2, 0);
+		acpi_dmar_rmrr_fixup(tmp, current);
 	}
 
 	return current;

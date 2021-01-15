@@ -4,6 +4,7 @@
 #define SOC_INTEL_COMMON_CSE_H
 
 #include <types.h>
+#include <vb2_api.h>
 
 /* MKHI Command groups */
 #define MKHI_GROUP_ID_CBM	0x0
@@ -27,6 +28,7 @@
 /* Boot partition info and set boot partition info command ids */
 #define MKHI_BUP_COMMON_GET_BOOT_PARTITION_INFO	0x1c
 #define MKHI_BUP_COMMON_SET_BOOT_PARTITION_INFO	0x1d
+#define MKHI_BUP_COMMON_DATA_CLEAR		0x20
 
 /* ME Current Working States */
 #define ME_HFS1_CWS_NORMAL	0x5
@@ -59,6 +61,24 @@ struct mkhi_hdr {
 	uint8_t rsvd;
 	uint8_t result;
 } __packed;
+
+/* CSE FW Version */
+struct fw_version {
+	uint16_t major;
+	uint16_t minor;
+	uint16_t hotfix;
+	uint16_t build;
+} __packed;
+
+/*
+ * CSE RW metadata structure
+ * fw_version - CSE RW firmware version
+ * sha256 - Hash of the CSE RW binary.
+ */
+struct cse_rw_metadata {
+	struct fw_version version;
+	uint8_t sha256[VB2_SHA256_DIGEST_SIZE];
+};
 
 /* set up device for use in early boot enviroument with temp bar */
 void heci_init(uintptr_t bar);
@@ -120,12 +140,10 @@ enum rst_req_type {
 };
 
 /*
- * Sends GLOBAL_RESET_REQ cmd to CSE.
- * The reset type can be one of the above defined reset type.
+ * Sends GLOBAL_RESET_REQ cmd to CSE with reset type GLOBAL_RESET.
  * Returns 0 on failure and 1 on success.
  */
-int cse_request_global_reset(enum rst_req_type rst_type);
-
+int cse_request_global_reset(void);
 /*
  * Sends HMRFPO_ENABLE command.
  * HMRFPO - Host ME Region Flash Protection Override.
@@ -218,5 +236,9 @@ uint8_t cse_wait_com_soft_temp_disable(void);
  * In software triggered recovery mode, the function allows CSE to boot from whatever is
  * currently selected partition.
  */
-void cse_fw_sync(void *unused);
+void cse_fw_sync(void);
+
+/* Perform a board-specific reset sequence for CSE RO<->RW jump */
+void cse_board_reset(void);
+
 #endif // SOC_INTEL_COMMON_CSE_H

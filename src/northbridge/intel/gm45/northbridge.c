@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
 #include <cbmem.h>
+#include <commonlib/helpers.h>
 #include <console/console.h>
 #include <device/pci_def.h>
 #include <device/pci_ops.h>
@@ -20,7 +21,7 @@
 static const int legacy_hole_base_k = 0xa0000 / 1024;
 static const int legacy_hole_size_k = 128;
 
-static int decode_pcie_bar(u32 *const base, u32 *const len)
+int decode_pcie_bar(u32 *const base, u32 *const len)
 {
 	*base = 0;
 	*len = 0;
@@ -37,15 +38,15 @@ static int decode_pcie_bar(u32 *const base, u32 *const len)
 	switch ((pciexbar_reg >> 1) & 3) {
 	case 0: /* 256MB */
 		*base = pciexbar_reg & (0x0f << 28);
-		*len = 256 * 1024 * 1024;
+		*len = 256 * MiB;
 		return 1;
 	case 1: /* 128M */
 		*base = pciexbar_reg & (0x1f << 27);
-		*len = 128 * 1024 * 1024;
+		*len = 128 * MiB;
 		return 1;
 	case 2: /* 64M */
 		*base = pciexbar_reg & (0x3f << 26);
-		*len = 64 * 1024 * 1024;
+		*len = 64 * MiB;
 		return 1;
 	}
 
@@ -259,12 +260,12 @@ static void gm45_init(void *const chip_info)
 			break;
 		}
 		for (; fn >= 0; --fn) {
-			const struct device *const d =
-				pcidev_on_root(dev, fn);
-			if (!d || d->enabled) continue;
-			const u32 deven = pci_read_config32(d0f0, D0F0_DEVEN);
+			const struct device *const d = pcidev_on_root(dev, fn);
+			if (!d || d->enabled)
+				continue;
+			/* FIXME: Using bitwise ops changes the binary */
 			pci_write_config32(d0f0, D0F0_DEVEN,
-					   deven & ~(1 << (bit_base + fn)));
+				pci_read_config32(d0f0, D0F0_DEVEN) & ~(1 << (bit_base + fn)));
 		}
 	}
 

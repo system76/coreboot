@@ -6,6 +6,7 @@
 #include <fsp/api.h>
 #include <FspmUpd.h>
 #include <soc/romstage.h>
+#include <string.h>
 
 #include "chip.h"
 #include "ipmi.h"
@@ -18,16 +19,62 @@
 static void mainboard_config_upd(FSPM_UPD *mupd)
 {
 	uint8_t val;
+	char val_str[VPD_LEN];
 
 	/* Send FSP log message to SOL */
 	if (vpd_get_bool(FSP_LOG, VPD_RW_THEN_RO, &val))
 		mupd->FspmConfig.SerialIoUartDebugEnable = val;
 	else {
 		printk(BIOS_INFO, "Not able to get VPD %s, default set "
-			"SerialIoUartDebugEnable to 1\n", FSP_LOG);
-		mupd->FspmConfig.SerialIoUartDebugEnable = 1;
+			"SerialIoUartDebugEnable to %d\n", FSP_LOG, FSP_LOG_DEFAULT);
+		mupd->FspmConfig.SerialIoUartDebugEnable = FSP_LOG_DEFAULT;
 	}
 	mupd->FspmConfig.SerialIoUartDebugIoBase = 0x2f8;
+
+	if (mupd->FspmConfig.SerialIoUartDebugEnable) {
+		/* FSP debug log level */
+		if (vpd_gets(FSP_LOG_LEVEL, val_str, VPD_LEN, VPD_RW_THEN_RO)) {
+			val = (uint8_t)atol(val_str);
+			if (val > 0x0f) {
+				printk(BIOS_DEBUG, "Invalid DebugPrintLevel value from VPD: "
+					"%d\n", val);
+				val = FSP_LOG_LEVEL_DEFAULT;
+			}
+			printk(BIOS_DEBUG, "Setting DebugPrintLevel %d from VPD\n", val);
+			mupd->FspmConfig.DebugPrintLevel = val;
+		} else {
+			printk(BIOS_INFO, "Not able to get VPD %s, default set "
+				"DebugPrintLevel to %d\n", FSP_LOG_LEVEL,
+				FSP_LOG_LEVEL_DEFAULT);
+			mupd->FspmConfig.DebugPrintLevel = FSP_LOG_LEVEL_DEFAULT;
+		}
+	}
+
+	/* Enable DCI */
+	if (vpd_get_bool(FSP_DCI, VPD_RW_THEN_RO, &val)) {
+		printk(BIOS_DEBUG, "Setting DciEn %d from VPD\n", val);
+		mupd->FspmConfig.PchDciEn = val;
+	} else {
+		printk(BIOS_INFO, "Not able to get VPD %s, default set "
+			"DciEn to %d\n", FSP_DCI, FSP_DCI_DEFAULT);
+		mupd->FspmConfig.PchDciEn = FSP_DCI_DEFAULT;
+	}
+
+	/*
+	 * UnusedUpdSpace0[0] is reserved for Memory Refresh Watermark.
+	 * Following code is effective when MemRefreshWaterMark patch is added to FSP
+	 * and when corresponding VPD variable is set.
+	 */
+	if (vpd_gets(FSPM_MEMREFRESHWATERMARK, val_str, VPD_LEN, VPD_RW_THEN_RO)) {
+		val = (uint8_t)atol(val_str);
+		if (val > 2) {
+			printk(BIOS_DEBUG, "Invalid MemRefreshWatermark value from VPD: "
+				"%d\n", val);
+			val = FSPM_MEMREFRESHWATERMARK_DEFAULT;
+		}
+		printk(BIOS_DEBUG, "Setting MemRefreshWatermark %d from VPD\n", val);
+		mupd->FspmConfig.UnusedUpdSpace0[0] = val;
+	}
 }
 
 /* Update bifurcation settings according to different Configs */
@@ -96,10 +143,20 @@ void mainboard_memory_init_params(FSPM_UPD *mupd)
 {
 	/* Since it's the first IPMI command, it's better to run get BMC
 	   selftest result first */
-	if (ipmi_kcs_premem_init(CONFIG_BMC_KCS_BASE, 0) == CB_SUCCESS)
+	if (ipmi_kcs_premem_init(CONFIG_BMC_KCS_BASE, 0) == CB_SUCCESS) {
+		ipmi_set_post_start(CONFIG_BMC_KCS_BASE);
 		init_frb2_wdt();
+	}
 
 	mainboard_config_gpios(mupd);
 	mainboard_config_iio(mupd);
 	mainboard_config_upd(mupd);
+}
+
+void mainboard_rtc_failed(void)
+{
+	if (ipmi_set_cmos_clear() == CB_SUCCESS)
+		printk(BIOS_DEBUG, "%s: IPMI set cmos clear successful\n", __func__);
+	else
+		printk(BIOS_ERR, "%s: IPMI set cmos clear failed\n", __func__);
 }

@@ -3,8 +3,10 @@
 #include <assert.h>
 #include <console/console.h>
 #include <cpu/x86/msr.h>
+#include <device/device.h>
 #include <fsp/util.h>
 #include <intelblocks/cpulib.h>
+#include <intelblocks/mp_init.h>
 #include <soc/gpio_soc_defs.h>
 #include <soc/iomap.h>
 #include <soc/msr.h>
@@ -17,19 +19,16 @@ static void soc_memory_init_params(FSP_M_CONFIG *m_cfg,
 		const struct soc_intel_tigerlake_config *config)
 {
 	unsigned int i;
-	uint32_t mask = 0;
+	uint32_t cpu_id, mask = 0;
 	const struct device *dev;
 
+	/*
+	 * If IGD is enabled, set IGD stolen size to 60MB.
+	 * Otherwise, skip IGD init in FSP.
+	 */
 	dev = pcidev_path_on_root(SA_DEVFN_IGD);
-	if (!dev || !dev->enabled) {
-		/* Skip IGD initialization in FSP if device is disabled in devicetree.cb */
-		m_cfg->InternalGfx = 0;
-		m_cfg->IgdDvmt50PreAlloc = 0;
-	} else {
-		m_cfg->InternalGfx = 1;
-		/* Set IGD stolen size to 60MB. */
-		m_cfg->IgdDvmt50PreAlloc = 0xFE;
-	}
+	m_cfg->InternalGfx = is_dev_enabled(dev);
+	m_cfg->IgdDvmt50PreAlloc = m_cfg->InternalGfx ? 0xFE : 0;
 
 	m_cfg->TsegSize = CONFIG_SMM_TSEG_SIZE;
 	m_cfg->IedSize = CONFIG_IED_REGION_SIZE;
@@ -64,7 +63,7 @@ static void soc_memory_init_params(FSP_M_CONFIG *m_cfg,
 	memcpy(m_cfg->PcieClkSrcClkReq, config->PcieClkSrcClkReq,
 		sizeof(config->PcieClkSrcClkReq));
 
-	m_cfg->PrmrrSize = get_prmrr_size();
+	m_cfg->PrmrrSize = get_valid_prmrr_size();
 	m_cfg->EnableC6Dram = config->enable_c6dram;
 	/* Disable BIOS Guard */
 	m_cfg->BiosGuard = 0;
@@ -75,7 +74,7 @@ static void soc_memory_init_params(FSP_M_CONFIG *m_cfg,
 
 	/* TraceHub configuration */
 	dev = pcidev_path_on_root(PCH_DEVFN_TRACEHUB);
-	if (dev && dev->enabled && config->TraceHubMode) {
+	if (is_dev_enabled(dev) && config->TraceHubMode) {
 		m_cfg->PcdDebugInterfaceFlags |= DEBUG_INTERFACE_TRACEHUB;
 		m_cfg->PchTraceHubMode = config->TraceHubMode;
 		m_cfg->CpuTraceHubMode = config->TraceHubMode;
@@ -86,10 +85,10 @@ static void soc_memory_init_params(FSP_M_CONFIG *m_cfg,
 
 	/* ISH */
 	dev = pcidev_path_on_root(PCH_DEVFN_ISH);
-	if (!dev || !dev->enabled)
-		m_cfg->PchIshEnable = 0;
-	else
-		m_cfg->PchIshEnable = 1;
+	m_cfg->PchIshEnable = is_dev_enabled(dev);
+
+	/* Skip GPIO configuration from FSP */
+	m_cfg->GpioOverride = 0x1;
 
 	/* DP port config */
 	m_cfg->DdiPortAConfig = config->DdiPortAConfig;
@@ -118,39 +117,23 @@ static void soc_memory_init_params(FSP_M_CONFIG *m_cfg,
 
 	/* TCSS DMA */
 	dev = pcidev_path_on_root(SA_DEVFN_TCSS_DMA0);
-	if (dev)
-		m_cfg->TcssDma0En = dev->enabled;
-	else
-		m_cfg->TcssDma0En = 0;
+	m_cfg->TcssDma0En = is_dev_enabled(dev);
 
 	dev = pcidev_path_on_root(SA_DEVFN_TCSS_DMA1);
-	if (dev)
-		m_cfg->TcssDma1En = dev->enabled;
-	else
-		m_cfg->TcssDma1En = 0;
+	m_cfg->TcssDma1En = is_dev_enabled(dev);
 
 	/* USB4/TBT */
 	dev = pcidev_path_on_root(SA_DEVFN_TBT0);
-	if (dev)
-		m_cfg->TcssItbtPcie0En = dev->enabled;
-	else
-		m_cfg->TcssItbtPcie0En = 0;
+	m_cfg->TcssItbtPcie0En = is_dev_enabled(dev);
+
 	dev = pcidev_path_on_root(SA_DEVFN_TBT1);
-	if (dev)
-		m_cfg->TcssItbtPcie1En = dev->enabled;
-	else
-		m_cfg->TcssItbtPcie1En = 0;
+	m_cfg->TcssItbtPcie1En = is_dev_enabled(dev);
 
 	dev = pcidev_path_on_root(SA_DEVFN_TBT2);
-	if (dev)
-		m_cfg->TcssItbtPcie2En = dev->enabled;
-	else
-		m_cfg->TcssItbtPcie2En = 0;
+	m_cfg->TcssItbtPcie2En = is_dev_enabled(dev);
+
 	dev = pcidev_path_on_root(SA_DEVFN_TBT3);
-	if (dev)
-		m_cfg->TcssItbtPcie3En = dev->enabled;
-	else
-		m_cfg->TcssItbtPcie3En = 0;
+	m_cfg->TcssItbtPcie3En = is_dev_enabled(dev);
 
 	/* Hyper Threading */
 	m_cfg->HyperThreading = !config->HyperThreadingDisable;
@@ -166,10 +149,7 @@ static void soc_memory_init_params(FSP_M_CONFIG *m_cfg,
 
 	/* Audio: HDAUDIO_LINK_MODE I2S/SNDW */
 	dev = pcidev_path_on_root(PCH_DEVFN_HDA);
-	if (!dev)
-		m_cfg->PchHdaEnable = 0;
-	else
-		m_cfg->PchHdaEnable = dev->enabled;
+	m_cfg->PchHdaEnable = is_dev_enabled(dev);
 
 	m_cfg->PchHdaDspEnable = config->PchHdaDspEnable;
 	m_cfg->PchHdaAudioLinkHdaEnable = config->PchHdaAudioLinkHdaEnable;
@@ -181,19 +161,43 @@ static void soc_memory_init_params(FSP_M_CONFIG *m_cfg,
 	memcpy(m_cfg->PchHdaAudioLinkSndwEnable, config->PchHdaAudioLinkSndwEnable,
 			sizeof(m_cfg->PchHdaAudioLinkSndwEnable));
 
+	/* IPU configuration */
+	dev = pcidev_path_on_root(SA_DEVFN_IPU);
+	m_cfg->SaIpuEnable = is_dev_enabled(dev);
+
 	/* Vt-D config */
-	m_cfg->VtdDisable = 0;
-	m_cfg->VtdIgdEnable = 0x1;
-	m_cfg->VtdBaseAddress[0] = GFXVT_BASE_ADDRESS;
-	m_cfg->VtdIpuEnable = 0x1;
-	m_cfg->VtdBaseAddress[1] = IPUVT_BASE_ADDRESS;
-	m_cfg->VtdIopEnable = 0x1;
-	m_cfg->VtdBaseAddress[2] = VTVC0_BASE_ADDRESS;
-	m_cfg->VtdItbtEnable = 0x1;
-	m_cfg->VtdBaseAddress[3] = TBT0_BASE_ADDRESS;
-	m_cfg->VtdBaseAddress[4] = TBT1_BASE_ADDRESS;
-	m_cfg->VtdBaseAddress[5] = TBT2_BASE_ADDRESS;
-	m_cfg->VtdBaseAddress[6] = TBT3_BASE_ADDRESS;
+	cpu_id = cpu_get_cpuid();
+	if (cpu_id == CPUID_TIGERLAKE_A0) {
+		/* Disable VT-d support for pre-QS platform */
+		m_cfg->VtdDisable = 1;
+	} else {
+		/* Enable VT-d support for QS platform */
+		m_cfg->VtdDisable = 0;
+		m_cfg->VtdIopEnable = 0x1;
+
+		if (m_cfg->InternalGfx) {
+			m_cfg->VtdIgdEnable = 0x1;
+			m_cfg->VtdBaseAddress[0] = GFXVT_BASE_ADDRESS;
+		}
+
+		if (m_cfg->SaIpuEnable) {
+			m_cfg->VtdIpuEnable = 0x1;
+			m_cfg->VtdBaseAddress[1] = IPUVT_BASE_ADDRESS;
+		}
+
+		m_cfg->VtdBaseAddress[2] = VTVC0_BASE_ADDRESS;
+
+		if (m_cfg->TcssDma0En || m_cfg->TcssDma1En)
+			m_cfg->VtdItbtEnable = 0x1;
+		if (m_cfg->TcssItbtPcie0En)
+			m_cfg->VtdBaseAddress[3] = TBT0_BASE_ADDRESS;
+		if (m_cfg->TcssItbtPcie1En)
+			m_cfg->VtdBaseAddress[4] = TBT1_BASE_ADDRESS;
+		if (m_cfg->TcssItbtPcie2En)
+			m_cfg->VtdBaseAddress[5] = TBT2_BASE_ADDRESS;
+		if (m_cfg->TcssItbtPcie3En)
+			m_cfg->VtdBaseAddress[6] = TBT3_BASE_ADDRESS;
+	}
 
 	/* Change VmxEnable UPD value according to ENABLE_VMX Kconfig */
 	m_cfg->VmxEnable = CONFIG(ENABLE_VMX);
@@ -203,6 +207,13 @@ static void soc_memory_init_params(FSP_M_CONFIG *m_cfg,
 
 	/* Skip CPU replacement check */
 	m_cfg->SkipCpuReplacementCheck = !config->CpuReplacementCheck;
+
+	/* Skip CPU side PCIe enablement in FSP if device is disabled in devicetree */
+	dev = pcidev_path_on_root(SA_DEVFN_CPU_PCIE);
+	m_cfg->CpuPcieRpEnableMask = dev && dev->enabled;
+
+	/* Change TmeEnable UPD value according to INTEL_TME Kconfig */
+	m_cfg->TmeEnable = CONFIG(INTEL_TME);
 }
 
 void platform_fsp_memory_init_params_cb(FSPM_UPD *mupd, uint32_t version)

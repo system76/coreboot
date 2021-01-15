@@ -79,7 +79,6 @@ void pci_bus_enable_resources(struct device *dev);
 void pci_bus_reset(struct bus *bus);
 struct device *pci_probe_dev(struct device *dev, struct bus *bus,
 				unsigned int devfn);
-
 void do_pci_scan_bridge(struct device *dev,
 	void (*do_scan_bus)(struct bus *bus,
 		unsigned int min_devfn, unsigned int max_devfn));
@@ -128,6 +127,18 @@ static inline int pci_base_address_is_memory_space(unsigned int attr)
 }
 
 void pci_dev_disable_bus_master(const struct device *dev);
+
+static __always_inline
+#if ENV_PCI_SIMPLE_DEVICE
+void pci_dev_request_bus_master(pci_devfn_t dev)
+#else
+void pci_dev_request_bus_master(struct device *dev)
+#endif /* ENV_PCI_SIMPLE_DEVICE */
+{
+	if (CONFIG(PCI_ALLOW_BUS_MASTER_ANY_DEVICE))
+		pci_or_config16(dev, PCI_COMMAND, PCI_COMMAND_MASTER);
+}
+
 #endif /* CONFIG_PCI */
 
 void pci_early_bridge_init(void);

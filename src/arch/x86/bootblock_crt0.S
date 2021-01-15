@@ -10,7 +10,7 @@
 
 #include <cpu/x86/cr.h>
 
-.section .text
+.section .init._start, "ax", @progbits
 
 /*
  * Include the old code for reset vector and protected mode entry. That code has
@@ -19,12 +19,6 @@
 #include <cpu/x86/16bit/entry16.inc>
 #include <cpu/x86/16bit/reset16.inc>
 #include <cpu/x86/32bit/entry32.inc>
-
-	/* BIST result in eax */
-	mov	%eax, %ebx
-	/* entry64.inc preserves ebx. */
-#include <cpu/x86/64bit/entry64.inc>
-	mov	%ebx, %eax
 
 #if CONFIG(BOOTBLOCK_DEBUG_SPINLOOP)
 

@@ -15,7 +15,6 @@
 #include <acpi/acpi_gnvs.h>
 #include <cpu/x86/smm.h>
 #include <acpi/acpigen.h>
-#include <cbmem.h>
 #include <string.h>
 #include "chip.h"
 #include "i82801ix.h"
@@ -97,7 +96,7 @@ static void i82801ix_pirq_init(struct device *dev)
 	 */
 
 	for (irq_dev = all_devices; irq_dev; irq_dev = irq_dev->next) {
-		u8 int_pin=0, int_line=0;
+		u8 int_pin = 0, int_line = 0;
 
 		if (!irq_dev->enabled || irq_dev->path.type != DEVICE_PATH_PCI)
 			continue;
@@ -160,8 +159,7 @@ static void i82801ix_power_options(struct device *dev)
 	int nmi_option;
 
 	/* BIOS must program... */
-	reg32 = pci_read_config32(dev, 0xac);
-	pci_write_config32(dev, 0xac, reg32 | (1 << 30) | (3 << 8));
+	pci_or_config32(dev, 0xac, (1 << 30) | (3 << 8));
 
 	/* Which state do we want to goto after g3 (power restored)?
 	 * 0 == S0 Full On
@@ -356,9 +354,6 @@ static void lpc_init(struct device *dev)
 {
 	printk(BIOS_DEBUG, "i82801ix: %s\n", __func__);
 
-	/* Set the value for PCI command register. */
-	pci_write_config16(dev, PCI_COMMAND, 0x000f);
-
 	/* IO APIC initialization. */
 	i82801ix_enable_apic(dev);
 
@@ -424,7 +419,7 @@ static void i82801ix_lpc_read_resources(struct device *dev)
 	 * 0x00c0 ~ 0x00de....ISA DMA
 	 * 0x00c1 ~ 0x00df....ISA DMA aliases
 	 * 0x00f0.............Coprocessor Error
-	 * (0x0400-0x041f)....SMBus (SMBUS_IO_BASE, during raminit)
+	 * (0x0400-0x041f)....SMBus (CONFIG_FIXED_SMBUS_IO_BASE, during raminit)
 	 * 0x04d0 - 0x04d1....PIC
 	 * 0x0500 - 0x057f....PM (DEFAULT_PMBASE)
 	 * 0x0580 - 0x05bf....SB GPIO (DEFAULT_GPIOBASE)
@@ -457,24 +452,16 @@ static void i82801ix_lpc_read_resources(struct device *dev)
 	res->flags = IORESOURCE_MEM | IORESOURCE_ASSIGNED | IORESOURCE_FIXED;
 }
 
-void southbridge_inject_dsdt(const struct device *dev)
+size_t gnvs_size_of_array(void)
 {
-	struct global_nvs *gnvs = cbmem_add(CBMEM_ID_ACPI_GNVS, sizeof(*gnvs));
-
-	if (gnvs) {
-		memset(gnvs, 0, sizeof(*gnvs));
-		acpi_create_gnvs(gnvs);
-
-		/* And tell SMI about it */
-		apm_control(APM_CNT_GNVS_UPDATE);
-
-		/* Add it to SSDT.  */
-		acpigen_write_scope("\\");
-		acpigen_write_name_dword("NVSA", (uintptr_t)gnvs);
-		acpigen_pop_len();
-	}
+	return sizeof(struct global_nvs);
 }
 
+/* To build emulation/qemu-q35 with CHROMEOS. */
+void *gnvs_chromeos_ptr(struct global_nvs *gnvs)
+{
+	return 0;
+}
 
 static const char *lpc_acpi_name(const struct device *dev)
 {
@@ -494,7 +481,6 @@ static struct device_operations device_ops = {
 	.read_resources		= i82801ix_lpc_read_resources,
 	.set_resources		= pci_dev_set_resources,
 	.enable_resources	= pci_dev_enable_resources,
-	.acpi_inject_dsdt	= southbridge_inject_dsdt,
 	.write_acpi_tables      = acpi_write_hpet,
 	.acpi_fill_ssdt		= southbridge_fill_ssdt,
 	.acpi_name		= lpc_acpi_name,

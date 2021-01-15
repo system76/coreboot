@@ -40,24 +40,28 @@ def parseargs():
         help='APCB output file')
     parser.add_argument(
         '--spd_0_0',
-        type=argparse.FileType('r'),
+        type=argparse.FileType('rb'),
         help='SPD input file for channel 0, dimm 0')
     parser.add_argument(
         '--spd_0_1',
-        type=argparse.FileType('r'),
+        type=argparse.FileType('rb'),
         help='SPD input file for channel 0, dimm 1')
     parser.add_argument(
         '--spd_1_0',
-        type=argparse.FileType('r'),
+        type=argparse.FileType('rb'),
         help='SPD input file for channel 1, dimm 0')
     parser.add_argument(
         '--spd_1_1',
-        type=argparse.FileType('r'),
+        type=argparse.FileType('rb'),
         help='SPD input file for channel 1, dimm 1')
     parser.add_argument(
         '--hex',
         action='store_true',
         help='SPD input file is hex encoded, binary otherwise')
+    parser.add_argument(
+        '--strip_manufacturer_information',
+        action='store_true',
+        help='Strip all manufacturer information from SPD')
     parser.add_argument(
         '--board_id_gpio0',
         type=int,
@@ -99,7 +103,7 @@ def inject(orig, insert, offset):
 def main():
     args = parseargs()
 
-    print("Reading input APCB from %s\n" % (args.apcb_in.name))
+    print("Reading input APCB from %s" % (args.apcb_in.name))
 
     apcb = args.apcb_in.read()
 
@@ -107,10 +111,10 @@ def main():
 
     gpio_offset = apcb.find(GPIO_MAGIC)
     assert gpio_offset > 0, "GPIO magic number not found"
-    print('GPIO magic number found at offset 0x%x\n' % gpio_offset)
+    print('GPIO magic number found at offset 0x%x' % gpio_offset)
     gpio_array = (args.board_id_gpio0 + args.board_id_gpio1 +
                   args.board_id_gpio2 + args.board_id_gpio3)
-    print('Writing SPD GPIO array %s\n' % gpio_array)
+    print('Writing SPD GPIO array %s' % gpio_array)
     apcb = inject(apcb, pack('BBBBBBBBBBBB', *gpio_array), gpio_offset)
 
     spd_offset = 0
@@ -130,7 +134,7 @@ def main():
                 "Unexpected channel number found in APCB"
 
         print("Found SPD magic number with channel %d and dimm %d "
-              "at offset 0x%x\n" % (spd_ssp.ChannelNumber, spd_ssp.DimmNumber,
+              "at offset 0x%x" % (spd_ssp.ChannelNumber, spd_ssp.DimmNumber,
                                     spd_offset))
 
         dimm_channel = (spd_ssp.ChannelNumber, spd_ssp.DimmNumber)
@@ -146,21 +150,27 @@ def main():
 
         if spd:
             if args.hex:
+                spd = spd.decode()
                 spd = re.sub(r'#.*', '', spd)
                 spd = re.sub(r'\s+', '', spd)
                 spd = bytes.fromhex(spd)
-            else:
-                spd = spd.encode()
 
             assert len(spd) == 512, \
                             "Expected SPD to be 512 bytes, got %d" % len(spd)
 
-            print("Enabling channel %d, dimm %d and injecting SPD\n" %
+            if args.strip_manufacturer_information:
+                print("Stripping manufacturer information from SPD")
+                spd = spd[0:320] + b'\x00'*64 + spd[320+64:]
+
+                assert len(spd) == 512, \
+                                "Error while stripping SPD manufacurer information"
+
+            print("Enabling channel %d, dimm %d and injecting SPD" %
                   (spd_ssp.ChannelNumber, spd_ssp.DimmNumber))
             spd_ssp = spd_ssp._replace(SpdValid=True, DimmPresent=True)
 
         else:
-            print("Disabling channel %d, dimm %d and clearing SPD\n" %
+            print("Disabling channel %d, dimm %d and clearing SPD" %
                   (spd_ssp.ChannelNumber, spd_ssp.DimmNumber))
             spd_ssp = spd_ssp._replace(SpdValid=False, DimmPresent=False)
             spd = EMPTY_SPD
@@ -170,7 +180,7 @@ def main():
 
         spd_offset += 512
 
-    print("Fixing checksum and writing to %s\n" % (args.apcb_out.name))
+    print("Fixing checksum and writing to %s" % (args.apcb_out.name))
 
     apcb = inject(apcb, bytes([chksum(apcb)]), 16)
 

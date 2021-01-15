@@ -12,7 +12,6 @@
 #include <cpu/x86/msr.h>
 #include <cpu/intel/common/common.h>
 #include <cpu/intel/turbo.h>
-#include <ec/google/chromeec/ec.h>
 #include <intelblocks/cpulib.h>
 #include <intelblocks/lpc_lib.h>
 #include <intelblocks/sgx.h>
@@ -23,17 +22,19 @@
 #include <soc/cpu.h>
 #include <soc/iomap.h>
 #include <soc/msr.h>
+#include <soc/nvs.h>
 #include <soc/pci_devs.h>
 #include <soc/pm.h>
 #include <soc/ramstage.h>
 #include <soc/systemagent.h>
 #include <string.h>
 #include <types.h>
-#include <vendorcode/google/chromeos/gnvs.h>
 #include <wrdd.h>
 #include <device/pci_ops.h>
 
 #include "chip.h"
+
+#define  CPUID_6_EAX_ISST	(1 << 7)
 
 /*
  * List of suported C-states in this processor.
@@ -155,7 +156,7 @@ static int get_cores_per_package(void)
 	return cores;
 }
 
-void acpi_create_gnvs(struct global_nvs *gnvs)
+void soc_fill_gnvs(struct global_nvs *gnvs)
 {
 	const struct soc_intel_skylake_config *config = config_of_soc();
 
@@ -164,22 +165,6 @@ void acpi_create_gnvs(struct global_nvs *gnvs)
 
 	/* CPU core count */
 	gnvs->pcnt = dev_count_cpu();
-
-#if CONFIG(CONSOLE_CBMEM)
-	/* Update the mem console pointer. */
-	gnvs->cbmc = (u32)cbmem_find(CBMEM_ID_CONSOLE);
-#endif
-
-	if (CONFIG(CHROMEOS)) {
-		/* Initialize Verified Boot data */
-		chromeos_init_chromeos_acpi(&(gnvs->chromeos));
-		if (CONFIG(EC_GOOGLE_CHROMEEC)) {
-			gnvs->chromeos.vbt2 = google_ec_running_ro() ?
-				ACTIVE_ECFW_RO : ACTIVE_ECFW_RW;
-		} else {
-			gnvs->chromeos.vbt2 = ACTIVE_ECFW_RO;
-		}
-	}
 
 	/* Enable DPTF based on mainboard configuration */
 	gnvs->dpte = config->dptf_enable;
@@ -367,6 +352,19 @@ static void generate_p_state_entries(int core, int cores_per_package)
 	acpigen_pop_len();
 }
 
+static void generate_cppc_entries(int core_id)
+{
+	/* Generate GCPC table in first logical core */
+	if (core_id == 0) {
+		struct cppc_config cppc_config;
+		cpu_init_cppc_config(&cppc_config, CPPC_VERSION_2);
+		acpigen_write_CPPC_package(&cppc_config);
+	}
+
+	/* Write _CST entry for each logical core */
+	acpigen_write_CPPC_method();
+}
+
 void generate_cpu_entries(const struct device *device)
 {
 	int core_id, cpu_id, pcontrol_blk = ACPI_BASE_ADDRESS, plen = 6;
@@ -375,15 +373,10 @@ void generate_cpu_entries(const struct device *device)
 	int numcpus = totalcores/cores_per_package;
 	config_t *config = config_of_soc();
 	int is_s0ix_enable = config->s0ix_enable;
+	const bool isst_supported = cpuid_eax(6) & CPUID_6_EAX_ISST;
 
 	printk(BIOS_DEBUG, "Found %d CPU(s) with %d core(s) each.\n",
 	       numcpus, cores_per_package);
-
-	if (config->eist_enable && config->speed_shift_enable) {
-		struct cppc_config cppc_config;
-		cpu_init_cppc_config(&cppc_config, 2 /* version 2 */);
-		acpigen_write_CPPC_package(&cppc_config);
-	}
 
 	for (cpu_id = 0; cpu_id < numcpus; cpu_id++) {
 		for (core_id = 0; core_id < cores_per_package; core_id++) {
@@ -403,9 +396,11 @@ void generate_cpu_entries(const struct device *device)
 				/* Generate P-state tables */
 				generate_p_state_entries(core_id,
 						cores_per_package);
-				if (config->speed_shift_enable)
-					acpigen_write_CPPC_method();
 			}
+
+			if (isst_supported)
+				generate_cppc_entries(core_id);
+
 			acpigen_pop_len();
 		}
 	}
@@ -425,22 +420,19 @@ static unsigned long acpi_fill_dmar(unsigned long current)
 	const bool gfxvten = MCHBAR32(GFXVTBAR) & 1;
 
 	/* iGFX has to be enabled, GFXVTBAR set and in 32-bit space. */
-	if (igfx_dev && igfx_dev->enabled && gfxvten &&
-	    gfx_vtbar && !MCHBAR32(GFXVTBAR + 4)) {
-		unsigned long tmp = current;
+	const bool emit_igd =
+			igfx_dev && igfx_dev->enabled &&
+			gfx_vtbar && gfxvten &&
+			!MCHBAR32(GFXVTBAR + 4);
+
+	/* First, add DRHD entries */
+	if (emit_igd) {
+		const unsigned long tmp = current;
 
 		current += acpi_create_dmar_drhd(current, 0, 0, gfx_vtbar);
 		current += acpi_create_dmar_ds_pci(current, 0, 2, 0);
 
 		acpi_dmar_drhd_fixup(tmp, current);
-
-		/* Add RMRR entry */
-		tmp = current;
-
-		current += acpi_create_dmar_rmrr(current, 0,
-				sa_get_gsm_base(), sa_get_tolud_base() - 1);
-		current += acpi_create_dmar_ds_pci(current, 0, 2, 0);
-		acpi_dmar_rmrr_fixup(tmp, current);
 	}
 
 	const u32 vtvc0bar = MCHBAR32(VTVC0BAR) & ~0xfff;
@@ -459,6 +451,16 @@ static unsigned long acpi_fill_dmar(unsigned long current)
 							V_P2SB_HBDF_DEV, V_P2SB_HBDF_FUN);
 
 		acpi_dmar_drhd_fixup(tmp, current);
+	}
+
+	/* Then, add RMRR entries after all DRHD entries */
+	if (emit_igd) {
+		const unsigned long tmp = current;
+
+		current += acpi_create_dmar_rmrr(current, 0,
+				sa_get_gsm_base(), sa_get_tolud_base() - 1);
+		current += acpi_create_dmar_ds_pci(current, 0, 2, 0);
+		acpi_dmar_rmrr_fixup(tmp, current);
 	}
 
 	return current;
@@ -503,6 +505,9 @@ unsigned long acpi_madt_irq_overrides(unsigned long current)
 	irqovr = (void *)current;
 	current += acpi_create_madt_irqoverride(irqovr, 0, sci, sci, flags);
 
+	/* NMI */
+	current += acpi_create_madt_lapic_nmi((acpi_madt_lapic_nmi_t *)current, 0xff, 5, 1);
+
 	return current;
 }
 
@@ -515,29 +520,6 @@ unsigned long southbridge_write_acpi_tables(const struct device *device,
 					   ACPI_ACCESS_SIZE_DWORD_ACCESS);
 	current = acpi_write_hpet(device, current, rsdp);
 	return acpi_align_current(current);
-}
-
-void southbridge_inject_dsdt(const struct device *device)
-{
-	struct global_nvs *gnvs;
-
-	gnvs = cbmem_find(CBMEM_ID_ACPI_GNVS);
-	if (!gnvs) {
-		gnvs = cbmem_add(CBMEM_ID_ACPI_GNVS, sizeof(*gnvs));
-		if (gnvs)
-			memset(gnvs, 0, sizeof(*gnvs));
-	}
-
-	if (gnvs) {
-		acpi_create_gnvs(gnvs);
-		/* And tell SMI about it */
-		apm_control(APM_CNT_GNVS_UPDATE);
-
-		/* Add it to DSDT.  */
-		acpigen_write_scope("\\");
-		acpigen_write_name_dword("NVSA", (u32) gnvs);
-		acpigen_pop_len();
-	}
 }
 
 /* Save wake source information for calculating ACPI _SWS values */
@@ -625,12 +607,18 @@ const char *soc_acpi_name(const struct device *dev)
 	if (dev->path.type != DEVICE_PATH_PCI)
 		return NULL;
 
-	/* Only match devices on the root bus */
-	if (dev->bus && dev->bus->secondary > 0)
+	/* Match functions 0 and 1 for possible GPUs on a secondary bus */
+	if (dev->bus && dev->bus->secondary > 0) {
+		switch (PCI_FUNC(dev->path.pci.devfn)) {
+		case 0: return "DEV0";
+		case 1: return "DEV1";
+		}
 		return NULL;
+	}
 
 	switch (dev->path.pci.devfn) {
 	case SA_DEVFN_ROOT:	return "MCHC";
+	case SA_DEVFN_PEG0:	return "PEGP";
 	case SA_DEVFN_IGD:	return "GFX0";
 	case PCH_DEVFN_ISH:	return "ISHB";
 	case PCH_DEVFN_XHCI:	return "XHCI";
@@ -673,7 +661,6 @@ const char *soc_acpi_name(const struct device *dev)
 	case PCH_DEVFN_EMMC:	return "EMMC";
 	case PCH_DEVFN_SDIO:	return "SDIO";
 	case PCH_DEVFN_SDCARD:	return "SDXC";
-	case PCH_DEVFN_LPC:	return "LPCB";
 	case PCH_DEVFN_P2SB:	return "P2SB";
 	case PCH_DEVFN_PMC:	return "PMC_";
 	case PCH_DEVFN_HDA:	return "HDAS";

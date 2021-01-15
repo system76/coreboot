@@ -493,7 +493,6 @@ int spd_xmp_decode_ddr3(dimm_attr *dimm,
 	return ret;
 }
 
-
 /**
  * Fill cbmem with information for SMBIOS type 17.
  *
@@ -593,7 +592,7 @@ static void print_ns(const char *msg, u32 val)
 /**
 * \brief Print the info in DIMM
 *
-* Print info about the DIMM. Useful to use when CONFIG_DEBUG_RAM_SETUP is
+* Print info about the DIMM. Useful to use when CONFIG(DEBUG_RAM_SETUP) is
 * selected, or for a purely informative output.
 *
 * @param dimm pointer to already decoded @ref dimm_attr structure

@@ -1,7 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
 #include <assert.h>
-#include <stddef.h>
 #include <stdint.h>
 #include <console/console.h>
 #include <cbmem.h>
@@ -11,8 +10,6 @@
 #include <smp/node.h>
 
 #define MAX_TIMESTAMPS 192
-
-DECLARE_OPTIONAL_REGION(timestamp);
 
 /* This points to the active timestamp_table and can change within a stage
    as CBMEM comes available. */

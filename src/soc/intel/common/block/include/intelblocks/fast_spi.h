@@ -23,6 +23,10 @@ void fast_spi_set_bios_interface_lock_down(void);
  */
 void fast_spi_set_lock_enable(void);
 /*
+ * Set FAST_SPIBAR BIOS Control Ext Bios LE bit.
+ */
+void fast_spi_set_ext_bios_lock_enable(void);
+/*
  * Set FAST_SPIBAR BIOS Control EISS bit.
  */
 void fast_spi_set_eiss(void);
@@ -73,5 +77,20 @@ bool fast_spi_wpd_status(void);
  * Enable SPI Write protect.
  */
 void fast_spi_enable_wp(void);
+/*
+ * Get base and size of extended BIOS decode window used at runtime in host address space. If
+ * the BIOS region is not greater than 16MiB, then this function returns 0 for both base and
+ * size.
+ */
+void fast_spi_get_ext_bios_window(uintptr_t *base, size_t *size);
+/*
+ * SOC function to get SPI-DMI Destination Id
+ */
+uint32_t soc_get_spi_dmi_destination_id(void);
+/*
+ * Add MTRR for extended BIOS region(when supported) to postcar frame
+ */
+struct postcar_frame;
+void fast_spi_cache_ext_bios_postcar(struct postcar_frame *pcf);
 
 #endif	/* SOC_INTEL_COMMON_BLOCK_FAST_SPI_H */

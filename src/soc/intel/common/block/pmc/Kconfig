@@ -13,6 +13,12 @@ if SOC_INTEL_COMMON_BLOCK_PMC
 config POWER_STATE_DEFAULT_ON_AFTER_FAILURE
 	default y
 
+config SOC_INTEL_COMMON_BLOCK_PMC_DISCOVERABLE
+	bool
+	help
+	  Select this on platforms where the PMC device is discoverable
+	  when scanning busses.
+
 endif # SOC_INTEL_COMMON_BLOCK_PMC
 
 config PMC_INVALID_READ_AFTER_WRITE
@@ -22,6 +28,14 @@ config PMC_INVALID_READ_AFTER_WRITE
 	  Enable this for PMC devices where a read back of ACPI BAR and
 	  IO access bit does not return the previously written value.
 
+config PMC_IPC_ACPI_INTERFACE
+	bool
+	default n
+	depends on HAVE_ACPI_TABLES
+	help
+	  Enable this to have the PMC IPC mailbox ACPI interface added
+	  to the SSDT for use by other drivers.
+
 config PMC_GLOBAL_RESET_ENABLE_LOCK
 	bool
 	help
@@ -29,3 +43,31 @@ config PMC_GLOBAL_RESET_ENABLE_LOCK
 	  and lock register is located under PMC BASE at offset ETR.
 	  Note that the reset register is still at 0xCF9 this only
 	  controls the enable and lock feature.
+
+config PMC_LOW_POWER_MODE_PROGRAM
+	bool
+	help
+	  Enable this for PMC devices to perform registers programming
+	  to ensure low power in active idle scenario.
+
+config PM_ACPI_TIMER_OPTIONAL
+	bool
+	default n
+	help
+	  This needs to be selected by SoCs, where the hardware PM Timer
+	  can be disabled, to show the ACPI PM Timer Kconfig in menuconfig.
+
+if PM_ACPI_TIMER_OPTIONAL
+
+config USE_PM_ACPI_TIMER
+	bool "Enable ACPI PM timer"
+	default y
+	help
+	  This should be disabled for devices running on battery since
+	  it can draw much power. Further, it must be disabled, if S0ix
+	  is enabled.
+
+	  Disabling this option also stops the hardware TCO timer and makes
+	  the TCO watchdog unavailable.
+
+endif # PM_ACPI_TIMER_OPTIONAL

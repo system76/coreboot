@@ -66,8 +66,7 @@ static uint8_t *locate_spd(void)
 	int spd_index = get_gpios(gpio_vector);
 
 	printk(BIOS_DEBUG, "spd index %d\n", spd_index);
-	spd_file = cbfs_boot_map_with_leak("spd.bin", CBFS_TYPE_SPD,
-						&spd_file_len);
+	spd_file = cbfs_map("spd.bin", &spd_file_len);
 	if (!spd_file)
 		die("SPD data not found.");
 
@@ -86,15 +85,15 @@ void mainboard_fill_pei_data(struct pei_data *pei_data)
 {
 	struct pei_data pei_data_template = {
 		.pei_version = PEI_VERSION,
-		.mchbar = (uintptr_t)DEFAULT_MCHBAR,
-		.dmibar = (uintptr_t)DEFAULT_DMIBAR,
+		.mchbar = DEFAULT_MCHBAR,
+		.dmibar = DEFAULT_DMIBAR,
 		.epbar = DEFAULT_EPBAR,
 		.pciexbar = CONFIG_MMCONF_BASE_ADDRESS,
-		.smbusbar = SMBUS_IO_BASE,
+		.smbusbar = CONFIG_FIXED_SMBUS_IO_BASE,
 		.wdbbar = 0x4000000,
 		.wdbsize = 0x1000,
 		.hpet_address = CONFIG_HPET_ADDRESS,
-		.rcba = (uintptr_t)DEFAULT_RCBABASE,
+		.rcba = (uintptr_t)DEFAULT_RCBA,
 		.pmbase = DEFAULT_PMBASE,
 		.gpiobase = DEFAULT_GPIOBASE,
 		.thermalbase = 0xfed08000,

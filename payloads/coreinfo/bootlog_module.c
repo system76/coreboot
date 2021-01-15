@@ -1,16 +1,4 @@
-/*
- *
- * Copyright (C) 2008 Uwe Hermann <uwe@hermann-uwe.de>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
 
 #include "coreinfo.h"
 
@@ -19,13 +7,11 @@
 #define LINES_SHOWN 19
 #define TAB_WIDTH 2
 
-
 /* Globals that are used for tracking screen state */
 static char *g_buf = NULL;
 static s32 g_line = 0;
 static s32 g_lines_count = 0;
 static s32 g_max_cursor_line = 0;
-
 
 /* Copied from libpayload/drivers/cbmem_console.c */
 struct cbmem_console {
@@ -36,7 +22,6 @@ struct cbmem_console {
 
 #define CURSOR_MASK ((1 << 28) - 1)
 #define OVERFLOW (1 << 31)
-
 
 static u32 char_width(char c, u32 cursor, u32 screen_width)
 {
@@ -110,7 +95,7 @@ static int bootlog_module_init(void)
 		return -1;
 	}
 
-	struct cbmem_console *console = lib_sysinfo.cbmem_cons;
+	struct cbmem_console *console = phys_to_virt(lib_sysinfo.cbmem_cons);
 	if (console == NULL) {
 		return -1;
 	}

@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
 #include "hostbridge.asl"
-#include "../iomap.h"
+#include "../memmap.h"
 #include <southbridge/intel/common/rcba.h>
 
 /* PCI Device Resource Consumption */
@@ -32,3 +32,6 @@ Device (PDRC)
 
 // PCIe graphics port 0:1.0
 #include "peg.asl"
+
+// Integrated graphics 0:2.0
+#include <drivers/intel/gma/acpi/gfx.asl>

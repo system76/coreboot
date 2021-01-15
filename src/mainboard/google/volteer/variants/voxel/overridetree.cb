@@ -1,6 +1,75 @@
 chip soc/intel/tigerlake
+	register "DdiPort1Hpd" = "0"
+	register "DdiPort2Hpd" = "0"
+
+	register "power_limits_config[POWER_LIMITS_U_2_CORE]" = "{
+		.tdp_pl1_override = 18,
+		.tdp_pl2_override = 51,
+		.tdp_pl4 = 71,
+	}"
+	register "power_limits_config[POWER_LIMITS_U_4_CORE]" = "{
+		.tdp_pl1_override = 18,
+		.tdp_pl2_override = 51,
+		.tdp_pl4 = 105,
+	}"
+
+	register "usb2_ports[3]" = "USB2_PORT_TYPE_C(OC_SKIP)"     # Type-A / Type-C Cl
+	register "usb2_ports[8]" = "USB2_PORT_TYPE_C(OC_SKIP)"     # Type-A / Type-C C0
+
+	# Disable SRCCLKREQ1#
+	register "PcieClkSrcUsage[1]" = "PCIE_CLK_NOTUSED"
+
 	device domain 0 on
-		device pci 15.0 on
+		device ref dptf on
+			chip drivers/intel/dptf
+				## Active Policy
+				register "policies.active" = "{
+					[0] = {.target = DPTF_CPU,
+					       .thresholds = {TEMP_PCT(98, 100),}},
+					[1] = {.target = DPTF_TEMP_SENSOR_2,
+					       .thresholds = {TEMP_PCT(64, 100),
+							      TEMP_PCT(60, 90),
+							      TEMP_PCT(56, 80),
+							      TEMP_PCT(52, 70),
+							      TEMP_PCT(47, 60),
+							      TEMP_PCT(42, 50),
+							      TEMP_PCT(35, 40),}}}"
+
+				## Passive Policy
+				register "policies.passive" = "{
+					[0] = DPTF_PASSIVE(CPU,	CPU,	       95, 5000),
+					[1] = DPTF_PASSIVE(CPU,	TEMP_SENSOR_1, 65, 6000),
+					[2] = DPTF_PASSIVE(CHARGER,	TEMP_SENSOR_0, 65, 6000),
+					[3] = DPTF_PASSIVE(CPU,	TEMP_SENSOR_2, 52, 6000),
+					[4] = DPTF_PASSIVE(CPU,	TEMP_SENSOR_3, 65, 6000)}"
+
+				## Critical Policy
+				register "policies.critical" = "{
+					[0] = DPTF_CRITICAL(CPU,	       100, SHUTDOWN),
+					[1] = DPTF_CRITICAL(TEMP_SENSOR_0,	75, SHUTDOWN),
+					[2] = DPTF_CRITICAL(TEMP_SENSOR_1,	75, SHUTDOWN),
+					[3] = DPTF_CRITICAL(TEMP_SENSOR_2,	75, SHUTDOWN),
+					[4] = DPTF_CRITICAL(TEMP_SENSOR_3,	75, SHUTDOWN)}"
+
+				## Power Limits Control
+				# 12-18W PL1 in 200mW increments, avg over 28-32s interval
+				# PL2 is fixed at 51W, avg over 28-32s interval
+				register "controls.power_limits" = "{
+					.pl1 = {.min_power = 12000,
+						.max_power = 18000,
+						.time_window_min = 28 * MSECS_PER_SEC,
+						.time_window_max = 32 * MSECS_PER_SEC,
+						.granularity = 200,},
+					.pl2 = {.min_power = 51000,
+						.max_power = 51000,
+						.time_window_min = 28 * MSECS_PER_SEC,
+						.time_window_max = 32 * MSECS_PER_SEC,
+						.granularity = 1000,}}"
+
+				device generic 0 on end
+			end
+		end
+		device ref i2c0 on
 			chip drivers/i2c/generic
 				register "hid" = ""10EC5682""
 				register "name" = ""RT58""
@@ -32,12 +101,12 @@ chip soc/intel/tigerlake
 				device i2c 32 on
 				end
 			end
-		end # I2C #0			0xA0E8
-		device pci 15.1 on
+		end
+		device ref i2c1 on
 			chip drivers/i2c/hid
 				register "generic.hid" = ""GDIX0000""
 				register "generic.desc" = ""Goodix Touchscreen""
-				register "generic.irq" = "ACPI_IRQ_EDGE_LOW(GPP_E7_IRQ)"
+				register "generic.irq" = "ACPI_IRQ_LEVEL_LOW(GPP_E7_IRQ)"
 				register "generic.probed" = "1"
 				register "generic.reset_gpio" =
 							"ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_C10)"
@@ -52,7 +121,7 @@ chip soc/intel/tigerlake
 			chip drivers/i2c/hid
 				register "generic.hid" = ""ELAN90FC""
 				register "generic.desc" = ""ELAN Touchscreen""
-				register "generic.irq" = "ACPI_IRQ_EDGE_LOW(GPP_E7_IRQ)"
+				register "generic.irq" = "ACPI_IRQ_LEVEL_LOW(GPP_E7_IRQ)"
 				register "generic.probed" = "1"
 				register "generic.reset_gpio" =
 							"ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_C10)"
@@ -63,8 +132,22 @@ chip soc/intel/tigerlake
 				register "hid_desc_reg_offset" = "0x01"
 				device i2c 10 on end
 			end
-		end # I2C1				0xA0E9
-		device pci 15.2 on
+			chip drivers/i2c/generic
+				register "hid" = ""RAYD0001""
+				register "desc" = ""Raydium Touchscreen""
+				register "irq" = "ACPI_IRQ_EDGE_LOW(GPP_E7_IRQ)"
+				register "probed" = "1"
+				register "reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_C10)"
+				register "reset_delay_ms" = "1"
+				register "reset_off_delay_ms" = "2"
+				register "enable_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_A8)"
+				register "enable_delay_ms" = "10"
+				register "enable_off_delay_ms" = "1"
+				register "has_power_resource" = "1"
+				device i2c 39 on end
+			end
+		end
+		device ref i2c2 on
 			chip drivers/i2c/sx9310
 				register "desc" = ""SAR0 Proximity Sensor""
 				register "irq" = "ACPI_IRQ_LEVEL_LOW(GPP_F14_IRQ)"
@@ -95,8 +178,8 @@ chip soc/intel/tigerlake
 				register "reg_sar_ctrl2" = "0x3c"
 				device i2c 28 on end
 			end
-		end # I2C2				0xA0EA
-		device pci 19.1 on
+		end
+		device ref i2c5 on
 			chip drivers/i2c/generic
 				register "hid" = ""ELAN0000""
 				register "desc" = ""ELAN Touchpad""
@@ -105,8 +188,37 @@ chip soc/intel/tigerlake
 				register "probed" = "1"
 				device i2c 15 on end
 			end
-		end # I2C5				0xA0C6
-		device pci 1f.2 hidden
+			chip drivers/i2c/hid
+				register "generic.hid" = ""PNP0C50""
+				register "generic.desc" = ""Synaptics Touchpad""
+				register "generic.irq" = "ACPI_IRQ_WAKE_LEVEL_LOW(GPP_E15_IRQ)"
+				register "generic.wake" = "GPE0_DW2_15"
+				register "generic.probed" = "1"
+				register "hid_desc_reg_offset" = "0x20"
+				device i2c 0x2c on end
+			end
+		end
+		device ref pch_espi on
+			chip ec/google/chromeec
+				use conn0 as mux_conn[0]
+				use conn1 as mux_conn[1]
+				device pnp 0c09.0 on end
+			end
+		end
+		device ref pcie_rp9 on
+			chip soc/intel/common/block/pcie/rtd3
+				register "enable_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_B2)"
+				register "reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_A11)"
+				register "srcclk_pin" = "0"
+				device generic 0 on end
+			end
+		end
+		# This variant has USB4/PCIe on both ports so RP0 must be enabled
+		# in order for hotplug resources to be assigned to Type-C Port C0.
+		device ref tbt_pcie_rp0 on
+			probe DB_USB USB4_GEN3
+		end
+		device ref pmc hidden
 			# The pmc_mux chip driver is a placeholder for the
 			# PMC.MUX device in the ACPI hierarchy.
 			chip drivers/intel/pmc_mux
@@ -116,17 +228,80 @@ chip soc/intel/tigerlake
 						register "usb3_port_number" = "1"
 						# SBU is fixed, HSL follows CC
 						register "sbu_orientation" = "TYPEC_ORIENTATION_NORMAL"
-						device generic 0 on end
+						device generic 0 alias conn0 on end
 					end
 					chip drivers/intel/pmc_mux/conn
 						register "usb2_port_number" = "4"
 						register "usb3_port_number" = "2"
 						# SBU is fixed, HSL follows CC
 						register "sbu_orientation" = "TYPEC_ORIENTATION_NORMAL"
-						device generic 1 on end
+						device generic 1 alias conn1 on end
 					end
 				end
 			end
-		end # PMC
+		end
+		device ref north_xhci on
+			chip drivers/usb/acpi
+				device ref tcss_root_hub on
+					chip drivers/usb/acpi
+						register "desc" = ""USB3 Type-C Port C0 (MLB)""
+						register "type" = "UPC_TYPE_C_USB2_SS_SWITCH"
+						register "group" = "ACPI_PLD_GROUP(3, 2)"
+						device ref tcss_usb3_port1 on end
+					end
+					chip drivers/usb/acpi
+						register "desc" = ""USB3 Type-C Port C1 (MLB)""
+						register "type" = "UPC_TYPE_C_USB2_SS_SWITCH"
+						register "group" = "ACPI_PLD_GROUP(2, 2)"
+						device ref tcss_usb3_port2 on end
+					end
+				end
+			end
+		end
+		device ref south_xhci on
+			chip drivers/usb/acpi
+				device ref xhci_root_hub on
+					chip drivers/usb/acpi
+						register "desc" = ""USB2 Type-A Port A1 (DB)""
+						register "type" = "UPC_TYPE_A"
+						register "group" = "ACPI_PLD_GROUP(1, 1)"
+						device ref usb2_port2 on
+							probe DB_USB USB4_GEN3
+						end
+					end
+					chip drivers/usb/acpi
+						register "desc" = ""USB2 Type-C Port C1 (MLB)""
+						register "type" = "UPC_TYPE_C_USB2_SS_SWITCH"
+						register "group" = "ACPI_PLD_GROUP(2, 1)"
+						device ref usb2_port4 on end
+					end
+					chip drivers/usb/acpi
+						register "desc" = ""USB2 Camera""
+						register "type" = "UPC_TYPE_INTERNAL"
+						device ref usb2_port5 on end
+					end
+					chip drivers/usb/acpi
+						register "desc" = ""USB2 Type-C Port C0 (MLB)""
+						register "type" = "UPC_TYPE_C_USB2_SS_SWITCH"
+						register "group" = "ACPI_PLD_GROUP(3, 1)"
+						device ref usb2_port9 on end
+					end
+					chip drivers/usb/acpi
+						register "desc" = ""USB2 Bluetooth""
+						register "type" = "UPC_TYPE_INTERNAL"
+						register "reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_A13)"
+						device ref usb2_port10 on end
+					end
+					chip drivers/usb/acpi
+						register "desc" = ""USB3 Type-A Port A1 (DB)""
+						register "type" = "UPC_TYPE_USB3_A"
+						register "group" = "ACPI_PLD_GROUP(1, 2)"
+						device ref usb3_port2 on
+							probe DB_USB USB4_GEN3
+						end
+					end
+				end
+			end
+		end
 	end
 end

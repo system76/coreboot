@@ -6,6 +6,7 @@
 #include <device/device.h>
 #include <device/pci.h>
 #include <device/pci_def.h>
+#include "iobp.h"
 #include "pch.h"
 
 #ifdef __SIMPLE_DEVICE__
@@ -56,11 +57,6 @@ enum pch_platform_type get_pch_platform_type(void)
 	return PCH_TYPE_DESKTOP;
 }
 
-int pch_is_lp(void)
-{
-	return get_pch_platform_type() == PCH_TYPE_ULT;
-}
-
 u16 get_pmbase(void)
 {
 	static u16 pmbase;
@@ -86,9 +82,7 @@ u16 get_gpiobase(void)
 /* Put device in D3Hot Power State */
 static void pch_enable_d3hot(struct device *dev)
 {
-	u32 reg32 = pci_read_config32(dev, PCH_PCS);
-	reg32 |= PCH_PCS_PS_D3HOT;
-	pci_write_config32(dev, PCH_PCS, reg32);
+	pci_or_config32(dev, PCH_PCS, PCH_PCS_PS_D3HOT);
 }
 
 /* Set bit in function disable register to hide this device */
@@ -103,31 +97,31 @@ void pch_disable_devfn(struct device *dev)
 		break;
 	case PCI_DEVFN(21, 0): /* DMA */
 		pch_enable_d3hot(dev);
-		pch_iobp_update(SIO_IOBP_FUNCDIS0, ~0UL, SIO_IOBP_FUNCDIS_DIS);
+		pch_iobp_update(SIO_IOBP_FUNCDIS0, ~0, SIO_IOBP_FUNCDIS_DIS);
 		break;
 	case PCI_DEVFN(21, 1): /* I2C0 */
 		pch_enable_d3hot(dev);
-		pch_iobp_update(SIO_IOBP_FUNCDIS1, ~0UL, SIO_IOBP_FUNCDIS_DIS);
+		pch_iobp_update(SIO_IOBP_FUNCDIS1, ~0, SIO_IOBP_FUNCDIS_DIS);
 		break;
 	case PCI_DEVFN(21, 2): /* I2C1 */
 		pch_enable_d3hot(dev);
-		pch_iobp_update(SIO_IOBP_FUNCDIS2, ~0UL, SIO_IOBP_FUNCDIS_DIS);
+		pch_iobp_update(SIO_IOBP_FUNCDIS2, ~0, SIO_IOBP_FUNCDIS_DIS);
 		break;
 	case PCI_DEVFN(21, 3): /* SPI0 */
 		pch_enable_d3hot(dev);
-		pch_iobp_update(SIO_IOBP_FUNCDIS3, ~0UL, SIO_IOBP_FUNCDIS_DIS);
+		pch_iobp_update(SIO_IOBP_FUNCDIS3, ~0, SIO_IOBP_FUNCDIS_DIS);
 		break;
 	case PCI_DEVFN(21, 4): /* SPI1 */
 		pch_enable_d3hot(dev);
-		pch_iobp_update(SIO_IOBP_FUNCDIS4, ~0UL, SIO_IOBP_FUNCDIS_DIS);
+		pch_iobp_update(SIO_IOBP_FUNCDIS4, ~0, SIO_IOBP_FUNCDIS_DIS);
 		break;
 	case PCI_DEVFN(21, 5): /* UART0 */
 		pch_enable_d3hot(dev);
-		pch_iobp_update(SIO_IOBP_FUNCDIS5, ~0UL, SIO_IOBP_FUNCDIS_DIS);
+		pch_iobp_update(SIO_IOBP_FUNCDIS5, ~0, SIO_IOBP_FUNCDIS_DIS);
 		break;
 	case PCI_DEVFN(21, 6): /* UART1 */
 		pch_enable_d3hot(dev);
-		pch_iobp_update(SIO_IOBP_FUNCDIS6, ~0UL, SIO_IOBP_FUNCDIS_DIS);
+		pch_iobp_update(SIO_IOBP_FUNCDIS6, ~0, SIO_IOBP_FUNCDIS_DIS);
 		break;
 	case PCI_DEVFN(22, 0): /* MEI #1 */
 		RCBA32_OR(FD2, PCH_DISABLE_MEI1);
@@ -143,7 +137,7 @@ void pch_disable_devfn(struct device *dev)
 		break;
 	case PCI_DEVFN(23, 0): /* SDIO */
 		pch_enable_d3hot(dev);
-		pch_iobp_update(SIO_IOBP_FUNCDIS7, ~0UL, SIO_IOBP_FUNCDIS_DIS);
+		pch_iobp_update(SIO_IOBP_FUNCDIS7, ~0, SIO_IOBP_FUNCDIS_DIS);
 		break;
 	case PCI_DEVFN(25, 0): /* Gigabit Ethernet */
 		RCBA32_OR(BUC, PCH_DISABLE_GBE);
@@ -185,114 +179,8 @@ void pch_disable_devfn(struct device *dev)
 	}
 }
 
-#define IOBP_RETRY 1000
-static inline int iobp_poll(void)
-{
-	unsigned int try;
-
-	for (try = IOBP_RETRY; try > 0; try--) {
-		u16 status = RCBA16(IOBPS);
-		if ((status & IOBPS_READY) == 0)
-			return 1;
-		udelay(10);
-	}
-
-	printk(BIOS_ERR, "IOBP: timeout waiting for transaction to complete\n");
-	return 0;
-}
-
-u32 pch_iobp_read(u32 address)
-{
-	u16 status;
-
-	if (!iobp_poll())
-		return 0;
-
-	/* Set the address */
-	RCBA32(IOBPIRI) = address;
-
-	/* READ OPCODE */
-	status = RCBA16(IOBPS);
-	status &= ~IOBPS_MASK;
-	status |= IOBPS_READ;
-	RCBA16(IOBPS) = status;
-
-	/* Undocumented magic */
-	RCBA16(IOBPU) = IOBPU_MAGIC;
-
-	/* Set ready bit */
-	status = RCBA16(IOBPS);
-	status |= IOBPS_READY;
-	RCBA16(IOBPS) = status;
-
-	if (!iobp_poll())
-		return 0;
-
-	/* Check for successful transaction */
-	status = RCBA16(IOBPS);
-	if (status & IOBPS_TX_MASK) {
-		printk(BIOS_ERR, "IOBP: read 0x%08x failed\n", address);
-		return 0;
-	}
-
-	/* Read IOBP data */
-	return RCBA32(IOBPD);
-}
-
-void pch_iobp_write(u32 address, u32 data)
-{
-	u16 status;
-
-	if (!iobp_poll())
-		return;
-
-	/* Set the address */
-	RCBA32(IOBPIRI) = address;
-
-	/* WRITE OPCODE */
-	status = RCBA16(IOBPS);
-	status &= ~IOBPS_MASK;
-	status |= IOBPS_WRITE;
-	RCBA16(IOBPS) = status;
-
-	RCBA32(IOBPD) = data;
-
-	/* Undocumented magic */
-	RCBA16(IOBPU) = IOBPU_MAGIC;
-
-	/* Set ready bit */
-	status = RCBA16(IOBPS);
-	status |= IOBPS_READY;
-	RCBA16(IOBPS) = status;
-
-	if (!iobp_poll())
-		return;
-
-	/* Check for successful transaction */
-	status = RCBA16(IOBPS);
-	if (status & IOBPS_TX_MASK) {
-		printk(BIOS_ERR, "IOBP: write 0x%08x failed\n", address);
-		return;
-	}
-
-	printk(BIOS_INFO, "IOBP: set 0x%08x to 0x%08x\n", address, data);
-}
-
-void pch_iobp_update(u32 address, u32 andvalue, u32 orvalue)
-{
-	u32 data = pch_iobp_read(address);
-
-	/* Update the data */
-	data &= andvalue;
-	data |= orvalue;
-
-	pch_iobp_write(address, data);
-}
-
 void pch_enable(struct device *dev)
 {
-	u16 reg16;
-
 	/* PCH PCIe Root Ports are handled in PCIe driver. */
 	if (PCI_SLOT(dev->path.pci.devfn) == PCH_PCIE_DEV_SLOT)
 		return;
@@ -301,9 +189,8 @@ void pch_enable(struct device *dev)
 		printk(BIOS_DEBUG, "%s: Disabling device\n",  dev_path(dev));
 
 		/* Ensure memory, io, and bus master are all disabled */
-		reg16 = pci_read_config16(dev, PCI_COMMAND);
-		reg16 &= ~(PCI_COMMAND_MASTER | PCI_COMMAND_MEMORY | PCI_COMMAND_IO);
-		pci_write_config16(dev, PCI_COMMAND, reg16);
+		pci_and_config16(dev, PCI_COMMAND,
+				~(PCI_COMMAND_MASTER | PCI_COMMAND_MEMORY | PCI_COMMAND_IO));
 
 		/* Disable this device if possible */
 		pch_disable_devfn(dev);

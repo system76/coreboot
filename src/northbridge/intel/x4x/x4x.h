@@ -4,53 +4,27 @@
 #define __NORTHBRIDGE_INTEL_X4X_H__
 
 #include <stdint.h>
-#include "iomap.h"
+#include "memmap.h"
+
+#define BOOT_PATH_NORMAL	0
+#define BOOT_PATH_WARM_RESET	1
+#define BOOT_PATH_RESUME	2
 
 /*
  * D0:F0
  */
-#define D0F0_EPBAR_LO 0x40
-#define D0F0_EPBAR_HI 0x44
-#define D0F0_MCHBAR_LO 0x48
-#define D0F0_MCHBAR_HI 0x4c
-#define D0F0_GGC 0x52
-#define D0F0_DEVEN 0x54
-#define  D0EN		(1 << 0)
-#define  D1EN		(1 << 1)
-#define  IGD0EN		(1 << 3)
-#define  IGD1EN		(1 << 4)
-#define  D3F0EN		(1 << 6)
-#define  D3F1EN		(1 << 7)
-#define  D3F2EN		(1 << 8)
-#define  D3F3EN		(1 << 9)
-#define  PEG1EN		(1 << 13)
-#define  BOARD_DEVEN	(D0EN | D1EN | IGD0EN | IGD1EN | PEG1EN)
-#define D0F0_PCIEXBAR_LO 0x60
-#define D0F0_PCIEXBAR_HI 0x64
-#define D0F0_DMIBAR_LO 0x68
-#define D0F0_DMIBAR_HI 0x6c
-#define D0F0_PAM(x) (0x90+(x)) /* 0-6*/
-#define D0F0_REMAPBASE 0x98
-#define D0F0_REMAPLIMIT 0x9a
-#define D0F0_SMRAM 0x9d
-#define D0F0_ESMRAMC 0x9e
-#define D0F0_TOM 0xa0
-#define D0F0_TOUUD 0xa2
-#define D0F0_TOLUD 0xb0
-#define D0F0_GBSM 0xa4
-#define D0F0_BGSM 0xa8
-#define D0F0_TSEG 0xac
-#define D0F0_SKPD 0xdc /* Scratchpad Data */
-#define D0F0_CAPID0 0xe0
+#define HOST_BRIDGE	PCI_DEV(0, 0, 0)
+
+#include "registers/host_bridge.h"
 
 /*
  * D1:F0 PEG
  */
-#define PEG_CAP 0xa2
-#define SLOTCAP 0xb4
-#define PEGLC 0xec
-#define D1F0_VCCAP 0x104
-#define D1F0_VC0RCTL 0x114
+#define PEG_CAP		0xa2
+#define SLOTCAP		0xb4
+#define PEGLC		0xec
+#define D1F0_VCCAP	0x104
+#define D1F0_VC0RCTL	0x114
 
 /*
  * Graphics frequencies
@@ -70,21 +44,18 @@
  * MCHBAR
  */
 
-#define MCHBAR8(x) (*((volatile u8 *)(DEFAULT_MCHBAR + (x))))
+#define MCHBAR8(x)  (*((volatile u8  *)(DEFAULT_MCHBAR + (x))))
 #define MCHBAR16(x) (*((volatile u16 *)(DEFAULT_MCHBAR + (x))))
 #define MCHBAR32(x) (*((volatile u32 *)(DEFAULT_MCHBAR + (x))))
-#define MCHBAR8_AND(x, and) (MCHBAR8(x) = MCHBAR8(x) & (and))
-#define MCHBAR8_OR(x, or) (MCHBAR8(x) = MCHBAR8(x) | (or))
-#define MCHBAR8_AND_OR(x, and, or) \
-	(MCHBAR8(x) = (MCHBAR8(x) & (and)) | (or))
+#define MCHBAR8_AND(x,  and) (MCHBAR8(x)  = MCHBAR8(x)  & (and))
 #define MCHBAR16_AND(x, and) (MCHBAR16(x) = MCHBAR16(x) & (and))
-#define MCHBAR16_OR(x, or) (MCHBAR16(x) = MCHBAR16(x) | (or))
-#define MCHBAR16_AND_OR(x, and, or) \
-	(MCHBAR16(x) = (MCHBAR16(x) & (and)) | (or))
 #define MCHBAR32_AND(x, and) (MCHBAR32(x) = MCHBAR32(x) & (and))
+#define MCHBAR8_OR(x,  or) (MCHBAR8(x)  = MCHBAR8(x)  | (or))
+#define MCHBAR16_OR(x, or) (MCHBAR16(x) = MCHBAR16(x) | (or))
 #define MCHBAR32_OR(x, or) (MCHBAR32(x) = MCHBAR32(x) | (or))
-#define MCHBAR32_AND_OR(x, and, or) \
-	(MCHBAR32(x) = (MCHBAR32(x) & (and)) | (or))
+#define MCHBAR8_AND_OR(x,  and, or) (MCHBAR8(x)  = (MCHBAR8(x)  & (and)) | (or))
+#define MCHBAR16_AND_OR(x, and, or) (MCHBAR16(x) = (MCHBAR16(x) & (and)) | (or))
+#define MCHBAR32_AND_OR(x, and, or) (MCHBAR32(x) = (MCHBAR32(x) & (and)) | (or))
 
 #define CHDECMISC	0x111
 #define STACKED_MEM	(1 << 1)
@@ -122,239 +93,77 @@
  * DMIBAR
  */
 
-#define DMIBAR8(x) (*((volatile u8 *)(DEFAULT_DMIBAR + (x))))
+#define DMIBAR8(x)  (*((volatile u8  *)(DEFAULT_DMIBAR + (x))))
 #define DMIBAR16(x) (*((volatile u16 *)(DEFAULT_DMIBAR + (x))))
 #define DMIBAR32(x) (*((volatile u32 *)(DEFAULT_DMIBAR + (x))))
 
-#define DMIVC0RCTL 0x14
-#define DMIVC1RCTL 0x20
-#define DMIVC1RSTS 0x26
-#define DMIESD  0x44
-#define DMILE1D 0x50
-#define DMILE1A 0x58
-#define DMILE2D 0x60
-#define DMILE2A 0x68
+#define DMIVCECH	0x000	/* 32bit */
+#define DMIPVCCAP1	0x004	/* 32bit */
+
+#define DMIVC0RCAP	0x010	/* 32bit */
+#define DMIVC0RCTL	0x014	/* 32bit */
+#define DMIVC0RSTS	0x01a	/* 16bit */
+#define  VC0NP		(1 << 1)
+
+#define DMIVC1RCAP	0x01c	/* 32bit */
+#define DMIVC1RCTL	0x020	/* 32bit */
+#define DMIVC1RSTS	0x026	/* 16bit */
+#define  VC1NP		(1 << 1)
+
+#define DMIVCPRCAP	0x028	/* 32bit */
+#define DMIVCPRCTL	0x02c	/* 32bit */
+#define DMIVCPRSTS	0x032	/* 16bit */
+#define  VCPNP		(1 << 1)
+
+#define DMIVCMRCAP	0x034	/* 32bit */
+#define DMIVCMRCTL	0x038	/* 32bit */
+#define DMIVCMRSTS	0x03e	/* 16bit */
+#define  VCMNP		(1 << 1)
+
+#define DMIESD		0x044	/* 32bit */
+
+#define DMILE1D		0x050	/* 32bit */
+#define DMILE1A		0x058	/* 64bit */
+#define DMILE2D		0x060	/* 32bit */
+#define DMILE2A		0x068	/* 64bit */
+
+#define DMILCAP		0x084	/* 32bit */
+#define DMILCTL		0x088	/* 16bit */
+#define DMILSTS		0x08a	/* 16bit */
+
+#define DMIUESTS	0x1c4	/* 32bit */
+#define DMICESTS	0x1d0	/* 32bit */
 
 /*
  * EPBAR
  */
 
-#define EPBAR8(x) (*((volatile u8 *)(DEFAULT_EPBAR + (x))))
+#define EPBAR8(x)  (*((volatile u8  *)(DEFAULT_EPBAR + (x))))
 #define EPBAR16(x) (*((volatile u16 *)(DEFAULT_EPBAR + (x))))
 #define EPBAR32(x) (*((volatile u32 *)(DEFAULT_EPBAR + (x))))
 
-#define EPESD 0x44
-#define EPLE1D 0x50
-#define EPLE1A 0x58
-#define EPLE2D 0x60
+#define EPPVCCAP1	0x004	/* 32bit */
+#define EPPVCCTL	0x00c	/* 32bit */
 
-#define NOP_CMD 0x2
-#define PRECHARGE_CMD 0x4
-#define MRS_CMD 0x6
-#define EMRS_CMD 0x8
-#define EMRS1_CMD (EMRS_CMD | 0x10)
-#define EMRS2_CMD (EMRS_CMD | 0x20)
-#define EMRS3_CMD (EMRS_CMD | 0x30)
-#define ZQCAL_CMD 0xa
-#define CBR_CMD 0xc
-#define NORMALOP_CMD 0xe
+#define EPVC0RCAP	0x010	/* 32bit */
+#define EPVC0RCTL	0x014	/* 32bit */
+#define EPVC0RSTS	0x01a	/* 16bit */
 
-#define TOTAL_CHANNELS 2
-#define TOTAL_DIMMS 4
-#define TOTAL_BYTELANES 8
-#define DIMMS_PER_CHANNEL (TOTAL_DIMMS / TOTAL_CHANNELS)
-#define RAW_CARD_UNPOPULATED 0xff
-#define RAW_CARD_POPULATED 0
+#define EPVC1RCAP	0x01c	/* 32bit */
+#define EPVC1RCTL	0x020	/* 32bit */
+#define EPVC1RSTS	0x026	/* 16bit */
 
-#define DIMM_IS_POPULATED(dimms, idx) (dimms[idx].card_type != RAW_CARD_UNPOPULATED)
-#define IF_DIMM_POPULATED(dimms, idx) if (dimms[idx].card_type != RAW_CARD_UNPOPULATED)
-#define ONLY_DIMMA_IS_POPULATED(dimms, ch) ( \
-	(DIMM_IS_POPULATED(dimms, (ch == 0) ? 0 : 2) && \
-	!DIMM_IS_POPULATED(dimms, (ch == 0) ? 1 : 3)))
-#define ONLY_DIMMB_IS_POPULATED(dimms, ch) ( \
-	(DIMM_IS_POPULATED(dimms, (ch == 0) ? 1 : 3) && \
-	!DIMM_IS_POPULATED(dimms, (ch == 0) ? 0 : 2)))
-#define BOTH_DIMMS_ARE_POPULATED(dimms, ch) ( \
-	(DIMM_IS_POPULATED(dimms, (ch == 0) ? 0 : 2) && \
-	(DIMM_IS_POPULATED(dimms, (ch == 0) ? 1 : 3))))
-#define FOR_EACH_DIMM(idx) \
-	for (idx = 0; idx < TOTAL_DIMMS; ++idx)
-#define FOR_EACH_POPULATED_DIMM(dimms, idx) \
-	FOR_EACH_DIMM(idx) IF_DIMM_POPULATED(dimms, idx)
-#define FOR_EACH_DIMM_IN_CHANNEL(ch, idx) \
-	for (idx = (ch) << 1; idx < ((ch) << 1) + DIMMS_PER_CHANNEL; ++idx)
-#define FOR_EACH_POPULATED_DIMM_IN_CHANNEL(dimms, ch, idx) \
-	FOR_EACH_DIMM_IN_CHANNEL(ch, idx) IF_DIMM_POPULATED(dimms, idx)
-#define CHANNEL_IS_POPULATED(dimms, idx) \
-	((dimms[idx<<1].card_type != RAW_CARD_UNPOPULATED) \
-		|| (dimms[(idx<<1) + 1].card_type != RAW_CARD_UNPOPULATED))
-#define CHANNEL_IS_CARDF(dimms, idx) \
-	((dimms[idx<<1].card_type == 0xf) \
-		|| (dimms[(idx<<1) + 1].card_type == 0xf))
-#define IF_CHANNEL_POPULATED(dimms, idx) \
-	if ((dimms[idx<<1].card_type != RAW_CARD_UNPOPULATED) \
-		|| (dimms[(idx<<1) + 1].card_type != RAW_CARD_UNPOPULATED))
-#define FOR_EACH_CHANNEL(idx) \
-	for (idx = 0; idx < TOTAL_CHANNELS; ++idx)
-#define FOR_EACH_POPULATED_CHANNEL(dimms, idx) \
-	FOR_EACH_CHANNEL(idx) IF_CHANNEL_POPULATED(dimms, idx)
+#define EPVC1MTS	0x028	/* 32bit */
+#define EPVC1ITC	0x02c	/* 32bit */
 
-#define RANKS_PER_CHANNEL 4
-#define RANK_IS_POPULATED(dimms, ch, r) \
-	(((dimms[ch<<1].card_type != RAW_CARD_UNPOPULATED) && ((r) < dimms[ch<<1].ranks)) || \
-	((dimms[(ch<<1) + 1].card_type != RAW_CARD_UNPOPULATED) && ((r) >= 2) && ((r) < (dimms[(ch<<1) + 1].ranks + 2))))
-#define IF_RANK_POPULATED(dimms, ch, r) \
-	if (((dimms[ch<<1].card_type != RAW_CARD_UNPOPULATED) \
-	&& ((r) < dimms[ch<<1].ranks)) \
-	|| ((dimms[(ch<<1) + 1].card_type != RAW_CARD_UNPOPULATED) \
-		&& ((r) >= 2) && ((r) < (dimms[(ch<<1) + 1].ranks + 2))))
-#define FOR_EACH_RANK_IN_CHANNEL(r) \
-	for (r = 0; r < RANKS_PER_CHANNEL; ++r)
-#define FOR_EACH_POPULATED_RANK_IN_CHANNEL(dimms, ch, r) \
-	FOR_EACH_RANK_IN_CHANNEL(r) IF_RANK_POPULATED(dimms, ch, r)
-#define FOR_EACH_RANK(ch, r) \
-	FOR_EACH_CHANNEL(ch) FOR_EACH_RANK_IN_CHANNEL(r)
-#define FOR_EACH_POPULATED_RANK(dimms, ch, r) \
-	FOR_EACH_RANK(ch, r) IF_RANK_POPULATED(dimms, ch, r)
-#define FOR_EACH_BYTELANE(l) \
-	for (l = 0; l < TOTAL_BYTELANES; l++)
-#define FOR_EACH_POPULATED_CHANNEL_AND_BYTELANE(dimms, ch, l) \
-	FOR_EACH_POPULATED_CHANNEL (dimms, ch) FOR_EACH_BYTELANE(l)
+#define EPESD		0x044	/* 32bit */
 
-#define DDR3_MAX_CAS 18
+#define EPLE1D		0x050	/* 32bit */
+#define EPLE1A		0x058	/* 64bit */
+#define EPLE2D		0x060	/* 32bit */
+#define EPLE2A		0x068	/* 64bit */
 
-enum fsb_clock {
-	FSB_CLOCK_800MHz	= 0,
-	FSB_CLOCK_1066MHz	= 1,
-	FSB_CLOCK_1333MHz	= 2,
-};
-
-enum mem_clock {
-	MEM_CLOCK_400MHz  = 0,
-	MEM_CLOCK_533MHz  = 1,
-	MEM_CLOCK_667MHz  = 2,
-	MEM_CLOCK_800MHz  = 3,
-	MEM_CLOCK_1066MHz  = 4,
-	MEM_CLOCK_1333MHz  = 5,
-};
-
-enum ddr {
-	DDR2 = 2,
-	DDR3 = 3,
-};
-
-enum ddrxspd {
-	DDR2SPD = 0x8,
-	DDR3SPD = 0xb,
-};
-
-enum chip_width { /* as in DDR3 spd */
-	CHIP_WIDTH_x4	= 0,
-	CHIP_WIDTH_x8	= 1,
-	CHIP_WIDTH_x16	= 2,
-	CHIP_WIDTH_x32	= 3,
-};
-
-enum chip_cap { /* as in DDR3 spd */
-	CHIP_CAP_256M	= 0,
-	CHIP_CAP_512M	= 1,
-	CHIP_CAP_1G	= 2,
-	CHIP_CAP_2G	= 3,
-	CHIP_CAP_4G	= 4,
-	CHIP_CAP_8G	= 5,
-	CHIP_CAP_16G	= 6,
-};
-
-struct dll_setting {
-	u8 tap;
-	u8 pi;
-	u8 db_en;
-	u8 db_sel;
-	u8 clk_delay;
-	u8 coarse;
-};
-
-struct rt_dqs_setting {
-	u8 tap;
-	u8 pi;
-};
-
-enum n_banks {
-	N_BANKS_4 = 0,
-	N_BANKS_8 = 1,
-};
-
-struct timings {
-	unsigned int	CAS;
-	unsigned int    tclk;
-	enum fsb_clock	fsb_clk;
-	enum mem_clock	mem_clk;
-	unsigned int	tRAS;
-	unsigned int	tRP;
-	unsigned int	tRCD;
-	unsigned int	tWR;
-	unsigned int	tRFC;
-	unsigned int	tWTR;
-	unsigned int	tRRD;
-	unsigned int	tRTP;
-};
-
-struct dimminfo {
-	unsigned int	card_type; /* 0xff: unpopulated,
-				      0xa - 0xf: raw card type A - F */
-	enum chip_width	width;
-	unsigned int	page_size; /* of whole DIMM in Bytes (4096 or 8192) */
-	enum n_banks	n_banks;
-	unsigned int	ranks;
-	unsigned int	rows;
-	unsigned int	cols;
-	u16             spd_crc;
-	u8		mirrored;
-};
-
-struct rcven_timings {
-	u8 min_common_coarse;
-	u8 coarse_offset[TOTAL_BYTELANES];
-	u8 medium[TOTAL_BYTELANES];
-	u8 tap[TOTAL_BYTELANES];
-	u8 pi[TOTAL_BYTELANES];
-};
-
-/* The setup is up to two DIMMs per channel */
-struct sysinfo {
-	int		boot_path;
-	enum fsb_clock	max_fsb;
-
-	int		dimm_config[2];
-	int		spd_type;
-	int		channel_capacity[2];
-	struct timings	selected_timings;
-	struct dimminfo	dimms[4];
-	u8		spd_map[4];
-	struct rcven_timings rcven_t[TOTAL_CHANNELS];
-	/*
-	 * The rt_dqs delay register for rank 0 seems to be used
-	 * for all other ranks on the channel, so only save that
-	 */
-	struct rt_dqs_setting rt_dqs[TOTAL_CHANNELS][TOTAL_BYTELANES];
-	struct dll_setting dqs_settings[TOTAL_CHANNELS][TOTAL_BYTELANES];
-	struct dll_setting dq_settings[TOTAL_CHANNELS][TOTAL_BYTELANES];
-	u8		nmode;
-	u8		stacked_mode;
-};
-#define BOOT_PATH_NORMAL	0
-#define BOOT_PATH_WARM_RESET	1
-#define BOOT_PATH_RESUME	2
-
-enum ddr2_signals {
-	CLKSET0 = 0,
-	CTRL0,
-	CLKSET1,
-	CMD,
-	CTRL1,
-	CTRL2,
-	CTRL3,
-};
+#define EP_PORTARB(x)	(0x100 + 4 * (x))	/* 256bit */
 
 void x4x_early_init(void);
 void x4x_late_init(int s3resume);
@@ -363,42 +172,7 @@ void mb_pre_raminit_setup(int s3_resume);
 u32 decode_igd_memory_size(u32 gms);
 u32 decode_igd_gtt_size(u32 gsm);
 u32 decode_tseg_size(const u32 esmramc);
-u8 decode_pciebar(u32 *const base, u32 *const len);
-void sdram_initialize(int boot_path, const u8 *spd_map);
-void do_raminit(struct sysinfo *, int fast_boot);
-void rcven(struct sysinfo *s);
-u32 fsb_to_mhz(u32 speed);
-u32 ddr_to_mhz(u32 speed);
-u32 test_address(int channel, int rank);
-void dqsset(u8 ch, u8 lane, const struct dll_setting *setting);
-void dqset(u8 ch, u8 lane, const struct dll_setting *setting);
-void rt_set_dqs(u8 channel, u8 lane, u8 rank,
-		struct rt_dqs_setting *dqs_setting);
-int do_write_training(struct sysinfo *s);
-int do_read_training(struct sysinfo *s);
-void search_write_leveling(struct sysinfo *s);
-void send_jedec_cmd(const struct sysinfo *s, u8 r, u8 ch, u8 cmd, u32 val);
-
-extern const struct dll_setting default_ddr2_667_ctrl[7];
-extern const struct dll_setting default_ddr2_800_ctrl[7];
-extern const struct dll_setting default_ddr3_800_ctrl[2][7];
-extern const struct dll_setting default_ddr3_1067_ctrl[2][7];
-extern const struct dll_setting default_ddr3_1333_ctrl[2][7];
-extern const struct dll_setting default_ddr2_667_dqs[TOTAL_BYTELANES];
-extern const struct dll_setting default_ddr2_800_dqs[TOTAL_BYTELANES];
-extern const struct dll_setting default_ddr3_800_dqs[2][TOTAL_BYTELANES];
-extern const struct dll_setting default_ddr3_1067_dqs[2][TOTAL_BYTELANES];
-extern const struct dll_setting default_ddr3_1333_dqs[2][TOTAL_BYTELANES];
-extern const struct dll_setting default_ddr2_667_dq[TOTAL_BYTELANES];
-extern const struct dll_setting default_ddr2_800_dq[TOTAL_BYTELANES];
-extern const struct dll_setting default_ddr3_800_dq[2][TOTAL_BYTELANES];
-extern const struct dll_setting default_ddr3_1067_dq[2][TOTAL_BYTELANES];
-extern const struct dll_setting default_ddr3_1333_dq[2][TOTAL_BYTELANES];
-extern const u8 ddr3_emrs1_rtt_nom_config[16][4];
-extern const u8 post_jedec_tab[3][4][2];
-extern const u32 ddr3_c2_tab[2][3][6][2];
-extern const u8 ddr3_c2_x264[3][6];
-extern const u16 ddr3_c2_x23c[3][6];
+int decode_pcie_bar(u32 *const base, u32 *const len);
 
 #include <device/device.h>
 struct acpi_rsdp;

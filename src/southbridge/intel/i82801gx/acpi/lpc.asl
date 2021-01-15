@@ -25,11 +25,6 @@ Device (LPCB)
 		Offset (0x80),	// IO Decode Ranges
 		IOD0,	8,
 		IOD1,	8,
-
-		Offset (0xf0),	// RCBA
-		RCEN,	1,
-		,	13,
-		RCBA,	18,
 	}
 
 	#include <southbridge/intel/common/acpi/irqlinks.asl>
@@ -73,7 +68,7 @@ Device (LPCB)
 			If (HPTE) {
 				// Note: Ancient versions of Windows don't want
 				// to see the HPET in order to work right
-				If (LGreaterEqual(OSYS, 2001)) {
+				If (OSYS >= 2001) {
 					Return (0xf)	// Enable and show device
 				} Else {
 					Return (0xb)	// Enable and don't show device
@@ -87,16 +82,16 @@ Device (LPCB)
 		{
 			If (HPTE) {
 				CreateDWordField(BUF0, \_SB.PCI0.LPCB.HPET.FED0._BAS, HPT0)
-				If (Lequal(HPAS, 1)) {
-					Add(CONFIG_HPET_ADDRESS, 0x1000, HPT0)
+				If (HPAS == 1) {
+					HPT0 = CONFIG_HPET_ADDRESS + 0x1000
 				}
 
-				If (Lequal(HPAS, 2)) {
-					Add(CONFIG_HPET_ADDRESS, 0x2000, HPT0)
+				If (HPAS == 2) {
+					HPT0 = CONFIG_HPET_ADDRESS + 0x2000
 				}
 
-				If (Lequal(HPAS, 3)) {
-					Add(CONFIG_HPET_ADDRESS, 0x3000, HPT0)
+				If (HPAS == 3) {
+					HPT0 = CONFIG_HPET_ADDRESS + 0x3000
 				}
 			}
 
@@ -167,8 +162,6 @@ Device (LPCB)
 		Name (_CRS, ResourceTemplate()
 		{
 			IO (Decode16, 0x70, 0x70, 1, 8)
-// Disable as Windows doesn't like it, and systems don't seem to use it.
-//			IRQNoFlags() { 8 }
 		})
 	}
 
@@ -216,32 +209,4 @@ Device (LPCB)
 			Return (0xf)
 		}
 	}
-
-#ifdef ENABLE_FDC
-	Device (FDC0)		// Floppy controller
-	{
-		Name (_HID, EisaId ("PNP0700"))
-		Method (_STA, 0, NotSerialized)
-		{
-			Return (0x0f) // FIXME
-		}
-
-		Name(_CRS, ResourceTemplate()
-		{
-			IO (Decode16, 0x03F0, 0x03F0, 0x01, 0x06)
-			IO (Decode16, 0x03F7, 0x03F7, 0x01, 0x01)
-			IRQNoFlags () {6}
-			DMA (Compatibility, NotBusMaster, Transfer8) {2}
-		})
-
-		Name(_PRS, ResourceTemplate()
-		{
-			IO (Decode16, 0x03F0, 0x03F0, 0x01, 0x06)
-			IO (Decode16, 0x03F7, 0x03F7, 0x01, 0x01)
-			IRQNoFlags () {6}
-			DMA (Compatibility, NotBusMaster, Transfer8) {2}
-		})
-
-	}
-#endif
 }

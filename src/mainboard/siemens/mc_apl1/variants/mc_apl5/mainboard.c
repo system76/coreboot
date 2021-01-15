@@ -10,8 +10,6 @@
 #include <intelblocks/lpc_lib.h>
 #include <intelblocks/pcr.h>
 #include <soc/pcr_ids.h>
-#include <timer.h>
-#include <timestamp.h>
 #include <baseboard/variants.h>
 #include <types.h>
 
@@ -20,7 +18,6 @@
 void variant_mainboard_final(void)
 {
 	struct device *dev = NULL;
-	uint16_t cmd;
 
 	/*
 	 * PIR6 register mapping for PCIe root ports
@@ -50,9 +47,7 @@ void variant_mainboard_final(void)
 	/* Set Master Enable for on-board PCI device. */
 	dev = dev_find_device(PCI_VENDOR_ID_SIEMENS, 0x403e, 0);
 	if (dev) {
-		cmd = pci_read_config16(dev, PCI_COMMAND);
-		cmd |= PCI_COMMAND_MASTER;
-		pci_write_config16(dev, PCI_COMMAND, cmd);
+		pci_or_config16(dev, PCI_COMMAND, PCI_COMMAND_MASTER);
 
 		/* Disable clock outputs 0-3 (CLKOUT) for upstream XIO2001 PCIe
 		 * to PCI Bridge. */
@@ -72,36 +67,10 @@ void variant_mainboard_final(void)
 	}
 }
 
-static void wait_for_legacy_dev(void *unused)
-{
-	uint32_t legacy_delay, us_since_boot;
-	struct stopwatch sw;
-
-	/* Open main hwinfo block. */
-	if (hwilib_find_blocks("hwinfo.hex") != CB_SUCCESS)
-		return;
-
-	/* Get legacy delay parameter from hwinfo. */
-	if (hwilib_get_field(LegacyDelay, (uint8_t *) &legacy_delay,
-			      sizeof(legacy_delay)) != sizeof(legacy_delay))
-		return;
-
-	us_since_boot = get_us_since_boot();
-	/* No need to wait if the time since boot is already long enough.*/
-	if (us_since_boot > legacy_delay)
-		return;
-	stopwatch_init_msecs_expire(&sw, (legacy_delay - us_since_boot) / 1000);
-	printk(BIOS_NOTICE, "Wait remaining %d of %d us for legacy devices...",
-			legacy_delay - us_since_boot, legacy_delay);
-	stopwatch_wait_until_expired(&sw);
-	printk(BIOS_NOTICE, "done!\n");
-}
-
 static void finalize_boot(void *unused)
 {
 	/* Set coreboot ready LED. */
 	gpio_output(CNV_RGI_DT, 1);
 }
 
-BOOT_STATE_INIT_ENTRY(BS_DEV_ENUMERATE, BS_ON_ENTRY, wait_for_legacy_dev, NULL);
 BOOT_STATE_INIT_ENTRY(BS_PAYLOAD_BOOT, BS_ON_ENTRY, finalize_boot, NULL);

@@ -14,6 +14,7 @@
 #include <lib.h>
 #include <dimm_info_util.h>
 #include <vendorcode/amd/fsp/picasso/dmi_info.h>
+#include <device/dram/ddr4.h>
 
 /**
  * Populate dimm_info using AGESA TYPE17_DMI_INFO.
@@ -27,7 +28,9 @@ static void transfer_memory_info(const TYPE17_DMI_INFO *dmi17,
 
 	dimm->ddr_type = dmi17->MemoryType;
 
-	dimm->ddr_frequency = dmi17->Speed;
+	dimm->configured_speed_mts = ddr4_speed_mhz_to_reported_mts(dmi17->ConfigSpeed);
+
+	dimm->max_speed_mts = ddr4_speed_mhz_to_reported_mts(dmi17->Speed);
 
 	dimm->rank_per_dimm = dmi17->Attributes;
 

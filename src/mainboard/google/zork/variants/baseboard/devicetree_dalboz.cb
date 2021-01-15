@@ -3,41 +3,34 @@ chip soc/amd/picasso
 
 	# Set FADT Configuration
 	register "fadt_boot_arch" = "ACPI_FADT_LEGACY_DEVICES | ACPI_FADT_8042"
-	register "fadt_flags" = "ACPI_FADT_WBINVD | /* See table 5-34 ACPI 6.3 spec */
-				ACPI_FADT_C1_SUPPORTED |
-				ACPI_FADT_SLEEP_BUTTON |
-				ACPI_FADT_S4_RTC_WAKE |
-				ACPI_FADT_32BIT_TIMER |
-				ACPI_FADT_RESET_REGISTER |
-				ACPI_FADT_SEALED_CASE |
-				ACPI_FADT_PCI_EXPRESS_WAKE |
-				ACPI_FADT_REMOTE_POWER_ON"
+	# See table 5-34 ACPI 6.3 spec
+	register "fadt_flags" = "ACPI_FADT_SLEEP_BUTTON | ACPI_FADT_SEALED_CASE"
 
 	register "acp_pin_cfg" = "I2S_PINS_I2S_TDM"
-	register "acp_i2s_wake_enable" = "1"
-	register "acpi_pme_enable" = "1"
+	register "acp_i2s_wake_enable" = "0"
+	register "acp_pme_enable" = "0"
 
 	# Start : OPN Performance Configuration
 	# (Configuratin that is common for all variants)
 	# For the below fields, 0 indicates use SOC default
 
 	# PROCHOT_L de-assertion Ramp Time
-	register "prochot_l_deassertion_ramp_time" = "20" #mS
+	register "prochot_l_deassertion_ramp_time_ms" = "20"
 
 	# Lower die temperature limit
-	register "thermctl_limit" = "100" #degrees C
+	register "thermctl_limit_degreeC" = "100"
 
 	# FP5 Processor Voltage Supply PSI Currents
-	register "psi0_current_limit" = "18000" #mA
-	register "psi0_soc_current_limit" = "12000"  #mA
-	register "vddcr_soc_voltage_margin" = "0" #mV
-	register "vddcr_vdd_voltage_margin" = "0" #mV
+	register "psi0_current_limit_mA" = "18000"
+	register "psi0_soc_current_limit_mA" = "12000"
+	register "vddcr_soc_voltage_margin_mV" = "0"
+	register "vddcr_vdd_voltage_margin_mV" = "0"
 
 	# VRM Limits
-	register "vrm_maximum_current_limit" = "0"  #mA
-	register "vrm_soc_maximum_current_limit" = "0"  #mA
-	register "vrm_current_limit" = "0"  #mA
-	register "vrm_soc_current_limit" = "0" #mA
+	register "vrm_maximum_current_limit_mA" = "0"
+	register "vrm_soc_maximum_current_limit_mA" = "0"
+	register "vrm_current_limit_mA" = "0"
+	register "vrm_soc_current_limit_mA" = "0"
 
 	# Misc SMU settings
 	register "sb_tsi_alert_comparator_mode_en" = "0"
@@ -47,87 +40,107 @@ chip soc/amd/picasso
 
 	# End : OPN Performance Configuration
 
-	register "sd_emmc_config" = "SD_EMMC_EMMC_HS400"
+	register "emmc_config" = "{
+		.timing = SD_EMMC_EMMC_HS400,
+		.sdr104_hs400_driver_strength = SD_EMMC_DRIVE_STRENGTH_A,
+		/*
+		 * The reference design was missing a pull-up on the CMD line.
+		 * This means we can't run at the full 400 kHz. By setting this
+		 * to 1 we run at the slowest frequency possible by the
+		 * controller (~97 kHz).
+		 *
+		 * Boards that have the pull-up should correctly set this.
+		 */
+		.init_khz_preset = 1,
+	}"
 
-	register "xhci0_force_gen1" = "0"
+	register "has_usb2_phy_tune_params" = "1"
 
 	# Controller0 Port0 Default
-	register "usb_2_port_0_tune_params" = "{
+	register "usb_2_port_tune_params[0]" = "{
 		.com_pds_tune = 0x03,
 		.sq_rx_tune = 0x3,
 		.tx_fsls_tune = 0x3,
 		.tx_pre_emp_amp_tune = 0x03,
 		.tx_pre_emp_pulse_tune = 0x0,
 		.tx_rise_tune = 0x1,
-		.rx_vref_tune = 0x6,
+		.tx_vref_tune = 0x6,
 		.tx_hsxv_tune = 0x3,
 		.tx_res_tune = 0x01,
 	}"
 
 	# Controller0 Port1 Default
-	register "usb_2_port_1_tune_params" = "{
+	register "usb_2_port_tune_params[1]" = "{
 		.com_pds_tune = 0x03,
 		.sq_rx_tune = 0x3,
 		.tx_fsls_tune = 0x3,
 		.tx_pre_emp_amp_tune = 0x03,
 		.tx_pre_emp_pulse_tune = 0x0,
 		.tx_rise_tune = 0x1,
-		.rx_vref_tune = 0x6,
+		.tx_vref_tune = 0x6,
 		.tx_hsxv_tune = 0x3,
 		.tx_res_tune = 0x01,
 	}"
 
 	# Controller0 Port2 Default
-	register "usb_2_port_2_tune_params" = "{
+	register "usb_2_port_tune_params[2]" = "{
 		.com_pds_tune = 0x03,
 		.sq_rx_tune = 0x3,
 		.tx_fsls_tune = 0x3,
 		.tx_pre_emp_amp_tune = 0x03,
 		.tx_pre_emp_pulse_tune = 0x0,
 		.tx_rise_tune = 0x1,
-		.rx_vref_tune = 0x6,
+		.tx_vref_tune = 0x6,
 		.tx_hsxv_tune = 0x3,
 		.tx_res_tune = 0x01,
 	}"
 
 	# Controller0 Port3 Default
-	register "usb_2_port_3_tune_params" = "{
+	register "usb_2_port_tune_params[3]" = "{
 		.com_pds_tune = 0x03,
 		.sq_rx_tune = 0x3,
 		.tx_fsls_tune = 0x3,
 		.tx_pre_emp_amp_tune = 0x03,
 		.tx_pre_emp_pulse_tune = 0x0,
 		.tx_rise_tune = 0x1,
-		.rx_vref_tune = 0x6,
+		.tx_vref_tune = 0x6,
 		.tx_hsxv_tune = 0x3,
 		.tx_res_tune = 0x01,
 	}"
 
 	# Controller1 Port0 Default
-	register "usb_2_port_4_tune_params" = "{
+	register "usb_2_port_tune_params[4]" = "{
 		.com_pds_tune = 0x03,
 		.sq_rx_tune = 0x3,
 		.tx_fsls_tune = 0x3,
 		.tx_pre_emp_amp_tune = 0x02,
 		.tx_pre_emp_pulse_tune = 0x0,
 		.tx_rise_tune = 0x1,
-		.rx_vref_tune = 0x5,
+		.tx_vref_tune = 0x5,
 		.tx_hsxv_tune = 0x3,
 		.tx_res_tune = 0x01,
 	}"
 
 	# Controller1 Port1 Default
-	register "usb_2_port_5_tune_params" = "{
+	register "usb_2_port_tune_params[5]" = "{
 		.com_pds_tune = 0x03,
 		.sq_rx_tune = 0x3,
 		.tx_fsls_tune = 0x3,
 		.tx_pre_emp_amp_tune = 0x02,
 		.tx_pre_emp_pulse_tune = 0x0,
 		.tx_rise_tune = 0x1,
-		.rx_vref_tune = 0x5,
+		.tx_vref_tune = 0x5,
 		.tx_hsxv_tune = 0x3,
 		.tx_res_tune = 0x01,
 	}"
+
+	# USB OC pin mapping
+	register "usb_port_overcurrent_pin[0]" = "USB_OC_PIN_0"	# USB C0
+	register "usb_port_overcurrent_pin[1]" = "USB_OC_PIN_1"	# USB C1
+	register "usb_port_overcurrent_pin[2]" = "USB_OC_PIN_0"	# USB A0
+	register "usb_port_overcurrent_pin[3]" = "USB_OC_PIN_1"	# USB A1
+	register "usb_port_overcurrent_pin[4]" = "USB_OC_NONE"	# Camera
+	register "usb_port_overcurrent_pin[5]" = "USB_OC_NONE"	# Bluetooth
 
 	# SPI Configuration
 	register "common_config.spi_config" = "{
@@ -177,6 +190,15 @@ chip soc/amd/picasso
 
 	register "i2c_scl_reset" = "GPIO_I2C2_SCL | GPIO_I2C3_SCL"
 
+	# genral purpose PCIe clock output configuration
+	register "gpp_clk_config[0]" = "GPP_CLK_REQ" # WLAN
+	register "gpp_clk_config[1]" = "GPP_CLK_REQ" # SD Reader
+	register "gpp_clk_config[2]" = "GPP_CLK_REQ" # NVME SSD
+	register "gpp_clk_config[3]" = "GPP_CLK_OFF"
+	register "gpp_clk_config[4]" = "GPP_CLK_OFF"
+	register "gpp_clk_config[5]" = "GPP_CLK_OFF"
+	register "gpp_clk_config[6]" = "GPP_CLK_OFF"
+
 	device cpu_cluster 0 on
 		device lapic 0 on end
 	end
@@ -188,7 +210,12 @@ chip soc/amd/picasso
 		device pci 0.2 on  end # IOMMU
 		device pci 1.0 on  end # Dummy Host Bridge, must be enabled
 		device pci 1.1 off end # GPP Bridge 0
-		device pci 1.2 on  end # GPP Bridge 1 - Wifi
+		device pci 1.2 on      # GPP Bridge 1 - Wifi
+			chip drivers/wifi/generic
+				register "wake" = "GEVENT_8"
+				device pci 00.0 on  end
+			end
+		end
 		device pci 1.3 on  end # GPP Bridge 2 - SD
 		device pci 1.4 off end # GPP Bridge 3
 		device pci 1.5 off end # GPP Bridge 4
@@ -234,6 +261,7 @@ chip soc/amd/picasso
 						chip drivers/usb/acpi
 							register "desc" = ""Bluetooth""
 							register "type" = "UPC_TYPE_INTERNAL"
+							register "reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPIO_143)"
 							device usb 2.5 on end
 						end
 						chip drivers/usb/acpi
@@ -279,11 +307,11 @@ chip soc/amd/picasso
 					device generic 0.0 on end
 				end
 			end # Audio
-			device pci 0.6 on  end # HDA
+			device pci 0.6 off end # HDA
 			device pci 0.7 on  end # non-Sensor Fusion Hub device
 		end
-		device pci 8.2 on      # Internal GPP Bridge 0 to Bus B
-			device pci 0.0 on  end # AHCI
+		device pci 8.2 off     # Internal GPP Bridge 0 to Bus B
+			device pci 0.0 off end # AHCI
 		end
 		device pci 14.0 on  end # SM
 		device pci 14.3 on  # - D14F3 bridge
@@ -298,11 +326,14 @@ chip soc/amd/picasso
 								register "name" = ""RT58""
 								register "uid" = "1"
 								register "desc" = ""Realtek RT5682""
-								register "irq_gpio" = "ACPI_GPIO_IRQ_EDGE_BOTH(62)"
-								register "property_count" = "1"
+								register "irq_gpio" = "ACPI_GPIO_IRQ_EDGE_BOTH(GPIO_84)"
+								register "property_count" = "2"
 								register "property_list[0].type" = "ACPI_DP_TYPE_INTEGER"
 								register "property_list[0].name" = ""realtek,jd-src""
 								register "property_list[0].integer" = "1"
+								register "property_list[1].type" = "ACPI_DP_TYPE_STRING"
+								register "property_list[1].name" = ""realtek,mclk-name""
+								register "property_list[1].string" = ""oscout1""
 								device i2c 1a on end
 							end
 						end

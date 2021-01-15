@@ -2,9 +2,9 @@
 
 if SOC_INTEL_COOPERLAKE_SP
 
-config MAINBOARD_USES_FSP2_0
-	  bool
-	  default y
+config SOC_SPECIFIC_OPTIONS
+	def_bool y
+	select MICROCODE_BLOB_NOT_HOOKED_UP
 
 config FSP_HEADER_PATH
 	  string "Location of FSP headers"
@@ -19,24 +19,37 @@ config MAX_CPUS
 	int
 	default 255
 
+config CPU_ADDR_BITS
+	int
+	default 46
+
 config PCR_BASE_ADDRESS
 	hex
 	default 0xfd000000
 	help
 	  This option allows you to select MMIO Base Address of sideband bus.
 
-# currently FSP hardcodes [0fe800000;fe930000] for its heap
 config DCACHE_RAM_BASE
 	hex
-	default 0xfe9a0000
+	default 0xfe800000
 
 config DCACHE_RAM_SIZE
 	hex
-	default 0x60000
+	default 0x1fff00
+	help
+	  The size of the cache-as-ram region required during bootblock
+	  and/or romstage. FSP-T reserves the upper 0x100 for
+	  FspReservedBuffer.
 
 config DCACHE_BSP_STACK_SIZE
 	hex
-	default 0x10000
+	default 0x140000
+	help
+	  The amount of anticipated stack usage in CAR by bootblock and
+	  other stages. It needs to include FSP-M stack requirement and
+	  CB romstage stack requirement. The integration documentation
+	  says this needs to be 256KiB, but practice show this needs to
+	  be a lot more.
 
 config CPU_MICROCODE_CBFS_LOC
 	hex
@@ -54,18 +67,58 @@ config HEAP_SIZE
 	hex
 	default 0x80000
 
+config STACK_SIZE
+	hex
+	default 0x4000
+
 config FSP_TEMP_RAM_SIZE
 	hex
 	depends on FSP_USES_CB_STACK
-	default 0x70000
+	default 0x40000
 	help
 	  The amount of anticipated heap usage in CAR by FSP.
 	  Refer to Platform FSP integration guide document to know
-	  the exact FSP requirement for Heap setup.
+	  the exact FSP requirement for Heap setup.  The FSP integration
+	  documentation says this needs to be at least 128KiB, but practice
+	  show this needs to be 256KiB or more.
+
+config IED_REGION_SIZE
+	hex
+	default 0x400000
 
 config SOC_INTEL_COMMON_BLOCK_P2SB
 	def_bool y
 
-select CACHE_MRC_SETTINGS
+config CPU_BCLK_MHZ
+	int
+	default 100
+
+# CPX-SP has 2 IMCs, 3 channels per IMC, 2 DIMMs per channel
+# Default value is set to one socket, full config.
+config DIMM_MAX
+	int
+	default 12
+
+# DDR4
+config DIMM_SPD_SIZE
+	int
+	default 512
+
+if INTEL_TXT
+
+config INTEL_TXT_SINIT_SIZE
+	hex
+	default 0x50000
+	help
+	  According to document number 572782 this needs to be 256KiB
+	  for the SINIT module and 64KiB for SINIT data.
+
+config INTEL_TXT_HEAP_SIZE
+	hex
+	default 0xf0000
+	help
+	  This must be 960KiB according to 572782.
+
+endif # INTEL_TXT
 
 endif

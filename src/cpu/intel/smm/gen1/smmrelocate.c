@@ -25,7 +25,6 @@
 #define  G_SMRAME	(1 << 3)
 #define  C_BASE_SEG	((0 << 2) | (1 << 1) | (0 << 0))
 
-
 /* On model_6fx, model_1067x and model_106cx SMRR functions slightly
    differently. The MSR are at different location from the rest
    and need to be explicitly enabled in IA32_FEATURE_CONTROL MSR. */
@@ -60,8 +59,8 @@ static void write_smrr_alt(struct smm_relocation_params *relo_params)
 	printk(BIOS_DEBUG, "Writing SMRR. base = 0x%08x, mask=0x%08x\n",
 	       relo_params->smrr_base.lo, relo_params->smrr_mask.lo);
 
-	wrmsr(MSR_SMRR_PHYS_BASE, relo_params->smrr_base);
-	wrmsr(MSR_SMRR_PHYS_MASK, relo_params->smrr_mask);
+	wrmsr(CORE2_SMRR_PHYS_BASE, relo_params->smrr_base);
+	wrmsr(CORE2_SMRR_PHYS_MASK, relo_params->smrr_mask);
 }
 
 static void fill_in_relocation_params(struct smm_relocation_params *params)

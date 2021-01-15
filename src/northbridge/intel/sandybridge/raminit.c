@@ -54,8 +54,47 @@ static void disable_channel(ramctr_timing *ctrl, int channel)
 	memset(&ctrl->info.dimm[channel][0], 0, sizeof(ctrl->info.dimm[0]));
 }
 
-/* Fill cbmem with information for SMBIOS type 17 */
-static void fill_smbios17(ramctr_timing *ctrl)
+static bool nb_supports_ecc(const uint32_t capid0_a)
+{
+	return !(capid0_a & CAPID_ECCDIS);
+}
+
+static uint16_t nb_slots_per_channel(const uint32_t capid0_a)
+{
+	return !(capid0_a & CAPID_DDPCD) + 1;
+}
+
+static uint16_t nb_number_of_channels(const uint32_t capid0_a)
+{
+	return !(capid0_a & CAPID_PDCD) + 1;
+}
+
+static uint32_t nb_max_chan_capacity_mib(const uint32_t capid0_a)
+{
+	uint32_t ddrsz;
+
+	/* Values from documentation, which assume two DIMMs per channel */
+	switch (CAPID_DDRSZ(capid0_a)) {
+	case 1:
+		ddrsz = 8192;
+		break;
+	case 2:
+		ddrsz = 2048;
+		break;
+	case 3:
+		ddrsz = 512;
+		break;
+	default:
+		ddrsz = 16384;
+		break;
+	}
+
+	/* Account for the maximum number of DIMMs per channel */
+	return (ddrsz / 2) * nb_slots_per_channel(capid0_a);
+}
+
+/* Fill cbmem with information for SMBIOS type 16 and type 17 */
+static void setup_sdram_meminfo(ramctr_timing *ctrl)
 {
 	int channel, slot;
 	const u16 ddr_freq = (1000 << 8) / ctrl->tCK;
@@ -66,6 +105,19 @@ static void fill_smbios17(ramctr_timing *ctrl)
 		if (ret != CB_SUCCESS)
 			printk(BIOS_ERR, "RAMINIT: Failed to add SMBIOS17\n");
 	}
+
+	/* The 'spd_add_smbios17' function allocates this CBMEM area */
+	struct memory_info *m = cbmem_find(CBMEM_ID_MEMINFO);
+	if (m == NULL)
+		return;
+
+	const uint32_t capid0_a = pci_read_config32(HOST_BRIDGE, CAPID0_A);
+
+	const uint16_t channels = nb_number_of_channels(capid0_a);
+
+	m->ecc_capable = nb_supports_ecc(capid0_a);
+	m->max_capacity_mib = channels * nb_max_chan_capacity_mib(capid0_a);
+	m->number_of_devices = channels * nb_slots_per_channel(capid0_a);
 }
 
 /* Return CRC16 match for all SPDs */
@@ -101,7 +153,6 @@ static void dram_find_spds_ddr3(spd_raw_data *spd, ramctr_timing *ctrl)
 	int dimms = 0, ch_dimms;
 	int channel, slot, spd_slot;
 	bool can_use_ecc = ctrl->ecc_supported;
-	dimm_info *dimm = &ctrl->info;
 
 	memset (ctrl->rankmap, 0, sizeof(ctrl->rankmap));
 
@@ -115,10 +166,8 @@ static void dram_find_spds_ddr3(spd_raw_data *spd, ramctr_timing *ctrl)
 		/* Count dimms on channel */
 		for (slot = 0; slot < NUM_SLOTS; slot++) {
 			spd_slot = 2 * channel + slot;
-			printk(BIOS_DEBUG, "SPD probe channel%d, slot%d\n", channel, slot);
 
-			spd_decode_ddr3(&dimm->dimm[channel][slot], spd[spd_slot]);
-			if (dimm->dimm[channel][slot].dram_type == SPD_MEMORY_TYPE_SDRAM_DDR3)
+			if (spd[spd_slot][SPD_MEMORY_TYPE] == SPD_MEMORY_TYPE_SDRAM_DDR3)
 				ch_dimms++;
 		}
 
@@ -126,70 +175,74 @@ static void dram_find_spds_ddr3(spd_raw_data *spd, ramctr_timing *ctrl)
 			spd_slot = 2 * channel + slot;
 			printk(BIOS_DEBUG, "SPD probe channel%d, slot%d\n", channel, slot);
 
+			dimm_attr *const dimm = &ctrl->info.dimm[channel][slot];
+
 			/* Search for XMP profile */
-			spd_xmp_decode_ddr3(&dimm->dimm[channel][slot], spd[spd_slot],
+			spd_xmp_decode_ddr3(dimm, spd[spd_slot],
 					DDR3_XMP_PROFILE_1);
 
-			if (dimm->dimm[channel][slot].dram_type != SPD_MEMORY_TYPE_SDRAM_DDR3) {
+			if (dimm->dram_type != SPD_MEMORY_TYPE_SDRAM_DDR3) {
 				printram("No valid XMP profile found.\n");
-				spd_decode_ddr3(&dimm->dimm[channel][slot], spd[spd_slot]);
+				spd_decode_ddr3(dimm, spd[spd_slot]);
 
-			} else if (ch_dimms > dimm->dimm[channel][slot].dimms_per_channel) {
+			} else if (ch_dimms > dimm->dimms_per_channel) {
 				printram(
 				"XMP profile supports %u DIMMs, but %u DIMMs are installed.\n",
-					dimm->dimm[channel][slot].dimms_per_channel, ch_dimms);
+					dimm->dimms_per_channel, ch_dimms);
 
 				if (CONFIG(NATIVE_RAMINIT_IGNORE_XMP_MAX_DIMMS))
 					printk(BIOS_WARNING,
 						"XMP maximum DIMMs will be ignored.\n");
 				else
-					spd_decode_ddr3(&dimm->dimm[channel][slot],
-							spd[spd_slot]);
+					spd_decode_ddr3(dimm, spd[spd_slot]);
 
-			} else if (dimm->dimm[channel][slot].voltage != 1500) {
+			} else if (dimm->voltage != 1500) {
 				/* TODO: Support DDR3 voltages other than 1500mV */
 				printram("XMP profile's requested %u mV is unsupported.\n",
-						 dimm->dimm[channel][slot].voltage);
-				spd_decode_ddr3(&dimm->dimm[channel][slot], spd[spd_slot]);
+						 dimm->voltage);
+
+				if (CONFIG(NATIVE_RAMINIT_IGNORE_XMP_REQUESTED_VOLTAGE))
+					printk(BIOS_WARNING,
+						"XMP requested voltage will be ignored.\n");
+				else
+					spd_decode_ddr3(dimm, spd[spd_slot]);
 			}
 
 			/* Fill in CRC16 for MRC cache */
 			ctrl->spd_crc[channel][slot] =
 				spd_ddr3_calc_unique_crc(spd[spd_slot], sizeof(spd_raw_data));
 
-			if (dimm->dimm[channel][slot].dram_type != SPD_MEMORY_TYPE_SDRAM_DDR3) {
+			if (dimm->dram_type != SPD_MEMORY_TYPE_SDRAM_DDR3) {
 				/* Mark DIMM as invalid */
-				dimm->dimm[channel][slot].ranks   = 0;
-				dimm->dimm[channel][slot].size_mb = 0;
+				dimm->ranks   = 0;
+				dimm->size_mb = 0;
 				continue;
 			}
 
-			dram_print_spd_ddr3(&dimm->dimm[channel][slot]);
+			dram_print_spd_ddr3(dimm);
 			dimms++;
 			ctrl->rank_mirror[channel][slot * 2] = 0;
-			ctrl->rank_mirror[channel][slot * 2 + 1] =
-				dimm->dimm[channel][slot].flags.pins_mirrored;
+			ctrl->rank_mirror[channel][slot * 2 + 1] = dimm->flags.pins_mirrored;
 
-			ctrl->channel_size_mb[channel] += dimm->dimm[channel][slot].size_mb;
+			ctrl->channel_size_mb[channel] += dimm->size_mb;
 
-			if (!dimm->dimm[channel][slot].flags.is_ecc)
+			if (!dimm->flags.is_ecc)
 				can_use_ecc = false;
 
-			ctrl->auto_self_refresh &= dimm->dimm[channel][slot].flags.asr;
+			ctrl->auto_self_refresh &= dimm->flags.asr;
 
-			ctrl->extended_temperature_range &=
-				dimm->dimm[channel][slot].flags.ext_temp_refresh;
+			ctrl->extended_temperature_range &= dimm->flags.ext_temp_refresh;
 
-			ctrl->rankmap[channel] |=
-				((1 << dimm->dimm[channel][slot].ranks) - 1) << (2 * slot);
+			ctrl->rankmap[channel] |= ((1 << dimm->ranks) - 1) << (2 * slot);
 
 			printk(BIOS_DEBUG, "channel[%d] rankmap = 0x%x\n", channel,
 				ctrl->rankmap[channel]);
 		}
-		if ((ctrl->rankmap[channel] & 0x03) && (ctrl->rankmap[channel] & 0x0c)
-				&& dimm->dimm[channel][0].reference_card <= 5
-				&& dimm->dimm[channel][1].reference_card <= 5) {
 
+		const u8 rc_0 = ctrl->info.dimm[channel][0].reference_card;
+		const u8 rc_1 = ctrl->info.dimm[channel][1].reference_card;
+
+		if (ch_dimms == NUM_SLOTS && rc_0 < 6 && rc_1 < 6) {
 			const int ref_card_offset_table[6][6] = {
 				{ 0, 0, 0, 0, 2, 2 },
 				{ 0, 0, 0, 0, 2, 2 },
@@ -198,9 +251,7 @@ static void dram_find_spds_ddr3(spd_raw_data *spd, ramctr_timing *ctrl)
 				{ 2, 2, 2, 1, 0, 0 },
 				{ 2, 2, 2, 1, 0, 0 },
 			};
-			ctrl->ref_card_offset[channel] = ref_card_offset_table
-					[dimm->dimm[channel][0].reference_card]
-					[dimm->dimm[channel][1].reference_card];
+			ctrl->ref_card_offset[channel] = ref_card_offset_table[rc_0][rc_1];
 		} else {
 			ctrl->ref_card_offset[channel] = 0;
 		}
@@ -245,7 +296,7 @@ static void init_dram_ddr3(int s3resume, const u32 cpuid)
 	int me_uma_size, cbmem_was_inited, fast_boot, err;
 	ramctr_timing ctrl;
 	spd_raw_data spds[4];
-	struct region_device rdev;
+	size_t mrc_size;
 	ramctr_timing *ctrl_cached = NULL;
 
 	MCHBAR32(SAPMCTL) |= 1;
@@ -258,7 +309,7 @@ static void init_dram_ddr3(int s3resume, const u32 cpuid)
 
 	wait_txt_clear();
 
-	wrmsr(0x000002e6, (msr_t) { .lo = 0, .hi = 0 });
+	wrmsr(0x2e6, (msr_t) { .lo = 0, .hi = 0 });
 
 	const u32 sskpd = MCHBAR32(SSKPD);	// !!! = 0x00000000
 	if ((pci_read_config16(SOUTHBRIDGE, 0xa2) & 0xa0) == 0x20 && sskpd && !s3resume) {
@@ -272,10 +323,11 @@ static void init_dram_ddr3(int s3resume, const u32 cpuid)
 	early_thermal_init();
 
 	/* Try to find timings in MRC cache */
-	err = mrc_cache_get_current(MRC_TRAINING_DATA, MRC_CACHE_VERSION, &rdev);
-
-	if (!err && !(region_device_sz(&rdev) < sizeof(ctrl)))
-		ctrl_cached = rdev_mmap_full(&rdev);
+	ctrl_cached = mrc_cache_current_mmap_leak(MRC_TRAINING_DATA,
+						  MRC_CACHE_VERSION,
+						  &mrc_size);
+	if (mrc_size < sizeof(ctrl))
+		ctrl_cached = NULL;
 
 	/* Before reusing training data, assert that the CPU has not been replaced */
 	if (ctrl_cached && cpuid != ctrl_cached->cpu) {
@@ -364,14 +416,44 @@ static void init_dram_ddr3(int s3resume, const u32 cpuid)
 
 	set_scrambling_seed(&ctrl);
 
+	if (!s3resume && ctrl.ecc_enabled)
+		channel_scrub(&ctrl);
+
 	set_normal_operation(&ctrl);
 
 	final_registers(&ctrl);
 
+	/* can't do this earlier because it needs to be done in normal operation */
+	if (CONFIG(DEBUG_RAM_SETUP) && !s3resume && ctrl.ecc_enabled) {
+		uint32_t i, tseg = pci_read_config32(HOST_BRIDGE, TSEGMB);
+
+		printk(BIOS_INFO, "RAMINIT: ECC scrub test on first channel up to 0x%x\n",
+		       tseg);
+
+		/*
+		 * This test helps to debug the ECC scrubbing.
+		 * It likely tests every channel/rank, as rank interleave and enhanced
+		 * interleave are enabled, but there's no guarantee for it.
+		 */
+
+		/* Skip first MB to avoid special case for A-seg and test up to TSEG */
+		for (i = 1; i < tseg >> 20; i++) {
+			for (int j = 0; j < 1 * MiB; j += 4096) {
+				uintptr_t addr = i * MiB + j;
+				if (read32((u32 *)addr) == 0)
+					continue;
+
+				printk(BIOS_ERR, "RAMINIT: ECC scrub: DRAM not cleared at"
+				       " addr 0x%lx\n", addr);
+				break;
+			}
+		}
+		printk(BIOS_INFO, "RAMINIT: ECC scrub test done.\n");
+	}
+
 	/* Zone config */
 	dram_zones(&ctrl, 0);
 
-	intel_early_me_status();
 	intel_early_me_init_done(ME_INIT_STATUS_SUCCESS);
 	intel_early_me_status();
 
@@ -386,7 +468,7 @@ static void init_dram_ddr3(int s3resume, const u32 cpuid)
 	}
 
 	if (!s3resume)
-		fill_smbios17(&ctrl);
+		setup_sdram_meminfo(&ctrl);
 }
 
 void perform_raminit(int s3resume)

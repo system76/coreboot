@@ -5,7 +5,6 @@
 
 #include <commonlib/helpers.h>
 #include <stdint.h>
-#include "vendorcode/google/chromeos/gnvs.h"
 
 struct __packed global_nvs {
 	/* Miscellaneous */
@@ -99,12 +98,9 @@ struct __packed global_nvs {
 	u8	rsvd11[6];
 	/* XHCI */
 	u8	xhci;
-	u8	rsvd13[76]; /* 0xf5 - rsvd */
 
-	/* ChromeOS specific (starts at 0x100)*/
-	chromeos_acpi_t chromeos;
+	u32     cbmc;
+	u8	rsvd13[72]; /* rsvd */
 };
-
-check_member(global_nvs, chromeos, GNVS_CHROMEOS_ACPI_OFFSET);
 
 #endif /* SOUTHBRIDGE_INTEL_IBEXPEAK_NVS_H */

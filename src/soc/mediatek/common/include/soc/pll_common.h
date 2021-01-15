@@ -3,6 +3,7 @@
 #ifndef SOC_MEDIATEK_PLL_COMMON_H
 #define SOC_MEDIATEK_PLL_COMMON_H
 
+#include <device/mmio.h>
 #include <soc/addressmap.h>
 #include <types.h>
 
@@ -20,6 +21,8 @@
 
 struct mux {
 	void *reg;
+	void *set_reg;
+	void *clr_reg;
 	void *upd_reg;
 	u8 mux_shift;
 	u8 mux_width;
@@ -52,10 +55,25 @@ struct pll {
 		.div_rate = _div_rate,					\
 	}
 
+/* every PLL can share the same POWER_EN/ISO_EN/EN bits, use the common BITFIELD macro */
+DEFINE_BIT(PLL_ENABLE, 0)
+
+DEFINE_BIT(PLL_POWER_ENABLE, 0)
+DEFINE_BIT(PLL_ISO_ENABLE, 1)
+DEFINE_BITFIELD(PLL_POWER_ISO_ENABLE, 1, 0)
+
+DEFINE_BITFIELD(PLL_CON1, 31, 0)
+
 void pll_set_pcw_change(const struct pll *pll);
 void mux_set_sel(const struct mux *mux, u32 sel);
 int pll_set_rate(const struct pll *pll, u32 rate);
 void mt_pll_init(void);
-void mt_pll_raise_ca53_freq(u32 freq);
+void mt_pll_raise_little_cpu_freq(u32 freq);
+
+enum fmeter_type {
+	FMETER_ABIST = 0,
+	FMETER_CKGEN,
+};
+u32 mt_fmeter_get_freq_khz(enum fmeter_type type, u32 id);
 
 #endif

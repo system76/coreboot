@@ -1,16 +1,10 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#ifndef __PI_STONEYRIDGE_PCI_DEVS_H__
-#define __PI_STONEYRIDGE_PCI_DEVS_H__
+#ifndef AMD_STONEYRIDGE_PCI_DEVS_H
+#define AMD_STONEYRIDGE_PCI_DEVS_H
 
 #include <device/pci_def.h>
-
-#if !defined(__SIMPLE_DEVICE__)
-#include <device/device.h>
-#define _SOC_DEV(slot, func)	pcidev_on_root(slot, func)
-#else
-#define _SOC_DEV(slot, func)	PCI_DEV(0, slot, func)
-#endif
+#include <amdblocks/pci_devs.h>
 
 /* GNB Root Complex */
 #define GNB_DEV			0x0
@@ -207,4 +201,4 @@
 #define SD_DEVFN		PCI_DEVFN(SD_DEV, SD_FUNC)
 #define SOC_SD_DEV		_SOC_DEV(SD_DEV, SD_FUNC)
 
-#endif /* __PI_STONEYRIDGE_PCI_DEVS_H__ */
+#endif /* AMD_STONEYRIDGE_PCI_DEVS_H */

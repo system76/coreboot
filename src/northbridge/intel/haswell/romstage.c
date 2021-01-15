@@ -4,11 +4,14 @@
 #include <console/console.h>
 #include <cf9_reset.h>
 #include <device/device.h>
+#include <device/mmio.h>
 #include <timestamp.h>
 #include <cpu/x86/lapic.h>
 #include <cbmem.h>
 #include <commonlib/helpers.h>
 #include <romstage_handoff.h>
+#include <security/intel/txt/txt.h>
+#include <security/intel/txt/txt_register.h>
 #include <cpu/intel/haswell/haswell.h>
 #include <northbridge/intel/haswell/chip.h>
 #include <northbridge/intel/haswell/haswell.h>
@@ -51,7 +54,7 @@ void mainboard_romstage_entry(void)
 		.dmibar			= (uintptr_t)DEFAULT_DMIBAR,
 		.epbar			= DEFAULT_EPBAR,
 		.pciexbar		= CONFIG_MMCONF_BASE_ADDRESS,
-		.smbusbar		= SMBUS_IO_BASE,
+		.smbusbar		= CONFIG_FIXED_SMBUS_IO_BASE,
 		.hpet_address		= HPET_ADDR,
 		.rcba			= (uintptr_t)DEFAULT_RCBA,
 		.pmbase			= DEFAULT_PMBASE,
@@ -108,11 +111,26 @@ void mainboard_romstage_entry(void)
 
 	report_platform_info();
 
+	if (CONFIG(INTEL_TXT))
+		intel_txt_romstage_init();
+
 	copy_spd(&pei_data);
 
 	sdram_initialize(&pei_data);
 
 	timestamp_add_now(TS_AFTER_INITRAM);
+
+	if (CONFIG(INTEL_TXT)) {
+		printk(BIOS_DEBUG, "Check TXT_ERROR register after MRC\n");
+
+		intel_txt_log_acm_error(read32((void *)TXT_ERROR));
+
+		intel_txt_log_spad();
+
+		intel_txt_memory_has_secrets();
+
+		txt_dump_regions();
+	}
 
 	post_code(0x3b);
 

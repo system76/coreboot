@@ -2,8 +2,8 @@
 
 #include <delay.h>
 #include <halt.h>
-#include <soc/rtc_common.h>
 #include <soc/rtc.h>
+#include <soc/rtc_common.h>
 #include <soc/mt6358.h>
 #include <soc/pmic_wrap.h>
 #include <timer.h>
@@ -11,7 +11,7 @@
 #define RTC_GPIO_USER_MASK	  ((1 << 13) - (1 << 8))
 
 /* initialize rtc setting of using dcxo clock */
-static int rtc_enable_dcxo(void)
+static bool rtc_enable_dcxo(void)
 {
 	u16 bbpu, con, osc32con, sec;
 
@@ -20,9 +20,9 @@ static int rtc_enable_dcxo(void)
 	rtc_write_trigger();
 
 	mdelay(1);
-	if (!rtc_writeif_unlock()) { /* Unlock for reload */
+	if (!rtc_writeif_unlock()) {
 		rtc_info("rtc_writeif_unlock() failed\n");
-		return 0;
+		return false;
 	}
 
 	rtc_read(RTC_OSC32CON, &osc32con);
@@ -32,7 +32,7 @@ static int rtc_enable_dcxo(void)
 		    | RTC_EMB_K_EOSC32_MODE | RTC_EMBCK_SEL_OPTION;
 	if (!rtc_xosc_write(osc32con)) {
 		rtc_info("rtc_xosc_write() failed\n");
-		return 0;
+		return false;
 	}
 
 	rtc_read(RTC_CON, &con);
@@ -40,11 +40,11 @@ static int rtc_enable_dcxo(void)
 	rtc_read(RTC_AL_SEC, &sec);
 	rtc_info("con=0x%x, osc32con=0x%x, sec=0x%x\n", con, osc32con, sec);
 
-	return 1;
+	return true;
 }
 
 /* initialize rtc related gpio */
-static int rtc_gpio_init(void)
+bool rtc_gpio_init(void)
 {
 	u16 con;
 
@@ -67,7 +67,7 @@ static int rtc_gpio_init(void)
 	return rtc_write_trigger();
 }
 
-static u16 rtc_get_frequency_meter(u16 val, u16 measure_src, u16 window_size)
+u16 rtc_get_frequency_meter(u16 val, u16 measure_src, u16 window_size)
 {
 	u16 bbpu, osc32con;
 	u16 fqmtr_busy, fqmtr_data, fqmtr_rst, fqmtr_tcksel;
@@ -115,7 +115,7 @@ static u16 rtc_get_frequency_meter(u16 val, u16 measure_src, u16 window_size)
 		rtc_read(PMIC_RG_FQMTR_CON0, &fqmtr_busy);
 		if (stopwatch_expired(&sw)) {
 			rtc_info("get frequency time out !!\n");
-			return 0;
+			return false;
 		}
 	} while (fqmtr_busy & PMIC_FQMTR_CON0_BUSY);
 
@@ -142,95 +142,8 @@ static u16 rtc_get_frequency_meter(u16 val, u16 measure_src, u16 window_size)
 	return fqmtr_data;
 }
 
-/* 32k clock calibration */
-static u16 rtc_eosc_cali(void)
-{
-	u16 middle, diff1, diff2, cksel;
-	u16 val = 0;
-	u16 left = RTC_XOSCCALI_START, right = RTC_XOSCCALI_END;
-
-	rtc_read(PMIC_RG_FQMTR_CKSEL, &cksel);
-	cksel &= ~PMIC_FQMTR_CKSEL_MASK;
-	/* select EOSC_32 as fixed clock */
-	rtc_write(PMIC_RG_FQMTR_CKSEL, cksel | PMIC_FQMTR_FIX_CLK_EOSC_32K);
-	rtc_read(PMIC_RG_FQMTR_CKSEL, &cksel);
-	rtc_info("PMIC_RG_FQMTR_CKSEL=0x%x\n", cksel);
-
-	while (left <= right) {
-		middle = (right + left) / 2;
-		if (middle == left)
-			break;
-
-		/* select 26M as target clock */
-		val = rtc_get_frequency_meter(middle, PMIC_FQMTR_CON0_FQM26M_CK, 0);
-
-		if (val >= RTC_FQMTR_LOW_BASE && val <= RTC_FQMTR_HIGH_BASE)
-			break;
-		if (val > RTC_FQMTR_HIGH_BASE)
-			right = middle;
-		else
-			left = middle;
-	}
-
-	if (val >= RTC_FQMTR_LOW_BASE && val <= RTC_FQMTR_HIGH_BASE)
-		return middle;
-
-	val = rtc_get_frequency_meter(left, PMIC_FQMTR_CON0_FQM26M_CK, 0);
-	if (val > RTC_FQMTR_LOW_BASE)
-		diff1 = val - RTC_FQMTR_LOW_BASE;
-	else
-		diff1 = RTC_FQMTR_LOW_BASE - val;
-
-	val = rtc_get_frequency_meter(right, PMIC_FQMTR_CON0_FQM26M_CK, 0);
-	if (val > RTC_FQMTR_LOW_BASE)
-		diff2 = val - RTC_FQMTR_LOW_BASE;
-	else
-		diff2 = RTC_FQMTR_LOW_BASE - val;
-
-	if (diff1 < diff2)
-		return left;
-	else
-		return right;
-}
-
-void rtc_osc_init(void)
-{
-	u16 osc32con;
-
-	/* enable 32K export */
-	rtc_gpio_init();
-
-	/* Calibrate eosc32 for powerdown clock */
-	rtc_read(RTC_OSC32CON, &osc32con);
-	osc32con &= ~RTC_XOSCCALI_MASK;
-	osc32con |= rtc_eosc_cali() & RTC_XOSCCALI_MASK;
-	rtc_xosc_write(osc32con);
-	rtc_info("EOSC32 cali val = 0x%x\n", osc32con);
-}
-
-/* enable lpd subroutine */
-static int rtc_lpen(u16 con)
-{
-	con &= ~RTC_CON_LPRST;
-	rtc_write(RTC_CON, con);
-	if (!rtc_write_trigger())
-		return 0;
-
-	con |= RTC_CON_LPRST;
-	rtc_write(RTC_CON, con);
-	if (!rtc_write_trigger())
-		return 0;
-
-	con &= ~RTC_CON_LPRST;
-	rtc_write(RTC_CON, con);
-	if (!rtc_write_trigger())
-		return 0;
-
-	return 1;
-}
-
 /* low power detect setting */
-static int rtc_lpd_init(void)
+static bool rtc_lpd_init(void)
 {
 	u16 con, sec;
 
@@ -239,19 +152,19 @@ static int rtc_lpd_init(void)
 	sec |= RTC_LPD_OPT_F32K_CK_ALIVE;
 	rtc_write(RTC_AL_SEC, sec);
 	if (!rtc_write_trigger())
-		return 0;
+		return false;
 
 	/* init XOSC32 to detect 32k clock stop */
 	rtc_read(RTC_CON, &con);
 	con |= RTC_CON_XOSC32_LPEN;
 	if (!rtc_lpen(con))
-		return 0;
+		return false;
 
 	/* init EOSC32 to detect rtc low power */
 	rtc_read(RTC_CON, &con);
 	con |= RTC_CON_EOSC32_LPEN;
 	if (!rtc_lpen(con))
-		return 0;
+		return false;
 
 	rtc_read(RTC_CON, &con);
 	con &= ~RTC_CON_XOSC32_LPEN;
@@ -263,9 +176,9 @@ static int rtc_lpd_init(void)
 	sec |= RTC_LPD_OPT_EOSC_LPD;
 	rtc_write(RTC_AL_SEC, sec);
 	if (!rtc_write_trigger())
-		return 0;
+		return false;
 
-	return 1;
+	return true;
 }
 
 static bool rtc_hw_init(void)
@@ -291,16 +204,8 @@ static bool rtc_hw_init(void)
 	return true;
 }
 
-/* write powerkeys to enable rtc functions */
-static int rtc_powerkey_init(void)
-{
-	rtc_write(RTC_POWERKEY1, RTC_POWERKEY1_KEY);
-	rtc_write(RTC_POWERKEY2, RTC_POWERKEY2_KEY);
-	return rtc_write_trigger();
-}
-
 /* rtc init check */
-int rtc_init(u8 recover)
+int rtc_init(int recover)
 {
 	int ret;
 
@@ -320,6 +225,7 @@ int rtc_init(u8 recover)
 
 	rtc_osc_init();
 
+	/* In recovery mode, we need 20ms delay for register setting. */
 	if (recover)
 		mdelay(20);
 
@@ -343,7 +249,8 @@ int rtc_init(u8 recover)
 		goto err;
 	}
 
-	/* After lpd init, powerkeys need to be written again to enable
+	/*
+	 * After lpd init, powerkeys need to be written again to enable
 	 * low power detect function.
 	 */
 	if (!rtc_powerkey_init()) {

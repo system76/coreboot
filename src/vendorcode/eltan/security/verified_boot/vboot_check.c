@@ -33,7 +33,7 @@ int verified_boot_check_manifest(void)
 
 	sd = vb2_get_sd(ctx);
 
-	buffer = cbfs_boot_map_with_leak(RSA_PUBLICKEY_FILE_NAME, CBFS_TYPE_RAW, &size);
+	buffer = cbfs_map(RSA_PUBLICKEY_FILE_NAME, &size);
 	if (!buffer || !size) {
 		printk(BIOS_ERR, "ERROR: Public key not found!\n");
 		goto fail;
@@ -71,7 +71,7 @@ int verified_boot_check_manifest(void)
 	pre->flags = VB2_FIRMWARE_PREAMBLE_DISALLOW_HWCRYPTO;
 
 	/* Fill body_signature (vb2_structure). RSA2048 key is used */
-	cbfs_boot_map_with_leak("oemmanifest.bin", CBFS_TYPE_RAW, &size);
+	cbfs_map("oemmanifest.bin", &size);
 	if (size != ((CONFIG_VENDORCODE_ELTAN_OEM_MANIFEST_ITEMS * DIGEST_SIZE) + (2048/8))) {
 		printk(BIOS_ERR, "ERROR: Incorrect manifest size!\n");
 		goto fail;
@@ -183,7 +183,7 @@ void verified_boot_check_cbfsfile(const char *name, uint32_t type, uint32_t hash
 	void *start;
 	size_t size;
 
-	start = cbfs_boot_map_with_leak(name, type & ~VERIFIED_BOOT_COPY_BLOCK, &size);
+	start = cbfs_map(name, &size);
 	if (start && size) {
 		/* Speed up processing by copying the file content to memory first */
 		if (!ENV_ROMSTAGE_OR_BEFORE && (type & VERIFIED_BOOT_COPY_BLOCK)) {
@@ -345,12 +345,17 @@ int verified_boot_should_run_oprom(struct rom_header *rom_header)
 
 int prog_locate_hook(struct prog *prog)
 {
+	static int initialized;
+
 	if (ENV_BOOTBLOCK)
 		verified_boot_bootblock_check();
 
 	if (ENV_ROMSTAGE) {
-		if (prog->type == PROG_REFCODE)
+		if (!initialized && ((prog->type == PROG_REFCODE) ||
+		    (prog->type == PROG_POSTCAR))) {
 			verified_boot_early_check();
+			initialized = 1;
+		}
 
 		if (CONFIG(POSTCAR_STAGE) && prog->type == PROG_POSTCAR)
 			process_verify_list(postcar_verify_list);

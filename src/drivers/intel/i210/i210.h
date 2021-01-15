@@ -16,7 +16,6 @@
 #define  I210_DONE		0x02      /* command done bit */
 #define I210_TARGET_CHECKSUM	0xBABA    /* resulting checksum */
 
-
 /*define some other useful values here */
 #define I210_POLL_TIMEOUT_US	300000    /* 300 ms */
 /*Define some error states here*/
@@ -28,9 +27,10 @@
 #define I210_CHECKSUM_ERROR	0x00000010
 #define I210_FLASH_UPDATE_ERROR	0x00000020
 
+#define MAC_ADDR_LEN		6
+
 /* We need one function we can call to get a MAC address to use */
 /* This function can be coded somewhere else but must exist. */
-extern enum cb_err mainboard_get_mac_address(struct device *dev,
-						uint8_t mac[6]);
+extern enum cb_err mainboard_get_mac_address(struct device *dev, uint8_t mac[MAC_ADDR_LEN]);
 
 #endif /* _INTEL_I210_H_ */

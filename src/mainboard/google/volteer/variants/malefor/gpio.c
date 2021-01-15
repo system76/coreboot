@@ -155,7 +155,9 @@ static const struct pad_config gpio_table[] = {
 static const struct pad_config early_gpio_table[] = {
 	/* A12 : SATAXPCIE1 ==> M2_SSD_PEDET */
 	PAD_CFG_NF(GPP_A12, NONE, DEEP, NF1),
-
+	/* A13 : PMC_I2C_SCL ==> BT_DISABLE_L */
+	/* assert reset on reboot */
+	PAD_CFG_GPO(GPP_A13, 0, DEEP),
 	/* A17 : DDSP_HPDC ==> MEM_CH_SEL */
 	PAD_CFG_GPI(GPP_A17, NONE, DEEP),
 
@@ -183,8 +185,8 @@ static const struct pad_config early_gpio_table[] = {
 	/* C22 : UART2_RTS# ==> PCH_FPMCU_BOOT0 */
 	PAD_CFG_GPO(GPP_C22, 0, DEEP),
 
-	/* E12 : SPI1_MISO_IO1 ==> PEN_ALERT_ODL */
-	PAD_CFG_GPO(GPP_E12, 1, DEEP),
+	/* D16 : ISH_UART0_CTS# ==> EN_PP3300_SD */
+	PAD_CFG_GPO(GPP_D16, 1, DEEP),
 
 	/* H11 : SRCCLKREQ5# ==> WLAN_PERST_L */
 	PAD_CFG_GPO(GPP_H11, 1, DEEP),

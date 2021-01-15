@@ -55,7 +55,8 @@ subdirs-$(CONFIG_LP_CBFS) += libcbfs
 subdirs-$(CONFIG_LP_LZMA) += liblzma
 subdirs-$(CONFIG_LP_LZ4) += liblz4
 
-INCLUDES := -Iinclude -Iinclude/$(ARCHDIR-y) -I$(obj) -include include/kconfig.h
+INCLUDES := -Iinclude -Iinclude/$(ARCHDIR-y) -I$(obj)
+INCLUDES += -include include/kconfig.h -include include/compiler.h
 
 CFLAGS +=  $(EXTRA_CFLAGS) $(INCLUDES) -Os -pipe -nostdinc -ggdb3
 CFLAGS += -nostdlib -fno-builtin -ffreestanding -fomit-frame-pointer
@@ -64,7 +65,14 @@ CFLAGS += -Wall -Wundef -Wstrict-prototypes -Wmissing-prototypes -Wvla
 CFLAGS += -Wwrite-strings -Wredundant-decls -Wno-trigraphs -Wimplicit-fallthrough
 CFLAGS += -Wstrict-aliasing -Wshadow -Werror
 
-$(obj)/libpayload-config.h: $(KCONFIG_AUTOHEADER)
+ifeq ($(CONFIG_LP_LTO),y)
+CFLAGS += -flto
+endif
+
+$(obj)/libpayload.config: $(DOTCONFIG)
+	cp $< $@
+
+$(obj)/libpayload-config.h: $(KCONFIG_AUTOHEADER) $(obj)/libpayload.config
 	cmp $@ $< 2>/dev/null || cp $< $@
 
 library-targets = $(addsuffix .a,$(addprefix $(obj)/,$(libraries))) $(obj)/libpayload.a
@@ -116,7 +124,7 @@ install: real-target
 	install -m 755 bin/lpas $(DESTDIR)/libpayload/bin
 	install -m 644 bin/lp.functions $(DESTDIR)/libpayload/bin
 	install -m 644 $(DOTCONFIG) $(DESTDIR)/libpayload/libpayload.config
-	install -m 755 .xcompile $(DESTDIR)/libpayload/libpayload.xcompile
+	install -m 755 $(xcompile) $(DESTDIR)/libpayload/libpayload.xcompile
 
 clean-for-update-target:
 	rm -f $(addsuffix .a,$(addprefix $(obj)/,$(libraries))) $(obj)/libpayload.a

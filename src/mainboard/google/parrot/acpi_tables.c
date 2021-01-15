@@ -3,7 +3,6 @@
 #include <acpi/acpi.h>
 #include <acpi/acpi_gnvs.h>
 #include <device/device.h>
-#include <vendorcode/google/chromeos/gnvs.h>
 #include <ec/compal/ene932/ec.h>
 #include "ec.h"
 
@@ -12,7 +11,7 @@
 #include "thermal.h"
 #include "onboard.h"
 
-void acpi_create_gnvs(struct global_nvs *gnvs)
+void mainboard_fill_gnvs(struct global_nvs *gnvs)
 {
 	/* Disable USB ports in S3 by default */
 	gnvs->s3u0 = 0;
@@ -22,11 +21,8 @@ void acpi_create_gnvs(struct global_nvs *gnvs)
 	gnvs->s5u0 = 0;
 	gnvs->s5u1 = 0;
 
-
-#if CONFIG(CHROMEOS)
-	gnvs->chromeos.vbt2 = parrot_ec_running_ro() ?
-		ACTIVE_ECFW_RO : ACTIVE_ECFW_RW;
-#endif
+	if (CONFIG(CHROMEOS) && !parrot_ec_running_ro())
+		gnvs_set_ecfw_rw();
 
 	/* EC handles all active thermal and fan control on Parrot. */
 	gnvs->tcrt = CRITICAL_TEMPERATURE;

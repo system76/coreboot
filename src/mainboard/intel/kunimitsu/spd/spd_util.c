@@ -49,7 +49,6 @@ void mainboard_fill_rcomp_strength_data(void *rcomp_strength_ptr)
 	static const u16 StrengthendRcompTarget[5] = {
 		100, 40, 40, 21, 40 };
 
-
 	if (mem_cfg_id == K4E6E304EE_MEM_ID) {
 		memcpy(rcomp_strength_ptr, StrengthendRcompTarget,
 			sizeof(StrengthendRcompTarget));
@@ -69,8 +68,7 @@ uintptr_t mainboard_get_spd_data(void)
 	printk(BIOS_INFO, "SPD index %d\n", spd_index);
 
 	/* Load SPD data from CBFS */
-	spd_file = cbfs_boot_map_with_leak("spd.bin", CBFS_TYPE_SPD,
-		&spd_file_len);
+	spd_file = cbfs_map("spd.bin", &spd_file_len);
 	if (!spd_file)
 		die("SPD data not found.");
 

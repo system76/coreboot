@@ -1,13 +1,14 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
 #include <assert.h>
-#include <delay.h>
+#include <console/console.h>
 #include <lib.h>
 #include <soc/clock.h>
 #include <soc/gpio.h>
 #include <soc/qcom_qup_se.h>
 #include <soc/qupv3_config.h>
 #include <soc/qupv3_spi.h>
+#include <types.h>
 
 /* SE_SPI_LOOPBACK register fields */
 #define LOOPBACK_ENABLE	0x1

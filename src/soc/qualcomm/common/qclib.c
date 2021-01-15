@@ -3,18 +3,22 @@
 #include <console/cbmem_console.h>
 #include <cbmem.h>
 #include <boardid.h>
+#include <bootmode.h>
 #include <string.h>
 #include <fmap.h>
 #include <assert.h>
 #include <arch/mmu.h>
 #include <cbfs.h>
 #include <console/console.h>
+#include <mrc_cache.h>
 #include <soc/mmu.h>
 #include <soc/mmu_common.h>
 #include <soc/qclib_common.h>
 #include <soc/symbols_common.h>
 #include <security/vboot/misc.h>
 #include <vb2_api.h>
+
+#define QCLIB_VERSION 0
 
 struct qclib_cb_if_table qclib_cb_if_table = {
 	.magic = QCLIB_MAGIC_NUMBER,
@@ -70,9 +74,8 @@ static void write_table_entry(struct qclib_cb_if_table_entry *te)
 
 	} else if (!strncmp(QCLIB_TE_DDR_TRAINING_DATA, te->name,
 			sizeof(te->name))) {
-
-		assert(fmap_overwrite_area(QCLIB_FR_DDR_TRAINING_DATA,
-			(const void *)te->blob_address, te->size));
+		assert(!mrc_cache_stash_data(MRC_TRAINING_DATA, QCLIB_VERSION,
+					     (const void *)te->blob_address, te->size));
 
 	} else if (!strncmp(QCLIB_TE_LIMITS_CFG_DATA, te->name,
 			sizeof(te->name))) {
@@ -112,7 +115,7 @@ __weak int qclib_soc_blob_load(void) { return 0; }
 void qclib_load_and_run(void)
 {
 	int i;
-	ssize_t ssize;
+	ssize_t data_size;
 	struct mmu_context pre_qclib_mmu_context;
 
 	/* zero ddr_information SRAM region, needs new data each boot */
@@ -128,12 +131,14 @@ void qclib_load_and_run(void)
 	qclib_add_if_table_entry(QCLIB_TE_DDR_INFORMATION, NULL, 0, 0);
 
 	/* Attempt to load DDR Training Blob */
-	ssize = fmap_read_area(QCLIB_FR_DDR_TRAINING_DATA, _ddr_training,
-		REGION_SIZE(ddr_training));
-	if (ssize < 0)
-		goto fail;
+	data_size = mrc_cache_load_current(MRC_TRAINING_DATA, QCLIB_VERSION,
+					   _ddr_training, REGION_SIZE(ddr_training));
+	if (data_size < 0) {
+		printk(BIOS_ERR, "Unable to load previous training data.\n");
+		memset(_ddr_training, 0, REGION_SIZE(ddr_training));
+	}
 	qclib_add_if_table_entry(QCLIB_TE_DDR_TRAINING_DATA,
-				 _ddr_training, ssize, 0);
+				 _ddr_training, REGION_SIZE(ddr_training), 0);
 
 	/* hook for SoC specific binary blob loads */
 	if (qclib_soc_blob_load()) {

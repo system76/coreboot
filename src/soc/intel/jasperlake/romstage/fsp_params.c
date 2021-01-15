@@ -2,7 +2,9 @@
 
 #include <assert.h>
 #include <console/console.h>
+#include <device/device.h>
 #include <fsp/util.h>
+#include <soc/iomap.h>
 #include <soc/pci_devs.h>
 #include <soc/romstage.h>
 #include <soc/soc_chip.h>
@@ -12,18 +14,16 @@ static void soc_memory_init_params(FSP_M_CONFIG *m_cfg,
 		const struct soc_intel_jasperlake_config *config)
 {
 	unsigned int i;
-	const struct device *dev = pcidev_path_on_root(SA_DEVFN_IGD);
+	const struct device *dev;
 	uint32_t mask = 0;
 
-	if (!dev || !dev->enabled) {
-		/* Skip IGD initialization in FSP if device is disabled in devicetree.cb */
-		m_cfg->InternalGfx = 0;
-		m_cfg->IgdDvmt50PreAlloc = 0;
-	} else {
-		m_cfg->InternalGfx = 1;
-		/* Set IGD stolen size to 60MB. */
-		m_cfg->IgdDvmt50PreAlloc = 0xFE;
-	}
+	/*
+	 * If IGD is enabled, set IGD stolen size to 60MB.
+	 * Otherwise, skip IGD init in FSP.
+	 */
+	dev = pcidev_path_on_root(SA_DEVFN_IGD);
+	m_cfg->InternalGfx = is_dev_enabled(dev);
+	m_cfg->IgdDvmt50PreAlloc = m_cfg->InternalGfx ? 0xFE : 0;
 
 	m_cfg->TsegSize = CONFIG_SMM_TSEG_SIZE;
 	m_cfg->SaGv = config->SaGv;
@@ -61,15 +61,18 @@ static void soc_memory_init_params(FSP_M_CONFIG *m_cfg,
 
 	/* TraceHub configuration */
 	dev = pcidev_path_on_root(PCH_DEVFN_TRACEHUB);
-	if (dev && dev->enabled && config->TraceHubMode) {
+	if (is_dev_enabled(dev) && config->TraceHubMode) {
 		m_cfg->PcdDebugInterfaceFlags |= DEBUG_INTERFACE_TRACEHUB;
 		m_cfg->PchTraceHubMode = config->TraceHubMode;
 		m_cfg->CpuTraceHubMode = config->TraceHubMode;
 	}
 
+	/* IPU configuration */
+	dev = pcidev_path_on_root(SA_DEVFN_IPU);
+	m_cfg->SaIpuEnable = is_dev_enabled(dev);
+
 	/* Change VmxEnable UPD value according to ENABLE_VMX Kconfig */
 	m_cfg->VmxEnable = CONFIG(ENABLE_VMX);
-
 
 	/* Enable SMBus controller based on config */
 	m_cfg->SmbusEnable = config->SmbusEnable;
@@ -79,6 +82,18 @@ static void soc_memory_init_params(FSP_M_CONFIG *m_cfg,
 
 	/* VT-d config */
 	m_cfg->VtdDisable = 0;
+	m_cfg->VtdIopEnable = 0x1;
+
+	if (m_cfg->InternalGfx) {
+		m_cfg->VtdIgdEnable = 0x1;
+		m_cfg->VtdBaseAddress[0] = GFXVT_BASE_ADDRESS;
+	}
+
+	if (m_cfg->SaIpuEnable) {
+		m_cfg->VtdIpuEnable = 0x1;
+		m_cfg->VtdBaseAddress[1] = IPUVT_BASE_ADDRESS;
+	}
+	m_cfg->VtdBaseAddress[2] = VTVC0_BASE_ADDRESS;
 
 	m_cfg->SerialIoUartDebugControllerNumber = CONFIG_UART_FOR_CONSOLE;
 	m_cfg->SerialIoUartDebugMode = config->SerialIoUartMode[CONFIG_UART_FOR_CONSOLE];
@@ -92,10 +107,7 @@ static void soc_memory_init_params(FSP_M_CONFIG *m_cfg,
 
 	/* Audio */
 	dev = pcidev_path_on_root(PCH_DEVFN_HDA);
-	if (!dev)
-		m_cfg->PchHdaEnable = 0;
-	else
-		m_cfg->PchHdaEnable = dev->enabled;
+	m_cfg->PchHdaEnable = is_dev_enabled(dev);
 
 	m_cfg->PchHdaDspEnable = config->PchHdaDspEnable;
 	m_cfg->PchHdaAudioLinkHdaEnable = config->PchHdaAudioLinkHdaEnable;
@@ -114,6 +126,16 @@ static void soc_memory_init_params(FSP_M_CONFIG *m_cfg,
 			ARRAY_SIZE(config->PchHdaAudioLinkSndwEnable), "copy buffer overflow!");
 	memcpy(m_cfg->PchHdaAudioLinkSndwEnable, config->PchHdaAudioLinkSndwEnable,
 		sizeof(config->PchHdaAudioLinkSndwEnable));
+
+	/* Skip the CPU replacement check */
+	m_cfg->SkipCpuReplacementCheck = config->SkipCpuReplacementCheck;
+
+	/*
+	 * Set GpioOverride
+	 * When GpioOverride is set FSP will not configure any GPIOs
+	 * and rely on GPIO settings programmed before moved to FSP.
+	 */
+	m_cfg->GpioOverride = 1;
 }
 
 void platform_fsp_memory_init_params_cb(FSPM_UPD *mupd, uint32_t version)

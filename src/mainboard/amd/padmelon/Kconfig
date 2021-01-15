@@ -12,7 +12,6 @@ config BOARD_SPECIFIC_OPTIONS # dummy
 	select GFXUMA
 	select STONEYRIDGE_LEGACY_FREE
 	select ONBOARD_VGA_IS_PRIMARY
-	select BOOTBLOCK_CONSOLE
 	select SUPERIO_FINTEK_F81803A
 	select SUPERIO_FINTEK_COMMON_PRE_RAM
 	select SUPERIO_FINTEK_FAN_CONTROL
@@ -28,7 +27,7 @@ config MAINBOARD_PART_NUMBER
 	string
 	default "Padmelon"
 
-choice PADMELON_SOC
+choice
 	prompt "SOC used in padmelon board"
 	default PADMELON_MERLIN_FALCON
 

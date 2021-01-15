@@ -22,11 +22,10 @@
 #define APM_CNT_PST_CONTROL	0x80
 #define APM_CNT_ACPI_DISABLE	0x1e
 #define APM_CNT_ACPI_ENABLE	0xe1
-#define APM_CNT_MBI_UPDATE	0xeb
-#define APM_CNT_GNVS_UPDATE	0xea
 #define APM_CNT_ROUTE_ALL_XHCI	0xca
 #define APM_CNT_FINALIZE	0xcb
 #define APM_CNT_LEGACY		0xcc
+#define APM_CNT_MBI_UPDATE	0xeb
 #define APM_CNT_SMMINFO		0xec
 #define APM_CNT_SMMSTORE	0xed
 #define APM_CNT_ELOG_GSMI	0xef
@@ -75,7 +74,7 @@ struct smm_runtime {
 
 struct smm_module_params {
 	void *arg;
-	int cpu;
+	size_t cpu;
 	const struct smm_runtime *runtime;
 	/* A canary value that has been placed at the end of the stack.
 	 * If (uintptr_t)canary != *canary then a stack overflow has occurred.
@@ -128,6 +127,12 @@ static inline bool smm_points_to_smram(const void *ptr, const size_t len)
  *             into this field so the code doing the loading can manipulate the
  *             runtime's assumptions. e.g. updating the APIC id to CPU map to
  *             handle sparse APIC id space.
+ * The following parameters are only used when X86_SMM_LOADER_VERSION2 is enabled.
+ * - smm_entry - entry address of first CPU thread, all others will be tiled
+ *               below this address.
+ * - smm_main_entry_offset - default entry offset (e.g 0x8000)
+ * - smram_start - smaram starting address
+ * - smram_end - smram ending address
  */
 struct smm_loader_params {
 	void *stack_top;
@@ -141,11 +146,23 @@ struct smm_loader_params {
 	void *handler_arg;
 
 	struct smm_runtime *runtime;
+
+	/* The following are only used by X86_SMM_LOADER_VERSION2 */
+#if CONFIG(X86_SMM_LOADER_VERSION2)
+	uintptr_t smm_entry;
+	uintptr_t smm_main_entry_offset;
+	uintptr_t smram_start;
+	uintptr_t smram_end;
+#endif
 };
 
 /* Both of these return 0 on success, < 0 on failure. */
 int smm_setup_relocation_handler(struct smm_loader_params *params);
 int smm_load_module(void *smram, size_t size, struct smm_loader_params *params);
+
+#if CONFIG(X86_SMM_LOADER_VERSION2)
+u32 smm_get_cpu_smbase(unsigned int cpu_num);
+#endif
 
 /* Backup and restore default SMM region. */
 void *backup_default_smm_area(void);
@@ -174,5 +191,13 @@ int smm_subregion(int sub, uintptr_t *start, size_t *size);
 
 /* Print the SMM memory layout on console. */
 void smm_list_regions(void);
+
+#define SMM_REVISION_OFFSET_FROM_TOP (0x8000 - 0x7efc)
+/* Return the SMM save state revision. The revision can be fetched from the smm savestate
+   which is always at the same offset downward from the top of the save state. */
+uint32_t smm_revision(void);
+/* Returns the PM ACPI SMI port. On Intel systems this typically not configurable (APM_CNT, 0xb2).
+   On AMD systems it is sometimes configurable. */
+uint16_t pm_acpi_smi_cmd_port(void);
 
 #endif /* CPU_X86_SMM_H */

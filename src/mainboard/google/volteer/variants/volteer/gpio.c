@@ -30,7 +30,7 @@ static const struct pad_config override_gpio_table[] = {
 	PAD_CFG_NF(GPP_A23, NONE, DEEP, NF1),
 
 	/* B3  : CPU_GP2 ==> PEN_DET_ODL */
-	PAD_CFG_GPI(GPP_B3, NONE, DEEP),
+	PAD_CFG_GPI_GPIO_DRIVER(GPP_B3, NONE, PLTRST),
 	/* B5  : ISH_I2C0_CVF_SDA */
 	PAD_CFG_NF(GPP_B5, NONE, DEEP, NF1),
 	/* B6  : ISH_I2C0_CVF_SCL */
@@ -91,18 +91,18 @@ static const struct pad_config override_gpio_table[] = {
 	/* D14 : ISH_UART0_TXD ==> UART_ISH_TX_DEBUG_RX */
 	PAD_CFG_NF(GPP_D14, NONE, DEEP, NF1),
 	/* D16 : ISH_UART0_CTS# ==> EN_PP3300_SD */
-	PAD_CFG_GPO(GPP_D16, 1, DEEP),
+	PAD_NC(GPP_D16, UP_20K),
 	/* D17 : ISH_GP4 ==> EN_FCAM_PWR */
-	PAD_CFG_GPO(GPP_D17, 1, DEEP),
+	PAD_CFG_GPO(GPP_D17, 0, DEEP),
 	/* D18 : ISH_GP5 ==> FCAM_SNRPWR_EN */
-	PAD_CFG_GPO(GPP_D18, 1, DEEP),
+	PAD_CFG_GPO(GPP_D18, 0, DEEP),
 
 	/* E1  : SPI1_IO2 ==> PEN_DET_ODL */
-	PAD_CFG_GPI_SCI_LOW(GPP_E1, NONE, DEEP, EDGE_SINGLE),
+	PAD_CFG_GPI_SCI(GPP_E1, NONE, DEEP, EDGE_SINGLE, NONE),
 	/* E2  : SPI1_IO3 ==> WLAN_PCIE_WAKE_ODL */
 	PAD_CFG_GPI(GPP_E2, NONE, DEEP),
 	/* E3  : CPU_GP0 ==> USI_REPORT_EN */
-	PAD_CFG_GPO(GPP_E3, 1, DEEP),
+	PAD_CFG_GPO(GPP_E3, 0, DEEP),
 	/* E7  : CPU_GP1 ==> USI_INT */
 	PAD_CFG_GPI_APIC(GPP_E7, NONE, PLTRST, LEVEL, NONE),
 	/* E8  : SPI1_CS1# ==> SLP_S0IX */
@@ -125,7 +125,7 @@ static const struct pad_config override_gpio_table[] = {
 	/* F13 : GSXDOUT ==> WiFi_DISABLE_L */
 	PAD_CFG_GPO(GPP_F13, 1, DEEP),
 	/* F14 : GSXDIN ==> SAR0_INT_L */
-	PAD_CFG_GPI_SCI_LOW(GPP_F14, NONE, PLTRST, EDGE_SINGLE),
+	PAD_CFG_GPI_APIC(GPP_F14, NONE, PLTRST, LEVEL, NONE),
 	/* F15 : GSXSRESET# ==> RCAM_RST_L */
 	PAD_CFG_GPO(GPP_F15, 1, DEEP),
 	/* F16 : GSXCLK ==> WWAN_DPR_SAR_ODL */
@@ -154,7 +154,7 @@ static const struct pad_config override_gpio_table[] = {
 	/* H13 : M2_SKT2_CFG1 # ==> WWAN_CONFIG1 */
 	PAD_CFG_GPI(GPP_H13, NONE, DEEP),
 	/* H14 : M2_SKT2_CFG2 # ==> RCAM_SNRPWR_EN */
-	PAD_CFG_GPO(GPP_H14, 1, DEEP),
+	PAD_CFG_GPO(GPP_H14, 0, DEEP),
 	/* H15 : M2_SKT2_CFG3 # ==> WWAN_CONFIG3 */
 	PAD_CFG_GPI(GPP_H15, NONE, DEEP),
 	/* H16 : DDPB_CTRLCLK ==> DDPB_HDMI_CTRLCLK */
@@ -164,7 +164,7 @@ static const struct pad_config override_gpio_table[] = {
 	/* H19 : TIME_SYNC0 ==> USER_PRES_FP_ODL */
 	PAD_CFG_GPI(GPP_H19, NONE, DEEP),
 	/* H20 : IMGCLKOUT1 ==> EN_MIPI_RCAM_PWR */
-	PAD_CFG_GPO(GPP_H20, 1, DEEP),
+	PAD_CFG_GPO(GPP_H20, 0, DEEP),
 	/* H21 : IMGCLKOUT2 ==> CAM_MCLK1 */
 	PAD_CFG_NF(GPP_H21, NONE, DEEP, NF1),
 	/* H22 : IMGCLKOUT3 ==> CAM_MCLK0 */
@@ -210,6 +210,9 @@ static const struct pad_config override_gpio_table[] = {
 static const struct pad_config early_gpio_table[] = {
 	/* A12 : SATAXPCIE1 ==> M2_SSD_PEDET */
 	PAD_CFG_NF(GPP_A12, NONE, DEEP, NF1),
+	/* A13 : PMC_I2C_SCL ==> BT_DISABLE_L */
+	/* assert reset on reboot */
+	PAD_CFG_GPO(GPP_A13, 0, DEEP),
 	/* A17 : DDSP_HPDC ==> MEM_CH_SEL */
 	PAD_CFG_GPI(GPP_A17, NONE, DEEP),
 
@@ -231,8 +234,8 @@ static const struct pad_config early_gpio_table[] = {
 	/* C22 : UART2_RTS# ==> PCH_FPMCU_BOOT0 */
 	PAD_CFG_GPO(GPP_C22, 0, DEEP),
 
-	/* E12 : SPI1_MISO_IO1 ==> EN_PP3300_SSD */
-	PAD_CFG_GPO(GPP_E12, 1, DEEP),
+	/* D16 : ISH_UART0_CTS# ==> EN_PP3300_SD */
+	PAD_NC(GPP_D16, UP_20K),
 
 	/* F11 : THC1_SPI2_CLK ==> EN_PP3300_WWAN */
 	PAD_CFG_GPO(GPP_F11, 1, DEEP),

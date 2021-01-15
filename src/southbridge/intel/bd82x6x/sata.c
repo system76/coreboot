@@ -40,28 +40,28 @@ static void sata_read_resources(struct device *dev)
 	if (sata_mode != 2)
 		return;
 
-	res = find_resource(dev, PCI_BASE_ADDRESS_0);
+	res = probe_resource(dev, PCI_BASE_ADDRESS_0);
 	if (res) {
 		res->base = 0x1f0;
 		res->size = 8;
 		res->flags = IORESOURCE_IO | IORESOURCE_ASSIGNED | IORESOURCE_FIXED;
 	}
 
-	res = find_resource(dev, PCI_BASE_ADDRESS_1);
+	res = probe_resource(dev, PCI_BASE_ADDRESS_1);
 	if (res) {
 		res->base = 0x3f4;
 		res->size = 4;
 		res->flags = IORESOURCE_IO | IORESOURCE_ASSIGNED | IORESOURCE_FIXED;
 	}
 
-	res = find_resource(dev, PCI_BASE_ADDRESS_2);
+	res = probe_resource(dev, PCI_BASE_ADDRESS_2);
 	if (res) {
 		res->base = 0x170;
 		res->size = 8;
 		res->flags = IORESOURCE_IO | IORESOURCE_ASSIGNED | IORESOURCE_FIXED;
 	}
 
-	res = find_resource(dev, PCI_BASE_ADDRESS_3);
+	res = probe_resource(dev, PCI_BASE_ADDRESS_3);
 	if (res) {
 		res->base = 0x374;
 		res->size = 4;
@@ -77,7 +77,7 @@ static void sata_set_resources(struct device *dev)
 	if (sata_mode == 2) {
 		unsigned int i;
 		for (i = PCI_BASE_ADDRESS_0; i <= PCI_BASE_ADDRESS_3; i += 4) {
-			struct resource *const res = find_resource(dev, i);
+			struct resource *const res = probe_resource(dev, i);
 			if (res)
 				res->flags &= ~IORESOURCE_FIXED;
 		}
@@ -108,7 +108,8 @@ static void sata_init(struct device *dev)
 	/* SATA configuration */
 
 	/* Enable BARs */
-	pci_write_config16(dev, PCI_COMMAND, 0x0007);
+	pci_write_config16(dev, PCI_COMMAND,
+			   PCI_COMMAND_MASTER | PCI_COMMAND_MEMORY | PCI_COMMAND_IO);
 
 	/* AHCI */
 	if (sata_mode == 0) {
@@ -116,20 +117,8 @@ static void sata_init(struct device *dev)
 
 		printk(BIOS_DEBUG, "SATA: Controller in AHCI mode.\n");
 
-		/* Set timings */
-		pci_write_config16(dev, IDE_TIM_PRI, IDE_DECODE_ENABLE |
-				IDE_ISP_3_CLOCKS | IDE_RCT_1_CLOCKS |
-				IDE_PPE0 | IDE_IE0 | IDE_TIME0);
-		pci_write_config16(dev, IDE_TIM_SEC, IDE_DECODE_ENABLE |
-				IDE_ISP_5_CLOCKS | IDE_RCT_4_CLOCKS);
-
-		/* Sync DMA */
-		pci_write_config16(dev, IDE_SDMA_CNT, IDE_PSDE0);
-		pci_write_config16(dev, IDE_SDMA_TIM, 0x0001);
-
-		/* Set IDE I/O Configuration */
-		reg32 = SIG_MODE_PRI_NORMAL | FAST_PCB1 | FAST_PCB0 | PCB1 | PCB0;
-		pci_write_config32(dev, IDE_CONFIG, reg32);
+		pci_write_config16(dev, IDE_TIM_PRI, IDE_DECODE_ENABLE);
+		pci_write_config16(dev, IDE_TIM_SEC, IDE_DECODE_ENABLE);
 
 		/* for AHCI, Port Enable is managed in memory mapped space */
 		reg16 = pci_read_config16(dev, 0x92);

@@ -7,21 +7,6 @@
 #include <string.h>
 #include <vb2_sha.h>
 
-#if !defined(LOG)
-#define LOG(x...) printk(BIOS_INFO, "CBFS: " x)
-#endif
-#if defined(CONFIG)
-
-#if CONFIG(DEBUG_CBFS)
-#define DEBUG(x...) printk(BIOS_SPEW, "CBFS: " x)
-#else
-#define DEBUG(x...)
-#endif
-
-#elif !defined(DEBUG)
-#define DEBUG(x...)
-#endif
-
 static size_t cbfs_next_offset(const struct region_device *cbfs,
 				const struct cbfsf *f)
 {
@@ -350,7 +335,7 @@ int cbfs_vb2_hash_contents(const struct region_device *cbfs,
 		if (cbfsf_file_type(fh, &ftype))
 			return VB2_ERROR_UNKNOWN;
 
-		if (ftype == CBFS_TYPE_DELETED || ftype == CBFS_TYPE_DELETED2)
+		if (ftype == CBFS_TYPE_DELETED || ftype == CBFS_TYPE_NULL)
 			continue;
 
 		rv = cbfs_extend_hash_with_offset(&ctx, cbfs, &fh->data);

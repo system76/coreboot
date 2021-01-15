@@ -134,6 +134,14 @@ static const struct {
 	  "8th generation (Whiskey Lake family) Core Processor (Mobile)" },
 	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_CORE_10TH_GEN_U,
 	  "10th generation (Icelake family) Core Processor (Mobile)" },
+	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_CORE_CML_U1,
+	  "10th generation (Comet Lake family) Core Processor (Mobile)" },
+	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_CORE_CML_U2,
+	  "10th generation (Comet Lake family) Core Processor (Mobile)" },
+	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_CORE_CML_U3,
+	  "10th generation (Comet Lake family) Core Processor (Mobile)" },
+	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_HEWITTLAKE,
+	  "Xeon E7 v4/Xeon E5 v4/Xeon E3 v4/Xeon D (Hewitt Lake)" },
 	/* Southbridges (LPC controllers) */
 	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82371XX, "371AB/EB/MB" },
 	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10, "ICH10" },
@@ -250,6 +258,10 @@ static const struct {
 	  "Sunrise Point-LP Y iHDCP 2.2 Premium/Kabylake" },
 	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_CANNONPOINT_LP_U_PREM,
 	  "Cannon Point-LP U Premium/CoffeeLake/Whiskeylake" },
+	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_COMETPOINT_LP_U_PREM,
+	  "Comet Point-LP U Premium/Cometlake" },
+	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_COMETPOINT_LP_U_BASE,
+	  "Comet Point-LP U Base/Cometlake" },
 	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_H110, "H110" },
 	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_H170, "H170" },
 	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_Z170, "Z170" },
@@ -265,6 +277,7 @@ static const struct {
 	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_QM175, "QM175" },
 	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_CM238, "CM238" },
 	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_C621, "C621" },
+	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_C621A, "C621A" },
 	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_C622, "C622" },
 	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_C624, "C624" },
 	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_C625, "C625" },
@@ -437,6 +450,8 @@ static const struct {
 	  "Intel(R) Iris Plus Graphics 655" },
 	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_IRIS_PLUS_G7,
 	  "Intel(R) Iris Plus Graphics G7" },
+	{ PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_UHD_GRAPHICS,
+	  "Intel(R) UHD Graphics" },
 };
 
 #ifndef __DARWIN__
@@ -500,6 +515,7 @@ static void print_usage(const char *name)
 	     "   -M | --msrs:                      dump CPU MSRs\n"
 	     "   -A | --ambs:                      dump AMB registers\n"
 	     "   -x | --sgx:                       dump SGX status\n"
+	     "   -t | --tme:                       dump TME status\n"
 	     "   -a | --all:                       dump all known (safe) registers\n"
 	     "        --pcr=PORT_ID:               dump all registers of a PCR port\n"
 	     "                                     (may be specified max %d times)\n"
@@ -560,7 +576,7 @@ int main(int argc, char *argv[])
 	int dump_gpios = 0, dump_mchbar = 0, dump_rcba = 0;
 	int dump_pmbase = 0, dump_epbar = 0, dump_dmibar = 0;
 	int dump_pciexbar = 0, dump_coremsrs = 0, dump_ambs = 0;
-	int dump_spi = 0, dump_gfx = 0, dump_ahci = 0, dump_sgx = 0;
+	int dump_spi = 0, dump_gfx = 0, dump_ahci = 0, dump_sgx = 0, dump_tme = 0;
 	int dump_lpc = 0;
 	int show_gpio_diffs = 0;
 	size_t pcr_count = 0;
@@ -587,10 +603,11 @@ int main(int argc, char *argv[])
 		{"ahci", 0, 0, 'R'},
 		{"sgx", 0, 0, 'x'},
 		{"pcr", required_argument, 0, LONG_OPT_PCR},
+		{"tme", 0, 0, 't'},
 		{0, 0, 0, 0}
 	};
 
-	while ((opt = getopt_long(argc, argv, "vh?gGrplmedPMaAsfRS:x",
+	while ((opt = getopt_long(argc, argv, "vh?gGrplmedPMaAsfRS:xt",
                                   long_options, &option_index)) != EOF) {
 		switch (opt) {
 		case 'v':
@@ -652,6 +669,7 @@ int main(int argc, char *argv[])
 			dump_spi = 1;
 			dump_ahci = 1;
 			dump_sgx = 1;
+			dump_tme = 1;
 			break;
 		case 'A':
 			dump_ambs = 1;
@@ -661,6 +679,9 @@ int main(int argc, char *argv[])
 			break;
 		case 'x':
 			dump_sgx = 1;
+			break;
+		case 't':
+			dump_tme = 1;
 			break;
 		case LONG_OPT_PCR:
 			if (pcr_count < MAX_PCR_PORTS) {
@@ -759,13 +780,13 @@ int main(int argc, char *argv[])
 	}
 
 	gfx = pci_get_dev(pacc, 0, 0, 0x02, 0);
-
 	if (gfx) {
 		pci_fill_info(gfx, PCI_FILL_IDENT | PCI_FILL_BASES |
 				   PCI_FILL_CLASS);
-
-		if (gfx->vendor_id != PCI_VENDOR_ID_INTEL)
-			gfx = 0;
+		if ((gfx->device_class & 0xff00) != 0x0300)
+			gfx = NULL;
+		else if (gfx->vendor_id != PCI_VENDOR_ID_INTEL)
+			gfx = NULL;
 	}
 
 	if (sb->device_id == PCI_DEVICE_ID_INTEL_BAYTRAIL_LPC) {
@@ -853,6 +874,9 @@ int main(int argc, char *argv[])
 
 	if (dump_sgx)
 		print_sgx();
+
+	if (dump_tme)
+		print_tme();
 
 	if (pcr_count)
 		print_pcr_ports(sb, dump_pcr, pcr_count);

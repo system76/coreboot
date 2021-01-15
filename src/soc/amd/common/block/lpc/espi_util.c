@@ -24,37 +24,37 @@ static uintptr_t espi_get_bar(void)
 	return espi_bar;
 }
 
-static uint32_t espi_read32(int reg)
+static uint32_t espi_read32(unsigned int reg)
 {
 	return read32((void *)(espi_get_bar() + reg));
 }
 
-static void espi_write32(int reg, uint32_t val)
+static void espi_write32(unsigned int reg, uint32_t val)
 {
 	write32((void *)(espi_get_bar() + reg), val);
 }
 
-static uint16_t espi_read16(int reg)
+static uint16_t espi_read16(unsigned int reg)
 {
 	return read16((void *)(espi_get_bar() + reg));
 }
 
-static void espi_write16(int reg, uint16_t val)
+static void espi_write16(unsigned int reg, uint16_t val)
 {
 	write16((void *)(espi_get_bar() + reg), val);
 }
 
-static uint8_t espi_read8(int reg)
+static uint8_t espi_read8(unsigned int reg)
 {
 	return read8((void *)(espi_get_bar() + reg));
 }
 
-static void espi_write8(int reg, uint8_t val)
+static void espi_write8(unsigned int reg, uint8_t val)
 {
 	write8((void *)(espi_get_bar() + reg), val);
 }
 
-static void espi_enable_decode(int decode_en)
+static void espi_enable_decode(uint32_t decode_en)
 {
 	uint32_t val;
 
@@ -63,7 +63,7 @@ static void espi_enable_decode(int decode_en)
 	espi_write32(ESPI_DECODE, val);
 }
 
-static bool espi_is_decode_enabled(int decode)
+static bool espi_is_decode_enabled(uint32_t decode)
 {
 	uint32_t val;
 
@@ -104,29 +104,24 @@ static int espi_get_unused_io_window(void)
  */
 static int espi_std_io_decode(uint16_t base, size_t size)
 {
-	int ret = -1;
+	if (size == 2 && base == 0x2e)
+		return ESPI_DECODE_IO_0X2E_0X2F_EN;
 
 	if (size != 1)
-		return ret;
+		return -1;
 
 	switch (base) {
 	case 0x80:
-		ret = ESPI_DECODE_IO_0x80_EN;
-		break;
+		return ESPI_DECODE_IO_0x80_EN;
 	case 0x60:
 	case 0x64:
-		ret = ESPI_DECODE_IO_0X60_0X64_EN;
-		break;
+		return ESPI_DECODE_IO_0X60_0X64_EN;
 	case 0x2e:
 	case 0x2f:
-		ret = ESPI_DECODE_IO_0X2E_0X2F_EN;
-		break;
+		return ESPI_DECODE_IO_0X2E_0X2F_EN;
 	default:
-		ret = -1;
-		break;
+		return -1;
 	}
-
-	return ret;
 }
 
 static size_t espi_get_io_window_size(int idx)
@@ -188,9 +183,9 @@ int espi_open_io_window(uint16_t base, size_t size)
 	if (std_io != -1) {
 		espi_enable_decode(std_io);
 		return 0;
+	} else {
+		return espi_open_generic_io_window(base, size);
 	}
-
-	return espi_open_generic_io_window(base, size);
 }
 
 static int espi_find_mmio_window(uint32_t win_base)
@@ -411,7 +406,7 @@ static void espi_clear_status(void)
  * Wait up to ESPI_CMD_TIMEOUT_US for interrupt status register to update after sending a
  * command.
  */
-static int espi_check_status(uint32_t *status)
+static int espi_poll_status(uint32_t *status)
 {
 	struct stopwatch sw;
 
@@ -462,8 +457,8 @@ static int espi_send_command(const struct espi_cmd *cmd)
 		return -1;
 	}
 
-	if (espi_check_status(&status) == -1) {
-		espi_show_failure(cmd, "Error: eSPI check status failed", 0);
+	if (espi_poll_status(&status) == -1) {
+		espi_show_failure(cmd, "Error: eSPI poll status failed", 0);
 		return -1;
 	}
 
@@ -475,7 +470,8 @@ static int espi_send_command(const struct espi_cmd *cmd)
 	}
 
 	if (status & ~ESPI_STATUS_DNCMD_COMPLETE) {
-		espi_show_failure(cmd, "Error: eSPI status register bits set", status);
+		espi_show_failure(cmd, "Error: unexpected eSPI status register bits set",
+				  status);
 		return -1;
 	}
 

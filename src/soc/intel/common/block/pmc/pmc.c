@@ -1,30 +1,12 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
 #include <acpi/acpi.h>
-#include <arch/io.h>
 #include <device/pci_ops.h>
 #include <console/console.h>
-#include <cpu/x86/smm.h>
 #include <device/pci.h>
 #include <device/pci_ids.h>
 #include <intelblocks/pmc.h>
 #include <soc/pci_devs.h>
-
-/* SoC overrides */
-
-/* Fill up PMC resource structure inside SoC directory */
-__weak int pmc_soc_get_resources(
-		struct pmc_resource_config *cfg)
-{
-	/* no-op */
-	return -1;
-}
-
-/* SoC override PMC initialization */
-__weak void pmc_soc_init(struct device *dev)
-{
-	/* no-op */
-}
 
 static void pch_pmc_add_new_resource(struct device *dev,
 		uint8_t offset, uintptr_t base, size_t size,
@@ -91,13 +73,6 @@ static void pch_pmc_read_resources(struct device *dev)
 	pch_pmc_add_io_resources(dev, config);
 }
 
-void pmc_set_acpi_mode(void)
-{
-	if (!acpi_is_wakeup_s3()) {
-		apm_control(APM_CNT_ACPI_DISABLE);
-	}
-}
-
 static struct device_operations device_ops = {
 	.read_resources		= pch_pmc_read_resources,
 	.set_resources		= pci_dev_set_resources,
@@ -122,6 +97,8 @@ static const unsigned short pci_device_ids[] = {
 	PCI_DEVICE_ID_INTEL_TGP_PMC,
 	PCI_DEVICE_ID_INTEL_MCC_PMC,
 	PCI_DEVICE_ID_INTEL_JSP_PMC,
+	PCI_DEVICE_ID_INTEL_ADP_P_PMC,
+	PCI_DEVICE_ID_INTEL_ADP_S_PMC,
 	0
 };
 

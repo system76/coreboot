@@ -8,6 +8,7 @@
 #include <device/device.h>
 #include <device/path.h>
 #include <stdlib.h>
+#include <types.h>
 #include <crc_byte.h>
 
 #if CONFIG(GENERIC_GPIO_LIB)
@@ -196,7 +197,6 @@ int acpi_device_status(const struct device *dev)
 		return ACPI_STATUS_DEVICE_HIDDEN_ON;
 	return ACPI_STATUS_DEVICE_ALL_ON;
 }
-
 
 /* Write the unique _UID based on ACPI device path. */
 void acpi_device_write_uid(const struct device *dev)
@@ -1019,33 +1019,72 @@ struct acpi_dp *acpi_dp_add_integer_array(struct acpi_dp *dp, const char *name,
 	return dp_array;
 }
 
+struct acpi_dp *acpi_dp_add_gpio_array(struct acpi_dp *dp, const char *name,
+				       const struct acpi_gpio_res_params *params,
+				       size_t param_count)
+{
+	struct acpi_dp *gpio;
+	uint32_t i;
+
+	if (!dp || !param_count)
+		return NULL;
+
+	gpio = acpi_dp_new_table(name);
+	if (!gpio)
+		return NULL;
+
+	/*
+	 * Generate ACPI identifiers as follows:
+	 * Package () {
+	 *     name,           // e.g. cs-gpios
+	 *     Package() {
+	 *           ref, index, pin, active_low, // GPIO-0 (params[0])
+	 *           ref, index, pin, active_low, // GPIO-1 (params[1])
+	 *           ...
+	 *     }
+	 * }
+	 */
+	for (i = 0; i < param_count; i++, params++) {
+		/*
+		 * If refs is NULL, leave a hole in the gpio array. This can be used in
+		 * conditions where some controllers use both GPIOs and native signals.
+		 */
+		if (!params->ref) {
+			acpi_dp_add_integer(gpio, NULL, 0);
+			continue;
+		}
+
+		/* The device that has _CRS containing GpioIO()/GpioInt() */
+		acpi_dp_add_reference(gpio, NULL, params->ref);
+
+		/* Index of the GPIO resource in _CRS starting from zero */
+		acpi_dp_add_integer(gpio, NULL, params->index);
+
+		/* Pin in the GPIO resource, typically zero */
+		acpi_dp_add_integer(gpio, NULL, params->pin);
+
+		/* Set if pin is active low */
+		acpi_dp_add_integer(gpio, NULL, params->active_low);
+	}
+	acpi_dp_add_array(dp, gpio);
+
+	return gpio;
+
+}
+
+
 struct acpi_dp *acpi_dp_add_gpio(struct acpi_dp *dp, const char *name,
 				 const char *ref, int index, int pin,
 				 int active_low)
 {
-	if (!dp)
-		return NULL;
+	struct acpi_gpio_res_params param = {
+		.ref = ref,
+		.index = index,
+		.pin = pin,
+		.active_low = active_low,
+	};
 
-	struct acpi_dp *gpio = acpi_dp_new_table(name);
-
-	if (!gpio)
-		return NULL;
-
-	/* The device that has _CRS containing GpioIO()/GpioInt() */
-	acpi_dp_add_reference(gpio, NULL, ref);
-
-	/* Index of the GPIO resource in _CRS starting from zero */
-	acpi_dp_add_integer(gpio, NULL, index);
-
-	/* Pin in the GPIO resource, typically zero */
-	acpi_dp_add_integer(gpio, NULL, pin);
-
-	/* Set if pin is active low */
-	acpi_dp_add_integer(gpio, NULL, active_low);
-
-	acpi_dp_add_array(dp, gpio);
-
-	return gpio;
+	return acpi_dp_add_gpio_array(dp, name, &param, 1);
 }
 
 /*

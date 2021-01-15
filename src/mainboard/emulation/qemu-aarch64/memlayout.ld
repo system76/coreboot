@@ -1,8 +1,4 @@
-/*
- *
- *
- * SPDX-License-Identifier: GPL-2.0-or-later
- */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #include <memlayout.h>
 #include <arch/header.ld>
@@ -23,9 +19,11 @@ SECTIONS
 	REGION(secram, 0xe000000, 0x1000000, 4096)
 	DRAM_START(0x40000000)
 	BOOTBLOCK(0x60010000, 64K)
-	STACK(0x60020000, 62K)
+	STACK(0x60020000, 54K)
+	CBFS_MCACHE(0x6002D800, 8K)
 	FMAP_CACHE(0x6002F800, 2K)
-	ROMSTAGE(0x60030000, 128K)
+        TIMESTAMP(0x60030000, 1K)
+	ROMSTAGE(0x60031000, 128K)
 	TTB(0x60070000, 128K)
 	RAMSTAGE(0x600b0000, 16M)
 

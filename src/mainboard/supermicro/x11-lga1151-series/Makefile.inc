@@ -1,10 +1,10 @@
 ## SPDX-License-Identifier: GPL-2.0-only
 
-bootblock-y += bootblock.c
-
-ramstage-y += ramstage.c
-
 CPPFLAGS_common += -I$(src)/mainboard/$(MAINBOARDDIR)/include
 
-subdirs-y += variants/$(VARIANT_DIR)
-CPPFLAGS_common += -I$(src)/mainboard/$(MAINBOARDDIR)/variants/$(VARIANT_DIR)/include
+bootblock-y += bootblock.c
+bootblock-y += variants/$(VARIANT_DIR)/gpio_early.c
+
+ramstage-y += mainboard.c
+ramstage-y += variants/$(VARIANT_DIR)/gpio.c
+ramstage-$(CONFIG_HAVE_ACPI_TABLES) += fadt.c

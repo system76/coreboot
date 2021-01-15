@@ -59,6 +59,10 @@ config INTEL_GMA_SWSMISCI
 config INTEL_GMA_LIBGFXINIT_EDID
 	bool
 
+config VBT_DATA_SIZE_KB
+	int
+	default 8
+
 config GFX_GMA_ANALOG_I2C_HDMI_B
 	bool
 
@@ -68,6 +72,14 @@ config GFX_GMA_ANALOG_I2C_HDMI_C
 config GFX_GMA_ANALOG_I2C_HDMI_D
 	bool
 
+config GFX_GMA_IGNORE_PRESENCE_STRAPS
+	def_bool n
+	depends on MAINBOARD_HAS_LIBGFXINIT
+	help
+	  libgfxinit uses the GPU presence straps to determine if a display port
+	  is present/enabled. Select this option if a board doesn't correctly implement
+	  these straps, causing libgfxinit to fail to detect an attached panel.
+
 config GFX_GMA
 	def_bool y
 	depends on NORTHBRIDGE_INTEL_GM45 || NORTHBRIDGE_INTEL_X4X \
@@ -75,7 +87,7 @@ config GFX_GMA
 		|| NORTHBRIDGE_INTEL_HASWELL \
 		|| SOC_INTEL_BROADWELL || SOC_INTEL_SKYLAKE || SOC_INTEL_APOLLOLAKE \
 		|| SOC_INTEL_KABYLAKE || SOC_INTEL_COFFEELAKE \
-		|| SOC_INTEL_WHISKEYLAKE
+		|| SOC_INTEL_WHISKEYLAKE || SOC_INTEL_COMETLAKE
 	depends on MAINBOARD_USE_LIBGFXINIT || INTEL_GMA_LIBGFXINIT_EDID
 	select RAMSTAGE_LIBHWBASE
 
@@ -102,10 +114,20 @@ config GFX_GMA_GENERATION
 	string
 	default "Broxton" if SOC_INTEL_APOLLOLAKE
 	default "Skylake" if SOC_INTEL_SKYLAKE || SOC_INTEL_KABYLAKE || \
-				SOC_INTEL_COFFEELAKE || SOC_INTEL_WHISKEYLAKE
+				SOC_INTEL_COFFEELAKE || SOC_INTEL_WHISKEYLAKE || \
+				SOC_INTEL_COMETLAKE
 	default "Haswell" if NORTHBRIDGE_INTEL_HASWELL || SOC_INTEL_BROADWELL
 	default "Ironlake" if NORTHBRIDGE_INTEL_IRONLAKE || NORTHBRIDGE_INTEL_SANDYBRIDGE
 	default "G45" if NORTHBRIDGE_INTEL_GM45 || NORTHBRIDGE_INTEL_X4X
+
+config GFX_GMA_PCH
+	string
+	default "Ibex_Peak" if NORTHBRIDGE_INTEL_IRONLAKE
+	default "Cougar_Point" if NORTHBRIDGE_INTEL_SANDYBRIDGE
+	default "Lynx_Point" if NORTHBRIDGE_INTEL_HASWELL || SOC_INTEL_BROADWELL
+	default "Sunrise_Point" if SOC_INTEL_COMMON_SKYLAKE_BASE
+	default "Cannon_Point" if SOC_INTEL_CANNONLAKE_BASE
+	default "No_PCH"
 
 config GFX_GMA_PANEL_1_PORT
 	string
@@ -126,12 +148,5 @@ config GFX_GMA_ANALOG_I2C_PORT
 	  Boards with a DVI-I connector share the I2C pins for both analog and
 	  digital displays. In that case, the EDID for a VGA display has to be
 	  read over the I2C interface of the coupled digital port.
-
-config GFX_GMA_IGNORE_PRESENCE_STRAPS
-	def_bool n
-	help
-	  libgfxinit uses the GPU presence straps to determine if a display port
-	  is present/enabled. Select this option if a board doesn't correctly implement
-	  these straps, causing libgfxinit to fail to detect an attached panel.
 
 endif

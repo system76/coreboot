@@ -1,16 +1,21 @@
 chip soc/intel/broadwell
 
-	# Enable Panel and configure power delays
-	register "gpu_panel_port_select" = "1"			# eDP
-	register "gpu_panel_power_cycle_delay" = "5"		# 400ms
-	register "gpu_panel_power_up_delay" = "400"		# 40ms
-	register "gpu_panel_power_down_delay" = "150"		# 15ms
-	register "gpu_panel_power_backlight_on_delay" = "500"	# 50ms
-	register "gpu_panel_power_backlight_off_delay" = "2100"	# 210ms
+	register "panel_cfg" = "{
+		.up_delay_ms		=  40,
+		.down_delay_ms		=  15,
+		.cycle_delay_ms		= 400,
+		.backlight_on_delay_ms	=  50,
+		.backlight_off_delay_ms	= 210,
+		.backlight_pwm_hz	= 200,
+	}"
 
-	# DTLE DATA / EDGE values
-	register "sata_port0_gen3_dtle" = "0x5"
-	register "sata_port1_gen3_dtle" = "0x5"
+	device domain 0 on
+		chip soc/intel/broadwell/pch
+			# DTLE DATA / EDGE values
+			register "sata_port0_gen3_dtle" = "0x5"
+			register "sata_port1_gen3_dtle" = "0x5"
 
-	device domain 0 on end
+			device pci 1f.2 on  end # SATA Controller
+		end
+	end
 end

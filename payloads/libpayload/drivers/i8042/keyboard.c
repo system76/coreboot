@@ -27,11 +27,20 @@
  * SUCH DAMAGE.
  */
 
+#include <stdbool.h>
+#include <stdint.h>
+
 #include <keycodes.h>
 #include <libpayload-config.h>
 #include <libpayload.h>
 
 #include "i8042.h"
+
+#ifdef DEBUG
+#define debug(x...) printf(x)
+#else
+#define debug(x...) do {} while (0)
+#endif
 
 #define POWER_BUTTON         0x90
 #define MEDIA_KEY_PREFIX     0xE0
@@ -169,16 +178,253 @@ static struct layout_maps keyboard_layouts[] = {
 #endif
 };
 
-static unsigned char keyboard_cmd(unsigned char cmd)
+static void keyboard_drain_input(void)
 {
-	i8042_write_data(cmd);
-
-	return i8042_wait_read_ps2() == 0xfa;
+	while (i8042_data_ready_ps2())
+		(void)i8042_read_data_ps2();
 }
 
-int keyboard_havechar(void)
+static bool keyboard_cmd(unsigned char cmd)
 {
-	return i8042_data_ready_ps2();
+	const uint64_t timeout_us = cmd == I8042_KBCMD_RESET ? 1*1000*1000 : 200*1000;
+	const uint64_t start_time = timer_us(0);
+
+	i8042_write_data(cmd);
+
+	do {
+		if (!i8042_data_ready_ps2()) {
+			udelay(50);
+			continue;
+		}
+
+		const uint8_t data = i8042_read_data_ps2();
+		switch (data) {
+		case 0xfa:
+			return true;
+		case 0xfe:
+			return false;
+		default:
+			/* Warn only if we already disabled keyboard input. */
+			if (cmd != I8042_KBCMD_DEFAULT_DIS)
+				debug("WARNING: Keyboard sent spurious 0x%02x.\n", data);
+			break;
+		}
+	} while (timer_us(start_time) < timeout_us);
+
+	debug("ERROR: Keyboard command timed out.\n");
+	return false;
+}
+
+static bool set_scancode_set(const unsigned char set)
+{
+	bool ret;
+
+	if (set < 1 || set > 3)
+		return false;
+
+	ret = keyboard_cmd(I8042_KBCMD_SET_SCANCODE);
+	if (!ret) {
+		debug("ERROR: Keyboard set scancode failed!\n");
+		return ret;
+	}
+
+	ret = keyboard_cmd(set);
+	if (!ret) {
+		debug("ERROR: Keyboard scancode set#%u failed!\n", set);
+		return ret;
+	}
+
+	return ret;
+}
+
+static enum keyboard_state {
+	STATE_INIT = 0,
+	STATE_SIMPLIFIED_INIT,
+	STATE_DISABLE_SCAN,
+	STATE_DRAIN_INPUT,
+	STATE_DISABLE_TRANSLATION,
+	STATE_START_SELF_TEST,
+	STATE_SELF_TEST,
+	STATE_CONFIGURE,
+	STATE_CONFIGURE_SET1,
+	STATE_ENABLE_TRANSLATION,
+	STATE_ENABLE_SCAN,
+	STATE_RUNNING,
+	STATE_IGNORE,
+} keyboard_state;
+
+#define STATE_NAMES_ENTRY(name) [STATE_##name] = #name
+static const char *const state_names[] = {
+	STATE_NAMES_ENTRY(INIT),
+	STATE_NAMES_ENTRY(SIMPLIFIED_INIT),
+	STATE_NAMES_ENTRY(DISABLE_SCAN),
+	STATE_NAMES_ENTRY(DRAIN_INPUT),
+	STATE_NAMES_ENTRY(DISABLE_TRANSLATION),
+	STATE_NAMES_ENTRY(START_SELF_TEST),
+	STATE_NAMES_ENTRY(SELF_TEST),
+	STATE_NAMES_ENTRY(CONFIGURE),
+	STATE_NAMES_ENTRY(CONFIGURE_SET1),
+	STATE_NAMES_ENTRY(ENABLE_TRANSLATION),
+	STATE_NAMES_ENTRY(ENABLE_SCAN),
+	STATE_NAMES_ENTRY(RUNNING),
+	STATE_NAMES_ENTRY(IGNORE),
+};
+
+__attribute__((unused))
+static const char *state_name(enum keyboard_state state)
+{
+	if (state >= ARRAY_SIZE(state_names) || !state_names[state])
+		return "<unknown>";
+	return state_names[state];
+}
+
+static uint64_t keyboard_time;
+static uint64_t state_time;
+
+static void keyboard_poll(void)
+{
+	enum keyboard_state next_state = keyboard_state;
+	unsigned int i;
+
+	switch (keyboard_state) {
+
+	case STATE_INIT:
+		/* Wait until keyboard_init() has been called. */
+		break;
+
+	case STATE_SIMPLIFIED_INIT:
+		/* On the first try, start opportunistically, do
+		   the first steps at once and skip the self-test. */
+		(void)keyboard_cmd(I8042_KBCMD_DEFAULT_DIS);
+		keyboard_drain_input();
+		(void)i8042_set_kbd_translation(false);
+		next_state = STATE_CONFIGURE;
+		break;
+
+	case STATE_DISABLE_SCAN:
+		(void)keyboard_cmd(I8042_KBCMD_DEFAULT_DIS);
+		next_state = STATE_DRAIN_INPUT;
+		break;
+
+	case STATE_DRAIN_INPUT:
+		/* Limit number of bytes drained per poll. */
+		for (i = 0; i < 50 && i8042_data_ready_ps2(); ++i)
+			(void)i8042_read_data_ps2();
+		if (i == 0)
+			next_state = STATE_DISABLE_TRANSLATION;
+		break;
+
+	case STATE_DISABLE_TRANSLATION:
+		/* Be opportunistic and assume it's disabled on failure. */
+		(void)i8042_set_kbd_translation(false);
+		next_state = STATE_START_SELF_TEST;
+		break;
+
+	case STATE_START_SELF_TEST:
+		if (!keyboard_cmd(I8042_KBCMD_RESET))
+			debug("ERROR: Keyboard self-test couldn't be started.\n");
+		/* We ignore errors and always move to the self-test state
+		   which will simply try again if necessary. */
+		next_state = STATE_SELF_TEST;
+		break;
+
+	case STATE_SELF_TEST:
+		if (!i8042_data_ready_ps2()) {
+			if (timer_us(state_time) > 5*1000*1000) {
+				debug("WARNING: Keyboard self-test timed out.\n");
+				next_state = STATE_DISABLE_SCAN;
+			}
+			break;
+		}
+
+		const uint8_t self_test_result = i8042_read_data_ps2();
+		switch (self_test_result) {
+		case 0xaa:
+			debug("INFO: Keyboard self-test succeeded.\n");
+			next_state = STATE_CONFIGURE;
+			break;
+		case 0xfc:
+		case 0xfd:
+			/* Failure. Try again. */
+			debug("WARNING: Keyboard self-test failed.\n");
+			next_state = STATE_START_SELF_TEST;
+			break;
+		default:
+			debug("WARNING: Keyboard self-test received spurious 0x%02x\n",
+			       self_test_result);
+			break;
+		}
+		break;
+
+	case STATE_CONFIGURE:
+		if (set_scancode_set(2))
+			next_state = STATE_ENABLE_TRANSLATION;
+		else
+			next_state = STATE_CONFIGURE_SET1;
+		break;
+
+	case STATE_CONFIGURE_SET1:
+		if (!set_scancode_set(1)) {
+			debug("ERROR: Keyboard failed to set any scancode set.\n");
+			next_state = STATE_DISABLE_SCAN;
+			break;
+		}
+
+		next_state = STATE_ENABLE_SCAN;
+		break;
+
+	case STATE_ENABLE_TRANSLATION:
+		if (i8042_set_kbd_translation(true) != 0) {
+			debug("ERROR: Keyboard controller set translation failed!\n");
+			next_state = STATE_DISABLE_SCAN;
+			break;
+		}
+
+		next_state = STATE_ENABLE_SCAN;
+		break;
+
+	case STATE_ENABLE_SCAN:
+		if (!keyboard_cmd(I8042_KBCMD_EN)) {
+			debug("ERROR: Keyboard enable scanning failed!\n");
+			next_state = STATE_DISABLE_SCAN;
+			break;
+		}
+
+		next_state = STATE_RUNNING;
+		break;
+
+	case STATE_RUNNING:
+		/* TODO: Use echo command to detect detach. */
+		break;
+
+	case STATE_IGNORE:
+		/* TODO: Try again after timeout if it ever seems useful. */
+		break;
+
+	}
+
+	switch (next_state) {
+	case STATE_INIT:
+	case STATE_RUNNING:
+	case STATE_IGNORE:
+		break;
+	default:
+		if (timer_us(keyboard_time) > 30*1000*1000)
+			next_state = STATE_IGNORE;
+		break;
+	}
+
+	if (keyboard_state != next_state) {
+		debug("INFO: Keyboard advancing state to '%s'.\n", state_name(next_state));
+		keyboard_state = next_state;
+		state_time = timer_us(0);
+	}
+}
+
+bool keyboard_havechar(void)
+{
+	keyboard_poll();
+	return keyboard_state == STATE_RUNNING && i8042_data_ready_ps2();
 }
 
 unsigned char keyboard_get_scancode(void)
@@ -306,88 +552,27 @@ int keyboard_set_layout(char *country)
 }
 
 static struct console_input_driver cons = {
-	.havekey = keyboard_havechar,
+	.havekey = (int (*)(void))keyboard_havechar,
 	.getchar = keyboard_getchar,
 	.input_type = CONSOLE_INPUT_TYPE_EC,
 };
 
-/* Enable keyboard translated */
-static int enable_translated(void)
-{
-	if (!i8042_cmd(I8042_CMD_RD_CMD_BYTE)) {
-		int cmd = i8042_read_data_ps2();
-		cmd |= I8042_CMD_BYTE_XLATE;
-		if (!i8042_cmd(I8042_CMD_WR_CMD_BYTE)) {
-			i8042_write_data(cmd);
-		} else {
-			printf("ERROR: i8042_cmd WR_CMD failed!\n");
-			return 0;
-		}
-	} else {
-		printf("ERROR: i8042_cmd RD_CMD failed!\n");
-		return 0;
-	}
-	return 1;
-}
-
-/* Set scancode set 1 */
-static int set_scancode_set(void)
-{
-	unsigned int ret;
-	ret = keyboard_cmd(I8042_KBCMD_SET_SCANCODE);
-	if (!ret) {
-		printf("ERROR: Keyboard set scancode failed!\n");
-		return ret;
-	}
-
-	ret = keyboard_cmd(I8042_SCANCODE_SET_1);
-	if (!ret) {
-		printf("ERROR: Keyboard scancode set#1 failed!\n");
-		return ret;
-	}
-
-	/*
-	 * Set default parameters.
-	 * Fix for broken QEMU PS/2 make scancodes.
-	 */
-	ret = keyboard_cmd(I8042_KBCMD_SET_DEFAULT);
-	if (!ret) {
-		printf("ERROR: Keyboard set default params failed!\n");
-		return ret;
-	}
-
-	/* Enable scanning */
-	ret = keyboard_cmd(I8042_KBCMD_EN);
-	if (!ret) {
-		printf("ERROR: Keyboard enable scanning failed!\n");
-		return ret;
-	}
-
-	return ret;
-}
-
 void keyboard_init(void)
 {
+	if (keyboard_state != STATE_INIT)
+		return;
+
 	map = &keyboard_layouts[0];
 
 	/* Initialized keyboard controller. */
 	if (!i8042_probe() || !i8042_has_ps2())
 		return;
 
-	/* Empty keyboard buffer */
-	while (keyboard_havechar())
-		keyboard_getchar();
-
 	/* Enable first PS/2 port */
 	i8042_cmd(I8042_CMD_EN_KB);
 
-	if (CONFIG(LP_PC_KEYBOARD_AT_TRANSLATED)) {
-		if (!enable_translated())
-			return;
-	} else {
-		if (!set_scancode_set())
-			return;
-	}
+	keyboard_state = STATE_SIMPLIFIED_INIT;
+	keyboard_time = state_time = timer_us(0);
 
 	console_add_input_driver(&cons);
 }
@@ -402,20 +587,18 @@ void keyboard_disconnect(void)
 	if (!i8042_has_ps2())
 		return;
 
-	/* Empty keyboard buffer */
-	while (keyboard_havechar())
-		keyboard_getchar();
-
 	/* Disable scanning */
 	keyboard_cmd(I8042_KBCMD_DEFAULT_DIS);
+	keyboard_drain_input();
 
 	/* Send keyboard disconnect command */
 	i8042_cmd(I8042_CMD_DIS_KB);
 
 	/* Hand off with empty buffer */
-	while (keyboard_havechar())
-		keyboard_getchar();
+	keyboard_drain_input();
 
 	/* Release keyboard controller driver */
 	i8042_close();
+
+	keyboard_state = STATE_INIT;
 }

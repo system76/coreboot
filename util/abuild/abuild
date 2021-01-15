@@ -263,10 +263,8 @@ function update_config
 	# Disable all other payload config options
 	{
 		echo "# CONFIG_PAYLOAD_SEABIOS is not set"
-		echo "# CONFIG_PAYLOAD_BAYOU is not set"
 		echo "# CONFIG_PAYLOAD_FILO is not set"
 		echo "# CONFIG_PAYLOAD_GRUB2 is not set"
-		echo "# CONFIG_PAYLOAD_OPENBIOS is not set"
 		echo "# CONFIG_PAYLOAD_DEPTHCHARGE is not set"
 		echo "# CONFIG_PAYLOAD_LINUXBOOT is not set"
 		echo "# CONFIG_PAYLOAD_UBOOT is not set"
@@ -356,7 +354,6 @@ function compile_target
 	eval "$BUILDPREFIX" "$MAKE" "$verboseopt" DOTCONFIG="${build_dir}/config.build" obj="${build_dir}" objutil="$TARGET/sharedutils" BUILD_TIMELESS=$TIMELESS \
 		&> "${build_dir}/make.log" ; \
 		MAKE_FAILED=$?
-	cp "${ROOT}/.xcompile" "${build_dir}/xcompile.build"
 	cd "${build_dir}" || return $?
 
 	etime=$(perl -e 'print time();' 2>/dev/null || date +%s)
@@ -468,10 +465,10 @@ function build_config
 
 	missing_arches="$($MAKE --no-print-directory -f - \
 		REQUIRED_ARCHES="$required_arches" <<'EOF'
-include .xcompile
+include $(xcompile)
 .PHONY: missing_arches
 missing_arches:
-	$(if $(XCOMPILE_COMPLETE),,$(error .xcompile is invalid.))
+	$(if $(XCOMPILE_COMPLETE),,$(error $(xcompile) is invalid.))
 	@echo $(foreach arch,$(REQUIRED_ARCHES),$(if $(filter $(arch),$(SUBARCH_SUPPORTED)),,$(arch)))
 EOF
 )"
@@ -769,7 +766,9 @@ if ! mkdir -p "$TARGET"; then
 	exit 1
 fi
 
-$MAKE -C"${ROOT}" .xcompile || exit 1
+# Generate a single xcompile for all boards
+export xcompile="${TARGET}/xcompile"
+$MAKE -C"${ROOT}" UPDATED_SUBMODULES=1 "${xcompile}" || exit 1
 
 customizing=$(echo "$customizing" | cut -c3-)
 if [ "$customizing" = "" ]; then
@@ -796,8 +795,6 @@ if [ "$cpus" != "1" ]; then
 	echo | xargs -P ${cpus:-0} -n 1 echo 2>/dev/null >/dev/null && USE_XARGS=1
 fi
 
-git submodule update --checkout --init
-
 if [ "$USE_XARGS" = "0" ]; then
 test "$MAKEFLAGS" == "" && test "$cpus" != "" && export MAKEFLAGS="-j $cpus"
 export MAKEFLAGS="$MAKEFLAGS UPDATED_SUBMODULES=1" # no need to re-download
@@ -823,7 +820,7 @@ build_targets()
 	printf "%s" "$configoptions" > "$TMPCFG"
 	$MAKE -j "$cpus" DOTCONFIG="$TMPCFG" obj="$TARGET/temp" objutil="$TARGET/sharedutils" allnoconfig
 	printf "%s" "$configoptions" >> "$TMPCFG"
-	yes "" 2>/dev/null | $MAKE -j "$cpus" DOTCONFIG="$TMPCFG" obj="$TARGET/temp" objutil="$TARGET/sharedutils" oldconfig 2>/dev/null |head > /dev/null
+	yes "" 2>/dev/null | $MAKE -j "$cpus" DOTCONFIG="$TMPCFG" obj="$TARGET/temp" objutil="$TARGET/sharedutils" oldconfig
 	BUILDPREFIX=
 	if [ "$scanbuild" = "true" ]; then
 		scanbuild_out=$TARGET/sharedutils-scanbuild
@@ -852,6 +849,7 @@ build_targets()
 		junit "</failure>"
 		junit "</testcase>"
 		echo "Shared Utilities - Log: $TARGET/sharedutils/make.log" >> "$FAILED_BOARDS"
+		rm "$TMPCFG"
 		return
 	fi
 

@@ -17,6 +17,9 @@
 /* GPIO controller */
 #include "gpio.asl"
 
+/* GFX 00:02.0 */
+#include <drivers/intel/gma/acpi/gfx.asl>
+
 /* ESPI 0:1f.0 */
 #include <soc/intel/common/block/acpi/acpi/lpc.asl>
 
@@ -33,10 +36,10 @@
 #include "serialio.asl"
 
 /* SMBus 0:1f.4 */
-#include "smbus.asl"
+#include <soc/intel/common/block/acpi/acpi/smbus.asl>
 
 /* ISH 0:12.0 */
-#include "ish.asl"
+#include <soc/intel/common/block/acpi/acpi/ish.asl>
 
 /* USB XHCI 0:14.0 */
 #include "xhci.asl"
@@ -44,8 +47,11 @@
 /* PCI _OSC */
 #include <soc/intel/common/acpi/pci_osc.asl>
 
-/* PMC Core*/
-#include <soc/intel/common/block/acpi/acpi/pmc.asl>
+/* Intel Power Engine Plug-in */
+#include <soc/intel/common/block/acpi/acpi/pep.asl>
 
 /* EMMC/SD card */
 #include "scs.asl"
+
+/* GbE 0:1f.6 */
+#include <soc/intel/common/block/acpi/acpi/pch_glan.asl>

@@ -2,11 +2,6 @@
 
 #include <soc/ramstage.h>
 
-#define HOSTC 0x40
-#define SMBUS_IO_BASE	0xefa0
-#define HOSTC_I2C_EN (1 << 2)
-#define I2C_ADDR_EEPROM 0x57
-
 #if ENV_ROMSTAGE
 #define FSP_UPD_SIGNATURE FSPM_UPD_SIGNATURE
 #define EEPROM_OFFSET_FSP_SIGNATURE 0
@@ -21,13 +16,12 @@
 #define EEPROM_OFFSET_FSP_CONFIG (EEPROM_OFFSET_FSP_SIGNATURE + sizeof(FSP_UPD_HEADER))
 #define GET_VALUE(x) {.offset = offsetof(FSP_S_CONFIG, x), \
 					.size = member_size(FSP_S_CONFIG, x)}
-#endif // ENV_ROMSTAGE
+#endif /* ENV_ROMSTAGE */
 
 typedef struct {
 	size_t offset;
 	size_t size;
 } fsp_params;
 
-bool read_write_config(u8 addr, void *blob, size_t read_offset, size_t write_offset,
-		size_t size);
-int check_signature(u8 addr);
+bool read_write_config(void *blob, size_t read_offset, size_t write_offset, size_t size);
+int check_signature(const size_t offset, const uint64_t signature);

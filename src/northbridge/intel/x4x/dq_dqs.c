@@ -5,8 +5,8 @@
 #include <delay.h>
 #include <string.h>
 #include <types.h>
+#include "raminit.h"
 #include "x4x.h"
-#include "iomap.h"
 
 static void print_dll_setting(const struct dll_setting *dll_setting,
 			u8 default_verbose)
@@ -129,7 +129,6 @@ static int decrement_dq_dqs(const struct sysinfo *s,
 	return CB_SUCCESS;
 }
 
-
 #define WT_PATTERN_SIZE 80
 
 static const u32 write_training_schedule[WT_PATTERN_SIZE] = {
@@ -220,7 +219,7 @@ static int find_dq_limit(const struct sysinfo *s, const u8 channel,
 		expected_result == FAILING ? "failing" : "succeeding", channel);
 	memset(pass_count, 0, sizeof(pass_count));
 
-	while(succes_mask) {
+	while (succes_mask) {
 		test_result = test_dq_aligned(s, channel);
 		FOR_EACH_BYTELANE(lane) {
 			if (((test_result >> lane) & 1) != expected_result) {
@@ -279,7 +278,7 @@ int do_write_training(struct sysinfo *s)
 			s->dq_settings[channel][lane] = s->dqs_settings[channel][lane];
 		}
 		memset(dq_lower, 0, sizeof(dq_lower));
-			/* Start from DQS settings */
+		/* Start from DQS settings */
 		memcpy(dq_setting, s->dqs_settings[channel], sizeof(dq_setting));
 
 		if (find_dq_limit(s, channel, dq_setting, dq_lower,
@@ -390,7 +389,7 @@ static int rt_find_dqs_limit(struct sysinfo *s, u8 channel,
 	FOR_EACH_BYTELANE(lane)
 		rt_set_dqs(channel, lane, 0, &dqs_setting[lane]);
 
-	while(status == CB_SUCCESS) {
+	while (status == CB_SUCCESS) {
 		test_result = test_dqs_aligned(s, channel);
 		if (test_result == (expected_result == SUCCEEDING ? 0 : 0xff))
 			return CB_SUCCESS;
@@ -498,7 +497,7 @@ int do_read_training(struct sysinfo *s)
 		FOR_EACH_BYTELANE(lane) {
 			saved_dqs_center[channel][lane] /= RT_LOOPS;
 			while (saved_dqs_center[channel][lane]--) {
-				if(rt_increment_dqs(&s->rt_dqs[channel][lane])
+				if (rt_increment_dqs(&s->rt_dqs[channel][lane])
 							== CB_ERR)
 					/* Should never happen */
 					printk(BIOS_ERR,
@@ -526,49 +525,49 @@ static void set_rank_write_level(struct sysinfo *s, u8 channel, u8 config,
 
 	/* Is shifted by bits 2 later so u8 can be used to reduce size */
 	static const u8 emrs1_lut[8][4][4] = { /* [Config][Leveling Rank][Rank] */
-		{  /* Config 0: 2R2R */
+		{ /* Config 0: 2R2R */
 			{0x11, 0x00, 0x91, 0x00},
 			{0x00, 0x11, 0x91, 0x00},
 			{0x91, 0x00, 0x11, 0x00},
 			{0x91, 0x00, 0x00, 0x11}
 		},
-		{  // Config 1: 2R1R
+		{ /* Config 1: 2R1R */
 			{0x11, 0x00, 0x91, 0x00},
 			{0x00, 0x11, 0x91, 0x00},
 			{0x91, 0x00, 0x11, 0x00},
 			{0x00, 0x00, 0x00, 0x00}
 		},
-		{  // Config 2: 1R2R
+		{ /* Config 2: 1R2R */
 			{0x11, 0x00, 0x91, 0x00},
 			{0x00, 0x00, 0x00, 0x00},
 			{0x91, 0x00, 0x11, 0x00},
 			{0x91, 0x00, 0x00, 0x11}
 		},
-		{  // Config 3: 1R1R
+		{ /* Config 3: 1R1R */
 			{0x11, 0x00, 0x91, 0x00},
 			{0x00, 0x00, 0x00, 0x00},
 			{0x91, 0x00, 0x11, 0x00},
 			{0x00, 0x00, 0x00, 0x00}
 		},
-		{  // Config 4: 2R0R
+		{ /* Config 4: 2R0R */
 			{0x11, 0x00, 0x00, 0x00},
 			{0x00, 0x11, 0x00, 0x00},
 			{0x00, 0x00, 0x00, 0x00},
 			{0x00, 0x00, 0x00, 0x00}
 		},
-		{  // Config 5: 0R2R
+		{ /* Config 5: 0R2R */
 			{0x00, 0x00, 0x00, 0x00},
 			{0x00, 0x00, 0x00, 0x00},
 			{0x00, 0x00, 0x11, 0x00},
 			{0x00, 0x00, 0x00, 0x11}
 		},
-		{  // Config 6: 1R0R
+		{ /* Config 6: 1R0R */
 			{0x11, 0x00, 0x00, 0x00},
 			{0x00, 0x00, 0x00, 0x00},
 			{0x00, 0x00, 0x00, 0x00},
 			{0x00, 0x00, 0x00, 0x00}
 		},
-		{  // Config 7: 0R1R
+		{ /* Config 7: 0R1R */
 			{0x00, 0x00, 0x00, 0x00},
 			{0x00, 0x00, 0x00, 0x00},
 			{0x00, 0x00, 0x11, 0x00},

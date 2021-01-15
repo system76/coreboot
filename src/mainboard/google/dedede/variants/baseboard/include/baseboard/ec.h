@@ -1,8 +1,4 @@
-/*
- *
- *
- * SPDX-License-Identifier: GPL-2.0-or-later
- */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #ifndef __BASEBOARD_EC_H__
 #define __BASEBOARD_EC_H__
@@ -42,9 +38,12 @@
  * 2. Power button
  * 3. Key press
  * 4. Mode change
+ * 5. AC Connect/Disconnect
  */
 #define MAINBOARD_EC_S3_WAKE_EVENTS \
 	(MAINBOARD_EC_S5_WAKE_EVENTS |\
+	 EC_HOST_EVENT_MASK(EC_HOST_EVENT_AC_CONNECTED)    |\
+	 EC_HOST_EVENT_MASK(EC_HOST_EVENT_AC_DISCONNECTED) |\
 	 EC_HOST_EVENT_MASK(EC_HOST_EVENT_KEY_PRESSED) |\
 	 EC_HOST_EVENT_MASK(EC_HOST_EVENT_MODE_CHANGE))
 

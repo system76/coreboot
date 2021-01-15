@@ -32,4 +32,52 @@
 #define cpuid(fn, eax, ebx, ecx, edx) \
 	asm("cpuid" : "=a"(eax), "=b"(ebx), "=c"(ecx), "=d"(edx) : "0"(fn))
 
+#define _declare_cpuid(reg)					\
+	static inline unsigned int cpuid_##reg(unsigned int fn)	\
+	{							\
+		unsigned int eax, ebx, ecx, edx;		\
+		cpuid(fn, eax, ebx, ecx, edx);			\
+		return reg;					\
+	}
+
+_declare_cpuid(eax)
+_declare_cpuid(ebx)
+_declare_cpuid(ecx)
+_declare_cpuid(edx)
+
+#undef _declare_cpuid
+
+static inline unsigned int cpuid_max(void)
+{
+	return cpuid_eax(0);
+}
+
+static inline unsigned int cpuid_family(void)
+{
+	const unsigned int eax = cpuid_eax(1);
+	return (eax & 0xff00000) >> (20 - 4) | (eax & 0xf00) >> 8;
+}
+
+static inline unsigned int cpuid_model(void)
+{
+	const unsigned int eax = cpuid_eax(1);
+	return (eax & 0xf0000) >> (16 - 4) | (eax & 0xf0) >> 4;
+}
+
+enum intel_fam6_model {
+	NEHALEM		= 0x25,
+	SANDYBRIDGE	= 0x2a,
+	IVYBRIDGE	= 0x3a,
+	HASWELL		= 0x3c,
+	BROADWELL_U	= 0x3d,
+	HASWELL_U	= 0x45,
+	HASWELL_GT3E	= 0x46,
+	BROADWELL	= 0x47,
+	SKYLAKE_U_Y	= 0x4e,
+	APOLLOLAKE	= 0x5c,
+	SKYLAKE_S_H	= 0x5e,
+	KABYLAKE_U_Y	= 0x8e,
+	KABYLAKE_S_H	= 0x9e,
+};
+
 #endif

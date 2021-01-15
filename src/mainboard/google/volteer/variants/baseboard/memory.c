@@ -1,14 +1,10 @@
-/*
- *
- *
- * SPDX-License-Identifier: GPL-2.0-or-later
- */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #include <baseboard/gpio.h>
 #include <baseboard/variants.h>
 #include <gpio.h>
 
-static const struct lpddr4x_cfg baseboard_memcfg = {
+static const struct lpddr4x_cfg baseboard_lpddr4x_memcfg = {
 	/* DQ CPU<>DRAM map */
 	.dq_map = {
 		[0] = {
@@ -60,7 +56,12 @@ static const struct lpddr4x_cfg baseboard_memcfg = {
 	.ect = 1, /* Enable Early Command Training */
 };
 
-const struct lpddr4x_cfg *__weak variant_memory_params(void)
+static const struct ddr_memory_cfg baseboard_memcfg = {
+	.mem_type = MEMTYPE_LPDDR4X,
+	.lpddr4_cfg = &baseboard_lpddr4x_memcfg
+};
+
+const struct ddr_memory_cfg *__weak variant_memory_params(void)
 {
 	return &baseboard_memcfg;
 }

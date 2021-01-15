@@ -18,7 +18,7 @@ static u8 mainboard_smi_ec(void)
 
 	ec_kbc_write_cmd(0x56);
 	src = ec_kbc_read_ob();
-	printk(BIOS_DEBUG, "mainboard_smi_ec src: %x\n", src);
+	printk(BIOS_DEBUG, "%s src: %x\n", __func__, src);
 
 	switch (src) {
 	case EC_BATTERY_CRITICAL:
@@ -36,12 +36,11 @@ static u8 mainboard_smi_ec(void)
 
 void mainboard_smi_gpi(u32 gpi_sts)
 {
-	printk(BIOS_DEBUG, "mainboard_smi_gpi: %x\n", gpi_sts);
+	printk(BIOS_DEBUG, "%s: %x\n", __func__, gpi_sts);
 	if (gpi_sts & (1 << EC_SMI_GPI)) {
 		/* Process all pending events from EC */
-		while (mainboard_smi_ec() != EC_NO_EVENT);
-	}
-	else if (gpi_sts & (1 << EC_LID_GPI)) {
+		do {} while (mainboard_smi_ec() != EC_NO_EVENT);
+	} else if (gpi_sts & (1 << EC_LID_GPI)) {
 		printk(BIOS_DEBUG, "LID CLOSED, SHUTDOWN\n");
 
 		/* Go to S5 */
@@ -51,15 +50,12 @@ void mainboard_smi_gpi(u32 gpi_sts)
 
 void mainboard_smi_sleep(u8 slp_typ)
 {
-	printk(BIOS_DEBUG, "mainboard_smi_sleep: %x\n", slp_typ);
+	printk(BIOS_DEBUG, "%s: %x\n", __func__, slp_typ);
 	/* Disable SCI and SMI events */
-
 
 	/* Clear pending events that may trigger immediate wake */
 
-
 	/* Enable wake events */
-
 
 	/* Tell the EC to Disable USB power */
 	if (gnvs->s3u0 == 0 && gnvs->s3u1 == 0) {
@@ -70,7 +66,7 @@ void mainboard_smi_sleep(u8 slp_typ)
 
 int mainboard_smi_apmc(u8 apmc)
 {
-	printk(BIOS_DEBUG, "mainboard_smi_apmc: %x\n", apmc);
+	printk(BIOS_DEBUG, "%s: %x\n", __func__, apmc);
 	switch (apmc) {
 	case APM_CNT_ACPI_ENABLE:
 		printk(BIOS_DEBUG, "APMC: ACPI_EN\n");

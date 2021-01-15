@@ -5,14 +5,6 @@ config MISSING_BOARD_RESET
 	  implementation. This activates a stub that logs the missing
 	  board reset and halts execution.
 
-config NO_EDID_FILL_FB
-	bool
-	default y if !MAINBOARD_DO_NATIVE_VGA_INIT
-	help
-	  Don't include default fill_lb_framebuffer() implementation. Select
-	  this if your drivers uses MAINBOARD_DO_NATIVE_VGA_INIT but provides
-	  its own fill_lb_framebuffer() implementation.
-
 config RAMSTAGE_ADA
 	bool
 	help
@@ -30,12 +22,11 @@ config FLATTENED_DEVICE_TREE
 	  Selected by features that require to parse and manipulate a flattened
 	  devicetree in ramstage.
 
-config GENERIC_SPD_BIN
+config HAVE_SPD_IN_CBFS
 	bool
 	help
 	  If enabled, add support for adding spd.hex files in cbfs as spd.bin
-	  and locating it runtime to load SPD. Additionally provide provision to
-	  fetch SPD over SMBus.
+	  and locating it runtime to load SPD.
 
 config DIMM_MAX
 	int
@@ -54,6 +45,23 @@ config DIMM_SPD_SIZE
 
 config SPD_READ_BY_WORD
 	bool
+
+config SPD_CACHE_IN_FMAP
+	bool
+	default n
+	help
+	  Enables capability to cache DIMM SPDs in a dedicated FMAP region
+	  to speed loading of SPD data. Currently requires board-level
+	  romstage implementation to read/write/utilize cached SPD data.
+	  When the default FMAP is used, will create a region named RW_SPD_CACHE
+	  to store the cached SPD data.
+
+config SPD_CACHE_FMAP_NAME
+	string
+	depends on SPD_CACHE_IN_FMAP
+	default "RW_SPD_CACHE"
+	help
+	  Name of the FMAP region created in the default FMAP to cache SPD data.
 
 if RAMSTAGE_LIBHWBASE
 
@@ -81,3 +89,23 @@ config ESPI_DEBUG
 	help
 	  This option enables eSPI library helper functions for displaying debug
 	  information.
+
+config NO_CBFS_MCACHE
+	bool
+	help
+	  Disables the CBFS metadata cache. This means that your platform does
+	  not need to provide a CBFS_MCACHE section in memlayout and can save
+	  the associated CAR/SRAM size. In that case every single CBFS file
+	  lookup must re-read the same CBFS directory entries from flash to find
+	  the respective file.
+
+config CBFS_MCACHE_RW_PERCENTAGE
+	int
+	depends on VBOOT && !NO_CBFS_MCACHE
+	default 25 if CHROMEOS	# Chrome OS stores many L10n files in RO only
+	default 50
+	help
+	  The amount of the CBFS_MCACHE area that's used for the RW CBFS, in
+	  percent from 0 to 100. The remaining area will be used for the RO
+	  CBFS. Default is an even 50/50 split. When VBOOT is disabled, this
+	  will automatically be 0 (meaning the whole MCACHE is used for RO).

@@ -71,7 +71,6 @@ static const struct cpu_driver driver __cpu_driver = {
 	.id_table = cpu_table,
 };
 
-
 /*
  * MP and SMM loading initialization.
  */
@@ -153,7 +152,7 @@ static void get_microcode_info(const void **microcode, int *parallel)
 	const struct pattrs *pattrs = pattrs_get();
 
 	*microcode = pattrs->microcode_patch;
-	*parallel = 1;
+	*parallel = !intel_ht_supported();
 }
 
 static void per_cpu_smm_trigger(void)

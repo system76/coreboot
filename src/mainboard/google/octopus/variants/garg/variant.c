@@ -8,34 +8,7 @@
 #include <delay.h>
 #include <gpio.h>
 #include <variant/sku.h>
-
-struct gpio_with_delay {
-	gpio_t gpio;
-	unsigned int delay_msecs;
-};
-
-static void power_off_lte_module(u8 slp_typ)
-{
-	const struct gpio_with_delay lte_power_off_gpios[] = {
-		{
-			GPIO_161, /* AVS_I2S1_MCLK -- PLT_RST_LTE_L */
-			30,
-		},
-		{
-			GPIO_117, /* PCIE_WAKE1_B -- FULL_CARD_POWER_OFF */
-			100
-		},
-		{
-			GPIO_67, /* UART2-CTS_B -- EN_PP3300_DX_LTE_SOC */
-			0
-		}
-	};
-
-	for (int i = 0; i < ARRAY_SIZE(lte_power_off_gpios); i++) {
-		gpio_output(lte_power_off_gpios[i].gpio, 0);
-		mdelay(lte_power_off_gpios[i].delay_msecs);
-	}
-}
+#include <soc/intel/apollolake/chip.h>
 
 const char *mainboard_vbt_filename(void)
 {
@@ -47,6 +20,7 @@ const char *mainboard_vbt_filename(void)
 	case SKU_9_HDMI:
 	case SKU_19_HDMI_TS:
 	case SKU_50_HDMI:
+	case SKU_52_HDMI_TS:
 		return "vbt_garg_hdmi.bin";
 	default:
 		return "vbt.bin";
@@ -63,9 +37,29 @@ void variant_smi_sleep(u8 slp_typ)
 	switch (google_chromeec_get_board_sku()) {
 	case SKU_17_LTE:
 	case SKU_18_LTE_TS:
-		power_off_lte_module(slp_typ);
+	case SKU_39_1A2C_360_LTE_TS_NO_STYLUES:
+		power_off_lte_module();
 		return;
 	default:
 		return;
+	}
+}
+
+void variant_update_devtree(struct device *dev)
+{
+	struct soc_intel_apollolake_config *cfg = NULL;
+
+	cfg = (struct soc_intel_apollolake_config *)dev->chip_info;
+
+	if (cfg != NULL && (cfg->disable_xhci_lfps_pm != 1)) {
+		switch (google_chromeec_get_board_sku()) {
+		case SKU_17_LTE:
+		case SKU_18_LTE_TS:
+		case SKU_39_1A2C_360_LTE_TS_NO_STYLUES:
+			cfg->disable_xhci_lfps_pm = 1;
+			return;
+		default:
+			return;
+		}
 	}
 }

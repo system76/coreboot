@@ -8,6 +8,7 @@ src := src
 srck := $(top)/util/kconfig
 obj ?= build
 override obj := $(subst $(top)/,,$(abspath $(obj)))
+xcompile ?= $(obj)/xcompile
 objutil ?= $(obj)/util
 objk := $(objutil)/kconfig
 absobj := $(abspath $(obj))
@@ -119,7 +120,7 @@ UNIT_TEST:=1
 NOCOMPILE:=
 endif
 
-.xcompile: util/xcompile/xcompile
+$(xcompile): util/xcompile/xcompile
 	rm -f $@
 	$< $(XGCCPATH) > $@.tmp
 	\mv -f $@.tmp $@ 2> /dev/null
@@ -146,15 +147,17 @@ ifneq ($(UNIT_TEST),1)
 include $(DOTCONFIG)
 endif
 
-# in addition to the dependency below, create the file if it doesn't exist
-# to silence stupid warnings about a file that would be generated anyway.
-$(if $(wildcard .xcompile)$(NOCOMPILE),,$(eval $(shell util/xcompile/xcompile $(XGCCPATH) > .xcompile || rm -f .xcompile)))
+# The toolchain requires xcompile to determine the ARCH_SUPPORTED, so we can't
+# wait for make to generate the file.
+$(if $(wildcard $(xcompile)),, $(shell \
+	mkdir -p $(dir $(xcompile)) && \
+	util/xcompile/xcompile $(XGCCPATH) > $(xcompile) || rm -f $(xcompile)))
 
--include .xcompile
+include $(xcompile)
 
 ifneq ($(XCOMPILE_COMPLETE),1)
-$(shell rm -f .xcompile)
-$(error .xcompile deleted because it's invalid. \
+$(shell rm -f $(xcompile))
+$(error $(xcompile) deleted because it's invalid. \
 	Restarting the build should fix that, or explain the problem)
 endif
 
@@ -440,10 +443,10 @@ doxygen_simple:
 doxyplatform doxygen_platform: $(obj)/project_filelist.txt
 	echo
 	echo "Building doxygen documentation for $(CONFIG_MAINBOARD_PART_NUMBER)"
-	export DOXYGEN_OUTPUT_DIR="$(DOXYGEN_OUTPUT_DIR)/$(CONFIG_MAINBOARD_VENDOR)/$(CONFIG_MAINBOARD_PART_NUMBER)"; \
+	export DOXYGEN_OUTPUT_DIR="$$( echo $(DOXYGEN_OUTPUT_DIR)/$(call strip_quotes, $(CONFIG_MAINBOARD_VENDOR))_$(call strip_quotes, $(CONFIG_MAINBOARD_PART_NUMBER)) | sed 's|[^A-Za-z0-9/]|_|g' )"; \
 	mkdir -p "$$DOXYGEN_OUTPUT_DIR"; \
 	export DOXYFILES="$$(cat $(obj)/project_filelist.txt | grep -v '\.ld$$' | sed 's/\.aml/\.dsl/' | tr '\n' ' ')"; \
-	export DOXYGEN_PLATFORM="$(CONFIG_MAINBOARD_DIR) ($(CONFIG_MAINBOARD_PART_NUMBER)) version $(KERNELVERSION)"; \
+	export DOXYGEN_PLATFORM="$(call strip_quotes, $(CONFIG_MAINBOARD_DIR)) \($(call strip_quotes, $(CONFIG_MAINBOARD_PART_NUMBER))\) version $(KERNELVERSION)"; \
 	$(DOXYGEN) Documentation/doxygen/Doxyfile.coreboot_platform
 
 doxyclean: doxygen-clean

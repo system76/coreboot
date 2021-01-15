@@ -14,13 +14,11 @@
 #include <soc/gpio.h>
 #include <soc/lpc.h>
 #include <soc/msr.h>
-#include <soc/nvs.h>
 #include <soc/pattrs.h>
 #include <soc/pci_devs.h>
 #include <soc/pm.h>
 #include <soc/ramstage.h>
 #include <soc/intel/common/acpi.h>
-#include <boardid.h>
 #include <string.h>
 
 #define SHOW_PATTRS 1
@@ -127,33 +125,15 @@ int soc_fill_acpi_wake(uint32_t *pm1, uint32_t **gpe0)
 	struct chipset_power_state *ps = cbmem_find(CBMEM_ID_POWER_STATE);
 	static uint32_t gpe0_sts;
 
+	if (!ps)
+		return -1;
+
 	*pm1 = ps->pm1_sts & ps->pm1_en;
 
 	gpe0_sts = ps->gpe0_sts & ps->gpe0_en;
 	*gpe0 = &gpe0_sts;
 
 	return 1;
-}
-
-static void s3_resume_prepare(void)
-{
-	struct global_nvs *gnvs;
-
-	gnvs = cbmem_add(CBMEM_ID_ACPI_GNVS, sizeof(struct global_nvs));
-	if (!acpi_is_wakeup_s3() && gnvs)
-		memset(gnvs, 0, sizeof(struct global_nvs));
-}
-
-static void set_board_id(void)
-{
-	struct global_nvs *gnvs;
-
-	gnvs = cbmem_find(CBMEM_ID_ACPI_GNVS);
-	if (!gnvs) {
-		printk(BIOS_ERR, "Unable to locate Global NVS\n");
-		return;
-	}
-	gnvs->bdid = board_id();
 }
 
 void soc_init_pre_device(struct soc_intel_braswell_config *config)
@@ -165,14 +145,10 @@ void soc_init_pre_device(struct soc_intel_braswell_config *config)
 	/* Allow for SSE instructions to be executed. */
 	write_cr4(read_cr4() | CR4_OSFXSR | CR4_OSXMMEXCPT);
 
-	/* Indicate S3 resume to rest of ramstage. */
-	s3_resume_prepare();
-
 	/* Perform silicon specific init. */
 	intel_silicon_init();
 	set_max_freq();
 
-	set_board_id();
 	/* Get GPIO initial states from mainboard */
 	gpio_config = mainboard_get_gpios();
 	setup_soc_gpios(gpio_config, config->enable_xdp_tap);

@@ -21,11 +21,10 @@
  * It does not matter where we put the SMBus I/O base, as long as we
  * keep it consistent and don't interfere with other devices.  Stage2
  * will relocate this anyways.
- * Our solution is to have SMB initialization move the I/O to SMBUS_IO_BASE
+ * Our solution is to have SMB initialization move the I/O to CONFIG_FIXED_SMBUS_IO_BASE
  * again. But handling static BARs is a generic problem that should be
  * solved in the device allocator.
  */
-#define SMBUS_IO_BASE		0x0400
 #define SMBUS_SLAVE_ADDR	0x24
 /* TODO Make sure these don't get changed by stage2 */
 #define DEFAULT_GPIOBASE	0x0480
@@ -43,7 +42,6 @@
 
 int pch_silicon_revision(void);
 int pch_silicon_type(void);
-int pch_silicon_supported(int type, int rev);
 void pch_iobp_update(u32 address, u32 andvalue, u32 orvalue);
 
 void enable_usb_bar(void);
@@ -86,13 +84,20 @@ void early_usb_init(const struct southbridge_usb_port *portmap);
 
 #define PCH_EHCI1_DEV		PCI_DEV(0, 0x1d, 0)
 #define PCH_EHCI2_DEV		PCI_DEV(0, 0x1a, 0)
-#define PCH_XHCI_DEV		PCI_DEV(0, 0x14, 0)
 #define PCH_ME_DEV		PCI_DEV(0, 0x16, 0)
 #define PCH_PCIE_DEV_SLOT	28
 #define PCH_IOAPIC_PCI_BUS	250
 #define PCH_IOAPIC_PCI_SLOT	31
 #define PCH_HPET_PCI_BUS	250
 #define PCH_HPET_PCI_SLOT	15
+
+/* PCI Configuration Space (D20:F0): xHCI */
+#define PCH_XHCI_DEV		PCI_DEV(0, 0x14, 0)
+
+#define XHCI_PWR_CNTL_STS	0x74
+
+/* xHCI memory base registers */
+#define XHCI_PORTSC_x_USB3(port)	(0x4c0 + (port) * 0x10)
 
 /* PCI Configuration Space (D31:F0): LPC */
 #define PCH_LPC_DEV		PCI_DEV(0, 0x1f, 0)
@@ -156,53 +161,12 @@ void early_usb_init(const struct southbridge_usb_port *portmap);
 #define LGMR			0x98 /* LPC Generic Memory Range */
 #define BIOS_DEC_EN1		0xd8 /* BIOS Decode Enable */
 
-/* PCI Configuration Space (D31:F1): IDE */
-#define PCH_IDE_DEV		PCI_DEV(0, 0x1f, 1)
+/* PCI Configuration Space (D31:F2): SATA */
 #define PCH_SATA_DEV		PCI_DEV(0, 0x1f, 2)
 #define PCH_SATA2_DEV		PCI_DEV(0, 0x1f, 5)
 #define IDE_TIM_PRI		0x40	/* IDE timings, primary */
 #define   IDE_DECODE_ENABLE	(1 << 15)
-#define   IDE_SITRE		(1 << 14)
-#define   IDE_ISP_5_CLOCKS	(0 << 12)
-#define   IDE_ISP_4_CLOCKS	(1 << 12)
-#define   IDE_ISP_3_CLOCKS	(2 << 12)
-#define   IDE_RCT_4_CLOCKS	(0 <<  8)
-#define   IDE_RCT_3_CLOCKS	(1 <<  8)
-#define   IDE_RCT_2_CLOCKS	(2 <<  8)
-#define   IDE_RCT_1_CLOCKS	(3 <<  8)
-#define   IDE_DTE1		(1 <<  7)
-#define   IDE_PPE1		(1 <<  6)
-#define   IDE_IE1		(1 <<  5)
-#define   IDE_TIME1		(1 <<  4)
-#define   IDE_DTE0		(1 <<  3)
-#define   IDE_PPE0		(1 <<  2)
-#define   IDE_IE0		(1 <<  1)
-#define   IDE_TIME0		(1 <<  0)
 #define IDE_TIM_SEC		0x42	/* IDE timings, secondary */
-
-#define IDE_SDMA_CNT		0x48	/* Synchronous DMA control */
-#define   IDE_SSDE1		(1 <<  3)
-#define   IDE_SSDE0		(1 <<  2)
-#define   IDE_PSDE1		(1 <<  1)
-#define   IDE_PSDE0		(1 <<  0)
-
-#define IDE_SDMA_TIM		0x4a
-
-#define IDE_CONFIG		0x54	/* IDE I/O Configuration Register */
-#define   SIG_MODE_SEC_NORMAL	(0 << 18)
-#define   SIG_MODE_SEC_TRISTATE	(1 << 18)
-#define   SIG_MODE_SEC_DRIVELOW	(2 << 18)
-#define   SIG_MODE_PRI_NORMAL	(0 << 16)
-#define   SIG_MODE_PRI_TRISTATE	(1 << 16)
-#define   SIG_MODE_PRI_DRIVELOW	(2 << 16)
-#define   FAST_SCB1		(1 << 15)
-#define   FAST_SCB0		(1 << 14)
-#define   FAST_PCB1		(1 << 13)
-#define   FAST_PCB0		(1 << 12)
-#define   SCB1			(1 <<  3)
-#define   SCB0			(1 <<  2)
-#define   PCB1			(1 <<  1)
-#define   PCB0			(1 <<  0)
 
 #define SATA_SIRI		0xa0 /* SATA Indexed Register Index */
 #define SATA_SIRD		0xa4 /* SATA Indexed Register Data */
@@ -230,26 +194,6 @@ void early_usb_init(const struct southbridge_usb_port *portmap);
 
 #define CIR0		0x0050	/* 32bit */
 #define  TCLOCKDN	(1u << 31)
-
-#define RCTCL		0x0100	/* 32bit */
-#define ESD		0x0104	/* 32bit */
-#define ULD		0x0110	/* 32bit */
-#define ULBA		0x0118	/* 64bit */
-
-#define RP1D		0x0120	/* 32bit */
-#define RP1BA		0x0128	/* 64bit */
-#define RP2D		0x0130	/* 32bit */
-#define RP2BA		0x0138	/* 64bit */
-#define RP3D		0x0140	/* 32bit */
-#define RP3BA		0x0148	/* 64bit */
-#define RP4D		0x0150	/* 32bit */
-#define RP4BA		0x0158	/* 64bit */
-#define HDD		0x0160	/* 32bit */
-#define HDBA		0x0168	/* 64bit */
-#define RP5D		0x0170	/* 32bit */
-#define RP5BA		0x0178	/* 64bit */
-#define RP6D		0x0180	/* 32bit */
-#define RP6BA		0x0188	/* 64bit */
 
 #define RPC		0x0400	/* 32bit */
 #define RPFN		0x0404	/* 32bit */

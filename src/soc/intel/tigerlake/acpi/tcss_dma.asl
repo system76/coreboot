@@ -1,7 +1,4 @@
-/*
- *
- * SPDX-License-Identifier: GPL-2.0-or-later
- */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 OperationRegion (DPME, SystemMemory, BASE(_ADR), 0x100)
 Field (DPME, AnyAcc, NoLock, Preserve)
@@ -35,20 +32,12 @@ Method (_S0W, 0x0)
 
 Method (_PR0)
 {
-	If (DUID == 0) {
-		Return (Package() { \_SB.PCI0.D3C, \_SB.PCI0.TBT0 })
-	} Else {
-		Return (Package() { \_SB.PCI0.D3C, \_SB.PCI0.TBT1 })
-	}
+	Return (Package() { \_SB.PCI0.D3C })
 }
 
 Method (_PR3)
 {
-	If (DUID == 0) {
-		Return (Package() { \_SB.PCI0.D3C, \_SB.PCI0.TBT0 })
-	} Else {
-		Return (Package() { \_SB.PCI0.D3C, \_SB.PCI0.TBT1 })
-	}
+	Return (Package() { \_SB.PCI0.D3C })
 }
 
 /*
@@ -75,6 +64,24 @@ Method (D3CE, 0, Serialized)
  */
 Name (SD3C, 0)
 
+Method (_PS0, 0, Serialized)
+{
+	If (DUID == 0) {
+		\_SB.PCI0.TBT0._ON()
+	} Else {
+		\_SB.PCI0.TBT1._ON()
+	}
+}
+
+Method (_PS3, 0, Serialized)
+{
+	If (DUID == 0) {
+		\_SB.PCI0.TBT0._OFF()
+	} Else {
+		\_SB.PCI0.TBT1._OFF()
+	}
+}
+
 Method (_DSW, 3)
 {
 	/* If entering Sx (Arg1 > 1), need to skip TCSS D3Cold & TBT RTD3/D3Cold. */
@@ -84,31 +91,4 @@ Method (_DSW, 3)
 Method (_PRW, 0)
 {
 	Return (Package() { 0x6D, 4 })
-}
-
-Method (_DSD, 0)
-{
-	Return(
-		Package()
-		{
-			/* Thunderbolt GUID for IMR_VALID at ../drivers/acpi/property.c */
-			ToUUID("C44D002F-69F9-4E7D-A904-A7BAABDF43F7"),
-			Package ()
-			{
-				Package (2) { "IMR_VALID", 1 }
-			},
-
-			/* Thunderbolt GUID for WAKE_SUPPORTED at ../drivers/acpi/property.c */
-			ToUUID("6C501103-C189-4296-BA72-9BF5A26EBE5D"),
-			Package ()
-			{
-				Package (2) { "WAKE_SUPPORTED", 1 }
-			}
-		}
-	)
-}
-
-Method (_DSM, 4, Serialized)
-{
-	Return (Buffer() { 0 })
 }

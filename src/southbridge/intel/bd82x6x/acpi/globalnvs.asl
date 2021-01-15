@@ -11,11 +11,10 @@ Name(\PICM, 0)		// IOAPIC/8259
  */
 
 External(NVSA)
-OperationRegion (GNVS, SystemMemory, NVSA, 0xf00)
+OperationRegion (GNVS, SystemMemory, NVSA, 0x1000)
 Field (GNVS, ByteAcc, NoLock, Preserve)
 {
 	/* Miscellaneous */
-	Offset (0x00),
 	OSYS,	16,	// 0x00 - Operating System
 	SMIF,	 8,	// 0x02 - SMI function
 	PRM0,	 8,	// 0x03 - SMI function parameter
@@ -111,6 +110,7 @@ Field (GNVS, ByteAcc, NoLock, Preserve)
 
 	Offset (0xf5),
 	TPIQ,	 8,	// 0xf5 - trackpad IRQ value
+	CBMC,	32,
 
 	/* ChromeOS specific */
 	Offset (0x100),

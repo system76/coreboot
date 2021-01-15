@@ -8,7 +8,6 @@
 #include <device/device.h>
 #include <device/pci.h>
 #include <device/pci_ids.h>
-#include <device/hypertransport.h>
 #include <string.h>
 #include <lib.h>
 #include <cpu/cpu.h>
@@ -19,7 +18,7 @@
 #include <Porting.h>
 #include <Options.h>
 #include <Topology.h>
-#include <northbridge/amd/agesa/nb_common.h>
+#include <northbridge/amd/nb_common.h>
 #include <northbridge/amd/agesa/state_machine.h>
 #include <northbridge/amd/agesa/agesa_helper.h>
 
@@ -542,7 +541,6 @@ static unsigned long agesa_write_acpi_tables(const struct device *device,
 
 	return current;
 }
-
 
 static struct device_operations northbridge_operations = {
 	.read_resources	  = nb_read_resources,

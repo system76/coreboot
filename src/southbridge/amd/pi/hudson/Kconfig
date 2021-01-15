@@ -18,8 +18,9 @@ config SOUTHBRIDGE_SPECIFIC_OPTIONS # dummy
 	select HAVE_CF9_RESET
 	select HAVE_CF9_RESET_PREPARE
 	select SOC_AMD_COMMON
-	select SOC_AMD_COMMON_BLOCK
 	select SOC_AMD_COMMON_BLOCK_ACPIMMIO
+	select SOC_AMD_COMMON_BLOCK_BANKED_GPIOS
+	select SOC_AMD_COMMON_BLOCK_PCI_MMCONF
 
 config EHCI_BAR
 	hex
@@ -61,7 +62,11 @@ config HUDSON_GEC_FWM
 
 config HUDSON_PSP
 	bool
-	default y if CPU_AMD_PI_00730F01 || CPU_AMD_PI_00660F01
+	default y if CPU_AMD_PI_00730F01
+
+config AMDFW_CONFIG_FILE
+	string "AMD PSP Firmware config file"
+	default "src/southbridge/amd/pi/hudson/fw_avl.cfg" if CPU_AMD_PI_00730F01
 
 config HUDSON_XHCI_FWM_FILE
 	string "XHCI firmware path and filename"
@@ -85,7 +90,6 @@ config AMD_PUBKEY_FILE
 	depends on HUDSON_PSP
 	string "AMD public Key"
 	default "3rdparty/blobs/southbridge/amd/avalon/PSP/AmdPubKey.bin" if CPU_AMD_PI_00730F01
-	default "3rdparty/blobs/southbridge/amd/kern/PSP/AmdPubKeyCZ.bin" if CPU_AMD_PI_00660F01
 
 config HUDSON_SATA_MODE
 	int "SATA Mode"

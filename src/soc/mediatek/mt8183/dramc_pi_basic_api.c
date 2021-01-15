@@ -47,10 +47,12 @@ void dramc_sw_impedance_cal(const struct sdram_params *params, u8 term,
 	broadcast_bak = dramc_get_broadcast();
 	dramc_set_broadcast(DRAMC_BROADCAST_OFF);
 
-	clrbits32(&ch[0].phy.misc_spm_ctrl1, 0xf << 0);
-	write32(&ch[0].phy.misc_spm_ctrl2, 0x0);
-	write32(&ch[0].phy.misc_spm_ctrl0, 0x0);
-	clrbits32(&ch[0].ao.impcal, 0x1 << 31);
+	for (u8 chn = 0; chn < CHANNEL_MAX; chn++) {
+		clrbits32(&ch[chn].phy.misc_spm_ctrl1, 0xf << 0);
+		write32(&ch[chn].phy.misc_spm_ctrl2, 0x0);
+		write32(&ch[chn].phy.misc_spm_ctrl0, 0x0);
+		clrbits32(&ch[chn].ao.impcal, 0x1 << 31);
+	}
 
 	impcal_bak = read32(&ch[0].ao.impcal);
 	dramc_sw_imp_cal_vref_sel(term, IMPCAL_STAGE_DRVP);
@@ -91,7 +93,7 @@ void dramc_sw_impedance_cal(const struct sdram_params *params, u8 term,
 	if (term == ODT_ON)
 		setbits32(&ch[0].ao.impcal, 0x1 << 21);
 	clrsetbits32(&ch[0].ao.shu[0].impcal1, 0x1f << 4 | 0x1f << 11,
-		DRVP_result << 4 | 0x1f << 11);
+		DRVP_result << 4);
 	clrsetbits32(&ch[0].phy.shu[0].ca_cmd[11], 0xff << 0, 0x3);
 
 	for (u8 impx_drv = 0; impx_drv < 32; impx_drv++) {
@@ -150,9 +152,6 @@ void dramc_sw_impedance_save_reg(u8 freq_group,
 	sw_impedance[ODT_OFF][2] = sw_impedance[ODT_ON][2];
 	sw_impedance[ODT_OFF][3] = sw_impedance[ODT_ON][3];
 
-	clrsetbits32(&ch[0].phy.shu[0].ca_cmd[11], 0xff, 0x3);
-	dramc_sw_imp_cal_vref_sel(dq_term, IMPCAL_STAGE_DRVP);
-
 	/* DQ */
 	clrsetbits32(&ch[0].ao.shu[0].drving[0], (0x1f << 5) | (0x1f << 0),
 		(sw_impedance[dq_term][0] << 5) |
@@ -202,7 +201,10 @@ void dramc_sw_impedance_save_reg(u8 freq_group,
 	SET32_BITFIELDS(&ch[0].phy.shu[0].ca_cmd[0],
 			SHU1_CA_CMD0_RG_TX_ARCLK_DRVN_PRE, 0);
 
+	dramc_set_broadcast(DRAMC_BROADCAST_OFF);
 	clrsetbits32(&ch[0].phy.shu[0].ca_dll[1], 0x1f << 16, 0x9 << 16);
+	clrsetbits32(&ch[1].phy.shu[0].ca_dll[1], 0x1f << 16, 0x9 << 16);
+	dramc_set_broadcast(DRAMC_BROADCAST_ON);
 }
 
 static void transfer_pll_to_spm_control(void)
@@ -345,9 +347,9 @@ static void dramc_phy_low_power_enable(u8 chn)
 		(chn == CHANNEL_A) ? 0xba000 : 0x3a000);
 }
 
-static void dramc_dummy_read_for_tracking_enable(u8 chn)
+static void dramc_dummy_read_for_tracking_enable(u8 chn, u32 rk_num)
 {
-	setbits32(&ch[chn].ao.dummy_rd, 0x3 << 16);
+	setbits32(&ch[chn].ao.dummy_rd, rk_num << 16);
 
 	for (size_t r = 0; r < 2; r++)
 		for (size_t i = 0; i < 4; i++)
@@ -401,7 +403,7 @@ static void dramc_enable_dramc_dcm(void)
 	}
 }
 
-void dramc_runtime_config(void)
+void dramc_runtime_config(u32 rk_num)
 {
 	for (u8 chn = 0; chn < CHANNEL_MAX; chn++)
 		clrbits32(&ch[chn].ao.refctrl0, 0x1 << 29);
@@ -410,7 +412,7 @@ void dramc_runtime_config(void)
 	setbits32(&mtk_spm->spm_power_on_val0, 0x1 << 25);
 
 	for (u8 chn = 0; chn < CHANNEL_MAX; chn++) {
-		dramc_hw_dqsosc(chn);
+		dramc_hw_dqsosc(chn, rk_num);
 
 		/* RX_TRACKING: ON */
 		dramc_rx_input_delay_tracking(chn);
@@ -424,7 +426,7 @@ void dramc_runtime_config(void)
 			  (0x3 << 4) | (0x3 << 8) | (0x1 << 28));
 
 		/* DUMMY_READ_FOR_TRACKING: ON */
-		dramc_dummy_read_for_tracking_enable(chn);
+		dramc_dummy_read_for_tracking_enable(chn, rk_num);
 
 		/* ZQCS_ENABLE_LP4: ON */
 		clrbits32(&ch[chn].ao.spcmdctrl, 0x1 << 30);

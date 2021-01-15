@@ -2,7 +2,14 @@
 
 #include <acpi/acpi.h>
 
-DefinitionBlock("dsdt.aml", "DSDT", 2, OEM_ID, ACPI_TABLE_CREATOR, 0x20181220)
+DefinitionBlock(
+	"dsdt.aml",
+	"DSDT",
+	ACPI_DSDT_REV_2,
+	OEM_ID,
+	ACPI_TABLE_CREATOR,
+	0x20181220
+	)
 {
 	#include "acpi/platform.asl"
 	#include <southbridge/intel/common/acpi/platform.asl>
@@ -12,7 +19,7 @@ DefinitionBlock("dsdt.aml", "DSDT", 2, OEM_ID, ACPI_TABLE_CREATOR, 0x20181220)
 
 	Device (\_SB.PCI0)
 	{
-		#include <northbridge/intel/haswell/acpi/haswell.asl>
+		#include <northbridge/intel/haswell/acpi/hostbridge.asl>
 		#include <southbridge/intel/lynxpoint/acpi/pch.asl>
 		#include <drivers/intel/gma/acpi/default_brightness_levels.asl>
 	}

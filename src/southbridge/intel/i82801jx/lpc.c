@@ -16,7 +16,6 @@
 #include <cpu/x86/smm.h>
 #include <acpi/acpigen.h>
 #include <arch/smp/mpspec.h>
-#include <cbmem.h>
 #include <string.h>
 #include "chip.h"
 #include "i82801jx.h"
@@ -276,19 +275,6 @@ static void i82801jx_power_options(struct device *dev)
 	outl(reg32, pmbase + 0x10);
 }
 
-static void i82801jx_configure_cstates(struct device *dev)
-{
-	// Enable Popup & Popdown
-	pci_or_config8(dev, D31F0_CxSTATE_CNF, (1 << 4) | (1 << 3) | (1 << 2));
-
-	// Set Deeper Sleep configuration to recommended values
-	// Deeper Sleep to Stop CPU: 34-40us
-	// Deeper Sleep to Sleep: 15us
-	pci_update_config8(dev, D31F0_C4TIMING_CNT, ~0x0f, (2 << 2) | (2 << 0));
-
-	/* We could enable slow-C4 exit here, if someone needs it? */
-}
-
 static void i82801jx_rtc_init(struct device *dev)
 {
 	u8 reg8;
@@ -360,9 +346,6 @@ static void lpc_init(struct device *dev)
 {
 	printk(BIOS_DEBUG, "i82801jx: %s\n", __func__);
 
-	/* Set the value for PCI command register. */
-	pci_write_config16(dev, PCI_COMMAND, 0x000f);
-
 	/* IO APIC initialization. */
 	i82801jx_enable_apic(dev);
 
@@ -373,10 +356,6 @@ static void lpc_init(struct device *dev)
 
 	/* Setup power options. */
 	i82801jx_power_options(dev);
-
-	/* Configure Cx state registers */
-	if (LPC_IS_MOBILE(dev))
-		i82801jx_configure_cstates(dev);
 
 	/* Initialize the real time clock. */
 	i82801jx_rtc_init(dev);
@@ -423,7 +402,6 @@ unsigned long acpi_fill_madt(unsigned long current)
 	current += acpi_create_madt_irqoverride((acpi_madt_irqoverride_t *)
 		 current, 0, 9, 9, MP_IRQ_POLARITY_HIGH | MP_IRQ_TRIGGER_LEVEL);
 
-
 	return current;
 }
 
@@ -451,7 +429,7 @@ static void i82801jx_lpc_read_resources(struct device *dev)
 	 * 0x00c0 ~ 0x00de....ISA DMA
 	 * 0x00c1 ~ 0x00df....ISA DMA aliases
 	 * 0x00f0.............Coprocessor Error
-	 * (0x0400-0x041f)....SMBus (SMBUS_IO_BASE, during raminit)
+	 * (0x0400-0x041f)....SMBus (CONFIG_FIXED_SMBUS_IO_BASE, during raminit)
 	 * 0x04d0 - 0x04d1....PIC
 	 * 0x0500 - 0x057f....PM (DEFAULT_PMBASE)
 	 * 0x0580 - 0x05bf....SB GPIO (DEFAULT_GPIOBASE)
@@ -498,22 +476,9 @@ static void i82801jx_lpc_read_resources(struct device *dev)
 	}
 }
 
-void southbridge_inject_dsdt(const struct device *dev)
+size_t gnvs_size_of_array(void)
 {
-	struct global_nvs *gnvs = cbmem_add(CBMEM_ID_ACPI_GNVS, sizeof(*gnvs));
-
-	if (gnvs) {
-		memset(gnvs, 0, sizeof(*gnvs));
-		acpi_create_gnvs(gnvs);
-
-		/* And tell SMI about it */
-		apm_control(APM_CNT_GNVS_UPDATE);
-
-		/* Add it to SSDT.  */
-		acpigen_write_scope("\\");
-		acpigen_write_name_dword("NVSA", (u32) gnvs);
-		acpigen_pop_len();
-	}
+	return sizeof(struct global_nvs);
 }
 
 static const char *lpc_acpi_name(const struct device *dev)
@@ -534,7 +499,6 @@ static struct device_operations device_ops = {
 	.read_resources		= i82801jx_lpc_read_resources,
 	.set_resources		= pci_dev_set_resources,
 	.enable_resources	= pci_dev_enable_resources,
-	.acpi_inject_dsdt	= southbridge_inject_dsdt,
 	.write_acpi_tables      = acpi_write_hpet,
 	.acpi_fill_ssdt		= southbridge_fill_ssdt,
 	.acpi_name		= lpc_acpi_name,

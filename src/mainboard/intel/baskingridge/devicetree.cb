@@ -16,14 +16,6 @@ chip northbridge/intel/haswell
 			device lapic 0 on end
 			# Magic APIC ID to locate this chip
 			device lapic 0xACAC off end
-
-			register "c1_battery" = "2"	# ACPI(C1) = MWAIT(C1E)
-			register "c2_battery" = "3"	# ACPI(C2) = MWAIT(C3)
-			register "c3_battery" = "9"	# ACPI(C3) = MWAIT(C7S)
-
-			register "c1_acpower" = "2"	# ACPI(C1) = MWAIT(C1E)
-			register "c2_acpower" = "3"	# ACPI(C2) = MWAIT(C3)
-			register "c3_acpower" = "9"	# ACPI(C3) = MWAIT(C7S)
 		end
 	end
 
@@ -32,15 +24,6 @@ chip northbridge/intel/haswell
 		device pci 02.0 on end # vga controller
 
 		chip southbridge/intel/lynxpoint # Intel Series 8 Lynx Point PCH
-			register "pirqa_routing" = "0x8b"
-			register "pirqb_routing" = "0x8a"
-			register "pirqc_routing" = "0x8b"
-			register "pirqd_routing" = "0x8b"
-			register "pirqe_routing" = "0x80"
-			register "pirqf_routing" = "0x80"
-			register "pirqg_routing" = "0x80"
-			register "pirqh_routing" = "0x80"
-
 			# GPI routing
 			#  0 No effect (default)
 			#  1 SMI# (if corresponding ALT_GPI_SMI_EN bit is also set)
@@ -50,8 +33,6 @@ chip northbridge/intel/haswell
 			register "alt_gp_smi_en" = "0x0000"
 			register "gpe0_en_1" = "0x4000"
 
-			register "ide_legacy_combined" = "0x0"
-			register "sata_ahci" = "0x1"
 			register "sata_port_map" = "0x3f"
 
 			# SuperIO range is 0x700-0x73f

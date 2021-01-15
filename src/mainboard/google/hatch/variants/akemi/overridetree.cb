@@ -22,20 +22,12 @@ chip soc/intel/cannonlake
 	register "usb2_ports[0]" = "USB2_PORT_TYPE_C(OC2)"	# Type-C Port 0
 	register "usb2_ports[1]" = "USB2_PORT_TYPE_C(OC2)"	# Type-C Port 1
 	register "usb2_ports[2]" = "USB2_PORT_SHORT(OC3)"	# Type-A Port 0
-	register "usb2_ports[3]" = "USB2_PORT_EMPTY"	# Unused
-	register "usb2_ports[4]" = "USB2_PORT_EMPTY"
-	register "usb2_ports[5]" = "USB2_PORT_EMPTY"	# WWAN
 	register "usb2_ports[6]" = "USB2_PORT_LONG(OC_SKIP)"	# Camera
-	register "usb2_ports[7]" = "USB2_PORT_EMPTY"
-	register "usb2_ports[8]" = "USB2_PORT_EMPTY"
 	register "usb2_ports[9]" = "USB2_PORT_MID(OC_SKIP)"	# BT
 
 	register "usb3_ports[0]" = "USB3_PORT_DEFAULT(OC2)"	# Type-C Port 0
 	register "usb3_ports[1]" = "USB3_PORT_DEFAULT(OC2)"	# Type-C Port 1
 	register "usb3_ports[2]" = "USB3_PORT_DEFAULT(OC3)"	# Type-A Port 0
-	register "usb3_ports[3]" = "USB3_PORT_EMPTY"	# Unused
-	register "usb3_ports[4]" = "USB3_PORT_EMPTY"	# WWAN
-	register "usb3_ports[5]" = "USB3_PORT_EMPTY"
 
 	# Intel Common SoC Config
 	#+-------------------+---------------------------+
@@ -80,6 +72,9 @@ chip soc/intel/cannonlake
 	register "ScsEmmcHs400Enabled" = "1"
 
 	device domain 0 on
+		device pci 02.0 on	# Integrated Graphics Device
+			register "gfx" = "GMA_DEFAULT_PANEL(0)"
+		end
 		device pci 14.0 on
 			chip drivers/usb/acpi
 				register "desc" = ""Root Hub""
@@ -180,7 +175,7 @@ chip soc/intel/cannonlake
 			chip drivers/i2c/hid
 				register "generic.hid" = ""PNP0C50""
 				register "generic.desc" = ""Synaptics Touchpad""
-				register "generic.irq" = "ACPI_IRQ_WAKE_EDGE_LOW(GPP_A21_IRQ)"
+				register "generic.irq" = "ACPI_IRQ_WAKE_LEVEL_LOW(GPP_A21_IRQ)"
 				register "generic.wake" = "GPE0_DW0_21"
 				register "generic.probed" = "1"
 				register "hid_desc_reg_offset" = "0x20"
@@ -204,7 +199,7 @@ chip soc/intel/cannonlake
 			chip drivers/i2c/hid
 				register "generic.hid" = ""GDIX0000""
 				register "generic.desc" = ""Goodix Touchscreen""
-				register "generic.irq" = "ACPI_IRQ_EDGE_LOW(GPP_D16_IRQ)"
+				register "generic.irq" = "ACPI_IRQ_LEVEL_LOW(GPP_D16_IRQ)"
 				register "generic.probed" = "1"
 				register "generic.reset_gpio" =
 							"ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_D15)"

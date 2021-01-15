@@ -13,6 +13,10 @@ int linenum = 0;
 \r?\n			{linenum++;}
 chip			{return(CHIP);}
 device			{return(DEVICE);}
+alias			{return(ALIAS);}
+use			{return(REFERENCE);}
+ref			{return(REFERENCE);}
+as			{return(ASSOCIATION);}
 register		{return(REGISTER);}
 fw_config		{return(FW_CONFIG_TABLE);}
 field			{return(FW_CONFIG_FIELD);}
@@ -36,6 +40,7 @@ spi			{yylval.number=SPI; return(BUS);}
 usb			{yylval.number=USB; return(BUS);}
 lpc			{yylval.number=LPC; return(BUS);}
 espi			{yylval.number=ESPI; return(BUS);}
+gpio			{yylval.number=GPIO; return(BUS);}
 irq			{yylval.number=IRQ; return(RESOURCE);}
 drq			{yylval.number=DRQ; return(RESOURCE);}
 io			{yylval.number=IO; return(RESOURCE);}

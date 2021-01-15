@@ -137,6 +137,14 @@ Maintainers List (try to look for most precise areas first)
 # Mainboards
 ################################################################################
 
+AMD family 17h and 19h reference boards
+M:	Marshall Dawson <marshalldawson3rd@gmail.com>
+M:	Felix Held <felix-coreboot@felixheld.de>
+M:	Jason Glenesk <jason.glenesk@gmail.com>
+S:	Maintained
+F:	src/mainboard/amd/majolica/
+F:	src/mainboard/amd/mandolin/
+
 APPLE MAINBOARDS
 M:	Evgeny Zinoviev <me@ch1p.io>
 S:	Maintained
@@ -208,6 +216,14 @@ F:	src/mainboard/asus/p8z77-v_lx2/
 
 
 
+CLEVO MAINBOARDS
+M:	Felix Singer <felixsinger@posteo.net>
+M:	Michael Niewöhner <foss@mniewoehner.de>
+S:	Supported
+F:	src/mainboard/clevo/
+
+
+
 FACEBOOK FBG1701 MAINBOARD
 M:	Frans Hendriks <fhendriks@eltan.com>
 M:	Wim Vervoorn <wvervoorn@eltan.com>
@@ -225,19 +241,19 @@ F:	src/mainboard/facebook/monolith/
 GETAC P470 MAINBOARD
 M:	Patrick Georgi <patrick@georgi.software>
 S:	Maintained
-F:	src/mainboard/getac/p470
+F:	src/mainboard/getac/p470/
 
 
 
 GIGABYTE GA-G41M-ES2L MAINBOARD
 M:	Damien Zammit <damien@zamaudio.com>
 S:	Odd Fixes
-F:	src/mainboard/gigabyte/ga-g41m-es2l
+F:	src/mainboard/gigabyte/ga-g41m-es2l/
 
 GIGABYTE GA-H61M SERIES MAINBOARDS
 M:	Angel Pons <th3fanbus@gmail.com>
 S:	Maintained
-F:	src/mainboard/gigabyte/ga-h61m-series
+F:	src/mainboard/gigabyte/ga-h61m-series/
 
 
 
@@ -265,12 +281,27 @@ F:	src/mainboard/google/stout/
 INTEL D510MO MAINBOARD
 M:	Damien Zammit <damien@zamaudio.com>
 S:	Odd Fixes
-F:	src/mainboard/intel/d510mo
+F:	src/mainboard/intel/d510mo/
 
 INTEL STRAGO MAINBOARD
 M:	Hannah Williams <hannah.williams@intel.com>
 S:	Supported
 F:	/src/mainboard/intel/strago/
+
+
+
+KONTRON BSL6 MAINBOARD
+M:	Felix Singer <felixsinger@posteo.net>
+M:	Nico Huber <nico.h@gmx.de>
+S:	Supported
+F:	src/mainboard/kontron/bsl6/
+
+KONTRON MAL10 MAINBOARD
+M:	Maxim Polyakov <max.senia.poliak@gmail.com>
+M:	Nico Huber <nico.h@gmx.de>
+M:	Felix Singer <felixsinger@posteo.net>
+S:	Supported
+F:	src/mainboard/kontron/mal10/
 
 
 
@@ -291,7 +322,7 @@ LIBRETREND LT1000 MAINBOARD
 M:	Piotr Król <piotr.krol@3mdeb.com>
 M:	Michał Żygowski <michal.zygowski@3mdeb.com>
 S:	Maintained
-F:	src/mainboard/libretrend/lt1000
+F:	src/mainboard/libretrend/lt1000/
 
 
 OCP DELTALAKE MAINBOARD
@@ -302,7 +333,7 @@ M:	Morgan Jang <Morgan_Jang@wiwynn.com>
 M:	Ryback Hung <<Ryback.Hung@quantatw.com>
 M:	Bryant Ou <Bryant.Ou@quantatw.com>
 S:	Supported
-F:	src/mainboard/ocp/deltalake
+F:	src/mainboard/ocp/deltalake/
 
 OCP TIOGAPASS MAINBOARD
 M:	Jonathan Zhang <jonzhang@fb.com>
@@ -312,7 +343,7 @@ M:	Morgan Jang <Morgan_Jang@wiwynn.com>
 M:	Ryback Hung <<Ryback.Hung@quantatw.com>
 M:	Bryant Ou <Bryant.Ou@quantatw.com>
 S:	Maintained
-F:	src/mainboard/ocp/tiogapass
+F:	src/mainboard/ocp/tiogapass/
 
 
 
@@ -352,14 +383,14 @@ PRODRIVE HERMES MAINBOARD
 M:	Christian Walter <christian.walter@9elements.com>
 M:	Patrick Rudolph <patrick.rudolph@9elements.com>
 S:	Maintained
-F:	src/mainboard/prodrive/hermes
+F:	src/mainboard/prodrive/hermes/
 
 
 
 PURISM MAINBOARDS
 M:	Matt DeVillier <matt.devillier@puri.sm>
 S:	Supported
-F:	src/mainboard/purism
+F:	src/mainboard/purism/
 
 
 
@@ -370,6 +401,12 @@ F:	src/mainboard/samsung/lumpy/
 F:	src/mainboard/samsung/stumpy/
 
 
+
+SIEMENS CHILI MAINBAORD
+M:	Felix Singer <felixsinger@posteo.net>
+M:	Nico Huber <nico.h@gmx.de>
+S:	Supported
+F:	src/mainboard/siemens/chili/
 
 SIEMENS MC_xxxx MAINBOARDS
 M:	Werner Zeh <werner.zeh@siemens.com>
@@ -393,7 +430,7 @@ F:	src/mainboard/supermicro/x10slm-f/
 SUPERMICRO X11-LGA1151-SERIES
 M:	Michael Niewöhner <foss@mniewoehner.de>
 S:	Maintained
-F:	src/mainboard/supermicro/x11-lga1151-series
+F:	src/mainboard/supermicro/x11-lga1151-series/
 
 ################################################################################
 # Architectures
@@ -404,7 +441,6 @@ M:	Julius Werner <jwerner@chromium.org>
 S:	Supported
 F:	src/arch/arm/
 F:	src/arch/arm64/
-F:	src/soc/mediatek/
 F:	src/soc/nvidia/
 F:	src/soc/rockchip/
 F:	util/nvidia/
@@ -499,12 +535,13 @@ F:	src/drivers/intel/
 F:	src/include/cpu/intel/
 
 INTEL FSP DENVERTON-NS SOC & HARCUVAR CRB
+M:	Suresh Bellampalli <suresh.bellampalli@intel.com>
 M:	Vanessa Eusebio <vanessa.f.eusebio@intel.com>
-M:	David Guckian <david.guckian@intel.com>
-S:	Odd Fixes
+M:	Michal Motyl <michalx.motyl@intel.com>
+M:	Mariusz Szafranski <mariuszx.szafranski@intel.com>
+S:	Maintained
 F:	src/mainboard/intel/harcuvar/
 F:	src/soc/intel/denverton_ns/
-F:	src/vendorcode/intel/fsp/fsp2_0/denverton_ns/
 
 INTEL FSP 1.1
 M:	Lee Leahy <leroy.p.leahy@intel.com>
@@ -522,6 +559,28 @@ F:	src/drivers/intel/fsp2_0/
 # Systems on a Chip
 ################################################################################
 
+AMD Cezanne
+M:	Marshall Dawson <marshalldawson3rd@gmail.com>
+M:	Felix Held <felix-coreboot@felixheld.de>
+M:	Jason Glenesk <jason.glenesk@gmail.com>
+S:	Maintained
+F:	src/soc/amd/cezanne/
+
+AMD common SoC code
+M:	Marshall Dawson <marshalldawson3rd@gmail.com>
+M:	Felix Held <felix-coreboot@felixheld.de>
+M:	Jason Glenesk <jason.glenesk@gmail.com>
+S:	Maintained
+F:	src/soc/amd/common/
+
+AMD Picasso
+M:	Marshall Dawson <marshalldawson3rd@gmail.com>
+M:	Felix Held <felix-coreboot@felixheld.de>
+M:	Jason Glenesk <jason.glenesk@gmail.com>
+S:	Maintained
+F:	src/soc/amd/picasso/
+F:	src/vendorcode/amd/fsp/picasso/
+
 INTEL APOLLOLAKE_SOC
 M:	Andrey Petrov <andrey.petrov@gmail.com>
 S:	Maintained
@@ -532,8 +591,8 @@ M:	Piotr Król <piotr.krol@3mdeb.com>
 M:	Michał Żygowski <michal.zygowski@3mdeb.com>
 M:	Frans Hendriks <fhendriks@eltan.com>
 S:	Maintained
-F:	/src/soc/intel/braswell
-F:	/src/vendorcode/intel/fsp/fsp1_1/braswell
+F:	/src/soc/intel/braswell/
+F:	/src/vendorcode/intel/fsp/fsp1_1/braswell/
 
 INTEL Xeon Sacalable Processor Family
 M:	Jonathan Zhang <jonzhang@fb.com>
@@ -544,13 +603,18 @@ M:	Ryback Hung <<Ryback.Hung@quantatw.com>
 M:	Bryant Ou <Bryant.Ou@quantatw.com>
 S:	Supported
 F:	src/soc/intel/xeon_sp
-F:	src/vendorcode/intel/fsp/fsp2_0/skylake_sp
-F:	src/vendorcode/intel/fsp/fsp2_0/copperlake_sp
+F:	src/vendorcode/intel/fsp/fsp2_0/skylake_sp/
+F:	src/vendorcode/intel/fsp/fsp2_0/copperlake_sp/
+
+MEDIATEK SOCS
+M:	Hung-Te Lin <hungte@chromium.org>
+S:	Supported
+F:	src/soc/mediatek/
 
 ORPHANED ARM SOCS
 S:	Orphaned
 F:	src/cpu/armltd/
-F:	src/cpu/ti/
+F:	src/soc/ti/
 F:	src/soc/qualcomm/
 F:	src/soc/samsung/
 F:	util/exynos/
@@ -573,13 +637,13 @@ F:	payloads/coreinfo/
 EXTERNAL PAYLOADS INTEGRATION
 M:	Stefan Reinauer <stefan.reinauer@coreboot.org>
 M:	Martin Roth <gaumless@gmail.com>
-F:	payloads/external
+F:	payloads/external/
 
 LINUXBOOT PAYLOAD INTEGRATION
 M:	Christian Walter <christian.walter@9elements.com>
 M:	Marcello Sylvester Bauer <info@marcellobauer.com>
 S:	Supported
-F:	payloads/external/LinuxBoot
+F:	payloads/external/LinuxBoot/
 
 ################################################################################
 # Utilities
@@ -653,6 +717,8 @@ F:	src/drivers/aspeed/common/
 F:	src/drivers/aspeed/ast2050/
 
 ACPI
+M:	Lance Zhao <lance.zhao@gmail.com>
+S:	Supported
 F:	src/acpi/
 F:	src/arch/x86/acpi/
 F:	util/acpi/
@@ -682,8 +748,13 @@ OPTION ROM EXECUTION & X86EMU
 F:	src/device/oprom/
 
 CBFS
-F:	src/include/cbfs.h
-F:	src/commonlib/bsd/include/commonlib/bsd/cbfs_serialized.h
+M:	Julius Werner <jwerner@chromium.org>
+F:	src/include/cbfs*
+F:	src/commonlib/bsd/include/commonlib/bsd/cbfs*
+F:	src/commonlib/bsd/cbfs*
+F:	src/lib/cbfs.c
+
+CBFSTOOL
 F:	util/cbfstool/
 
 CBMEM
@@ -704,7 +775,7 @@ TPM SUPPORT
 M:	Christian Walter <christian.walter@9elements.com>
 S:	Supported
 F:	src/drivers/*/tpm/
-F:	src/security/tpm
+F:	src/security/tpm/
 
 SUPERIOS & SUPERIOTOOL
 M:	Felix Held <felix-coreboot@felixheld.de>
@@ -722,7 +793,7 @@ ELTAN VENDORCODE
 M:	Frans Hendriks <fhendriks@eltan.com>
 M:	Wim Vervoorn <wvervoorn@eltan.com>
 S:	Maintained
-F:	src/vendorcode/eltan
+F:	src/vendorcode/eltan/
 
 MISSING: TIMERS / DELAYS
 

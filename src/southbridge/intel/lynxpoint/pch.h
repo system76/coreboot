@@ -47,11 +47,10 @@
  * It does not matter where we put the SMBus I/O base, as long as we
  * keep it consistent and don't interfere with other devices.  Stage2
  * will relocate this anyways.
- * Our solution is to have SMB initialization move the I/O to SMBUS_IO_BASE
+ * Our solution is to have SMB initialization move the I/O to CONFIG_FIXED_SMBUS_IO_BASE
  * again. But handling static BARs is a generic problem that should be
  * solved in the device allocator.
  */
-#define SMBUS_IO_BASE		0x0400
 #define SMBUS_SLAVE_ADDR	0x24
 
 #if CONFIG(INTEL_LYNXPOINT_LP)
@@ -70,6 +69,11 @@
 
 #ifndef __ACPI__
 
+static inline int pch_is_lp(void)
+{
+	return CONFIG(INTEL_LYNXPOINT_LP);
+}
+
 /* PCH platform types, safe for MRC consumption */
 enum pch_platform_type {
 	PCH_TYPE_MOBILE	 = 0,
@@ -85,7 +89,6 @@ void usb_xhci_route_all(void);
 enum pch_platform_type get_pch_platform_type(void);
 int pch_silicon_revision(void);
 int pch_silicon_id(void);
-int pch_is_lp(void);
 u16 get_pmbase(void);
 u16 get_gpiobase(void);
 
@@ -116,11 +119,7 @@ void disable_gpe(u32 mask);
 
 void pch_enable(struct device *dev);
 void pch_disable_devfn(struct device *dev);
-u32 pch_iobp_read(u32 address);
-void pch_iobp_write(u32 address, u32 data);
-void pch_iobp_update(u32 address, u32 andvalue, u32 orvalue);
 void pch_log_state(void);
-void acpi_create_intel_hpet(acpi_hpet_t * hpet);
 void acpi_create_serialio_ssdt(acpi_header_t *ssdt);
 
 void enable_usb_bar(void);
@@ -168,7 +167,7 @@ void mainboard_config_rcba(void);
 #define GEN_PMCON_2		0xa2
 #define GEN_PMCON_3		0xa4
 #define PMIR			0xac
-#define  PMIR_CF9LOCK		(1UL << 31)
+#define  PMIR_CF9LOCK		(1 << 31)
 #define  PMIR_CF9GR		(1 << 20)
 
 /* GEN_PMCON_3 bits */
@@ -213,54 +212,13 @@ void mainboard_config_rcba(void);
 #define LPC_GEN4_DEC		0x90 /* LPC IF Generic Decode Range 4 */
 #define LGMR			0x98 /* LPC Generic Memory Range */
 
-/* PCI Configuration Space (D31:F1): IDE */
-#define PCH_IDE_DEV		PCI_DEV(0, 0x1f, 1)
+/* PCI Configuration Space (D31:F2): SATA */
 #define PCH_SATA_DEV		PCI_DEV(0, 0x1f, 2)
 #define PCH_SATA2_DEV		PCI_DEV(0, 0x1f, 5)
-#define INTR_LN			0x3c
+
 #define IDE_TIM_PRI		0x40	/* IDE timings, primary */
 #define   IDE_DECODE_ENABLE	(1 << 15)
-#define   IDE_SITRE		(1 << 14)
-#define   IDE_ISP_5_CLOCKS	(0 << 12)
-#define   IDE_ISP_4_CLOCKS	(1 << 12)
-#define   IDE_ISP_3_CLOCKS	(2 << 12)
-#define   IDE_RCT_4_CLOCKS	(0 <<  8)
-#define   IDE_RCT_3_CLOCKS	(1 <<  8)
-#define   IDE_RCT_2_CLOCKS	(2 <<  8)
-#define   IDE_RCT_1_CLOCKS	(3 <<  8)
-#define   IDE_DTE1		(1 <<  7)
-#define   IDE_PPE1		(1 <<  6)
-#define   IDE_IE1		(1 <<  5)
-#define   IDE_TIME1		(1 <<  4)
-#define   IDE_DTE0		(1 <<  3)
-#define   IDE_PPE0		(1 <<  2)
-#define   IDE_IE0		(1 <<  1)
-#define   IDE_TIME0		(1 <<  0)
 #define IDE_TIM_SEC		0x42	/* IDE timings, secondary */
-
-#define IDE_SDMA_CNT		0x48	/* Synchronous DMA control */
-#define   IDE_SSDE1		(1 <<  3)
-#define   IDE_SSDE0		(1 <<  2)
-#define   IDE_PSDE1		(1 <<  1)
-#define   IDE_PSDE0		(1 <<  0)
-
-#define IDE_SDMA_TIM		0x4a
-
-#define IDE_CONFIG		0x54	/* IDE I/O Configuration Register */
-#define   SIG_MODE_SEC_NORMAL	(0 << 18)
-#define   SIG_MODE_SEC_TRISTATE	(1 << 18)
-#define   SIG_MODE_SEC_DRIVELOW	(2 << 18)
-#define   SIG_MODE_PRI_NORMAL	(0 << 16)
-#define   SIG_MODE_PRI_TRISTATE	(1 << 16)
-#define   SIG_MODE_PRI_DRIVELOW	(2 << 16)
-#define   FAST_SCB1		(1 << 15)
-#define   FAST_SCB0		(1 << 14)
-#define   FAST_PCB1		(1 << 13)
-#define   FAST_PCB0		(1 << 12)
-#define   SCB1			(1 <<  3)
-#define   SCB0			(1 <<  2)
-#define   PCB1			(1 <<  1)
-#define   PCB0			(1 <<  0)
 
 #define SATA_SIRI		0xa0 /* SATA Indexed Register Index */
 #define SATA_SIRD		0xa4 /* SATA Indexed Register Data */
@@ -269,10 +227,10 @@ void mainboard_config_rcba(void);
 /* SATA IOBP Registers */
 #define SATA_IOBP_SP0G3IR	0xea000151
 #define SATA_IOBP_SP1G3IR	0xea000051
-#define SATA_IOBP_SP0DTLE_DATA	0xea002550
-#define SATA_IOBP_SP0DTLE_EDGE	0xea002554
-#define SATA_IOBP_SP1DTLE_DATA	0xea002750
-#define SATA_IOBP_SP1DTLE_EDGE	0xea002754
+#define SATA_IOBP_SP0DTLE_DATA	0xea002750
+#define SATA_IOBP_SP0DTLE_EDGE	0xea002754
+#define SATA_IOBP_SP1DTLE_DATA	0xea002550
+#define SATA_IOBP_SP1DTLE_EDGE	0xea002554
 
 #define SATA_DTLE_MASK		0xF
 #define SATA_DTLE_DATA_SHIFT	24
@@ -317,7 +275,7 @@ void mainboard_config_rcba(void);
 #define  XHCI_USB3_PORTSC_WRC	(1 << 19)	/* Warm Reset Complete */
 #define  XHCI_USB3_PORTSC_LWS	(1 << 16)	/* Link Write Strobe */
 #define  XHCI_USB3_PORTSC_PED	(1 << 1)	/* Port Enabled/Disabled */
-#define  XHCI_USB3_PORTSC_WPR	(1UL << 31)	/* Warm Port Reset */
+#define  XHCI_USB3_PORTSC_WPR	(1 << 31)	/* Warm Port Reset */
 #define  XHCI_USB3_PORTSC_PLS	(0xf << 5)	/* Port Link State */
 #define   XHCI_PLSR_DISABLED	(4 << 5)	/* Port is disabled */
 #define   XHCI_PLSR_RXDETECT	(5 << 5)	/* Port is disconnected */
@@ -406,45 +364,11 @@ void mainboard_config_rcba(void);
 
 #define PMBASE		0x40
 
-#define VCH		0x0000	/* 32bit */
-#define VCAP1		0x0004	/* 32bit */
-#define VCAP2		0x0008	/* 32bit */
-#define PVC		0x000c	/* 16bit */
-#define PVS		0x000e	/* 16bit */
-
-#define V0CAP		0x0010	/* 32bit */
-#define V0CTL		0x0014	/* 32bit */
-#define V0STS		0x001a	/* 16bit */
-
-#define V1CAP		0x001c	/* 32bit */
-#define V1CTL		0x0020	/* 32bit */
-#define V1STS		0x0026	/* 16bit */
-
-#define RCTCL		0x0100	/* 32bit */
-#define ESD		0x0104	/* 32bit */
-#define ULD		0x0110	/* 32bit */
-#define ULBA		0x0118	/* 64bit */
-
-#define RP1D		0x0120	/* 32bit */
-#define RP1BA		0x0128	/* 64bit */
-#define RP2D		0x0130	/* 32bit */
-#define RP2BA		0x0138	/* 64bit */
-#define RP3D		0x0140	/* 32bit */
-#define RP3BA		0x0148	/* 64bit */
-#define RP4D		0x0150	/* 32bit */
-#define RP4BA		0x0158	/* 64bit */
-#define HDD		0x0160	/* 32bit */
-#define HDBA		0x0168	/* 64bit */
-#define RP5D		0x0170	/* 32bit */
-#define RP5BA		0x0178	/* 64bit */
-#define RP6D		0x0180	/* 32bit */
-#define RP6BA		0x0188	/* 64bit */
-
 #define RPC		0x0400	/* 32bit */
 #define RPFN		0x0404	/* 32bit */
 
 /* Root Port configuratinon space hide */
-#define RPFN_HIDE(port)         (1UL << (((port) * 4) + 3))
+#define RPFN_HIDE(port)         (1 << (((port) * 4) + 3))
 /* Get the function number assigned to a Root Port */
 #define RPFN_FNGET(reg,port)    (((reg) >> ((port) * 4)) & 7)
 /* Set the function number for a Root Port */

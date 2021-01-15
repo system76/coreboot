@@ -15,7 +15,6 @@
 #include <acpi/acpi_gnvs.h>
 #include <acpi/acpigen.h>
 #include <cpu/x86/smm.h>
-#include <cbmem.h>
 #include <string.h>
 #include "chip.h"
 #include "pch.h"
@@ -43,9 +42,6 @@ static void pch_enable_ioapic(struct device *dev)
 	/* Assign unique bus/dev/fn for I/O APIC */
 	pci_write_config16(dev, LPC_IBDF,
 		PCH_IOAPIC_PCI_BUS << 8 | PCH_IOAPIC_PCI_SLOT << 3);
-
-	/* Enable ACPI I/O range decode */
-	pci_write_config8(dev, ACPI_CNTL, ACPI_EN);
 
 	set_ioapic_id(VIO_APIC_VADDR, 0x02);
 
@@ -519,9 +515,6 @@ static void lpc_init(struct device *dev)
 	/* Print detected platform */
 	report_pch_info(dev);
 
-	/* Set the value for PCI command register. */
-	pci_write_config16(dev, PCI_COMMAND, 0x000f);
-
 	/* IO APIC initialization. */
 	pch_enable_ioapic(dev);
 
@@ -648,31 +641,21 @@ static void pch_lpc_enable(struct device *dev)
 	pch_enable(dev);
 }
 
-void southbridge_inject_dsdt(const struct device *dev)
+size_t gnvs_size_of_array(void)
 {
-	struct global_nvs *gnvs = cbmem_add(CBMEM_ID_ACPI_GNVS, sizeof(*gnvs));
+	return sizeof(struct global_nvs);
+}
 
-	if (gnvs) {
-		memset(gnvs, 0, sizeof(*gnvs));
+void *gnvs_chromeos_ptr(struct global_nvs *gnvs)
+{
+	return &gnvs->chromeos;
+}
 
-		acpi_create_gnvs(gnvs);
-
-		gnvs->apic = 1;
-		gnvs->mpen = 1; /* Enable Multi Processing */
-		gnvs->pcnt = dev_count_cpu();
-
-#if CONFIG(CHROMEOS)
-		chromeos_init_chromeos_acpi(&(gnvs->chromeos));
-#endif
-
-		/* And tell SMI about it */
-		apm_control(APM_CNT_GNVS_UPDATE);
-
-		/* Add it to DSDT.  */
-		acpigen_write_scope("\\");
-		acpigen_write_name_dword("NVSA", (u32) gnvs);
-		acpigen_pop_len();
-	}
+void soc_fill_gnvs(struct global_nvs *gnvs)
+{
+	gnvs->apic = 1;
+	gnvs->mpen = 1; /* Enable Multi Processing */
+	gnvs->pcnt = dev_count_cpu();
 }
 
 static const char *lpc_acpi_name(const struct device *dev)
@@ -722,7 +705,6 @@ static struct device_operations device_ops = {
 	.set_resources		= pci_dev_set_resources,
 	.enable_resources	= pci_dev_enable_resources,
 	.write_acpi_tables      = acpi_write_hpet,
-	.acpi_inject_dsdt	= southbridge_inject_dsdt,
 	.acpi_fill_ssdt		= southbridge_fill_ssdt,
 	.acpi_name		= lpc_acpi_name,
 	.init			= lpc_init,
@@ -731,7 +713,6 @@ static struct device_operations device_ops = {
 	.scan_bus		= scan_static_bus,
 	.ops_pci		= &pci_dev_ops_pci,
 };
-
 
 /* IDs for LPC device of Intel 6 Series Chipset, Intel 7 Series Chipset, and
  * Intel C200 Series Chipset

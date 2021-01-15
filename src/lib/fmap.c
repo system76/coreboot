@@ -4,6 +4,7 @@
 #include <cbmem.h>
 #include <console/console.h>
 #include <fmap.h>
+#include <metadata_hash.h>
 #include <stddef.h>
 #include <string.h>
 #include <symbols.h>
@@ -27,9 +28,20 @@ uint64_t get_fmap_flash_offset(void)
 	return FMAP_OFFSET;
 }
 
-static int check_signature(const struct fmap *fmap)
+static int verify_fmap(const struct fmap *fmap)
 {
-	return memcmp(fmap->signature, FMAP_SIGNATURE, sizeof(fmap->signature));
+	if (memcmp(fmap->signature, FMAP_SIGNATURE, sizeof(fmap->signature)))
+		return -1;
+
+	static bool done = false;
+	if (!CONFIG(CBFS_VERIFICATION) || !ENV_INITIAL_STAGE || done)
+		return 0;	/* Only need to check hash in first stage. */
+
+	if (metadata_hash_verify_fmap(fmap, FMAP_SIZE) != VB2_SUCCESS)
+		return -1;
+
+	done = true;
+	return 0;
 }
 
 static void report(const struct fmap *fmap)
@@ -46,6 +58,10 @@ static void setup_preram_cache(struct mem_region_device *cache_mrdev)
 	if (CONFIG(NO_FMAP_CACHE))
 		return;
 
+	/* No need to use FMAP cache in SMM */
+	if (ENV_SMM)
+		return;
+
 	if (!ENV_ROMSTAGE_OR_BEFORE) {
 		/* We get here if ramstage makes an FMAP access before calling
 		   cbmem_initialize(). We should avoid letting it come to that,
@@ -56,14 +72,15 @@ static void setup_preram_cache(struct mem_region_device *cache_mrdev)
 	}
 
 	struct fmap *fmap = (struct fmap *)_fmap_cache;
-	if (!ENV_BOOTBLOCK) {
-		/* NOTE: This assumes that for all platforms running this code,
-		   the bootblock is the first stage and the bootblock will make
+	if (!(ENV_INITIAL_STAGE)) {
+		/* NOTE: This assumes that the first stage will make
 		   at least one FMAP access (usually from finding CBFS). */
-		if (!check_signature(fmap))
+		if (!verify_fmap(fmap))
 			goto register_cache;
 
 		printk(BIOS_ERR, "ERROR: FMAP cache corrupted?!\n");
+		if (CONFIG(TOCTOU_SAFETY))
+			die("TOCTOU safety relies on FMAP cache");
 	}
 
 	/* In case we fail below, make sure the cache is invalid. */
@@ -77,7 +94,7 @@ static void setup_preram_cache(struct mem_region_device *cache_mrdev)
 	/* memlayout statically guarantees that the FMAP_CACHE is big enough. */
 	if (rdev_readat(boot_rdev, fmap, FMAP_OFFSET, FMAP_SIZE) != FMAP_SIZE)
 		return;
-	if (check_signature(fmap))
+	if (verify_fmap(fmap))
 		return;
 	report(fmap);
 
@@ -108,8 +125,9 @@ static int find_fmap_directory(struct region_device *fmrd)
 	if (fmap == NULL)
 		return -1;
 
-	if (check_signature(fmap)) {
-		printk(BIOS_DEBUG, "No FMAP found at %zx offset.\n", offset);
+	if (verify_fmap(fmap)) {
+		printk(BIOS_ERR, "FMAP missing or corrupted at offset 0x%zx!\n",
+		       offset);
 		rdev_munmap(boot, fmap);
 		return -1;
 	}
@@ -145,6 +163,9 @@ int fmap_locate_area(const char *name, struct region *ar)
 {
 	struct region_device fmrd;
 	size_t offset;
+
+	if (name == NULL || ar == NULL)
+		return -1;
 
 	if (find_fmap_directory(&fmrd))
 		return -1;
@@ -187,6 +208,9 @@ int fmap_find_region_name(const struct region * const ar,
 {
 	struct region_device fmrd;
 	size_t offset;
+
+	if (name == NULL || ar == NULL)
+		return -1;
 
 	if (find_fmap_directory(&fmrd))
 		return -1;

@@ -270,6 +270,45 @@ config UBSAN
 	  say N because it adds a small performance penalty and may abort
 	  on code that happens to work in spite of the UB.
 
+config HAVE_ASAN_IN_ROMSTAGE
+	bool
+	default n
+
+config ASAN_IN_ROMSTAGE
+	bool
+	default n
+	help
+	  Enable address sanitizer in romstage for platform.
+
+config HAVE_ASAN_IN_RAMSTAGE
+	bool
+	default n
+
+config ASAN_IN_RAMSTAGE
+	bool
+	default n
+	help
+	  Enable address sanitizer in ramstage for platform.
+
+config ASAN
+	bool "Address sanitizer support"
+	default n
+	select ASAN_IN_ROMSTAGE if HAVE_ASAN_IN_ROMSTAGE
+	select ASAN_IN_RAMSTAGE if HAVE_ASAN_IN_RAMSTAGE
+	help
+	  Enable address sanitizer - runtime memory debugger,
+	  designed to find out-of-bounds accesses and use-after-scope bugs.
+
+	  This feature consumes up to 1/8 of available memory and brings about
+	  ~1.5x performance slowdown.
+
+	  If unsure, say N.
+
+if ASAN
+	comment "Before using this feature, make sure that           "
+	comment "asan_shadow_offset_callback patch is applied to GCC."
+endif
+
 choice
 	prompt "Stage Cache for ACPI S3 resume"
 	default NO_STAGE_CACHE if !HAVE_ACPI_RESUME
@@ -497,6 +536,17 @@ source "src/vendorcode/*/Kconfig"
 
 source "src/arch/*/Kconfig"
 
+config CHIPSET_DEVICETREE
+	string
+	default ""
+	help
+	  This symbol allows a chipset to provide a set of default settings in
+	  a devicetree which are common to all mainboards. This may include
+	  devices (including alias names), chip drivers, register settings,
+	  and others. This path is relative to the src/ directory.
+
+	  Example: "chipset.cb"
+
 endmenu
 
 source "src/device/Kconfig"
@@ -504,6 +554,7 @@ source "src/device/Kconfig"
 menu "Generic Drivers"
 source "src/drivers/*/Kconfig"
 source "src/drivers/*/*/Kconfig"
+source "src/drivers/*/*/*/Kconfig"
 source "src/commonlib/storage/Kconfig"
 endmenu
 
@@ -839,7 +890,7 @@ config DEBUG_SMI
 	bool "Output verbose SMI debug messages"
 	default n
 	depends on HAVE_SMI_HANDLER
-	select SPI_FLASH_SMM if SPI_CONSOLE || CONSOLE_SPI_FLASH
+	select SPI_FLASH_SMM if EM100PRO_SPI_CONSOLE || CONSOLE_SPI_FLASH
 	help
 	  This option enables additional SMI related debug messages.
 
@@ -854,7 +905,7 @@ config DEBUG_PERIODIC_SMI
 # Only visible if debug level is DEBUG (7) or SPEW (8) as it does additional
 # printk(BIOS_DEBUG, ...) calls.
 config DEBUG_MALLOC
-	prompt "Output verbose malloc debug messages" if DEFAULT_CONSOLE_LOGLEVEL_7 || DEFAULT_CONSOLE_LOGLEVEL_8
+	prompt "Output verbose malloc debug messages" if DEFAULT_CONSOLE_LOGLEVEL_7 || DEFAULT_CONSOLE_LOGLEVEL_8 || CONSOLE_OVERRIDE_LOGLEVEL
 	bool
 	default n
 	help
@@ -862,6 +913,15 @@ config DEBUG_MALLOC
 
 	  Note: This option will increase the size of the coreboot image.
 
+	  If unsure, say N.
+
+# Only visible if DEBUG_SPEW (8) is set.
+config DEBUG_RESOURCES
+	bool "Output verbose PCI MEM and IO resource debug messages" if DEFAULT_CONSOLE_LOGLEVEL_8 || CONSOLE_OVERRIDE_LOGLEVEL
+	default n
+	help
+	  This option enables additional PCI memory and IO debug messages.
+	  Note: This option will increase the size of the coreboot image.
 	  If unsure, say N.
 
 config DEBUG_CONSOLE_INIT
@@ -879,7 +939,7 @@ config DEBUG_CONSOLE_INIT
 # Only visible if debug level is DEBUG (7) or SPEW (8) as it does additional
 # printk(BIOS_DEBUG, ...) calls.
 config REALMODE_DEBUG
-	prompt "Enable debug messages for option ROM execution" if DEFAULT_CONSOLE_LOGLEVEL_7 || DEFAULT_CONSOLE_LOGLEVEL_8
+	prompt "Enable debug messages for option ROM execution" if DEFAULT_CONSOLE_LOGLEVEL_7 || DEFAULT_CONSOLE_LOGLEVEL_8 || CONSOLE_OVERRIDE_LOGLEVEL
 	bool
 	default n
 	depends on PCI_OPTION_ROM_RUN_REALMODE
@@ -1053,15 +1113,14 @@ config DEBUG_INTEL_ME
 	  is present on Intel 6-series chipsets.
 endif
 
-config TRACE
-	bool "Trace function calls"
+config DEBUG_FUNC
+	bool "Enable function entry and exit reporting macros" if DEFAULT_CONSOLE_LOGLEVEL_8
 	default n
 	help
-	  If enabled, every function will print information to console once
-	  the function is entered. The syntax is ~0xaaaabbbb(0xccccdddd)
-	  the 0xaaaabbbb is the actual function and 0xccccdddd is EIP
-	  of calling function. Please note some printk related functions
-	  are omitted from trace to have good looking console dumps.
+	  This option enables additional function entry and exit debug messages
+	  for select functions.
+	  Note: This option will increase the size of the coreboot image.
+	  If unsure, say N.
 
 config DEBUG_COVERAGE
 	bool "Debug code coverage"
@@ -1104,7 +1163,6 @@ config EM100
 	  by changing the settings in the descriptor.bin file.
 
 endmenu
-
 
 ###############################################################################
 # Set variables with no prompt - these can be set anywhere, and putting at

@@ -2,6 +2,7 @@
 
 #include <console/console.h>
 #include <cpu/cpu.h>
+#include <cpu/x86/cr.h>
 #include <cpu/x86/mp.h>
 #include <cpu/x86/msr.h>
 #include <cpu/x86/mtrr.h>
@@ -9,6 +10,7 @@
 #include <cpu/intel/smm_reloc.h>
 #include <cpu/intel/em64t100_save_state.h>
 #include <cpu/intel/turbo.h>
+#include <cpu/intel/common/common.h>
 #include <device/device.h>
 #include <device/pci.h>
 #include <intelblocks/cpulib.h>
@@ -43,6 +45,27 @@ static void dnv_configure_mca(void)
 	   of these banks are core vs package scope. For now every CPU clears
 	   every bank. */
 	mca_configure();
+
+	/* TODO install a fallback MC handler for each core in case OS does
+	   not provide one. Is it really needed? */
+
+	/* Enable the machine check exception */
+	write_cr4(read_cr4() | CR4_MCE);
+}
+
+static void configure_thermal_core(void)
+{
+	msr_t msr;
+
+	/* Disable Thermal interrupts */
+	msr.lo = 0;
+	msr.hi = 0;
+	wrmsr(IA32_THERM_INTERRUPT, msr);
+	wrmsr(IA32_PACKAGE_THERM_INTERRUPT, msr);
+
+	msr = rdmsr(IA32_MISC_ENABLE);
+	msr.lo |= THERMAL_MONITOR_ENABLE_BIT;	/* TM1/TM2/EMTTM enable */
+	wrmsr(IA32_MISC_ENABLE, msr);
 }
 
 static void denverton_core_init(struct device *cpu)
@@ -54,17 +77,15 @@ static void denverton_core_init(struct device *cpu)
 	/* Clear out pending MCEs */
 	dnv_configure_mca();
 
+	/* Configure Thermal Sensors */
+	configure_thermal_core();
+
 	/* Enable Fast Strings */
 	msr = rdmsr(IA32_MISC_ENABLE);
 	msr.lo |= FAST_STRINGS_ENABLE_BIT;
 	wrmsr(IA32_MISC_ENABLE, msr);
 
-	/* Lock AES-NI only if supported */
-	if (cpuid_ecx(1) & (1 << 25)) {
-		msr = rdmsr(MSR_FEATURE_CONFIG);
-		msr.lo |= FEATURE_CONFIG_LOCK;		/* Lock AES-NI */
-		wrmsr(MSR_FEATURE_CONFIG, msr);
-	}
+	set_aesni_lock();
 
 	/* Enable Turbo */
 	enable_turbo();

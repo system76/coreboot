@@ -1,16 +1,4 @@
-/*
- *
- * Copyright (C) 2008 Advanced Micro Devices, Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0-only */
 
 #include <arch/io.h>
 #include <pci.h>
@@ -163,7 +151,7 @@ static int pci_module_redraw(WINDOW *win)
 	return 0;
 }
 
-static void pci_scan_bus(int bus)
+static void ci_pci_scan_bus(int bus)
 {
 	int slot, func;
 	unsigned int val;
@@ -208,7 +196,7 @@ static void pci_scan_bus(int bus)
 
 				busses = pci_read_config32(dev, REG_PRIMARY_BUS);
 
-				pci_scan_bus((busses >> 8) & 0xff);
+				ci_pci_scan_bus((busses >> 8) & 0xff);
 
 			}
 		}
@@ -252,7 +240,7 @@ static int pci_module_handle(int key)
 
 static int pci_module_init(void)
 {
-	pci_scan_bus(0);
+	ci_pci_scan_bus(0);
 	return 0;
 }
 

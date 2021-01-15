@@ -14,6 +14,8 @@
 
 #define LHLT_DELAY	0x50000	/* I/O delay between post codes on failure */
 
+.section .init, "ax", @progbits
+
 .global	bootblock_pre_c_entry
 bootblock_pre_c_entry:
 	/*
@@ -132,8 +134,8 @@ CAR_init_done:
 	cmp	$0, %eax
 	jne	halt2
 
-	/* Setup bootloader stack */
-	movl	%edx, %esp
+	/* Setup bootblock stack */
+	movl	$_ecar_stack, %esp
 
 	/*
 	 * ebp:  FSP_INFO_HEADER address
@@ -145,15 +147,27 @@ CAR_init_done:
 	 * mm1:  high 32-bits of TSC value
 	 */
 
-	/* coreboot assumes stack/heap region will be zero */
+	/*
+	 * temp_memory_start/end reside in the .bss section, which gets cleared
+	 * below. Save the FSP return value to the stack before writing those
+	 * variables.
+	 */
+	push	%ecx
+	push	%edx
+
+	/* clear .bss section */
 	cld
-	movl	%ecx, %edi
-	neg	%ecx
-	/* Clear up to Temp Ram top. */
-	add	%edx, %ecx
+	xor	%eax, %eax
+	movl	$(_ebss), %ecx
+	movl	$(_bss), %edi
+	sub	%edi, %ecx
 	shrl	$2, %ecx
-	xorl	%eax, %eax
 	rep	stosl
+
+	pop	%edx
+	movl	%edx, temp_memory_end
+	pop	%ecx
+	movl	%ecx, temp_memory_start
 
 	/* Need to align stack to 16 bytes at call instruction. Account for
 	the pushes below. */

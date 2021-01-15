@@ -555,6 +555,9 @@ int heci_reset(void)
 {
 	uint32_t csr;
 
+	/* Clear post code to prevent eventlog entry from unknown code. */
+	post_code(0);
+
 	/* Send reset request */
 	csr = read_host_csr();
 	csr |= (CSR_RESET | CSR_IG);
@@ -616,9 +619,10 @@ static bool cse_is_global_reset_allowed(void)
 }
 
 /*
- * Sends GLOBAL_RESET_REQ cmd to CSE.The reset type can be GLOBAL_RESET/CSE_RESET_ONLY.
+ * Sends GLOBAL_RESET_REQ cmd to CSE with reset type GLOBAL_RESET.
+ * Returns 0 on failure and 1 on success.
  */
-int cse_request_global_reset(enum rst_req_type rst_type)
+static int cse_request_reset(enum rst_req_type rst_type)
 {
 	int status;
 	struct mkhi_hdr reply;
@@ -644,7 +648,7 @@ int cse_request_global_reset(enum rst_req_type rst_type)
 		return 0;
 	}
 
-	if (!cse_is_global_reset_allowed()) {
+	if (!cse_is_global_reset_allowed() || !is_cse_enabled()) {
 		printk(BIOS_ERR, "HECI: CSE does not meet required prerequisites\n");
 		return 0;
 	}
@@ -661,6 +665,11 @@ int cse_request_global_reset(enum rst_req_type rst_type)
 
 	printk(BIOS_DEBUG, "HECI: Global Reset %s!\n", status ? "success" : "failure");
 	return status;
+}
+
+int cse_request_global_reset(void)
+{
+	return cse_request_reset(GLOBAL_RESET);
 }
 
 static bool cse_is_hmrfpo_enable_allowed(void)
@@ -893,6 +902,14 @@ static const unsigned short pci_device_ids[] = {
 	PCI_DEVICE_ID_INTEL_JSP_CSE1,
 	PCI_DEVICE_ID_INTEL_JSP_CSE2,
 	PCI_DEVICE_ID_INTEL_JSP_CSE3,
+	PCI_DEVICE_ID_INTEL_ADP_P_CSE0,
+	PCI_DEVICE_ID_INTEL_ADP_P_CSE1,
+	PCI_DEVICE_ID_INTEL_ADP_P_CSE2,
+	PCI_DEVICE_ID_INTEL_ADP_P_CSE3,
+	PCI_DEVICE_ID_INTEL_ADP_S_CSE0,
+	PCI_DEVICE_ID_INTEL_ADP_S_CSE1,
+	PCI_DEVICE_ID_INTEL_ADP_S_CSE2,
+	PCI_DEVICE_ID_INTEL_ADP_S_CSE3,
 	0,
 };
 

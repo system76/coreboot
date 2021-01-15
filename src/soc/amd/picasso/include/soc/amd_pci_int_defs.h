@@ -1,16 +1,13 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#ifndef __AMD_PCI_INT_DEFS_H__
-#define __AMD_PCI_INT_DEFS_H__
+#ifndef AMD_PICASSO_AMD_PCI_INT_DEFS_H
+#define AMD_PICASSO_AMD_PCI_INT_DEFS_H
 
 /*
  * PIRQ and device routing - these define the index into the
  * FCH PCI_INTR 0xC00/0xC01 interrupt routing table.
  */
-/*
- * PIRQ and device routing - these define the index into the
- * FCH PCI_INTR 0xC00/0xC01 interrupt routing table.
- */
+
 #define PIRQ_NC		0x1f	/* Not Used */
 #define PIRQ_A		0x00	/* INT A */
 #define PIRQ_B		0x01	/* INT B */
@@ -64,4 +61,4 @@
 #define PIRQ_UART3	0x79	/* UART3 */
 /* 0x7a-0x7f reserved */
 
-#endif /* __AMD_PCI_INT_DEFS_H__ */
+#endif /* AMD_PICASSO_AMD_PCI_INT_DEFS_H */

@@ -50,15 +50,18 @@ enum ite_ec_fan_mode {
 };
 
 struct ite_ec_fan_smartconfig {
-	u8 tmpin;	/* select TMPINx (1, 2 or 3)		*/
-	u8 tmp_off;	/* turn fan off below (°C)		*/
-	u8 tmp_start;	/* turn fan on above (°C)		*/
-	u8 tmp_full;	/* 100% duty cycle above (°C)		*/
-	u8 tmp_delta;	/* adapt fan speed when temperature
-			   changed by at least `tmp_delta`°C	*/
-	u8 smoothing;	/* enable smoothing			*/
-	u8 pwm_start;	/* start at this duty cycle (%)		*/
-	u8 slope;	/* increase duty cycle by `slope`%/°C	*/
+	u8 tmpin;	/* select TMPINx (1, 2 or 3)			*/
+	u8 tmp_off;	/* turn fan off below (°C)			*/
+	u8 tmp_start;	/* turn fan on above (°C)			*/
+	u8 tmp_full;	/* 100% duty cycle above (°C)			*/
+	u8 tmp_delta;	/* adapt fan speed when temperature changed by
+			   at least `tmp_delta`°C			*/
+	u8 full_lmt;	/* force fan to full PWM at thermal limit	*/
+	u8 smoothing;	/* enable smoothing				*/
+	u8 pwm_start;	/* start at this duty cycle (%)			*/
+	u8 slope;	/* increase duty cycle by `slope`%/°C		*/
+	u8 clsd_loop;	/* tachometer closed-loop mode enable		*/
+	u16 rpm_start;	/* start at this RPM (clsd_loop = 1)		*/
 };
 
 struct ite_ec_fan_config {
@@ -90,6 +93,11 @@ struct ite_ec_config {
 	 * Enable SMBus for external thermal sensor.
 	 */
 	bool smbus_en;
+	/*
+	 * Select 24 MHz clock for external host instead of an
+	 * internally generated 32 MHz clock.
+	 */
+	bool smbus_24mhz;
 };
 
 /* Some shorthands for device trees */

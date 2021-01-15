@@ -1,18 +1,20 @@
 config SOC_INTEL_COMMON
 	bool
+	select AZALIA_PLUGIN_SUPPORT
 	select HAVE_DISPLAY_MTRRS
+	select ACPI_SOC_NVS
 	help
 	  common code for Intel SOCs
 
 if SOC_INTEL_COMMON
 
-comment "Intel SoC Common Code"
+comment "Intel SoC Common Code for IP blocks"
 source "src/soc/intel/common/block/Kconfig"
 
 comment "Intel SoC Common PCH Code"
 source "src/soc/intel/common/pch/Kconfig"
 
-comment "Intel SoC Common coreboot stages"
+comment "Intel SoC Common coreboot stages and non-IP blocks"
 source "src/soc/intel/common/basecode/Kconfig"
 
 config SOC_INTEL_COMMON_RESET
@@ -30,6 +32,20 @@ config ACPI_CONSOLE
 	help
 	  Provide a mechanism for serial console based ACPI debug.
 
+config PAVP
+	bool "Enable PAVP (Protected Audio-Video Path) support"
+	default y
+	help
+	  Protected Audio-Video Path is an Intel technology used to enforce digital
+	  rights protections on multimedia content. Streaming or other media playback
+	  services may require it to be enabled for correct functioning.
+
+	  Users might disable PAVP if the concept of digital rights management (DRM)
+	  offends them, or if they have concerns about the security of
+	  the Management Engine, which is where this technology is implemented.
+
+	  Set this option to n to disable support.
+
 config MMA
 	bool "Enable MMA (Memory Margin Analysis) support for Intel Core"
 	default n
@@ -42,10 +58,6 @@ config MMA_BLOBS_PATH
 	depends on MMA
 	default "3rdparty/blobs/soc/intel/kabylake/mma-blobs" if SOC_INTEL_KABYLAKE
 	default "3rdparty/blobs/soc/intel/skylake/mma-blobs" if SOC_INTEL_SKYLAKE
-
-config SOC_INTEL_COMMON_ACPI
-	bool
-	default n
 
 config SOC_INTEL_COMMON_NHLT
 	bool

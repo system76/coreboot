@@ -15,7 +15,6 @@ OperationRegion (GNVS, SystemMemory, NVSA, 0x100)
 Field (GNVS, ByteAcc, NoLock, Preserve)
 {
 	/* Miscellaneous */
-	Offset (0x00),
 	OSYS,	16,	// 0x00 - Operating System
 	SMIF,	 8,	// 0x02 - SMI function
 	PRM0,	 8,	// 0x03 - SMI function parameter
@@ -111,4 +110,5 @@ Field (GNVS, ByteAcc, NoLock, Preserve)
 	Offset (0xf0),
 	DOCK,	 8,	// 0xf0 - Docking Status
 	BTEN,	 8,	// 0xf1 - Bluetooth Enable
+	CBMC,	32,
 }

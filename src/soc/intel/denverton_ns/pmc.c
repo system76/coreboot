@@ -1,7 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
 #include <acpi/acpi.h>
-#include <arch/io.h>
 #include <device/pci_ops.h>
 #include <console/console.h>
 #include <device/device.h>
@@ -17,7 +16,7 @@
 /* While we read BAR dynamically in case it changed, let's
  * initialize it with a same value
  */
-static u16 acpi_base = DEFAULT_ACPI_BASE;
+static u16 acpi_base = ACPI_BASE_ADDRESS;
 static u32 pwrm_base = DEFAULT_PWRM_BASE;
 
 static void pch_power_options(struct device *dev) { /* TODO */ }

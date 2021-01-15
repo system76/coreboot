@@ -29,6 +29,7 @@ enum dram_odt_type {
 };
 
 enum {
+	CA_NUM_LP4 = 6,
 	DQ_DATA_WIDTH = 16,
 	DQS_BIT_NUMBER = 8,
 	DQS_NUMBER = (DQ_DATA_WIDTH / DQS_BIT_NUMBER)
@@ -44,6 +45,13 @@ enum {
 enum {
 	CBT_NORMAL_MODE = 0,
 	CBT_BYTE_MODE1
+};
+
+enum {
+	CBT_R0_R1_NORMAL = 0,	/* Normal mode */
+	CBT_R0_R1_BYTE,		/* Byte mode */
+	CBT_R0_NORMAL_R1_BYTE,	/* Mixed mode R0: Normal R1: Byte */
+	CBT_R0_BYTE_R1_NORMAL	/* Mixed mode R0: Byte R1: Normal */
 };
 
 enum {

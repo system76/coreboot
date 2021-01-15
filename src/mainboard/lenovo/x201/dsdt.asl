@@ -9,7 +9,7 @@
 DefinitionBlock(
 	"dsdt.aml",
 	"DSDT",
-	0x02,		/* DSDT revision: ACPI v2.0 and up */
+	ACPI_DSDT_REV_2,
 	OEM_ID,
 	ACPI_TABLE_CREATOR,
 	0x20130325	/* OEM revision */
@@ -20,7 +20,7 @@ DefinitionBlock(
 	#include "acpi/platform.asl"
 
 	/* global NVS and variables */
-	#include <southbridge/intel/bd82x6x/acpi/globalnvs.asl>
+	#include <southbridge/intel/ibexpeak/acpi/globalnvs.asl>
 
 	/* General Purpose Events */
 	#include "acpi/gpe.asl"

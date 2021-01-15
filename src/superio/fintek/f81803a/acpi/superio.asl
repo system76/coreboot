@@ -152,7 +152,7 @@ Device(SUPERIO_DEV) {
 			ENTER_CONFIG_MODE (SUPERIO_UART_LDN)
 			  PNP_WRITE_IO(PNP_IO0, Arg0, IO0)
 			  PNP_WRITE_IRQ(PNP_IRQ0, Arg0, IR0)
-			  Store (One, PNP_DEVICE_ACTIVE)
+			  PNP_DEVICE_ACTIVE = 1
 			EXIT_CONFIG_MODE ()
 		}
 	}
@@ -221,7 +221,7 @@ Device(SUPERIO_DEV) {
 			ENTER_CONFIG_MODE (SUPERIO_UART_LDN)
 			  PNP_WRITE_IO(PNP_IO0, Arg0, IO0)
 			  PNP_WRITE_IRQ(PNP_IRQ0, Arg0, IR0)
-			  Store (One, PNP_DEVICE_ACTIVE)
+			  PNP_DEVICE_ACTIVE = 1
 			EXIT_CONFIG_MODE ()
 		}
 	}
@@ -234,9 +234,8 @@ Device(SUPERIO_DEV) {
 	OperationRegion(APCx, SystemIO, APC5, 0x01)
 	Field(APCx, ByteAcc, Nolock, Preserve) /* bits in PME ACPI CONTROL Reg 5*/
 	{
-		Offset(0x00), /*Control Reg 5 */
-		, 7,
-		PSIN, 1 /* PSIN_FLAG */
+		    , 7, /*Control Reg 5 */
+		PSIN, 1  /* PSIN_FLAG */
 	}
 
 	/* routine to clear PSIN_FLAG in ACPI_CONTROL_REG_5 of SIO */
@@ -244,7 +243,7 @@ Device(SUPERIO_DEV) {
 	{
 		/* DBG0("SIO CPSI") */
 		ENTER_CONFIG_MODE(SUPERIO_PME_LDN)
-		Store(1, PSIN)
+		PSIN = 1
 		EXIT_CONFIG_MODE()
 	}
 #endif

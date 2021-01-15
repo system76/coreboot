@@ -3,6 +3,8 @@
 #ifndef ELOG_H_
 #define ELOG_H_
 
+#include <stdint.h>
+
 #define MAX_EVENT_SIZE                    0x7F
 
 /* End of log */
@@ -77,7 +79,7 @@
 #define  ELOG_WAKE_SOURCE_PME              0x01
 #define  ELOG_WAKE_SOURCE_PME_INTERNAL     0x02
 #define  ELOG_WAKE_SOURCE_RTC              0x03
-#define  ELOG_WAKE_SOURCE_GPIO             0x04
+#define  ELOG_WAKE_SOURCE_GPE              0x04
 #define  ELOG_WAKE_SOURCE_SMBUS            0x05
 #define  ELOG_WAKE_SOURCE_PWRBTN           0x06
 #define  ELOG_WAKE_SOURCE_PME_HDA          0x07
@@ -117,6 +119,11 @@
 #define  ELOG_WAKE_SOURCE_PME_PCIE22       0x29
 #define  ELOG_WAKE_SOURCE_PME_PCIE23       0x2a
 #define  ELOG_WAKE_SOURCE_PME_PCIE24       0x2b
+#define  ELOG_WAKE_SOURCE_GPIO             0x2c
+#define  ELOG_WAKE_SOURCE_PME_TBT          0x2d
+#define  ELOG_WAKE_SOURCE_PME_TCSS_XHCI    0x2e
+#define  ELOG_WAKE_SOURCE_PME_TCSS_XDCI    0x2f
+#define  ELOG_WAKE_SOURCE_PME_TCSS_DMA     0x30
 
 struct elog_event_data_wake {
 	u8 source;
@@ -198,7 +205,6 @@ struct elog_event_mem_cache_update {
 #define ELOG_TYPE_MI_HRPD                 0xb3
 #define ELOG_TYPE_MI_HRPC                 0xb4
 #define ELOG_TYPE_MI_HR                   0xb5
-
 
 struct elog_event_extended_event {
 	u8 event_type;

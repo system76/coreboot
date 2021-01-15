@@ -2,6 +2,7 @@
 
 #include <assert.h>
 #include <commonlib/helpers.h>
+#include <console/console.h>
 #include <delay.h>
 #include <device/mmio.h>
 #include <soc/clock.h>
@@ -11,14 +12,6 @@
 #define DIV(div) (2 * div - 1)
 
 struct clock_config qup_cfg[] = {
-	{
-		.hz = QUPV3_UART_SRC_HZ,
-		.src = SRC_GPLL0_EVEN_300MHZ,
-		.div = DIV(1),
-		.m = 384,
-		.n = 15625,
-		.d_2 = 15625,
-	},
 	{
 		.hz = SRC_XO_HZ,	/* 19.2KHz */
 		.src = SRC_XO_19_2MHZ,
@@ -102,6 +95,20 @@ struct clock_config qup_wrap_cfg[] = {
 		.src = SRC_XO_19_2MHZ,
 		.div = DIV(1),
 	},
+};
+
+static struct sc7180_mnd_clock *mdss_clock[MDSS_CLK_COUNT] = {
+	[MDSS_CLK_ESC0] = &mdss->esc0,
+	[MDSS_CLK_PCLK0] = &mdss->pclk0,
+	[MDSS_CLK_BYTE0] = &mdss->byte0,
+	[MDSS_CLK_BYTE0_INTF] = &mdss->byte0,
+};
+
+static u32 *mdss_cbcr[MDSS_CLK_COUNT] = {
+	[MDSS_CLK_ESC0] = &mdss->esc0_cbcr,
+	[MDSS_CLK_PCLK0] = &mdss->pclk0_cbcr,
+	[MDSS_CLK_BYTE0] = &mdss->byte0_cbcr,
+	[MDSS_CLK_BYTE0_INTF] = &mdss->byte0_intf_cbcr,
 };
 
 static int clock_configure_gpll0(void)
@@ -202,7 +209,7 @@ void clock_configure_qspi(uint32_t hz)
 			qspi_core_cfg, hz,
 			ARRAY_SIZE(qspi_core_cfg));
 	clock_enable(&gcc->qspi_cnoc_ahb_cbcr);
-	clock_enable(&gcc->qspi_core.cbcr);
+	clock_enable(&gcc->qspi_core_cbcr);
 }
 
 int clock_reset_bcr(void *bcr_addr, bool reset)
@@ -323,11 +330,63 @@ static void speed_up_boot_cpu(void)
 		printk(BIOS_DEBUG, "L3 Frequency bumped to 1.2096(GHz)\n");
 }
 
+int mdss_clock_configure(enum mdss_clock clk_type, uint32_t source,
+				uint32_t half_divider, uint32_t m,
+				uint32_t n, uint32_t d_2)
+{
+	struct clock_config mdss_clk_cfg;
+	uint32_t reg_val;
+
+	if (clk_type >= MDSS_CLK_COUNT)
+		return -1;
+
+	/* Initialize it with received arguments */
+	mdss_clk_cfg.hz = 0;
+	mdss_clk_cfg.src = source;
+
+	/*
+	 * client is expected to provide 2n divider value,
+	 * as the divider value in register is in form "2n-1"
+	 */
+	mdss_clk_cfg.div = half_divider ? (half_divider - 1) : 0;
+	mdss_clk_cfg.m = m;
+	mdss_clk_cfg.n = n;
+	mdss_clk_cfg.d_2 = d_2;
+
+	/* configure and set the clock */
+	reg_val = (mdss_clk_cfg.src << CLK_CTL_CFG_SRC_SEL_SHFT) |
+			(mdss_clk_cfg.div << CLK_CTL_CFG_SRC_DIV_SHFT);
+
+	write32(&mdss_clock[clk_type]->clock.rcg_cfg, reg_val);
+
+	/* Set m/n/d values for a specific clock */
+	if (mdss_clk_cfg.m != 0)
+		clock_configure_mnd((struct sc7180_clock *)mdss_clock[clk_type],
+			mdss_clk_cfg.m, mdss_clk_cfg.n, mdss_clk_cfg.d_2);
+
+	/* Commit config to RCG */
+	setbits32(&mdss_clock[clk_type]->clock.rcg_cmd,
+						BIT(CLK_CTL_CMD_UPDATE_SHFT));
+
+	return 0;
+}
+
+int mdss_clock_enable(enum mdss_clock clk_type)
+{
+	if (clk_type >= MDSS_CLK_COUNT)
+		return -1;
+
+	/* Enable clock*/
+	clock_enable(mdss_cbcr[clk_type]);
+
+	return 0;
+}
+
 void clock_init(void)
 {
 	clock_configure_gpll0();
 
-	clock_enable_vote(&gcc->qup_wrap0_core_2x.cbcr,
+	clock_enable_vote(&gcc->qup_wrap0_core_2x_cbcr,
 				&gcc->apcs_clk_br_en1,
 				QUPV3_WRAP0_CORE_2X_CLK_ENA);
 	clock_enable_vote(&gcc->qup_wrap0_core_cbcr,

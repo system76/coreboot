@@ -8,6 +8,7 @@
 #include <device/pci.h>
 #include <device/pci_ids.h>
 #include "chip.h"
+#include "iobp.h"
 #include "pch.h"
 #include "nvs.h"
 
@@ -118,7 +119,7 @@ static void serialio_init_once(int acpi_mode)
 {
 	if (acpi_mode) {
 		/* Enable ACPI IRQ for IRQ13, IRQ7, IRQ6, IRQ5 in RCBA. */
-		RCBA32_OR(ACPIIRQEN, (1 << 13)|(1 << 7)|(1 << 6)|(1 << 5));
+		RCBA32_OR(ACPIIRQEN, (1 << 13) | (1 << 7) | (1 << 6) | (1 << 5));
 	}
 
 	/* Program IOBP CB000154h[12,9:8,4:0] = 1001100011111b. */
@@ -130,7 +131,7 @@ static void serialio_init_once(int acpi_mode)
 
 static void serialio_init(struct device *dev)
 {
-	struct southbridge_intel_lynxpoint_config *config = dev->chip_info;
+	struct southbridge_intel_lynxpoint_config *config = config_of(dev);
 	struct resource *bar0, *bar1;
 	int sio_index = -1;
 
@@ -227,14 +228,14 @@ static struct device_operations device_ops = {
 };
 
 static const unsigned short pci_device_ids[] = {
-	0x9c60, /* 0:15.0 - SDMA */
-	0x9c61, /* 0:15.1 - I2C0 */
-	0x9c62, /* 0:15.2 - I2C1 */
-	0x9c65, /* 0:15.3 - SPI0 */
-	0x9c66, /* 0:15.4 - SPI1 */
-	0x9c63, /* 0:15.5 - UART0 */
-	0x9c64, /* 0:15.6 - UART1 */
-	0x9c35, /* 0:17.0 - SDIO */
+	PCI_DEVICE_ID_INTEL_LPT_LP_SDMA,
+	PCI_DEVICE_ID_INTEL_LPT_LP_I2C0,
+	PCI_DEVICE_ID_INTEL_LPT_LP_I2C1,
+	PCI_DEVICE_ID_INTEL_LPT_LP_GSPI0,
+	PCI_DEVICE_ID_INTEL_LPT_LP_GSPI1,
+	PCI_DEVICE_ID_INTEL_LPT_LP_UART0,
+	PCI_DEVICE_ID_INTEL_LPT_LP_UART1,
+	PCI_DEVICE_ID_INTEL_LPT_LP_SD,
 	0
 };
 

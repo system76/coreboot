@@ -78,34 +78,14 @@ endif
 ifeq ($(CONFIG_HUDSON_PSP), y)
 
 ifeq ($(CONFIG_CPU_AMD_PI_00730F01), y)
-FIRMWARE_LOCATE=$(dir $(call strip_quotes, $(CONFIG_AMD_PUBKEY_FILE)))
+FIRMWARE_LOCATION=$(shell grep -e FIRMWARE_LOCATION $(CONFIG_AMDFW_CONFIG_FILE) | awk '{print $$2}')
 FIRMWARE_TYPE=
 
-PSPBTLDR_FILE=$(top)/$(FIRMWARE_LOCATE)/PspBootLoader.Bypass.sbin
-#PSPRCVR_FILE=$(top)/$(FIRMWARE_LOCATE)/PspRecovery.sbin
-#PSPSCUREOS_FILE=$(top)/$(FIRMWARE_LOCATE)/PspSecureOs.sbin
-#PSPTRUSTLETS_FILE=$(top)/$(FIRMWARE_LOCATE)/trustlets.bin
-#TRUSTLETKEY_FILE=$(top)/$(FIRMWARE_LOCATE)/Trustlet.tkn.cert
 endif
 
-ifeq ($(CONFIG_CPU_AMD_PI_00660F01), y)
-FIRMWARE_LOCATE=$(dir $(call strip_quotes, $(CONFIG_AMD_PUBKEY_FILE)))
-FIRMWARE_TYPE=CZ
-
-PSPBTLDR_FILE=$(top)/$(FIRMWARE_LOCATE)/PspBootLoader_prod_CZ.sbin
-PSPRCVR_FILE=$(top)/$(FIRMWARE_LOCATE)/PspRecoveryBootLoader_prod_CZ.sbin
-PSPSCUREOS_FILE=$(top)/$(FIRMWARE_LOCATE)/PspSecureOs_prod_CZ.csbin
-PSPTRUSTLETS_FILE=$(top)/$(FIRMWARE_LOCATE)/PspTrustlets_prod_CZ.cbin
-TRUSTLETKEY_FILE=$(top)/$(FIRMWARE_LOCATE)/TrustletKey_prod_CZ.sbin
-SMUFIRMWARE2_FILE=$(top)/$(FIRMWARE_LOCATE)/SmuFirmware2_prod_CZ.sbin
-endif
-
-#PUBSIGNEDKEY_FILE=$(top)/$(FIRMWARE_LOCATE)/RtmPubSigned$(FIRMWARE_TYPE).key
-#PSPNVRAM_FILE=$(top)/$(FIRMWARE_LOCATE)/PspNvram$(FIRMWARE_TYPE).bin
-SMUFWM_FILE=$(top)/$(FIRMWARE_LOCATE)/SmuFirmware$(FIRMWARE_TYPE).sbin
-SMUFWM_FN_FILE=$(top)/$(FIRMWARE_LOCATE)/SmuFirmware$(FIRMWARE_TYPE)_FN.sbin
-SMUSCS_FILE=$(top)/$(FIRMWARE_LOCATE)/SmuScs$(FIRMWARE_TYPE).bin
-#PSPSECUREDEBUG_FILE=$(top)/$(FIRMWARE_LOCATE)/PspSecureDebug$(FIRMWARE_TYPE).Key
+#PUBSIGNEDKEY_FILE=$(top)/$(FIRMWARE_LOCATION)/RtmPubSigned$(FIRMWARE_TYPE).key
+#PSPNVRAM_FILE=$(top)/$(FIRMWARE_LOCATION)/PspNvram$(FIRMWARE_TYPE).bin
+#PSPSECUREDEBUG_FILE=$(top)/$(FIRMWARE_LOCATION)/PspSecureDebug$(FIRMWARE_TYPE).Key
 
 endif
 
@@ -120,7 +100,7 @@ OPT_PSPBTLDR_FILE=$(call add_opt_prefix, $(PSPBTLDR_FILE), --bootloader)
 OPT_SMUFWM_FILE=$(call add_opt_prefix, $(SMUFWM_FILE), --smufirmware)
 OPT_PSPRCVR_FILE=$(call add_opt_prefix, $(PSPRCVR_FILE), --recovery)
 OPT_PUBSIGNEDKEY_FILE=$(call add_opt_prefix, $(PUBSIGNEDKEY_FILE), --rtmpubkey)
-OPT_PSPSCUREOS_FILE=$(call add_opt_prefix, $(PSPSCUREOS_FILE), --secureos)
+OPT_PSPSECUREOS_FILE=$(call add_opt_prefix, $(PSPSECUREOS_FILE), --secureos)
 OPT_PSPNVRAM_FILE=$(call add_opt_prefix, $(PSPNVRAM_FILE), --nvram)
 OPT_PSPSECUREDEBUG_FILE=$(call add_opt_prefix, $(PSPSECUREDEBUG_FILE), --securedebug)
 OPT_PSPTRUSTLETS_FILE=$(call add_opt_prefix, $(PSPTRUSTLETS_FILE), --trustlets)
@@ -128,28 +108,20 @@ OPT_TRUSTLETKEY_FILE=$(call add_opt_prefix, $(TRUSTLETKEY_FILE), --trustletkey)
 OPT_SMUFIRMWARE2_FILE=$(call add_opt_prefix, $(SMUFIRMWARE2_FILE), --smufirmware2)
 OPT_SMUSCS_FILE=$(call add_opt_prefix, $(SMUSCS_FILE), --smuscs)
 
+# Add all the files listed in the config file
+POUND_SIGN=$(call strip_quotes, "\#")
+DEP_FILES= $(patsubst %,$(FIRMWARE_LOCATION)/%, $(shell sed -e /^$(POUND_SIGN)/d -e /^FIRMWARE_LOCATION/d $(CONFIG_AMDFW_CONFIG_FILE) | awk '{print $$2}' ))
+
 $(obj)/amdfw.rom:	$(call strip_quotes, $(CONFIG_HUDSON_XHCI_FWM_FILE)) \
 			$(call strip_quotes, $(CONFIG_HUDSON_IMC_FWM_FILE)) \
 			$(call strip_quotes, $(CONFIG_HUDSON_GEC_FWM_FILE)) \
-			$(call strip_quotes, $(CONFIG_AMD_PUBKEY_FILE)) \
-			$(call strip_quotes, $(PUBSIGNEDKEY_FILE)) \
-			$(call strip_quotes, $(PSPBTLDR_FILE)) \
-			$(call strip_quotes, $(PSPRCVR_FILE)) \
-			$(call strip_quotes, $(PSPSCUREOS_FILE)) \
-			$(call strip_quotes, $(PSPNVRAM_FILE)) \
-			$(call strip_quotes, $(SMUFWM_FILE)) \
-			$(call strip_quotes, $(SMUSCS_FILE)) \
-			$(call strip_quotes, $(PSPSECUREDEBUG_FILE)) \
-			$(call strip_quotes, $(PSPTRUSTLETS_FILE)) \
-			$(call strip_quotes, $(TRUSTLETKEY_FILE)) \
-			$(call strip_quotes, $(SMUFIRMWARE2_FILE)) \
 			$(call strip_quotes, $(AMD_PUBKEY2_FILE)) \
 			$(call strip_quotes, $(PUBSIGNEDKEY2_FILE)) \
 			$(call strip_quotes, $(PSPBTLDR2_FILE)) \
 			$(call strip_quotes, $(SMUFWM2_FILE)) \
 			$(call strip_quotes, $(SMUFWM2_FN_FILE)) \
 			$(call strip_quotes, $(PSPRCVR2_FILE)) \
-			$(call strip_quotes, $(PSPSCUREOS2_FILE)) \
+			$(call strip_quotes, $(PSPSECUREOS2_FILE)) \
 			$(call strip_quotes, $(PSPNVRAM2_FILE)) \
 			$(call strip_quotes, $(SMUSCS2_FILE)) \
 			$(call strip_quotes, $(PSPSECUREDEBUG2_FILE)) \
@@ -157,6 +129,7 @@ $(obj)/amdfw.rom:	$(call strip_quotes, $(CONFIG_HUDSON_XHCI_FWM_FILE)) \
 			$(call strip_quotes, $(TRUSTLETKEY2_FILE)) \
 			$(call strip_quotes, $(SMUFIRMWARE2_2_FILE)) \
 			$(call strip_quotes, $(SMUFIRMWARE2_2_FN_FILE)) \
+			$(DEP_FILES) \
 			$(AMDFWTOOL)
 	rm -f $@
 	@printf "    AMDFWTOOL  $(subst $(obj)/,,$(@))\n"
@@ -164,25 +137,13 @@ $(obj)/amdfw.rom:	$(call strip_quotes, $(CONFIG_HUDSON_XHCI_FWM_FILE)) \
 		$(OPT_HUDSON_XHCI_FWM_FILE) \
 		$(OPT_HUDSON_IMC_FWM_FILE) \
 		$(OPT_HUDSON_GEC_FWM_FILE) \
-		$(OPT_AMD_PUBKEY_FILE) \
-		$(OPT_PSPBTLDR_FILE) \
-		$(OPT_SMUFWM_FILE) \
-		$(OPT_PSPRCVR_FILE) \
-		$(OPT_PUBSIGNEDKEY_FILE) \
-		$(OPT_PSPSCUREOS_FILE) \
-		$(OPT_PSPNVRAM_FILE) \
-		$(OPT_PSPSECUREDEBUG_FILE) \
-		$(OPT_PSPTRUSTLETS_FILE) \
-		$(OPT_TRUSTLETKEY_FILE) \
-		$(OPT_SMUFIRMWARE2_FILE) \
-		$(OPT_SMUSCS_FILE) \
 		$(OPT_2AMD_PUBKEY_FILE) \
 		$(OPT_2PSPBTLDR_FILE) \
 		$(OPT_2SMUFWM_FILE) \
 		$(OPT_2SMUFWM_FN_FILE) \
 		$(OPT_2PSPRCVR_FILE) \
 		$(OPT_2PUBSIGNEDKEY_FILE) \
-		$(OPT_2PSPSCUREOS_FILE) \
+		$(OPT_2PSPSECUREOS_FILE) \
 		$(OPT_2PSPNVRAM_FILE) \
 		$(OPT_2PSPSECUREDEBUG_FILE) \
 		$(OPT_2PSPTRUSTLETS_FILE) \
@@ -192,15 +153,13 @@ $(obj)/amdfw.rom:	$(call strip_quotes, $(CONFIG_HUDSON_XHCI_FWM_FILE)) \
 		$(OPT_2SMUSCS_FILE) \
 		--flashsize $(CONFIG_ROM_SIZE) \
 		--location $(HUDSON_FWM_POSITION) \
+		--config $(CONFIG_AMDFW_CONFIG_FILE) \
 		--output	$@
 
 ifeq ($(CONFIG_AMDFW_OUTSIDE_CBFS),y)
-PHONY+=add_amdfw
-INTERMEDIATE+=add_amdfw
-
-add_amdfw: $(obj)/coreboot.pre $(obj)/amdfw.rom
+$(call add_intermediate, add_amdfw, $(obj)/coreboot.pre $(obj)/amdfw.rom)
 	printf "    DD         Adding AMD Firmware\n"
-	dd if=$(obj)/amdfw.rom \
+	flock $< dd if=$(obj)/amdfw.rom \
 		of=$(obj)/coreboot.pre conv=notrunc bs=1 seek=131072 >/dev/null 2>&1
 
 else # ifeq ($(CONFIG_AMDFW_OUTSIDE_CBFS),y)

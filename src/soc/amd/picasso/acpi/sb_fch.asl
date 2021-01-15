@@ -34,7 +34,7 @@ Device (GPIO)
 				ActiveLow,
 				Exclusive, , , IRQR)
 			{ 0 }
-			Memory32Fixed (ReadWrite, 0xFED81500, 0x300)
+			Memory32Fixed (ReadWrite, ACPIMMIO_GPIO0_BASE, 0x400)
 		}
 		CreateDWordField (Local0, IRQR._INT, IRQN)
 		If (PMOD) {
@@ -44,7 +44,7 @@ Device (GPIO)
 		}
 		If (IRQN == 0x1f) {
 			Return (ResourceTemplate() {
-				Memory32Fixed (ReadWrite, 0xFED81500, 0x300)
+				Memory32Fixed (ReadWrite, ACPIMMIO_GPIO0_BASE, 0x400)
 			})
 		} Else {
 			Return (Local0)
@@ -122,6 +122,16 @@ Device (FUR0)
 			Return (Local0)
 		}
 	}
+
+	Name (_PR0, Package () { \_SB.AOAC.FUR0 })
+	Name (_PR2, Package () { \_SB.AOAC.FUR0 })
+	Name (_PR3, Package () { \_SB.AOAC.FUR0 })
+	Method (_PS0, 0, Serialized) {
+		\_SB.AOAC.FUR0.TDS = 1
+	}
+	Method (_PS3, 0, Serialized) {
+		\_SB.AOAC.FUR0.TDS = 3
+	}
 }
 
 Device (FUR1) {
@@ -158,11 +168,9 @@ Device (FUR1) {
 	Name (_PR2, Package () { \_SB.AOAC.FUR1 })
 	Name (_PR3, Package () { \_SB.AOAC.FUR1 })
 	Method (_PS0, 0, Serialized) {
-		Printf("FUR1._PS0")
 		\_SB.AOAC.FUR1.TDS = 1
 	}
 	Method (_PS3, 0, Serialized) {
-		Printf("FUR1._PS3")
 		\_SB.AOAC.FUR1.TDS = 3
 	}
 }
@@ -201,11 +209,9 @@ Device (FUR2) {
 	Name (_PR2, Package () { \_SB.AOAC.FUR2 })
 	Name (_PR3, Package () { \_SB.AOAC.FUR2 })
 	Method (_PS0, 0, Serialized) {
-		Printf("FUR2._PS0")
 		\_SB.AOAC.FUR2.TDS = 1
 	}
 	Method (_PS3, 0, Serialized) {
-		Printf("FUR2._PS3")
 		\_SB.AOAC.FUR2.TDS = 3
 	}
 }
@@ -244,11 +250,9 @@ Device (FUR3) {
 	Name (_PR2, Package () { \_SB.AOAC.FUR3 })
 	Name (_PR3, Package () { \_SB.AOAC.FUR3 })
 	Method (_PS0, 0, Serialized) {
-		Printf("FUR3._PS0")
 		\_SB.AOAC.FUR3.TDS = 1
 	}
 	Method (_PS3, 0, Serialized) {
-		Printf("FUR3._PS3")
 		\_SB.AOAC.FUR3.TDS = 3
 	}
 }
@@ -290,11 +294,9 @@ Device (I2C2) {
 	Name (_PR2, Package () { \_SB.AOAC.I2C2 })
 	Name (_PR3, Package () { \_SB.AOAC.I2C2 })
 	Method (_PS0, 0, Serialized) {
-		Printf("I2C2._PS0")
 		\_SB.AOAC.I2C2.TDS = 1
 	}
 	Method (_PS3, 0, Serialized) {
-		Printf("I2C2._PS3")
 		\_SB.AOAC.I2C2.TDS = 3
 	}
 }
@@ -336,11 +338,9 @@ Device (I2C3)
 	Name (_PR2, Package () { \_SB.AOAC.I2C3 })
 	Name (_PR3, Package () { \_SB.AOAC.I2C3 })
 	Method (_PS0, 0, Serialized) {
-		Printf("I2C3._PS0")
 		\_SB.AOAC.I2C3.TDS = 1
 	}
 	Method (_PS3, 0, Serialized) {
-		Printf("I2C3._PS3")
 		\_SB.AOAC.I2C3.TDS = 3
 	}
 }
@@ -351,6 +351,14 @@ Device (MISC)
 	Name (_UID, 0x3)
 	Name (_CRS, ResourceTemplate() {
 		Memory32Fixed (ReadWrite, ACPIMMIO_MISC_BASE, 0x100)
+	})
+	Name (_DSD, Package ()
+	{
+		ToUUID ("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
+		Package ()
+		{
+			Package () { "is-rv", 1 },
+		},
 	})
 	Method (_STA, 0x0, NotSerialized)
 	{

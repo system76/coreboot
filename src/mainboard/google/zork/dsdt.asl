@@ -6,9 +6,9 @@
 #include <acpi/acpi.h>
 
 DefinitionBlock (
-	"DSDT.AML",	/* Output filename */
-	"DSDT",		/* Signature */
-	0x02,		/* DSDT Revision, needs to be 2 for 64bit */
+	"dsdt.aml",
+	"DSDT",
+	ACPI_DSDT_REV_2,
 	OEM_ID,
 	ACPI_TABLE_CREATOR,
 	0x00010001	/* OEM Revision */

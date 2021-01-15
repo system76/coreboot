@@ -28,7 +28,6 @@ static void check_pirq_routing_table(struct irq_routing_table *rt)
 	printk(BIOS_DEBUG, "%s(): Interrupt Routing Table located at %p.\n",
 		     __func__, addr);
 
-
 	sum = rt->checksum - sum;
 
 	if (sum != rt->checksum) {
@@ -106,8 +105,6 @@ static u8 pirq_get_next_free_irq(u8 *pirq, u16 bitmap)
 		/* If it's not yet routed, use it */
 		if (!already_routed)
 			break;
-		/* But if it was already routed, try the next one */
-		continue;
 	}
 	/* Now we got our IRQ */
 	return irq;

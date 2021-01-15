@@ -54,7 +54,11 @@ Method (IRQM, 1, Serialized) {
 
 	Switch (ToInteger (Arg0))
 	{
-		Case (Package () { 1, 5, 9, 13, 17, 21 }) {
+		Case (Package () { 1, 5, 9, 13
+#if CONFIG(SOC_INTEL_CANNONLAKE_PCH_H)
+		, 17, 21
+#endif
+		}) {
 			If (PICM) {
 				Return (IQAA)
 			} Else {
@@ -62,7 +66,11 @@ Method (IRQM, 1, Serialized) {
 			}
 		}
 
-		Case (Package () { 2, 6, 10, 14, 18, 22 }) {
+		Case (Package () { 2, 6, 10, 14
+#if CONFIG(SOC_INTEL_CANNONLAKE_PCH_H)
+		, 18, 22
+#endif
+		}) {
 			If (PICM) {
 				Return (IQBA)
 			} Else {
@@ -70,7 +78,11 @@ Method (IRQM, 1, Serialized) {
 			}
 		}
 
-		Case (Package () { 3, 7, 11, 15, 19, 23 }) {
+		Case (Package () { 3, 7, 11, 15
+#if CONFIG(SOC_INTEL_CANNONLAKE_PCH_H)
+		, 19, 23
+#endif
+		}) {
 			If (PICM) {
 				Return (IQCA)
 			} Else {
@@ -78,7 +90,11 @@ Method (IRQM, 1, Serialized) {
 			}
 		}
 
-		Case (Package () { 4, 8, 12, 16, 20, 24 }) {
+		Case (Package () { 4, 8, 12, 16
+#if CONFIG(SOC_INTEL_CANNONLAKE_PCH_H)
+		, 20, 24
+#endif
+		}) {
 			If (PICM) {
 				Return (IQDA)
 			} Else {
@@ -368,6 +384,7 @@ Device (RP16)
 	}
 }
 
+#if CONFIG(SOC_INTEL_CANNONLAKE_PCH_H)
 Device (RP17)
 {
 	Name (_ADR, 0x001B0000)
@@ -503,3 +520,4 @@ Device (RP24)
 		Return (IRQM (RPPN))
 	}
 }
+#endif

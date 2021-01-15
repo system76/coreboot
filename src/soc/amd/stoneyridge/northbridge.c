@@ -146,7 +146,6 @@ static void set_resources(struct device *dev)
 	struct bus *bus;
 	struct resource *res;
 
-
 	/* do we need this? */
 	create_vga_resource(dev);
 
@@ -171,7 +170,7 @@ unsigned long acpi_fill_mcfg(unsigned long current)
 					     CONFIG_MMCONF_BASE_ADDRESS,
 					     0,
 					     0,
-					     CONFIG_MMCONF_BUS_NUMBER);
+					     CONFIG_MMCONF_BUS_NUMBER - 1);
 
 	return current;
 }
@@ -231,7 +230,6 @@ static void patch_ssdt_processor_scope(acpi_header_t *ssdt)
 	ssdt->checksum = 0;
 	ssdt->checksum = acpi_checksum((void *)ssdt, ssdt->length);
 }
-
 
 static unsigned long agesa_write_acpi_tables(const struct device *device,
 					     unsigned long current,

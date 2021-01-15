@@ -3,6 +3,7 @@
 #include <acpi/acpi.h>
 #include <acpi/acpi_gnvs.h>
 #include <acpi/acpigen.h>
+#include <arch/ioapic.h>
 #include <device/mmio.h>
 #include <arch/smp/mpspec.h>
 #include <cbmem.h>
@@ -16,11 +17,9 @@
 #include <soc/iomap.h>
 #include <soc/irq.h>
 #include <soc/msr.h>
+#include <soc/nvs.h>
 #include <soc/pattrs.h>
 #include <soc/pm.h>
-
-#include <ec/google/chromeec/ec.h>
-#include <vendorcode/google/chromeos/gnvs.h>
 
 #define MWAIT_RES(state, sub_state)                         \
 	{                                                   \
@@ -57,7 +56,7 @@ static acpi_cstate_t cstate_map[] = {
 	}
 };
 
-void acpi_init_gnvs(struct global_nvs *gnvs)
+void soc_fill_gnvs(struct global_nvs *gnvs)
 {
 	/* Set unknown wake source */
 	gnvs->pm1i = -1;
@@ -67,22 +66,6 @@ void acpi_init_gnvs(struct global_nvs *gnvs)
 
 	/* Top of Low Memory (start of resource allocation) */
 	gnvs->tolm = nc_read_top_of_low_memory();
-
-#if CONFIG(CONSOLE_CBMEM)
-	/* Update the mem console pointer. */
-	gnvs->cbmc = (u32)cbmem_find(CBMEM_ID_CONSOLE);
-#endif
-
-	if (CONFIG(CHROMEOS)) {
-		/* Initialize Verified Boot data */
-		chromeos_init_chromeos_acpi(&(gnvs->chromeos));
-		if (CONFIG(EC_GOOGLE_CHROMEEC)) {
-			gnvs->chromeos.vbt2 = google_ec_running_ro() ?
-				ACTIVE_ECFW_RO : ACTIVE_ECFW_RW;
-		} else {
-			gnvs->chromeos.vbt2 = ACTIVE_ECFW_RO;
-		}
-	}
 }
 
 int acpi_sci_irq(void)
@@ -125,18 +108,32 @@ unsigned long acpi_fill_mcfg(unsigned long current)
 	return current;
 }
 
-static acpi_tstate_t baytrail_tss_table[] = {
+unsigned long acpi_fill_madt(unsigned long current)
+{
+	/* Local APICs */
+	current = acpi_create_madt_lapics(current);
+
+	/* IOAPIC */
+	current += acpi_create_madt_ioapic((acpi_madt_ioapic_t *) current,
+				2, IO_APIC_ADDR, 0);
+
+	current = acpi_madt_irq_overrides(current);
+
+	return current;
+}
+
+static acpi_tstate_t soc_tss_table[] = {
 	{ 100, 1000, 0, 0x00, 0 },
-	{ 88, 875, 0, 0x1e, 0 },
-	{ 75, 750, 0, 0x1c, 0 },
-	{ 63, 625, 0, 0x1a, 0 },
-	{ 50, 500, 0, 0x18, 0 },
-	{ 38, 375, 0, 0x16, 0 },
-	{ 25, 250, 0, 0x14, 0 },
-	{ 13, 125, 0, 0x12, 0 },
+	{  88,  875, 0, 0x1e, 0 },
+	{  75,  750, 0, 0x1c, 0 },
+	{  63,  625, 0, 0x1a, 0 },
+	{  50,  500, 0, 0x18, 0 },
+	{  38,  375, 0, 0x16, 0 },
+	{  25,  250, 0, 0x14, 0 },
+	{  13,  125, 0, 0x12, 0 },
 };
 
-static void generate_T_state_entries(int core, int cores_per_package)
+static void generate_t_state_entries(int core, int cores_per_package)
 {
 	/* Indicate SW_ALL coordination for T-states */
 	acpigen_write_TSD_package(core, cores_per_package, SW_ALL);
@@ -148,24 +145,23 @@ static void generate_T_state_entries(int core, int cores_per_package)
 	acpigen_write_TPC("\\TLVL");
 
 	/* Write TSS table for MSR access */
-	acpigen_write_TSS_package(
-		ARRAY_SIZE(baytrail_tss_table), baytrail_tss_table);
+	acpigen_write_TSS_package(ARRAY_SIZE(soc_tss_table), soc_tss_table);
 }
 
 static int calculate_power(int tdp, int p1_ratio, int ratio)
 {
-	u32 m;
-	u32 power;
+	u32 m, power;
 
 	/*
 	 * M = ((1.1 - ((p1_ratio - ratio) * 0.00625)) / 1.1) ^ 2
-	 *
-	 * Power = (ratio / p1_ratio) * m * tdp
 	 */
 
 	m = (110000 - ((p1_ratio - ratio) * 625)) / 11;
 	m = (m * m) / 1000;
 
+	/*
+	 * Power = (ratio / p1_ratio) * m * TDP
+	 */
 	power = ((ratio * 100000 / p1_ratio) / 100);
 	power *= (m / 100) * (tdp / 1000);
 	power /= 1000;
@@ -173,7 +169,7 @@ static int calculate_power(int tdp, int p1_ratio, int ratio)
 	return (int)power;
 }
 
-static void generate_P_state_entries(int core, int cores_per_package)
+static void generate_p_state_entries(int core, int cores_per_package)
 {
 	int ratio_min, ratio_max, ratio_turbo, ratio_step, ratio_range_2;
 	int coord_type, power_max, power_unit, num_entries;
@@ -232,12 +228,12 @@ static void generate_P_state_entries(int core, int cores_per_package)
 
 		/* Add entry for Turbo ratio */
 		acpigen_write_PSS_package(
-			clock_max + 1,		/*MHz*/
-			power_max,		/*mW*/
-			10,			/*lat1*/
-			10,			/*lat2*/
-			control_status,		/*control*/
-			control_status);	/*status*/
+			clock_max + 1,		/* MHz */
+			power_max,		/* mW */
+			10,			/* lat1 */
+			10,			/* lat2 */
+			control_status,		/* control */
+			control_status);	/* status */
 	} else {
 		/* _PSS package count without Turbo */
 		acpigen_write_package(num_entries + 1);
@@ -248,12 +244,12 @@ static void generate_P_state_entries(int core, int cores_per_package)
 	/* First regular entry is max non-turbo ratio */
 	control_status = (ratio_max << 8) | vid_max;
 	acpigen_write_PSS_package(
-		clock_max,		/*MHz*/
-		power_max,		/*mW*/
-		10,			/*lat1*/
-		10,			/*lat2*/
-		control_status,		/*control */
-		control_status);	/*status*/
+		clock_max,		/* MHz */
+		power_max,		/* mW */
+		10,			/* lat1 */
+		10,			/* lat2 */
+		control_status,		/* control */
+		control_status);	/* status */
 
 	/* Set up ratio and vid ranges for VID calculation */
 	ratio_range_2 = (ratio_turbo - ratio_min) * 2;
@@ -264,8 +260,8 @@ static void generate_P_state_entries(int core, int cores_per_package)
 	     ratio >= ratio_min; ratio -= ratio_step) {
 
 		/* Calculate VID for this ratio */
-		vid = ((ratio - ratio_min) * vid_range_2) /
-			ratio_range_2 + vid_min;
+		vid = ((ratio - ratio_min) * vid_range_2) / ratio_range_2 + vid_min;
+
 		/* Round up if remainder */
 		if (((ratio - ratio_min) * vid_range_2) % ratio_range_2)
 			vid++;
@@ -276,12 +272,12 @@ static void generate_P_state_entries(int core, int cores_per_package)
 		control_status = (ratio << 8) | (vid & 0xff);
 
 		acpigen_write_PSS_package(
-			clock,			/*MHz*/
-			power,			/*mW*/
-			10,			/*lat1*/
-			10,			/*lat2*/
-			control_status,		/*control*/
-			control_status);	/*status*/
+			clock,			/* MHz */
+			power,			/* mW */
+			10,			/* lat1 */
+			10,			/* lat2 */
+			control_status,		/* control */
+			control_status);	/* status */
 	}
 
 	/* Fix package length */
@@ -301,20 +297,16 @@ void generate_cpu_entries(const struct device *device)
 		}
 
 		/* Generate processor \_SB.CPUx */
-		acpigen_write_processor(
-			core, pcontrol_blk, plen);
+		acpigen_write_processor(core, pcontrol_blk, plen);
 
 		/* Generate  P-state tables */
-		generate_P_state_entries(
-			core, pattrs->num_cpus);
+		generate_p_state_entries(core, pattrs->num_cpus);
 
 		/* Generate C-state tables */
-		acpigen_write_CST_package(
-			cstate_map, ARRAY_SIZE(cstate_map));
+		acpigen_write_CST_package(cstate_map, ARRAY_SIZE(cstate_map));
 
 		/* Generate T-state tables */
-		generate_T_state_entries(
-			core, pattrs->num_cpus);
+		generate_t_state_entries(core, pattrs->num_cpus);
 
 		acpigen_pop_len();
 	}
@@ -343,8 +335,7 @@ unsigned long acpi_madt_irq_overrides(unsigned long current)
 		sci_flags |= MP_IRQ_POLARITY_HIGH;
 
 	irqovr = (void *)current;
-	current += acpi_create_madt_irqoverride(irqovr, 0, sci_irq, sci_irq,
-	                                        sci_flags);
+	current += acpi_create_madt_irqoverride(irqovr, 0, sci_irq, sci_irq, sci_flags);
 
 	return current;
 }

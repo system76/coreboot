@@ -3,11 +3,14 @@
 #include <assert.h>
 #include <boot_device.h>
 #include <cbfs.h>
+#include <cbfs_private.h>
+#include <cbmem.h>
 #include <commonlib/bsd/compression.h>
+#include <commonlib/endian.h>
 #include <console/console.h>
-#include <endian.h>
 #include <fmap.h>
 #include <lib.h>
+#include <metadata_hash.h>
 #include <security/tpm/tspi/crtm.h>
 #include <security/vboot/vboot_common.h>
 #include <stdlib.h>
@@ -15,62 +18,112 @@
 #include <symbols.h>
 #include <timestamp.h>
 
-#define ERROR(x...) printk(BIOS_ERR, "CBFS: " x)
-#define LOG(x...) printk(BIOS_INFO, "CBFS: " x)
-#if CONFIG(DEBUG_CBFS)
-#define DEBUG(x...) printk(BIOS_SPEW, "CBFS: " x)
-#else
-#define DEBUG(x...)
-#endif
+cb_err_t cbfs_boot_lookup(const char *name, bool force_ro,
+			  union cbfs_mdata *mdata, struct region_device *rdev)
+{
+	const struct cbfs_boot_device *cbd = cbfs_get_boot_device(force_ro);
+	if (!cbd)
+		return CB_ERR;
+
+	size_t data_offset;
+	cb_err_t err = CB_CBFS_CACHE_FULL;
+	if (!CONFIG(NO_CBFS_MCACHE) && !ENV_SMM && cbd->mcache_size)
+		err = cbfs_mcache_lookup(cbd->mcache, cbd->mcache_size,
+					  name, mdata, &data_offset);
+	if (err == CB_CBFS_CACHE_FULL) {
+		struct vb2_hash *metadata_hash = NULL;
+		if (CONFIG(TOCTOU_SAFETY)) {
+			if (ENV_SMM)  /* Cannot provide TOCTOU safety for SMM */
+				dead_code();
+			if (!cbd->mcache_size)
+				die("Cannot access CBFS TOCTOU-safely in " ENV_STRING " before CBMEM init!\n");
+			/* We can only reach this for the RW CBFS -- an mcache
+			   overflow in the RO CBFS would have been caught when
+			   building the mcache in cbfs_get_boot_device().
+			   (Note that TOCTOU_SAFETY implies !NO_CBFS_MCACHE.) */
+			assert(cbd == vboot_get_cbfs_boot_device());
+			/* TODO: set metadata_hash to RW metadata hash here. */
+		}
+		err = cbfs_lookup(&cbd->rdev, name, mdata, &data_offset,
+				  metadata_hash);
+	}
+
+	if (CONFIG(VBOOT_ENABLE_CBFS_FALLBACK) && !force_ro &&
+	    err == CB_CBFS_NOT_FOUND) {
+		printk(BIOS_INFO, "CBFS: Fall back to RO region for %s\n",
+		       name);
+		return cbfs_boot_lookup(name, true, mdata, rdev);
+	}
+	if (err) {
+		if (err == CB_CBFS_NOT_FOUND)
+			printk(BIOS_WARNING, "CBFS: '%s' not found.\n", name);
+		else if (err == CB_CBFS_HASH_MISMATCH)
+			printk(BIOS_ERR, "CBFS ERROR: metadata hash mismatch!\n");
+		else
+			printk(BIOS_ERR,
+			       "CBFS ERROR: error %d when looking up '%s'\n",
+			       err, name);
+		return err;
+	}
+
+	if (rdev_chain(rdev, &cbd->rdev, data_offset, be32toh(mdata->h.len)))
+		return CB_ERR;
+
+	if (tspi_measure_cbfs_hook(rdev, name, be32toh(mdata->h.type)))
+		return CB_ERR;
+
+	return CB_SUCCESS;
+}
 
 int cbfs_boot_locate(struct cbfsf *fh, const char *name, uint32_t *type)
 {
-	struct region_device rdev;
-
-	if (cbfs_boot_region_device(&rdev))
+	if (cbfs_boot_lookup(name, false, &fh->mdata, &fh->data))
 		return -1;
 
-	int ret = cbfs_locate(fh, &rdev, name, type);
+	size_t msize = be32toh(fh->mdata.h.offset);
+	if (rdev_chain(&fh->metadata, &addrspace_32bit.rdev,
+		       (uintptr_t)&fh->mdata, msize))
+		return -1;
 
-	if (CONFIG(VBOOT_ENABLE_CBFS_FALLBACK) && ret) {
-
-		/*
-		 * When VBOOT_ENABLE_CBFS_FALLBACK is enabled and a file is not available in the
-		 * active RW region, the RO (COREBOOT) region will be used to locate the file.
-		 *
-		 * This functionality makes it possible to avoid duplicate files in the RO
-		 * and RW partitions while maintaining updateability.
-		 *
-		 * Files can be added to the RO_REGION_ONLY config option to use this feature.
-		 */
-		printk(BIOS_DEBUG, "Fall back to RO region for %s\n", name);
-		if (fmap_locate_area_as_rdev("COREBOOT", &rdev))
-			ERROR("RO region not found\n");
-		else
-			ret = cbfs_locate(fh, &rdev, name, type);
+	if (type) {
+		if (!*type)
+			*type = be32toh(fh->mdata.h.type);
+		else if (*type != be32toh(fh->mdata.h.type))
+			return -1;
 	}
 
-	if (!ret)
-		if (tspi_measure_cbfs_hook(fh, name))
-			return -1;
-
-	return ret;
+	return 0;
 }
 
-void *cbfs_boot_map_with_leak(const char *name, uint32_t type, size_t *size)
+static void *_cbfs_map(const char *name, size_t *size_out, bool force_ro)
 {
-	struct cbfsf fh;
-	size_t fsize;
+	struct region_device rdev;
+	union cbfs_mdata mdata;
 
-	if (cbfs_boot_locate(&fh, name, &type))
+	if (cbfs_boot_lookup(name, force_ro, &mdata, &rdev))
 		return NULL;
 
-	fsize = region_device_sz(&fh.data);
+	if (size_out != NULL)
+		*size_out = region_device_sz(&rdev);
 
-	if (size != NULL)
-		*size = fsize;
+	return rdev_mmap_full(&rdev);
+}
 
-	return rdev_mmap(&fh.data, 0, fsize);
+void *cbfs_map(const char *name, size_t *size_out)
+{
+	return _cbfs_map(name, size_out, false);
+}
+
+void *cbfs_ro_map(const char *name, size_t *size_out)
+{
+	return _cbfs_map(name, size_out, true);
+}
+
+int cbfs_unmap(void *mapping)
+{
+	/* This works because munmap() only works on the root rdev and never
+	   cares about which chained subregion something was mapped from. */
+	return rdev_munmap(boot_device_ro(), mapping);
 }
 
 int cbfs_locate_file_in_region(struct cbfsf *fh, const char *region_name,
@@ -84,9 +137,13 @@ int cbfs_locate_file_in_region(struct cbfsf *fh, const char *region_name,
 		return -1;
 	}
 
+	uint32_t dummy_type = 0;
+	if (!type)
+		type = &dummy_type;
+
 	ret = cbfs_locate(fh, &rdev, name, type);
 	if (!ret)
-		if (tspi_measure_cbfs_hook(fh, name))
+		if (tspi_measure_cbfs_hook(&rdev, name, *type))
 			return -1;
 	return ret;
 }
@@ -245,7 +302,7 @@ void *cbfs_boot_map_optionrom(uint16_t vendor, uint16_t device)
 	tohex16(vendor, name + 3);
 	tohex16(device, name + 8);
 
-	return cbfs_boot_map_with_leak(name, CBFS_TYPE_OPTIONROM, NULL);
+	return cbfs_map(name, NULL);
 }
 
 void *cbfs_boot_map_optionrom_revision(uint16_t vendor, uint16_t device, uint8_t rev)
@@ -256,27 +313,39 @@ void *cbfs_boot_map_optionrom_revision(uint16_t vendor, uint16_t device, uint8_t
 	tohex16(device, name + 8);
 	tohex8(rev, name + 13);
 
-	return cbfs_boot_map_with_leak(name, CBFS_TYPE_OPTIONROM, NULL);
+	return cbfs_map(name, NULL);
 }
 
-size_t cbfs_boot_load_file(const char *name, void *buf, size_t buf_size,
-			   uint32_t type)
+static size_t _cbfs_load(const char *name, void *buf, size_t buf_size,
+			 bool force_ro)
 {
-	struct cbfsf fh;
-	uint32_t compression_algo;
-	size_t decompressed_size;
+	struct region_device rdev;
+	union cbfs_mdata mdata;
 
-	if (cbfs_boot_locate(&fh, name, &type) < 0)
+	if (cbfs_boot_lookup(name, force_ro, &mdata, &rdev))
 		return 0;
 
-	if (cbfsf_decompression_info(&fh, &compression_algo,
-				     &decompressed_size)
-		    < 0
-	    || decompressed_size > buf_size)
-		return 0;
+	uint32_t compression = CBFS_COMPRESS_NONE;
+	const struct cbfs_file_attr_compression *attr = cbfs_find_attr(&mdata,
+				CBFS_FILE_ATTR_TAG_COMPRESSION, sizeof(*attr));
+	if (attr) {
+		compression = be32toh(attr->compression);
+		if (buf_size < be32toh(attr->decompressed_size))
+			return 0;
+	}
 
-	return cbfs_load_and_decompress(&fh.data, 0, region_device_sz(&fh.data),
-					buf, buf_size, compression_algo);
+	return cbfs_load_and_decompress(&rdev, 0, region_device_sz(&rdev),
+					buf, buf_size, compression);
+}
+
+size_t cbfs_load(const char *name, void *buf, size_t buf_size)
+{
+	return _cbfs_load(name, buf, buf_size, false);
+}
+
+size_t cbfs_ro_load(const char *name, void *buf, size_t buf_size)
+{
+	return _cbfs_load(name, buf, buf_size, true);
 }
 
 int cbfs_prog_stage_load(struct prog *pstage)
@@ -296,10 +365,16 @@ int cbfs_prog_stage_load(struct prog *pstage)
 	foffset = 0;
 	foffset += sizeof(stage);
 
+	/* cbfs_stage fields are written in little endian despite the other
+	   cbfs data types being encoded in big endian. */
+	stage.compression = read_le32(&stage.compression);
+	stage.entry = read_le64(&stage.entry);
+	stage.load = read_le64(&stage.load);
+	stage.len = read_le32(&stage.len);
+	stage.memlen = read_le32(&stage.memlen);
+
 	assert(fsize == stage.len);
 
-	/* Note: cbfs_stage fields are currently in the endianness of the
-	 * running processor. */
 	load = (void *)(uintptr_t)stage.load;
 	entry = (void *)(uintptr_t)stage.entry;
 
@@ -330,9 +405,115 @@ out:
 	return 0;
 }
 
-int cbfs_boot_region_device(struct region_device *rdev)
+void cbfs_boot_device_find_mcache(struct cbfs_boot_device *cbd, uint32_t id)
 {
-	boot_device_init();
-	return vboot_locate_cbfs(rdev) &&
-	       fmap_locate_area_as_rdev("COREBOOT", rdev);
+	if (CONFIG(NO_CBFS_MCACHE) || ENV_SMM)
+		return;
+
+	if (cbd->mcache_size)
+		return;
+
+	const struct cbmem_entry *entry;
+	if (cbmem_possibly_online() &&
+	    (entry = cbmem_entry_find(id))) {
+		cbd->mcache = cbmem_entry_start(entry);
+		cbd->mcache_size = cbmem_entry_size(entry);
+	} else if (ENV_ROMSTAGE_OR_BEFORE) {
+		u8 *boundary = _ecbfs_mcache - REGION_SIZE(cbfs_mcache) *
+			CONFIG_CBFS_MCACHE_RW_PERCENTAGE / 100;
+		boundary = (u8 *)ALIGN_DOWN((uintptr_t)boundary,
+					    CBFS_MCACHE_ALIGNMENT);
+		if (id == CBMEM_ID_CBFS_RO_MCACHE) {
+			cbd->mcache = _cbfs_mcache;
+			cbd->mcache_size = boundary - _cbfs_mcache;
+		} else if (id == CBMEM_ID_CBFS_RW_MCACHE) {
+			cbd->mcache = boundary;
+			cbd->mcache_size = _ecbfs_mcache - boundary;
+		}
+	}
 }
+
+cb_err_t cbfs_init_boot_device(const struct cbfs_boot_device *cbd,
+			       struct vb2_hash *metadata_hash)
+{
+	/* If we have an mcache, mcache_build() will also check mdata hash. */
+	if (!CONFIG(NO_CBFS_MCACHE) && !ENV_SMM && cbd->mcache_size > 0)
+		return cbfs_mcache_build(&cbd->rdev, cbd->mcache,
+					 cbd->mcache_size, metadata_hash);
+
+	/* No mcache and no verification means we have nothing special to do. */
+	if (!CONFIG(CBFS_VERIFICATION) || !metadata_hash)
+		return CB_SUCCESS;
+
+	/* Verification only: use cbfs_walk() without a walker() function to
+	   just run through the CBFS once, will return NOT_FOUND by default. */
+	cb_err_t err = cbfs_walk(&cbd->rdev, NULL, NULL, metadata_hash, 0);
+	if (err == CB_CBFS_NOT_FOUND)
+		err = CB_SUCCESS;
+	return err;
+}
+
+const struct cbfs_boot_device *cbfs_get_boot_device(bool force_ro)
+{
+	static struct cbfs_boot_device ro;
+
+	/* Ensure we always init RO mcache, even if first file is from RW.
+	   Otherwise it may not be available when needed in later stages. */
+	if (ENV_INITIAL_STAGE && !force_ro && !region_device_sz(&ro.rdev))
+		cbfs_get_boot_device(true);
+
+	if (!force_ro) {
+		const struct cbfs_boot_device *rw = vboot_get_cbfs_boot_device();
+		/* This will return NULL if vboot isn't enabled, didn't run yet
+		   or decided to boot into recovery mode. */
+		if (rw)
+			return rw;
+	}
+
+	/* In rare cases post-RAM stages may run this before cbmem_initialize(),
+	   so we can't lock in the result of find_mcache() on the first try and
+	   should keep trying every time until an mcache is found. */
+	cbfs_boot_device_find_mcache(&ro, CBMEM_ID_CBFS_RO_MCACHE);
+
+	if (region_device_sz(&ro.rdev))
+		return &ro;
+
+	if (fmap_locate_area_as_rdev("COREBOOT", &ro.rdev))
+		die("Cannot locate primary CBFS");
+
+	if (ENV_INITIAL_STAGE) {
+		cb_err_t err = cbfs_init_boot_device(&ro, metadata_hash_get());
+		if (err == CB_CBFS_HASH_MISMATCH)
+			die("RO CBFS metadata hash verification failure");
+		else if (CONFIG(TOCTOU_SAFETY) && err == CB_CBFS_CACHE_FULL)
+			die("RO mcache overflow breaks TOCTOU safety!\n");
+		else if (err && err != CB_CBFS_CACHE_FULL)
+			die("RO CBFS initialization error: %d", err);
+	}
+
+	return &ro;
+}
+
+#if !CONFIG(NO_CBFS_MCACHE)
+static void mcache_to_cbmem(const struct cbfs_boot_device *cbd, u32 cbmem_id)
+{
+	if (!cbd)
+		return;
+
+	size_t real_size = cbfs_mcache_real_size(cbd->mcache, cbd->mcache_size);
+	void *cbmem_mcache = cbmem_add(cbmem_id, real_size);
+	if (!cbmem_mcache) {
+		printk(BIOS_ERR, "ERROR: Cannot allocate CBMEM mcache %#x (%#zx bytes)!\n",
+		       cbmem_id, real_size);
+		return;
+	}
+	memcpy(cbmem_mcache, cbd->mcache, real_size);
+}
+
+static void cbfs_mcache_migrate(int unused)
+{
+	mcache_to_cbmem(vboot_get_cbfs_boot_device(), CBMEM_ID_CBFS_RW_MCACHE);
+	mcache_to_cbmem(cbfs_get_boot_device(true), CBMEM_ID_CBFS_RO_MCACHE);
+}
+ROMSTAGE_CBMEM_INIT_HOOK(cbfs_mcache_migrate)
+#endif

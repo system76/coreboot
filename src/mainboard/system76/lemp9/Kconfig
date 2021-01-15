@@ -9,14 +9,13 @@ config BOARD_SPECIFIC_OPTIONS
 	select HAVE_ACPI_RESUME
 	select HAVE_ACPI_TABLES
 	select HAVE_SMI_HANDLER
-	select GENERIC_SPD_BIN
+	select HAVE_SPD_IN_CBFS
 	select INTEL_GMA_HAVE_VBT
 	select INTEL_LPSS_UART_FOR_CONSOLE
 	select MAINBOARD_HAS_LPC_TPM
 	select MAINBOARD_HAS_TPM2
 	select NO_UART_ON_SUPERIO
-	select SOC_INTEL_COMETLAKE
-	select SOC_INTEL_COMMON_BLOCK_HDA
+	select SOC_INTEL_COMETLAKE_1
 	select SOC_INTEL_COMMON_BLOCK_HDA_VERB
 	select SPD_READ_BY_WORD
 	select SYSTEM_TYPE_LAPTOP
@@ -41,13 +40,17 @@ config MAINBOARD_VERSION
 
 config CBFS_SIZE
 	hex
-	default 0xA00000
+	default 0xc00000
+
+config SUBSYSTEM_VENDOR_ID
+	hex
+	default 0x1558
+
+config SUBSYSTEM_DEVICE_ID
+	hex
+	default 0x1401
 
 config CONSOLE_POST
-	bool
-	default y
-
-config ONBOARD_VGA_IS_PRIMARY
 	bool
 	default y
 
@@ -74,6 +77,10 @@ config VGA_BIOS_FILE
 config VGA_BIOS_ID
 	string
 	default "8086,9b41"
+
+config TPM_PIRQ
+	hex
+	default 0x10 # GPP_A7/PIRQA#
 
 config POST_DEVICE
 	bool

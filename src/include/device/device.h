@@ -6,6 +6,7 @@
 #include <device/path.h>
 #include <device/pci_type.h>
 #include <smbios.h>
+#include <static.h>
 #include <types.h>
 
 struct fw_config;
@@ -16,6 +17,7 @@ struct smbus_bus_operations;
 struct pnp_mode_ops;
 struct spi_bus_operations;
 struct usb_bus_operations;
+struct gpio_operations;
 
 /* Chip operations */
 struct chip_operations {
@@ -62,6 +64,7 @@ struct device_operations {
 	const struct spi_bus_operations *ops_spi_bus;
 	const struct smbus_bus_operations *ops_smbus_bus;
 	const struct pnp_mode_ops *ops_pnp_mode;
+	const struct gpio_operations *ops_gpio;
 };
 
 /**
@@ -195,6 +198,11 @@ void disable_children(struct bus *bus);
 bool dev_is_active_bridge(struct device *dev);
 void add_more_links(struct device *dev, unsigned int total_links);
 
+static inline bool is_dev_enabled(const struct device *const dev)
+{
+	return dev && dev->enabled;
+}
+
 /* Option ROM helper functions */
 void run_bios(struct device *dev, unsigned long addr);
 
@@ -202,6 +210,10 @@ void run_bios(struct device *dev, unsigned long addr);
 DEVTREE_CONST struct device *find_dev_path(
 		const struct bus *parent,
 		const struct device_path *path);
+DEVTREE_CONST struct device *find_dev_nested_path(
+		const struct bus *parent,
+		const struct device_path nested_path[],
+		size_t nested_path_length);
 struct device *alloc_find_dev(struct bus *parent, struct device_path *path);
 struct device *dev_find_device(u16 vendor, u16 device, struct device *from);
 struct device *dev_find_class(unsigned int class, struct device *from);
@@ -251,6 +263,38 @@ void show_all_devs_tree(int debug_level, const char *msg);
 void show_one_resource(int debug_level, struct device *dev,
 		       struct resource *resource, const char *comment);
 void show_all_devs_resources(int debug_level, const char *msg);
+
+/* Debug macros */
+#if CONFIG(DEBUG_RESOURCES)
+#include <console/console.h>
+#define LOG_MEM_RESOURCE(type, dev, index, base_kb, size_kb) \
+	printk(BIOS_SPEW, "%s:%d res: %s, dev: %s, index: 0x%x, base: 0x%llx, " \
+		"end: 0x%llx, size_kb: 0x%llx\n", \
+		__func__, __LINE__, type, dev_path(dev), index, (base_kb << 10), \
+		(base_kb << 10) + (size_kb << 10) - 1, size_kb)
+
+#define LOG_IO_RESOURCE(type, dev, index, base, size) \
+	printk(BIOS_SPEW, "%s:%d res: %s, dev: %s, index: 0x%x, base: 0x%llx, " \
+		"end: 0x%llx, size: 0x%llx\n", \
+		__func__, __LINE__, type, dev_path(dev), index, base, base + size - 1, size)
+#else /* DEBUG_RESOURCES*/
+#define LOG_MEM_RESOURCE(type, dev, index, base_kb, size_kb)
+#define LOG_IO_RESOURCE(type, dev, index, base, size)
+#endif /* DEBUG_RESOURCES*/
+
+#if CONFIG(DEBUG_FUNC)
+#include <console/console.h>
+#define DEV_FUNC_ENTER(dev) \
+	printk(BIOS_SPEW, "%s:%s:%d: ENTER (dev: %s)\n", \
+		__FILE__, __func__, __LINE__, dev_path(dev))
+
+#define DEV_FUNC_EXIT(dev) \
+	printk(BIOS_SPEW, "%s:%s:%d: EXIT (dev: %s)\n", __FILE__, \
+		__func__, __LINE__, dev_path(dev))
+#else /* DEBUG_FUNC */
+#define DEV_FUNC_ENTER(dev)
+#define DEV_FUNC_EXIT(dev)
+#endif /* DEBUG_FUNC */
 
 /* Rounding for boundaries.
  * Due to some chip bugs, go ahead and round IO to 16
@@ -330,6 +374,12 @@ DEVTREE_CONST struct device *pcidev_path_on_root_debug(pci_devfn_t devfn, const 
 void devtree_bug(const char *func, pci_devfn_t devfn);
 void __noreturn devtree_die(void);
 
+/*
+ * Dies if `dev` or `dev->chip_info` are NULL. Returns `dev->chip_info` otherwise.
+ *
+ * Only use if missing `chip_info` is fatal and we can't boot. If it's
+ * not fatal, please handle the NULL case gracefully.
+ */
 static inline DEVTREE_CONST void *config_of(const struct device *dev)
 {
 	if (dev && dev->chip_info)
@@ -338,11 +388,13 @@ static inline DEVTREE_CONST void *config_of(const struct device *dev)
 	devtree_die();
 }
 
-static inline DEVTREE_CONST void *config_of_soc(void)
-{
-	return config_of(pcidev_on_root(0, 0));
-}
+/*
+ * Returns pointer to config structure of root device (B:D:F = 0:00:0) defined by
+ * sconfig in static.{h/c}.
+ */
+#define config_of_soc()		__pci_0_00_0_config
 
+void enable_static_device(struct device *dev);
 void enable_static_devices(struct device *bus);
 void scan_smbus(struct device *bus);
 void scan_generic_bus(struct device *bus);

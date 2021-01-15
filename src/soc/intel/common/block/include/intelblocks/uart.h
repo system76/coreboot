@@ -10,8 +10,10 @@
 
 #define MAX_GPIO_PAD_PER_UART		2
 
-struct uart_gpio_pad_config {
+struct uart_controller_config {
 	int console_index;
+	/* devfn in PCI_DEVFN() format */
+	unsigned int devfn;
 	struct pad_config gpios[MAX_GPIO_PAD_PER_UART];
 };
 
@@ -22,12 +24,6 @@ struct uart_gpio_pad_config {
  * 3. SOC will provide appropriate GPIO pad configuration for UART console
  * 4. SOC will allow common code to set UART into legacy mode if supported.
  */
-
-/*
- * Common routine to initialize UART controller PCI config space, take it out of
- * reset and configure M/N dividers.
- */
-void uart_common_init(const struct device *dev, uintptr_t baseaddr);
 
 /*
  * Check if UART debug controller is initialized
@@ -60,22 +56,5 @@ void uart_bootblock_init(void);
  * NULL = otherwise
  */
 const struct device *uart_get_device(void);
-
-/**************************** SoC callbacks ***********************************/
-
-/*
- * SoC should implement soc_uart_console_to_device() function to
- * get UART debug controller device structure based on console number
- * Caller needs to check proper UART console index supported by SoC.
- * If wrong UART console index is passed to function, it'll return NULL.
- *
- * Input:
- * UART console index selected in config
- *
- * Returns:
- * Pointer to device structure = If device has a UART debug controller.
- * NULL = otherwise
- */
-DEVTREE_CONST struct device *soc_uart_console_to_device(int uart_console);
 
 #endif	/* SOC_INTEL_COMMON_BLOCK_UART_H */

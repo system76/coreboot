@@ -30,7 +30,7 @@
 
 subdirs-y += 00670F00
 
-ifeq ($(CONFIG_CPU_AMD_PI_00630F01)$(CONFIG_CPU_AMD_PI_00730F01)$(CONFIG_CPU_AMD_PI_00660F01),y)
+ifeq ($(CONFIG_CPU_AMD_PI_00630F01)$(CONFIG_CPU_AMD_PI_00730F01),y)
 # AGESA V5 Files
 
 AGESA_ROOT = $(call strip_quotes,$(CONFIG_AGESA_BINARY_PI_VENDORCODE_PATH))
@@ -52,10 +52,6 @@ AGESA_INC += -I$(AGESA_ROOT)/Proc/CPU/Feature
 AGESA_INC += -I$(AGESA_ROOT)/Proc/Fch
 AGESA_INC += -I$(AGESA_ROOT)/Proc/Fch/Common
 
-ifeq ($(CONFIG_CPU_AMD_PI_00660F01),y)
-AGESA_INC += -I$(AGESA_ROOT)/Proc/Fch/Kern
-AGESA_INC += -I$(AGESA_ROOT)/Proc/Psp/PspBaseLib
-endif
 ifeq ($(CONFIG_CPU_AMD_PI_00630F01),y)
 AGESA_INC += -I$(AGESA_ROOT)/Proc/IDS
 endif
@@ -80,7 +76,7 @@ export AGESA_CFLAGS  := $(AGESA_CFLAGS)
 
 CC_bootblock := $(CC_bootblock) $(AGESA_INC) $(AGESA_CFLAGS)
 CC_romstage := $(CC_romstage) $(AGESA_INC) $(AGESA_CFLAGS)
-CC_postcar:= $(CC_postcar) -I$(AGESA_ROOT)/binaryPI
+CC_postcar:= $(CC_postcar) -I$(src)/southbridge/amd/pi/hudson -I$(AGESA_ROOT)/binaryPI
 CC_ramstage := $(CC_ramstage) $(AGESA_INC) $(AGESA_CFLAGS)
 
 CC_x86_32 := $(CC_x86_32) $(AGESA_INC) $(AGESA_CFLAGS)
@@ -111,11 +107,6 @@ endef
 
 agesa_raw_files += $(wildcard $(src)/vendorcode/amd/pi/Lib/*.[cS])
 
-ifeq ($(CONFIG_CPU_AMD_PI_00660F01),y)
-agesa_raw_files += $(wildcard $(AGESA_ROOT)/Proc/Fch/Kern/KernImc/*.[cS])
-agesa_raw_files += $(wildcard $(AGESA_ROOT)/Proc/Fch/Common/*.[cS])
-agesa_raw_files += $(wildcard $(AGESA_ROOT)/Proc/Psp/PspBaseLib/*.[cS])
-endif
 ifeq ($(CONFIG_HUDSON_IMC_FWM),y)
 agesa_raw_files += $(wildcard $(src)/vendorcode/amd/pi/Lib/imc/*.c)
 endif

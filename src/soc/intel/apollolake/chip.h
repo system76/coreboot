@@ -4,6 +4,7 @@
 #define _SOC_APOLLOLAKE_CHIP_H_
 
 #include <commonlib/helpers.h>
+#include <drivers/intel/gma/gma.h>
 #include <intelblocks/cfg.h>
 #include <intelblocks/gspi.h>
 #include <soc/gpe.h>
@@ -31,6 +32,17 @@ struct soc_intel_apollolake_config {
 
 	/* Common struct containing power limits configuration info */
 	struct soc_power_limits_config power_limits_config;
+
+	/*
+	 * IGD panel configuration
+	 *
+	 * Second backlight control shares logic with other pins (aka. display utility pin).
+	 * Be sure it's used for PWM before setting any secondary backlight value.
+	 */
+	struct i915_gpu_panel_config panel_cfg[2];
+
+	/* i915 struct for GMA backlight control */
+	struct i915_gpu_controller_info gfx;
 
 	/*
 	 * Mapping from PCIe root port to CLKREQ input on the SOC. The SOC has
@@ -101,7 +113,7 @@ struct soc_intel_apollolake_config {
 	int dptf_enable;
 
 	/* TCC activation offset value in degrees Celsius */
-	int tcc_offset;
+	uint32_t tcc_offset;
 
 	/* Configure Audio clk gate and power gate
 	 * IOSF-SB port ID 92 offset 0x530 [5] and [3]

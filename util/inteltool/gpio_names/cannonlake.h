@@ -4,60 +4,60 @@
 #include "gpio_groups.h"
 
 static const char *const cannonlake_pch_h_group_a_names[] = {
-	"GPP_A0",	"RCIN#",		"n/a",			"ESPI_ALERT1#",
-	"GPP_A1",	"LAD0",			"n/a",			"ESPI_IO0",
-	"GPP_A2",	"LAD1",			"n/a",			"ESPI_IO1",
-	"GPP_A3",	"LAD2",			"n/a",			"ESPI_IO2",
-	"GPP_A4",	"LAD3",			"n/a",			"ESPI_IO3",
-	"GPP_A5",	"LFRAME#",		"n/a",			"ESPI_CS0#",
-	"GPP_A6",	"SERIRQ",		"n/a",			"ESPI_CS1#",
-	"GPP_A7",	"PIRQA#",		"n/a",			"ESPI_ALERT0#",
-	"GPP_A8",	"CLKRUN#",		"n/a",			"n/a",
-	"GPP_A9",	"CLKOUT_LPC0",		"n/a",			"ESPI_CLK",
-	"GPP_A10",	"CLKOUT_LPC1",		"n/a",			"n/a",
-	"GPP_A11",	"PME#",			"SD_VDD2_PWR_EN#",	"n/a",
-	"GPP_A12",	"BM_BUSY#",		"ISH_GP6",		"SX_EXIT_HOLDOFF#",
-	"GPP_A13",	"SUSWARN#/SUSPWRDNACK",	"n/a",			"n/a",
-	"GPP_A14",	"SUS_STAT#",		"n/a",			"ESPI_RESET#",
-	"GPP_A15",	"SUSACK#",		"n/a",			"n/a",
-	"GPP_A16",	"CLKOUT_48",		"n/a",			"n/a",
-	"GPP_A17",	"SD_VDD1_PWR_EN#",	"ISH_GP7",		"n/a",
-	"GPP_A18",	"ISH_GP0",		"n/a",			"n/a",
-	"GPP_A19",	"ISH_GP1",		"n/a",			"n/a",
-	"GPP_A20",	"ISH_GP2",		"n/a",			"n/a",
-	"GPP_A21",	"ISH_GP3",		"n/a",			"n/a",
-	"GPP_A22",	"ISH_GP4",		"n/a",			"n/a",
-	"GPP_A23",	"ISH_GP5",		"n/a",			"n/a",
-	"GPIO_RSVD_0",	"n/a",			"n/a",			"n/a",
+	"GPP_A0",		"RCIN#",		"n/a",			"ESPI_ALERT1#",
+	"GPP_A1",		"LAD0",			"n/a",			"ESPI_IO0",
+	"GPP_A2",		"LAD1",			"n/a",			"ESPI_IO1",
+	"GPP_A3",		"LAD2",			"n/a",			"ESPI_IO2",
+	"GPP_A4",		"LAD3",			"n/a",			"ESPI_IO3",
+	"GPP_A5",		"LFRAME#",		"n/a",			"ESPI_CS0#",
+	"GPP_A6",		"SERIRQ",		"n/a",			"ESPI_CS1#",
+	"GPP_A7",		"PIRQA#",		"n/a",			"ESPI_ALERT0#",
+	"GPP_A8",		"CLKRUN#",		"n/a",			"n/a",
+	"GPP_A9",		"CLKOUT_LPC0",		"n/a",			"ESPI_CLK",
+	"GPP_A10",		"CLKOUT_LPC1",		"n/a",			"n/a",
+	"GPP_A11",		"PME#",			"SD_VDD2_PWR_EN#",	"n/a",
+	"GPP_A12",		"BM_BUSY#",		"ISH_GP6",		"SX_EXIT_HOLDOFF#",
+	"GPP_A13",		"SUSWARN#/SUSPWRDNACK",	"n/a",			"n/a",
+	"GPP_A14",		"SUS_STAT#",		"n/a",			"ESPI_RESET#",
+	"GPP_A15",		"SUSACK#",		"n/a",			"n/a",
+	"GPP_A16",		"CLKOUT_48",		"n/a",			"n/a",
+	"GPP_A17",		"SD_VDD1_PWR_EN#",	"ISH_GP7",		"n/a",
+	"GPP_A18",		"ISH_GP0",		"n/a",			"n/a",
+	"GPP_A19",		"ISH_GP1",		"n/a",			"n/a",
+	"GPP_A20",		"ISH_GP2",		"n/a",			"n/a",
+	"GPP_A21",		"ISH_GP3",		"n/a",			"n/a",
+	"GPP_A22",		"ISH_GP4",		"n/a",			"n/a",
+	"GPP_A23",		"ISH_GP5",		"n/a",			"n/a",
+	"ESPI_CLK_LOOPBK",	"ESPI_CLK_LOOPBK",	"n/a",			"n/a",
 };
 
 static const char *const cannonlake_pch_h_group_b_names[] = {
-	"GPP_B0",	"GSPI0_CS1#",	"n/a",
-	"GPP_B1",	"GSPI1_CS1#",	"TIME_SYNC1",
-	"GPP_B2",	"VRALERT#",	"n/a",
-	"GPP_B3",	"CPU_GP2",	"n/a",
-	"GPP_B4",	"CPU_GP3",	"n/a",
-	"GPP_B5",	"SRCCLKREQ0#",	"n/a",
-	"GPP_B6",	"SRCCLKREQ1#",	"n/a",
-	"GPP_B7",	"SRCCLKREQ2#",	"n/a",
-	"GPP_B8",	"SRCCLKREQ3#",	"n/a",
-	"GPP_B9",	"SRCCLKREQ4#",	"n/a",
-	"GPP_B10",	"SRCCLKREQ5#",	"n/a",
-	"GPP_B11",	"I2S_MCLK",	"n/a",
-	"GPP_B12",	"SLP_S0#",	"n/a",
-	"GPP_B13",	"PLTRST#",	"n/a",
-	"GPP_B14",	"SPKR",		"n/a",
-	"GPP_B15",	"GSPI0_CS0#",	"n/a",
-	"GPP_B16",	"GSPI0_CLK",	"n/a",
-	"GPP_B17",	"GSPI0_MISO",	"n/a",
-	"GPP_B18",	"GSPI0_MOSI",	"n/a",
-	"GPP_B19",	"GSPI1_CS0#",	"n/a",
-	"GPP_B20",	"GSPI1_CLK",	"n/a",
-	"GPP_B21",	"GSPI1_MISO",	"n/a",
-	"GPP_B22",	"GSPI1_MOSI",	"n/a",
-	"GPP_B23",	"SML1ALERT#",	"PCHHOT#",
-	"GPIO_RSVD_1",	"n/a",		"n/a",
-	"GPIO_RSVD_2",	"n/a",		"n/a",
+	"GPP_B0",		"GSPI0_CS1#",		"n/a",
+	"GPP_B1",		"GSPI1_CS1#",		"TIME_SYNC1",
+	"GPP_B2",		"VRALERT#",		"n/a",
+	"GPP_B3",		"CPU_GP2",		"n/a",
+	"GPP_B4",		"CPU_GP3",		"n/a",
+	"GPP_B5",		"SRCCLKREQ0#",		"n/a",
+	"GPP_B6",		"SRCCLKREQ1#",		"n/a",
+	"GPP_B7",		"SRCCLKREQ2#",		"n/a",
+	"GPP_B8",		"SRCCLKREQ3#",		"n/a",
+	"GPP_B9",		"SRCCLKREQ4#",		"n/a",
+	"GPP_B10",		"SRCCLKREQ5#",		"n/a",
+	"GPP_B11",		"I2S_MCLK",		"n/a",
+	"GPP_B12",		"SLP_S0#",		"n/a",
+	"GPP_B13",		"PLTRST#",		"n/a",
+	"GPP_B14",		"SPKR",			"n/a",
+	"GPP_B15",		"GSPI0_CS0#",		"n/a",
+	"GPP_B16",		"GSPI0_CLK",		"n/a",
+	"GPP_B17",		"GSPI0_MISO",		"n/a",
+	"GPP_B18",		"GSPI0_MOSI",		"n/a",
+	"GPP_B19",		"GSPI1_CS0#",		"n/a",
+	"GPP_B20",		"GSPI1_CLK",		"n/a",
+	"GPP_B21",		"GSPI1_MISO",		"n/a",
+	"GPP_B22",		"GSPI1_MOSI",		"n/a",
+	"GPP_B23",		"SML1ALERT#",		"PCHHOT#",
+	"GSPI0_CLK_LOOPBK",	"GSPI0_CLK_LOOPBK",	"n/a",
+	"GSPI1_CLK_LOOPBK",	"GSPI1_CLK_LOOPBK",	"n/a",
 };
 
 static const char *const cannonlake_pch_h_group_c_names[] = {
@@ -158,15 +158,15 @@ static const char *const cannonlake_pch_h_group_f_names[] = {
 };
 
 static const char *const cannonlake_pch_h_group_spi_names[] = {
-	"GPIO_RSVD_11",
-	"GPIO_RSVD_12",
-	"GPIO_RSVD_13",
-	"GPIO_RSVD_14",
-	"GPIO_RSVD_15",
-	"GPIO_RSVD_16",
-	"GPIO_RSVD_17",
-	"GPIO_RSVD_18",
-	"GPIO_RSVD_19",
+	"SPI0_IO_2",		"SPI0_IO_2",
+	"SPI0_IO_3",		"SPI0_IO_3",
+	"SPI0_MISO",		"SPI0_MISO",
+	"SPI0_MOSI",		"SPI0_MOSI",
+	"SPI0_CS2_B",		"SPI0_CS2#",
+	"SPI0_CS0_B",		"SPI0_CS0#",
+	"SPI0_CS1_B",		"SPI0_CS1#",
+	"SPI0_CLK",		"SPI0_CLK",
+	"SPI0_CLK_LOOPBK",	"SPI0_CLK_LOOPBK",
 };
 
 static const char *const cannonlake_pch_h_group_g_names[] = {
@@ -181,60 +181,60 @@ static const char *const cannonlake_pch_h_group_g_names[] = {
 };
 
 static const char *const cannonlake_pch_h_group_aza_names[] = {
-	"GPIO_RSVD_3",
-	"GPIO_RSVD_4",
-	"GPIO_RSVD_5",
-	"GPIO_RSVD_6",
-	"GPIO_RSVD_7",
-	"GPIO_RSVD_8",
-	"GPIO_RSVD_9",
-	"GPIO_RSVD_10",
+	"HDA_BCLK",	"HDA_BCLK",	"I2S0_SCLK",	"n/a",
+	"HDA_RST_B",	"HDA_RST#",	"I2S1_SCLK",	"SNDW1_CLK",
+	"HDA_SYNC",	"HDA_SYNC",	"I2S0_SFRM",	"n/a",
+	"HDA_SDO",	"HDA_SDO",	"I2S0_TXD",	"n/a",
+	"HDA_SDI0",	"HDA_SDI0",	"I2S0_RXD",	"n/a",
+	"HDA_SDI1",	"HDA_SDI1",	"I2S1_RXD",	"SNDW1_DATA",
+	"I2S1_SFRM",	"I2S1_SFRM",	"SNDW2_CLK",	"n/a",
+	"I2S1_TXD",	"I2S1_TXD",	"SNDW2_DATA",	"n/a",
 };
 
 static const char *const cannonlake_pch_h_group_vgpio_0_names[] = {
-	"CNV_BTEN",
-	"CNV_GNEN",
-	"CNV_WFEN",
-	"CNV_WCEN",
-	"CNV_BT_HOST_WAKEB",
-	"vCNV_GNSS_HOST_WAKEB",
-	"vSD3_CD_B",
-	"CNV_BT_IF_SELECT",
-	"vCNV_BT_UART_TXD",
-	"vCNV_BT_UART_RXD",
-	"vCNV_BT_UART_CTS_B",
-	"vCNV_BT_UART_RTS_B",
-	"vCNV_MFUART1_TXD",
-	"vCNV_MFUART1_RXD",
-	"vCNV_MFUART1_CTS_B",
-	"vCNV_MFUART1_RTS_B",
-	"vCNV_GNSS_UART_TXD",
-	"vCNV_GNSS_UART_RXD",
-	"vCNV_GNSS_UART_CTS_B",
-	"vCNV_GNSS_UART_RTS_B",
-	"vUART0_TXD",
-	"vUART0_RXD",
-	"vUART0_CTS_B",
-	"vUART0_RTSB",
-	"vISH_UART0_TXD",
-	"vISH_UART0_RXD",
-	"vISH_UART0_CTS_B",
-	"vISH_UART0_RTSB",
-	"vISH_UART1_TXD",
-	"vISH_UART1_RXD",
-	"vISH_UART1_CTS_B",
-	"vISH_UART1_RTS_B",
+	"CNV_BTEN",			"n/a",		"n/a",		"n/a",
+	"CNV_GNEN",			"n/a",		"n/a",		"n/a",
+	"CNV_WFEN",			"n/a",		"n/a",		"n/a",
+	"CNV_WCEN",			"n/a",		"n/a",		"n/a",
+	"vCNV_GNSS_HOST_WAKE_B",	"n/a",		"n/a",		"n/a",
+	"vSD3_CD_B",			"n/a",		"n/a",		"n/a",
+	"CNV_BT_HOST_WAKE_B",		"n/a",		"n/a",		"n/a",
+	"CNV_BT_IF_SELECT",		"n/a",		"n/a",		"n/a",
+	"vCNV_BT_UART_TXD",		"ISH UART0",	"SIo UART2",	"n/a",
+	"vCNV_BT_UART_RXD",		"ISH UART0",	"SIo UART2",	"n/a",
+	"vCNV_BT_UART_CTS_B",		"ISH UART0",	"SIo UART2",	"n/a",
+	"vCNV_BT_UART_RTS_B",		"ISH UART0",	"SIo UART2",	"n/a",
+	"vCNV_MFUART1_TXD",		"ISH UART0",	"SIo UART2",	"n/a",
+	"vCNV_MFUART1_RXD",		"ISH UART0",	"SIo UART2",	"n/a",
+	"vCNV_MFUART1_CTS_B",		"ISH UART0",	"SIo UART2",	"n/a",
+	"vCNV_MFUART1_RTS_B",		"ISH UART0",	"SIo UART2",	"n/a",
+	"vCNV_GNSS_UART_TXD",		"n/a",		"n/a",		"n/a",
+	"vCNV_GNSS_UART_RXD",		"n/a",		"n/a",		"n/a",
+	"vCNV_GNSS_UART_CTS_B",		"n/a",		"n/a",		"n/a",
+	"vCNV_GNSS_UART_RTS_B",		"n/a",		"n/a",		"n/a",
+	"vUART0_TXD",			"mapped",	"n/a",		"n/a",
+	"vUART0_RXD",			"mapped",	"n/a",		"n/a",
+	"vUART0_CTS_B",			"mapped",	"n/a",		"n/a",
+	"vUART0_RTS_B",			"mapped",	"n/a",		"n/a",
+	"vISH_UART0_TXD",		"mapped",	"n/a",		"n/a",
+	"vISH_UART0_RXD", 		"mapped",	"n/a",		"n/a",
+	"vISH_UART0_CTS_B",		"mapped",	"n/a",		"n/a",
+	"vISH_UART0_RTS_B",		"mapped",	"n/a",		"n/a",
+	"vISH_UART1_TXD",		"mapped",	"n/a",		"n/a",
+	"vISH_UART1_RXD", 		"mapped",	"n/a",		"n/a",
+	"vISH_UART1_CTS_B",		"mapped",	"n/a",		"n/a",
+	"vISH_UART1_RTS_B",		"mapped",	"n/a",		"n/a",
 };
 
 static const char *const cannonlake_pch_h_group_vgpio_1_names[] = {
-	"vCNV_BT_I2S_BCLK",
-	"vCNV_BT_I2S_WS_SYNC",
-	"vCNV_BT_I2S_SDO",
-	"vCNV_BT_I2S_SDI",
-	"vSSP2_SCLK",
-	"vSSP2_SFRM",
-	"vSSP2_TXD",
-	"vSSP2_RXD",
+	"vCNV_BT_I2S_BCLK",		"SSP0",		"SSP1",		"SSP2",
+	"vCNV_BT_I2S_WS_SYNC",		"SSP0",		"SSP1",		"SSP2",
+	"vCNV_BT_I2S_SDO",		"SSP0",		"SSP1",		"SSP2",
+	"vCNV_BT_I2S_SDI",		"SSP0",		"SSP1",		"SSP2",
+	"vSSP2_SCLK",			"mapped",	"n/a",		"n/a",
+	"vSSP2_SFRM",			"mapped",	"n/a",		"n/a",
+	"vSSP2_TXD",			"mapped",	"n/a",		"n/a",
+	"vSSP2_RXD",			"n/a",		"n/a",		"n/a",
 };
 
 static const char *const cannonlake_pch_h_group_h_names[] = {
@@ -264,6 +264,32 @@ static const char *const cannonlake_pch_h_group_h_names[] = {
 	"GPP_H23",	"TIME_SYNC0",
 };
 
+const char *const cannonlake_pch_h_group_cpu_names[] = {
+	"HDACPU_SDI",	"HDACPU_SDI",
+	"HDACPU_SDO",	"HDACPU_SDO",
+	"HDACPU_SCLK",	"HDACPU_SCLK",
+	"PM_SYNC",	"PM_SYNC",
+	"PECI",		"PECI",
+	"CPUPWRGD",	"CPUPWRG#",
+	"THRMTRIP_B",	"THRMTRIP#",
+	"PLTRST_CPU_B",	"PLTRST_CPU#",
+	"PM_DOWN",	"PM_DOWN",
+	"TRIGGER_IN",	"TRIGGER_IN",
+	"TRIGGER_OUT",	"TRIGGER_OUT",
+};
+
+const char *const cannonlake_pch_h_group_jtag_names[] = {
+	"PCH_TDO",	"PCH_TDO",
+	"PCH_JTAGX",	"PCH_JTAGX",
+	"PROC_PRDY_B",	"PROC_RDY#",
+	"PROC_PREQ_B",	"PROC_REQ#",
+	"CPU_TRST_B",	"CPU_TRST#",
+	"PCH_TDI", 	"PCH_TDI",
+	"PCH_TMS", 	"PCH_TMS",
+	"PCH_TCK", 	"PCH_TCK",
+	"ITP_PMODE",	"ITP_PMODE",
+};
+
 static const char *const cannonlake_pch_h_group_i_names[] = {
 	"GPP_I0",	"DDPB_HPD0",		"DISP_MISC0",
 	"GPP_I1",	"DDPB_HPD1",		"DISP_MISC1",
@@ -280,9 +306,9 @@ static const char *const cannonlake_pch_h_group_i_names[] = {
 	"GPP_I12",	"M2_SKT2_CFG1",		"n/a",
 	"GPP_I13",	"M2_SKT2_CFG2",		"n/a",
 	"GPP_I14",	"M2_SKT2_CFG3",		"n/a",
-	"GPIO_RSVD_40",	"n/a",			"n/a",
-	"GPIO_RSVD_41",	"n/a",			"n/a",
-	"GPIO_RSVD_42",	"n/a",			"n/a",
+	"SYS_PWROK",	"SYS_PWROK",		"n/a",
+	"SYS_RESET_B",	"SYS_RESET#",		"n/a",
+	"CL_RST_B", 	"CL_RST#",		"n/a",
 };
 
 static const char *const cannonlake_pch_h_group_j_names[] = {
@@ -340,6 +366,10 @@ static const char *const cannonlake_pch_h_group_gpd_names[] = {
 	"GPD9",		"SLP_WLAN#",
 	"GPD10",	"SLP_S5#",
 	"GPD11",	"LANPHYPC",
+	"SLP_LAN_B",	"SLP_LAN#",
+	"SLP_SUS_B",	"SLP_SUS#",
+	"WAKE_B",	"WAKE#",
+	"DRAM_RESET_B",	"DRAM_RESET#",
 };
 
 static const struct gpio_group cannonlake_pch_h_group_a = {
@@ -386,8 +416,8 @@ static const struct gpio_group cannonlake_pch_h_group_f = {
 
 static const struct gpio_group cannonlake_pch_h_group_spi = {
 	.display	= "------- GPIO Group SPI -------",
-	.pad_count	= ARRAY_SIZE(cannonlake_pch_h_group_spi_names) / 1,
-	.func_count	= 1,
+	.pad_count	= ARRAY_SIZE(cannonlake_pch_h_group_spi_names) / 2,
+	.func_count	= 2,
 	.pad_names	= cannonlake_pch_h_group_spi_names,
 };
 
@@ -399,23 +429,23 @@ static const struct gpio_group cannonlake_pch_h_group_g = {
 };
 
 static const struct gpio_group cannonlake_pch_h_group_aza = {
-	.display	= "------- GPIO Grpoup AZA -------",
-	.pad_count	= ARRAY_SIZE(cannonlake_pch_h_group_aza_names) / 1,
-	.func_count	= 1,
+	.display	= "------- GPIO Group AZA -------",
+	.pad_count	= ARRAY_SIZE(cannonlake_pch_h_group_aza_names) / 4,
+	.func_count	= 4,
 	.pad_names	= cannonlake_pch_h_group_aza_names,
 };
 
 static const struct gpio_group cannonlake_pch_h_group_vgpio_0 = {
-	.display	= "------- GPIO Grpoup VGPIO_0 -------",
-	.pad_count	= ARRAY_SIZE(cannonlake_pch_h_group_vgpio_0_names) / 1,
-	.func_count	= 1,
+	.display	= "------- GPIO Group VGPIO_0 -------",
+	.pad_count	= ARRAY_SIZE(cannonlake_pch_h_group_vgpio_0_names) / 4,
+	.func_count	= 4,
 	.pad_names	= cannonlake_pch_h_group_vgpio_0_names,
 };
 
 static const struct gpio_group cannonlake_pch_h_group_vgpio_1 = {
-	.display	= "------- GPIO Grpoup VGPIO_1 -------",
-	.pad_count	= ARRAY_SIZE(cannonlake_pch_h_group_vgpio_1_names) / 1,
-	.func_count	= 1,
+	.display	= "------- GPIO Group VGPIO_1 -------",
+	.pad_count	= ARRAY_SIZE(cannonlake_pch_h_group_vgpio_1_names) / 4,
+	.func_count	= 4,
 	.pad_names	= cannonlake_pch_h_group_vgpio_1_names,
 };
 
@@ -426,8 +456,22 @@ static const struct gpio_group cannonlake_pch_h_group_h = {
 	.pad_names	= cannonlake_pch_h_group_h_names,
 };
 
+static const struct gpio_group cannonlake_pch_h_group_cpu = {
+	.display	= "------- GPIO Group CPU -------",
+	.pad_count	= ARRAY_SIZE(cannonlake_pch_h_group_cpu_names) / 2,
+	.func_count	= 2,
+	.pad_names	= cannonlake_pch_h_group_cpu_names,
+};
+
+static const struct gpio_group cannonlake_pch_h_group_jtag = {
+	.display	= "------- GPIO Group JTAG -------",
+	.pad_count	= ARRAY_SIZE(cannonlake_pch_h_group_jtag_names) / 2,
+	.func_count	= 2,
+	.pad_names	= cannonlake_pch_h_group_jtag_names,
+};
+
 static const struct gpio_group cannonlake_pch_h_group_i = {
-	.display	= "-------GPIO Group GPP_I -------",
+	.display	= "------- GPIO Group GPP_I -------",
 	.pad_count	= ARRAY_SIZE(cannonlake_pch_h_group_i_names) / 3,
 	.func_count	= 3,
 	.pad_names	= cannonlake_pch_h_group_i_names,
@@ -505,6 +549,8 @@ static	const struct gpio_community cannonlake_pch_h_community_3 = {
 };
 
 static const struct gpio_group *const cannonlake_pch_h_community_4_groups[] = {
+	&cannonlake_pch_h_group_cpu,
+	&cannonlake_pch_h_group_jtag,
 	&cannonlake_pch_h_group_i,
 	&cannonlake_pch_h_group_j,
 };

@@ -7,7 +7,6 @@
 #include <device/device.h>
 #include <device/pci.h>
 #include <device/pci_ids.h>
-#include <device/hypertransport.h>
 #include <string.h>
 #include <lib.h>
 #include <cpu/cpu.h>
@@ -18,7 +17,7 @@
 #include <cpu/amd/msr.h>
 #include <cpu/amd/mtrr.h>
 #include <acpi/acpigen.h>
-#include <northbridge/amd/pi/nb_common.h>
+#include <northbridge/amd/nb_common.h>
 #include <northbridge/amd/agesa/agesa_helper.h>
 
 #define MAX_NODE_NUMS MAX_NODES

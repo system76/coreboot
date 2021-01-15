@@ -14,23 +14,6 @@
 #include <spi-generic.h>
 #endif
 
-typedef enum {
-	AMD64,
-	EM64T100,
-	EM64T101,
-	LEGACY
-} save_state_type_t;
-
-typedef struct {
-	save_state_type_t type;
-	union {
-	amd64_smm_state_save_area_t *amd64_state_save;
-	em64t100_smm_state_save_area_t *em64t100_state_save;
-	em64t101_smm_state_save_area_t *em64t101_state_save;
-	legacy_smm_state_save_area_t *legacy_state_save;
-	};
-} smm_state_save_area_t;
-
 static int do_driver_init = 1;
 
 typedef enum { SMI_LOCKED, SMI_UNLOCKED } smi_semaphore;
@@ -120,6 +103,32 @@ static inline void *smm_save_state(uintptr_t base, int arch_offset, int node)
 	return (void *)base;
 }
 
+/* This returns the SMM revision from the savestate of CPU0,
+   which is assumed to be the same for all CPU's. See the memory
+   map in smmhandler.S */
+uint32_t smm_revision(void)
+{
+	return *(uint32_t *)(SMM_BASE + SMM_ENTRY_OFFSET * 2 - SMM_REVISION_OFFSET_FROM_TOP);
+}
+
+void *smm_get_save_state(int cpu)
+{
+	switch (smm_revision()) {
+	case 0x00030002:
+	case 0x00030007:
+		return smm_save_state(SMM_BASE, SMM_LEGACY_ARCH_OFFSET, cpu);
+	case 0x00030100:
+		return smm_save_state(SMM_BASE, SMM_EM64T100_ARCH_OFFSET, cpu);
+	case 0x00030101: /* SandyBridge, IvyBridge, and Haswell */
+		return smm_save_state(SMM_BASE, SMM_EM64T101_ARCH_OFFSET, cpu);
+	case 0x00020064:
+	case 0x00030064:
+		return smm_save_state(SMM_BASE, SMM_AMD64_ARCH_OFFSET, cpu);
+	}
+
+	return NULL;
+}
+
 bool smm_region_overlaps_handler(const struct region *r)
 {
 	const struct region r_smm = {SMM_BASE, SMM_DEFAULT_SIZE};
@@ -133,11 +142,9 @@ bool smm_region_overlaps_handler(const struct region *r)
  * @param smm_revision revision of the smm state save map
  */
 
-void smi_handler(u32 smm_revision)
+void smi_handler(void)
 {
 	unsigned int node;
-	smm_state_save_area_t state_save;
-	u32 smm_base = SMM_BASE; /* ASEG */
 
 	/* Are we ok to execute the handler? */
 	if (!smi_obtain_lock()) {
@@ -163,36 +170,10 @@ void smi_handler(u32 smm_revision)
 
 	printk(BIOS_SPEW, "\nSMI# #%d\n", node);
 
-	switch (smm_revision) {
-	case 0x00030002:
-	case 0x00030007:
-		state_save.type = LEGACY;
-		state_save.legacy_state_save =
-			smm_save_state(smm_base,
-				       SMM_LEGACY_ARCH_OFFSET, node);
-		break;
-	case 0x00030100:
-		state_save.type = EM64T100;
-		state_save.em64t100_state_save =
-			smm_save_state(smm_base,
-				       SMM_EM64T100_ARCH_OFFSET, node);
-		break;
-	case 0x00030101: /* SandyBridge, IvyBridge, and Haswell */
-		state_save.type = EM64T101;
-		state_save.em64t101_state_save =
-			smm_save_state(smm_base,
-				       SMM_EM64T101_ARCH_OFFSET, node);
-		break;
-	case 0x00020064:
-	case 0x00030064:
-		state_save.type = AMD64;
-		state_save.amd64_state_save =
-			smm_save_state(smm_base,
-				       SMM_AMD64_ARCH_OFFSET, node);
-		break;
-	default:
-		printk(BIOS_DEBUG, "smm_revision: 0x%08x\n", smm_revision);
-		printk(BIOS_DEBUG, "SMI# not supported on your CPU\n");
+	/* Use smm_get_save_state() to see if the smm revision is supported */
+	if (smm_get_save_state(node) == NULL) {
+		printk(BIOS_WARNING, "smm_revision: 0x%08x\n", smm_revision());
+		printk(BIOS_WARNING, "SMI# not supported on your CPU\n");
 		/* Don't release lock, so no further SMI will happen,
 		 * if we don't handle it anyways.
 		 */

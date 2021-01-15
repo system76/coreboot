@@ -1,6 +1,5 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#include <arch/mmio.h>
 #include <console/console.h>
 #include <spi_flash.h>
 #include <soc/pci_devs.h>
@@ -9,6 +8,7 @@
 #include <device/pci_ops.h>
 #include <lib.h>
 #include <timer.h>
+#include <types.h>
 
 #define GRANULARITY_TEST_4k		0x0000f000		/* bits 15-12 */
 #define WORD_TO_DWORD_UPPER(x)		((x << 16) & 0xffff0000)
@@ -30,28 +30,6 @@
 #define   SPI_FIFO_RD_PTR_SHIFT		16
 #define   SPI_FIFO_RD_PTR_MASK		0x7f
 
-static uint32_t spibar;
-
-static inline uint8_t spi_read8(uint8_t reg)
-{
-	return read8((void *)(spibar + reg));
-}
-
-static inline uint32_t spi_read32(uint8_t reg)
-{
-	return read32((void *)(spibar + reg));
-}
-
-static inline void spi_write8(uint8_t reg, uint8_t val)
-{
-	write8((void *)(spibar + reg), val);
-}
-
-static inline void spi_write32(uint8_t reg, uint32_t val)
-{
-	write32((void *)(spibar + reg), val);
-}
-
 static void dump_state(const char *str, u8 phase)
 {
 	u8 dump_size;
@@ -64,7 +42,7 @@ static void dump_state(const char *str, u8 phase)
 	printk(BIOS_DEBUG, "Cntrl0: %x\n", spi_read32(SPI_CNTRL0));
 	printk(BIOS_DEBUG, "Status: %x\n", spi_read32(SPI_STATUS));
 
-	addr = spibar + SPI_FIFO;
+	addr = spi_get_bar() + SPI_FIFO;
 	if (phase == 0) {
 		dump_size = spi_read8(SPI_TX_BYTE_COUNT);
 		printk(BIOS_DEBUG, "TxByteCount: %x\n", dump_size);
@@ -111,8 +89,7 @@ static int execute_command(void)
 
 void spi_init(void)
 {
-	spibar = lpc_get_spibase();
-	printk(BIOS_DEBUG, "%s: Spibar at 0x%08x\n", __func__, spibar);
+	printk(BIOS_DEBUG, "%s: SPI BAR at 0x%08lx\n", __func__, spi_get_bar());
 }
 
 static int spi_ctrlr_xfer(const struct spi_slave *slave, const void *dout,

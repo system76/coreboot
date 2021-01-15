@@ -11,10 +11,7 @@
 #define DEFAULT_TCOBASE		(DEFAULT_PMBASE + 0x60)
 #define DEFAULT_GPIOBASE	0x00000580
 
-
 #define APM_CNT		0xb2
-
-
 
 #define GP_IO_USE_SEL	0x00
 #define GP_IO_SEL	0x04
@@ -66,24 +63,18 @@
 #define D31F0_C4TIMING_CNT	0xaa
 #define D31F0_GPIO_ROUT		0xb8
 
-
 /* D31:F2 SATA */
 #define D31F2_IDE_TIM_PRI	0x40
 #define D31F2_IDE_TIM_SEC	0x42
 #define D31F2_SIDX		0xa0
 #define D31F2_SDAT		0xa4
 
-
 /* D30:F0 PCI-to-PCI bridge */
 #define D30F0_SMLT		0x1b
-
 
 /* D28:F0-5 PCIe root ports */
 #define D28Fx_XCAP		0x42
 #define D28Fx_SLCAP		0x54
-
-
-#define SMBUS_IO_BASE		0x0400
 
 /* PCI Configuration Space (D31:F3): SMBus */
 #define SMB_BASE		0x20
@@ -166,16 +157,9 @@
 #define FD_SD		(1 <<  3) /* SMBus */
 #define FD_SAD1		(1 <<  2) /* SATA #1 */
 
-
 #ifndef __ACPI__
 
 #include <device/pci_ops.h>
-
-static inline int lpc_is_mobile(const u16 devid)
-{
-	return (devid == 0x2917) || (devid == 0x2919);
-}
-#define LPC_IS_MOBILE(dev) lpc_is_mobile(pci_read_config16(dev, PCI_DEVICE_ID))
 
 void i82801jx_lpc_setup(void);
 void i82801jx_setup_bars(void);

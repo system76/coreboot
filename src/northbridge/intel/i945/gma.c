@@ -19,6 +19,7 @@
 #include <pc80/vga_io.h>
 #include <commonlib/helpers.h>
 #include <types.h>
+#include <framebuffer_info.h>
 
 #include "i945.h"
 #include "chip.h"
@@ -358,15 +359,14 @@ static int intel_gma_init_lvds(struct northbridge_intel_i945_config *conf,
 			(void *)pgfx, hactive * vactive * 4);
 		memset((void *)pgfx, 0x00, hactive * vactive * 4);
 
-		set_vbe_mode_info_valid(&edid, pgfx);
+		fb_new_framebuffer_info_from_edid(&edid, pgfx);
 	} else {
-			vga_misc_write(0x67);
+		vga_misc_write(0x67);
 
-			write32(mmiobase + DSPCNTR(0), DISPPLANE_SEL_PIPE_B);
-			write32(mmiobase + VGACNTRL, 0x02c4008e
-				| VGA_PIPE_B_SELECT);
+		write32(mmiobase + DSPCNTR(0), DISPPLANE_SEL_PIPE_B);
+		write32(mmiobase + VGACNTRL, 0x02c4008e | VGA_PIPE_B_SELECT);
 
-			vga_textmode_init();
+		vga_textmode_init();
 	}
 	return 0;
 }
@@ -585,7 +585,6 @@ static u32 freq_to_blc_pwm_ctl(struct device *const dev, u16 pwm_freq)
 	return BLM_LEGACY_MODE | ((blc_mod / 2) << 17) | ((blc_mod / 2) << 1);
 }
 
-
 static void panel_setup(u8 *mmiobase, struct device *const dev)
 {
 	const struct northbridge_intel_i945_config *const conf = dev->chip_info;
@@ -749,7 +748,6 @@ static struct device_operations gma_func0_ops = {
 	.ops_pci		= &pci_dev_ops_pci,
 	.acpi_name		= gma_acpi_name,
 };
-
 
 static struct device_operations gma_func1_ops = {
 	.read_resources		= pci_dev_read_resources,

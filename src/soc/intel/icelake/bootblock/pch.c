@@ -3,6 +3,7 @@
 #include <device/mmio.h>
 #include <device/device.h>
 #include <device/pci_ops.h>
+#include <intelblocks/dmi.h>
 #include <intelblocks/fast_spi.h>
 #include <intelblocks/gspi.h>
 #include <intelblocks/lpc_lib.h>
@@ -27,9 +28,6 @@
 #define PCR_PSFX_TO_SHDW_PCIEN_IOEN	0x01
 #define PCR_PSFX_T0_SHDW_PCIEN	0x1C
 
-#define PCR_DMI_DMICTL		0x2234
-#define  PCR_DMI_DMICTL_SRLOCK	(1 << 31)
-
 #define PCR_DMI_ACPIBA		0x27B4
 #define PCR_DMI_ACPIBDID	0x27B8
 #define PCR_DMI_PMBASEA		0x27AC
@@ -40,34 +38,33 @@
 
 static void soc_config_pwrmbase(void)
 {
-	uint32_t reg32;
-	uint16_t reg16;
-
 	/*
 	 * Assign Resources to PWRMBASE
-	 * Clear BIT 1-2  Command Register
+	 * Clear BIT 1-2 Command Register
 	 */
-	reg16 = pci_read_config16(PCH_DEV_PMC, PCI_COMMAND);
-	reg16 &= ~(PCI_COMMAND_MEMORY);
-	pci_write_config16(PCH_DEV_PMC, PCI_COMMAND, reg16);
+	pci_and_config16(PCH_DEV_PMC, PCI_COMMAND, ~(PCI_COMMAND_MEMORY | PCI_COMMAND_MASTER));
 
 	/* Program PWRM Base */
 	pci_write_config32(PCH_DEV_PMC, PWRMBASE, PCH_PWRM_BASE_ADDRESS);
 
 	/* Enable Bus Master and MMIO Space */
-	pci_or_config16(PCH_DEV_PMC, PCI_COMMAND, PCI_COMMAND_MEMORY);
+	pci_or_config16(PCH_DEV_PMC, PCI_COMMAND, (PCI_COMMAND_MEMORY | PCI_COMMAND_MASTER));
 
 	/* Enable PWRM in PMC */
-	reg32 = read32((void *)(PCH_PWRM_BASE_ADDRESS + ACTL));
-	write32((void *)(PCH_PWRM_BASE_ADDRESS + ACTL), reg32 | PWRM_EN);
+	setbits32((void *) PCH_PWRM_BASE_ADDRESS + ACTL, PWRM_EN);
 }
 
 void bootblock_pch_early_init(void)
 {
-	fast_spi_early_init(SPI_BASE_ADDRESS);
-	gspi_early_bar_init();
+	/*
+	 * Perform P2SB configuration before any another controller initialization as the
+	 * controller might want to perform PCR settings.
+	 */
 	p2sb_enable_bar();
 	p2sb_configure_hpet();
+
+	fast_spi_early_init(SPI_BASE_ADDRESS);
+	gspi_early_bar_init();
 
 	/*
 	 * Enabling PWRM Base for accessing

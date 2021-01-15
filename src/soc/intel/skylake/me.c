@@ -10,7 +10,6 @@
 #include <soc/me.h>
 #include <soc/pci_devs.h>
 
-
 /* HFSTS1[3:0] Current Working State Values */
 static const char *const me_cws_values[] = {
 	[ME_HFS_CWS_RESET]	= "Reset",
@@ -341,7 +340,7 @@ void intel_me_status(void)
 
 int send_global_reset(void)
 {
-	int status = -1;
+	int status = 0;
 	union me_hfsts1 hfs1;
 
 	if (!is_cse_enabled())
@@ -353,7 +352,7 @@ int send_global_reset(void)
 		goto ret;
 
 	/* ME should be in Normal Mode for this command */
-	status = cse_request_global_reset(GLOBAL_RESET);
+	status = cse_request_global_reset();
 ret:
 	return status;
 }

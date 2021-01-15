@@ -146,6 +146,8 @@ static inline uint32_t inl(unsigned port)
 #define PCI_DEVICE_ID_INTEL_SUNRISEPOINT_LP_U_IHDCP_PREM	0x9d4e
 #define PCI_DEVICE_ID_INTEL_SUNRISEPOINT_LP_Y_IHDCP_PREM	0x9d4b
 #define PCI_DEVICE_ID_INTEL_CANNONPOINT_LP_U_PREM	0x9d84
+#define PCI_DEVICE_ID_INTEL_COMETPOINT_LP_U_PREM	0x0284
+#define PCI_DEVICE_ID_INTEL_COMETPOINT_LP_U_BASE	0x0285
 #define PCI_DEVICE_ID_INTEL_H110		0xa143
 #define PCI_DEVICE_ID_INTEL_H170		0xa144
 #define PCI_DEVICE_ID_INTEL_Z170		0xa145
@@ -169,11 +171,17 @@ static inline uint32_t inl(unsigned port)
 #define PCI_DEVICE_ID_INTEL_C627		0xa1c6
 #define PCI_DEVICE_ID_INTEL_C628		0xa1c7
 #define PCI_DEVICE_ID_INTEL_C629		0xa1ca
+#define PCI_DEVICE_ID_INTEL_C621A		0xa1cb
+#define PCI_DEVICE_ID_INTEL_C627A		0xa1cc
+#define PCI_DEVICE_ID_INTEL_C629A		0xa1cd
 #define PCI_DEVICE_ID_INTEL_C624_SUPER		0xa242
 #define PCI_DEVICE_ID_INTEL_C627_SUPER_1	0xa243
 #define PCI_DEVICE_ID_INTEL_C621_SUPER		0xa244
 #define PCI_DEVICE_ID_INTEL_C627_SUPER_2	0xa245
 #define PCI_DEVICE_ID_INTEL_C628_SUPER		0xa246
+#define PCI_DEVICE_ID_INTEL_C621A_SUPER		0xa24a
+#define PCI_DEVICE_ID_INTEL_C627A_SUPER		0xa24b
+#define PCI_DEVICE_ID_INTEL_C629A_SUPER		0xa24c
 
 #define PCI_DEVICE_ID_INTEL_H310		0xa303
 #define PCI_DEVICE_ID_INTEL_H370		0xa304
@@ -287,6 +295,10 @@ static inline uint32_t inl(unsigned port)
 #define PCI_DEVICE_ID_INTEL_CORE_8TH_GEN_U_1	0x3ed0 /* Coffeelake (Mobile) */
 #define PCI_DEVICE_ID_INTEL_CORE_8TH_GEN_U_2	0x3e34 /* Whiskeylake (Mobile) */
 #define PCI_DEVICE_ID_INTEL_CORE_10TH_GEN_U	0x8a12 /* Icelake U */
+#define PCI_DEVICE_ID_INTEL_CORE_CML_U1		0x9b51 /* Cometlake U (Mobile) */
+#define PCI_DEVICE_ID_INTEL_CORE_CML_U2		0x9b61 /* Cometlake U (Mobile) */
+#define PCI_DEVICE_ID_INTEL_CORE_CML_U3		0x9b71 /* Cometlake U (Mobile) */
+#define PCI_DEVICE_ID_INTEL_HEWITTLAKE		0x6f00 /* Hewitt Lake */
 
 
 /* Intel GPUs */
@@ -356,6 +368,7 @@ static inline uint32_t inl(unsigned port)
 #define PCI_DEVICE_ID_INTEL_IRIS_PLUS_650	0x5927
 #define PCI_DEVICE_ID_INTEL_IRIS_PLUS_655	0x3EA5
 #define PCI_DEVICE_ID_INTEL_IRIS_PLUS_G7	0x8A52
+#define PCI_DEVICE_ID_INTEL_UHD_GRAPHICS	0x9b41
 
 #if !defined(__DARWIN__) && !defined(__FreeBSD__)
 typedef struct { uint32_t hi, lo; } msr_t;
@@ -367,8 +380,6 @@ typedef struct { uint32_t hi, lo; } msr_t;
 #define rdmsr freebsd_rdmsr
 #define wrmsr freebsd_wrmsr
 typedef struct { uint32_t hi, lo; } msr_t;
-msr_t freebsd_rdmsr(int addr);
-int freebsd_wrmsr(int addr, msr_t msr);
 #endif
 typedef struct { uint16_t addr; int size; char *name; } io_register_t;
 typedef struct {
@@ -400,6 +411,7 @@ int print_spi(struct pci_dev *sb);
 int print_gfx(struct pci_dev *gfx);
 int print_ahci(struct pci_dev *ahci);
 int print_sgx(void);
+void print_tme(void);
 void ivybridge_dump_timings(const char *dump_spd_file);
 
 #endif

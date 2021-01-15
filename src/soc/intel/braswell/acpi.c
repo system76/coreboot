@@ -5,25 +5,23 @@
 #include <acpi/acpigen.h>
 #include <device/mmio.h>
 #include <arch/smp/mpspec.h>
-#include <cbmem.h>
 #include <console/console.h>
 #include <cpu/intel/turbo.h>
 #include <cpu/x86/msr.h>
 #include <cpu/x86/smm.h>
 #include <device/pci.h>
-#include <ec/google/chromeec/ec.h>
 #include <drivers/intel/gma/opregion.h>
 #include <soc/acpi.h>
 #include <soc/gfx.h>
 #include <soc/iomap.h>
 #include <soc/irq.h>
 #include <soc/msr.h>
+#include <soc/nvs.h>
 #include <soc/pattrs.h>
 #include <soc/pci_devs.h>
 #include <soc/pm.h>
 #include <string.h>
 #include <types.h>
-#include <vendorcode/google/chromeos/gnvs.h>
 #include <wrdd.h>
 
 #define MWAIT_RES(state, sub_state)                         \
@@ -61,7 +59,7 @@ static acpi_cstate_t cstate_map[] = {
 	}
 };
 
-void acpi_init_gnvs(struct global_nvs *gnvs)
+void soc_fill_gnvs(struct global_nvs *gnvs)
 {
 	/* Set unknown wake source */
 	gnvs->pm1i = -1;
@@ -72,21 +70,11 @@ void acpi_init_gnvs(struct global_nvs *gnvs)
 	/* Top of Low Memory (start of resource allocation) */
 	gnvs->tolm = nc_read_top_of_low_memory();
 
-#if CONFIG(CONSOLE_CBMEM)
-	/* Update the mem console pointer. */
-	gnvs->cbmc = (u32)cbmem_find(CBMEM_ID_CONSOLE);
-#endif
-
-	if (CONFIG(CHROMEOS)) {
-		/* Initialize Verified Boot data */
-		chromeos_init_chromeos_acpi(&(gnvs->chromeos));
-		if (CONFIG(EC_GOOGLE_CHROMEEC)) {
-			gnvs->chromeos.vbt2 = google_ec_running_ro() ?
-				ACTIVE_ECFW_RO : ACTIVE_ECFW_RW;
-		} else {
-			gnvs->chromeos.vbt2 = ACTIVE_ECFW_RO;
-		}
-	}
+	/* Fill in the Wi-Fi Region ID */
+	if (CONFIG(HAVE_REGULATORY_DOMAIN))
+		gnvs->cid1 = wifi_regulatory_domain();
+	else
+		gnvs->cid1 = WRDD_DEFAULT_REGULATORY_DOMAIN;
 }
 
 int acpi_sci_irq(void)
@@ -374,36 +362,6 @@ unsigned long southcluster_write_acpi_tables(const struct device *device, unsign
 	printk(BIOS_DEBUG, "current = %lx\n", current);
 
 	return current;
-}
-
-void southcluster_inject_dsdt(const struct device *device)
-{
-	struct global_nvs *gnvs;
-
-	gnvs = cbmem_find(CBMEM_ID_ACPI_GNVS);
-	if (!gnvs) {
-		gnvs = cbmem_add(CBMEM_ID_ACPI_GNVS, sizeof(*gnvs));
-		if (gnvs)
-			memset(gnvs, 0, sizeof(*gnvs));
-	}
-
-	if (gnvs) {
-		acpi_create_gnvs(gnvs);
-
-		/* Fill in the Wi-Fi Region ID */
-		if (CONFIG(HAVE_REGULATORY_DOMAIN))
-			gnvs->cid1 = wifi_regulatory_domain();
-		else
-			gnvs->cid1 = WRDD_DEFAULT_REGULATORY_DOMAIN;
-
-		/* And tell SMI about it */
-		apm_control(APM_CNT_GNVS_UPDATE);
-
-		/* Add it to DSDT */
-		acpigen_write_scope("\\");
-		acpigen_write_name_dword("NVSA", (u32) gnvs);
-		acpigen_pop_len();
-	}
 }
 
 __weak void acpi_create_serialio_ssdt(acpi_header_t *ssdt)

@@ -20,41 +20,6 @@
 #include "haswell.h"
 #include "chip.h"
 
-/* Intel suggested latency times in units of 1024ns. */
-#define C_STATE_LATENCY_CONTROL_0_LIMIT 0x42
-#define C_STATE_LATENCY_CONTROL_1_LIMIT 0x73
-#define C_STATE_LATENCY_CONTROL_2_LIMIT 0x91
-#define C_STATE_LATENCY_CONTROL_3_LIMIT 0xe4
-#define C_STATE_LATENCY_CONTROL_4_LIMIT 0x145
-#define C_STATE_LATENCY_CONTROL_5_LIMIT 0x1ef
-
-#define C_STATE_LATENCY_MICRO_SECONDS(limit, base) \
-	(((1 << ((base)*5)) * (limit)) / 1000)
-#define C_STATE_LATENCY_FROM_LAT_REG(reg) \
-	C_STATE_LATENCY_MICRO_SECONDS(C_STATE_LATENCY_CONTROL_ ##reg## _LIMIT, \
-				      (IRTL_1024_NS >> 10))
-
-/*
- * List of supported C-states in this processor. Only the ULT parts support C8,
- * C9, and C10.
- */
-enum {
-	C_STATE_C0,             /* 0 */
-	C_STATE_C1,             /* 1 */
-	C_STATE_C1E,            /* 2 */
-	C_STATE_C3,             /* 3 */
-	C_STATE_C6_SHORT_LAT,   /* 4 */
-	C_STATE_C6_LONG_LAT,    /* 5 */
-	C_STATE_C7_SHORT_LAT,   /* 6 */
-	C_STATE_C7_LONG_LAT,    /* 7 */
-	C_STATE_C7S_SHORT_LAT,  /* 8 */
-	C_STATE_C7S_LONG_LAT,   /* 9 */
-	C_STATE_C8,             /* 10 */
-	C_STATE_C9,             /* 11 */
-	C_STATE_C10,            /* 12 */
-	NUM_C_STATES
-};
-
 #define MWAIT_RES(state, sub_state)                         \
 	{                                                   \
 		.addrl = (((state) << 4) | (sub_state)),    \
@@ -186,29 +151,8 @@ static const u8 power_limit_time_msr_to_sec[] = {
 	[0x11] = 128,
 };
 
-int haswell_family_model(void)
-{
-	return cpuid_eax(1) & 0x0fff0ff0;
-}
-
-int haswell_stepping(void)
-{
-	return cpuid_eax(1) & 0xf;
-}
-
-/* Dynamically determine if the part is ULT. */
-int haswell_is_ult(void)
-{
-	static int ult = -1;
-
-	if (ult < 0)
-		ult = !!(haswell_family_model() == HASWELL_FAMILY_ULT);
-
-	return ult;
-}
-
-/* The core 100MHz BLCK is disabled in deeper c-states. One needs to calibrate
- * the 100MHz BCLCK against the 24MHz BLCK to restore the clocks properly
+/* The core 100MHz BCLK is disabled in deeper c-states. One needs to calibrate
+ * the 100MHz BCLK against the 24MHz BCLK to restore the clocks properly
  * when a core is woken up. */
 static int pcode_ready(void)
 {
@@ -247,7 +191,7 @@ static void calibrate_24mhz_bclk(void)
 
 	err_code = MCHBAR32(BIOS_MAILBOX_INTERFACE) & 0xff;
 
-	printk(BIOS_DEBUG, "PCODE: 24MHz BLCK calibration response: %d\n",
+	printk(BIOS_DEBUG, "PCODE: 24MHz BCLK calibration response: %d\n",
 	       err_code);
 
 	/* Read the calibrated value. */
@@ -259,7 +203,7 @@ static void calibrate_24mhz_bclk(void)
 		return;
 	}
 
-	printk(BIOS_DEBUG, "PCODE: 24MHz BLCK calibration value: 0x%08x\n",
+	printk(BIOS_DEBUG, "PCODE: 24MHz BCLK calibration value: 0x%08x\n",
 	       MCHBAR32(BIOS_MAILBOX_DATA));
 }
 
@@ -284,7 +228,16 @@ static u32 pcode_mailbox_read(u32 command)
 
 static void initialize_vr_config(void)
 {
+	struct cpu_vr_config vr_config = { 0 };
 	msr_t msr;
+
+	const struct device *lapic = dev_find_lapic(SPEEDSTEP_APIC_MAGIC);
+
+	if (lapic && lapic->chip_info) {
+		const struct cpu_intel_haswell_config *conf = lapic->chip_info;
+
+		vr_config = conf->vr_config;
+	}
 
 	printk(BIOS_DEBUG, "Initializing VR config.\n");
 
@@ -295,7 +248,7 @@ static void initialize_vr_config(void)
 	msr.hi &= 0xc0000000;
 	msr.hi |= (0x01 << (52 - 32)); /* PSI3 threshold -  1A. */
 	msr.hi |= (0x05 << (42 - 32)); /* PSI2 threshold -  5A. */
-	msr.hi |= (0x0f << (32 - 32)); /* PSI1 threshold - 15A. */
+	msr.hi |= (0x14 << (32 - 32)); /* PSI1 threshold - 20A. */
 
 	if (haswell_is_ult())
 		msr.hi |= (1 <<  (62 - 32)); /* Enable PSI4 */
@@ -315,24 +268,35 @@ static void initialize_vr_config(void)
 	msr.hi &= ~(1 << (51 - 32));
 	/* Enable decay mode on C-state entry. */
 	msr.hi |= (1 << (52 - 32));
+	/* Set the slow ramp rate */
 	if (haswell_is_ult()) {
-		/* Set the slow ramp rate to be fast ramp rate / 4 */
 		msr.hi &= ~(0x3 << (53 - 32));
-		msr.hi |= (0x01 << (53 - 32));
+		/* Configure the C-state exit ramp rate. */
+		if (vr_config.slow_ramp_rate_enable) {
+			/* Configured slow ramp rate. */
+			msr.hi |= ((vr_config.slow_ramp_rate_set & 0x3) << (53 - 32));
+			/* Set exit ramp rate to slow. */
+			msr.hi &= ~(1 << (50 - 32));
+		} else {
+			/* Fast ramp rate / 4. */
+			msr.hi |= (1 << (53 - 32));
+		}
 	}
 	/* Set MIN_VID (31:24) to allow CPU to have full control. */
 	msr.lo &= ~0xff000000;
+	msr.lo |= (vr_config.cpu_min_vid & 0xff) << 24;
 	wrmsr(MSR_VR_MISC_CONFIG, msr);
 
 	/*  Configure VR_MISC_CONFIG2 MSR. */
-	if (haswell_is_ult()) {
-		msr = rdmsr(MSR_VR_MISC_CONFIG2);
-		msr.lo &= ~0xffff;
-		/* Allow CPU to control minimum voltage completely (15:8) and
-		 * set the fast ramp voltage to 1110mV (0x6f in 10mV steps). */
-		msr.lo |= 0x006f;
-		wrmsr(MSR_VR_MISC_CONFIG2, msr);
-	}
+	if (!haswell_is_ult())
+		return;
+
+	msr = rdmsr(MSR_VR_MISC_CONFIG2);
+	msr.lo &= ~0xffff;
+	/* Allow CPU to control minimum voltage completely (15:8) and
+	 * set the fast ramp voltage to 1110mV (0x6f in 10mV steps). */
+	msr.lo |= 0x006f;
+	wrmsr(MSR_VR_MISC_CONFIG2, msr);
 }
 
 static void configure_pch_power_sharing(void)
@@ -403,8 +367,7 @@ void set_power_limits(u8 power_limit_1_time)
 	u8 power_limit_1_val;
 
 	if (power_limit_1_time >= ARRAY_SIZE(power_limit_time_sec_to_msr))
-		power_limit_1_time = ARRAY_SIZE(power_limit_time_sec_to_msr)
-		- 1;
+		power_limit_1_time = ARRAY_SIZE(power_limit_time_sec_to_msr) - 1;
 
 	if (!(msr.lo & PLATFORM_INFO_SET_TDP))
 		return;
@@ -481,12 +444,6 @@ static void configure_c_states(void)
 	/* The deepest package c-state defaults to factory-configured value. */
 	wrmsr(MSR_PKG_CST_CONFIG_CONTROL, msr);
 
-	msr = rdmsr(MSR_PMG_IO_CAPTURE_BASE);
-	msr.lo &= ~0xffff;
-	msr.lo |= (get_pmbase() + 0x14);	// LVL_2 base address
-	/* The deepest package c-state defaults to factory-configured value. */
-	wrmsr(MSR_PMG_IO_CAPTURE_BASE, msr);
-
 	msr = rdmsr(MSR_MISC_PWR_MGMT);
 	msr.lo &= ~(1 << 0);	// Enable P-state HW_ALL coordination
 	wrmsr(MSR_MISC_PWR_MGMT, msr);
@@ -512,26 +469,24 @@ static void configure_c_states(void)
 	msr.lo = IRTL_VALID | IRTL_1024_NS | C_STATE_LATENCY_CONTROL_2_LIMIT;
 	wrmsr(MSR_C_STATE_LATENCY_CONTROL_2, msr);
 
-	/* Haswell ULT only supoprts the 3-5 latency response registers.*/
-	if (haswell_is_ult()) {
-		/* C-state Interrupt Response Latency Control 3 - package C8 */
-		msr.hi = 0;
-		msr.lo = IRTL_VALID | IRTL_1024_NS |
-			 C_STATE_LATENCY_CONTROL_3_LIMIT;
-		wrmsr(MSR_C_STATE_LATENCY_CONTROL_3, msr);
+	/* Only Haswell ULT supports the 3-5 latency response registers */
+	if (!haswell_is_ult())
+		return;
 
-		/* C-state Interrupt Response Latency Control 4 - package C9 */
-		msr.hi = 0;
-		msr.lo = IRTL_VALID | IRTL_1024_NS |
-			 C_STATE_LATENCY_CONTROL_4_LIMIT;
-		wrmsr(MSR_C_STATE_LATENCY_CONTROL_4, msr);
+	/* C-state Interrupt Response Latency Control 3 - package C8 */
+	msr.hi = 0;
+	msr.lo = IRTL_VALID | IRTL_1024_NS | C_STATE_LATENCY_CONTROL_3_LIMIT;
+	wrmsr(MSR_C_STATE_LATENCY_CONTROL_3, msr);
 
-		/* C-state Interrupt Response Latency Control 5 - package C10 */
-		msr.hi = 0;
-		msr.lo = IRTL_VALID | IRTL_1024_NS |
-			 C_STATE_LATENCY_CONTROL_5_LIMIT;
-		wrmsr(MSR_C_STATE_LATENCY_CONTROL_5, msr);
-	}
+	/* C-state Interrupt Response Latency Control 4 - package C9 */
+	msr.hi = 0;
+	msr.lo = IRTL_VALID | IRTL_1024_NS | C_STATE_LATENCY_CONTROL_4_LIMIT;
+	wrmsr(MSR_C_STATE_LATENCY_CONTROL_4, msr);
+
+	/* C-state Interrupt Response Latency Control 5 - package C10 */
+	msr.hi = 0;
+	msr.lo = IRTL_VALID | IRTL_1024_NS | C_STATE_LATENCY_CONTROL_5_LIMIT;
+	wrmsr(MSR_C_STATE_LATENCY_CONTROL_5, msr);
 }
 
 static void configure_thermal_target(void)
@@ -577,29 +532,6 @@ static void configure_misc(void)
 	wrmsr(IA32_PACKAGE_THERM_INTERRUPT, msr);
 }
 
-static void enable_lapic_tpr(void)
-{
-	msr_t msr;
-
-	msr = rdmsr(MSR_PIC_MSG_CONTROL);
-	msr.lo &= ~(1 << 10);	/* Enable APIC TPR updates */
-	wrmsr(MSR_PIC_MSG_CONTROL, msr);
-}
-
-static void configure_dca_cap(void)
-{
-	uint32_t feature_flag;
-	msr_t msr;
-
-	/* Check feature flag in CPUID.(EAX=1):ECX[18]==1 */
-	feature_flag = cpu_get_feature_flags_ecx();
-	if (feature_flag & CPUID_DCA) {
-		msr = rdmsr(IA32_PLATFORM_DCA_CAP);
-		msr.lo |= 1;
-		wrmsr(IA32_PLATFORM_DCA_CAP, msr);
-	}
-}
-
 static void set_max_ratio(void)
 {
 	msr_t msr, perf_ctl;
@@ -607,7 +539,10 @@ static void set_max_ratio(void)
 	perf_ctl.hi = 0;
 
 	/* Check for configurable TDP option */
-	if (cpu_config_tdp_levels()) {
+	if (get_turbo_state() == TURBO_ENABLED) {
+		msr = rdmsr(MSR_TURBO_RATIO_LIMIT);
+		perf_ctl.lo = (msr.lo & 0xff) << 8;
+	} else if (cpu_config_tdp_levels()) {
 		/* Set to nominal TDP ratio */
 		msr = rdmsr(MSR_CONFIG_TDP_NOMINAL);
 		perf_ctl.lo = (msr.lo & 0xff) << 8;
@@ -618,28 +553,8 @@ static void set_max_ratio(void)
 	}
 	wrmsr(IA32_PERF_CTL, perf_ctl);
 
-	printk(BIOS_DEBUG, "haswell: frequency set to %d\n",
-	       ((perf_ctl.lo >> 8) & 0xff) * HASWELL_BCLK);
-}
-
-static void set_energy_perf_bias(u8 policy)
-{
-	msr_t msr;
-	int ecx;
-
-	/* Determine if energy efficient policy is supported. */
-	ecx = cpuid_ecx(0x6);
-	if (!(ecx & (1 << 3)))
-		return;
-
-	/* Energy Policy is bits 3:0 */
-	msr = rdmsr(IA32_ENERGY_PERF_BIAS);
-	msr.lo &= ~0xf;
-	msr.lo |= policy & 0xf;
-	wrmsr(IA32_ENERGY_PERF_BIAS, msr);
-
-	printk(BIOS_DEBUG, "haswell: energy policy set to %u\n",
-	       policy);
+	printk(BIOS_DEBUG, "CPU: frequency set to %d\n",
+	       ((perf_ctl.lo >> 8) & 0xff) * CPU_BCLK);
 }
 
 static void configure_mca(void)
@@ -659,7 +574,7 @@ static void configure_mca(void)
 }
 
 /* All CPUs including BSP will run the following function. */
-static void haswell_init(struct device *cpu)
+static void cpu_core_init(struct device *cpu)
 {
 	/* Clear out pending MCEs */
 	configure_mca();
@@ -686,9 +601,6 @@ static void haswell_init(struct device *cpu)
 	/* Set energy policy */
 	set_energy_perf_bias(ENERGY_POLICY_NORMAL);
 
-	/* Set Max Ratio */
-	set_max_ratio();
-
 	/* Enable Turbo */
 	enable_turbo();
 }
@@ -704,10 +616,11 @@ static void pre_mp_init(void)
 
 	initialize_vr_config();
 
-	if (haswell_is_ult()) {
-		calibrate_24mhz_bclk();
-		configure_pch_power_sharing();
-	}
+	if (!haswell_is_ult())
+		return;
+
+	calibrate_24mhz_bclk();
+	configure_pch_power_sharing();
 }
 
 static int get_cpu_count(void)
@@ -743,6 +656,9 @@ static void per_cpu_smm_trigger(void)
 
 static void post_mp_init(void)
 {
+	/* Set Max Ratio */
+	set_max_ratio();
+
 	/* Now that all APs have been relocated as well as the BSP let SMIs
 	 * start flowing. */
 	global_smi_enable();
@@ -769,7 +685,7 @@ void mp_init_cpus(struct bus *cpu_bus)
 }
 
 static struct device_operations cpu_dev_ops = {
-	.init     = haswell_init,
+	.init = cpu_core_init,
 };
 
 static const struct cpu_device_id cpu_table[] = {
@@ -778,6 +694,8 @@ static const struct cpu_device_id cpu_table[] = {
 	{ X86_VENDOR_INTEL, 0x306c3 }, /* Intel Haswell C0 */
 	{ X86_VENDOR_INTEL, 0x40650 }, /* Intel Haswell ULT B0 */
 	{ X86_VENDOR_INTEL, 0x40651 }, /* Intel Haswell ULT B1 */
+	{ X86_VENDOR_INTEL, 0x40660 }, /* Intel Crystal Well C0 */
+	{ X86_VENDOR_INTEL, 0x40661 }, /* Intel Crystal Well C1 */
 	{ 0, 0 },
 };
 

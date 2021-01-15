@@ -6,6 +6,7 @@
 #include <cpu/x86/msr.h>
 #include <cpu/x86/cache.h>
 #include <security/intel/stm/SmmStm.h>
+#include <stdbool.h>
 #include <string.h>
 
 #define TXT_EVTYPE_BASE 0x400
@@ -476,7 +477,7 @@ int add_pi_resource(STM_RSC *resource_list, uint32_t num_entries)
 		return -1; // INVALID_PARAMETER;
 
 	resource_size = get_resource_size(resource_list, num_entries);
-	printk(BIOS_DEBUG, "STM: ResourceSize - 0x%08lx\n", resource_size);
+	printk(BIOS_DEBUG, "STM: ResourceSize - 0x%08zx\n", resource_size);
 	if (resource_size == 0)
 		return -1; // INVALID_PARAMETER;
 

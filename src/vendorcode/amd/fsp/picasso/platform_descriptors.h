@@ -28,6 +28,14 @@ typedef enum {
 	GEN_INVALID		// Max Gen for boundary check
 } dxio_link_speed_cap;
 
+/* Upstream Auto Speed Change Allowed */
+typedef enum {
+	SPDC_DEFAULT = 0,      // Enabled for Gen2 and Gen3
+	SPDC_DISBLED,
+	SPDC_ENABLED,
+	SPDC_INVALID
+} dxio_upstream_auto_speed_change;
+
 /* SATA ChannelType initialization */
 typedef enum {
 	SATA_CHANNEL_OTHER = 0,	// Default Channel Type
@@ -109,35 +117,73 @@ typedef struct __packed {
 	uint8_t		reserved;
 } fsp_ddi_descriptor;
 
-/* Picasso PCIe Descriptor: used for assigning lanes, bifurcation and other settings */
-/* Beware that the lane numbers in here are the logical and not the physical lane numbers! */
+/*
+ * Picasso DXIO Descriptor: Used for assigning lanes to PCIe/SATA/XGBE engines, configure
+ * bifurcation and other settings. Beware that the lane numbers in here are the logical and not
+ * the physical lane numbers!
+ *
+ * Picasso DXIO lane mapping:
+ *
+ * physical | logical | protocol
+ * ---------|---------|-----------
+ * GFX[7:0] | [15:8]  | PCIe
+ * GPP[3:0] |  [7:4]  | PCIe
+ * GPP[5:4] |  [1:0]  | PCIe, XGBE
+ * GPP[7:6] |  [3:2]  | PCIe, SATA
+ *
+ * Picasso supports up to 7 PCIe ports. The 8 GFX PCIe lanes can either be used as an x8 port
+ * or split into two x4 ports. The GPP general purpose lanes can be used as PCIe x4, x2 and x1
+ * ports. The ports can only start at logical lane numbers that are integer multiples of the
+ * lane width, so for example an x4 port can only start with the logical lane 0, 4, 8 or 12.
+ * Different ports mustn't overlap or be assigned to the same lane(s). Within ports with the
+ * same width the one with a higher start logical lane number needs to be assigned to a higher
+ * PCIe root port number; ports of the same size don't have to be assigned to consecutive PCIe
+ * root ports though.
+ *
+ * Dali only supports up to 5 PCIe ports and has less DXIO connectivity than Picasso:
+ *
+ * physical | logical | protocol
+ * ---------|---------|-----------
+ * GFX[3:0] | [11:8]  | PCIe
+ * GPP[1:0] |  [5:4]  | PCIe
+ * GPP[5:4] |  [1:0]  | PCIe, XGBE
+ * GPP[7:6] |  [3:2]  | SATA
+ *
+ * Pollock has even less DXIO lanes and the mapping of GPP lane numbers to the logical lane
+ * numbers differs to Picasso/Dali:
+ *
+ * physical | logical | protocol
+ * ---------|---------|----------
+ * GPP[1:0] |  [1:0]  | PCIe
+ * GPP[3:2] |  [5:4]  | PCIe
+ */
 typedef struct __packed {
-	uint8_t		engine_type;
-	uint8_t		start_lane;			// Start lane of the pci device
-	uint8_t		end_lane;			// End lane of the pci device
-	uint8_t		gpio_group_id;			// FCH reset number. 0 is global reset
+	uint8_t		engine_type;			// See dxio_engine_type
+	uint8_t		start_logical_lane;		// Start lane of the pci device
+	uint8_t		end_logical_lane;		// End lane of the pci device
+	uint8_t		gpio_group_id;			// Currently unused by FSP
 	uint32_t	port_present		:1;	// Should be TRUE if train link
 	uint32_t	reserved_3		:7;
 	uint32_t	device_number		:5;	// Desired root port device number
 	uint32_t	function_number		:3;	// Desired root port function number
-	uint32_t	link_speed_capability	:2;
-	uint32_t	auto_spd_change		:2;
-	uint32_t	eq_preset		:4;
-	uint32_t	link_aspm		:2;
-	uint32_t	link_aspm_L1_1		:1;
-	uint32_t	link_aspm_L1_2		:1;
-	uint32_t	clk_req			:4;
-	uint8_t		link_hotplug;
-	uint8_t		slot_power_limit;
-	uint32_t	slot_power_limit_scale	:2;
+	uint32_t	link_speed_capability	:2;	// See dxio_link_speed_cap
+	uint32_t	auto_spd_change		:2;	// See dxio_upstream_auto_speed_change
+	uint32_t	eq_preset		:4;	// Gen3 equalization preset
+	uint32_t	link_aspm		:2;	// See dxio_aspm_type
+	uint32_t	link_aspm_L1_1		:1;	// En/Dis root port capabilities for L1.1
+	uint32_t	link_aspm_L1_2		:1;	// En/Dis root port capabilities for L1.2
+	uint32_t	clk_req			:4;	// See cpm_clk_req
+	uint8_t		link_hotplug;			// Currently unused by FSP
+	uint8_t		slot_power_limit;		// Currently unused by FSP
+	uint32_t	slot_power_limit_scale	:2;	// Currently unused by FSP
 	uint32_t	reserved_4		:6;
-	uint32_t	link_compliance_mode	:1;
-	uint32_t	link_safe_mode		:1;
-	uint32_t	sb_link			:1;
-	uint32_t	clk_pm_support		:1;
-	uint32_t	channel_type		:3;
-	uint32_t	turn_off_unused_lanes	:1;
+	uint32_t	link_compliance_mode	:1;	// Currently unused by FSP
+	uint32_t	link_safe_mode		:1;	// Currently unused by FSP
+	uint32_t	sb_link			:1;	// Currently unused by FSP
+	uint32_t	clk_pm_support		:1;	// Currently unused by FSP
+	uint32_t	channel_type		:3;	// See dxio_sata_channel_type
+	uint32_t	turn_off_unused_lanes	:1;	// Power down lanes if device not present
 	uint8_t		reserved[4];
-} fsp_pcie_descriptor;
+} fsp_dxio_descriptor;
 
 #endif /* __PI_PICASSO_PLATFORM_DESCRIPTORS_H__ */

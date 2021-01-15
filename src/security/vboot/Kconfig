@@ -159,6 +159,7 @@ config VBOOT_ALWAYS_ALLOW_UDC
 
 config VBOOT_HAS_REC_HASH_SPACE
 	bool
+	default y if MRC_SAVE_HASH_IN_TPM && HAS_RECOVERY_MRC_CACHE
 	default n
 	help
 	  Set this option to indicate to vboot that recovery data hash space
@@ -367,6 +368,17 @@ config VBOOT_KEYBLOCK_VERSION
 config VBOOT_KEYBLOCK_PREAMBLE_FLAGS
 	hex "Keyblock preamble flags"
 	default 0x0
+
+config VBOOT_HASH_BLOCK_SIZE
+	hex
+	default 0x400
+	help
+	  Set the default hash size.  Generally 1k is reasonable, but in some
+	  cases it may improve hashing speed to increase the size.
+
+	  Note that this buffer is allocated in the stack.  Although the
+	  build should fail if the stack size is exceeded, it's something to
+	  be aware of when changing the size.
 
 endmenu # Keys
 endif # VBOOT

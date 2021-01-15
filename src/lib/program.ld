@@ -13,11 +13,12 @@
 .text . : {
 	_program = .;
 	_text = .;
+	*(.init._start);
+	*(.init);
+	*(.init.*);
 	*(.text._start);
 	*(.text.stage_entry);
-#if !ENV_X86 && (ENV_DECOMPRESSOR || ENV_BOOTBLOCK && !CONFIG(COMPRESS_BOOTBLOCK))
-	KEEP(*(.id));
-#endif
+	KEEP(*(.metadata_hash_anchor));
 	*(.text);
 	*(.text.*);
 
@@ -51,7 +52,7 @@
 	_etext = .;
 } : to_load
 
-#if ENV_RAMSTAGE && CONFIG(COVERAGE)
+#if ENV_RAMSTAGE && (CONFIG(COVERAGE) || CONFIG(ASAN_IN_RAMSTAGE))
 .ctors . : {
 	. = ALIGN(0x100);
 	__CTOR_LIST__ = .;
@@ -124,6 +125,11 @@
 	. = ALIGN(ARCH_POINTER_ALIGN_SIZE);
 	_eheap = .;
 }
+#endif
+
+#if ENV_RAMSTAGE && CONFIG(ASAN_IN_RAMSTAGE)
+	_shadow_size = (_eheap - _data) >> 3;
+	REGION(asan_shadow, ., _shadow_size, ARCH_POINTER_ALIGN_SIZE)
 #endif
 
 _eprogram = .;

@@ -24,14 +24,6 @@ uint32_t soc_read_sci_irq_select(void);
 void soc_write_sci_irq_select(uint32_t scis);
 
 /*
- * Calls acpi_write_hpet which creates and fills HPET table and
- * adds it to the RSDT (and XSDT) structure.
- */
-unsigned long southbridge_write_acpi_tables(const struct device *device,
-					    unsigned long current,
-					    struct acpi_rsdp *rsdp);
-
-/*
  * get_cstate_map returns a table of processor specific acpi_cstate_t entries
  * and number of entries in the table
  */
@@ -70,5 +62,22 @@ void generate_t_state_entries(int core, int cores_per_package);
  * states while SKL generates  * P state only depending on a devicetree config
  */
 void soc_power_states_generation(int core_id, int cores_per_package);
+
+/*
+ * Common function to calculate the power ratio for power state generation
+ */
+int common_calculate_power_ratio(int tdp, int p1_ratio, int ratio);
+
+struct madt_ioapic_info {
+	u8  id;
+	u32 addr;
+	u32 gsi_base;
+};
+
+/*
+ * Returns a table of MADT ioapic_info entries and the number of entries
+ * If the SOC doesn't implement this hook a default ioapic setting is used.
+ */
+const struct madt_ioapic_info *soc_get_ioapic_info(size_t *entries);
 
 #endif				/* _SOC_INTEL_COMMON_BLOCK_ACPI_H_ */

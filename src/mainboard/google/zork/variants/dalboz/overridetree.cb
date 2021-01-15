@@ -9,17 +9,17 @@ chip soc/amd/picasso
 	register "system_config" = "1"
 
 	# Set STAPM confiuration. All of these fields must be set >0 to take affect
-	register "slow_ppt_limit" = "6000" #mw
-	register "fast_ppt_limit" = "9000" #mw
-	register "slow_ppt_time_constant" = "5" #second
-	register "stapm_time_constant" = "2500" #second
-	register "sustained_power_limit" = "4800" #mw
+	register "slow_ppt_limit_mW" = "6000"
+	register "fast_ppt_limit_mW" = "9000"
+	register "slow_ppt_time_constant_s" = "5"
+	register "stapm_time_constant_s" = "2500"
+	register "sustained_power_limit_mW" = "4800"
 
 	# End : OPN Performance Configuration
 
-	register "telemetry_vddcr_vdd_slope" = "30231" #mA
+	register "telemetry_vddcr_vdd_slope_mA" = "30231"
 	register "telemetry_vddcr_vdd_offset" = "0-1"
-	register "telemetry_vddcr_soc_slope" = "22644" #mA
+	register "telemetry_vddcr_soc_slope_mA" = "22644"
 	register "telemetry_vddcr_soc_offset" = "68"
 
 	# I2C2 for touchscreen and trackpad
@@ -48,9 +48,12 @@ chip soc/amd/picasso
 			register "desc" = ""Raydium Touchscreen""
 			register "probed" = "1"
 			register "irq_gpio" = "ACPI_GPIO_IRQ_EDGE_LOW(GPIO_12)"
-			register "reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPIO_140)"
-			register "reset_delay_ms" = "20"
+			register "reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPIO_140)"
+			# 32ms: Rise time of the reset line
+			# 20ms: Firmware ready time
+			register "reset_delay_ms" = "32 + 20"
 			register "has_power_resource" = "1"
+			register "disable_gpio_export_in_crs" = "1"
 			device i2c 39 on end
 		end
 		chip drivers/i2c/generic
@@ -58,7 +61,7 @@ chip soc/amd/picasso
 			register "desc" = ""ELAN Touchscreen""
 			register "probed" = "1"
 			register "irq_gpio" = "ACPI_GPIO_IRQ_EDGE_LOW(GPIO_12)"
-			register "reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPIO_140)"
+			register "reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPIO_140)"
 			register "reset_delay_ms" = "20"
 			register "has_power_resource" = "1"
 			device i2c 10 on end
@@ -66,9 +69,9 @@ chip soc/amd/picasso
 		chip drivers/i2c/hid
 			register "generic.hid" = ""SYTS7817""
 			register "generic.desc" = ""Synaptics Touchscreen""
-			register "generic.irq_gpio" = "ACPI_GPIO_IRQ_EDGE_LOW(GPIO_12)"
+			register "generic.irq_gpio" = "ACPI_GPIO_IRQ_LEVEL_LOW(GPIO_12)"
 			register "generic.probed" = "1"
-			register "generic.reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPIO_140)"
+			register "generic.reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPIO_140)"
 			register "generic.reset_delay_ms" = "45"
 			register "generic.has_power_resource" = "1"
 			register "generic.disable_gpio_export_in_crs" = "1"
@@ -78,10 +81,13 @@ chip soc/amd/picasso
 		chip drivers/i2c/hid
 			register "generic.hid" = ""GDIX0000""
 			register "generic.desc" = ""Goodix Touchscreen""
-			register "generic.irq_gpio" = "ACPI_GPIO_IRQ_EDGE_LOW(GPIO_12)"
+			register "generic.irq_gpio" = "ACPI_GPIO_IRQ_LEVEL_LOW(GPIO_12)"
 			register "generic.probed" = "1"
-			register "generic.reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPIO_140)"
+			register "generic.reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPIO_140)"
 			register "generic.reset_delay_ms" = "120"
+			register "generic.reset_off_delay_ms" = "1"
+			register "generic.stop_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPIO_144)"
+			register "generic.stop_off_delay_ms" = "1"
 			register "generic.has_power_resource" = "1"
 			register "hid_desc_reg_offset" = "0x01"
 			device i2c 5d on end
@@ -97,7 +103,7 @@ chip soc/amd/picasso
 		chip drivers/i2c/hid
 			register "generic.hid" = ""PNP0C50""
 			register "generic.desc" = ""Synaptics Touchpad""
-			register "generic.irq_gpio" = "ACPI_GPIO_IRQ_EDGE_LOW(GPIO_9)"
+			register "generic.irq_gpio" = "ACPI_GPIO_IRQ_LEVEL_LOW(GPIO_9)"
 			register "generic.wake" = "GEVENT_22"
 			register "generic.probed" = "1"
 			register "hid_desc_reg_offset" = "0x20"

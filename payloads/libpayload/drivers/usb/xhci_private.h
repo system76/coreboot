@@ -204,7 +204,7 @@ typedef transfer_ring_t command_ring_t;
 #define SC_UADDR_LEN		8
 #define SC_STATE_FIELD		f4		/* STATE - Slot State */
 #define SC_STATE_START		27
-#define SC_STATE_LEN		8
+#define SC_STATE_LEN		5
 #define SC_MASK(tok)		MASK(SC_##tok##_START, SC_##tok##_LEN)
 #define SC_GET(tok, sc)		(((sc)->SC_##tok##_FIELD & SC_MASK(tok)) \
 				 >> SC_##tok##_START)
@@ -363,7 +363,7 @@ typedef struct erst_entry {
 #define CAP_CSZ_LEN			1
 
 #define CAP_MASK(tok)		MASK(CAP_##tok##_START, CAP_##tok##_LEN)
-#define CAP_GET(tok, cap)	(((cap)->CAP_##tok##_FIELD & CAP_MASK(tok)) \
+#define CAP_GET(tok, cap)	((read32(&(cap)->CAP_##tok##_FIELD) & CAP_MASK(tok)) \
 				 >> CAP_##tok##_START)
 
 #define CTXSIZE(xhci) (CAP_GET(CSZ, (xhci)->capreg) ? 64 : 32)
@@ -514,7 +514,6 @@ int xhci_cmd_set_tr_dq(xhci_t *, int slot_id, int ep, trb_t *, int dcs);
 static inline int xhci_ep_id(const endpoint_t *const ep) {
 	return ((ep->endpoint & 0x7f) * 2) + (ep->direction != OUT);
 }
-
 
 #ifdef XHCI_DUMPS
 void xhci_dump_slotctx(const slotctx_t *);

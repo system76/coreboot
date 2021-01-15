@@ -11,8 +11,10 @@
 #include <intelblocks/systemagent.h>
 #include <smbios.h>
 #include <soc/iomap.h>
+#include <soc/nvs.h>
 #include <soc/pci_devs.h>
 #include <soc/systemagent.h>
+#include <types.h>
 #include "systemagent_def.h"
 
 /* SoC override function */
@@ -44,6 +46,38 @@ __weak unsigned long sa_write_acpi_tables(const struct device *dev,
 __weak uint32_t soc_systemagent_max_chan_capacity_mib(u8 capid0_a_ddrsz)
 {
 	return 32768;	/* 32 GiB per channel */
+}
+
+static bool sa_supports_ecc(const uint32_t capid0_a)
+{
+	return !(capid0_a & CAPID_ECCDIS);
+}
+
+static size_t sa_slots_per_channel(const uint32_t capid0_a)
+{
+	return !(capid0_a & CAPID_DDPCD) + 1;
+}
+
+static size_t sa_number_of_channels(const uint32_t capid0_a)
+{
+	return !(capid0_a & CAPID_PDCD) + 1;
+}
+
+static void sa_soc_systemagent_init(struct device *dev)
+{
+	soc_systemagent_init(dev);
+
+	struct memory_info *m = cbmem_find(CBMEM_ID_MEMINFO);
+	if (m == NULL)
+		return;
+
+	const uint32_t capid0_a = pci_read_config32(dev, CAPID0_A);
+
+	m->ecc_capable = sa_supports_ecc(capid0_a);
+	m->max_capacity_mib = soc_systemagent_max_chan_capacity_mib(CAPID_DDRSZ(capid0_a)) *
+			      sa_number_of_channels(capid0_a);
+	m->number_of_devices = sa_slots_per_channel(capid0_a) *
+			       sa_number_of_channels(capid0_a);
 }
 
 /*
@@ -113,7 +147,6 @@ void sa_fill_gnvs(struct global_nvs *gnvs)
 	       gnvs->a4gb, gnvs->a4gs);
 }
 
-
 static void sa_get_mem_map(struct device *dev, uint64_t *values)
 {
 	int i;
@@ -125,8 +158,7 @@ static void sa_get_mem_map(struct device *dev, uint64_t *values)
  * These are the host memory ranges that should be added:
  * - 0 -> 0xa0000: cacheable
  * - 0xc0000 -> top_of_ram : cacheable
- * - top_of_ram -> BGSM: cacheable with standard MTRRs and reserved
- * - BGSM -> TOLUD: not cacheable with standard MTRRs and reserved
+ * - top_of_ram -> TOLUD: not cacheable with standard MTRRs and reserved
  * - 4GiB -> TOUUD: cacheable
  *
  * The default SMRAM space is reserved so that the range doesn't
@@ -140,9 +172,10 @@ static void sa_get_mem_map(struct device *dev, uint64_t *values)
  * is not omitted the mtrr code will setup the area as cacheable
  * causing VGA access to not work.
  *
- * The TSEG region is mapped as cacheable so that one can perform
- * SMRAM relocation faster. Once the SMRR is enabled the SMRR takes
- * precedence over the existing MTRRs covering this region.
+ * Don't need to mark the entire top_of_ram till TOLUD range (used
+ * for stolen memory like GFX and ME, PTT, DPR, PRMRR, TSEG etc) as
+ * cacheable for OS usage as coreboot already done with mpinit w/ smm
+ * relocation early.
  *
  * It should be noted that cacheable entry types need to be added in
  * order. The reason is that the current MTRR code assumes this and
@@ -173,13 +206,8 @@ static void sa_add_dram_resources(struct device *dev, int *resource_count)
 
 	sa_get_mem_map(dev, &sa_map_values[0]);
 
-	/* top_of_ram -> BGSM */
+	/* top_of_ram -> TOLUD */
 	base_k = top_of_ram;
-	size_k = sa_map_values[SA_BGSM_REG] - base_k;
-	reserved_ram_resource(dev, index++, base_k / KiB, size_k / KiB);
-
-	/* BGSM -> TOLUD */
-	base_k = sa_map_values[SA_BGSM_REG];
 	size_k = sa_map_values[SA_TOLUD_REG] - base_k;
 	mmio_resource(dev, index++, base_k / KiB, size_k / KiB);
 
@@ -226,7 +254,7 @@ static void imr_resource(struct device *dev, int idx, uint32_t base,
 
 /*
  * Add IMR ranges that hang off the host bridge/memory
- * controller device in case CONFIG_SA_ENABLE_IMR is selected by SoC.
+ * controller device in case CONFIG(SA_ENABLE_IMR) is selected by SoC.
  */
 static void sa_add_imr_resources(struct device *dev, int *resource_cnt)
 {
@@ -260,56 +288,12 @@ static void systemagent_read_resources(struct device *dev)
 	if (CONFIG(SA_ENABLE_IMR))
 		/* Add the isolated memory ranges (IMRs). */
 		sa_add_imr_resources(dev, &index);
+
+	/* Reserve the window used for extended BIOS decoding. */
+	if (CONFIG(FAST_SPI_SUPPORTS_EXT_BIOS_WINDOW))
+		mmio_resource(dev, index++, CONFIG_EXT_BIOS_WIN_BASE / KiB,
+			      CONFIG_EXT_BIOS_WIN_SIZE / KiB);
 }
-
-#if CONFIG(GENERATE_SMBIOS_TABLES)
-static bool sa_supports_ecc(const uint32_t capida)
-{
-	return !(capida & CAPID_ECCDIS);
-}
-
-static size_t sa_slots_per_channel(const uint32_t capida)
-{
-	return !(capida & CAPID_DDPCD) + 1;
-}
-
-static size_t sa_number_of_channels(const uint32_t capida)
-{
-	return !(capida & CAPID_PDCD) + 1;
-}
-
-static int sa_smbios_write_type_16(struct device *dev, int *handle,
-		unsigned long *current)
-{
-	struct smbios_type16 *t = (struct smbios_type16 *)*current;
-	int len = sizeof(struct smbios_type16);
-	const uint32_t capida = pci_read_config32(dev, CAPID0_A);
-
-	struct memory_info *meminfo;
-	meminfo = cbmem_find(CBMEM_ID_MEMINFO);
-	if (meminfo == NULL)
-		return 0;	/* can't find mem info in cbmem */
-
-	memset(t, 0, sizeof(struct smbios_type16));
-	t->type = SMBIOS_PHYS_MEMORY_ARRAY;
-	t->handle = *handle;
-	t->length = len - 2;
-	t->location = MEMORY_ARRAY_LOCATION_SYSTEM_BOARD;
-	t->use = MEMORY_ARRAY_USE_SYSTEM;
-	t->memory_error_correction = sa_supports_ecc(capida) ? MEMORY_ARRAY_ECC_SINGLE_BIT :
-		MEMORY_ARRAY_ECC_NONE;
-	/* no error information handle available */
-	t->memory_error_information_handle = 0xFFFE;
-	t->maximum_capacity = soc_systemagent_max_chan_capacity_mib(CAPID_DDRSZ(capida)) *
-			      sa_number_of_channels(capida) * (MiB / KiB);
-	t->number_of_memory_devices = sa_slots_per_channel(capida) *
-				      sa_number_of_channels(capida);
-
-	*current += len;
-	*handle += 1;
-	return len;
-}
-#endif
 
 void enable_power_aware_intr(void)
 {
@@ -326,13 +310,10 @@ static struct device_operations systemagent_ops = {
 	.read_resources   = systemagent_read_resources,
 	.set_resources    = pci_dev_set_resources,
 	.enable_resources = pci_dev_enable_resources,
-	.init             = soc_systemagent_init,
+	.init             = sa_soc_systemagent_init,
 	.ops_pci          = &pci_dev_ops_pci,
 #if CONFIG(HAVE_ACPI_TABLES)
 	.write_acpi_tables = sa_write_acpi_tables,
-#endif
-#if CONFIG(GENERATE_SMBIOS_TABLES)
-	.get_smbios_data = sa_smbios_write_type_16,
 #endif
 };
 
@@ -390,16 +371,52 @@ static const unsigned short systemagent_ids[] = {
 	PCI_DEVICE_ID_INTEL_CML_H,
 	PCI_DEVICE_ID_INTEL_CML_H_4_2,
 	PCI_DEVICE_ID_INTEL_CML_H_8_2,
-	PCI_DEVICE_ID_INTEL_TGL_ID_U,
-	PCI_DEVICE_ID_INTEL_TGL_ID_U_1,
 	PCI_DEVICE_ID_INTEL_TGL_ID_U_2_2,
-	PCI_DEVICE_ID_INTEL_TGL_ID_Y,
+	PCI_DEVICE_ID_INTEL_TGL_ID_U_4_2,
+	PCI_DEVICE_ID_INTEL_TGL_ID_Y_2_2,
+	PCI_DEVICE_ID_INTEL_TGL_ID_Y_4_2,
 	PCI_DEVICE_ID_INTEL_JSL_EHL,
 	PCI_DEVICE_ID_INTEL_EHL_ID_1,
+	PCI_DEVICE_ID_INTEL_EHL_ID_2,
+	PCI_DEVICE_ID_INTEL_EHL_ID_3,
+	PCI_DEVICE_ID_INTEL_EHL_ID_4,
+	PCI_DEVICE_ID_INTEL_EHL_ID_5,
+	PCI_DEVICE_ID_INTEL_EHL_ID_6,
+	PCI_DEVICE_ID_INTEL_EHL_ID_7,
+	PCI_DEVICE_ID_INTEL_EHL_ID_8,
+	PCI_DEVICE_ID_INTEL_EHL_ID_9,
+	PCI_DEVICE_ID_INTEL_EHL_ID_10,
+	PCI_DEVICE_ID_INTEL_EHL_ID_11,
+	PCI_DEVICE_ID_INTEL_EHL_ID_12,
 	PCI_DEVICE_ID_INTEL_JSL_ID_1,
 	PCI_DEVICE_ID_INTEL_JSL_ID_2,
 	PCI_DEVICE_ID_INTEL_JSL_ID_3,
 	PCI_DEVICE_ID_INTEL_JSL_ID_4,
+	PCI_DEVICE_ID_INTEL_JSL_ID_5,
+	PCI_DEVICE_ID_INTEL_ADL_S_ID_1,
+	PCI_DEVICE_ID_INTEL_ADL_S_ID_2,
+	PCI_DEVICE_ID_INTEL_ADL_S_ID_3,
+	PCI_DEVICE_ID_INTEL_ADL_S_ID_4,
+	PCI_DEVICE_ID_INTEL_ADL_S_ID_5,
+	PCI_DEVICE_ID_INTEL_ADL_S_ID_6,
+	PCI_DEVICE_ID_INTEL_ADL_S_ID_7,
+	PCI_DEVICE_ID_INTEL_ADL_S_ID_8,
+	PCI_DEVICE_ID_INTEL_ADL_S_ID_9,
+	PCI_DEVICE_ID_INTEL_ADL_S_ID_10,
+	PCI_DEVICE_ID_INTEL_ADL_S_ID_11,
+	PCI_DEVICE_ID_INTEL_ADL_S_ID_12,
+	PCI_DEVICE_ID_INTEL_ADL_S_ID_13,
+	PCI_DEVICE_ID_INTEL_ADL_S_ID_14,
+	PCI_DEVICE_ID_INTEL_ADL_S_ID_15,
+	PCI_DEVICE_ID_INTEL_ADL_P_ID_1,
+	PCI_DEVICE_ID_INTEL_ADL_P_ID_2,
+	PCI_DEVICE_ID_INTEL_ADL_P_ID_3,
+	PCI_DEVICE_ID_INTEL_ADL_P_ID_4,
+	PCI_DEVICE_ID_INTEL_ADL_P_ID_5,
+	PCI_DEVICE_ID_INTEL_ADL_P_ID_6,
+	PCI_DEVICE_ID_INTEL_ADL_P_ID_7,
+	PCI_DEVICE_ID_INTEL_ADL_P_ID_8,
+	PCI_DEVICE_ID_INTEL_ADL_P_ID_9,
 	0
 };
 

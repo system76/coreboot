@@ -253,17 +253,17 @@ Device (PDRC)
 			/* MCH BAR _BAS will be updated in _CRS below according to
 			 * B0:D0:F0:Reg.48h
 			 */
-			Memory32Fixed (ReadWrite, 0, 0x08000, MCHB)
+			Memory32Fixed (ReadWrite, 0, MCH_BASE_SIZE, MCHB)
 
 			/* DMI BAR _BAS will be updated in _CRS below according to
 			 * B0:D0:F0:Reg.68h
 			 */
-			Memory32Fixed (ReadWrite, 0, 0x01000, DMIB)
+			Memory32Fixed (ReadWrite, 0, DMI_BASE_SIZE, DMIB)
 
 			/* EP BAR _BAS will be updated in _CRS below according to
 			 * B0:D0:F0:Reg.40h
 			 */
-			Memory32Fixed (ReadWrite, 0, 0x01000, EGPB)
+			Memory32Fixed (ReadWrite, 0, EP_BASE_SIZE, EGPB)
 
 			/* PCI Express BAR _BAS and _LEN will be updated in
 			 * _CRS below according to B0:D0:F0:Reg.60h
@@ -275,6 +275,11 @@ Device (PDRC)
 
 			/* FLASH range */
 			Memory32Fixed (ReadOnly, 0, CONFIG_ROM_SIZE, FIOH)
+
+#if CONFIG(FAST_SPI_SUPPORTS_EXT_BIOS_WINDOW)
+			/* Extended BIOS window */
+			Memory32Fixed (ReadOnly, CONFIG_EXT_BIOS_WIN_BASE, CONFIG_EXT_BIOS_WIN_SIZE)
+#endif
 
 			/* Local APIC range(0xFEE0_0000 to 0xFEEF_FFFF) */
 			Memory32Fixed (ReadOnly, 0xFEE00000, 0x100000)

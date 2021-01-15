@@ -4,7 +4,7 @@
 
 #define AOAC_DEVICE(DEV_NAME, DEV_ID, SX) \
 	PowerResource(DEV_NAME, SX, 0) { \
-		OperationRegion (AOAC, SystemMemory, ACPIMMIO_AOAC_BASE + 0x40 + (DEV_ID << 1), 2) \
+		OperationRegion (AOAC, SystemMemory, ACPIMMIO_BASE(AOAC) + 0x40 + (DEV_ID << 1), 2) \
 		Field (AOAC, ByteAcc, NoLock, Preserve) { \
 			/* \
 			 * Target Device State \
@@ -68,8 +68,6 @@
 		Method(_STA) { \
 			Local0 = (PRBS && RCOS && RBS) \
 \
-			Printf("AOAC.%s._STA: %o", #DEV_NAME, Local0) \
-\
 			If (Local0) { \
 				Return (1) \
 			} Else { \
@@ -77,34 +75,22 @@
 			} \
 		} \
 		Method(_ON, 0, Serialized) { \
-			Printf("AOAC.%s._ON", #DEV_NAME) \
-\
 			ISWC=0 \
 			POD=1 \
 \
 			While (!PRBS || !RCOS || !RBS) { \
-				Printf ("Waiting for device to power on") \
 				Stall (100) \
 			} \
-\
-			Printf("Done waiting") \
 		} \
 		Method(_OFF, 0, Serialized) { \
-			Printf("AOAC.%s._OFF", #DEV_NAME) \
-\
 			ISWC=0 \
 			POD=0 \
 \
 			While (PRBS || RCOS || RBS) { \
-				Printf ("Waiting for device to power off") \
 				Stall (100) \
 			} \
-\
-			Printf("Done waiting") \
 		} \
 		Method(_RST, 0, Serialized) { \
-			Printf("AOAC.%s._RST", #DEV_NAME) \
-\
 			ISWC=1 \
 			SRB=1 \
 \
@@ -139,6 +125,7 @@ Device (AOAC) {
 
 	AOAC_DEVICE(I2C2,	7, 0)
 	AOAC_DEVICE(I2C3,	8, 0)
+	AOAC_DEVICE(FUR0,	11, 0)
 	AOAC_DEVICE(FUR1,	12, 0)
 	AOAC_DEVICE(FUR2,	16, 0)
 	AOAC_DEVICE(FUR3,	26, 0)

@@ -13,9 +13,9 @@
 #include <acpi/acpi.h>
 #include <acpi/acpi_gnvs.h>
 #include <cpu/x86/smm.h>
-#include <cbmem.h>
 #include <string.h>
 #include "chip.h"
+#include "iobp.h"
 #include "nvs.h"
 #include "pch.h"
 #include <acpi/acpigen.h>
@@ -39,9 +39,6 @@ static void pch_enable_ioapic(struct device *dev)
 	/* Assign unique bus/dev/fn for I/O APIC */
 	pci_write_config16(dev, LPC_IBDF,
 		PCH_IOAPIC_PCI_BUS << 8 | PCH_IOAPIC_PCI_SLOT << 3);
-
-	/* Enable ACPI I/O range decode */
-	pci_write_config8(dev, ACPI_CNTL, ACPI_EN);
 
 	set_ioapic_id(VIO_APIC_VADDR, 0x02);
 
@@ -72,6 +69,25 @@ static void pch_enable_serial_irqs(struct device *dev)
 #endif
 }
 
+static void enable_hpet(struct device *const dev)
+{
+	u32 reg32;
+	size_t i;
+
+	/* Assign unique bus/dev/fn for each HPET */
+	for (i = 0; i < 8; ++i)
+		pci_write_config16(dev, LPC_HnBDF(i),
+			PCH_HPET_PCI_BUS << 8 | PCH_HPET_PCI_SLOT << 3 | i);
+
+	/* Move HPET to default address 0xfed00000 and enable it */
+	reg32 = RCBA32(HPTC);
+	reg32 |= (1 << 7); // HPET Address Enable
+	reg32 &= ~(3 << 0);
+	RCBA32(HPTC) = reg32;
+	/* Read it back to stick. It's affected by posted write syndrome. */
+	RCBA32(HPTC);
+}
+
 /* PIRQ[n]_ROUT[3:0] - PIRQ Routing Control
  * 0x00 - 0000 = Reserved
  * 0x01 - 0001 = Reserved
@@ -96,25 +112,25 @@ static void pch_enable_serial_irqs(struct device *dev)
 static void pch_pirq_init(struct device *dev)
 {
 	struct device *irq_dev;
-	/* Get the chip configuration */
-	config_t *config = dev->chip_info;
 
-	pci_write_config8(dev, PIRQA_ROUT, config->pirqa_routing);
-	pci_write_config8(dev, PIRQB_ROUT, config->pirqb_routing);
-	pci_write_config8(dev, PIRQC_ROUT, config->pirqc_routing);
-	pci_write_config8(dev, PIRQD_ROUT, config->pirqd_routing);
+	const uint8_t pirq = 0x80;
 
-	pci_write_config8(dev, PIRQE_ROUT, config->pirqe_routing);
-	pci_write_config8(dev, PIRQF_ROUT, config->pirqf_routing);
-	pci_write_config8(dev, PIRQG_ROUT, config->pirqg_routing);
-	pci_write_config8(dev, PIRQH_ROUT, config->pirqh_routing);
+	pci_write_config8(dev, PIRQA_ROUT, pirq);
+	pci_write_config8(dev, PIRQB_ROUT, pirq);
+	pci_write_config8(dev, PIRQC_ROUT, pirq);
+	pci_write_config8(dev, PIRQD_ROUT, pirq);
+
+	pci_write_config8(dev, PIRQE_ROUT, pirq);
+	pci_write_config8(dev, PIRQF_ROUT, pirq);
+	pci_write_config8(dev, PIRQG_ROUT, pirq);
+	pci_write_config8(dev, PIRQH_ROUT, pirq);
 
 	/* Eric Biederman once said we should let the OS do this.
 	 * I am not so sure anymore he was right.
 	 */
 
 	for (irq_dev = all_devices; irq_dev; irq_dev = irq_dev->next) {
-		u8 int_pin=0, int_line=0;
+		u8 int_pin = 0, int_line = 0;
 
 		if (!irq_dev->enabled || irq_dev->path.type != DEVICE_PATH_PCI)
 			continue;
@@ -122,10 +138,12 @@ static void pch_pirq_init(struct device *dev)
 		int_pin = pci_read_config8(irq_dev, PCI_INTERRUPT_PIN);
 
 		switch (int_pin) {
-		case 1: /* INTA# */ int_line = config->pirqa_routing; break;
-		case 2: /* INTB# */ int_line = config->pirqb_routing; break;
-		case 3: /* INTC# */ int_line = config->pirqc_routing; break;
-		case 4: /* INTD# */ int_line = config->pirqd_routing; break;
+		case 1: /* INTA# */
+		case 2: /* INTB# */
+		case 3: /* INTC# */
+		case 4: /* INTD# */
+			int_line = pirq;
+			break;
 		}
 
 		if (!int_line)
@@ -135,10 +153,8 @@ static void pch_pirq_init(struct device *dev)
 	}
 }
 
-static void pch_gpi_routing(struct device *dev)
+static void pch_gpi_routing(struct device *dev, config_t *config)
 {
-	/* Get the chip configuration */
-	config_t *config = dev->chip_info;
 	u32 reg32 = 0;
 
 	/* An array would be much nicer here, or some
@@ -170,8 +186,6 @@ static void pch_power_options(struct device *dev)
 	u16 reg16;
 	u32 reg32;
 	const char *state;
-	/* Get the chip configuration */
-	config_t *config = dev->chip_info;
 	u16 pmbase = get_pmbase();
 	int pwr_on = CONFIG_MAINBOARD_POWER_FAILURE_STATE;
 	int nmi_option;
@@ -240,19 +254,23 @@ static void pch_power_options(struct device *dev)
 	reg16 &= ~(1 << 10);	// Disable BIOS_PCI_EXP_EN for native PME
 	pci_write_config16(dev, GEN_PMCON_1, reg16);
 
-	/*
-	 * Set the board's GPI routing on LynxPoint-H.
-	 * This is done as part of GPIO configuration on LynxPoint-LP.
-	 */
-	if (pch_is_lp())
-		pch_gpi_routing(dev);
+	if (dev->chip_info) {
+		config_t *config = dev->chip_info;
 
-	/* GPE setup based on device tree configuration */
-	enable_all_gpe(config->gpe0_en_1, config->gpe0_en_2,
-		       config->gpe0_en_3, config->gpe0_en_4);
+		/*
+		 * Set the board's GPI routing on LynxPoint-H.
+		 * This is done as part of GPIO configuration on LynxPoint-LP.
+		 */
+		if (!pch_is_lp())
+			pch_gpi_routing(dev, config);
 
-	/* SMI setup based on device tree configuration */
-	enable_alt_smi(config->alt_gp_smi_en);
+		/* GPE setup based on device tree configuration */
+		enable_all_gpe(config->gpe0_en_1, config->gpe0_en_2,
+			       config->gpe0_en_3, config->gpe0_en_4);
+
+		/* SMI setup based on device tree configuration */
+		enable_alt_smi(config->alt_gp_smi_en);
+	}
 
 	/* Set up power management block and determine sleep mode */
 	reg32 = inl(pmbase + 0x04); // PM1_CNT
@@ -262,7 +280,7 @@ static void pch_power_options(struct device *dev)
 
 	/* Clear magic status bits to prevent unexpected wake */
 	reg32 = RCBA32(0x3310);
-	reg32 |= (1 << 4)|(1 << 5)|(1 << 0);
+	reg32 |= (1 << 4) | (1 << 5) | (1 << 0);
 	RCBA32(0x3310) = reg32;
 
 	reg16 = RCBA16(0x3f02);
@@ -286,67 +304,74 @@ static void lpt_lp_pm_init(struct device *dev)
 
 	pci_write_config8(dev, 0xa9, 0x46);
 
-	RCBA32_AND_OR(0x232c, ~1, 0x00000000);
-	RCBA32_AND_OR(0x1100, ~0xc000, 0xc000);
-	RCBA32_AND_OR(0x1100, ~0, 0x00000100);
-	RCBA32_AND_OR(0x1100, ~0, 0x0000003f);
-	RCBA32_AND_OR(0x2320, ~0x60, 0x10);
-	RCBA32_AND_OR(0x3314,  0, 0x00012fff);
-	RCBA32_AND_OR(0x3318,  0, 0x0dcf0400);
-	RCBA32_AND_OR(0x3324,  0, 0x04000000);
-	RCBA32_AND_OR(0x3368,  0, 0x00041400);
-	RCBA32_AND_OR(0x3388,  0, 0x3f8ddbff);
-	RCBA32_AND_OR(0x33ac,  0, 0x00007001);
-	RCBA32_AND_OR(0x33b0,  0, 0x00181900);
-	RCBA32_AND_OR(0x33c0,  0, 0x00060A00);
-	RCBA32_AND_OR(0x33d0,  0, 0x06200840);
-	RCBA32_AND_OR(0x3a28,  0, 0x01010101);
-	RCBA32_AND_OR(0x3a2c,  0, 0x04040404);
-	RCBA32_AND_OR(0x2b1c,  0, 0x03808033);
-	RCBA32_AND_OR(0x2b34,  0, 0x80000009);
-	RCBA32_AND_OR(0x3348,  0, 0x022ddfff);
-	RCBA32_AND_OR(0x334c,  0, 0x00000001);
-	RCBA32_AND_OR(0x3358,  0, 0x0001c000);
-	RCBA32_AND_OR(0x3380,  0, 0x3f8ddbff);
-	RCBA32_AND_OR(0x3384,  0, 0x0001c7e1);
-	RCBA32_AND_OR(0x338c,  0, 0x0001c7e1);
-	RCBA32_AND_OR(0x3398,  0, 0x0001c000);
-	RCBA32_AND_OR(0x33a8,  0, 0x00181900);
-	RCBA32_AND_OR(0x33dc,  0, 0x00080000);
-	RCBA32_AND_OR(0x33e0,  0, 0x00000001);
-	RCBA32_AND_OR(0x3a20,  0, 0x00000404);
-	RCBA32_AND_OR(0x3a24,  0, 0x01010101);
-	RCBA32_AND_OR(0x3a30,  0, 0x01010101);
-	RCBA32_AND_OR(0x0410, ~0, 0x00000003);
-	RCBA32_AND_OR(0x2618, ~0, 0x08000000);
-	RCBA32_AND_OR(0x2300, ~0, 0x00000002);
-	RCBA32_AND_OR(0x2600, ~0, 0x00000008);
-	RCBA32_AND_OR(0x33b4,  0, 0x00007001);
-	RCBA32_AND_OR(0x3350,  0, 0x022ddfff);
-	RCBA32_AND_OR(0x3354,  0, 0x00000001);
-	RCBA32_AND_OR(0x33d4, ~0, 0x08000000); /* Power Optimizer */
-	RCBA32_AND_OR(0x33c8, ~0, 0x00000080); /* Power Optimizer */
-	RCBA32_AND_OR(0x2b10,  0, 0x0000883c); /* Power Optimizer */
-	RCBA32_AND_OR(0x2b14,  0, 0x1e0a4616); /* Power Optimizer */
-	RCBA32_AND_OR(0x2b24,  0, 0x40000005); /* Power Optimizer */
-	RCBA32_AND_OR(0x2b20,  0, 0x0005db01); /* Power Optimizer */
-	RCBA32_AND_OR(0x3a80,  0, 0x05145005);
+	RCBA32_AND_OR(0x232c, ~1, 0);
 
-	pci_write_config32(dev, 0xac,
-		pci_read_config32(dev, 0xac) | (1 << 21));
+	RCBA32_AND_OR(0x1100, ~0xc000, 0xc000);
+	RCBA32_OR(0x1100, 0x00000100);
+	RCBA32_OR(0x1100, 0x0000003f);
+
+	RCBA32_AND_OR(0x2320, ~0x60, 0x10);
+
+	RCBA32(0x3314) = 0x00012fff;
+	RCBA32(0x3318) = 0x0dcf0400;
+	RCBA32(0x3324) = 0x04000000;
+	RCBA32(0x3368) = 0x00041400;
+	RCBA32(0x3388) = 0x3f8ddbff;
+	RCBA32(0x33ac) = 0x00007001;
+	RCBA32(0x33b0) = 0x00181900;
+	RCBA32(0x33c0) = 0x00060A00;
+	RCBA32(0x33d0) = 0x06200840;
+	RCBA32(0x3a28) = 0x01010101;
+	RCBA32(0x3a2c) = 0x04040404;
+	RCBA32(0x2b1c) = 0x03808033;
+	RCBA32(0x2b34) = 0x80000009;
+	RCBA32(0x3348) = 0x022ddfff;
+	RCBA32(0x334c) = 0x00000001;
+	RCBA32(0x3358) = 0x0001c000;
+	RCBA32(0x3380) = 0x3f8ddbff;
+	RCBA32(0x3384) = 0x0001c7e1;
+	RCBA32(0x338c) = 0x0001c7e1;
+	RCBA32(0x3398) = 0x0001c000;
+	RCBA32(0x33a8) = 0x00181900;
+	RCBA32(0x33dc) = 0x00080000;
+	RCBA32(0x33e0) = 0x00000001;
+	RCBA32(0x3a20) = 0x00000404;
+	RCBA32(0x3a24) = 0x01010101;
+	RCBA32(0x3a30) = 0x01010101;
+
+	RCBA32_OR(0x0410, 0x00000003);
+	RCBA32_OR(0x2618, 0x08000000);
+	RCBA32_OR(0x2300, 0x00000002);
+	RCBA32_OR(0x2600, 0x00000008);
+
+	RCBA32(0x33b4) = 0x00007001;
+	RCBA32(0x3350) = 0x022ddfff;
+	RCBA32(0x3354) = 0x00000001;
+
+	/* Power Optimizer */
+	RCBA32_OR(0x33d4, 0x08000000);
+	RCBA32_OR(0x33c8, 0x00000080);
+
+	RCBA32(0x2b10) = 0x0000883c;
+	RCBA32(0x2b14) = 0x1e0a4616;
+	RCBA32(0x2b24) = 0x40000005;
+	RCBA32(0x2b20) = 0x0005db01;
+	RCBA32(0x3a80) = 0x05145005;
+
+	pci_or_config32(dev, 0xac, 1 << 21);
 
 	pch_iobp_update(0xED00015C, ~(1 << 11), 0x00003700);
-	pch_iobp_update(0xED000118, ~0UL, 0x00c00000);
-	pch_iobp_update(0xED000120, ~0UL, 0x00240000);
-	pch_iobp_update(0xCA000000, ~0UL, 0x00000009);
+	pch_iobp_update(0xED000118, ~0, 0x00c00000);
+	pch_iobp_update(0xED000120, ~0, 0x00240000);
+	pch_iobp_update(0xCA000000, ~0, 0x00000009);
 
 	/* Set RCBA CIR28 0x3A84 based on SATA port enables */
 	data = 0x00001005;
 	/* Port 3 and 2 disabled */
-	if ((config->sata_port_map & ((1 << 3)|(1 << 2))) == 0)
+	if (config && (config->sata_port_map & ((1 << 3) | (1 << 2))) == 0)
 		data |= (1 << 24) | (1 << 26);
 	/* Port 1 and 0 disabled */
-	if ((config->sata_port_map & ((1 << 1)|(1 << 0))) == 0)
+	if (config && (config->sata_port_map & ((1 << 1) | (1 << 0))) == 0)
 		data |= (1 << 20) | (1 << 18);
 	RCBA32(0x3a84) = data;
 
@@ -364,25 +389,6 @@ static void lpt_lp_pm_init(struct device *dev)
 	RCBA32_OR(0x33c8, (1 << 15));
 }
 
-static void enable_hpet(struct device *const dev)
-{
-	u32 reg32;
-	size_t i;
-
-	/* Assign unique bus/dev/fn for each HPET */
-	for (i = 0; i < 8; ++i)
-		pci_write_config16(dev, LPC_HnBDF(i),
-			PCH_HPET_PCI_BUS << 8 | PCH_HPET_PCI_SLOT << 3 | i);
-
-	/* Move HPET to default address 0xfed00000 and enable it */
-	reg32 = RCBA32(HPTC);
-	reg32 |= (1 << 7); // HPET Address Enable
-	reg32 &= ~(3 << 0);
-	RCBA32(HPTC) = reg32;
-	/* Read it back to stick. It's affected by posted write syndrome. */
-	RCBA32(HPTC);
-}
-
 static void enable_clock_gating(struct device *dev)
 {
 	/* LynxPoint Mobile */
@@ -390,7 +396,7 @@ static void enable_clock_gating(struct device *dev)
 	u16 reg16;
 
 	/* DMI */
-	RCBA32_AND_OR(0x2234, ~0UL, 0xf);
+	RCBA32_AND_OR(0x2234, ~0, 0xf);
 	reg16 = pci_read_config16(dev, GEN_PMCON_1);
 	reg16 |= (1 << 11) | (1 << 12) | (1 << 14);
 	reg16 |= (1 << 2); // PCI CLKRUN# Enable
@@ -399,7 +405,7 @@ static void enable_clock_gating(struct device *dev)
 
 	reg32 = RCBA32(CG);
 	reg32 |= (1 << 22); // HDA Dynamic
-	reg32 |= (1UL << 31); // LPC Dynamic
+	reg32 |= (1 << 31); // LPC Dynamic
 	reg32 |= (1 << 16); // PCIe Dynamic
 	reg32 |= (1 << 27); // HPET Dynamic
 	reg32 |= (1 << 28); // GPIO Dynamic
@@ -415,16 +421,14 @@ static void enable_lp_clock_gating(struct device *dev)
 	u16 reg16;
 
 	/* DMI */
-	RCBA32_AND_OR(0x2234, ~0UL, 0xf);
+	RCBA32_AND_OR(0x2234, ~0, 0xf);
 	reg16 = pci_read_config16(dev, GEN_PMCON_1);
 	reg16 &= ~((1 << 11) | (1 << 14));
 	reg16 |= (1 << 5) | (1 << 6) | (1 << 7) | (1 << 12) | (1 << 13);
 	reg16 |= (1 << 2); // PCI CLKRUN# Enable
 	pci_write_config16(dev, GEN_PMCON_1, reg16);
 
-	reg32 = pci_read_config32(dev, 0x64);
-	reg32 |= (1 << 6);
-	pci_write_config32(dev, 0x64, reg32);
+	pci_or_config32(dev, 0x64, 1 << 6);
 
 	/*
 	 * RCBA + 0x2614[27:25,14:13,10,8] = 101,11,1,1
@@ -432,7 +436,7 @@ static void enable_lp_clock_gating(struct device *dev)
 	 * RCBA + 0x2614[30:28] = 0x0
 	 * RCBA + 0x2614[26] = 1 (IF 0:2.0@0x08 >= 0x0b)
 	 */
-	RCBA32_AND_OR(0x2614, 0x8bffffff, 0x0a206500);
+	RCBA32_AND_OR(0x2614, ~0x74000000, 0x0a206500);
 
 	/* Check for LPT-LP B2 stepping and 0:31.0@0xFA > 4 */
 	struct device *const gma = pcidev_on_root(2, 0);
@@ -446,7 +450,7 @@ static void enable_lp_clock_gating(struct device *dev)
 		reg32 &= ~(1 << 29); // LPC Dynamic
 	else
 		reg32 |= (1 << 29); // LPC Dynamic
-	reg32 |= (1UL << 31); // LP LPC
+	reg32 |= (1 << 31); // LP LPC
 	reg32 |= (1 << 30); // LP BLA
 	reg32 |= (1 << 28); // GPIO Dynamic
 	reg32 |= (1 << 27); // HPET Dynamic
@@ -463,8 +467,8 @@ static void enable_lp_clock_gating(struct device *dev)
 
 	RCBA32_OR(0x38c0, 0x3c07); // SPI Dynamic
 
-	pch_iobp_update(0xCF000000, ~0UL, 0x00007001);
-	pch_iobp_update(0xCE00C000, ~1UL, 0x00000000); // bit0=0 in BWG 1.4.0
+	pch_iobp_update(0xCF000000, ~0, 0x00007001);
+	pch_iobp_update(0xCE00C000, ~1, 0x00000000); // bit0=0 in BWG 1.4.0
 }
 
 static void pch_set_acpi_mode(void)
@@ -475,37 +479,27 @@ static void pch_set_acpi_mode(void)
 
 static void pch_disable_smm_only_flashing(struct device *dev)
 {
-	u8 reg8;
-
 	printk(BIOS_SPEW, "Enabling BIOS updates outside of SMM... ");
-	reg8 = pci_read_config8(dev, BIOS_CNTL);
-	reg8 &= ~(1 << 5);
-	pci_write_config8(dev, BIOS_CNTL, reg8);
+
+	pci_and_config8(dev, BIOS_CNTL, ~(1 << 5));
 }
 
 static void pch_fixups(struct device *dev)
 {
-	u8 gen_pmcon_2;
-
 	/* Indicate DRAM init done for MRC S3 to know it can resume */
-	gen_pmcon_2 = pci_read_config8(dev, GEN_PMCON_2);
-	gen_pmcon_2 |= (1 << 7);
-	pci_write_config8(dev, GEN_PMCON_2, gen_pmcon_2);
+	pci_or_config8(dev, GEN_PMCON_2, 1 << 7);
 
 	/*
 	 * Enable DMI ASPM in the PCH
 	 */
 	RCBA32_AND_OR(0x2304, ~(1 << 10), 0);
-	RCBA32_OR(0x21a4, (1 << 11)|(1 << 10));
+	RCBA32_OR(0x21a4, (1 << 11) | (1 << 10));
 	RCBA32_OR(0x21a8, 0x3);
 }
 
 static void lpc_init(struct device *dev)
 {
 	printk(BIOS_DEBUG, "pch: %s\n", __func__);
-
-	/* Set the value for PCI command register. */
-	pci_write_config16(dev, PCI_COMMAND, 0x000f);
 
 	/* IO APIC initialization. */
 	pch_enable_ioapic(dev);
@@ -570,7 +564,7 @@ static void pch_lpc_add_mmio_resources(struct device *dev)
 		res->base = (resource_t)(uintptr_t)DEFAULT_RCBA;
 		res->size = 16 * 1024;
 		res->flags = IORESOURCE_MEM | IORESOURCE_ASSIGNED |
-		             IORESOURCE_FIXED | IORESOURCE_RESERVE;
+			     IORESOURCE_FIXED | IORESOURCE_RESERVE;
 	}
 
 	/* Check LPC Memory Decode register. */
@@ -582,7 +576,7 @@ static void pch_lpc_add_mmio_resources(struct device *dev)
 			res->base = reg;
 			res->size = 16 * 1024;
 			res->flags = IORESOURCE_MEM | IORESOURCE_ASSIGNED |
-			             IORESOURCE_FIXED | IORESOURCE_RESERVE;
+				     IORESOURCE_FIXED | IORESOURCE_RESERVE;
 		}
 	}
 }
@@ -641,7 +635,6 @@ static void pch_lpc_add_gen_io_resources(struct device *dev, int reg_value,
 static void pch_lpc_add_io_resources(struct device *dev)
 {
 	struct resource *res;
-	config_t *config = dev->chip_info;
 
 	/* Add the default claimed IO range for the LPC device. */
 	res = new_resource(dev, 0);
@@ -650,23 +643,23 @@ static void pch_lpc_add_io_resources(struct device *dev)
 	res->flags = IORESOURCE_IO | IORESOURCE_ASSIGNED | IORESOURCE_FIXED;
 
 	/* GPIOBASE */
-	pch_lpc_add_io_resource(dev, get_gpiobase(), DEFAULT_GPIOSIZE,
-	                        GPIO_BASE);
+	pch_lpc_add_io_resource(dev, get_gpiobase(), DEFAULT_GPIOSIZE, GPIO_BASE);
 
 	/* PMBASE */
 	pch_lpc_add_io_resource(dev, get_pmbase(), 256, PMBASE);
 
 	/* LPC Generic IO Decode range. */
-	pch_lpc_add_gen_io_resources(dev, config->gen1_dec, LPC_GEN1_DEC);
-	pch_lpc_add_gen_io_resources(dev, config->gen2_dec, LPC_GEN2_DEC);
-	pch_lpc_add_gen_io_resources(dev, config->gen3_dec, LPC_GEN3_DEC);
-	pch_lpc_add_gen_io_resources(dev, config->gen4_dec, LPC_GEN4_DEC);
+	if (dev->chip_info) {
+		config_t *config = dev->chip_info;
+		pch_lpc_add_gen_io_resources(dev, config->gen1_dec, LPC_GEN1_DEC);
+		pch_lpc_add_gen_io_resources(dev, config->gen2_dec, LPC_GEN2_DEC);
+		pch_lpc_add_gen_io_resources(dev, config->gen3_dec, LPC_GEN3_DEC);
+		pch_lpc_add_gen_io_resources(dev, config->gen4_dec, LPC_GEN4_DEC);
+	}
 }
 
 static void pch_lpc_read_resources(struct device *dev)
 {
-	struct global_nvs *gnvs;
-
 	/* Get the normal PCI resources of this device. */
 	pci_dev_read_resources(dev);
 
@@ -675,11 +668,6 @@ static void pch_lpc_read_resources(struct device *dev)
 
 	/* Add IO resources. */
 	pch_lpc_add_io_resources(dev);
-
-	/* Allocate ACPI NVS in CBMEM */
-	gnvs = cbmem_add(CBMEM_ID_ACPI_GNVS, sizeof(struct global_nvs));
-	if (!acpi_is_wakeup_s3() && gnvs)
-		memset(gnvs, 0, sizeof(struct global_nvs));
 }
 
 static void pch_lpc_enable(struct device *dev)
@@ -691,39 +679,26 @@ static void pch_lpc_enable(struct device *dev)
 	pch_enable(dev);
 }
 
-void southbridge_inject_dsdt(const struct device *dev)
+size_t gnvs_size_of_array(void)
 {
-	struct global_nvs *gnvs;
+	return sizeof(struct global_nvs);
+}
 
-	gnvs = cbmem_find(CBMEM_ID_ACPI_GNVS);
-	if (!gnvs) {
-		gnvs = cbmem_add(CBMEM_ID_ACPI_GNVS, sizeof(*gnvs));
-		if (gnvs)
-			memset(gnvs, 0, sizeof(*gnvs));
-	}
+uint32_t *gnvs_cbmc_ptr(struct global_nvs *gnvs)
+{
+	return &gnvs->cbmc;
+}
 
-	if (gnvs) {
-		acpi_create_gnvs(gnvs);
+void *gnvs_chromeos_ptr(struct global_nvs *gnvs)
+{
+	return &gnvs->chromeos;
+}
 
-		gnvs->apic = 1;
-		gnvs->mpen = 1; /* Enable Multi Processing */
-		gnvs->pcnt = dev_count_cpu();
-
-#if CONFIG(CHROMEOS)
-		chromeos_init_chromeos_acpi(&(gnvs->chromeos));
-#endif
-
-		/* Update the mem console pointer. */
-		gnvs->cbmc = (u32)cbmem_find(CBMEM_ID_CONSOLE);
-
-		/* And tell SMI about it */
-		apm_control(APM_CNT_GNVS_UPDATE);
-
-		/* Add it to DSDT.  */
-		acpigen_write_scope("\\");
-		acpigen_write_name_dword("NVSA", (u32) gnvs);
-		acpigen_pop_len();
-	}
+void soc_fill_gnvs(struct global_nvs *gnvs)
+{
+	gnvs->apic = 1;
+	gnvs->mpen = 1; /* Enable Multi Processing */
+	gnvs->pcnt = dev_count_cpu();
 }
 
 static const char *lpc_acpi_name(const struct device *dev)
@@ -741,7 +716,6 @@ static unsigned long southbridge_write_acpi_tables(const struct device *device,
 						   struct acpi_rsdp *rsdp)
 {
 	unsigned long current;
-	acpi_hpet_t *hpet;
 	acpi_header_t *ssdt;
 
 	current = start;
@@ -752,13 +726,7 @@ static unsigned long southbridge_write_acpi_tables(const struct device *device,
 	/*
 	 * We explicitly add these tables later on:
 	 */
-	printk(BIOS_DEBUG, "ACPI:    * HPET\n");
-
-	hpet = (acpi_hpet_t *) current;
-	current += sizeof(acpi_hpet_t);
-	current = acpi_align_current(current);
-	acpi_create_intel_hpet(hpet);
-	acpi_add_table(rsdp, hpet);
+	current = acpi_write_hpet(device, current, rsdp);
 
 	current = acpi_align_current(current);
 
@@ -786,7 +754,6 @@ static struct device_operations device_ops = {
 	.set_resources		= pci_dev_set_resources,
 	.enable_resources	= pci_dev_enable_resources,
 	.acpi_fill_ssdt		= southbridge_fill_ssdt,
-	.acpi_inject_dsdt	= southbridge_inject_dsdt,
 	.acpi_name		= lpc_acpi_name,
 	.write_acpi_tables      = southbridge_write_acpi_tables,
 	.init			= lpc_init,
@@ -796,29 +763,29 @@ static struct device_operations device_ops = {
 	.ops_pci		= &pci_dev_ops_pci,
 };
 
-
 /* IDs for LPC device of Intel 8 Series Chipset (Lynx Point) */
 static const unsigned short pci_device_ids[] = {
-	0x8c41, /* Mobile Full Featured Engineering Sample. */
-	0x8c42, /* Desktop Full Featured Engineering Sample. */
-	0x8c44, /* Z87 SKU */
-	0x8c46, /* Z85 SKU */
-	0x8c49, /* HM86 SKU */
-	0x8c4a, /* H87 SKU */
-	0x8c4b, /* HM87 SKU */
-	0x8c4c, /* Q85 SKU */
-	0x8c4e, /* Q87 SKU */
-	0x8c4f, /* QM87 SKU */
-	0x8c50, /* B85 SKU */
-	0x8c52, /* C222 SKU */
-	0x8c54, /* C224 SKU */
-	0x8c56, /* C226 SKU */
-	0x8c5c, /* H81 SKU */
-	0x9c41, /* LP Full Featured Engineering Sample */
-	0x9c43, /* LP Premium SKU */
-	0x9c45, /* LP Mainstream SKU */
-	0x9c47, /* LP Value SKU */
-	0 };
+	PCI_DEVICE_ID_INTEL_LPT_MOBILE_SAMPLE,
+	PCI_DEVICE_ID_INTEL_LPT_DESKTOP_SAMPLE,
+	PCI_DEVICE_ID_INTEL_LPT_Z87,
+	PCI_DEVICE_ID_INTEL_LPT_Z85,
+	PCI_DEVICE_ID_INTEL_LPT_HM86,
+	PCI_DEVICE_ID_INTEL_LPT_H87,
+	PCI_DEVICE_ID_INTEL_LPT_HM87,
+	PCI_DEVICE_ID_INTEL_LPT_Q85,
+	PCI_DEVICE_ID_INTEL_LPT_Q87,
+	PCI_DEVICE_ID_INTEL_LPT_QM87,
+	PCI_DEVICE_ID_INTEL_LPT_B85,
+	PCI_DEVICE_ID_INTEL_LPT_C222,
+	PCI_DEVICE_ID_INTEL_LPT_C224,
+	PCI_DEVICE_ID_INTEL_LPT_C226,
+	PCI_DEVICE_ID_INTEL_LPT_H81,
+	PCI_DEVICE_ID_INTEL_LPT_LP_SAMPLE,
+	PCI_DEVICE_ID_INTEL_LPT_LP_PREMIUM,
+	PCI_DEVICE_ID_INTEL_LPT_LP_MAINSTREAM,
+	PCI_DEVICE_ID_INTEL_LPT_LP_VALUE,
+	0
+};
 
 static const struct pci_driver pch_lpc __pci_driver = {
 	.ops	 = &device_ops,

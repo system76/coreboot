@@ -1,8 +1,11 @@
 config BOARD_GOOGLE_BASEBOARD_DEDEDE
 	def_bool n
 	select BOARD_ROMSIZE_KB_16384 if !BOARD_ROMSIZE_KB_32768
+	select CR50_USE_LONG_INTERRUPT_PULSES
 	select DPTF_USE_EISA_HID
+	select DRIVERS_GENERIC_GPIO_KEYS
 	select DRIVERS_I2C_GENERIC
+	select DRIVERS_I2C_GPIO_MUX
 	select DRIVERS_I2C_HID
 	select DRIVERS_INTEL_DPTF
 	select DRIVERS_SPI_ACPI
@@ -11,6 +14,8 @@ config BOARD_GOOGLE_BASEBOARD_DEDEDE
 	select EC_GOOGLE_CHROMEEC_BOARDID
 	select EC_GOOGLE_CHROMEEC_ESPI
 	select EC_GOOGLE_CHROMEEC_SKUID
+	select FW_CONFIG
+	select FW_CONFIG_SOURCE_CHROMEEC_CBI
 	select GOOGLE_SMBIOS_MAINBOARD_VERSION
 	select HAVE_ACPI_RESUME
 	select HAVE_ACPI_TABLES
@@ -20,6 +25,10 @@ config BOARD_GOOGLE_BASEBOARD_DEDEDE
 	select MAINBOARD_HAS_TPM2
 	select SOC_INTEL_JASPERLAKE
 	select SOC_INTEL_COMMON_BLOCK_DTT
+	select SOC_INTEL_CSE_LITE_SKU
+	select HAVE_SPD_IN_CBFS if !BOARD_GOOGLE_DEDEDE
+	select DRIVERS_INTEL_MIPI_CAMERA
+	select SOC_INTEL_COMMON_BLOCK_IPU
 
 if BOARD_GOOGLE_BASEBOARD_DEDEDE
 
@@ -30,15 +39,24 @@ config BASEBOARD_DEDEDE_LAPTOP
 config CHROMEOS
 	bool
 	default y
+	select CHROMEOS_CSE_BOARD_RESET_OVERRIDE
+	select CHROMEOS_DRAM_PART_NUMBER_IN_CBI
 	select EC_GOOGLE_CHROMEEC_SWITCHES
 	select GBB_FLAG_FORCE_DEV_SWITCH_ON
 	select GBB_FLAG_FORCE_DEV_BOOT_USB
 	select GBB_FLAG_FORCE_DEV_BOOT_LEGACY
 	select GBB_FLAG_FORCE_MANUAL_RECOVERY
 	select HAS_RECOVERY_MRC_CACHE
-	select MRC_CLEAR_NORMAL_CACHE_ON_RECOVERY_RETRAIN
 	select VBOOT_EARLY_EC_SYNC
 	select VBOOT_LID_SWITCH
+
+config CHROMEOS_WIFI_SAR
+	bool "Enable SAR options for Chrome OS build"
+	depends on CHROMEOS
+	select DSAR_ENABLE
+	select SAR_ENABLE
+	select USE_SAR
+	select WIFI_SAR_CBFS
 
 config DEVICETREE
 	string
@@ -53,8 +71,8 @@ config DRIVER_TPM_SPI_BUS
 
 config FMDFILE
 	string
-	default "src/mainboard/$(CONFIG_MAINBOARD_DIR)/chromeos-dedede-16MiB.fmd" if BOARD_ROMSIZE_KB_16384
-	default "src/mainboard/$(CONFIG_MAINBOARD_DIR)/chromeos-dedede-32MiB.fmd" if BOARD_ROMSIZE_KB_32768
+	default "src/mainboard/\$(CONFIG_MAINBOARD_DIR)/chromeos-dedede-16MiB.fmd" if BOARD_ROMSIZE_KB_16384
+	default "src/mainboard/\$(CONFIG_MAINBOARD_DIR)/chromeos-dedede-32MiB.fmd" if BOARD_ROMSIZE_KB_32768
 
 config MAINBOARD_DIR
 	string
@@ -71,9 +89,16 @@ config MAINBOARD_PART_NUMBER
 	default "Dedede" if BOARD_GOOGLE_DEDEDE
 	default "Drawcia" if BOARD_GOOGLE_DRAWCIA
 	default "Drawcia" if BOARD_GOOGLE_DRAWCIA_LEGACY
+	default "Madoo" if BOARD_GOOGLE_MADOO
 	default "Waddledoo" if BOARD_GOOGLE_WADDLEDOO
 	default "Waddledee" if BOARD_GOOGLE_WADDLEDEE
 	default "Wheelie" if BOARD_GOOGLE_WHEELIE
+	default "Magolor" if BOARD_GOOGLE_MAGOLOR
+	default "Metaknight" if BOARD_GOOGLE_METAKNIGHT
+	default "Lantis" if BOARD_GOOGLE_LANTIS
+	default "Galtic" if BOARD_GOOGLE_GALTIC
+	default "Sasuke" if BOARD_GOOGLE_SASUKE
+	default "Storo" if BOARD_GOOGLE_STORO
 
 config MAX_CPUS
 	int
@@ -98,14 +123,15 @@ config VARIANT_DIR
 	default "dedede" if BOARD_GOOGLE_DEDEDE
 	default "drawcia" if BOARD_GOOGLE_DRAWCIA
 	default "drawcia" if BOARD_GOOGLE_DRAWCIA_LEGACY
+	default "madoo" if BOARD_GOOGLE_MADOO
 	default "waddledoo" if BOARD_GOOGLE_WADDLEDOO
 	default "waddledee" if BOARD_GOOGLE_WADDLEDEE
 	default "wheelie" if BOARD_GOOGLE_WHEELIE
-
-config VARIANT_HAS_CAMERA_ACPI
-	bool
-	default n
-	help
-	  Select this option to enable camera ACPI support on the variant.
+	default "magolor" if BOARD_GOOGLE_MAGOLOR
+	default "metaknight" if BOARD_GOOGLE_METAKNIGHT
+	default "lantis" if BOARD_GOOGLE_LANTIS
+	default "galtic" if BOARD_GOOGLE_GALTIC
+	default "sasuke" if BOARD_GOOGLE_SASUKE
+	default "storo" if BOARD_GOOGLE_STORO
 
 endif #BOARD_GOOGLE_BASEBOARD_DEDEDE

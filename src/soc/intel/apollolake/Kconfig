@@ -3,10 +3,11 @@ config SOC_INTEL_APOLLOLAKE
 	help
 	  Intel Apollolake support
 
-config SOC_INTEL_GLK
+config SOC_INTEL_GEMINILAKE
 	bool
 	default n
 	select SOC_INTEL_APOLLOLAKE
+	select SOC_INTEL_COMMON_BLOCK_CNVI
 	select SOC_INTEL_COMMON_BLOCK_CPU_MPINIT
 	select SOC_INTEL_COMMON_BLOCK_SGX
 	select SOC_INTEL_COMMON_BLOCK_GSPI_VERSION_2
@@ -21,17 +22,14 @@ config CPU_SPECIFIC_OPTIONS
 	def_bool y
 	select ACPI_INTEL_HARDWARE_SLEEP_VALUES
 	select ACPI_NO_PCAT_8259
-	select ARCH_BOOTBLOCK_X86_32
-	select ARCH_RAMSTAGE_X86_32
-	select ARCH_ROMSTAGE_X86_32
-	select ARCH_VERSTAGE_X86_32
-	select BOOT_DEVICE_SPI_FLASH_RW_NOMMAP_EARLY if BOOT_DEVICE_SPI_FLASH
+	select ARCH_ALL_STAGES_X86_32
 	select BOOT_DEVICE_SUPPORTS_WRITES
 	# CPU specific options
+	select CPU_INTEL_COMMON
 	select CPU_INTEL_FIRMWARE_INTERFACE_TABLE
+	select CPU_SUPPORTS_PM_TIMER_EMULATION
 	select IOAPIC
 	select PCR_COMMON_IOSF_1_0
-	select SMP
 	select SSE2
 	select SUPPORT_CPU_UCODE_IN_CBFS
 	# Audio options
@@ -40,10 +38,11 @@ config CPU_SPECIFIC_OPTIONS
 	# Misc options
 	select CACHE_MRC_SETTINGS
 	select FSP_PLATFORM_MEMORY_SETTINGS_VERSIONS
+	select FSP_STATUS_GLOBAL_RESET_REQUIRED_5
 	select GENERIC_GPIO_LIB
 	select INTEL_DESCRIPTOR_MODE_CAPABLE
 	select HAVE_SMI_HANDLER
-	select HAVE_INTEL_FSP_REPO if !SOC_INTEL_GLK
+	select HAVE_INTEL_FSP_REPO if !SOC_INTEL_GEMINILAKE
 	select MRC_SETTINGS_PROTECT
 	select MRC_SETTINGS_VARIABLE_DATA
 	select NO_XIP_EARLY_STAGES
@@ -79,6 +78,7 @@ config CPU_SPECIFIC_OPTIONS
 	select SOC_INTEL_COMMON_BLOCK_PCR
 	select SOC_INTEL_COMMON_BLOCK_P2SB
 	select SOC_INTEL_COMMON_BLOCK_PMC
+	select SOC_INTEL_COMMON_BLOCK_PMC_DISCOVERABLE
 	select SOC_INTEL_COMMON_BLOCK_SRAM
 	select SOC_INTEL_COMMON_BLOCK_RTC
 	select SOC_INTEL_COMMON_BLOCK_SA
@@ -92,11 +92,14 @@ config CPU_SPECIFIC_OPTIONS
 	select SOC_INTEL_COMMON_BLOCK_SMM
 	select SOC_INTEL_COMMON_BLOCK_SPI
 	select SOC_INTEL_COMMON_BLOCK_CSE
+	select SOC_INTEL_COMMON_BLOCK_SMBUS
+	select SOC_INTEL_COMMON_FSP_RESET
+	select SOUTHBRIDGE_INTEL_COMMON_SMBUS
 	select UDELAY_TSC
 	select TSC_MONOTONIC_TIMER
 	select PLATFORM_USES_FSP2_0
-	select UDK_2015_BINDING if !SOC_INTEL_GLK
-	select UDK_2017_BINDING if SOC_INTEL_GLK
+	select UDK_2015_BINDING if !SOC_INTEL_GEMINILAKE
+	select UDK_2017_BINDING if SOC_INTEL_GEMINILAKE
 	select SOC_INTEL_COMMON_RESET
 	select HAVE_CF9_RESET_PREPARE
 	select INTEL_GMA_ADD_VBT if RUN_FSP_GOP
@@ -105,6 +108,11 @@ config CPU_SPECIFIC_OPTIONS
 	select NO_UART_ON_SUPERIO
 	select INTEL_GMA_ACPI
 	select INTEL_GMA_SWSMISCI
+	select HAVE_ASAN_IN_ROMSTAGE
+
+config MAX_CPUS
+	int
+	default 4
 
 config CHROMEOS
 	select CHROMEOS_RAMOOPS_DYNAMIC
@@ -136,7 +144,7 @@ config DCACHE_RAM_BASE
 
 config DCACHE_RAM_SIZE
 	hex
-	default 0x100000 if SOC_INTEL_GLK
+	default 0x100000 if SOC_INTEL_GEMINILAKE
 	default 0xc0000
 	help
 	  The size of the cache-as-ram region required during bootblock
@@ -152,6 +160,9 @@ config DCACHE_BSP_STACK_SIZE
 config SOC_INTEL_COMMON_BLOCK_GSPI_CLOCK_MHZ
 	int
 	default 100
+
+config CPU_XTAL_HZ
+	default 19200000
 
 config DRIVERS_I2C_DESIGNWARE_CLOCK_MHZ
 	int
@@ -181,7 +192,7 @@ config VERSTAGE_ADDR
 	  The base address (in CAR) where verstage should be linked
 
 config FSP_HEADER_PATH
-	default "src/vendorcode/intel/fsp/fsp2_0/glk" if SOC_INTEL_GLK
+	default "src/vendorcode/intel/fsp/fsp2_0/glk" if SOC_INTEL_GEMINILAKE
 	default "3rdparty/fsp/ApolloLakeFspBinPkg/Include/"
 
 config FSP_FD_PATH
@@ -291,7 +302,7 @@ config NHLT_RT5682
 
 choice
 	prompt "Cache-as-ram implementation"
-	default CAR_CQOS if !SOC_INTEL_GLK
+	default CAR_CQOS if !SOC_INTEL_GEMINILAKE
 	default CAR_NEM
 	help
 	  This option allows you to select how cache-as-ram (CAR) is set up.
@@ -333,7 +344,7 @@ config CACHE_QOS_SIZE_PER_BIT
 
 config L2_CACHE_SIZE
 	hex
-	default 0x400000 if SOC_INTEL_GLK
+	default 0x400000 if SOC_INTEL_GEMINILAKE
 	default 0x100000
 
 config SMM_RESERVED_SIZE
@@ -342,7 +353,7 @@ config SMM_RESERVED_SIZE
 
 config IFD_CHIPSET
 	string
-	default "glk" if SOC_INTEL_GLK
+	default "glk" if SOC_INTEL_GEMINILAKE
 	default "aplk"
 
 config CPU_BCLK_MHZ
@@ -401,5 +412,23 @@ config SOC_INTEL_I2C_DEV_MAX
 config RO_REGION_ONLY
 	string
 	default "pdpt pt"
+
+config INTEL_GMA_PANEL_2
+	bool
+	default n
+
+config INTEL_GMA_BCLV_OFFSET
+	default 0xc8358 if INTEL_GMA_PANEL_2
+	default 0xc8258
+
+config INTEL_GMA_BCLV_WIDTH
+	default 32
+
+config INTEL_GMA_BCLM_OFFSET
+	default 0xc8354 if INTEL_GMA_PANEL_2
+	default 0xc8254
+
+config INTEL_GMA_BCLM_WIDTH
+	default 32
 
 endif

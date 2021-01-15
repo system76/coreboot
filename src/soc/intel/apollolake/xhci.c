@@ -1,9 +1,10 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+#include <device/pci_type.h>
 #include <intelblocks/xhci.h>
 
 #define XHCI_USB2_PORT_STATUS_REG	0x480
-#if CONFIG(SOC_INTEL_GLK)
+#if CONFIG(SOC_INTEL_GEMINILAKE)
 #define XHCI_USB3_PORT_STATUS_REG	0x510
 #define XHCI_USB2_PORT_NUM		9
 #else
@@ -19,7 +20,8 @@ static const struct xhci_usb_info usb_info = {
 	.num_usb3_ports = XHCI_USB3_PORT_NUM,
 };
 
-const struct xhci_usb_info *soc_get_xhci_usb_info(void)
+const struct xhci_usb_info *soc_get_xhci_usb_info(pci_devfn_t xhci_dev)
 {
+	/* Apollo Lake only has one XHCI controller */
 	return &usb_info;
 }

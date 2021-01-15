@@ -3,13 +3,14 @@
 #include <acpi/acpigen.h>
 #include <console/console.h>
 #include <cpu/intel/turbo.h>
+#include <cpu/intel/common/common.h>
 #include <cpu/x86/msr.h>
 #include <arch/cpu.h>
 #include <intelblocks/cpulib.h>
 #include <intelblocks/fast_spi.h>
 #include <intelblocks/msr.h>
 #include <soc/soc_chip.h>
-#include <stdint.h>
+#include <types.h>
 
 /*
  * Set PERF_CTL MSR (0x199) P_Req with
@@ -337,19 +338,17 @@ void mca_configure(void)
 
 void cpu_lt_lock_memory(void *unused)
 {
-	msr_set_bit(MSR_LT_CONTROL, LT_CONTROL_LOCK_BIT);
+	msr_set(MSR_LT_CONTROL, LT_CONTROL_LOCK);
 }
 
-int get_prmrr_size(void)
+int get_valid_prmrr_size(void)
 {
 	msr_t msr;
 	int i;
 	int valid_size;
 
-	if (CONFIG(SOC_INTEL_COMMON_BLOCK_SGX_PRMRR_DISABLED)) {
-		printk(BIOS_DEBUG, "PRMRR disabled by config.\n");
+	if (!CONFIG(SOC_INTEL_COMMON_BLOCK_SGX_ENABLE))
 		return 0;
-	}
 
 	msr = rdmsr(MSR_PRMRR_VALID_CONFIG);
 	if (!msr.lo) {
@@ -369,10 +368,11 @@ int get_prmrr_size(void)
 			valid_size = 0;
 	}
 
-	/* die if we could not find a valid size within the limit */
-	if (!valid_size)
-		die("Unsupported PRMRR size limit %i MiB, check your config!\n",
+	if (!valid_size) {
+		printk(BIOS_WARNING, "Unsupported PRMRR size of %i MiB, check your config!\n",
 			CONFIG_SOC_INTEL_COMMON_BLOCK_SGX_PRMRR_SIZE);
+		return 0;
+	}
 
 	printk(BIOS_DEBUG, "PRMRR size set to %i MiB\n", valid_size);
 

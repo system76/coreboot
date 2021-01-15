@@ -13,6 +13,7 @@
 #include <drivers/intel/pmc_mux/chip.h>
 #include <intelblocks/pmc.h>
 #include <intelblocks/pmclib.h>
+#include <intelblocks/pmc_ipc.h>
 #include <intelblocks/rtc.h>
 #include <soc/pci_devs.h>
 #include <soc/pm.h>
@@ -119,33 +120,15 @@ static void soc_pmc_fill_ssdt(const struct device *dev)
 	acpigen_write_mem32fixed(1, PCH_PWRM_BASE_ADDRESS, PCH_PWRM_BASE_SIZE);
 	acpigen_write_resourcetemplate_footer();
 
+	/* Define IPC Write Method */
+	if (CONFIG(PMC_IPC_ACPI_INTERFACE))
+		pmc_ipc_acpi_fill_ssdt();
+
 	acpigen_pop_len(); /* PMC Device */
 	acpigen_pop_len(); /* Scope */
 
 	printk(BIOS_INFO, "%s: %s at %s\n", acpi_device_path(dev), dev->chip_ops->name,
 	       dev_path(dev));
-}
-
-/* FIXME: Rewrite loop below without this. */
-extern struct chip_operations drivers_intel_pmc_mux_ops;
-
-/* By default, TGL uses the PMC MUX for all ports, so port_number is unused */
-const struct device *soc_get_pmc_mux_device(int port_number)
-{
-	const struct device *pmc;
-	struct device *child;
-
-	child = NULL;
-	pmc = pcidev_path_on_root(PCH_DEVFN_PMC);
-	if (!pmc || !pmc->link_list)
-		return NULL;
-
-	while ((child = dev_bus_each_child(pmc->link_list, child)) != NULL)
-		if (child->chip_ops == &drivers_intel_pmc_mux_ops)
-			break;
-
-	/* child will either be the correct device or NULL if not found */
-	return child;
 }
 
 static void soc_acpi_mode_init(struct device *dev)

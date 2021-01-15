@@ -33,8 +33,8 @@ static void print_status_bits(u32 status, const char *bit_names[])
 	if (!status)
 		return;
 
-	for (i=31; i>=0; i--) {
-		if (status & (1UL << i)) {
+	for (i = 31; i >= 0; i--) {
+		if (status & (1 << i)) {
 			if (bit_names[i])
 				printk(BIOS_DEBUG, "%s ", bit_names[i]);
 			else
@@ -51,12 +51,11 @@ static void print_gpio_status(u32 status, int start)
 	if (!status)
 		return;
 
-	for (i=31; i>=0; i--) {
+	for (i = 31; i >= 0; i--) {
 		if (status & (1 << i))
 			printk(BIOS_DEBUG, "GPIO%d ", start + i);
 	}
 }
-
 
 /*
  * PM1_CNT
@@ -77,7 +76,6 @@ void disable_pm1_control(u32 mask)
 	pm1_cnt &= ~mask;
 	outl(pm1_cnt, get_pmbase() + PM1_CNT);
 }
-
 
 /*
  * PM1
@@ -126,7 +124,6 @@ void enable_pm1(u16 events)
 {
 	outw(events, get_pmbase() + PM1_EN);
 }
-
 
 /*
  * SMI
@@ -197,7 +194,6 @@ void disable_smi(u32 mask)
 	smi_en &= ~mask;
 	outl(smi_en, get_pmbase() + SMI_EN);
 }
-
 
 /*
  * ALT_GP_SMI
@@ -298,7 +294,6 @@ void enable_alt_smi(u32 mask)
 	}
 }
 
-
 /*
  * TCO
  */
@@ -367,7 +362,6 @@ void enable_tco_sci(void)
 	/* Enable TCO SCI events */
 	enable_gpe(TCOSCI_EN);
 }
-
 
 /*
  * GPE0

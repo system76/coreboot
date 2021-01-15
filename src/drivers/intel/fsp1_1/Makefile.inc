@@ -4,11 +4,12 @@ ifeq ($(CONFIG_PLATFORM_USES_FSP1_1),y)
 
 verstage-y += car.c
 verstage-y += fsp_util.c
-verstage-$(CONFIG_SEPARATE_VERSTAGE) += verstage.c
+verstage-$(CONFIG_VBOOT_SEPARATE_VERSTAGE) += verstage.c
 
 bootblock-$(CONFIG_USE_GENERIC_FSP_CAR_INC) += cache_as_ram.S
 bootblock-y += fsp_util.c
 bootblock-y += ../../../cpu/intel/microcode/microcode_asm.S
+bootblock-y += fsp_report.c
 
 romstage-y += car.c
 romstage-y += fsp_util.c
@@ -17,7 +18,6 @@ romstage-y += raminit.c
 romstage-y += romstage.c
 romstage-$(CONFIG_MMA) += mma_core.c
 
-ramstage-$(CONFIG_RUN_FSP_GOP) += fsp_gop.c
 ramstage-y += fsp_relocate.c
 ramstage-y += fsp_util.c
 ramstage-y += hob.c

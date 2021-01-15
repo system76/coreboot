@@ -6,7 +6,7 @@
 DefinitionBlock(
 	"dsdt.aml",
 	"DSDT",
-	0x02,		// DSDT revision: ACPI v2.0 and up
+	ACPI_DSDT_REV_2,
 	OEM_ID,
 	ACPI_TABLE_CREATOR,
 	0x20110725	// OEM revision
@@ -21,11 +21,10 @@ DefinitionBlock(
 	{
 		Device (PCI0)
 		{
-			#include <soc/intel/xeon_sp/cpx/acpi/southcluster.asl>
+			#include <soc/intel/xeon_sp/acpi/southcluster.asl>
 			#include <soc/intel/common/block/acpi/acpi/lpc.asl>
 
 		}
-
 
 		Device (UNC0)
 		{

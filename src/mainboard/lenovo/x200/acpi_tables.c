@@ -7,7 +7,7 @@
 #include <device/device.h>
 #include <southbridge/intel/i82801ix/nvs.h>
 
-void acpi_create_gnvs(struct global_nvs *gnvs)
+void mainboard_fill_gnvs(struct global_nvs *gnvs)
 {
 	gnvs->apic = 1;
 	gnvs->mpen = 1; /* Enable Multi Processing */
@@ -45,7 +45,6 @@ unsigned long acpi_fill_madt(unsigned long current)
 		 current, 0, 0, 2, MP_IRQ_POLARITY_HIGH | MP_IRQ_TRIGGER_EDGE);
 	current += acpi_create_madt_irqoverride((acpi_madt_irqoverride_t *)
 		 current, 0, 9, 9, MP_IRQ_POLARITY_HIGH | MP_IRQ_TRIGGER_LEVEL);
-
 
 	return current;
 }

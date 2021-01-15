@@ -5,13 +5,13 @@
 DefinitionBlock(
 	"dsdt.aml",
 	"DSDT",
-	0x05,		// DSDT revision: ACPI v5.0
-	"COREv4",	// OEM id
-	"COREBOOT",	// OEM table id
+	ACPI_DSDT_REV_2,
+	OEM_ID,
+	ACPI_TABLE_CREATOR,
 	0x20110725	// OEM revision
 ){
 	//Platform
-	#include <soc/intel/skylake/acpi/platform.asl>
+	#include <soc/intel/common/block/acpi/acpi/platform.asl>
 
 	// global NVS and variables
 	#include <soc/intel/skylake/acpi/globalnvs.asl>

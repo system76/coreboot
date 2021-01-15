@@ -7,11 +7,7 @@
 #include <device/mmio.h>
 #include <delay.h>
 
-#define HDA_ICII_REG 0x68
-#define HDA_ICII_BUSY (1 << 0)
-#define HDA_ICII_VALID (1 << 1)
-
-static int set_bits(void *port, u32 mask, u32 val)
+int azalia_set_bits(void *port, u32 mask, u32 val)
 {
 	u32 reg32;
 	int count;
@@ -23,9 +19,7 @@ static int set_bits(void *port, u32 mask, u32 val)
 	reg32 |= val;
 	write32(port, reg32);
 
-	/* Wait for readback of register to
-	 * match what was just written to it
-	 */
+	/* Wait for readback of register to match what was just written to it */
 	count = 50;
 	do {
 		/* Wait 1ms based on BKDG wait time */
@@ -40,19 +34,30 @@ static int set_bits(void *port, u32 mask, u32 val)
 	return 0;
 }
 
+int azalia_enter_reset(u8 *base)
+{
+	/* Set bit 0 to 0 to enter reset state (BAR + 0x8)[0] */
+	return azalia_set_bits(base + HDA_GCTL_REG, HDA_GCTL_CRST, 0);
+}
+
+int azalia_exit_reset(u8 *base)
+{
+	/* Set bit 0 to 1 to exit reset state (BAR + 0x8)[0] */
+	return azalia_set_bits(base + HDA_GCTL_REG, HDA_GCTL_CRST, HDA_GCTL_CRST);
+}
+
 static int codec_detect(u8 *base)
 {
 	u32 reg32;
 	int count;
 
-	/* Set Bit 0 to 1 to exit reset state (BAR + 0x8)[0] */
-	if (set_bits(base + 0x08, 1, 1) == -1)
+	if (azalia_exit_reset(base) < 0)
 		goto no_codec;
 
-	/* clear STATESTS bits (BAR + 0xE)[2:0] */
-	reg32 = read32(base + 0x0E);
+	/* clear STATESTS bits (BAR + 0xe)[2:0] */
+	reg32 = read32(base + HDA_STATESTS_REG);
 	reg32 |= 7;
-	write32(base + 0x0E, reg32);
+	write32(base + HDA_STATESTS_REG, reg32);
 
 	/* Wait for readback of register to
 	 * match what was just written to it
@@ -61,22 +66,20 @@ static int codec_detect(u8 *base)
 	do {
 		/* Wait 1ms based on BKDG wait time */
 		mdelay(1);
-		reg32 = read32(base + 0x0E);
+		reg32 = read32(base + HDA_STATESTS_REG);
 	} while ((reg32 != 0) && --count);
 	/* Timeout occurred */
 	if (!count)
 		goto no_codec;
 
-	/* Set Bit0 to 0 to enter reset state (BAR + 0x8)[0] */
-	if (set_bits(base + 0x08, 1, 0) == -1)
+	if (azalia_enter_reset(base) < 0)
 		goto no_codec;
 
-	/* Set Bit 0 to 1 to exit reset state (BAR + 0x8)[0] */
-	if (set_bits(base + 0x08, 1, 1) == -1)
+	if (azalia_exit_reset(base) < 0)
 		goto no_codec;
 
 	/* Read in Codec location (BAR + 0xe)[2..0] */
-	reg32 = read32(base + 0xe);
+	reg32 = read32(base + HDA_STATESTS_REG);
 	reg32 &= 0x0f;
 	if (!reg32)
 		goto no_codec;
@@ -86,25 +89,48 @@ static int codec_detect(u8 *base)
 no_codec:
 	/* Codec Not found */
 	/* Put HDA back in reset (BAR + 0x8) [0] */
-	set_bits(base + 0x08, 1, 0);
+	azalia_set_bits(base + HDA_GCTL_REG, 1, 0);
 	printk(BIOS_DEBUG, "azalia_audio: No codec!\n");
 	return 0;
 }
 
-static u32 find_verb(struct device *dev, u32 viddid, const u32 **verb)
+/*
+ * Find a specific entry within a verb table
+ *
+ * @param verb_table:		verb table data
+ * @param verb_table_bytes:	verb table size in bytes
+ * @param viddid:		vendor/device to search for
+ * @param verb:			pointer to entry within table
+ *
+ * Returns size of the entry within the verb table,
+ * Returns 0 if the entry is not found
+ *
+ * The HDA verb table is composed of dwords. A set of 4 dwords is
+ * grouped together to form a "jack" descriptor.
+ *   Bits 31:28 - Codec Address
+ *   Bits 27:20 - NID
+ *   Bits 19:8  - Verb ID
+ *   Bits  7:0  - Payload
+ *
+ * coreboot groups different codec verb tables into a single table
+ * and prefixes each with a specific header consisting of 3
+ * dword entries:
+ *   1 - Codec Vendor/Device ID
+ *   2 - Subsystem ID
+ *   3 - Number of jacks (groups of 4 dwords) for this codec
+ */
+u32 azalia_find_verb(const u32 *verb_table, u32 verb_table_bytes, u32 viddid, const u32 **verb)
 {
-	printk(BIOS_DEBUG, "azalia_audio: dev=%s\n", dev_path(dev));
-	printk(BIOS_DEBUG, "azalia_audio: Reading viddid=%x\n", viddid);
-
 	int idx = 0;
 
-	while (idx < (cim_verb_data_size / sizeof(u32))) {
-		u32 verb_size = 4 * cim_verb_data[idx + 2];	// in u32
-		if (cim_verb_data[idx] != viddid) {
+	while (idx < (verb_table_bytes / sizeof(u32))) {
+		/* Header contains the number of jacks, aka groups of 4 dwords */
+		u32 verb_size = 4 * verb_table[idx + 2];
+		if (verb_table[idx] != viddid) {
 			idx += verb_size + 3;	// skip verb + header
 			continue;
 		}
-		*verb = &cim_verb_data[idx + 3];
+		*verb = &verb_table[idx + 3];
 		return verb_size;
 	}
 
@@ -112,16 +138,14 @@ static u32 find_verb(struct device *dev, u32 viddid, const u32 **verb)
 	return 0;
 }
 
-/**
- *  Wait 50usec for the codec to indicate it is ready
- *  no response would imply that the codec is non-operative
+/*
+ * Wait 50usec for the codec to indicate it is ready.
+ * No response would imply that the codec is non-operative.
  */
 
 static int wait_for_ready(u8 *base)
 {
-	/* Use a 50 usec timeout - the Linux kernel uses the
-	 * same duration */
-
+	/* Use a 50 usec timeout - the Linux kernel uses the same duration */
 	int timeout = 50;
 
 	while (timeout--) {
@@ -134,29 +158,29 @@ static int wait_for_ready(u8 *base)
 	return -1;
 }
 
-/**
- *  Wait 50usec for the codec to indicate that it accepted
- *  the previous command.  No response would imply that the code
- *  is non-operative
+/*
+ * Wait 50usec for the codec to indicate that it accepted the previous command.
+ * No response would imply that the code is non-operative.
  */
 
 static int wait_for_valid(u8 *base)
 {
-	/* Use a 50 usec timeout - the Linux kernel uses the
-	 * same duration */
-
+	u32 reg32;
+	/* Use a 50 usec timeout - the Linux kernel uses the same duration */
 	int timeout = 25;
 
-	write32(base + HDA_ICII_REG,
-		HDA_ICII_VALID | HDA_ICII_BUSY);
+	/* Send the verb to the codec */
+	reg32 = read32(base + HDA_ICII_REG);
+	reg32 |= HDA_ICII_BUSY | HDA_ICII_VALID;
+	write32(base + HDA_ICII_REG, reg32);
+
 	while (timeout--) {
 		udelay(1);
 	}
 	timeout = 50;
 	while (timeout--) {
-		u32 reg32 = read32(base + HDA_ICII_REG);
-		if ((reg32 & (HDA_ICII_VALID | HDA_ICII_BUSY)) ==
-			HDA_ICII_VALID)
+		reg32 = read32(base + HDA_ICII_REG);
+		if ((reg32 & (HDA_ICII_VALID | HDA_ICII_BUSY)) == HDA_ICII_VALID)
 			return 0;
 		udelay(1);
 	}
@@ -174,20 +198,23 @@ static void codec_init(struct device *dev, u8 *base, int addr)
 	printk(BIOS_DEBUG, "azalia_audio: Initializing codec #%d\n", addr);
 
 	/* 1 */
-	if (wait_for_ready(base) == -1)
+	if (wait_for_ready(base) < 0) {
+		printk(BIOS_DEBUG, "  codec not ready.\n");
 		return;
+	}
 
 	reg32 = (addr << 28) | 0x000f0000;
-	write32(base + 0x60, reg32);
+	write32(base + HDA_IC_REG, reg32);
 
-	if (wait_for_valid(base) == -1)
+	if (wait_for_valid(base) < 0) {
+		printk(BIOS_DEBUG, "  codec not valid.\n");
 		return;
-
-	reg32 = read32(base + 0x64);
+	}
 
 	/* 2 */
+	reg32 = read32(base + HDA_IR_REG);
 	printk(BIOS_DEBUG, "azalia_audio: codec viddid: %08x\n", reg32);
-	verb_size = find_verb(dev, reg32, &verb);
+	verb_size = azalia_find_verb(cim_verb_data, cim_verb_data_size, reg32, &verb);
 
 	if (!verb_size) {
 		printk(BIOS_DEBUG, "azalia_audio: No verb!\n");
@@ -197,12 +224,12 @@ static void codec_init(struct device *dev, u8 *base, int addr)
 
 	/* 3 */
 	for (i = 0; i < verb_size; i++) {
-		if (wait_for_ready(base) == -1)
+		if (wait_for_ready(base) < 0)
 			return;
 
-		write32(base + 0x60, verb[i]);
+		write32(base + HDA_IC_REG, verb[i]);
 
-		if (wait_for_valid(base) == -1)
+		if (wait_for_valid(base) < 0)
 			return;
 	}
 	printk(BIOS_DEBUG, "azalia_audio: verb loaded.\n");
@@ -224,19 +251,18 @@ void azalia_audio_init(struct device *dev)
 	struct resource *res;
 	u32 codec_mask;
 
-	res = find_resource(dev, 0x10);
+	res = find_resource(dev, PCI_BASE_ADDRESS_0);
 	if (!res)
 		return;
 
-	// NOTE this will break as soon as the azalia_audio get's a bar above
-	// 4G. Is there anything we can do about it?
+	// NOTE this will break as soon as the azalia_audio get's a bar above 4G.
+	// Is there anything we can do about it?
 	base = res2mmio(res, 0, 0);
 	printk(BIOS_DEBUG, "azalia_audio: base = %p\n", base);
 	codec_mask = codec_detect(base);
 
 	if (codec_mask) {
-		printk(BIOS_DEBUG, "azalia_audio: codec_mask = %02x\n",
-		       codec_mask);
+		printk(BIOS_DEBUG, "azalia_audio: codec_mask = %02x\n", codec_mask);
 		codecs_init(dev, base, codec_mask);
 	}
 }

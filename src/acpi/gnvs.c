@@ -24,10 +24,19 @@ void *acpi_get_gnvs(void)
 
 static void gnvs_assign_cbmc(void)
 {
-	uint32_t *gnvs_cbmc = gnvs_cbmc_ptr();
+	uint32_t *gnvs_cbmc = gnvs_cbmc_ptr(gnvs);
 	if (gnvs_cbmc)
 		*gnvs_cbmc = (uintptr_t)cbmem_find(CBMEM_ID_CONSOLE);
 }
+
+/* Needs implementation in platform code. */
+__weak uint32_t *gnvs_cbmc_ptr(struct global_nvs *gnvs_)
+{
+	return NULL;
+}
+
+__weak void soc_fill_gnvs(struct global_nvs *gnvs_) { }
+__weak void mainboard_fill_gnvs(struct global_nvs *gnvs_) { }
 
 void *gnvs_get_or_create(void)
 {
@@ -41,10 +50,12 @@ void *gnvs_get_or_create(void)
 		return gnvs;
 
 	gnvs_size = gnvs_size_of_array();
+	if (!gnvs_size)
+		return NULL;
 
 	gnvs = cbmem_add(CBMEM_ID_ACPI_GNVS, gnvs_size);
 	if (!gnvs)
-		return gnvs;
+		return NULL;
 
 	memset(gnvs, 0, gnvs_size);
 
@@ -57,13 +68,15 @@ void *gnvs_get_or_create(void)
 	return gnvs;
 }
 
-void acpi_inject_nvsa(void)
+void acpi_fill_gnvs(void)
 {
-	uintptr_t gnvs_address = (uintptr_t)acpi_get_gnvs();
-	if (!gnvs_address)
+	if (!gnvs)
 		return;
 
+	soc_fill_gnvs(gnvs);
+	mainboard_fill_gnvs(gnvs);
+
 	acpigen_write_scope("\\");
-	acpigen_write_name_dword("NVSA", gnvs_address);
+	acpigen_write_name_dword("NVSA", (uintptr_t)gnvs);
 	acpigen_pop_len();
 }

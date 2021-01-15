@@ -56,7 +56,7 @@ void pnp_set_enable(struct device *dev, int enable)
 {
 	u8 tmp, bitpos;
 
-	tmp = pnp_read_config(dev, 0x30);
+	tmp = pnp_read_config(dev, PNP_IDX_EN);
 
 	/* Handle virtual devices, which share the same LDN register. */
 	bitpos = (dev->path.pnp.device >> 8) & 0x7;
@@ -66,14 +66,14 @@ void pnp_set_enable(struct device *dev, int enable)
 	else
 		tmp &= ~(1 << bitpos);
 
-	pnp_write_config(dev, 0x30, tmp);
+	pnp_write_config(dev, PNP_IDX_EN, tmp);
 }
 
 int pnp_read_enable(struct device *dev)
 {
 	u8 tmp, bitpos;
 
-	tmp = pnp_read_config(dev, 0x30);
+	tmp = pnp_read_config(dev, PNP_IDX_EN);
 
 	/* Handle virtual devices, which share the same LDN register. */
 	bitpos = (dev->path.pnp.device >> 8) & 0x7;
@@ -249,6 +249,8 @@ static void get_resources(struct device *dev, struct pnp_info *info)
 		pnp_get_ioresource(dev, PNP_IDX_IO2, info->io2);
 	if (info->flags & PNP_IO3)
 		pnp_get_ioresource(dev, PNP_IDX_IO3, info->io3);
+	if (info->flags & PNP_IO4)
+		pnp_get_ioresource(dev, PNP_IDX_IO4, info->io4);
 
 	if (info->flags & PNP_IRQ0) {
 		resource = new_resource(dev, PNP_IDX_IRQ0);

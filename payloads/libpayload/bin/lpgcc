@@ -57,11 +57,17 @@ BASE=`dirname $0`
 # This will set the _LIBDIR and _INCDIR variables used below
 . $BASE/lp.functions
 
+if [ $_LIBDIR != $_OBJ ]; then
+	_DOTCONFIG=$BASE/../libpayload.config
+	_XCOMPILE=$BASE/../libpayload.xcompile
+else
+	_DOTCONFIG=$_OBJ/libpayload.config
+	_XCOMPILE=$_OBJ/xcompile
+fi
+
 # include libpayload config
-if [ -f $BASE/../libpayload.config ]; then
-	. $BASE/../libpayload.config
-elif [ -f $BASE/../.config ]; then
-	. $BASE/../.config
+if [ -f $_DOTCONFIG ]; then
+	. $_DOTCONFIG
 else
 	echo "Can't find config"
 	exit 1
@@ -137,14 +143,19 @@ while [ $# -gt 0 ]; do
 	shift
 done
 
-_CFLAGS="$_ARCHEXTRA -nostdinc -nostdlib -I$BASE/../build -I$_INCDIR -I$_ARCHINCDIR -D__LIBPAYLOAD__=1"
+_CFLAGS="$_ARCHEXTRA -nostdinc -nostdlib -I$_INCDIR -I$_ARCHINCDIR -D__LIBPAYLOAD__=1"
 
-if [ "$CONFIG_LP_PDCURSES" = y ]; then
-  _CFLAGS="$_CFLAGS -I$BASE/../curses/PDCurses"
-fi
+if [ $_LIBDIR = $_OBJ ]; then
+    _CFLAGS="$_CFLAGS -I$_OBJ"
 
-if [ "$CONFIG_LP_TINYCURSES" = y ]; then
-  _CFLAGS="$_CFLAGS -I$BASE/../curses"
+    if [ "$CONFIG_LP_PDCURSES" = y ]; then
+	_CFLAGS="$_CFLAGS -I$BASE/../curses/PDCurses -I$BASE/../curses/pdcurses-backend"
+	_CFLAGS="$_CFLAGS -I$BASE/../curses/form -I$BASE/../curses/menu"
+    fi
+
+    if [ "$CONFIG_LP_TINYCURSES" = y ]; then
+	_CFLAGS="$_CFLAGS -I$BASE/../curses"
+    fi
 fi
 
 # Check for the -fno-stack-protector silliness
@@ -152,9 +163,10 @@ fi
 trygccoption -fno-stack-protector
 [ $? -eq 0 ] && _CFLAGS="$_CFLAGS -fno-stack-protector"
 
-_CFLAGS="$_CFLAGS -include $BASE/../include/kconfig.h -I`$DEFAULT_CC $_ARCHEXTRA -print-search-dirs | head -n 1 | cut -d' ' -f2`include"
+_CFLAGS="$_CFLAGS -include $BASE/../include/kconfig.h -include $BASE/../include/compiler.h"
+_CFLAGS="$_CFLAGS -I`$DEFAULT_CC $_ARCHEXTRA -print-search-dirs | head -n 1 | cut -d' ' -f2`include"
 
-_LDFLAGS="-L$BASE/../lib -L$_LIBDIR $_LDSCRIPT -static"
+_LDFLAGS="-L$_LIBDIR $_LDSCRIPT -static"
 
 if [ $DOLINK -eq 0 ]; then
     if [ $DEBUGME -eq 1 ]; then
@@ -166,15 +178,15 @@ else
     _LIBGCC=`$DEFAULT_CC $_ARCHEXTRA -print-libgcc-file-name`
     if [ -f $_ARCHLIBDIR/head.o ]; then
 	    HEAD_O=$_ARCHLIBDIR/head.o
-    elif [ -f $BASE/../build/head.o ]; then
-	    HEAD_O=$BASE/../build/head.o
+    elif [ -f $_OBJ/head.o ]; then
+	    HEAD_O=$_OBJ/head.o
     else
 	    echo "Could not find head.o"
 	    exit 1
     fi
 
-    if grep -q ARM64_A53_ERRATUM_843419=y $BASE/../libpayload.config &&
-       grep -q fix-cortex-a53-843419 $BASE/../libpayload.xcompile; then
+    if [ "$CONFIG_LP_ARM64_A53_ERRATUM_843419" = y ] &&
+       grep -q fix-cortex-a53-843419 $_XCOMPILE; then
             _LDFLAGS="$_LDFLAGS -Wl,--fix-cortex-a53-843419"
     fi
 

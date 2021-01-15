@@ -4,40 +4,41 @@
 #include <device/pci_ops.h>
 #include <device/pci_def.h>
 #include <console/console.h>
+#include <southbridge/intel/i82801ix/i82801ix.h>
 
 #include "gm45.h"
 
 static void init_egress(void)
 {
 	/* VC0: TC0 only */
-	EPBAR8(0x14) &= 1;
-	EPBAR8(0x4) = (EPBAR8(0x4) & ~7) | 1;
+	EPBAR8(EPVC0RCTL) &= 1;
+	EPBAR8(EPPVCCAP1) = (EPBAR8(EPPVCCAP1) & ~7) | 1;
 
 	/* VC1: isoch */
-	EPBAR32(0x28) = 0x0a0a0a0a;
-	EPBAR32(0x1c) = (EPBAR32(0x1c) & ~(127 << 16)) | (0x0a << 16);
+	EPBAR32(EPVC1MTS) = 0x0a0a0a0a;
+	EPBAR32(EPVC1RCAP) = (EPBAR32(EPVC1RCAP) & ~(127 << 16)) | (0x0a << 16);
 
 	/* VC1: ID1, TC7 */
-	EPBAR32(0x20) = (EPBAR32(0x20) & ~(7 << 24)) | (1 << 24);
-	EPBAR8(0x20) = (EPBAR8(0x20) & 1) | (1 << 7);
+	EPBAR32(EPVC1RCTL) = (EPBAR32(EPVC1RCTL) & ~(7 << 24)) | (1 << 24);
+	EPBAR8(EPVC1RCTL) = (EPBAR8(EPVC1RCTL) & 1) | (1 << 7);
 
 	/* VC1 ARB table: setup and enable */
-	EPBAR32(0x100) = 0x55555555;
-	EPBAR32(0x104) = 0x55555555;
-	EPBAR32(0x108) = 0x55555555;
-	EPBAR32(0x10c) = 0x55555555;
-	EPBAR32(0x110) = 0x55555555;
-	EPBAR32(0x114) = 0x55555555;
-	EPBAR32(0x118) = 0x55555555;
-	EPBAR32(0x11c) = 0x00005555;
-	EPBAR32(0x20) |= 1 << 16;
+	EPBAR32(EP_PORTARB(0)) = 0x55555555;
+	EPBAR32(EP_PORTARB(1)) = 0x55555555;
+	EPBAR32(EP_PORTARB(2)) = 0x55555555;
+	EPBAR32(EP_PORTARB(3)) = 0x55555555;
+	EPBAR32(EP_PORTARB(4)) = 0x55555555;
+	EPBAR32(EP_PORTARB(5)) = 0x55555555;
+	EPBAR32(EP_PORTARB(6)) = 0x55555555;
+	EPBAR32(EP_PORTARB(7)) = 0x00005555;
+	EPBAR32(EPVC1RCTL) |= 1 << 16;
 
-	while ((EPBAR8(0x26) & 1) != 0);
+	while ((EPBAR8(EPVC1RSTS) & 1) != 0);
 
 	/* VC1: enable */
-	EPBAR32(0x20) |= 1 << 31;
+	EPBAR32(EPVC1RCTL) |= 1 << 31;
 
-	while ((EPBAR8(0x26) & 2) != 0);
+	while ((EPBAR8(EPVC1RSTS) & 2) != 0);
 }
 
 /* MCH side */
@@ -46,16 +47,16 @@ static void init_dmi(int b2step)
 {
 	/* VC0: TC0 only */
 	DMIBAR8(DMIVC0RCTL) &= 1;
-	DMIBAR8(0x4) = (DMIBAR8(0x4) & ~7) | 1;
+	DMIBAR8(DMIPVCCAP1) = (DMIBAR8(DMIPVCCAP1) & ~7) | 1;
 
 	/* VC1: ID1, TC7 */
-	DMIBAR32(0x20) = (DMIBAR32(0x20) & ~(7 << 24)) | (1 << 24);
-	DMIBAR8(0x20) = (DMIBAR8(0x20) & 1) | (1 << 7);
+	DMIBAR32(DMIVC1RCTL) = (DMIBAR32(DMIVC1RCTL) & ~(7 << 24)) | (1 << 24);
+	DMIBAR8(DMIVC1RCTL) = (DMIBAR8(DMIVC1RCTL) & 1) | (1 << 7);
 
 	/* VC1: enable */
-	DMIBAR32(0x20) |= 1 << 31;
+	DMIBAR32(DMIVC1RCTL) |= 1 << 31;
 
-	while ((DMIBAR8(0x26) & 2) != 0);
+	while ((DMIBAR8(DMIVC1RSTS) & VC1NP) != 0);
 
 	/* additional configuration. */
 	DMIBAR32(0x200) |= 3 << 13;
@@ -92,9 +93,6 @@ static void init_pcie(const int peg_enabled,
 		      const int sdvo_enabled,
 		      const int peg_x16)
 {
-	u8 tmp8;
-	u16 tmp16;
-	u32 tmp;
 	const pci_devfn_t mch = PCI_DEV(0, 0, 0);
 	const pci_devfn_t pciex = PCI_DEV(0, 1, 0);
 
@@ -103,20 +101,17 @@ static void init_pcie(const int peg_enabled,
 		sdvo_enabled?"enabled":"disabled");
 
 	if (peg_enabled) {
-		tmp8 = pci_read_config8(mch, D0F0_DEVEN) | (1 << 1);
-		pci_write_config8(mch, D0F0_DEVEN, tmp8);
+		pci_or_config8(mch, D0F0_DEVEN, 1 << 1);
 
-		tmp8 = pci_read_config8(pciex, 0x224) & ~31;
-		pci_write_config8(pciex, 0x224, tmp8 | (peg_x16?16:0) | 1);
+		pci_write_config8(pciex, 0x224,
+			(pci_read_config8(pciex, 0x224) & ~31) | (peg_x16 ? 16 : 0) | 1);
 
-		tmp16 = pci_read_config16(pciex, 0x224) & ~(1 << 8);
-		pci_write_config16(pciex, 0x224, tmp16);
+		pci_and_config16(pciex, 0x224, ~(1 << 8));
 
 		/* FIXME: fill in: slot or fixed? -> devicetree */
 		int peg_is_slot = 0;
 		if (peg_is_slot) {
-			tmp16 = pci_read_config16(pciex, PEG_CAP) | (1 << 8);
-			pci_write_config16(pciex, PEG_CAP, tmp16);
+			pci_or_config16(pciex, PEG_CAP, 1 << 8);
 		}
 
 		/* FIXME: fill in: slot number, slot power -> devicetree */
@@ -125,20 +120,16 @@ static void init_pcie(const int peg_enabled,
 		/* peg_power := val * 10^-exp */
 		int peg_power_val = 75;
 		int peg_power_exp = 0; /* 0..3 */
-		tmp = (peg_slot << 17) | (peg_power_exp << 15) |
-			(peg_power_val << 7);
+		const u32 tmp = (peg_slot << 17) | (peg_power_exp << 15) | (peg_power_val << 7);
 		pci_write_config32(pciex, SLOTCAP, tmp);
 
 		/* GPEs */
-		tmp8 = pci_read_config8(pciex, PEGLC) | 7;
-		pci_write_config8(pciex, PEGLC, tmp8);
+		pci_or_config8(pciex, PEGLC, 7);
 
 		/* VC0: TC0 only, VC0 only */
-		tmp8 = pci_read_config8(pciex, D1F0_VC0RCTL);
-		pci_write_config8(pciex, D1F0_VC0RCTL, tmp8 & 1);
+		pci_and_config8(pciex, D1F0_VC0RCTL, 1);
 
-		tmp8 = pci_read_config8(pciex, D1F0_VCCAP);
-		pci_write_config8(pciex, D1F0_VCCAP, tmp8 & ~7);
+		pci_and_config8(pciex, D1F0_VCCAP, ~7);
 	}
 }
 
@@ -149,37 +140,26 @@ static void setup_aspm(const stepping_t stepping, const int peg_enabled)
 
 	/* Prerequisites for ASPM: */
 	if (peg_enabled) {
-		tmp32 = pci_read_config32(pciex, 0x200) | (3 << 13);
-		pci_write_config32(pciex, 0x200, tmp32);
+		pci_or_config32(pciex, 0x200, 3 << 13);
 
-		tmp32 = pci_read_config32(pciex, 0x0f0);
-		tmp32 &= ~((1 << 27) | (1 << 26));
-		pci_write_config32(pciex, 0x0f0, tmp32);
+		pci_and_config32(pciex, 0x0f0, ~((1 << 27) | (1 << 26)));
 
-		tmp32 = pci_read_config32(pciex, 0x0f0) | (3 << 24);
-		pci_write_config32(pciex, 0x0f0, tmp32);
+		pci_or_config32(pciex, 0x0f0, 3 << 24);
 
-		tmp32 = pci_read_config32(pciex, 0x0f4) & ~(1 << 4);
-		pci_write_config32(pciex, 0x0f4, tmp32);
+		pci_and_config32(pciex, 0x0f4, ~(1 << 4));
 
-		tmp32 = pci_read_config32(pciex, 0x0fc) | (1 << 0);
-		pci_write_config32(pciex, 0x0fc, tmp32);
+		pci_or_config32(pciex, 0x0fc, 1 << 0);
 
-		tmp32 = pci_read_config32(pciex, 0x0fc) | (1 << 1);
-		pci_write_config32(pciex, 0x0fc, tmp32);
+		pci_or_config32(pciex, 0x0fc, 1 << 1);
 
-		tmp32 = pci_read_config32(pciex, 0x0fc) | (1 << 4);
-		pci_write_config32(pciex, 0x0fc, tmp32);
+		pci_or_config32(pciex, 0x0fc, 1 << 4);
 
-		tmp32 = pci_read_config32(pciex, 0x0fc) & ~(7 << 5);
-		pci_write_config32(pciex, 0x0fc, tmp32);
+		pci_and_config32(pciex, 0x0fc, ~(7 << 5));
 
 		/* Set L0s, L1 supported in LCTL? */
-		tmp32 = pci_read_config32(pciex, 0x0b0) | (3 << 0);
-		pci_write_config32(pciex, 0x0b0, tmp32);
+		pci_or_config32(pciex, 0x0b0, 3 << 0);
 
-		tmp32 = pci_read_config32(pciex, 0x0f0) | (3 << 24);
-		pci_write_config32(pciex, 0x0f0, tmp32);
+		pci_or_config32(pciex, 0x0f0, 3 << 24);
 
 		tmp32 = pci_read_config32(pciex, 0x0f0);
 		if ((stepping >= STEPPING_B0) && (stepping <= STEPPING_B1))
@@ -217,40 +197,26 @@ static void setup_aspm(const stepping_t stepping, const int peg_enabled)
 		DMIBAR32(0x0e2c) = 0x88d07333;
 	}
 	if (peg_enabled) {
-		tmp32 = pci_read_config32(pciex, 0xa08) & ~(1 << 15);
-		pci_write_config32(pciex, 0xa08, tmp32);
+		pci_and_config32(pciex, 0xa08, ~(1 << 15));
 
-		tmp32 = pci_read_config32(pciex, 0xa84) | (1 << 8);
-		pci_write_config32(pciex, 0xa84, tmp32);
+		pci_or_config32(pciex, 0xa84, 1 << 8);
 
-		tmp32 = pci_read_config32(pciex, 0xb14) & ~(1 << 17);
-		pci_write_config32(pciex, 0xb14, tmp32);
+		pci_and_config32(pciex, 0xb14, ~(1 << 17));
 
-		tmp32 = pci_read_config32(pciex, 0xb00) | (3 << 8);
-		pci_write_config32(pciex, 0xb00, tmp32);
+		pci_or_config32(pciex, 0xb00, 3 << 8);
 
-		tmp32 = pci_read_config32(pciex, 0xb00) | (7 << 3);
-		pci_write_config32(pciex, 0xb00, tmp32);
+		pci_or_config32(pciex, 0xb00, 7 << 3);
 
-		tmp32 = pci_read_config32(pciex, 0xa84) & ~(1 << 8);
-		pci_write_config32(pciex, 0xa84, tmp32);
+		pci_and_config32(pciex, 0xa84, ~(1 << 8));
 
-		tmp32 = pci_read_config32(pciex, 0xa84) | (1 << 8);
-		pci_write_config32(pciex, 0xa84, tmp32);
+		pci_or_config32(pciex, 0xa84, 1 << 8);
 
-		tmp32 = pci_read_config32(pciex, 0xb04);
-		tmp32 = (tmp32 & ~(0x1f << 23)) | (0xe << 23);
-		pci_write_config32(pciex, 0xb04, tmp32);
+		pci_update_config32(pciex, 0xb04, ~(0x1f << 23), 0x0e << 23);
 
-		tmp32 = pci_read_config32(pciex, 0xb04);
-		tmp32 |= (1 << 31);
-		pci_write_config32(pciex, 0xb04, tmp32);
+		pci_or_config32(pciex, 0xb04, 1 << 31);
 
-		tmp32 = pci_read_config32(pciex, 0xb04);
-		tmp32 = (tmp32 & ~(0x03 << 29)) | (0x1 << 29);
-		pci_write_config32(pciex, 0xb04, tmp32);
+		pci_update_config32(pciex, 0xb04, ~(0x03 << 29), 0x01 << 29);
 	}
-
 
 	/*\ Setup ASPM on DMI \*/
 
@@ -258,14 +224,13 @@ static void setup_aspm(const stepping_t stepping, const int peg_enabled)
 	   the endpoint (ICH), but ICH doesn't give any limits. */
 
 	if (LPC_IS_MOBILE(PCI_DEV(0, 0x1f, 0)))
-		DMIBAR8(0x88) |= (3 << 0); // enable ASPM L0s, L1 (write-once)
+		DMIBAR8(DMILCTL) |= (3 << 0); // enable ASPM L0s, L1 (write-once)
 	else
-		DMIBAR8(0x88) |= (1 << 0); // enable ASPM L0s (write-once)
+		DMIBAR8(DMILCTL) |= (1 << 0); // enable ASPM L0s (write-once)
 	/* timing */
-	DMIBAR32(0x84) = (DMIBAR32(0x84) & ~(63 << 12)) | (2 << 12) | (2 << 15);
+	DMIBAR32(DMILCAP) = (DMIBAR32(DMILCAP) & ~(63 << 12)) | (2 << 12) | (2 << 15);
 	DMIBAR8(0x208 + 3) = 0;
 	DMIBAR32(0x208) &= ~(3 << 20);
-
 
 	/*\ Setup ASPM on PEG \*/
 	/*
@@ -286,12 +251,11 @@ static void setup_rcrb(const int peg_enabled)
 
 	/* Link1: component ID 1, link valid. */
 	EPBAR32(EPLE1D) = (EPBAR32(EPLE1D) & 0xff000000) | (1 << 16) | (1 << 0);
-	EPBAR32(EPLE1A) = (uintptr_t)DEFAULT_DMIBAR;
+	EPBAR32(EPLE1A) = DEFAULT_DMIBAR;
 
 	if (peg_enabled)
 		/* Link2: link_valid. */
 		EPBAR8(EPLE2D) |= (1 << 0); /* link valid */
-
 
 	/*\ RCRB setup: DMI Port \*/
 
@@ -305,7 +269,7 @@ static void setup_rcrb(const int peg_enabled)
 	/* Link2: component ID 1 (MCH), link valid */
 	DMIBAR32(DMILE2D) =
 		(DMIBAR32(DMILE2D) & 0xff000000) | (1 << 16) | (1 << 0);
-	DMIBAR32(DMILE2A) = (uintptr_t)DEFAULT_MCHBAR;
+	DMIBAR32(DMILE2A) = DEFAULT_MCHBAR;
 }
 
 void gm45_late_init(const stepping_t stepping)

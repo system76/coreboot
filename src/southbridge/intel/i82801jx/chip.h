@@ -43,13 +43,10 @@ struct southbridge_intel_i82801jx_config {
 	/* IDE configuration */
 	uint8_t sata_port_map : 6;
 	int sata_clock_request : 1;
-	int sata_traffic_monitor : 1;
 
 	int c4onc3_enable:1;
 	int c5_enable : 1;
 	int c6_enable : 1;
-	int c3_latency;
-	int docking_supported:1;
 
 	int throttle_duty : 3;
 

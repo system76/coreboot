@@ -49,7 +49,7 @@ static const struct pad_config gpio_table[] = {
 	/* B2  : PROCHOT_ODL */
 	PAD_NC(GPP_B2, NONE),
 	/* B3  : TRACKPAD_INT_ODL */
-	PAD_CFG_GPI_IRQ_WAKE(GPP_B3, NONE, PLTRST, LEVEL, INVERT),
+	PAD_CFG_GPI_IRQ_WAKE(GPP_B3, NONE, DEEP, LEVEL, INVERT),
 	/* B4  : H1_PCH_INT_ODL */
 	PAD_CFG_GPI_APIC(GPP_B4, NONE, PLTRST, LEVEL, INVERT),
 	/* B5  : PCIE_CLKREQ0_N */
@@ -224,9 +224,9 @@ static const struct pad_config gpio_table[] = {
 	/* E16 : GPP_E16/DDI1_DDC_SDA */
 	PAD_NC(GPP_E16, NONE),
 	/* E17 : HDMI_DDC_SCL */
-	PAD_NC(GPP_E17, NONE),
+	PAD_CFG_NF(GPP_E17, NONE, DEEP, NF1),
 	/* E18 : HDMI_DDC_SDA */
-	PAD_NC(GPP_E18, NONE),
+	PAD_CFG_NF(GPP_E18, NONE, DEEP, NF1),
 	/* E19 : GPP_E19/IMGCLKOUT_5/PCIE_LNK_DOWN */
 	PAD_NC(GPP_E19, NONE),
 	/* E20 : CNV_BRI_DT_R */
@@ -237,7 +237,6 @@ static const struct pad_config gpio_table[] = {
 	PAD_CFG_NF(GPP_E22, NONE, DEEP, NF1),
 	/* E23 : CNV_RGI_RSP */
 	PAD_CFG_NF(GPP_E23, NONE, DEEP, NF1),
-
 
 	/* F4  : CNV_RF_RST_L */
 	PAD_CFG_NF(GPP_F4, NONE, DEEP, NF1),
@@ -341,7 +340,6 @@ static const struct pad_config gpio_table[] = {
 	/* R7  :  I2S_SPK_AUDIO */
 	PAD_CFG_NF(GPP_R7, NONE, DEEP, NF1),
 
-
 	/* S0  : RAM_STRAP_4 */
 	PAD_CFG_GPI(GPP_S0, NONE, DEEP),
 	/* S1  : RSVD_STRAP */
@@ -358,7 +356,6 @@ static const struct pad_config gpio_table[] = {
 	PAD_CFG_NF(GPP_S6, NONE, DEEP, NF2),
 	/* S7  : DMIC0_DATA */
 	PAD_CFG_NF(GPP_S7, NONE, DEEP, NF2),
-
 
 	/* GPD0 : AP_BATLOW_L */
 	PAD_CFG_NF(GPD0, NONE, DEEP, NF1),

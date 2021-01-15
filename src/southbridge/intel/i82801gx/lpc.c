@@ -16,9 +16,9 @@
 #include <cpu/x86/smm.h>
 #include <acpi/acpigen.h>
 #include <arch/smp/mpspec.h>
-#include <cbmem.h>
 #include <string.h>
 #include <southbridge/intel/common/acpi_pirq_gen.h>
+#include <southbridge/intel/common/hpet.h>
 #include <southbridge/intel/common/pmbase.h>
 #include <southbridge/intel/common/spi.h>
 
@@ -35,9 +35,6 @@
  */
 static void i82801gx_enable_ioapic(struct device *dev)
 {
-	/* Enable ACPI I/O range decode */
-	pci_write_config8(dev, ACPI_CNTL, ACPI_EN);
-
 	set_ioapic_id(VIO_APIC_VADDR, 0x02);
 
 	/*
@@ -247,18 +244,13 @@ static void i82801gx_power_options(struct device *dev)
 
 static void i82801gx_configure_cstates(struct device *dev)
 {
-	u8 reg8;
-
-	reg8 = pci_read_config8(dev, 0xa9); // Cx state configuration
-	reg8 |= (1 << 4) | (1 << 3) | (1 << 2);	// Enable Popup & Popdown
-	pci_write_config8(dev, 0xa9, reg8);
+	// Enable Popup & Popdown
+	pci_or_config8(dev, 0xa9, (1 << 4) | (1 << 3) | (1 << 2));
 
 	// Set Deeper Sleep configuration to recommended values
-	reg8 = pci_read_config8(dev, 0xaa);
-	reg8 &= 0xf0;
-	reg8 |= (2 << 2);	// Deeper Sleep to Stop CPU: 34-40us
-	reg8 |= (2 << 0);	// Deeper Sleep to Sleep: 15us
-	pci_write_config8(dev, 0xaa, reg8);
+	// Deeper Sleep to Stop CPU: 34-40us
+	// Deeper Sleep to Sleep: 15us
+	pci_update_config8(dev, 0xaa, 0xf0, (2 << 2) | (2 << 0));
 }
 
 static void i82801gx_rtc_init(struct device *dev)
@@ -275,21 +267,6 @@ static void i82801gx_rtc_init(struct device *dev)
 	printk(BIOS_DEBUG, "rtc_failed = 0x%x\n", rtc_failed);
 
 	cmos_init(rtc_failed);
-}
-
-static void enable_hpet(void)
-{
-	u32 reg32;
-
-	/* Move HPET to default address 0xfed00000 and enable it */
-	reg32 = RCBA32(HPTC);
-	reg32 |= (1 << 7); // HPET Address Enable
-	reg32 &= ~(3 << 0);
-	RCBA32(HPTC) = reg32;
-	/* On NM10 this only works if read back */
-	RCBA32(HPTC);
-
-	write32((u32 *)0xfed00010, read32((u32 *)0xfed00010) | 1);
 }
 
 static void enable_clock_gating(void)
@@ -345,9 +322,6 @@ static void i82801gx_fixups(struct device *dev)
 static void lpc_init(struct device *dev)
 {
 	printk(BIOS_DEBUG, "i82801gx: %s\n", __func__);
-
-	/* Set the value for PCI command register. */
-	pci_write_config16(dev, PCI_COMMAND, 0x000f);
 
 	/* IO APIC initialization. */
 	i82801gx_enable_ioapic(dev);
@@ -413,7 +387,6 @@ unsigned long acpi_fill_madt(unsigned long current)
 		 current, 0, 0, 2, MP_IRQ_POLARITY_HIGH | MP_IRQ_TRIGGER_EDGE);
 	current += acpi_create_madt_irqoverride((acpi_madt_irqoverride_t *)
 		 current, 0, 9, 9, MP_IRQ_POLARITY_HIGH | MP_IRQ_TRIGGER_LEVEL);
-
 
 	return current;
 }
@@ -491,26 +464,15 @@ static void lpc_final(struct device *dev)
 	outb(POST_OS_BOOT, 0x80);
 }
 
-void southbridge_inject_dsdt(const struct device *dev)
+size_t gnvs_size_of_array(void)
 {
-	struct global_nvs *gnvs = cbmem_add(CBMEM_ID_ACPI_GNVS, sizeof(*gnvs));
+	return sizeof(struct global_nvs);
+}
 
-	if (gnvs) {
-		memset(gnvs, 0, sizeof(*gnvs));
-
-		gnvs->apic = 1;
-		gnvs->mpen = 1; /* Enable Multi Processing */
-
-		acpi_create_gnvs(gnvs);
-
-		/* And tell SMI about it */
-		apm_control(APM_CNT_GNVS_UPDATE);
-
-		/* Add it to SSDT.  */
-		acpigen_write_scope("\\");
-		acpigen_write_name_dword("NVSA", (u32) gnvs);
-		acpigen_pop_len();
-	}
+void soc_fill_gnvs(struct global_nvs *gnvs)
+{
+	gnvs->apic = 1;
+	gnvs->mpen = 1; /* Enable Multi Processing */
 }
 
 static const char *lpc_acpi_name(const struct device *dev)
@@ -527,7 +489,6 @@ static struct device_operations device_ops = {
 	.read_resources		= i82801gx_lpc_read_resources,
 	.set_resources		= pci_dev_set_resources,
 	.enable_resources	= pci_dev_enable_resources,
-	.acpi_inject_dsdt	= southbridge_inject_dsdt,
 	.write_acpi_tables      = acpi_write_hpet,
 	.acpi_fill_ssdt		= southbridge_fill_ssdt,
 	.acpi_name		= lpc_acpi_name,

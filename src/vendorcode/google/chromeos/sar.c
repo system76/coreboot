@@ -16,8 +16,7 @@ static int load_sar_file_from_cbfs(void *buf, size_t buffer_size)
 	const char *filename = get_wifi_sar_cbfs_filename();
 	if (filename == NULL)
 		filename = WIFI_SAR_CBFS_FILENAME;
-	return cbfs_boot_load_file(filename, buf,
-			buffer_size, CBFS_TYPE_RAW);
+	return cbfs_load(filename, buf, buffer_size);
 }
 
 /* Retrieve the wifi SAR limits data from VPD and decode it
@@ -71,7 +70,7 @@ int get_wifi_sar_limits(struct wifi_sar_limits *sar_limits)
 	/* Try to read the SAR limit entry from VPD */
 	if (!vpd_gets(wifi_sar_limit_key, wifi_sar_limit_str,
 							 buffer_size, VPD_RO_THEN_RW)) {
-		printk(BIOS_ERR, "Error: Could not locate '%s' in VPD.\n",
+		printk(BIOS_DEBUG, "Could not locate '%s' in VPD.\n",
 				wifi_sar_limit_key);
 
 		if (!CONFIG(WIFI_SAR_CBFS))
@@ -113,5 +112,5 @@ int get_wifi_sar_limits(struct wifi_sar_limits *sar_limits)
 __weak
 const char *get_wifi_sar_cbfs_filename(void)
 {
-	return NULL;
+	return WIFI_SAR_CBFS_FILENAME;
 }

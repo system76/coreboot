@@ -17,6 +17,8 @@
 #include <commonlib/fsp.h>
 #include <commonlib/endian.h>
 #include <commonlib/helpers.h>
+#include <commonlib/region.h>
+#include <vboot_host.h>
 
 #define SECTION_WITH_FIT_TABLE	"BOOTBLOCK"
 
@@ -47,15 +49,30 @@ static struct param {
 	uint64_t u64val;
 	uint32_t type;
 	uint32_t baseaddress;
+	/*
+	 * Input can be negative. It will be transformed to offset from start of region (if
+	 * negative) and stored in baseaddress.
+	 */
+	long long int baseaddress_input;
 	uint32_t baseaddress_assigned;
 	uint32_t loadaddress;
 	uint32_t headeroffset;
+	/*
+	 * Input can be negative. It will be transformed to offset from start of region (if
+	 * negative) and stored in baseaddress.
+	 */
+	long long int headeroffset_input;
 	uint32_t headeroffset_assigned;
 	uint32_t entrypoint;
 	uint32_t size;
 	uint32_t alignment;
 	uint32_t pagesize;
 	uint32_t cbfsoffset;
+	/*
+	 * Input can be negative. It will be transformed to corresponding region offset (if
+	 * negative) and stored in baseaddress.
+	 */
+	long long int cbfsoffset_input;
 	uint32_t cbfsoffset_assigned;
 	uint32_t arch;
 	uint32_t padding;
@@ -70,13 +87,25 @@ static struct param {
 	bool machine_parseable;
 	bool unprocessed;
 	bool ibb;
-	enum comp_algo compression;
+	enum cbfs_compression compression;
 	int precompression;
 	enum vb2_hash_algorithm hash;
 	/* For linux payloads */
 	char *initrd;
 	char *cmdline;
 	int force;
+	/*
+	 * Base and size of extended window for decoding SPI flash greater than 16MiB in host
+	 * address space on x86 platforms. The assumptions here are:
+	 * 1. Top 16MiB is still decoded in the fixed decode window just below 4G boundary.
+	 * 2. Rest of the SPI flash below the top 16MiB is mapped at the top of extended
+	 * window. Even though the platform might support a larger extended window, the SPI
+	 * flash part used by the mainboard might not be large enough to be mapped in the entire
+	 * window. In such cases, the mapping is assumed to be in the top part of the extended
+	 * window with the bottom part remaining unused.
+	 */
+	uint32_t ext_win_base;
+	uint32_t ext_win_size;
 } param = {
 	/* All variables not listed are initialized as zero. */
 	.arch = CBFS_ARCHITECTURE_UNKNOWN,
@@ -100,41 +129,218 @@ static bool region_is_modern_cbfs(const char *region)
 				CBFS_FILE_MAGIC, strlen(CBFS_FILE_MAGIC));
 }
 
-/*
- * Converts between offsets from the start of the specified image region and
- * "top-aligned" offsets from the top of the entire boot media. See comment
- * below for convert_to_from_top_aligned() about forming addresses.
- */
-static unsigned convert_to_from_absolute_top_aligned(
-		const struct buffer *region, unsigned offset)
+/* This describes a window from the SPI flash address space into the host address space. */
+struct mmap_window {
+	struct region flash_space;
+	struct region host_space;
+};
+
+enum mmap_window_type {
+	X86_DEFAULT_DECODE_WINDOW, /* Decode window just below 4G boundary */
+	X86_EXTENDED_DECODE_WINDOW, /* Extended decode window for mapping greater than 16MiB
+				       flash */
+	MMAP_MAX_WINDOWS,
+};
+
+/* Table of all the decode windows supported by the platform. */
+static struct mmap_window mmap_window_table[MMAP_MAX_WINDOWS];
+
+static void add_mmap_window(enum mmap_window_type idx, size_t flash_offset, size_t host_offset,
+			    size_t window_size)
+{
+	if (idx >= MMAP_MAX_WINDOWS) {
+		ERROR("Incorrect mmap window index(%d)\n", idx);
+		return;
+	}
+
+	mmap_window_table[idx].flash_space.offset = flash_offset;
+	mmap_window_table[idx].host_space.offset = host_offset;
+	mmap_window_table[idx].flash_space.size = window_size;
+	mmap_window_table[idx].host_space.size = window_size;
+}
+
+#define DEFAULT_DECODE_WINDOW_TOP	(4ULL * GiB)
+#define DEFAULT_DECODE_WINDOW_MAX_SIZE	(16 * MiB)
+
+static bool create_mmap_windows(void)
+{
+	static bool done;
+
+	if (done)
+		return done;
+
+	const size_t image_size = partitioned_file_total_size(param.image_file);
+	const size_t std_window_size = MIN(DEFAULT_DECODE_WINDOW_MAX_SIZE, image_size);
+	const size_t std_window_flash_offset = image_size - std_window_size;
+
+	/*
+	 * Default decode window lives just below 4G boundary in host space and maps up to a
+	 * maximum of 16MiB. If the window is smaller than 16MiB, the SPI flash window is mapped
+	 * at the top of the host window just below 4G.
+	 */
+	add_mmap_window(X86_DEFAULT_DECODE_WINDOW, std_window_flash_offset,
+			DEFAULT_DECODE_WINDOW_TOP - std_window_size, std_window_size);
+
+	if (param.ext_win_size && (image_size > DEFAULT_DECODE_WINDOW_MAX_SIZE)) {
+		/*
+		 * If the platform supports extended window and the SPI flash size is greater
+		 * than 16MiB, then create a mapping for the extended window as well.
+		 * The assumptions here are:
+		 * 1. Top 16MiB is still decoded in the fixed decode window just below 4G
+		 * boundary.
+		 * 2. Rest of the SPI flash below the top 16MiB is mapped at the top of extended
+		 * window. Even though the platform might support a larger extended window, the
+		 * SPI flash part used by the mainboard might not be large enough to be mapped
+		 * in the entire window. In such cases, the mapping is assumed to be in the top
+		 * part of the extended window with the bottom part remaining unused.
+		 *
+		 * Example:
+		 * ext_win_base = 0xF8000000
+		 * ext_win_size = 32 * MiB
+		 * ext_win_limit = ext_win_base + ext_win_size - 1 = 0xF9FFFFFF
+		 *
+		 * If SPI flash is 32MiB, then top 16MiB is mapped from 0xFF000000 - 0xFFFFFFFF
+		 * whereas the bottom 16MiB is mapped from 0xF9000000 - 0xF9FFFFFF. The extended
+		 * window 0xF8000000 - 0xF8FFFFFF remains unused.
+		 */
+		const size_t ext_window_mapped_size = MIN(param.ext_win_size,
+							  image_size - std_window_size);
+		const size_t ext_window_top = param.ext_win_base + param.ext_win_size;
+		add_mmap_window(X86_EXTENDED_DECODE_WINDOW,
+				std_window_flash_offset - ext_window_mapped_size,
+				ext_window_top - ext_window_mapped_size,
+				ext_window_mapped_size);
+
+		if (region_overlap(&mmap_window_table[X86_EXTENDED_DECODE_WINDOW].host_space,
+				   &mmap_window_table[X86_DEFAULT_DECODE_WINDOW].host_space)) {
+			const struct region *ext_region;
+
+			ext_region = &mmap_window_table[X86_EXTENDED_DECODE_WINDOW].host_space;
+			ERROR("Extended window(base=0x%zx, limit=0x%zx) overlaps with default window!\n",
+			      region_offset(ext_region), region_end(ext_region));
+
+			return false;
+		}
+	}
+
+	done = true;
+	return done;
+}
+
+static unsigned int convert_address(const struct region *to, const struct region *from,
+				    unsigned int addr)
+{
+	/*
+	 * Calculate the offset in the "from" region and use that offset to calculate
+	 * corresponding address in the "to" region.
+	 */
+	size_t offset = addr - region_offset(from);
+	return region_offset(to) + offset;
+}
+
+enum mmap_addr_type {
+	HOST_SPACE_ADDR,
+	FLASH_SPACE_ADDR,
+};
+
+static int find_mmap_window(enum mmap_addr_type addr_type, unsigned int addr)
+{
+	size_t i;
+
+	for (i = 0; i < ARRAY_SIZE(mmap_window_table); i++) {
+		const struct region *reg;
+
+		if (addr_type == HOST_SPACE_ADDR)
+			reg = &mmap_window_table[i].host_space;
+		else
+			reg = &mmap_window_table[i].flash_space;
+
+		if (region_offset(reg) <= addr && region_end(reg) >= addr)
+			return i;
+	}
+
+	return -1;
+}
+
+static unsigned int convert_host_to_flash(const struct buffer *region, unsigned int addr)
+{
+	int idx;
+	const struct region *to, *from;
+
+	idx = find_mmap_window(HOST_SPACE_ADDR, addr);
+	if (idx == -1) {
+		ERROR("Host address(%x) not in any mmap window!\n", addr);
+		return 0;
+	}
+
+	to = &mmap_window_table[idx].flash_space;
+	from = &mmap_window_table[idx].host_space;
+
+	/* region->offset is subtracted because caller expects offset in the given region. */
+	return convert_address(to, from, addr) - region->offset;
+}
+
+static unsigned int convert_flash_to_host(const struct buffer *region, unsigned int addr)
+{
+	int idx;
+	const struct region *to, *from;
+
+	/*
+	 * region->offset is added because caller provides offset in the given region. This is
+	 * converted to an absolute address in the SPI flash space. This is done before the
+	 * conversion as opposed to after in convert_host_to_flash() above because the address
+	 * is actually an offset within the region. So, it needs to be converted into an
+	 * absolute address in the SPI flash space before converting into an address in host
+	 * space.
+	 */
+	addr += region->offset;
+	idx = find_mmap_window(FLASH_SPACE_ADDR, addr);
+
+	if (idx == -1) {
+		ERROR("SPI flash address(%x) not in any mmap window!\n", addr);
+		return 0;
+	}
+
+	to = &mmap_window_table[idx].host_space;
+	from = &mmap_window_table[idx].flash_space;
+
+	return convert_address(to, from, addr);
+}
+
+static unsigned int convert_addr_space(const struct buffer *region, unsigned int addr)
 {
 	assert(region);
 
-	size_t image_size = partitioned_file_total_size(param.image_file);
+	assert(create_mmap_windows());
 
-	return image_size - region->offset - offset;
+	if (IS_HOST_SPACE_ADDRESS(addr))
+		return convert_host_to_flash(region, addr);
+	else
+		return convert_flash_to_host(region, addr);
 }
 
 /*
- * Converts between offsets from the start of the specified image region and
- * "top-aligned" offsets from the top of the image region. Works in either
- * direction: pass in one type of offset and receive the other type.
- * N.B. A top-aligned offset is always a positive number, and should not be
- * confused with a top-aligned *address*, which is its arithmetic inverse. */
-static unsigned convert_to_from_top_aligned(const struct buffer *region,
-								unsigned offset)
+ * This function takes offset value which represents the offset from one end of the region and
+ * converts it to offset from the other end of the region. offset is expected to be positive.
+ */
+static int convert_region_offset(unsigned int offset, uint32_t *region_offset)
 {
-	assert(region);
+	size_t size;
 
-	/* Cover the situation where a negative base address is given by the
-	 * user. Callers of this function negate it, so it'll be a positive
-	 * number smaller than the region.
-	 */
-	if ((offset > 0) && (offset < region->size)) {
-		return region->size - offset;
+	if (param.size) {
+		size = param.size;
+	} else {
+		assert(param.image_region);
+		size = param.image_region->size;
 	}
 
-	return convert_to_from_absolute_top_aligned(region, offset);
+	if (size < offset) {
+		ERROR("Cannot convert region offset (size=0x%zx, offset=0x%x)\n", size, offset);
+		return 1;
+	}
+
+	*region_offset = size - offset;
+	return 0;
 }
 
 static int do_cbfs_locate(int32_t *cbfs_addr, size_t metadata_size,
@@ -194,7 +400,7 @@ static int do_cbfs_locate(int32_t *cbfs_addr, size_t metadata_size,
 
 	/* Take care of the hash attribute if it is used */
 	if (param.hash != VB2_HASH_INVALID)
-		metadata_size += sizeof(struct cbfs_file_attr_hash);
+		metadata_size += cbfs_file_attr_hash_size(param.hash);
 
 	int32_t address = cbfs_locate_entry(&image, data_size, param.pagesize,
 						param.alignment, metadata_size);
@@ -242,11 +448,7 @@ static int cbfs_add_integer_component(const char *name,
 		goto done;
 	}
 
-	if (IS_TOP_ALIGNED_ADDRESS(offset))
-		offset = convert_to_from_top_aligned(param.image_region,
-								-offset);
-
-	header = cbfs_create_file_header(CBFS_COMPONENT_RAW,
+	header = cbfs_create_file_header(CBFS_TYPE_RAW,
 		buffer.size, name);
 	if (cbfs_add_entry(&image, &buffer, offset, header, 0) != 0) {
 		ERROR("Failed to add %llu into ROM image as '%s'.\n",
@@ -347,7 +549,7 @@ static int cbfs_add_master_header(void)
 	 *    image is at 4GB == 0.
 	 */
 	h->bootblocksize = htonl(4);
-	h->align = htonl(CBFS_ENTRY_ALIGNMENT);
+	h->align = htonl(CBFS_ALIGNMENT);
 	/* The offset and romsize fields within the master header are absolute
 	 * values within the boot media. As such, romsize needs to relfect
 	 * the end 'offset' for a CBFS. To achieve that the current buffer
@@ -361,7 +563,7 @@ static int cbfs_add_master_header(void)
 	h->offset = htonl(offset);
 	h->architecture = htonl(CBFS_ARCHITECTURE_UNKNOWN);
 
-	header = cbfs_create_file_header(CBFS_COMPONENT_CBFSHEADER,
+	header = cbfs_create_file_header(CBFS_TYPE_CBFSHEADER,
 		buffer_size(&buffer), name);
 	if (cbfs_add_entry(&image, &buffer, 0, header, 0) != 0) {
 		ERROR("Failed to add cbfs master header into ROM image.\n");
@@ -434,10 +636,7 @@ static int add_topswap_bootblock(struct buffer *buffer, uint32_t *offset)
 	buffer_clone(buffer, &new_bootblock);
 
 	 /* Update the location (offset) of bootblock in the region */
-	*offset = convert_to_from_top_aligned(param.image_region,
-							buffer_size(buffer));
-
-	return 0;
+	return convert_region_offset(buffer_size(buffer), offset);
 }
 
 static int cbfs_add_component(const char *filename,
@@ -483,7 +682,7 @@ static int cbfs_add_component(const char *filename,
 	 * Check if Intel CPU topswap is specified this will require a
 	 * second bootblock to be added.
 	 */
-	if (type == CBFS_COMPONENT_BOOTBLOCK && param.topswap_size)
+	if (type == CBFS_TYPE_BOOTBLOCK && param.topswap_size)
 		if (add_topswap_bootblock(&buffer, &offset))
 			return 1;
 
@@ -518,12 +717,10 @@ static int cbfs_add_component(const char *filename,
 			/* care about the additional metadata that is added */
 			/* to the cbfs file and therefore set the position  */
 			/* the real beginning of the data. */
-			if (type == CBFS_COMPONENT_STAGE)
-				attrs->position = htonl(offset +
-					sizeof(struct cbfs_stage));
-			else if (type == CBFS_COMPONENT_SELF)
-				attrs->position = htonl(offset +
-					sizeof(struct cbfs_payload));
+			if (type == CBFS_TYPE_STAGE)
+				attrs->position = htonl(offset - sizeof(struct cbfs_stage));
+			else if (type == CBFS_TYPE_SELF)
+				attrs->position = htonl(offset - sizeof(struct cbfs_payload));
 			else
 				attrs->position = htonl(offset);
 		}
@@ -563,9 +760,9 @@ static int cbfs_add_component(const char *filename,
 			return -1;
 	}
 
-	if (IS_TOP_ALIGNED_ADDRESS(offset))
-		offset = convert_to_from_top_aligned(param.image_region,
-								-offset);
+	if (IS_HOST_SPACE_ADDRESS(offset))
+		offset = convert_addr_space(param.image_region, offset);
+
 	if (cbfs_add_entry(&image, &buffer, offset, header, len_align) != 0) {
 		ERROR("Failed to add '%s' into ROM image.\n", filename);
 		free(header);
@@ -595,6 +792,9 @@ static int cbfstool_convert_raw(struct buffer *buffer,
 			return -1;
 		memcpy(compressed, buffer->data + 8, compressed_size);
 	} else {
+		if (param.compression == CBFS_COMPRESS_NONE)
+			goto out;
+
 		compress = compression_function(param.compression);
 		if (!compress)
 			return -1;
@@ -606,7 +806,7 @@ static int cbfstool_convert_raw(struct buffer *buffer,
 			     compressed, &compressed_size)) {
 			WARN("Compression failed - disabled\n");
 			free(compressed);
-			return 0;
+			goto out;
 		}
 	}
 
@@ -626,6 +826,7 @@ static int cbfstool_convert_raw(struct buffer *buffer,
 	buffer->data = compressed;
 	buffer->size = compressed_size;
 
+out:
 	header->len = htonl(buffer->size);
 	return 0;
 }
@@ -646,9 +847,8 @@ static int cbfstool_convert_fsp(struct buffer *buffer,
 	 * passed in by the caller.
 	 */
 	if (param.stage_xip) {
-		if (!IS_TOP_ALIGNED_ADDRESS(address))
-			address = -convert_to_from_absolute_top_aligned(
-					param.image_region, address);
+		if (!IS_HOST_SPACE_ADDRESS(address))
+			address = convert_addr_space(param.image_region, address);
 	} else {
 		if (param.baseaddress_assigned == 0) {
 			INFO("Honoring pre-linked FSP module.\n");
@@ -721,9 +921,7 @@ static int cbfstool_convert_mkstage(struct buffer *buffer, uint32_t *offset,
 		 * x86 semantics about the boot media being directly mapped
 		 * below 4GiB in the CPU address space.
 		 **/
-		address = -convert_to_from_absolute_top_aligned(
-				param.image_region, address);
-		*offset = address;
+		*offset = convert_addr_space(param.image_region, address);
 
 		ret = parse_elf_to_xip_stage(buffer, &output, offset,
 						param.ignore_section);
@@ -752,7 +950,7 @@ static int cbfstool_convert_mkpayload(struct buffer *buffer,
 	if (ret != 0) {
 		ret = parse_fit_to_payload(buffer, &output, param.compression);
 		if (ret == 0)
-			header->type = htonl(CBFS_COMPONENT_FIT);
+			header->type = htonl(CBFS_TYPE_FIT);
 	}
 
 	/* If it's not an FIT, see if it's a UEFI FV */
@@ -810,7 +1008,7 @@ static int cbfs_add(void)
 
 	/* Set the alignment to 4KiB minimum for FSP blobs when no base address
 	 * is provided so that relocation can occur. */
-	if (param.type == CBFS_COMPONENT_FSP) {
+	if (param.type == CBFS_TYPE_FSP) {
 		if (!param.baseaddress_assigned)
 			param.alignment = 4*1024;
 		convert = cbfstool_convert_fsp;
@@ -851,7 +1049,7 @@ static int cbfs_add_stage(void)
 
 	return cbfs_add_component(param.filename,
 				  param.name,
-				  CBFS_COMPONENT_STAGE,
+				  CBFS_TYPE_STAGE,
 				  param.baseaddress,
 				  param.headeroffset,
 				  cbfstool_convert_mkstage);
@@ -861,7 +1059,7 @@ static int cbfs_add_payload(void)
 {
 	return cbfs_add_component(param.filename,
 				  param.name,
-				  CBFS_COMPONENT_SELF,
+				  CBFS_TYPE_SELF,
 				  param.baseaddress,
 				  param.headeroffset,
 				  cbfstool_convert_mkpayload);
@@ -881,7 +1079,7 @@ static int cbfs_add_flat_binary(void)
 	}
 	return cbfs_add_component(param.filename,
 				  param.name,
-				  CBFS_COMPONENT_SELF,
+				  CBFS_TYPE_SELF,
 				  param.baseaddress,
 				  param.headeroffset,
 				  cbfstool_convert_mkflatpayload);
@@ -1079,12 +1277,16 @@ static int cbfs_print(void)
 	if (cbfs_image_from_buffer(&image, param.image_region,
 							param.headeroffset))
 		return 1;
-	if (param.machine_parseable)
-		return cbfs_print_parseable_directory(&image);
-	else {
+	if (param.machine_parseable) {
+		if (verbose)
+			printf("[FMAP REGION]\t%s\n", param.region_name);
+		cbfs_print_parseable_directory(&image);
+	} else {
 		printf("FMAP REGION: %s\n", param.region_name);
-		return cbfs_print_directory(&image);
+		cbfs_print_directory(&image);
 	}
+
+	return 0;
 }
 
 static int cbfs_extract(void)
@@ -1290,6 +1492,8 @@ enum {
 	/* begin after ASCII characters */
 	LONGOPT_START = 256,
 	LONGOPT_IBB = LONGOPT_START,
+	LONGOPT_EXT_WIN_BASE,
+	LONGOPT_EXT_WIN_SIZE,
 	LONGOPT_END,
 };
 
@@ -1333,8 +1537,36 @@ static struct option long_options[] = {
 	{"mach-parseable",no_argument,       0, 'k' },
 	{"unprocessed",   no_argument,       0, 'U' },
 	{"ibb",           no_argument,       0, LONGOPT_IBB },
+	{"ext-win-base",  required_argument, 0, LONGOPT_EXT_WIN_BASE },
+	{"ext-win-size",  required_argument, 0, LONGOPT_EXT_WIN_SIZE },
 	{NULL,            0,                 0,  0  }
 };
+
+static int get_region_offset(long long int offset, uint32_t *region_offset)
+{
+	/* If offset is not negative, no transformation required. */
+	if (offset >= 0) {
+		*region_offset = offset;
+		return 0;
+	}
+
+	/* Calculate offset from start of region. */
+	return convert_region_offset(-offset, region_offset);
+}
+
+static int calculate_region_offsets(void)
+{
+	int ret = 0;
+
+	if (param.baseaddress_assigned)
+		ret |= get_region_offset(param.baseaddress_input, &param.baseaddress);
+	if (param.headeroffset_assigned)
+		ret |= get_region_offset(param.headeroffset_input, &param.headeroffset);
+	if (param.cbfsoffset_assigned)
+		ret |= get_region_offset(param.cbfsoffset_input, &param.cbfsoffset);
+
+	return ret;
+}
 
 static int dispatch_command(struct command command)
 {
@@ -1373,6 +1605,13 @@ static int dispatch_command(struct command command)
 				return 1;
 			}
 		}
+
+		/*
+		 * Once image region is read, input offsets can be adjusted accordingly if the
+		 * inputs are provided as negative integers i.e. offsets from end of region.
+		 */
+		if (calculate_region_offsets())
+			return 1;
 	}
 
 	if (command.function()) {
@@ -1402,11 +1641,16 @@ static void usage(char *name)
 	     "  -U               Unprocessed; don't decompress or make ELF\n"
 	     "  -v               Provide verbose output\n"
 	     "  -h               Display this help message\n\n"
+	     "  --ext-win-base   Base of extended decode window in host address\n"
+	     "                   space(x86 only)\n"
+	     "  --ext-win-size   Size of extended decode window in host address\n"
+	     "                   space(x86 only)\n"
 	     "COMMANDs:\n"
 	     " add [-r image,regions] -f FILE -n NAME -t TYPE [-A hash] \\\n"
 	     "        [-c compression] [-b base-address | -a alignment] \\\n"
 	     "        [-p padding size] [-y|--xip if TYPE is FSP]       \\\n"
-	     "        [-j topswap-size] (Intel CPUs only) [--ibb]           "
+	     "        [-j topswap-size] (Intel CPUs only) [--ibb]       \\\n"
+	     "        [--ext-win-base win-base --ext-win-size win-size]     "
 			"Add a component\n"
 	     "                                                         "
 	     "    -j valid size: 0x10000 0x20000 0x40000 0x80000 0x100000 \n"
@@ -1417,7 +1661,8 @@ static void usage(char *name)
 	     " add-stage [-r image,regions] -f FILE -n NAME [-A hash] \\\n"
 	     "        [-c compression] [-b base] [-S section-to-ignore] \\\n"
 	     "        [-a alignment] [-P page-size] [-Q|--pow2page] \\\n"
-	     "        [-y|--xip] [--ibb]                                   "
+	     "        [-y|--xip] [--ibb]                                \\\n"
+	     "        [--ext-win-base win-base --ext-win-size win-size]     "
 			"Add a stage to the ROM\n"
 	     " add-flat-binary [-r image,regions] -f FILE -n NAME \\\n"
 	     "        [-A hash] -l load-address -e entry-point \\\n"
@@ -1572,10 +1817,7 @@ int main(int argc, char **argv)
 				break;
 			}
 			case 'A': {
-				int algo = cbfs_parse_hash_algo(optarg);
-				if (algo >= 0)
-					param.hash = algo;
-				else {
+				if (!vb2_lookup_hash_alg(optarg, &param.hash)) {
 					ERROR("Unknown hash algorithm '%s'.\n",
 						optarg);
 					return 1;
@@ -1592,7 +1834,7 @@ int main(int argc, char **argv)
 				param.source_region = optarg;
 				break;
 			case 'b':
-				param.baseaddress = strtoul(optarg, &suffix, 0);
+				param.baseaddress_input = strtoll(optarg, &suffix, 0);
 				if (!*optarg || (suffix && *suffix)) {
 					ERROR("Invalid base address '%s'.\n",
 						optarg);
@@ -1643,8 +1885,7 @@ int main(int argc, char **argv)
 				param.bootblock = optarg;
 				break;
 			case 'H':
-				param.headeroffset = strtoul(
-						optarg, &suffix, 0);
+				param.headeroffset_input = strtoll(optarg, &suffix, 0);
 				if (!*optarg || (suffix && *suffix)) {
 					ERROR("Invalid header offset '%s'.\n",
 						optarg);
@@ -1680,7 +1921,7 @@ int main(int argc, char **argv)
 				param.force_pow2_pagesize = 1;
 				break;
 			case 'o':
-				param.cbfsoffset = strtoul(optarg, &suffix, 0);
+				param.cbfsoffset_input = strtoll(optarg, &suffix, 0);
 				if (!*optarg || (suffix && *suffix)) {
 					ERROR("Invalid cbfs offset '%s'.\n",
 						optarg);
@@ -1749,6 +1990,20 @@ int main(int argc, char **argv)
 				break;
 			case LONGOPT_IBB:
 				param.ibb = true;
+				break;
+			case LONGOPT_EXT_WIN_BASE:
+				param.ext_win_base = strtoul(optarg, &suffix, 0);
+				if (!*optarg || (suffix && *suffix)) {
+					ERROR("Invalid ext window base '%s'.\n", optarg);
+					return 1;
+				}
+				break;
+			case LONGOPT_EXT_WIN_SIZE:
+				param.ext_win_size = strtoul(optarg, &suffix, 0);
+				if (!*optarg || (suffix && *suffix)) {
+					ERROR("Invalid ext window size '%s'.\n", optarg);
+					return 1;
+				}
 				break;
 			case 'h':
 			case '?':

@@ -1,11 +1,11 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 
-
 #ifndef _SOC_CHIP_H_
 #define _SOC_CHIP_H_
 
 #include <stdint.h>
 #include <intelblocks/cfg.h>
+#include <soc/gpio.h>
 #include <soc/irq.h>
 
 struct soc_intel_xeon_sp_skx_config {
@@ -37,6 +37,7 @@ struct soc_intel_xeon_sp_skx_config {
 	 * 6h = PIRQG#
 	 * 7h = PIRQH#
 	 */
+
 	uint16_t ir00_routing;
 	uint16_t ir01_routing;
 	uint16_t ir02_routing;

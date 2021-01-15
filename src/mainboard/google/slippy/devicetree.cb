@@ -11,9 +11,6 @@ chip northbridge/intel/haswell
 	# Enable HDMI Hotplug with 6ms pulse
 	register "gpu_dp_b_hotplug" = "0x06"
 
-	# Set backlight PWM value for eDP
-	register "gpu_pch_backlight_pwm_hz" = "200"
-
 	register "ec_present" = "true"
 
 	register "usb_xhci_on_resume" = "true"
@@ -23,14 +20,6 @@ chip northbridge/intel/haswell
 			device lapic 0 on end
 			# Magic APIC ID to locate this chip
 			device lapic 0xACAC off end
-
-			register "c1_battery" = "2"	# ACPI(C1) = MWAIT(C1E)
-			register "c2_battery" = "3"	# ACPI(C2) = MWAIT(C3)
-			register "c3_battery" = "9"	# ACPI(C3) = MWAIT(C7S)
-
-			register "c1_acpower" = "2"	# ACPI(C1) = MWAIT(C1E)
-			register "c2_acpower" = "3"	# ACPI(C2) = MWAIT(C3)
-			register "c3_acpower" = "9"	# ACPI(C3) = MWAIT(C7S)
 		end
 	end
 
@@ -40,15 +29,6 @@ chip northbridge/intel/haswell
 		device pci 03.0 on end # mini-hd audio
 
 		chip southbridge/intel/lynxpoint
-			register "pirqa_routing" = "0x8b"
-			register "pirqb_routing" = "0x8a"
-			register "pirqc_routing" = "0x8b"
-			register "pirqd_routing" = "0x8b"
-			register "pirqe_routing" = "0x80"
-			register "pirqf_routing" = "0x80"
-			register "pirqg_routing" = "0x80"
-			register "pirqh_routing" = "0x80"
-
 			# EC range is 0x800-0x9ff
 			register "gen1_dec" = "0x00fc0801"
 			register "gen2_dec" = "0x00fc0901"
@@ -61,8 +41,6 @@ chip northbridge/intel/haswell
 			register "gpe0_en_3" = "0x00000000"
 			register "gpe0_en_4" = "0x00000000"
 
-			register "ide_legacy_combined" = "0x0"
-			register "sata_ahci" = "0x1"
 			register "sata_port_map" = "0x1"
 
 			register "sio_acpi_mode" = "1"

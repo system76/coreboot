@@ -3,6 +3,12 @@
 #ifndef _RULES_H
 #define _RULES_H
 
+#if defined(__TIMELESS__)
+#define ENV_TIMELESS 1
+#else
+#define ENV_TIMELESS 0
+#endif
+
 /* Useful helpers to tell whether the code is executing in bootblock,
  * romstage, ramstage or SMM.
  */
@@ -57,10 +63,11 @@
 
 /*
  * NOTE: "verstage" code may either run as a separate stage or linked into the
- * bootblock/romstage, depending on the setting of CONFIG_SEPARATE_VERSTAGE. The
- * ENV_SEPARATE_VERSTAGE macro will only return true for "verstage" code when
- * CONFIG_SEPARATE_VERSTAGE=y, otherwise that code will have ENV_BOOTBLOCK or
- * ENV_ROMSTAGE set (depending on the CONFIG_VBOOT_STARTS_IN_... options).
+ * bootblock/romstage, depending on the setting of the VBOOT_SEPARATE_VERSTAGE
+ * kconfig option. The ENV_SEPARATE_VERSTAGE macro will only return true for
+ * "verstage" code when CONFIG(VBOOT_SEPARATE_VERSTAGE) is true, otherwise that
+ * code will have ENV_BOOTBLOCK or ENV_ROMSTAGE set (depending on the
+ * "VBOOT_STARTS_IN_"... kconfig options).
  */
 #elif defined(__VERSTAGE__)
 #define ENV_DECOMPRESSOR 0
@@ -72,7 +79,11 @@
 #define ENV_RMODULE 0
 #define ENV_POSTCAR 0
 #define ENV_LIBAGESA 0
+#if CONFIG(VBOOT_STARTS_BEFORE_BOOTBLOCK)
+#define ENV_STRING "verstage-before-bootblock"
+#else
 #define ENV_STRING "verstage"
+#endif
 
 #elif defined(__RAMSTAGE__)
 #define ENV_DECOMPRESSOR 0
@@ -260,6 +271,20 @@
 
 /* Currently rmodules, ramstage and smm have heap. */
 #define ENV_STAGE_HAS_HEAP_SECTION	(ENV_RMODULE || ENV_RAMSTAGE || ENV_SMM)
+
+/* Set USER_SPACE in the makefile for the rare code that runs in userspace */
+#if defined(__USER_SPACE__)
+#define ENV_USER_SPACE		1
+#else
+#define ENV_USER_SPACE		0
+#endif
+
+/* Define the first stage to run */
+#if CONFIG(VBOOT_STARTS_BEFORE_BOOTBLOCK)
+#define ENV_INITIAL_STAGE		ENV_SEPARATE_VERSTAGE
+#else
+#define ENV_INITIAL_STAGE		ENV_BOOTBLOCK
+#endif
 
 /**
  * For pre-DRAM stages and post-CAR always build with simple device model, ie.

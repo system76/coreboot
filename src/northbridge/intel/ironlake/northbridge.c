@@ -4,7 +4,6 @@
 #include <acpi/acpi.h>
 #include <device/pci_ops.h>
 #include <stdint.h>
-#include <delay.h>
 #include <cpu/intel/model_2065x/model_2065x.h>
 #include <device/device.h>
 #include <device/pci.h>
@@ -93,28 +92,30 @@ static struct device_operations pci_domain_ops = {
 
 static void mc_read_resources(struct device *dev)
 {
-	uint32_t tseg_base;
-	uint64_t TOUUD;
+	uint32_t tseg_base, tseg_end;
+	uint64_t touud;
 	uint16_t reg16;
+	int index = 3;
 
 	pci_dev_read_resources(dev);
 
 	mmconf_resource(dev, 0x50);
 
 	tseg_base = pci_read_config32(pcidev_on_root(0, 0), TSEG);
-	TOUUD = pci_read_config16(pcidev_on_root(0, 0),
-				  D0F0_TOUUD);
+	tseg_end = tseg_base + CONFIG_SMM_TSEG_SIZE;
+	touud = pci_read_config16(pcidev_on_root(0, 0),
+				  TOUUD);
 
 	printk(BIOS_DEBUG, "ram_before_4g_top: 0x%x\n", tseg_base);
-	printk(BIOS_DEBUG, "TOUUD: 0x%x\n", (unsigned int)TOUUD);
+	printk(BIOS_DEBUG, "TOUUD: 0x%x\n", (unsigned int)touud);
 
 	/* Report the memory regions */
-	ram_resource(dev, 3, 0, 640);
-	ram_resource(dev, 4, 768, ((tseg_base >> 10) - 768));
+	ram_resource(dev, index++, 0, 640);
+	ram_resource(dev, index++, 768, ((tseg_base >> 10) - 768));
 
-	mmio_resource(dev, 5, tseg_base >> 10, CONFIG_SMM_TSEG_SIZE >> 10);
+	mmio_resource(dev, index++, tseg_base >> 10, CONFIG_SMM_TSEG_SIZE >> 10);
 
-	reg16 = pci_read_config16(pcidev_on_root(0, 0), D0F0_GGC);
+	reg16 = pci_read_config16(pcidev_on_root(0, 0), GGC);
 	const int uma_sizes_gtt[16] =
 	    { 0, 1, 0, 2, 0, 0, 0, 0, 0, 2, 3, 4, 42, 42, 42, 42 };
 	/* Igd memory */
@@ -128,20 +129,25 @@ static void mc_read_resources(struct device *dev)
 	uma_size_gtt = uma_sizes_gtt[(reg16 >> 8) & 0xF];
 
 	igd_base =
-	    pci_read_config32(pcidev_on_root(0, 0), D0F0_IGD_BASE);
+	    pci_read_config32(pcidev_on_root(0, 0), IGD_BASE);
 	gtt_base =
-	    pci_read_config32(pcidev_on_root(0, 0), D0F0_GTT_BASE);
-	mmio_resource(dev, 6, gtt_base >> 10, uma_size_gtt << 10);
-	mmio_resource(dev, 7, igd_base >> 10, uma_size_igd << 10);
+	    pci_read_config32(pcidev_on_root(0, 0), GTT_BASE);
+	if (gtt_base > tseg_end) {
+		/* Reserve the gap. MMIO doesn't work in this range. Keep
+		   it uncacheable, though, for easier MTRR allocation. */
+		mmio_resource(dev, index++, tseg_end >> 10, (gtt_base - tseg_end) >> 10);
+	}
+	mmio_resource(dev, index++, gtt_base >> 10, uma_size_gtt << 10);
+	mmio_resource(dev, index++, igd_base >> 10, uma_size_igd << 10);
 
-	if (TOUUD > 4096)
-		ram_resource(dev, 8, (4096 << 10), ((TOUUD - 4096) << 10));
+	if (touud > 4096)
+		ram_resource(dev, index++, (4096 << 10), ((touud - 4096) << 10));
 
 	/* This memory is not DMA-capable. */
-	if (TOUUD >= 8192 - 64)
-	    bad_ram_resource(dev, 9, 0x1fc000000ULL >> 10, 0x004000000 >> 10);
+	if (touud >= 8192 - 64)
+		bad_ram_resource(dev, index++, 0x1fc000000ULL >> 10, 0x004000000 >> 10);
 
-	add_fixed_resources(dev, 10);
+	add_fixed_resources(dev, index);
 }
 
 static void northbridge_init(struct device *dev)
@@ -149,20 +155,20 @@ static void northbridge_init(struct device *dev)
 	u32 reg32;
 
 	/* Clear error status bits */
-	DMIBAR32(0x1c4) = 0xffffffff;
-	DMIBAR32(0x1d0) = 0xffffffff;
+	DMIBAR32(DMIUESTS) = 0xffffffff;
+	DMIBAR32(DMICESTS) = 0xffffffff;
 
-	reg32 = DMIBAR32(0x238);
+	reg32 = DMIBAR32(DMILLTC);
 	reg32 |= (1 << 29);
-	DMIBAR32(0x238) = reg32;
+	DMIBAR32(DMILLTC) = reg32;
 
 	reg32 = DMIBAR32(0x1f8);
 	reg32 |= (1 << 16);
 	DMIBAR32(0x1f8) = reg32;
 
-	reg32 = DMIBAR32(0x88);
+	reg32 = DMIBAR32(DMILCTL);
 	reg32 |= (1 << 1) | (1 << 0);
-	DMIBAR32(0x88) = reg32;
+	DMIBAR32(DMILCTL) = reg32;
 }
 
 /* Disable unused PEG devices based on devicetree before PCI enumeration */
@@ -183,7 +189,7 @@ static void ironlake_init(void *const chip_info)
 	}
 	const struct device *const d0f0 = pcidev_on_root(0, 0);
 	if (d0f0)
-		pci_update_config32(d0f0, D0F0_DEVEN, deven_mask, 0);
+		pci_update_config32(d0f0, DEVEN, deven_mask, 0);
 
 }
 
@@ -196,10 +202,34 @@ static struct device_operations mc_ops = {
 	.ops_pci		= &pci_dev_ops_pci,
 };
 
-static const struct pci_driver mc_driver_ard __pci_driver = {
-	.ops	= &mc_ops,
-	.vendor	= PCI_VENDOR_ID_INTEL,
-	.device	= 0x0044,	/* Arrandale DRAM controller */
+/*
+ * The host bridge PCI device ID can be changed by the firmware. There
+ * is no documentation about it, though. There's 'official' IDs, which
+ * appear in spec updates and Windows drivers, and 'mysterious' IDs,
+ * which Intel doesn't want OSes to know about and thus are not listed.
+ *
+ * The current coreboot code seems to be able to change the device ID
+ * of the host bridge, but it seems to be missing a warm reset so that
+ * the device ID changes. Account for the 'mysterious' device IDs in
+ * the northbridge driver, so that booting an OS has a chance to work.
+ */
+static const unsigned short pci_device_ids[] = {
+	/* 'Official' DIDs */
+	0x0040, /* Clarkdale */
+	0x0044, /* Arrandale */
+	0x0048, /* Unknown, but it appears in OS drivers and raminit */
+
+	/* Mysterious DIDs, taken from Linux' intel-agp driver */
+	0x0062, /* Arrandale A-? */
+	0x0069, /* Clarkdale K-0 */
+	0x006a, /* Arrandale K-0 */
+	0
+};
+
+static const struct pci_driver mc_driver_ilk __pci_driver = {
+	.ops     = &mc_ops,
+	.vendor  = PCI_VENDOR_ID_INTEL,
+	.devices = pci_device_ids,
 };
 
 static struct device_operations cpu_bus_ops = {
@@ -219,7 +249,7 @@ static void enable_dev(struct device *dev)
 }
 
 struct chip_operations northbridge_intel_ironlake_ops = {
-	CHIP_NAME("Intel i7 (Arrandale) integrated Northbridge")
+	CHIP_NAME("Intel Ironlake integrated Northbridge")
 	.enable_dev = enable_dev,
 	.init = ironlake_init,
 };

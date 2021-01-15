@@ -15,6 +15,10 @@ config MAX_SOCKET
 	int
 	default 2
 
+config CPU_ADDR_BITS
+	int
+	default 46
+
 # For 2S config, the number of cpus could be as high as
 # 2 threads * 20 cores * 2 sockets
 config MAX_CPUS
@@ -54,5 +58,9 @@ config C_ENV_BOOTBLOCK_SIZE
 config HEAP_SIZE
 	hex
 	default 0x80000
+
+config IED_REGION_SIZE
+	hex
+	default 0x400000
 
 endif

@@ -54,24 +54,6 @@ struct soc_intel_icelake_config {
 	/* TCC activation offset */
 	uint32_t tcc_offset;
 
-	uint64_t PlatformMemorySize;
-	uint8_t SmramMask;
-	uint8_t MrcFastBoot;
-	uint32_t TsegSize;
-	uint16_t MmioSize;
-
-	/* DDR Frequency Limit. Maximum Memory Frequency Selections in Mhz.
-	 * Options : 1067, 1333, 1600, 1867, 2133, 2400, 2667, 2933, 0(Auto) */
-	uint16_t DdrFreqLimit;
-
-	/* SAGV Low Frequency Selections in Mhz.
-	 * Options : 1067, 1333, 1600, 1867, 2133, 2400, 2667, 2933, 0(Auto) */
-	uint16_t FreqSaGvLow;
-
-	/* SAGV Mid Frequency Selections in Mhz.
-	 * Options : 1067, 1333, 1600, 1867, 2133, 2400, 2667, 2933, 0(Auto) */
-	uint16_t FreqSaGvMid;
-
 	/* System Agent dynamic frequency support. Only effects ULX/ULT CPUs.
 	 * When enabled memory will be training at two different frequencies.
 	 * 0:Disabled, 1:FixedLow, 2:FixedMid, 3:FixedHigh, 4:Enabled */
@@ -83,14 +65,12 @@ struct soc_intel_icelake_config {
 		SaGv_Enabled,
 	} SaGv;
 
-
 	/* Rank Margin Tool. 1:Enable, 0:Disable */
 	uint8_t RMT;
 
 	/* USB related */
 	struct usb2_port_config usb2_ports[16];
 	struct usb3_port_config usb3_ports[10];
-	uint8_t SsicPortEnable;
 	/* Wake Enable Bitmap for USB2 ports */
 	uint16_t usb2_wake_enable_bitmap;
 	/* Wake Enable Bitmap for USB3 ports */
@@ -146,33 +126,18 @@ struct soc_intel_icelake_config {
 	/* Enable if SD Card Power Enable Signal is Active High */
 	uint8_t SdCardPowerEnableActiveHigh;
 
-	/* Integrated Sensor */
-	uint8_t PchIshEnable;
-
 	/* Heci related */
 	uint8_t Heci3Enabled;
 
 	/* Gfx related */
-	uint8_t IgdDvmt50PreAlloc;
-	uint8_t InternalGfx;
 	uint8_t SkipExtGfxScan;
 
-	uint32_t GraphicsConfigPtr;
 	uint8_t Device4Enable;
-
-	/* GPIO IRQ Select. The valid value is 14 or 15 */
-	uint8_t GpioIrqRoute;
-	/* SCI IRQ Select. The valid value is 9, 10, 11, 20, 21, 22, 23 */
-	uint8_t SciIrqSelect;
-	/* TCO IRQ Select. The valid value is 9, 10, 11, 20, 21, 22, 23 */
-	uint8_t TcoIrqSelect;
-	uint8_t TcoIrqEnable;
 
 	/* HeciEnabled decides the state of Heci1 at end of boot
 	 * Setting to 0 (default) disables Heci1 and hides the device from OS */
 	uint8_t HeciEnabled;
-	/* Intel Speed Shift Technology */
-	uint8_t speed_shift_enable;
+
 	/* Enable VR specific mailbox command
 	 * 00b - no VR specific cmd sent
 	 * 01b - VR mailbox cmd specifically for the MPS IMPV8 VR will be sent

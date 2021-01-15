@@ -8,7 +8,9 @@
 #include <console/console.h>
 #include <delay.h>
 #include <device/device.h>
+#include <ec/google/chromeec/ec.h>
 #include <edid.h>
+#include <framebuffer_info.h>
 #include <gpio.h>
 #include <soc/ddp.h>
 #include <soc/dsi.h>
@@ -55,6 +57,13 @@ static void configure_audio(void)
 	gpio_set_mode(GPIO(EINT3), PAD_EINT3_FUNC_I2S3_DO);
 }
 
+static void configure_ec(void)
+{
+	/* EC may need SKU ID to identify if it is clamshell or convertible. */
+	if (CONFIG(BOARD_GOOGLE_JACUZZI_COMMON))
+		google_chromeec_set_sku_id(sku_id());
+}
+
 /* Default implementation for boards without panels defined yet. */
 struct panel_description __weak *get_panel_description(int panel_id)
 {
@@ -83,7 +92,7 @@ static void power_on_panel(struct panel_description *panel)
 	gpio_output(GPIO_PPVARN_LCD_EN, 1);
 	gpio_output(GPIO_PP1800_LCM_EN, 1);
 	gpio_output(GPIO_PP3300_LCM_EN, 1);
-	mdelay(6);
+	mdelay(15);
 	gpio_output(GPIO_LCM_RST_1V8, 1);
 	mdelay(6);
 }
@@ -104,8 +113,7 @@ struct panel_description *get_panel_from_cbfs(struct panel_description *desc)
 		return NULL;
 
 	snprintf(cbfs_name, sizeof(cbfs_name), "panel-%s", desc->name);
-	if (cbfs_boot_load_file(cbfs_name, buffer.raw, sizeof(buffer),
-				CBFS_TYPE_STRUCT))
+	if (cbfs_load(cbfs_name, buffer.raw, sizeof(buffer)))
 		desc->s = &buffer.s;
 	else
 		printk(BIOS_ERR, "Missing %s in CBFS.\n", cbfs_name);
@@ -160,9 +168,15 @@ static bool configure_display(void)
 		printk(BIOS_ERR, "%s: Failed in DSI init.\n", __func__);
 		return false;
 	}
+
+	if (panel->post_power_on)
+		panel->post_power_on();
+
 	mtk_ddp_mode_set(edid);
-	set_vbe_mode_info_valid(edid, 0);
-	set_vbe_framebuffer_orientation(panel->s->orientation);
+	struct fb_info *info = fb_new_framebuffer_info_from_edid(edid, 0);
+	if (info)
+		fb_set_orientation(info, panel->s->orientation);
+
 	return true;
 }
 
@@ -191,6 +205,7 @@ static void mainboard_init(struct device *dev)
 	configure_emmc();
 	configure_usb();
 	configure_audio();
+	configure_ec();
 	if (spm_init())
 		printk(BIOS_ERR,
 		       "SPM initialization failed, suspend/resume may fail.\n");

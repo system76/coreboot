@@ -1,13 +1,12 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-
 #ifndef _SOC_CHIP_H_
 #define _SOC_CHIP_H_
 
 #include <acpi/acpi_device.h>
 #include <device/i2c_simple.h>
 #include <drivers/i2c/designware/dw_i2c.h>
-#include <drivers/intel/gma/i915.h>
+#include <drivers/intel/gma/gma.h>
 #include <intelblocks/cfg.h>
 #include <intelblocks/gspi.h>
 #include <intelblocks/lpc_lib.h>
@@ -38,29 +37,7 @@ struct soc_intel_skylake_config {
 	struct soc_power_limits_config power_limits_config;
 
 	/* IGD panel configuration */
-	unsigned int gpu_pp_up_delay_ms;
-	unsigned int gpu_pp_down_delay_ms;
-	unsigned int gpu_pp_cycle_delay_ms;
-	unsigned int gpu_pp_backlight_on_delay_ms;
-	unsigned int gpu_pp_backlight_off_delay_ms;
-	unsigned int gpu_pch_backlight_pwm_hz;
-	enum {
-		GPU_BACKLIGHT_POLARITY_HIGH = 0,
-		GPU_BACKLIGHT_POLARITY_LOW,
-	} gpu_pch_backlight_polarity;
-
-	/*
-	 * Interrupt Routing configuration
-	 * If bit7 is 1, the interrupt is disabled.
-	 */
-	uint8_t pirqa_routing;
-	uint8_t pirqb_routing;
-	uint8_t pirqc_routing;
-	uint8_t pirqd_routing;
-	uint8_t pirqe_routing;
-	uint8_t pirqf_routing;
-	uint8_t pirqg_routing;
-	uint8_t pirqh_routing;
+	struct i915_gpu_panel_config panel_cfg;
 
 	/* Gpio group routed to each dword of the GPE0 block. Values are
 	 * of the form GPP_[A:G] or GPD. */
@@ -99,33 +76,10 @@ struct soc_intel_skylake_config {
 	uint32_t deep_sx_config;
 
 	/* TCC activation offset */
-	int tcc_offset;
-
-	/* Package PL4 power limit in Watts */
-	u32 PowerLimit4;
+	uint32_t tcc_offset;
 
 	/* Whether to ignore VT-d support of the SKU */
 	int ignore_vtd;
-
-	/*
-	 * The following fields come from FspUpdVpd.h.
-	 * These are configuration values that are passed to FSP during
-	 * MemoryInit.
-	 */
-	u64 PlatformMemorySize;
-	u8 SmramMask;
-	u8 MrcFastBoot;
-	u32 TsegSize;
-	u16 MmioSize;
-
-	/*
-	 * DDR Frequency Limit
-	 * 0(Auto), 1067, 1333, 1600, 1867, 2133, 2400
-	 */
-	u16 DdrFreqLimit;
-
-	/* Probeless Trace function */
-	u8 ProbelessTrace;
 
 	/*
 	 * System Agent dynamic frequency configuration
@@ -149,20 +103,15 @@ struct soc_intel_skylake_config {
 	u8 CmdTriStateDis;
 
 	/* Lan */
-	u8 EnableLan;
 	u8 EnableLanLtr;
 	u8 EnableLanK1Off;
 	u8 LanClkReqSupported;
 	u8 LanClkReqNumber;
 
 	/* SATA related */
-	u8 EnableSata;
 	enum {
-		/* Documentation and header files of Skylake FSP disagree on
-		   the values, Kaby Lake FSP (KabylakeFsp0001 on github) uses
-		   these: */
-		KBLFSP_SATA_MODE_AHCI    = 0,
-		KBLFSP_SATA_MODE_RAID    = 1,
+		SATA_AHCI    = 0,
+		SATA_RAID    = 1,
 	} SataMode;
 	u8 SataSalpSupport;
 	u8 SataPortsEnable[8];
@@ -172,7 +121,6 @@ struct soc_intel_skylake_config {
 	u8 SataSpeedLimit;
 
 	/* Audio related */
-	u8 EnableAzalia;
 	u8 DspEnable;
 
 	/* HDA Virtual Channel Type Select */
@@ -190,7 +138,6 @@ struct soc_intel_skylake_config {
 	u8 IoBufferOwnership;
 
 	/* Trace Hub function */
-	u8 EnableTraceHub;
 	u32 TraceHubMemReg0Size;
 	u32 TraceHubMemReg1Size;
 
@@ -280,15 +227,20 @@ struct soc_intel_skylake_config {
 		AspmL1,
 		AspmL0sL1,
 		AspmAutoConfig,
-	} PcieRpAspm[CONFIG_MAX_ROOT_PORTS];
+	} pcie_rp_aspm[CONFIG_MAX_ROOT_PORTS];
+
+	/* PCIe RP L1 substate */
+	enum {
+		L1SS_Default,
+		L1SS_Disabled,
+		L1SS_L1_1,
+		L1SS_L1_2,
+	} pcie_rp_l1substates[CONFIG_MAX_ROOT_PORTS];
 
 	/* USB related */
 	struct usb2_port_config usb2_ports[16];
 	struct usb3_port_config usb3_ports[10];
 	u8 SsicPortEnable;
-
-	/* SMBus */
-	u8 SmbusEnable;
 
 	/*
 	 * SerialIO device mode selection:
@@ -320,25 +272,12 @@ struct soc_intel_skylake_config {
 	/* Bus voltage level, default is 3.3V */
 	enum skylake_i2c_voltage i2c_voltage[CONFIG_SOC_INTEL_I2C_DEV_MAX];
 
-	/* Camera */
-	u8 Cio2Enable;
-	u8 SaImguEnable;
-
 	/* eMMC and SD */
-	u8 ScsEmmcEnabled;
 	u8 ScsEmmcHs400Enabled;
-	u8 ScsSdCardEnabled;
 	u8 EmmcHs400DllNeed;
 	u8 ScsEmmcHs400RxStrobeDll1;
 	u8 ScsEmmcHs400TxDataDll;
 
-	u8 PttSwitch;
-	u8 HeciTimeouts;
-	u8 HsioMessaging;
-	u8 Heci3Enabled;
-
-	/* Gfx related */
-	u8 IgdDvmt50PreAlloc;
 	enum {
 		Display_iGFX,
 		Display_PEG,
@@ -346,7 +285,6 @@ struct soc_intel_skylake_config {
 		Display_Auto,
 		Display_Switchable,
 	} PrimaryDisplay;
-	u8 ApertureSize;
 	u8 SkipExtGfxScan;
 	u8 ScanExtGfxForLegacyOpRom;
 
@@ -357,9 +295,7 @@ struct soc_intel_skylake_config {
 	 */
 	u32 LogoPtr;
 	u32 LogoSize;
-	u32 GraphicsConfigPtr;
-	u8 Device4Enable;
-	u8 RtcLock;
+
 	/* GPIO IRQ Route  The valid values is 14 or 15*/
 	u8 GpioIrqSelect;
 	/* SCI IRQ Select  The valid values is 9, 10, 11 and 20 21, 22, 23*/
@@ -432,11 +368,6 @@ struct soc_intel_skylake_config {
 	} PmConfigSlpAMinAssert;
 
 	/*
-	 * This member describes whether or not the PCI ClockRun feature of PCH
-	 * should be enabled. Values 0: Disabled, 1: Enabled
-	 */
-	u8 PmConfigPciClockRun;
-	/*
 	 * SLP_X Stretching After SUS Well Power Up. Values 0: Disabled,
 	 * 1: Enabled
 	 */
@@ -481,9 +412,7 @@ struct soc_intel_skylake_config {
 	 * Setting to 0 (default) disables Heci1 and hides the device from OS
 	 */
 	u8 HeciEnabled;
-	u8 PmTimerDisabled;
-	/* Intel Speed Shift Technology */
-	u8 speed_shift_enable;
+
 	/*
 	 * Enable VR specific mailbox command
 	 * 000b - Don't Send any VR command
@@ -532,9 +461,6 @@ struct soc_intel_skylake_config {
 	 * 0b - Enabled
 	 * 1b - Disabled
 	 */
-	/* FSP 1.1 */
-	u8 FastPkgCRampDisable;
-	/* FSP 2.0 */
 	u8 FastPkgCRampDisableIa;
 	u8 FastPkgCRampDisableGt;
 	u8 FastPkgCRampDisableSa;

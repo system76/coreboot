@@ -7,20 +7,14 @@
 #include <cbmem.h>
 #include <cpu/x86/mtrr.h>
 #include <cpu/x86/smm.h>
-#include <program_loading.h>
-#include <cpu/intel/smm_reloc.h>
-#include "ironlake.h"
+#include <types.h>
 
-static uintptr_t smm_region_start(void)
-{
-	/* Base of TSEG is top of usable DRAM */
-	uintptr_t tom = pci_read_config32(PCI_DEV(0,0,0), TSEG);
-	return tom;
-}
+#include "ironlake.h"
 
 static uintptr_t northbridge_get_tseg_base(void)
 {
-	return smm_region_start();
+	/* Base of TSEG is top of usable DRAM */
+	return pci_read_config32(PCI_DEV(0, 0, 0), TSEG);
 }
 
 static size_t northbridge_get_tseg_size(void)
@@ -30,7 +24,7 @@ static size_t northbridge_get_tseg_size(void)
 
 void *cbmem_top_chipset(void)
 {
-	return (void *) smm_region_start();
+	return (void *)northbridge_get_tseg_base();
 }
 
 void smm_region(uintptr_t *start, size_t *size)

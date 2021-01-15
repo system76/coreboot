@@ -27,7 +27,7 @@ void xbus_cfg(pnp_devfn_t dev)
 	/* Select proper BIOS size (4MB). */
 	pnp_write_config(dev, PC87417_XMEMCNF2,
 			 (pnp_read_config(dev, PC87417_XMEMCNF2)) | 0x04);
-	xbus_index = pnp_read_iobase(dev, 0x60);
+	xbus_index = pnp_read_iobase(dev, PNP_IDX_IO0);
 
 	/* Enable writes to devices attached to XCS0 (XBUS Chip Select 0). */
 	for (i = 0; i <= 0xf; i++)

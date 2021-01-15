@@ -28,6 +28,7 @@
 
 //#define USB_DEBUG
 
+#include <inttypes.h>
 #include <libpayload-config.h>
 #include <usb/usb.h>
 
@@ -229,7 +230,7 @@ get_free_address (hci_t *controller)
 	int i = controller->latest_address + 1;
 	for (; i != controller->latest_address; i++) {
 		if (i >= ARRAY_SIZE(controller->devices) || i < 1) {
-			usb_debug("WARNING: Device addresses for controller %#x"
+			usb_debug("WARNING: Device addresses for controller %#" PRIxPTR
 				  " wrapped around!\n", controller->reg_base);
 			i = 0;
 			continue;
@@ -275,7 +276,7 @@ usb_decode_mps0(usb_speed speed, u8 bMaxPacketSize0)
 			bMaxPacketSize0 = 9;
 		}
 		return 1 << bMaxPacketSize0;
-	default: 	/* GCC is stupid and cannot deal with enums correctly */
+	default:	/* GCC is stupid and cannot deal with enums correctly */
 		return 8;
 	}
 }

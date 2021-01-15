@@ -13,9 +13,11 @@
 #include <intelblocks/acpi.h>
 #include <soc/acpi.h>
 #include <soc/cpu.h>
+#include <soc/nvs.h>
 #include <soc/soc_util.h>
 #include <soc/pmc.h>
 #include <soc/systemagent.h>
+#include <soc/pci_devs.h>
 
 #define MWAIT_RES(state, sub_state)                         \
 	{                                                   \
@@ -58,18 +60,13 @@ static acpi_cstate_t cstate_map[] = {
 	}
 };
 
-void acpi_init_gnvs(struct global_nvs *gnvs)
+void soc_fill_gnvs(struct global_nvs *gnvs)
 {
 	/* CPU core count */
 	gnvs->pcnt = dev_count_cpu();
 
 	/* Top of Low Memory (start of resource allocation) */
 	gnvs->tolm = (uintptr_t)cbmem_top();
-
-#if CONFIG(CONSOLE_CBMEM)
-	/* Update the mem console pointer. */
-	gnvs->cbmc = (u32)cbmem_find(CBMEM_ID_CONSOLE);
-#endif
 
 	/* MMIO Low/High & TSEG base and length */
 	gnvs->mmiob = (u32)get_top_of_low_memory();
@@ -244,27 +241,55 @@ unsigned long southcluster_write_acpi_tables(const struct device *device,
 	return current;
 }
 
-void southcluster_inject_dsdt(const struct device *device)
+__weak void acpi_create_serialio_ssdt(acpi_header_t *ssdt) {}
+
+static unsigned long acpi_fill_dmar(unsigned long current)
 {
-	struct global_nvs *gnvs;
+	uint64_t vtbar;
+	unsigned long tmp = current;
 
-	gnvs = cbmem_find(CBMEM_ID_ACPI_GNVS);
-	if (!gnvs) {
-		gnvs = cbmem_add(CBMEM_ID_ACPI_GNVS, sizeof(*gnvs));
-		if (gnvs)
-			memset(gnvs, 0, sizeof(*gnvs));
-	}
+	vtbar = read64((void *)(DEFAULT_MCHBAR + MCH_VTBAR_OFFSET)) & MCH_VTBAR_MASK;
+	printk(BIOS_DEBUG, "DEFVTBAR:0x%llx\n", vtbar);
+	if (!vtbar)
+		return current;
 
-	if (gnvs) {
-		acpi_create_gnvs(gnvs);
-		/* And tell SMI about it */
-		apm_control(APM_CNT_GNVS_UPDATE);
+	current += acpi_create_dmar_drhd(current,
+			DRHD_INCLUDE_PCI_ALL, 0, vtbar);
 
-		/* Add it to DSDT.  */
-		acpigen_write_scope("\\");
-		acpigen_write_name_dword("NVSA", (u32)gnvs);
-		acpigen_pop_len();
-	}
+	current += acpi_create_dmar_ds_ioapic(current,
+			2, PCH_IOAPIC_PCI_BUS, PCH_IOAPIC_PCI_SLOT, 0);
+	current += acpi_create_dmar_ds_msi_hpet(current,
+			0, PCH_HPET_PCI_BUS, PCH_HPET_PCI_SLOT, 0);
+
+	acpi_dmar_drhd_fixup(tmp, current);
+
+	/* Create RMRR; see "VTD PLATFORM CONFIGURATION" in FSP log */
+	tmp = current;
+	current += acpi_create_dmar_rmrr(current, 0,
+					 RMRR_USB_BASE_ADDRESS,
+					 RMRR_USB_LIMIT_ADDRESS);
+	current += acpi_create_dmar_ds_pci(current,
+			0, XHCI_DEV, XHCI_FUNC);
+	acpi_dmar_rmrr_fixup(tmp, current);
+
+	return current;
 }
 
-__weak void acpi_create_serialio_ssdt(acpi_header_t *ssdt) {}
+unsigned long systemagent_write_acpi_tables(const struct device *dev,
+					    unsigned long current,
+					    struct acpi_rsdp *const rsdp)
+{
+	/* Create DMAR table only if we have VT-d capability. */
+	const u32 capid0_a = pci_read_config32(dev, CAPID0_A);
+	if (capid0_a & VTD_DISABLE)
+		return current;
+
+	acpi_dmar_t *const dmar = (acpi_dmar_t *)current;
+	printk(BIOS_DEBUG, "ACPI:    * DMAR\n");
+	acpi_create_dmar(dmar, DMAR_INTR_REMAP, acpi_fill_dmar);
+	current += dmar->header.length;
+	current = acpi_align_current(current);
+	acpi_add_table(rsdp, dmar);
+
+	return current;
+}

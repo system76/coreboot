@@ -1,6 +1,3 @@
-payloads/libpayload/install/
-payloads/nvramcui/build
-payloads/nvramcui/libpayload
 junit.xml
 abuild*.xml
 .config
@@ -11,46 +8,8 @@ defconfig
 .ccwrap
 build/
 coreboot-builds/
-payloads/coreinfo/lpbuild/
-payloads/coreinfo/lp.config*
-payloads/external/depthcharge/depthcharge/
-payloads/external/FILO/filo/
-payloads/external/GRUB2/grub2/
-payloads/external/LinuxBoot/linuxboot/
-payloads/external/SeaBIOS/seabios/
-payloads/external/tianocore/tianocore/
-payloads/external/tint/tint/
-payloads/external/U-Boot/u-boot/
-payloads/external/Memtest86Plus/memtest86plus/
-payloads/external/iPXE/ipxe/
-util/crossgcc/acpica-unix-*/
-util/crossgcc/binutils-*/
-util/crossgcc/build-*BINUTILS/
-util/crossgcc/build-*EXPAT/
-util/crossgcc/build-*GCC/
-util/crossgcc/build-*GDB/
-util/crossgcc/build-*GMP/
-util/crossgcc/build-*LIBELF/
-util/crossgcc/build-*MPC/
-util/crossgcc/build-*MPFR/
-util/crossgcc/build-*PYTHON/
-util/crossgcc/build-*LVM/
-util/crossgcc/build-*IASL/
-util/crossgcc/expat-*/
-util/crossgcc/gcc-*/
-util/crossgcc/gdb-*/
-util/crossgcc/gmp-*/
-util/crossgcc/libelf-*/
-util/crossgcc/mingwrt-*/
-util/crossgcc/mpc-*/
-util/crossgcc/mpfr-*/
-util/crossgcc/Python-*/
-util/crossgcc/*.src/
-util/crossgcc/tarballs/
-util/crossgcc/w32api-*/
-util/crossgcc/xgcc/
-util/crossgcc/xgcc-*/
-util/crossgcc/xgcc
+coreboot-builds*/
+
 site-local
 
 *.\#
@@ -59,13 +18,15 @@ site-local
 *.debug
 !Kconfig.debug
 *.elf
+*.fd
 *.o
 *.o.d
 *.out
 *.pyc
 *.sw[po]
 /*.rom
-coreboot-builds*/
+.test
+.dependencies
 
 # Development friendly files
 tags
@@ -75,61 +36,9 @@ tags
 xgcc/
 tarballs/
 
-#
-# KDE editors create lots of backup files whenever
-# a file is edited, so just ignore them
+# editor backup files, temporary files, IDE project files
 *~
 *.kate-swp
-# Ignore Kdevelop project file
 *.kdev4
-
-util/*/.dependencies
-util/*/.test
-util/amdfwtool/amdfwtool
-util/archive/archive
-util/bincfg/bincfg
-util/board_status/board-status
-util/bucts/bucts
-util/cbfstool/cbfs-compression-tool
-util/cbfstool/cbfstool
-util/cbfstool/fmaptool
-util/cbfstool/ifwitool
-util/cbfstool/rmodtool
-util/cbmem/.dependencies
-util/cbmem/cbmem
-util/dumpmmcr/dumpmmcr
-util/ectool/ectool
-util/futility/futility
-util/genprof/genprof
-util/getpir/getpir
-util/ifdtool/ifdtool
-util/intelmetool/intelmetool
-util/inteltool/.dependencies
-util/inteltool/inteltool
-util/intelvbttool/intelvbttool
-util/k8resdump/k8resdump
-util/lbtdump/lbtdump
-util/mptable/mptable
-util/msrtool/Makefile
-util/msrtool/Makefile.deps
-util/msrtool/msrtool
-util/nvramtool/.dependencies
-util/nvramtool/nvramtool
-util/optionlist/Options.wiki
-util/pmh7tool/pmh7tool
-util/runfw/googlesnow
-util/superiotool/superiotool
-util/vgabios/testbios
-util/autoport/autoport
-util/kbc1126/kbc1126_ec_dump
-util/kbc1126/kbc1126_ec_insert
-
-Documentation/*.aux
-Documentation/*.idx
-Documentation/*.log
-Documentation/*.toc
-Documentation/*.out
-Documentation/*.pdf
-Documentation/_build
 
 doxygen/*

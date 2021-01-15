@@ -1,8 +1,4 @@
-/*
- *
- *
- * SPDX-License-Identifier: GPL-2.0-or-later
- */
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #ifndef __MAINBOARD_EC_H__
 #define __MAINBOARD_EC_H__
@@ -38,7 +34,9 @@
 /* EC can wake from S3 with lid, power button or mode change event */
 #define MAINBOARD_EC_S3_WAKE_EVENTS \
 	(MAINBOARD_EC_S5_WAKE_EVENTS |\
-	 EC_HOST_EVENT_MASK(EC_HOST_EVENT_KEY_PRESSED) |\
+	 EC_HOST_EVENT_MASK(EC_HOST_EVENT_AC_CONNECTED)    |\
+	 EC_HOST_EVENT_MASK(EC_HOST_EVENT_AC_DISCONNECTED) |\
+	 EC_HOST_EVENT_MASK(EC_HOST_EVENT_KEY_PRESSED)     |\
 	 EC_HOST_EVENT_MASK(EC_HOST_EVENT_MODE_CHANGE))
 
 #define MAINBOARD_EC_S0IX_WAKE_EVENTS	(MAINBOARD_EC_S3_WAKE_EVENTS)

@@ -12,7 +12,7 @@ config BOARD_SPECIFIC_OPTIONS
 	select SOC_INTEL_KABYLAKE
 	select SKYLAKE_SOC_PCH_H if BOARD_INTEL_KBLRVP8 || BOARD_INTEL_KBLRVP11
 	select MAINBOARD_HAS_CHROMEOS
-	select GENERIC_SPD_BIN
+	select HAVE_SPD_IN_CBFS
 	select MAINBOARD_HAS_LPC_TPM
 	select INTEL_LPSS_UART_FOR_CONSOLE
 	select MAINBOARD_USES_IFD_GBE_REGION if BOARD_INTEL_KBLRVP8
@@ -42,10 +42,6 @@ config MAINBOARD_PART_NUMBER
 config MAINBOARD_FAMILY
 	string
 	default "Intel_Kblrvp"
-
-config MAX_CPUS
-	int
-	default 8
 
 config TPM_PIRQ
 	hex
@@ -84,4 +80,9 @@ config DIMM_SPD_SIZE
 config UART_FOR_CONSOLE
 	int
 	default 2
+
+config USE_PM_ACPI_TIMER
+	default n if BOARD_INTEL_KBLRVP3
+	default n if BOARD_INTEL_KBLRVP7
+
 endif

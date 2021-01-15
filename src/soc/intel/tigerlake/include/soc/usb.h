@@ -1,6 +1,5 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-
 #ifndef _SOC_USB_H_
 #define _SOC_USB_H_
 
@@ -32,6 +31,7 @@ struct usb2_port_config {
 	uint8_t tx_emp_enable;
 	uint8_t pre_emp_bias;
 	uint8_t pre_emp_bit;
+	uint8_t type_c;
 };
 
 /* USB Overcurrent pins definition */
@@ -113,6 +113,7 @@ enum {
 	.tx_emp_enable = USB2_PRE_EMP_ON, \
 	.pre_emp_bias  = USB2_BIAS_56P3MV, \
 	.pre_emp_bit   = USB2_HALF_BIT_PRE_EMP, \
+	.type_c	       = 1, \
 }
 
 struct usb3_port_config {
@@ -132,7 +133,7 @@ struct usb3_port_config {
 #define USB3_PORT_DEFAULT(pin) { \
 	.enable           = 1, \
 	.ocpin            = (pin), \
-	.tx_de_emp        = 0x0, \
+	.tx_de_emp        = 0x29, \
 	.tx_downscale_amp = 0x00, \
 }
 

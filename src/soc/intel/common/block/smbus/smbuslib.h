@@ -3,13 +3,14 @@
 #ifndef SOC_INTEL_COMMON_BLOCK_SMBUS__LIB_H
 #define SOC_INTEL_COMMON_BLOCK_SMBUS__LIB_H
 
-
 /* SMBus IO Base Address */
 #define SMBUS_IO_BASE	0xefa0
 
 /* PCI Configuration Space : SMBus */
 #define HOSTC	0x40
 #define HST_EN	(1 << 0)
+#define I2C_EN  (1 << 2)
+
 /* SMBus I/O bits. */
 #define SMBHSTSTAT	0x0
 #define SMBHSTCTL	0x2

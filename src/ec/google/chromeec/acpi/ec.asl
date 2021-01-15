@@ -10,7 +10,10 @@
 #ifdef DPTF_ENABLE_CHARGER
 External (\_SB.DPTF.TCHG, DeviceObj)
 #endif
-
+/* Enable DPTC interface with AMD ALIB */
+#ifdef EC_ENABLE_AMD_DPTC_SUPPORT
+External(\_SB.DPTC, MethodObj)
+#endif
 
 Device (EC0)
 {
@@ -28,7 +31,6 @@ Device (EC0)
 	OperationRegion (ERAM, EmbeddedControl, 0x00, EC_ACPI_MEM_MAPPED_BEGIN)
 	Field (ERAM, ByteAcc, Lock, Preserve)
 	{
-		Offset (0x00),
 		RAMV, 8,	// EC RAM Version
 		TSTB, 8,	// Test Byte
 		TSTC, 8,	// Complement of Test Byte
@@ -79,7 +81,7 @@ Device (EC0)
 		Offset (0x12),
 		BTID, 8,	// Battery index that host wants to read
 		USPP, 8,	// USB Port Power
-}
+	}
 
 #if CONFIG(EC_GOOGLE_CHROMEEC_ACPI_MEMMAP)
 	OperationRegion (EMEM, EmbeddedControl,
@@ -156,6 +158,17 @@ Device (EC0)
 
 		// Initialize LID switch state
 		Store (LIDS, \LIDS)
+
+#ifdef EC_ENABLE_AMD_DPTC_SUPPORT
+		/*
+		 * Per the device mode (clamshell or tablet) to initialize
+		 * the thermal setting on OS startup.
+		 */
+		If (CondRefOf (\_SB.DPTC)) {
+			\_SB.DPTC()
+		}
+#endif
+
 	}
 
 	/* Read requested temperature and check against EC error values */
@@ -379,6 +392,11 @@ Device (EC0)
 #endif
 #ifdef EC_ENABLE_TBMC_DEVICE
 		Notify (TBMC, 0x80)
+#endif
+#ifdef EC_ENABLE_AMD_DPTC_SUPPORT
+		If (CondRefOf (\_SB.DPTC)) {
+			\_SB.DPTC()
+		}
 #endif
 	}
 

@@ -1,7 +1,7 @@
 
 config BOARD_INTEL_BASEBOARD_GLKRVP
 	def_bool n
-	select SOC_INTEL_GLK
+	select SOC_INTEL_GEMINILAKE
 	select BOARD_ROMSIZE_KB_16384
 	select DRIVERS_I2C_GENERIC
 	select DRIVERS_I2C_HID
@@ -45,7 +45,6 @@ config CHROMEOS
 
 config VBOOT
 	select HAS_RECOVERY_MRC_CACHE
-	select MRC_CLEAR_NORMAL_CACHE_ON_RECOVERY_RETRAIN
 	select EC_GOOGLE_CHROMEEC_SWITCHES if GLK_CHROME_EC
 
 config MAINBOARD_DIR
@@ -67,10 +66,6 @@ config MAINBOARD_PART_NUMBER
 config MAINBOARD_FAMILY
 	string
 	default "Intel_Glkrvp" if BOARD_INTEL_GLKRVP
-
-config MAX_CPUS
-	int
-	default 4
 
 config UART_FOR_CONSOLE
 	int

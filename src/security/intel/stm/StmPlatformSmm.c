@@ -9,6 +9,7 @@
 
 #include <cbfs.h>
 #include <console/console.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <arch/rom_segs.h>
 
@@ -34,8 +35,7 @@ int load_stm_image(uintptr_t mseg)
 
 	memset((void *)mseg_base, 0, CONFIG_MSEG_SIZE); // clear the mseg
 
-	stm_image_size = cbfs_boot_load_file("stm.bin", mseg_base,
-					     stm_buffer_size, CBFS_TYPE_RAW);
+	stm_image_size = cbfs_load("stm.bin", mseg_base, stm_buffer_size);
 	printk(BIOS_DEBUG, "STM:loaded into mseg: 0x%p size: %u\n", mseg_base,
 	       stm_image_size);
 	/* status is number of bytes loaded */
@@ -71,7 +71,6 @@ struct descriptor {
 	uint16_t limit;
 	uintptr_t base;
 } __attribute__((packed));
-
 
 static void read_gdtr(struct descriptor *gdtr)
 {
@@ -116,7 +115,6 @@ void setup_smm_descriptor(void *smbase, void *base_smbase, int32_t apic_id,
 	psd->smm_ss = ROM_DATA_SEG;
 	psd->smm_other_segment = ROM_DATA_SEG;
 	psd->smm_tr = SMM_TASK_STATE_SEG;
-
 
 	// At this point the coreboot smm_stub is relative to the default
 	// smbase and not the one for the smi handler in tseg.  So we have

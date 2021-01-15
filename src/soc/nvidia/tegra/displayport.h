@@ -326,11 +326,9 @@ struct tegra_dc_dp_data {
 	int				enabled;
 };
 
-
 /* DPCD definitions */
 /* you know, all the vendors pick their own set of defines.
  * All of them.
- * FIXME so we can use the ones in include/device/drm_dp_helper.h
  */
 #define NV_DPCD_REV					(0x00000000)
 #define NV_DPCD_REV_MAJOR_SHIFT				(4)

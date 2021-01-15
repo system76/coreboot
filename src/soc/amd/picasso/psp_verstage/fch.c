@@ -4,17 +4,16 @@
 
 #include <amdblocks/acpimmio.h>
 #include <amdblocks/espi.h>
+#include <amdblocks/spi.h>
 #include <arch/exception.h>
 #include <arch/hlt.h>
 #include <arch/io.h>
 #include <bl_uapp/bl_errorcodes_public.h>
 #include <bl_uapp/bl_syscall_public.h>
 #include <console/console.h>
-#include <delay.h>
 #include <soc/i2c.h>
 #include <soc/southbridge.h>
 #include <stdint.h>
-#include <timestamp.h>
 
 static void i2c3_set_bar(void *bar)
 {
@@ -71,7 +70,7 @@ static void aoac_set_bar(void *bar)
 static struct {
 	const char *name;
 	struct {
-		FCH_IO_DEVICE device;
+		enum fch_io_device device;
 		uint32_t arg0;
 	} args;
 	void (*set_bar)(void *bar);
@@ -84,13 +83,14 @@ static struct {
 	{"eSPI", {FCH_IO_DEVICE_ESPI}, espi_set_bar},
 	{"I2C2", {FCH_IO_DEVICE_I2C, 2}, i2c2_set_bar},
 	{"I2C3", {FCH_IO_DEVICE_I2C, 3}, i2c3_set_bar},
+	{"SPI", {FCH_IO_DEVICE_SPI}, spi_set_base},
 	{"AOAC", {FCH_IO_DEVICE_AOAC}, aoac_set_bar},
 };
 
 uintptr_t *map_spi_rom(void)
 {
 	uintptr_t *addr = NULL;
-	struct SPIROM_INFO spi = {0};
+	struct spirom_info spi = {0};
 
 	if (svc_get_spi_rom_info(&spi))
 		printk(BIOS_DEBUG, "Error getting SPI ROM info.\n");
@@ -100,11 +100,6 @@ uintptr_t *map_spi_rom(void)
 			printk(BIOS_DEBUG, "Error mapping SPI ROM to address.\n");
 
 	return addr;
-}
-
-void sb_enable_legacy_io(void)
-{
-	pm_io_write32(PM_DECODE_EN, pm_io_read32(PM_DECODE_EN) | LEGACY_IO_EN);
 }
 
 static uint32_t map_fch_devices(void)
@@ -124,13 +119,13 @@ static uint32_t map_fch_devices(void)
 		bar_map[i].set_bar(bar);
 	}
 
-	return BL_UAPP_OK;
+	return BL_OK;
 }
 
 uint32_t unmap_fch_devices(void)
 {
 	void *bar;
-	uint32_t err, rtn = BL_UAPP_OK;
+	uint32_t err, rtn = BL_OK;
 	unsigned int i;
 
 	for (i = 0; i < ARRAY_SIZE(bar_map); ++i) {

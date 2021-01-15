@@ -21,6 +21,7 @@ enum device_path_type {
 	DEVICE_PATH_MMIO,
 	DEVICE_PATH_ESPI,
 	DEVICE_PATH_LPC,
+	DEVICE_PATH_GPIO,
 
 	/*
 	 * When adding path types to this table, please also update the
@@ -46,6 +47,7 @@ enum device_path_type {
 		"DEVICE_PATH_MMIO",		\
 		"DEVICE_PATH_ESPI",		\
 		"DEVICE_PATH_LPC",		\
+		"DEVICE_PATH_GPIO",		\
 }
 
 struct domain_path {
@@ -116,6 +118,10 @@ struct lpc_path {
 	uintptr_t addr;
 };
 
+struct gpio_path {
+	unsigned int id;
+};
+
 struct device_path {
 	enum device_path_type type;
 	union {
@@ -134,9 +140,9 @@ struct device_path {
 		struct mmio_path	mmio;
 		struct espi_path	espi;
 		struct lpc_path		lpc;
+		struct gpio_path	gpio;
 	};
 };
-
 
 #define DEVICE_PATH_MAX 40
 #define BUS_PATH_MAX (DEVICE_PATH_MAX+10)
