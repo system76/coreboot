@@ -54,7 +54,7 @@ chip soc/intel/cannonlake
 	}"
 
 	# SATA
-	register "SataMode" = "Sata_AHCI"
+	register "SataMode" = "SATA_AHCI"
 	register "SataSalpSupport" = "0"
 
 	register "SataPortsEnable[0]" = "0"
