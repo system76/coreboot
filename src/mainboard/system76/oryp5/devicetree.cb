@@ -17,9 +17,6 @@ chip soc/intel/cannonlake
 	# Disable s0ix
 	register "s0ix_enable" = "0"
 
-	# PM Timer Enabled
-	register "PmTimerDisabled" = "0"
-
 	# Disable DPTF
 	register "dptf_enable" = "0"
 
@@ -31,9 +28,6 @@ chip soc/intel/cannonlake
 		// /sys/class/powercap/intel-rapl:0/constraint_1_power_limit_uw
 		.tdp_pl2_override = 78,
 	}"
-
-	# Enable "Intel Speed Shift Technology"
-	register "speed_shift_enable" = "1"
 
 	# Enable Enhanced Intel SpeedStep
 	register "eist_enable" = "1"
@@ -60,7 +54,7 @@ chip soc/intel/cannonlake
 	}"
 
 	# SATA
-	register "SataMode" = "Sata_AHCI"
+	register "SataMode" = "SATA_AHCI"
 	register "SataSalpSupport" = "0"
 
 	register "SataPortsEnable[0]" = "0"
@@ -80,9 +74,6 @@ chip soc/intel/cannonlake
 	register "SataPortsDevSlp[5]" = "0"
 	register "SataPortsDevSlp[6]" = "0"
 	register "SataPortsDevSlp[7]" = "0"
-
-	# USB
-	register "SsicPortEnable" = "0"
 
 	# USB2
 	register "usb2_ports[0]" = "USB2_PORT_TYPE_C(OC_SKIP)" # Type-C
@@ -162,8 +153,6 @@ chip soc/intel/cannonlake
 
 	# Misc
 	register "Device4Enable" = "1"
-	register "HeciEnabled" = "0"
-	register "Heci3Enabled" = "0"
 	register "AcousticNoiseMitigation" = "1"
 	#register "dmipwroptimize" = "1"
 	#register "satapwroptimize" = "1"

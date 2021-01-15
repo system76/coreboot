@@ -17,9 +17,6 @@ chip soc/intel/cannonlake
 	# Disable s0ix
 	register "s0ix_enable" = "0"
 
-	# PM Timer Enabled
-	register "PmTimerDisabled" = "0"
-
 	# Disable DPTF
 	register "dptf_enable" = "0"
 
@@ -31,9 +28,6 @@ chip soc/intel/cannonlake
 		// /sys/class/powercap/intel-rapl:0/constraint_1_power_limit_uw
 		.tdp_pl2_override = 90,
 	}"
-
-	# Enable "Intel Speed Shift Technology"
-	register "speed_shift_enable" = "1"
 
 	# Enable Enhanced Intel SpeedStep
 	register "eist_enable" = "1"
@@ -60,7 +54,7 @@ chip soc/intel/cannonlake
 	}"
 
 	# SATA
-	register "SataMode" = "Sata_AHCI"
+	register "SataMode" = "SATA_AHCI"
 	register "SataSalpSupport" = "0"
 
 	register "SataPortsEnable[0]" = "1" # HDD (SATA0B)
@@ -94,9 +88,6 @@ chip soc/intel/cannonlake
 	register "PchHdaAudioLinkSndw3" = "0"
 	register "PchHdaAudioLinkSndw4" = "0"
 
-	# USB
-	register "SsicPortEnable" = "0"
-
 	# USB2
 	register "usb2_ports[0]" = "USB2_PORT_TYPE_C(OC_SKIP)" # USB 3.1 Gen 2 TYPE-C and DisplayPort
 	register "usb2_ports[1]" = "USB2_PORT_TYPE_C(OC_SKIP)" # USB 3.1 Gen 2 TYPE-C
@@ -127,7 +118,7 @@ chip soc/intel/cannonlake
 	register "usb3_ports[8]" = "USB3_PORT_EMPTY"
 	register "usb3_ports[9]" = "USB3_PORT_EMPTY"
 
-	# PCI Express Graphics #0 x16, Clock  (NVIDIA GPU)
+	# PCI Express Graphics #0 x16, Clock 8 (NVIDIA GPU)
 	register "PcieClkSrcUsage[8]" = "0x40"
 
 	# PCI Express root port #9 x4, Clock 9 (SSD1)
@@ -181,8 +172,6 @@ chip soc/intel/cannonlake
 
 	# Misc
 	register "Device4Enable" = "1"
-	register "HeciEnabled" = "0"
-	register "Heci3Enabled" = "0"
 	register "AcousticNoiseMitigation" = "1"
 	#register "dmipwroptimize" = "1"
 	#register "satapwroptimize" = "1"
