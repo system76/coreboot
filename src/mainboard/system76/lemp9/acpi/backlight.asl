@@ -1,7 +1,5 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#include <drivers/intel/gma/acpi/gma.asl>
-
 Scope (GFX0)
 {
        Name (BRIG, Package (22)
