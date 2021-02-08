@@ -176,6 +176,7 @@ The boards in this section are not real mainboards, but emulators.
 
 ## System76
 
+- [Adder Workstation 1](system76/addw1.md)
 - [Gazelle 15](system76/gaze15.md)
 - [Lemur Pro](system76/lemp9.md)
 - [Oryx Pro 5](system76/oryp5.md)
