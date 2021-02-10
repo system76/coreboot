@@ -30,7 +30,7 @@ static const struct pad_config gpio_table[] = {
 	PAD_CFG_NF(GPD3, UP_20K, DEEP, NF1), // PWR_BTN#
 	PAD_CFG_NF(GPD4, NONE, DEEP, NF1), // SUSB#
 	PAD_CFG_NF(GPD5, NONE, DEEP, NF1), // SUSC#
-	PAD_NC(GPD6, NONE, DEEP), // SLP_A# (test point)
+	PAD_NC(GPD6, NONE), // SLP_A# (test point)
 	PAD_CFG_GPI(GPD7, NONE, PWROK), // 100k pull up
 	PAD_CFG_NF(GPD8, NONE, DEEP, NF1), // SUS_CLK_R
 	PAD_NC(GPD9, NONE), // PCH_SLP_WLAN# (test point)
@@ -106,7 +106,7 @@ static const struct pad_config gpio_table[] = {
 	PAD_NC(GPP_C13, NONE),
 	PAD_NC(GPP_C14, NONE),
 	PAD_NC(GPP_C15, NONE),
-	PAD_CFG_NF(GPP_C16, DEEP, NF1), // I2C_SDA_TP
+	PAD_CFG_NF(GPP_C16, NONE, DEEP, NF1), // I2C_SDA_TP
 	PAD_CFG_NF(GPP_C17, NONE, DEEP, NF1), // I2C_SCL_TP
 	PAD_CFG_NF(GPP_C18, NONE, DEEP, NF1), // SMD_7411_I2C
 	PAD_CFG_NF(GPP_C19, NONE, DEEP, NF1), // SMC_7411_I2C
@@ -123,8 +123,8 @@ static const struct pad_config gpio_table[] = {
 	PAD_CFG_GPI(GPP_D4, NONE, DEEP), // I2C2_SDA
 	PAD_CFG_NF(GPP_D5, NONE, DEEP, NF3), // CNVI_RF_RST#
 	PAD_CFG_NF(GPP_D6, NONE, DEEP, NF3), // XTAL_CLKREQ
-	PAD_(GPP_D7, NONE),
-	PAD_(GPP_D8, NONE),
+	PAD_NC(GPP_D7, NONE),
+	PAD_NC(GPP_D8, NONE),
 	PAD_NC(GPP_D9, NONE),
 	PAD_NC(GPP_D10, NONE),
 	PAD_NC(GPP_D11, NONE),
