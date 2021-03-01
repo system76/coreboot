@@ -61,10 +61,6 @@ config VGA_BIOS_ID
 	string
 	default "8086,9b41"
 
-config TPM_PIRQ
-	hex
-	default 0x10 # GPP_A7/PIRQA#
-
 config POST_DEVICE
 	bool
 	default n
