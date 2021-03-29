@@ -151,7 +151,8 @@ Device (\_SB.PCI0.PEGP.DEV0) {
 		Debug = "PEGP.DEV0._ON"
 
 		If (_STA != 0xF) {
-			//TODO: enable source clock
+			PCRA(0xDC, 0x100C, ~0x0100)
+			Sleep(16)
 
 			GPPR(1)
 
@@ -182,7 +183,8 @@ Device (\_SB.PCI0.PEGP.DEV0) {
 
 			RTDS()
 
-			//TODO: disable source clock
+			PCRO(0xDC, 0x100C, 0x0100)
+			Sleep(16)
 
 			GPPR(0)
 
