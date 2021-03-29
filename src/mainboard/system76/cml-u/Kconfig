@@ -44,6 +44,16 @@ config MAINBOARD_PART_NUMBER
 	default "galp4" if BOARD_SYSTEM76_GALP4
 	default "darp6" if BOARD_SYSTEM76_DARP6
 
+config MAINBOARD_SMBIOS_PRODUCT_NAME
+	string
+	default "Galago Pro" if BOARD_SYSTEM76_GALP4
+	default "Darter Pro" if BOARD_SYSTEM76_DARP6
+
+config MAINBOARD_VERSION
+	string
+	default "galp4" if BOARD_SYSTEM76_GALP4
+	default "darp6" if BOARD_SYSTEM76_DARP6
+
 config CBFS_SIZE
 	hex
 	default 0xA00000

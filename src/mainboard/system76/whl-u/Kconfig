@@ -44,6 +44,16 @@ config MAINBOARD_PART_NUMBER
 	default "galp3-c" if BOARD_SYSTEM76_GALP3_C
 	default "darp5" if BOARD_SYSTEM76_DARP5
 
+config MAINBOARD_SMBIOS_PRODUCT_NAME
+	string
+	default "Galago Pro" if BOARD_SYSTEM76_GALP3_C
+	default "Darter Pro" if BOARD_SYSTEM76_DARP5
+
+config MAINBOARD_VERSION
+	string
+	default "galp3-c" if BOARD_SYSTEM76_GALP3_C
+	default "darp5" if BOARD_SYSTEM76_DARP5
+
 config CBFS_SIZE
 	hex
 	default 0xA00000
