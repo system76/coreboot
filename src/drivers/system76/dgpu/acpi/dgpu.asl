@@ -86,48 +86,78 @@ Device (\_SB.PCI0.PEGP.DEV0) {
 		LREV,   1
 	}
 
+	// Power on/off endpoint
+	Method (GPPR, 1) {
+		If (Arg0 == 0) {
+			Debug = "GPPR OFF"
+
+			CTXS(DGPU_RST_N)
+			Sleep(2) // DLHR - delay after hold reset
+			CTXS(DGPU_PWR_EN)
+			Sleep(75) // NGDT
+		} ElseIf (Arg0 == 1) {
+			Debug = "GPPR ON"
+
+			STXS(DGPU_PWR_EN)
+			Sleep(7) // DLPW - delay after power
+			STXS(DGPU_RST_N)
+			Sleep(2) // DLHR - delay after hold reset
+		}
+	}
+
+	// Enable link for RTD3
+	Method (RTEN) {
+		Debug = "RTEN"
+
+		Q0L0 = 1
+		Sleep(16)
+
+		Local0 = 0
+		While (Q0L0) {
+			If (Local0 > 4) {
+				Break
+			}
+
+			Sleep(16)
+			Local0++
+		}
+
+		P0RM = 0
+		P0AP = 0
+	}
+
+	// Disable link for RTD3
+	Method (RTDS) {
+		Debug = "RTDS"
+
+		Q0L2 = 1
+		Sleep(16)
+
+		Local0 = 0
+		While (Q0L2) {
+			If (Local0 > 4) {
+				Break
+			}
+
+			Sleep (16)
+			Local0++
+		}
+
+		P0RM = 1
+		P0AP = 3
+	}
+
 	Method (_ON) {
 		Debug = "PEGP.DEV0._ON"
 
 		If (_STA != 0xF) {
-			Debug = "  If DGPU_PWR_EN low"
-			If (! GTXS (DGPU_PWR_EN)) {
-				Debug = "    DGPU_PWR_EN high"
-				STXS (DGPU_PWR_EN)
+			//TODO: enable source clock
 
-				Debug = "    Sleep 16"
-				Sleep (16)
-			}
+			GPPR(1)
 
-			Debug = "  DGPU_RST_N high"
-			STXS(DGPU_RST_N)
+			RTEN()
 
-			Debug = "  Sleep 10"
-			Sleep (10)
-
-			Debug = "  Q0L0 = 1"
-			Q0L0 = 1
-
-			Debug = "  Sleep 16"
-			Sleep (16)
-
-			Debug = "  While Q0L0"
-			Local0 = 0
-			While (Q0L0) {
-				If ((Local0 > 4)) {
-					Debug = "    While Q0L0 timeout"
-					Break
-				}
-
-				Sleep (16)
-				Local0++
-			}
-
-			Debug = "  P0RM = 0"
-			P0RM = 0
-
-			Debug = "  P0AP = 0"
-			P0AP = 0
+			//TODO: wait for P0LS
 
 			Debug = Concatenate("  LREN = ", ToHexString(LTRE))
 			LREN = LTRE
@@ -150,50 +180,11 @@ Device (\_SB.PCI0.PEGP.DEV0) {
 			Debug = Concatenate("  LTRE = ", ToHexString(LREN))
 			LTRE = LREN
 
-			Debug = "  Q0L2 = 1"
-			Q0L2 = 1
+			RTDS()
 
-			Debug = "  Sleep 16"
-			Sleep (16)
+			//TODO: disable source clock
 
-			Debug = "  While Q0L2"
-			Local0 = Zero
-			While (Q0L2) {
-				If ((Local0 > 4)) {
-					Debug = "    While Q0L2 timeout"
-					Break
-				}
-
-				Sleep (16)
-				Local0++
-			}
-
-			Debug = "  P0RM = 1"
-			P0RM = 1
-
-			Debug = "  P0AP = 3"
-			P0AP = 3
-
-			Debug = "  Sleep 10"
-			Sleep (10)
-
-			Debug = "  DGPU_RST_N low"
-			CTXS(DGPU_RST_N)
-
-			Debug = "  While DGPU_GC6 low"
-			Local0 = Zero
-			While (! GRXS(DGPU_GC6)) {
-				If ((Local0 > 4)) {
-					Debug = "    While DGPU_GC6 low timeout"
-
-					Debug = "    DGPU_PWR_EN low"
-					CTXS (DGPU_PWR_EN)
-					Break
-				}
-
-				Sleep (16)
-				Local0++
-			}
+			GPPR(0)
 
 			Debug = "  _STA = 0x5"
 			_STA = 0x5
