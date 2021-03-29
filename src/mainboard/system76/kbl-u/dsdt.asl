@@ -10,26 +10,17 @@ DefinitionBlock(
 	0x20110725	// OEM revision
 )
 {
-	// Some generic macros
-	#include <soc/intel/skylake/acpi/platform.asl>
-
-	// global NVS and variables
+	#include <soc/intel/common/block/acpi/acpi/platform.asl>
 	#include <soc/intel/skylake/acpi/globalnvs.asl>
-
-	// CPU
 	#include <cpu/intel/common/acpi/cpu.asl>
 
-	Scope (\_SB) {
-		Device (PCI0)
-		{
-			#include <soc/intel/skylake/acpi/systemagent.asl>
-			#include <soc/intel/skylake/acpi/pch.asl>
-		}
+	Device (\_SB.PCI0)
+	{
+		#include <soc/intel/skylake/acpi/systemagent.asl>
+		#include <soc/intel/skylake/acpi/pch.asl>
 	}
 
-	// Chipset specific sleep states
 	#include <southbridge/intel/common/acpi/sleepstates.asl>
 
-	// Mainboard specific
 	#include "acpi/mainboard.asl"
 }
