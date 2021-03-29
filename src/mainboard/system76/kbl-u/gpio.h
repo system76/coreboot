@@ -13,7 +13,7 @@ static const struct pad_config gpio_table[] = {
 // GPD
 	// System Power Management
 		// PM_BATLOW#
-		PAD_CFG_NC(GPD0),
+		PAD_NC(GPD0, NONE),
 		// AC_PRESENT
 		PAD_CFG_NF(GPD1, NONE, DEEP, NF1),
 		// LAN_WAKEUP#
@@ -27,15 +27,15 @@ static const struct pad_config gpio_table[] = {
 		// SLP_A#
 		PAD_CFG_NF(GPD6, NONE, DEEP, NF1),
 		// NC
-		PAD_CFG_NC(GPD7),
+		PAD_NC(GPD7, NONE),
 		// SUSCLK
 		PAD_CFG_NF(GPD8, NONE, DEEP, NF1),
 		// PCH_SLP_WLAN#
 		PAD_CFG_NF(GPD9, NONE, DEEP, NF1),
 		// SLP_S5#
-		PAD_CFG_NC(GPD10),
+		PAD_NC(GPD10, NONE),
 		// PCH_GPD11
-		PAD_CFG_NC(GPD11),
+		PAD_NC(GPD11, NONE),
 
 // GPP_A
 	// LPC
@@ -56,7 +56,7 @@ static const struct pad_config gpio_table[] = {
 
 	// PCIE/USB3/SATA
 		// G_INT1
-		PAD_CFG_NC(GPP_A7),
+		PAD_NC(GPP_A7, NONE),
 
 	// LPC
 		// PM_CLKRUN#
@@ -68,11 +68,11 @@ static const struct pad_config gpio_table[] = {
 
 	// System Power Management
 		// TODO - LAN_WAKEUP#
-		PAD_CFG_NC(GPP_A11),
+		PAD_NC(GPP_A11, NONE),
 
 	// ISH
 		// PCH_GPP_A12
-		PAD_CFG_NC(GPP_A12),
+		PAD_NC(GPP_A12, NONE),
 
 	// System Power Management
 		// SUSWARN#
@@ -88,9 +88,9 @@ static const struct pad_config gpio_table[] = {
 
 	// SDIO/SDXC
 		// NC
-		PAD_CFG_NC(GPP_A16),
+		PAD_NC(GPP_A16, NONE),
 		// NC
-		PAD_CFG_NC(GPP_A17),
+		PAD_NC(GPP_A17, NONE),
 
 	// ISH
 		// TBTA_ACE_GPIO3
@@ -115,19 +115,19 @@ static const struct pad_config gpio_table[] = {
 
 	// System Power Management
 		// VRALERT#
-		PAD_CFG_NC(GPP_B2),
+		PAD_NC(GPP_B2, NONE),
 
 	// CPU Misc
 		// NC
-		PAD_CFG_NC(GPP_B3),
+		PAD_NC(GPP_B3, NONE),
 		// NC
-		PAD_CFG_NC(GPP_B4),
+		PAD_NC(GPP_B4, NONE),
 
 	// Clock Signals
 		// PCIECLKRQ0#
-		PAD_CFG_NC(GPP_B5),
+		PAD_NC(GPP_B5, NONE),
 		// PCIECLKRQ1#
-		PAD_CFG_NC(GPP_B6),
+		PAD_NC(GPP_B6, NONE),
 		// WLAN_CLKREQ#
 		PAD_CFG_NF(GPP_B7, NONE, DEEP, NF1),
 		// LAN_CLKREQ#
@@ -139,9 +139,9 @@ static const struct pad_config gpio_table[] = {
 
 	// System Power Management
 		// NC
-		PAD_CFG_NC(GPP_B11),
+		PAD_NC(GPP_B11, NONE),
 		// SLP_S0#
-		PAD_CFG_NC(GPP_B12),
+		PAD_NC(GPP_B12, NONE),
 		// PLTRST#
 		PAD_CFG_NF(GPP_B13, NONE, DEEP, NF1),
 
@@ -151,25 +151,25 @@ static const struct pad_config gpio_table[] = {
 
 	// LPSS
 		// PCH_GPP_B15
-		PAD_CFG_NC(GPP_B15),
+		PAD_NC(GPP_B15, NONE),
 		// PCH_GPP_B16
-		PAD_CFG_NC(GPP_B16),
+		PAD_NC(GPP_B16, NONE),
 		// PCH_GPP_B17
-		PAD_CFG_NC(GPP_B17),
+		PAD_NC(GPP_B17, NONE),
 		// GSPI0_BBS0 - No Reboot strap
-		PAD_CFG_NC(GPP_B18),
+		PAD_NC(GPP_B18, NONE),
 		// PCH_GPP_B19
-		PAD_CFG_NC(GPP_B19),
+		PAD_NC(GPP_B19, NONE),
 		// PCH_GPP_B20
-		PAD_CFG_NC(GPP_B20),
+		PAD_NC(GPP_B20, NONE),
 		// PCH_GPP_B21
-		PAD_CFG_NC(GPP_B21),
+		PAD_NC(GPP_B21, NONE),
 		// PCH_GPP_B22 - Boot BIOS strap
-		PAD_CFG_NC(GPP_B22),
+		PAD_NC(GPP_B22, NONE),
 
 	// SMBUS
 		// PCH_GPP_B23
-		PAD_CFG_NC(GPP_B23),
+		PAD_NC(GPP_B23, NONE),
 
 // GPP_C
 	// SMBUS
@@ -178,45 +178,45 @@ static const struct pad_config gpio_table[] = {
 		// SMB_DATA
 		PAD_CFG_NF(GPP_C1, NONE, DEEP, NF1),
 		// PCH_GPP_C2
-		PAD_CFG_NC(GPP_C2),
+		PAD_NC(GPP_C2, NONE),
 		// SML0CLK
-		PAD_CFG_NC(GPP_C3),
+		PAD_NC(GPP_C3, NONE),
 		// SML0DATA
-		PAD_CFG_NC(GPP_C4),
+		PAD_NC(GPP_C4, NONE),
 		// PCH_GPP_C5
-		PAD_CFG_NC(GPP_C5),
+		PAD_NC(GPP_C5, NONE),
 		// SML1CLK
-		PAD_CFG_NC(GPP_C6),
+		PAD_NC(GPP_C6, NONE),
 		// SML1DATA
-		PAD_CFG_NC(GPP_C7),
+		PAD_NC(GPP_C7, NONE),
 
 	// LPSS
 		// NC
-		PAD_CFG_NC(GPP_C8),
+		PAD_NC(GPP_C8, NONE),
 		// NC
-		PAD_CFG_NC(GPP_C9),
+		PAD_NC(GPP_C9, NONE),
 		// NC
-		PAD_CFG_NC(GPP_C10),
+		PAD_NC(GPP_C10, NONE),
 		// NC
-		PAD_CFG_NC(GPP_C11),
+		PAD_NC(GPP_C11, NONE),
 
 	// ISH
 		// TBTA_ACE_GPIO2
-		PAD_CFG_NC(GPP_C12),
+		PAD_NC(GPP_C12, NONE),
 		// TBCIO_PLUG_EVENT
 		_PAD_CFG_STRUCT(GPP_C13, 0x82880100, 0x0000),
 		// TBTA_MRESET
-		PAD_CFG_NC(GPP_C14),
+		PAD_NC(GPP_C14, NONE),
 		// TBTA_ACE_GPIO7
-		PAD_CFG_NC(GPP_C15),
+		PAD_NC(GPP_C15, NONE),
 
 	// LPSS
 		// T_SDA
-		PAD_CFG_NC(GPP_C16),
+		PAD_NC(GPP_C16, NONE),
 		// T_SCL
-		PAD_CFG_NC(GPP_C17),
+		PAD_NC(GPP_C17, NONE),
 		// NC
-		PAD_CFG_NC(GPP_C18),
+		PAD_NC(GPP_C18, NONE),
 		// SWI#
 		_PAD_CFG_STRUCT(GPP_C19, 0x40880100, 0x0000),
 		// UART2_RXD
@@ -231,67 +231,67 @@ static const struct pad_config gpio_table[] = {
 // GPP_D
 	// SPI - Touch
 		// NC
-		PAD_CFG_NC(GPP_D0),
+		PAD_NC(GPP_D0, NONE),
 		// NC
-		PAD_CFG_NC(GPP_D1),
+		PAD_NC(GPP_D1, NONE),
 		// NC
-		PAD_CFG_NC(GPP_D2),
+		PAD_NC(GPP_D2, NONE),
 		// NC
-		PAD_CFG_NC(GPP_D3),
+		PAD_NC(GPP_D3, NONE),
 
 	// NC
-	PAD_CFG_NC(GPP_D4),
+	PAD_NC(GPP_D4, NONE),
 
 	// ISH
 		// NC
-		PAD_CFG_NC(GPP_D5),
+		PAD_NC(GPP_D5, NONE),
 		// NC
-		PAD_CFG_NC(GPP_D6),
+		PAD_NC(GPP_D6, NONE),
 		// NC
-		PAD_CFG_NC(GPP_D7),
+		PAD_NC(GPP_D7, NONE),
 		// SB_BLON
 		PAD_CFG_GPO(GPP_D8, 1, DEEP),
 		// T_INT
-		PAD_CFG_NC(GPP_D9),
+		PAD_NC(GPP_D9, NONE),
 		// EDP_DET
-		PAD_CFG_NC(GPP_D10),
+		PAD_NC(GPP_D10, NONE),
 		// NC
-		PAD_CFG_NC(GPP_D11),
+		PAD_NC(GPP_D11, NONE),
 		// NC
-		PAD_CFG_NC(GPP_D12),
+		PAD_NC(GPP_D12, NONE),
 		// NC
-		PAD_CFG_NC(GPP_D13),
+		PAD_NC(GPP_D13, NONE),
 		// NC
-		PAD_CFG_NC(GPP_D14),
+		PAD_NC(GPP_D14, NONE),
 		// NC
-		PAD_CFG_NC(GPP_D15),
+		PAD_NC(GPP_D15, NONE),
 		// NC
-		PAD_CFG_NC(GPP_D16),
+		PAD_NC(GPP_D16, NONE),
 
 	// Audio - DMIC
 		// NC
-		PAD_CFG_NC(GPP_D17),
+		PAD_NC(GPP_D17, NONE),
 		// NC
-		PAD_CFG_NC(GPP_D18),
+		PAD_NC(GPP_D18, NONE),
 		// NC
-		PAD_CFG_NC(GPP_D19),
+		PAD_NC(GPP_D19, NONE),
 		// NC
-		PAD_CFG_NC(GPP_D20),
+		PAD_NC(GPP_D20, NONE),
 
 	// SPI - Touch
 		// TPM_DET#
-		PAD_CFG_NC(GPP_D21),
+		PAD_NC(GPP_D21, NONE),
 		// NC
-		PAD_CFG_NC(GPP_D22),
+		PAD_NC(GPP_D22, NONE),
 
 	// Audio - I2S
 		// NC
-		PAD_CFG_NC(GPP_D23),
+		PAD_NC(GPP_D23, NONE),
 
 // GPP_E
 	// SATAXPCIE
 		// PCH_GPP_E0
-		PAD_CFG_NC(GPP_E0),
+		PAD_NC(GPP_E0, NONE),
 		// SATA_ODD_PRSNT#
 		PAD_CFG_NF(GPP_E1, NONE, DEEP, NF1),
 		// SATAGP2
@@ -299,31 +299,31 @@ static const struct pad_config gpio_table[] = {
 
 	// CPU Misc
 		// NC
-		PAD_CFG_NC(GPP_E3),
+		PAD_NC(GPP_E3, NONE),
 
 	// DEVSLP
 		// DEVSLP0
-		PAD_CFG_NC(GPP_E4),
+		PAD_NC(GPP_E4, NONE),
 		// DEVSLP1
-		PAD_CFG_NC(GPP_E5),
+		PAD_NC(GPP_E5, NONE),
 		// DEVSLP2
 		PAD_CFG_NF(GPP_E6, NONE, DEEP, NF1),
 
 	// CPU Misc
 		// NC
-		PAD_CFG_NC(GPP_E7),
+		PAD_NC(GPP_E7, NONE),
 
 	// USB2
 		// PCH_SATA_LED#
 		PAD_CFG_NF(GPP_E8, NONE, DEEP, NF1),
 		// USB_OC#12
-		PAD_CFG_NC(GPP_E9),
+		PAD_NC(GPP_E9, NONE),
 		// USB_OC#34
-		PAD_CFG_NC(GPP_E10),
+		PAD_NC(GPP_E10, NONE),
 		// USB_OC#56
-		PAD_CFG_NC(GPP_E11),
+		PAD_NC(GPP_E11, NONE),
 		// USB_OC#78
-		PAD_CFG_NC(GPP_E12),
+		PAD_NC(GPP_E12, NONE),
 
 	// Display Sidebands
 		// MUX_HPD
@@ -345,87 +345,87 @@ static const struct pad_config gpio_table[] = {
 		// HDMI_CTRLDATA
 		PAD_CFG_NF(GPP_E21, DN_20K, DEEP, NF1),
 		// NC
-		PAD_CFG_NC(GPP_E22),
+		PAD_NC(GPP_E22, NONE),
 		// NC
-		PAD_CFG_NC(GPP_E23),
+		PAD_NC(GPP_E23, NONE),
 
 // GPP_F
 	// Audio - I2S
 		// NC
-		PAD_CFG_NC(GPP_F0),
+		PAD_NC(GPP_F0, NONE),
 		// NC
-		PAD_CFG_NC(GPP_F1),
+		PAD_NC(GPP_F1, NONE),
 		// NC
-		PAD_CFG_NC(GPP_F2),
+		PAD_NC(GPP_F2, NONE),
 		// NC
-		PAD_CFG_NC(GPP_F3),
+		PAD_NC(GPP_F3, NONE),
 
 	// LPSS
 		// NC
-		PAD_CFG_NC(GPP_F4),
+		PAD_NC(GPP_F4, NONE),
 		// NC
-		PAD_CFG_NC(GPP_F5),
+		PAD_NC(GPP_F5, NONE),
 		// NC
-		PAD_CFG_NC(GPP_F6),
+		PAD_NC(GPP_F6, NONE),
 		// NC
-		PAD_CFG_NC(GPP_F7),
+		PAD_NC(GPP_F7, NONE),
 		// NC
-		PAD_CFG_NC(GPP_F8),
+		PAD_NC(GPP_F8, NONE),
 		// NC
-		PAD_CFG_NC(GPP_F9),
+		PAD_NC(GPP_F9, NONE),
 
 	// ISH
 		// NC
-		PAD_CFG_NC(GPP_F10),
+		PAD_NC(GPP_F10, NONE),
 		// NC
-		PAD_CFG_NC(GPP_F11),
+		PAD_NC(GPP_F11, NONE),
 
 	// EMMC
 		// NC
-		PAD_CFG_NC(GPP_F12),
+		PAD_NC(GPP_F12, NONE),
 		// NC
-		PAD_CFG_NC(GPP_F13),
+		PAD_NC(GPP_F13, NONE),
 		// NC
-		PAD_CFG_NC(GPP_F14),
+		PAD_NC(GPP_F14, NONE),
 		// NC
-		PAD_CFG_NC(GPP_F15),
+		PAD_NC(GPP_F15, NONE),
 		// NC
-		PAD_CFG_NC(GPP_F16),
+		PAD_NC(GPP_F16, NONE),
 		// NC
-		PAD_CFG_NC(GPP_F17),
+		PAD_NC(GPP_F17, NONE),
 		// NC
-		PAD_CFG_NC(GPP_F18),
+		PAD_NC(GPP_F18, NONE),
 		// NC
-		PAD_CFG_NC(GPP_F19),
+		PAD_NC(GPP_F19, NONE),
 		// NC
-		PAD_CFG_NC(GPP_F20),
+		PAD_NC(GPP_F20, NONE),
 		// NC
-		PAD_CFG_NC(GPP_F21),
+		PAD_NC(GPP_F21, NONE),
 		// NC
-		PAD_CFG_NC(GPP_F22),
+		PAD_NC(GPP_F22, NONE),
 
 	// SDIO/SDXC
 		// LIGHT_KB_DET#
-		PAD_CFG_NC(GPP_F23),
+		PAD_NC(GPP_F23, NONE),
 
 // GPP_G
 	// SDIO/SDXC
 		// NC
-		PAD_CFG_NC(GPP_G0),
+		PAD_NC(GPP_G0, NONE),
 		// TBT Detect
-		PAD_CFG_NC(GPP_G1),
+		PAD_NC(GPP_G1, NONE),
 		// NC
-		PAD_CFG_NC(GPP_G2),
+		PAD_NC(GPP_G2, NONE),
 		// ASM1543_I_SEL0
-		PAD_CFG_NC(GPP_G3),
+		PAD_NC(GPP_G3, NONE),
 		// ASM1543_I_SEL1
-		PAD_CFG_NC(GPP_G4),
+		PAD_NC(GPP_G4, NONE),
 		// NC
-		PAD_CFG_NC(GPP_G5),
+		PAD_NC(GPP_G5, NONE),
 		// NC
-		PAD_CFG_NC(GPP_G6),
+		PAD_NC(GPP_G6, NONE),
 		// NC
-		PAD_CFG_NC(GPP_G7),
+		PAD_NC(GPP_G7, NONE),
 };
 
 // Early pad configuration in romstage
