@@ -37,6 +37,16 @@ config MAINBOARD_PART_NUMBER
 	default "galp3" if BOARD_SYSTEM76_GALP3
 	default "galp3-b" if BOARD_SYSTEM76_GALP3_B
 
+config MAINBOARD_SMBIOS_PRODUCT_NAME
+	string
+	default "Galago Pro"
+
+config MAINBOARD_VERSION
+	string
+	default "galp2" if BOARD_SYSTEM76_GALP2
+	default "galp3" if BOARD_SYSTEM76_GALP3
+	default "galp3-b" if BOARD_SYSTEM76_GALP3_B
+
 config CBFS_SIZE
 	hex
 	default 0x600000
