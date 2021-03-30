@@ -3,34 +3,89 @@
 Device (\_SB.PCI0.PEGP) {
 	Name (_ADR, CONFIG_DRIVERS_SYSTEM76_DGPU_DEVICE << 16)
 
+// Power state {
+	Name (_PSC, 0)
+
+	Method (_PS0) {
+		Printf("PEGP _PS0 {")
+		_PSC = 0
+		Printf("} PEGP _PS0")
+	}
+
+	Method (_PS3) {
+		Printf("PEGP _PS3 {")
+		_PSC = 3
+		Printf("} PEGP _PS3")
+	}
+
 	PowerResource (PWRR, 0, 0) {
 		Name (_STA, 1)
 
 		Method (_ON) {
-			Debug = "PEGP.PWRR._ON"
+			Printf("PEGP.PWRR._ON {")
 			If (_STA != 1) {
 				\_SB.PCI0.PEGP.DEV0._ON ()
-				_STA = 1
 			}
+			_STA = 1
+			Printf("} PEGP.PWRR._ON")
 		}
 
 		Method (_OFF) {
-			Debug = "PEGP.PWRR._OFF"
+			Printf("PEGP.PWRR._OFF {")
 			If (_STA != 0) {
 				\_SB.PCI0.PEGP.DEV0._OFF ()
-				_STA = 0
 			}
+			_STA = 0
+			Printf("} PEGP.PWRR._OFF")
 		}
 	}
 
 	Name (_PR0, Package () { \_SB.PCI0.PEGP.PWRR })
 	Name (_PR2, Package () { \_SB.PCI0.PEGP.PWRR })
 	Name (_PR3, Package () { \_SB.PCI0.PEGP.PWRR })
+// } Power state
 }
 
 Device (\_SB.PCI0.PEGP.DEV0) {
 	Name(_ADR, 0x00000000)
 	Name (_STA, 0xF)
+
+// Power state {
+	Name (_PSC, 0)
+
+	Method (_PS0) {
+		Printf("NVIDIA _PS0 {")
+		_PSC = 0
+		Printf("} NVIDIA _PS0")
+	}
+
+	Method (_PS3) {
+		Printf("NVIDIA _PS3 {")
+		_PSC = 3
+		Printf("} NVIDIA _PS3")
+	}
+
+	PowerResource (PWRR, 0, 0) {
+		Name (_STA, 1)
+
+		Method (_ON) {
+			Printf("NVIDIA PWRR._ON {")
+			_STA = 1
+			Printf("} NVIDIA PWRR._ON")
+		}
+
+		Method (_OFF) {
+			Printf("NVIDIA PWRR._OFF {")
+			_STA = 0
+			Printf("} NVIDIA PWRR._OFF")
+		}
+	}
+
+	Name (_PR0, Package () { PWRR })
+	Name (_PR2, Package () { PWRR })
+	Name (_PR3, Package () { PWRR })
+// } Power state
+
 	Name (LTRE, 0)
 
 	// Memory mapped PCI express registers
@@ -89,26 +144,25 @@ Device (\_SB.PCI0.PEGP.DEV0) {
 	// Power on/off endpoint
 	Method (GPPR, 1) {
 		If (Arg0 == 0) {
-			Debug = "GPPR OFF"
-
+			Printf("GPPR OFF {")
 			CTXS(DGPU_RST_N)
 			Sleep(2) // DLHR - delay after hold reset
 			CTXS(DGPU_PWR_EN)
 			Sleep(75) // NGDT
+			Printf("} GPPR OFF")
 		} ElseIf (Arg0 == 1) {
-			Debug = "GPPR ON"
-
+			Printf("GPPR ON {")
 			STXS(DGPU_PWR_EN)
 			Sleep(7) // DLPW - delay after power
 			STXS(DGPU_RST_N)
 			Sleep(2) // DLHR - delay after hold reset
+			Printf("} GPPR ON")
 		}
 	}
 
 	// Enable link for RTD3
 	Method (RTEN) {
-		Debug = "RTEN"
-
+		Printf("RTEN {")
 		Q0L0 = 1
 		Sleep(16)
 
@@ -124,12 +178,12 @@ Device (\_SB.PCI0.PEGP.DEV0) {
 
 		P0RM = 0
 		P0AP = 0
+		Printf("} RTEN")
 	}
 
 	// Disable link for RTD3
 	Method (RTDS) {
-		Debug = "RTDS"
-
+		Printf("RTDS {")
 		Q0L2 = 1
 		Sleep(16)
 
@@ -145,51 +199,50 @@ Device (\_SB.PCI0.PEGP.DEV0) {
 
 		P0RM = 1
 		P0AP = 3
+		Printf("} RTDS")
 	}
 
 	Method (_ON) {
-		Debug = "PEGP.DEV0._ON"
-
+		Printf("PEGP.DEV0._ON {")
 		If (_STA != 0xF) {
+			// Enable source clock
 			PCRA(0xDC, 0x100C, ~0x0100)
 			Sleep(16)
 
+			// Power on endpoint
 			GPPR(1)
 
+			// RTD3 link enable
 			RTEN()
 
 			//TODO: wait for P0LS
 
-			Debug = Concatenate("  LREN = ", ToHexString(LTRE))
+			// Restore link state?
 			LREN = LTRE
-
-			Debug = "  CEDR = 1"
 			CEDR = 1
-
-			Debug = "  CMDR |= 7"
 			CMDR |= 7
-
-			Debug = "  _STA = 0xF"
-			_STA = 0xF
 		}
+		_STA = 0xF
+		Printf("} PEGP.DEV0._ON")
 	}
 
 	Method (_OFF) {
-		Debug = "PEGP.DEV0._OFF"
-
+		Printf("PEGP.DEV0._OFF {")
 		If (_STA != 0x5) {
-			Debug = Concatenate("  LTRE = ", ToHexString(LREN))
+			// Save link state
 			LTRE = LREN
 
+			// RTD3 link disable
 			RTDS()
 
+			// Disable source clock
 			PCRO(0xDC, 0x100C, 0x0100)
 			Sleep(16)
 
+			// Power off endpoint
 			GPPR(0)
-
-			Debug = "  _STA = 0x5"
-			_STA = 0x5
 		}
+		_STA = 0x5
+		Printf("} PEGP.DEV0._OFF")
 	}
 }
