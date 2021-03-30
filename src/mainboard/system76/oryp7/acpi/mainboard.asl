@@ -2,7 +2,6 @@
 
 #include "../gpio.h"
 #include <drivers/system76/dgpu/acpi/dgpu.asl>
-#include "dgpu.asl"
 
 #define EC_GPE_SCI 0x03 /* GPP_K3 */
 #define EC_GPE_SWI 0x06 /* GPP_K6 */

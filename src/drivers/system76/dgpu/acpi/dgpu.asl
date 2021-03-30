@@ -65,17 +65,26 @@ Device (\_SB.PCI0.PEGP.DEV0) {
 		Printf("} NVIDIA _PS3")
 	}
 
+    OperationRegion (PCIC, PCI_Config, 0x00, 0x50)
+    Field (PCIC, DwordAcc, NoLock, Preserve) {
+        Offset (0x40),
+        SSID, 32
+    }
+
 	PowerResource (PWRR, 0, 0) {
 		Name (_STA, 1)
 
 		Method (_ON) {
 			Printf("NVIDIA PWRR._ON {")
+			^^SSID = 0x65E51558
+			Printf("  SSID %o", ToHexString(^^SSID))
 			_STA = 1
 			Printf("} NVIDIA PWRR._ON")
 		}
 
 		Method (_OFF) {
 			Printf("NVIDIA PWRR._OFF {")
+			Printf("  SSID %o", ToHexString(^^SSID))
 			_STA = 0
 			Printf("} NVIDIA PWRR._OFF")
 		}
