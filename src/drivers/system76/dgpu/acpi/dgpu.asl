@@ -23,18 +23,12 @@ Device (\_SB.PCI0.PEGP) {
 
 		Method (_ON) {
 			Printf("PEGP.PWRR._ON {")
-			If (_STA != 1) {
-				\_SB.PCI0.PEGP.DEV0._ON ()
-			}
 			_STA = 1
 			Printf("} PEGP.PWRR._ON")
 		}
 
 		Method (_OFF) {
 			Printf("PEGP.PWRR._OFF {")
-			If (_STA != 0) {
-				\_SB.PCI0.PEGP.DEV0._OFF ()
-			}
 			_STA = 0
 			Printf("} PEGP.PWRR._OFF")
 		}
@@ -76,7 +70,8 @@ Device (\_SB.PCI0.PEGP.DEV0) {
 
 		Method (_ON) {
 			Printf("NVIDIA PWRR._ON {")
-			^^SSID = 0x65E51558
+			^^_ON()
+			^^SSID = ((CONFIG_SUBSYSTEM_DEVICE_ID << 16) | CONFIG_SUBSYSTEM_VENDOR_ID)
 			Printf("  SSID %o", ToHexString(^^SSID))
 			_STA = 1
 			Printf("} NVIDIA PWRR._ON")
@@ -85,6 +80,7 @@ Device (\_SB.PCI0.PEGP.DEV0) {
 		Method (_OFF) {
 			Printf("NVIDIA PWRR._OFF {")
 			Printf("  SSID %o", ToHexString(^^SSID))
+			^^_OFF()
 			_STA = 0
 			Printf("} NVIDIA PWRR._OFF")
 		}
@@ -95,11 +91,10 @@ Device (\_SB.PCI0.PEGP.DEV0) {
 	Name (_PR3, Package () { PWRR })
 // } Power state
 
-	Name (LTRE, 0)
-
+// RTD3 {
 	// Memory mapped PCI express registers
 	// Not sure what this stuff is, but it is used to get into GC6
-        //TODO: use DGPU_DEVICE to generate address
+	//TODO: use DGPU_DEVICE to generate address
 	OperationRegion (RPCX, SystemMemory, CONFIG_MMCONF_BASE_ADDRESS + 0x8000, 0x1000)
 	Field (RPCX, ByteAcc, NoLock, Preserve) {
 		PVID,   16,
@@ -211,6 +206,8 @@ Device (\_SB.PCI0.PEGP.DEV0) {
 		Printf("} RTDS")
 	}
 
+	Name (LTRE, 0)
+
 	Method (_ON) {
 		Printf("PEGP.DEV0._ON {")
 		If (_STA != 0xF) {
@@ -224,12 +221,29 @@ Device (\_SB.PCI0.PEGP.DEV0) {
 			// RTD3 link enable
 			RTEN()
 
-			//TODO: wait for P0LS
+			// Wait for link to be up
+			While (P0LS < 7) {
+				Local0 = 0x20
+				While (Local0) {
+					If (P0LS < 7) {
+						Stall (100)
+						Local0--
+					} Else {
+						Break
+					}
+				}
+
+				If (Local0 == 0) {
+					RTLK = 1
+					Stall (100)
+				}
+			}
 
 			// Restore link state?
 			LREN = LTRE
 			CEDR = 1
 			CMDR |= 7
+			D0ST = 0 // Not sure what this is
 		}
 		_STA = 0xF
 		Printf("} PEGP.DEV0._ON")
@@ -254,4 +268,5 @@ Device (\_SB.PCI0.PEGP.DEV0) {
 		_STA = 0x5
 		Printf("} PEGP.DEV0._OFF")
 	}
+// } RTD3
 }
