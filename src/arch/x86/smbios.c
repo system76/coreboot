@@ -5,6 +5,7 @@
 #include <console/console.h>
 #include <version.h>
 #include <device/device.h>
+#include <device/dram/spd.h>
 #include <arch/cpu.h>
 #include <cpu/x86/name.h>
 #include <elog.h>
@@ -16,9 +17,6 @@
 #include <device/pci_ids.h>
 #include <device/pci_def.h>
 #include <device/pci.h>
-#if CONFIG(CHROMEOS)
-#include <vendorcode/google/chromeos/gnvs.h>
-#endif
 #include <drivers/vpd/vpd.h>
 #include <stdlib.h>
 
@@ -157,44 +155,10 @@ static int smbios_processor_name(u8 *start)
 	return smbios_add_string(start, str);
 }
 
-static const char *get_dimm_manufacturer_name(const uint16_t mod_id)
-{
-	switch (mod_id) {
-	case 0x9b85:
-		return "Crucial";
-	case 0x4304:
-		return "Ramaxel";
-	case 0x4f01:
-		return "Transcend";
-	case 0x9801:
-		return "Kingston";
-	case 0x987f:
-		return "Hynix";
-	case 0x9e02:
-		return "Corsair";
-	case 0xb004:
-		return "OCZ";
-	case 0xad80:
-		return "Hynix/Hyundai";
-	case 0x3486:
-		return "Super Talent";
-	case 0xcd04:
-		return "GSkill";
-	case 0xce80:
-		return "Samsung";
-	case 0xfe02:
-		return "Elpida";
-	case 0x2c80:
-		return "Micron";
-	default:
-		return NULL;
-	}
-}
-
 /* this function will fill the corresponding manufacturer */
 void smbios_fill_dimm_manufacturer_from_id(uint16_t mod_id, struct smbios_type17 *t)
 {
-	const char *const manufacturer = get_dimm_manufacturer_name(mod_id);
+	const char *const manufacturer = spd_manufacturer_name(mod_id);
 
 	if (manufacturer) {
 		t->manufacturer = smbios_add_string(t->eos, manufacturer);
@@ -319,6 +283,7 @@ static int create_smbios_type17_for_dimm(struct dimm_info *dimm,
 
 	smbios_fill_dimm_manufacturer_from_id(dimm->mod_id, t);
 	smbios_fill_dimm_serial_number(dimm, t);
+	smbios_fill_dimm_asset_tag(dimm, t);
 	smbios_fill_dimm_locator(dimm, t);
 
 	/* put '\0' in the end of data */
@@ -330,8 +295,22 @@ static int create_smbios_type17_for_dimm(struct dimm_info *dimm,
 	t->minimum_voltage = dimm->vdd_voltage;
 	t->maximum_voltage = dimm->vdd_voltage;
 
+	/* Fill in type detail */
+	switch (dimm->mod_type) {
+	case SPD_RDIMM:
+	case SPD_MINI_RDIMM:
+		t->type_detail = MEMORY_TYPE_DETAIL_REGISTERED;
+		break;
+	case SPD_UDIMM:
+	case SPD_MINI_UDIMM:
+		t->type_detail = MEMORY_TYPE_DETAIL_UNBUFFERED;
+		break;
+	default:
+		t->type_detail = MEMORY_TYPE_DETAIL_UNKNOWN;
+		break;
+	}
 	/* Synchronous = 1 */
-	t->type_detail = MEMORY_TYPE_DETAIL_SYNCHRONOUS;
+	t->type_detail |= MEMORY_TYPE_DETAIL_SYNCHRONOUS;
 	/* no handle for error information */
 	t->memory_error_information_handle = 0xFFFE;
 	t->attributes = dimm->rank_per_dimm;
@@ -411,11 +390,12 @@ static int smbios_write_type0(unsigned long *current, int handle)
 	t->vendor = smbios_add_string(t->eos, "coreboot");
 	t->bios_release_date = smbios_add_string(t->eos, coreboot_dmi_date);
 
-#if CONFIG(CHROMEOS) && CONFIG(HAVE_ACPI_TABLES)
-	u32 version_offset = (u32)smbios_string_table_len(t->eos);
-	/* SMBIOS offsets start at 1 rather than 0 */
-	chromeos_get_chromeos_acpi()->vbt10 = (uintptr_t)t->eos + (version_offset - 1);
-#endif
+	if (CONFIG(CHROMEOS) && CONFIG(HAVE_ACPI_TABLES)) {
+		uintptr_t version_address = (uintptr_t)t->eos;
+		/* SMBIOS offsets start at 1 rather than 0 */
+		version_address += (u32)smbios_string_table_len(t->eos) - 1;
+		smbios_type0_bios_version(version_address);
+	}
 	t->bios_version = smbios_add_string(t->eos, get_bios_version());
 	uint32_t rom_size = CONFIG_ROM_SIZE;
 	rom_size = MIN(CONFIG_ROM_SIZE, 16 * MiB);
@@ -461,12 +441,6 @@ static int get_socket_type(void)
 		return 0x36;
 
 	return 0x02; /* Unknown */
-}
-
-unsigned int __weak smbios_memory_error_correction_type(struct memory_info *meminfo)
-{
-	return meminfo->ecc_capable ?
-		MEMORY_ARRAY_ECC_SINGLE_BIT : MEMORY_ARRAY_ECC_NONE;
 }
 
 unsigned int __weak smbios_processor_external_clock(void)
@@ -597,6 +571,7 @@ static int smbios_write_type3(unsigned long *current, int handle)
 	t->thermal_state = SMBIOS_STATE_SAFE;
 	t->_type = smbios_mainboard_enclosure_type();
 	t->security_status = SMBIOS_STATE_SAFE;
+	t->number_of_power_cords = smbios_chassis_power_cords();
 	t->asset_tag_number = smbios_add_string(t->eos, smbios_mainboard_asset_tag());
 	t->version = smbios_add_string(t->eos, smbios_chassis_version());
 	t->serial_number = smbios_add_string(t->eos, smbios_chassis_serial_number());
@@ -673,14 +648,15 @@ static int smbios_write_type4(unsigned long *current, int handle)
 	t->processor_upgrade = get_socket_type();
 	len = t->length + smbios_string_table_len(t->eos);
 	if (cpu_have_cpuid() && cpuid_get_max_func() >= 0x16) {
-		t->max_speed = cpuid_ebx(0x16);
 		t->current_speed = cpuid_eax(0x16); /* base frequency */
 		t->external_clock = cpuid_ecx(0x16);
 	} else {
-		t->max_speed = smbios_cpu_get_max_speed_mhz();
 		t->current_speed = smbios_cpu_get_current_speed_mhz();
 		t->external_clock = smbios_processor_external_clock();
 	}
+
+	/* This field identifies a capability for the system, not the processor itself. */
+	t->max_speed = smbios_cpu_get_max_speed_mhz();
 
 	if (cpu_have_cpuid()) {
 		res = cpuid(1);
@@ -1016,6 +992,7 @@ static int smbios_write_type16(unsigned long *current, int *handle)
 
 	int len;
 	int i;
+	uint64_t max_capacity;
 
 	struct memory_info *meminfo;
 	meminfo = cbmem_find(CBMEM_ID_MEMINFO);
@@ -1041,11 +1018,17 @@ static int smbios_write_type16(unsigned long *current, int *handle)
 
 	t->location = MEMORY_ARRAY_LOCATION_SYSTEM_BOARD;
 	t->use = MEMORY_ARRAY_USE_SYSTEM;
-	t->memory_error_correction = smbios_memory_error_correction_type(meminfo);
+	t->memory_error_correction = meminfo->ecc_type;
 
 	/* no error information handle available */
 	t->memory_error_information_handle = 0xFFFE;
-	t->maximum_capacity = meminfo->max_capacity_mib * (MiB / KiB);
+	max_capacity = meminfo->max_capacity_mib;
+	if (max_capacity * (MiB / KiB) < SMBIOS_USE_EXTENDED_MAX_CAPACITY)
+		t->maximum_capacity = max_capacity * (MiB / KiB);
+	else {
+		t->maximum_capacity = SMBIOS_USE_EXTENDED_MAX_CAPACITY;
+		t->extended_maximum_capacity = max_capacity * MiB;
+	}
 	t->number_of_memory_devices = meminfo->number_of_devices;
 
 	len += smbios_string_table_len(t->eos);

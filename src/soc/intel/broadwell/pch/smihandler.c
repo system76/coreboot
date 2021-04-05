@@ -125,13 +125,9 @@ static void backlight_off(void)
 	printk(BIOS_INFO, "Backlight turned off\n");
 }
 
-static void southbridge_smi_sleep(void)
+static int power_on_after_fail(void)
 {
-	u8 reg8;
-	u32 reg32;
-	u8 slp_typ;
 	u8 s5pwr = CONFIG_MAINBOARD_POWER_FAILURE_STATE;
-	u16 pmbase = get_pmbase();
 
 	/* save and recover RTC port values */
 	u8 tmp70, tmp72;
@@ -140,6 +136,16 @@ static void southbridge_smi_sleep(void)
 	get_option(&s5pwr, "power_on_after_fail");
 	outb(tmp70, 0x70);
 	outb(tmp72, 0x72);
+
+	/* For "KEEP", switch to "OFF" - KEEP is software emulated. */
+	return (s5pwr == MAINBOARD_POWER_ON);
+}
+
+static void southbridge_smi_sleep(void)
+{
+	u32 reg32;
+	u8 slp_typ;
+	u16 pmbase = get_pmbase();
 
 	/* First, disable further SMIs */
 	disable_smi(SLP_SMI_EN);
@@ -190,15 +196,11 @@ static void southbridge_smi_sleep(void)
 		/* Disable all GPE */
 		disable_all_gpe();
 
-		/* Always set the flag in case CMOS was changed on runtime. For
-		 * "KEEP", switch to "OFF" - KEEP is software emulated
-		 */
-		reg8 = pci_read_config8(PCH_DEV_LPC, GEN_PMCON_3);
-		if (s5pwr == MAINBOARD_POWER_ON)
-			reg8 &= ~1;
+		/* Always set the flag in case CMOS was changed on runtime. */
+		if (power_on_after_fail())
+			pci_and_config8(PCH_DEV_LPC, GEN_PMCON_3, ~1);
 		else
-			reg8 |= 1;
-		pci_write_config8(PCH_DEV_LPC, GEN_PMCON_3, reg8);
+			pci_or_config8(PCH_DEV_LPC, GEN_PMCON_3, 1);
 
 		/* also iterates over all bridges on bus 0 */
 		busmaster_disable_on_bus(0);
@@ -312,23 +314,13 @@ static void southbridge_smi_apmc(void)
 {
 	u8 reg8;
 
-	/* Emulate B2 register as the FADT / Linux expects it */
-
-	reg8 = inb(APM_CNT);
+	reg8 = apm_get_apmc();
 	switch (reg8) {
-	case APM_CNT_CST_CONTROL:
-		printk(BIOS_DEBUG, "C-state control\n");
-		break;
-	case APM_CNT_PST_CONTROL:
-		printk(BIOS_DEBUG, "P-state control\n");
-		break;
 	case APM_CNT_ACPI_DISABLE:
 		disable_pm1_control(SCI_EN);
-		printk(BIOS_DEBUG, "SMI#: ACPI disabled.\n");
 		break;
 	case APM_CNT_ACPI_ENABLE:
 		enable_pm1_control(SCI_EN);
-		printk(BIOS_DEBUG, "SMI#: ACPI enabled.\n");
 		break;
 	case APM_CNT_ELOG_GSMI:
 		if (CONFIG(ELOG_GSMI))

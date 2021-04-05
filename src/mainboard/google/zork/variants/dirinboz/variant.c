@@ -1,13 +1,11 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #include <baseboard/variants.h>
-#include <console/console.h>
 #include <device/device.h>
 #include <drivers/i2c/generic/chip.h>
 #include <soc/pci_devs.h>
 #include <ec/google/chromeec/ec.h>
 #include <ec/google/chromeec/i2c_tunnel/chip.h>
-#include <string.h>
 
 /* FIXME: Comments seem to suggest these are not entirely correct. */
 static const fsp_ddi_descriptor non_hdmi_ddi_descriptors[] = {

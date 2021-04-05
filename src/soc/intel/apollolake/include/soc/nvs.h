@@ -10,15 +10,13 @@
 #define _SOC_APOLLOLAKE_NVS_H_
 
 #include <stdint.h>
-#include <commonlib/helpers.h>
-#include <vendorcode/google/chromeos/gnvs.h>
 
 struct __packed global_nvs {
 	/* Miscellaneous */
-	uint8_t		pcnt; /* 0x00 - Processor Count */
+	uint8_t		unused_was_pcnt; /* 0x00 - Processor Count */
 	uint8_t		ppcm; /* 0x01 - Max PPC State */
 	uint8_t		lids; /* 0x02 - LID State */
-	uint8_t		pwrs; /* 0x03 - AC Power State */
+	uint8_t		unused_was_pwrs; /* 0x03 - AC Power State */
 	uint8_t		dpte; /* 0x04 - Enable DPTF */
 	uint32_t	cbmc; /* 0x05 - 0x08 - coreboot Memory Console */
 	uint64_t	pm1i; /* 0x09 - 0x10 - System Wake Source - PM1 Index */
@@ -35,12 +33,6 @@ struct __packed global_nvs {
 	uint64_t	elng; /* 0x35 - 0x3C EPC Length */
 	uint64_t	a4gb; /* 0x3D - 0x44 Base of above 4GB MMIO Resource */
 	uint64_t	a4gs; /* 0x45 - 0x4C Length of above 4GB MMIO Resource */
-	uint8_t		unused[179];
-
-	/* ChromeOS specific (0x100 - 0xfff) */
-	chromeos_acpi_t chromeos;
 };
-
-check_member(global_nvs, chromeos, GNVS_CHROMEOS_ACPI_OFFSET);
 
 #endif	/* _SOC_APOLLOLAKE_NVS_H_ */

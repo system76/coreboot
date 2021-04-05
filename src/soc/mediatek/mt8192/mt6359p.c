@@ -5,6 +5,18 @@
 #include <delay.h>
 #include <soc/pmif.h>
 #include <soc/mt6359p.h>
+#include <timer.h>
+
+static const struct pmic_setting key_protect_setting[] = {
+	{0x3A8, 0x9CA6, 0xFFFF, 0},
+	{0x44A, 0xBADE, 0xFFFF, 0},
+	{0xA3A, 0x4729, 0xFFFF, 0},
+	{0xC58, 0x1605, 0xFFFF, 0},
+	{0xC5A, 0x1706, 0xFFFF, 0},
+	{0xC5C, 0x1807, 0xFFFF, 0},
+	{0xFB4, 0x6359, 0xFFFF, 0},
+	{0x1432, 0x5543, 0xFFFF, 0},
+};
 
 static const struct pmic_setting init_setting[] = {
 	{0x20, 0xA, 0xA, 0},
@@ -27,7 +39,11 @@ static const struct pmic_setting init_setting[] = {
 	{0xA08, 0x1, 0x1, 0},
 	{0xA0C, 0x300, 0x300, 0},
 	{0xA10, 0x0, 0x4000, 0},
-	{0xA12, 0x1E0, 0x1E0, 0},
+	/*
+	 * RG_STRUP_LONG_PRESS_EXT_SEL
+	 * only allow pwrkey boot after long-press shutdown.
+	 */
+	{0xA12, 0x1F2, 0x1F3, 0},
 	{0xA24, 0xFFFF, 0xFFFF, 0},
 	{0xA26, 0xFFE0, 0xFFE0, 0},
 	{0xA2C, 0xC0DF, 0xC0DF, 0},
@@ -90,6 +106,7 @@ static const struct pmic_setting init_setting[] = {
 	{0x19AE, 0x6E, 0x7E, 0},
 	{0x19B0, 0x3C00, 0x3C00, 0},
 	{0x19B4, 0x20FD, 0xFFFF, 0},
+	{0x19DE, 0x1, 0x1, 6},		/* RG_VGPUVCORE_PH2_OFF, disable phase 2 */
 	{0x1A08, 0x4200, 0x4680, 0},
 	{0x1A0A, 0x6E, 0x7E, 0},
 	{0x1A0C, 0x3C00, 0x3C00, 0},
@@ -165,6 +182,13 @@ static const struct pmic_setting init_setting[] = {
 	{0x202C, 0x8, 0xC, 0},
 	{0x208C, 0x100, 0xF00, 0},
 	{0x209C, 0x80, 0x1E0, 0},
+	/*
+	 * BUCK_VGPU11_OP_MODE/CFG/EN
+	 * Vreq setting for scp usage
+	 */
+	{0x15a0, 0x0, 0x1, 11},
+	{0x159a, 0x0, 0x1, 11},
+	{0x1594, 0x1, 0x1, 11},
 };
 
 static const struct pmic_setting lp_setting[] = {
@@ -275,6 +299,32 @@ static const struct pmic_setting lp_setting[] = {
 	{0x1d14, 0x1, 0x1, 0x2},
 };
 
+static const struct pmic_efuse efuse_setting[] = {
+	{79, 0xa0e, 0x1, 0xf},
+	{886, 0x198c, 0xf, 0x8},
+	{890, 0x198e, 0xf, 0x0},
+	{902, 0x1998, 0xf, 0x8},
+	{906, 0x1998, 0xf, 0xc},
+	{918, 0x19a2, 0xf, 0x8},
+	{922, 0x19a2, 0xf, 0xc},
+	{1014, 0x19ae, 0xf, 0x7},
+	{1018, 0x19ae, 0xf, 0xb},
+	{1158, 0x1a0a, 0xf, 0x7},
+	{1162, 0x1a0a, 0xf, 0xb},
+	{1206, 0x1a16, 0xf, 0x7},
+	{1210, 0x1a16, 0xf, 0xb},
+	{1254, 0x1a22, 0xf, 0x7},
+	{1258, 0x1a22, 0xf, 0xb},
+	{1304, 0x1a2c, 0x7, 0x4},
+	{1307, 0x1a32, 0x7, 0x8},
+	{1336, 0x1a34, 0x7, 0x4},
+	{1339, 0x1a3a, 0x7, 0x8},
+	{1683, 0x79c, 0xf, 0x4},
+	{1688, 0xc8a, 0x1, 0x3},
+	{1689, 0xc88, 0x1, 0x3},
+	{1690, 0xc88, 0x7, 0x0},
+};
+
 static struct pmif *pmif_arb = NULL;
 static void mt6359p_write(u32 reg, u32 data)
 {
@@ -306,6 +356,52 @@ static void pmic_wdt_set(void)
 	mt6359p_write_field(PMIC_TOP_RST_MISC_SET, 0x01, 0xFFFF, 0);
 }
 
+static void pmic_protect_key_setting(bool lock)
+{
+	for (int i = 0; i < ARRAY_SIZE(key_protect_setting); i++)
+		mt6359p_write(key_protect_setting[i].addr,
+			      lock ? 0 : key_protect_setting[i].val);
+}
+
+static int check_idle(u32 timeout, u32 addr, u32 mask)
+{
+	if (!wait_us(timeout, !mt6359p_read_field(addr, mask, 0)))
+		return -1;
+
+	return 0;
+}
+
+static u32 pmic_read_efuse(u32 efuse_bit, u32 mask)
+{
+	u32 efuse_data;
+	int index, shift;
+
+	index = efuse_bit / 16;
+	shift = efuse_bit % 16;
+	mt6359p_write_field(PMIC_TOP_CKHWEN_CON0, 0, 0x1, 2);
+	mt6359p_write_field(PMIC_TOP_CKPDN_CON0, 0, 0x1, 4);
+	mt6359p_write_field(PMIC_OTP_CON11, 1, 0x1, 0);
+	mt6359p_write_field(PMIC_OTP_CON0, index * 2, 0xFF, 0);
+	if (mt6359p_read_field(PMIC_OTP_CON8, 1, 0))
+		mt6359p_write_field(PMIC_OTP_CON8, 0, 1, 0);
+	else
+		mt6359p_write_field(PMIC_OTP_CON8, 1, 1, 0);
+
+	udelay(300);
+	if (check_idle(EFUSE_WAIT_US, PMIC_OTP_CON13, EFUSE_BUSY))
+		die("[%s] timeout after %d usecs\n", __func__, EFUSE_WAIT_US);
+
+	udelay(100);
+
+	efuse_data = mt6359p_read_field(PMIC_OTP_CON12, 0xFFFF, 0);
+	efuse_data = (efuse_data >> shift) & mask;
+
+	mt6359p_write_field(PMIC_TOP_CKHWEN_CON0, 1, 0x1, 2);
+	mt6359p_write_field(PMIC_TOP_CKPDN_CON0, 1, 0x1, 4);
+
+	return efuse_data;
+}
+
 static void pmic_init_setting(void)
 {
 	for (int i = 0; i < ARRAY_SIZE(init_setting); i++)
@@ -318,6 +414,30 @@ static void pmic_lp_setting(void)
 	for (int i = 0; i < ARRAY_SIZE(lp_setting); i++)
 		mt6359p_write_field(lp_setting[i].addr, lp_setting[i].val,
 			lp_setting[i].mask, lp_setting[i].shift);
+}
+
+static void pmic_efuse_setting(void)
+{
+	u32 efuse_data;
+	struct stopwatch sw;
+
+	stopwatch_init(&sw);
+
+	for (int i = 0; i < ARRAY_SIZE(efuse_setting); i++) {
+		efuse_data = pmic_read_efuse(efuse_setting[i].efuse_bit, efuse_setting[i].mask);
+		mt6359p_write_field(efuse_setting[i].addr, efuse_data,
+			efuse_setting[i].mask, efuse_setting[i].shift);
+	}
+
+	efuse_data = pmic_read_efuse(EFUSE_RG_VPA_OC_FT, 0x1);
+	if (efuse_data) {
+		/* restore VPA_DLC initial setting */
+		mt6359p_write(PMIC_BUCK_VPA_DLC_CON0, 0x2810);
+		mt6359p_write(PMIC_BUCK_VPA_DLC_CON1, 0x800);
+	}
+
+	printk(BIOS_DEBUG, "%s: Set efuses in %ld msecs\n",
+	       __func__, stopwatch_duration_msecs(&sw));
 }
 
 static void pmic_wk_vs2_voter_setting(void)
@@ -437,12 +557,10 @@ void mt6359p_init(void)
 	init_pmif_arb();
 	pmic_set_power_hold();
 	pmic_wdt_set();
+	pmic_protect_key_setting(false);
 	pmic_init_setting();
 	pmic_lp_setting();
+	pmic_efuse_setting();
+	pmic_protect_key_setting(true);
 	pmic_wk_vs2_voter_setting();
-}
-
-void mt6359p_romstage_init(void)
-{
-	init_pmif_arb();
 }

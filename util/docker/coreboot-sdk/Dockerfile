@@ -12,7 +12,7 @@
 #              is used to identify this docker image.
 #  DOCKER_COMMIT is the coreboot Commit-ID to build the toolchain from.
 
-FROM debian:sid
+FROM debian:sid AS coreboot-sdk
 MAINTAINER Martin Roth <martin@coreboot.org>
 
 RUN \
@@ -104,13 +104,12 @@ RUN mkdir /home/coreboot/.ccache && \
 	echo "export SDK_VERSION={{SDK_VERSION}}" >> /home/coreboot/.bashrc && \
 	echo "export SDK_COMMIT={{DOCKER_COMMIT}}" >> /home/coreboot/.bashrc
 
-VOLUME /home/coreboot/.ccache
-
 ENV PATH $PATH:/opt/xgcc/bin
 ENV SDK_VERSION={{SDK_VERSION}}
 ENV SDK_COMMIT={{DOCKER_COMMIT}}
 USER coreboot
 
+FROM coreboot-sdk
 # Test the built image
 RUN mkdir -p /tmp/work && \
   cd /tmp/work && \
@@ -123,20 +122,30 @@ RUN mkdir -p /tmp/work && \
   git clone https://review.coreboot.org/em100.git && \
   make -C em100 && \
   git clone https://review.coreboot.org/coreboot.git && \
-  make -C coreboot CPUS=$(nproc) test-abuild && \
-  \
+  (cd coreboot && git submodule update --init --checkout ) && \
+  make -C coreboot CPUS=$(nproc) test-abuild
+
+RUN \
+  cd /tmp/work && \
   make -C coreboot olddefconfig && \
   make -C coreboot all -j && \
   make -C coreboot printall && \
   make -C coreboot filelist && \
   make -C coreboot ctags-project && \
-  make -C coreboot cscope-project && \
-  \
-  make -C coreboot doxygen -j && \
+  make -C coreboot cscope-project
+
+RUN \
+  cd /tmp/work && \
+  make -C coreboot doxygen -j
+
+RUN \
+  cd /tmp/work && \
   make -C coreboot test-payloads&& \
   make -C coreboot test-tools -j && \
   make -C coreboot test-lint -j && \
   make -C coreboot test-cleanup -j && \
-  make -C coreboot CPUS=$(nproc) crostools && \
   cd && \
   rm -rf /tmp/work/
+
+FROM coreboot-sdk
+VOLUME /home/coreboot/.ccache

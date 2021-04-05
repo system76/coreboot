@@ -3,9 +3,9 @@
 #define __SIMPLE_DEVICE__
 
 #include <acpi/acpi.h>
+#include <acpi/acpi_pm.h>
 #include <arch/io.h>
 #include <device/mmio.h>
-#include <cbmem.h>
 #include <console/console.h>
 #include <cpu/x86/msr.h>
 #include <device/device.h>
@@ -48,6 +48,7 @@ const char *const *soc_smi_sts_array(size_t *a)
 		[APM_STS_BIT] = "APM",
 		[SWSMI_TMR_STS_BIT] = "SWSMI_TMR",
 		[PM1_STS_BIT] = "PM1",
+		[GPE0_STS_BIT] = "GPE0 (reserved)",
 		[GPIO_STS_BIT] = "GPIO_SMI",
 		[GPIO_UNLOCK_SMI_STS_BIT] = "GPIO_UNLOCK_SSMI",
 		[MC_SMI_STS_BIT] = "MCSMI",
@@ -86,7 +87,11 @@ uint32_t soc_get_smi_status(uint32_t generic_sts)
 			generic_sts |= (1 << PM1_STS_BIT);
 	}
 
-	return generic_sts;
+	/*
+	 * GPE0_STS is reserved in APL/GLK datasheets. For compatibility
+	 * with common code, mask it out so that it is always zero.
+	 */
+	return generic_sts & ~(1 << GPE0_STS_BIT);
 }
 
 const char *const *soc_tco_sts_array(size_t *a)
@@ -185,12 +190,10 @@ static int rtc_failed(uint32_t gen_pmcon1)
 
 int soc_get_rtc_failed(void)
 {
-	const struct chipset_power_state *ps = cbmem_find(CBMEM_ID_POWER_STATE);
+	const struct chipset_power_state *ps;
 
-	if (!ps) {
-		printk(BIOS_ERR, "Could not find power state in cbmem, RTC init aborted\n");
+	if (acpi_pm_state_for_rtc(&ps) < 0)
 		return 1;
-	}
 
 	return rtc_failed(ps->gen_pmcon1);
 }

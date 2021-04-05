@@ -7,8 +7,8 @@
 
 #define __SIMPLE_DEVICE__
 
+#include <acpi/acpi_pm.h>
 #include <device/mmio.h>
-#include <cbmem.h>
 #include <device/device.h>
 #include <device/pci.h>
 #include <device/pci_def.h>
@@ -117,7 +117,7 @@ void pmc_set_disb(void)
 	/* Set the DISB after DRAM init */
 	uint8_t disb_val;
 	/* Only care about bits [23:16] of register GEN_PMCON_A */
-	uint8_t *addr = (void *)(pmc_mmio_regs() + GEN_PMCON_A + 2);
+	uint8_t *addr = (uint8_t *)(pmc_mmio_regs() + GEN_PMCON_A + 2);
 
 	disb_val = read8(addr);
 	disb_val |= (DISB >> 16);
@@ -180,12 +180,10 @@ static int rtc_failed(uint32_t gen_pmcon_b)
 
 int soc_get_rtc_failed(void)
 {
-	const struct chipset_power_state *ps = cbmem_find(CBMEM_ID_POWER_STATE);
+	const struct chipset_power_state *ps;
 
-	if (!ps) {
-		printk(BIOS_ERR, "Could not find power state in cbmem, RTC init aborted\n");
+	if (acpi_pm_state_for_rtc(&ps) < 0)
 		return 1;
-	}
 
 	return rtc_failed(ps->gen_pmcon_b);
 }
@@ -204,15 +202,13 @@ static inline int deep_s3_enabled(void)
 }
 
 /* Return 0, 3, or 5 to indicate the previous sleep state. */
-int soc_prev_sleep_state(const struct chipset_power_state *ps,
-	int prev_sleep_state)
+int soc_prev_sleep_state(const struct chipset_power_state *ps, int prev_sleep_state)
 {
-
 	/*
 	 * Check for any power failure to determine if this a wake from
-	* S5 because the PCH does not set the WAK_STS bit when waking
-	* from a true G3 state.
-	*/
+	 * S5 because the PCH does not set the WAK_STS bit when waking
+	 * from a true G3 state.
+	 */
 	if (ps->gen_pmcon_a & (PWR_FLR | SUS_PWR_FLR))
 		prev_sleep_state = ACPI_S5;
 
@@ -243,8 +239,7 @@ void soc_fill_power_state(struct chipset_power_state *ps)
 	ps->tco1_sts = tco_read_reg(TCO1_STS);
 	ps->tco2_sts = tco_read_reg(TCO2_STS);
 
-	printk(BIOS_DEBUG, "TCO_STS:   %04x %04x\n",
-	ps->tco1_sts, ps->tco2_sts);
+	printk(BIOS_DEBUG, "TCO_STS:   %04x %04x\n", ps->tco1_sts, ps->tco2_sts);
 
 	pmc = pmc_mmio_regs();
 	ps->gen_pmcon_a = read32(pmc + GEN_PMCON_A);

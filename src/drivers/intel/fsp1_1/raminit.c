@@ -8,7 +8,7 @@
 #include <cpu/x86/smm.h>
 #include <fsp/romstage.h>
 #include <fsp/util.h>
-#include <lib.h> /* hexdump */
+#include <lib.h>
 #include <string.h>
 #include <timestamp.h>
 
@@ -236,9 +236,6 @@ void raminit(struct romstage_params *params)
 	if (fsp_verification_failure)
 		die_with_post_code(POST_INVALID_VENDOR_BINARY,
 				   "ERROR - coreboot's requirements not met by FSP binary!\n");
-
-	/* Display the memory configuration */
-	report_memory_config();
 
 	/* Locate the memory configuration data to speed up the next reboot */
 	mrc_hob = get_next_guid_hob(&mrc_guid, hob_list_ptr);

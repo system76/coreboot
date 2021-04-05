@@ -18,9 +18,8 @@
 #include <assert.h>
 #include <console/console.h>
 #include <device/device.h>
-#include <device/pci_def.h>
-#include <device/pci_type.h>
 #include <device/soundwire.h>
+#include <types.h>
 
 static char *gencurrent;
 
@@ -149,18 +148,6 @@ void acpigen_write_integer(uint64_t data)
 		acpigen_write_dword((unsigned int)data);
 	else
 		acpigen_write_qword(data);
-}
-
-void acpigen_write_name_zero(const char *name)
-{
-	acpigen_write_name(name);
-	acpigen_write_one();
-}
-
-void acpigen_write_name_one(const char *name)
-{
-	acpigen_write_name(name);
-	acpigen_write_zero();
 }
 
 void acpigen_write_name_byte(const char *name, uint8_t val)
@@ -1435,8 +1422,10 @@ void acpigen_write_if_lequal_namestr_int(const char *namestr, uint64_t val)
 	acpigen_write_integer(val);
 }
 
+/* Closes previously opened if statement and generates ACPI code for else statement. */
 void acpigen_write_else(void)
 {
+	acpigen_pop_len();
 	acpigen_emit_byte(ELSE_OP);
 	acpigen_write_len_f();
 }
@@ -2042,23 +2031,6 @@ void acpigen_resource_qword(u16 res_type, u16 gen_flags, u16 type_flags,
 void acpigen_write_ADR(uint64_t adr)
 {
 	acpigen_write_name_qword("_ADR", adr);
-}
-
-void acpigen_write_ADR_pci_devfn(pci_devfn_t devfn)
-{
-	/*
-	 * _ADR for PCI Bus is encoded as follows:
-	 * [63:32] - unused
-	 * [31:16] - device #
-	 * [15:0]  - function #
-	 */
-	acpigen_write_ADR(PCI_SLOT(devfn) << 16 | PCI_FUNC(devfn));
-}
-
-void acpigen_write_ADR_pci_device(const struct device *dev)
-{
-	assert(dev->path.type == DEVICE_PATH_PCI);
-	acpigen_write_ADR_pci_devfn(dev->path.pci.devfn);
 }
 
 /**

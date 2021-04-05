@@ -7,7 +7,6 @@
 #include <string.h>
 #include <console/console.h>
 #include <acpi/acpi.h>
-#include <acpi/acpi_gnvs.h>
 #include <acpi/acpigen.h>
 #include <device/pci_ops.h>
 #include <arch/ioapic.h>
@@ -16,11 +15,11 @@
 #include <device/pci.h>
 #include <amdblocks/acpimmio.h>
 #include <amdblocks/acpi.h>
+#include <amdblocks/ioapic.h>
 #include <soc/acpi.h>
 #include <soc/pci_devs.h>
 #include <soc/southbridge.h>
 #include <soc/northbridge.h>
-#include <soc/nvs.h>
 #include <soc/gpio.h>
 #include <version.h>
 
@@ -31,10 +30,10 @@ unsigned long acpi_fill_madt(unsigned long current)
 
 	/* Write Kern IOAPIC, only one */
 	current += acpi_create_madt_ioapic((acpi_madt_ioapic_t *)current,
-			CONFIG_MAX_CPUS, IO_APIC_ADDR, 0);
+			FCH_IOAPIC_ID, IO_APIC_ADDR, 0);
 
 	current += acpi_create_madt_ioapic((acpi_madt_ioapic_t *)current,
-			CONFIG_MAX_CPUS+1, IO_APIC2_ADDR, 24);
+			GNB_IOAPIC_ID, IO_APIC2_ADDR, 24);
 
 	/* 0: mean bus 0--->ISA */
 	/* 0: PIC 0 */
@@ -59,7 +58,7 @@ unsigned long acpi_fill_madt(unsigned long current)
  */
 void acpi_fill_fadt(acpi_fadt_t *fadt)
 {
-	printk(BIOS_DEBUG, "pm_base: 0x%04x\n", STONEYRIDGE_ACPI_IO_BASE);
+	printk(BIOS_DEBUG, "pm_base: 0x%04x\n", ACPI_IO_BASE);
 
 	fadt->sci_int = 9;		/* IRQ 09 - ACPI SCI */
 
@@ -152,23 +151,10 @@ void generate_cpu_entries(const struct device *device)
 		acpigen_write_processor(cpu, 0, 0);
 		acpigen_pop_len();
 	}
-}
 
-unsigned long southbridge_write_acpi_tables(const struct device *device,
-		unsigned long current,
-		struct acpi_rsdp *rsdp)
-{
-	return acpi_write_hpet(device, current, rsdp);
-}
-
-void soc_fill_gnvs(struct global_nvs *gnvs)
-{
-	/* Set unknown wake source */
-	gnvs->pm1i = ~0ULL;
-	gnvs->gpei = ~0ULL;
-
-	/* CPU core count */
-	gnvs->pcnt = dev_count_cpu();
+	acpigen_write_scope("\\");
+	acpigen_write_name_integer("PCNT", cores);
+	acpigen_pop_len();
 }
 
 static void acpigen_soc_get_gpio_in_local5(uintptr_t addr)
@@ -200,8 +186,6 @@ static int acpigen_soc_get_gpio_val(unsigned int gpio_num, uint32_t mask)
 
 	/* Store (One, Local0) */
 	acpigen_write_store_ops(ONE_OP, LOCAL0_OP);
-
-	acpigen_pop_len();	/* If */
 
 	/* Else */
 	acpigen_write_else();

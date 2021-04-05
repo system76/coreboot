@@ -57,7 +57,7 @@ struct chipset_power_state *fill_power_state(void)
 }
 
 /* Return 0, 3, or 5 to indicate the previous sleep state. */
-int chipset_prev_sleep_state(struct chipset_power_state *ps)
+int chipset_prev_sleep_state(const struct chipset_power_state *ps)
 {
 	/* Default to S0. */
 	int prev_sleep_state = ACPI_S0;
@@ -105,9 +105,8 @@ void soc_memory_init_params(struct romstage_params *params, MEMORY_INIT_UPD *upd
 	dev = pcidev_on_root(LPC_DEV, LPC_FUNC);
 
 	if (!dev) {
-		printk(BIOS_ERR,
-			"Error! Device (PCI:0:%02x.%01x) not found, soc_memory_init_params!\n",
-			LPC_DEV, LPC_FUNC);
+		printk(BIOS_ERR, "Error! Device (PCI:0:%02x.%01x) not found, %s!\n",
+			LPC_DEV, LPC_FUNC, __func__);
 		return;
 	}
 

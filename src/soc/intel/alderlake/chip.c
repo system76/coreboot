@@ -10,18 +10,12 @@
 #include <intelblocks/itss.h>
 #include <intelblocks/pcie_rp.h>
 #include <intelblocks/xdci.h>
-#include <romstage_handoff.h>
 #include <soc/intel/common/vbt.h>
 #include <soc/itss.h>
 #include <soc/pci_devs.h>
+#include <soc/pcie.h>
 #include <soc/ramstage.h>
 #include <soc/soc_chip.h>
-
-static const struct pcie_rp_group pch_lp_rp_groups[] = {
-	{ .slot = PCH_DEV_SLOT_PCIE,	.count = 8 },
-	{ .slot = PCH_DEV_SLOT_PCIE_1,	.count = 4 },
-	{ 0 }
-};
 
 #if CONFIG(HAVE_ACPI_TABLES)
 const char *soc_acpi_name(const struct device *dev)
@@ -125,7 +119,7 @@ static void soc_fill_gpio_pm_configuration(void)
 		memcpy(value, config->gpio_pm, sizeof(uint8_t) *
 			TOTAL_GPIO_COMM);
 	else
-		memset(value, MISCCFG_ENABLE_GPIO_PM_CONFIG, sizeof(uint8_t) *
+		memset(value, MISCCFG_GPIO_PM_CONFIG_BITS, sizeof(uint8_t) *
 			TOTAL_GPIO_COMM);
 
 	gpio_pm_configure(value, TOTAL_GPIO_COMM);
@@ -133,24 +127,16 @@ static void soc_fill_gpio_pm_configuration(void)
 
 void soc_init_pre_device(void *chip_info)
 {
-	/* TODO: A bug has been filed, remove this W/A once FSP is updated */
-	/* Snapshot the current GPIO IRQ polarities. FSP is setting a
-	 * default policy that doesn't honor boards' requirements. */
-	itss_snapshot_irq_polarities(GPIO_IRQ_START, GPIO_IRQ_END);
-
 	/* Perform silicon specific init. */
-	fsp_silicon_init(romstage_handoff_is_resume());
+	fsp_silicon_init();
 
 	 /* Display FIRMWARE_VERSION_INFO_HOB */
 	fsp_display_fvi_version_hob();
 
-	/* Restore GPIO IRQ polarities back to previous settings. */
-	itss_restore_irq_polarities(GPIO_IRQ_START, GPIO_IRQ_END);
-
 	soc_fill_gpio_pm_configuration();
 
 	/* Swap enabled PCI ports in device tree if needed. */
-	pcie_rp_update_devicetree(pch_lp_rp_groups);
+	pcie_rp_update_devicetree(get_pch_pcie_rp_table());
 }
 
 static struct device_operations pci_domain_ops = {

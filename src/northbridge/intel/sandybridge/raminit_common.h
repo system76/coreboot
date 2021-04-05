@@ -3,7 +3,6 @@
 #ifndef RAMINIT_COMMON_H
 #define RAMINIT_COMMON_H
 
-#include <cpu/intel/model_206ax/model_206ax.h>
 #include <stdint.h>
 
 #define BASEFREQ	133
@@ -307,7 +306,7 @@ void iosav_write_memory_test_sequence(ramctr_timing *ctrl, int channel, int slot
  */
 #define MRC_CACHE_VERSION 5
 
-enum pdwm_mode {
+enum power_down_mode {
 	PDM_NONE        = 0,
 	PDM_APD         = 1,
 	PDM_PPD         = 2,
@@ -323,7 +322,7 @@ typedef struct odtmap_st {
 
 /* WARNING: Do not forget to increase MRC_CACHE_VERSION when this struct is changed! */
 typedef struct dimm_info_st {
-	dimm_attr dimm[NUM_CHANNELS][NUM_SLOTS];
+	struct dimm_attr_ddr3_st dimm[NUM_CHANNELS][NUM_SLOTS];
 } dimm_info;
 
 /* WARNING: Do not forget to increase MRC_CACHE_VERSION when this struct is changed! */
@@ -434,7 +433,8 @@ typedef struct ramctr_timing_st {
 #define MIN_CAS 4
 
 /*
- * 1 QCLK (quarter of a clock cycle) equals 64 PI (phase interpolator) ticks.
+ * 1 QCLK (quadrature clock) is one half of a full clock cycle (tCK).
+ * In addition, 64 PI (phase interpolator) ticks are equal to 1 QCLK.
  * Logic delay values in I/O register bitfields are expressed in QCLKs.
  */
 #define QCLK_PI	64

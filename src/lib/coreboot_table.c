@@ -19,9 +19,8 @@
 #include <cbmem.h>
 #include <bootmem.h>
 #include <bootsplash.h>
+#include <inttypes.h>
 #include <spi_flash.h>
-#include <security/vboot/misc.h>
-#include <security/vboot/vbnv_layout.h>
 #include <smmstore.h>
 
 #if CONFIG(USE_OPTION_TABLE)
@@ -167,7 +166,7 @@ static void lb_gpios(struct lb_header *header)
 		"            NAME |       PORT | POLARITY |     VALUE\n",
 		gpios->count);
 	for (g = &gpios->gpios[0]; g < &gpios->gpios[gpios->count]; g++) {
-		printk(BIOS_INFO, "%16s | ", g->name);
+		printk(BIOS_INFO, "%16.16s | ", g->name);
 		if (g->port == -1)
 			printk(BIOS_INFO, " undefined | ");
 		else
@@ -189,21 +188,6 @@ static void lb_gpios(struct lb_header *header)
 		}
 	}
 }
-
-#if CONFIG(CHROMEOS)
-static void lb_vbnv(struct lb_header *header)
-{
-#if CONFIG(PC80_SYSTEM)
-	struct lb_range *vbnv;
-
-	vbnv = (struct lb_range *)lb_new_record(header);
-	vbnv->tag = LB_TAG_VBNV;
-	vbnv->size = sizeof(*vbnv);
-	vbnv->range_start = CONFIG_VBOOT_VBNV_OFFSET + 14;
-	vbnv->range_size = VBOOT_VBNV_BLOCK_SIZE;
-#endif
-}
-#endif /* CONFIG_CHROMEOS */
 
 __weak uint32_t board_id(void) { return UNDEFINED_STRAPPING_ID; }
 __weak uint32_t ram_code(void) { return UNDEFINED_STRAPPING_ID; }
@@ -322,10 +306,20 @@ static struct lb_board_config *lb_board_config(struct lb_header *header)
 	config->tag = LB_TAG_BOARD_CONFIG;
 	config->size = sizeof(*config);
 
+	const uint64_t fw_config = fw_config_get();
 	config->board_id = board_id();
 	config->ram_code = ram_code();
 	config->sku_id = sku_id();
-	config->fw_config = pack_lb64(fw_config_get());
+	config->fw_config = pack_lb64(fw_config);
+
+	if (config->board_id != UNDEFINED_STRAPPING_ID)
+		printk(BIOS_INFO, "Board ID: %d\n", config->board_id);
+	if (config->ram_code != UNDEFINED_STRAPPING_ID)
+		printk(BIOS_INFO, "RAM code: %d\n", config->ram_code);
+	if (config->sku_id != UNDEFINED_STRAPPING_ID)
+		printk(BIOS_INFO, "SKU ID: %d\n", config->sku_id);
+	if (fw_config != UNDEFINED_FW_CONFIG)
+		printk(BIOS_INFO, "FW config: %#" PRIx64 "\n", fw_config);
 
 	return config;
 }
@@ -491,10 +485,9 @@ static uintptr_t write_coreboot_table(uintptr_t rom_table_end)
 	if (CONFIG(CHROMEOS))
 		lb_gpios(head);
 
-#if CONFIG(CHROMEOS)
 	/* pass along VBNV offsets in CMOS */
-	lb_vbnv(head);
-#endif
+	if (CONFIG(VBOOT_VBNV_CMOS))
+		lb_table_add_vbnv_cmos(head);
 
 	/* Pass mmc early init status */
 	lb_mmc_info(head);

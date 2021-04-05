@@ -13,6 +13,7 @@ DefinitionBlock(
 	0x20110725	/* OEM revision */
 )
 {
+	#include <acpi/dsdt_top.asl>
 	#include <soc/intel/common/block/acpi/acpi/platform.asl>
 
 	/* global NVS and variables */
@@ -28,12 +29,6 @@ DefinitionBlock(
 			#include <soc/intel/tigerlake/acpi/tcss.asl>
 		}
 	}
-
-	/* Chrome OS specific */
-	#include <vendorcode/google/chromeos/acpi/chromeos.asl>
-
-	/* VPD support */
-	#include <vendorcode/google/chromeos/acpi/vpd.asl>
 
 	/* Chrome OS Embedded Controller */
 	Scope (\_SB.PCI0.LPCB)

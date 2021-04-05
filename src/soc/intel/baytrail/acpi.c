@@ -1,12 +1,10 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
 #include <acpi/acpi.h>
-#include <acpi/acpi_gnvs.h>
 #include <acpi/acpigen.h>
 #include <arch/ioapic.h>
 #include <device/mmio.h>
 #include <arch/smp/mpspec.h>
-#include <cbmem.h>
 #include <console/console.h>
 #include <cpu/x86/smm.h>
 #include <types.h>
@@ -17,7 +15,6 @@
 #include <soc/iomap.h>
 #include <soc/irq.h>
 #include <soc/msr.h>
-#include <soc/nvs.h>
 #include <soc/pattrs.h>
 #include <soc/pm.h>
 
@@ -56,18 +53,6 @@ static acpi_cstate_t cstate_map[] = {
 	}
 };
 
-void soc_fill_gnvs(struct global_nvs *gnvs)
-{
-	/* Set unknown wake source */
-	gnvs->pm1i = -1;
-
-	/* CPU core count */
-	gnvs->pcnt = dev_count_cpu();
-
-	/* Top of Low Memory (start of resource allocation) */
-	gnvs->tolm = nc_read_top_of_low_memory();
-}
-
 int acpi_sci_irq(void)
 {
 	u32 *actl = (u32 *)(ILB_BASE_ADDRESS + ACTL);
@@ -104,7 +89,7 @@ int acpi_sci_irq(void)
 unsigned long acpi_fill_mcfg(unsigned long current)
 {
 	current += acpi_create_mcfg_mmconfig((acpi_mcfg_mmconfig_t *)current,
-					     MCFG_BASE_ADDRESS, 0, 0, 255);
+			CONFIG_MMCONF_BASE_ADDRESS, 0, 0, CONFIG_MMCONF_BUS_NUMBER - 1);
 	return current;
 }
 

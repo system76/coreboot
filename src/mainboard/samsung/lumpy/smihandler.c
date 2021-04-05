@@ -2,12 +2,11 @@
 
 #include <console/console.h>
 #include <cpu/x86/smm.h>
-#include <southbridge/intel/bd82x6x/nvs.h>
+#include <soc/nvs.h>
 #include <southbridge/intel/bd82x6x/pch.h>
 #include <southbridge/intel/bd82x6x/me.h>
 #include <southbridge/intel/common/pmbase.h>
 #include <northbridge/intel/sandybridge/sandybridge.h>
-#include <cpu/intel/model_206ax/model_206ax.h>
 #include <ec/smsc/mec1308/ec.h>
 #include "ec.h"
 

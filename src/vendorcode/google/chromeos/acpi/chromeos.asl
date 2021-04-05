@@ -2,10 +2,8 @@
 
 #include <security/vboot/vbnv_layout.h>
 
-#if CONFIG(CHROMEOS)
-
 /* GPIO package generated at run time. */
-External (OIPG)
+External (OIPG, PkgObj)
 
 Device (CRHW)
 {
@@ -100,4 +98,3 @@ Device (CRHW)
 }
 
 #include "ramoops.asl"
-#endif

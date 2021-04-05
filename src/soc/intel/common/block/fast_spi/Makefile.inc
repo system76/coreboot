@@ -32,19 +32,40 @@ postcar-y += mmap_boot.c
 ramstage-y += mmap_boot.c
 smm-y += mmap_boot.c
 
-# Check to ensure that no sections in the FMAP cross 16MiB boundary if
-# the platform supports split decode windows for BIOS region greater
-# than 16MiB.
-$(call add_intermediate, check-fmap-16mib-crossing, $(obj)/fmap_config.h)
-		flash_offset=$$(printf "%d" $$(cat $(obj)/fmap_config.h | grep "FMAP_SECTION_FLASH_START" | awk '{print $$NF}')); \
-		for x in $$(cat $(obj)/fmap_config.h | grep "FMAP_TERMINAL_SECTIONS" | cut -d\" -f2); do \
-		    start=$$(printf "%d" $$(cat $(obj)/fmap_config.h | grep "FMAP_SECTION_"$$x"_START" | awk '{print $$NF}')); \
-		    size=$$(printf "%d" $$(cat $(obj)/fmap_config.h | grep "FMAP_SECTION_"$$x"_SIZE" | awk '{print $$NF}')); \
-		    start=$$((start-flash_offset)); \
-		    end=$$((start+size-1)); \
-		    if [ $$start -lt 16777216 ] && [ $$end -ge 16777216 ]; then echo "ERROR:" $$x "crosses 16MiB boundary"; fail=1; break; fi; \
-		done; \
-		if [ $$fail -eq 1 ]; then false; fi
+# When using extended BIOS window, no sub-region within the BIOS region must
+# cross 16MiB boundary from the end of the BIOS region. This is because the
+# top 16MiB of the BIOS region are decoded by the standard window from
+# (4G - 16M) to 4G. There is no standard section name that identifies the BIOS
+# region in flashmap. This check assumes that BIOS region is placed at the top
+# of SPI flash and hence calculates the boundary as flash_size - 16M. If any
+# region within the SPI flash crosses this boundary, then the check complains
+# and exits.
+
+$(call add_intermediate, check-fmap-16mib-crossing)
+check-fmap-16mib-crossing: $(obj)/fmap_config.h
+	fmap_get() { awk "/$$1/ { print \$$NF }" < $<; };		\
+									\
+	flash_offset=$$(fmap_get FMAP_SECTION_FLASH_START);		\
+	flash_size=$$(fmap_get FMAP_SECTION_FLASH_SIZE);		\
+	if [ $$((flash_size)) -le $$((0x1000000)) ]; then		\
+	   exit;		   	     				\
+	fi;								\
+	bios_16M_boundary=$$((flash_size-0x1000000)); 			\
+	for x in $$(grep "FMAP_TERMINAL_SECTIONS" < $< | cut -d\" -f2);	\
+	do								\
+	    start=$$(fmap_get "FMAP_SECTION_$${x}_START");		\
+	    size=$$(fmap_get "FMAP_SECTION_$${x}_SIZE");		\
+	    start=$$((start-flash_offset));				\
+	    end=$$((start+size-1));					\
+	    if [ $$((start)) -lt $$((bios_16M_boundary)) ] &&		\
+			[ $$((end)) -ge $$((bios_16M_boundary)) ];	\
+	    then							\
+	        echo "ERROR: $$x crosses 16MiB boundary";		\
+	        fail=1;							\
+	        break;							\
+	    fi;								\
+	done;								\
+	exit $$fail
 
 CBFSTOOL_ADD_CMD_OPTIONS += --ext-win-base $(CONFIG_EXT_BIOS_WIN_BASE) --ext-win-size $(CONFIG_EXT_BIOS_WIN_SIZE)
 

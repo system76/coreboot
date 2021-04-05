@@ -117,6 +117,16 @@ config NO_GFX_INIT
 
 endchoice
 
+config PRE_GRAPHICS_DELAY_MS
+	int "Graphics initialization delay in ms"
+	default 0
+	depends on VGA_ROM_RUN
+	help
+	  On some systems, coreboot boots so fast that connected monitors
+	  (mostly TVs) won't be able to wake up fast enough to talk to the
+	  VBIOS. On those systems we need to wait for a bit before executing
+	  the VBIOS.
+
 config ONBOARD_VGA_IS_PRIMARY
 	bool "Use onboard VGA as primary video device"
 	default n
@@ -509,9 +519,33 @@ config AZALIA_PLUGIN_SUPPORT
 	bool
 	default n
 
+config AZALIA_MAX_CODECS
+	int
+	depends on AZALIA_PLUGIN_SUPPORT
+	default 3
+	range 1 15
+	help
+	  The maximum number of codecs supported on a single HD Audio controller.
+
 config PCIEXP_PLUGIN_SUPPORT
 	bool
 	default y
+
+config MMCONF_BASE_ADDRESS
+	hex
+	depends on MMCONF_SUPPORT
+
+config MMCONF_BUS_NUMBER
+	int
+	depends on MMCONF_SUPPORT
+
+config MMCONF_LENGTH
+	hex
+	depends on MMCONF_SUPPORT
+	default 0x04000000 if MMCONF_BUS_NUMBER = 64
+	default 0x08000000 if MMCONF_BUS_NUMBER = 128
+	default 0x10000000 if MMCONF_BUS_NUMBER = 256
+	default 0x0
 
 config PCI_ALLOW_BUS_MASTER
 	bool "Allow coreboot to set optional PCI bus master bits"

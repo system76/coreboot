@@ -1,6 +1,5 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#include <boardid.h>
 #include <boot/coreboot_tables.h>
 #include <device/device.h>
 #include <gpio.h>
@@ -31,10 +30,9 @@ static void mainboard_init(struct device *dev)
 	setup_mmu(DRAM_INITIALIZED);
 	setup_usb();
 
-	if (CONFIG(CHROMEOS)) {
-		/* Copy WIFI calibration data into CBMEM. */
+	/* Copy WIFI calibration data into CBMEM. */
+	if (CONFIG(CHROMEOS))
 		cbmem_add_vpd_calibration_data();
-	}
 
 	/*
 	 * Make sure bootloader can issue sounds The frequency is calculated
@@ -51,7 +49,6 @@ static void mainboard_enable(struct device *dev)
 }
 
 struct chip_operations mainboard_ops = {
-	.name	= "gale",
 	.enable_dev = mainboard_enable,
 };
 

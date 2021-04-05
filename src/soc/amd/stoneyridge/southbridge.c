@@ -25,6 +25,8 @@
 #include <delay.h>
 #include <soc/pci_devs.h>
 #include <agesa_headers.h>
+#include <soc/acpi.h>
+#include <soc/lpc.h>
 #include <soc/nvs.h>
 #include <types.h>
 
@@ -342,6 +344,10 @@ void bootblock_fch_early_init(void)
 
 	fch_enable_legacy_io();
 	enable_aoac_devices();
+
+	/* disable the keyboard reset function before mainboard GPIO setup */
+	if (CONFIG(DISABLE_KEYBOARD_RESET_PIN))
+		fch_disable_kb_rst();
 }
 
 /* After console init */
@@ -350,12 +356,7 @@ void bootblock_fch_init(void)
 	fch_print_pmxc0_status();
 }
 
-void sb_enable(struct device *dev)
-{
-	printk(BIOS_DEBUG, "%s\n", __func__);
-}
-
-static void sb_init_acpi_ports(void)
+static void fch_init_acpi_ports(void)
 {
 	u32 reg;
 
@@ -401,60 +402,38 @@ static void sb_init_acpi_ports(void)
 				PM_ACPI_TIMER_EN_EN);
 }
 
-static void set_nvs_sws(void *unused)
+void fch_init(void *chip_info)
 {
-	struct acpi_pm_gpe_state *state;
-
-	state = cbmem_find(CBMEM_ID_POWER_STATE);
-	if (state == NULL)
-		return;
-
-	pm_fill_gnvs(state);
+	fch_init_acpi_ports();
 }
 
-BOOT_STATE_INIT_ENTRY(BS_OS_RESUME, BS_ON_ENTRY, set_nvs_sws, NULL);
-
-void southbridge_init(void *chip_info)
+static void set_sb_aoac(struct aoac_devs *aoac)
 {
-	struct acpi_pm_gpe_state *state;
+	const struct device *sd, *sata;
 
-	sb_init_acpi_ports();
+	aoac->ic0e = is_aoac_device_enabled(FCH_AOAC_DEV_I2C0);
+	aoac->ic1e = is_aoac_device_enabled(FCH_AOAC_DEV_I2C1);
+	aoac->ic2e = is_aoac_device_enabled(FCH_AOAC_DEV_I2C2);
+	aoac->ic3e = is_aoac_device_enabled(FCH_AOAC_DEV_I2C3);
+	aoac->ut0e = is_aoac_device_enabled(FCH_AOAC_DEV_UART0);
+	aoac->ut1e = is_aoac_device_enabled(FCH_AOAC_DEV_UART1);
+	aoac->ehce = is_aoac_device_enabled(FCH_AOAC_DEV_USB2);
+	aoac->xhce = is_aoac_device_enabled(FCH_AOAC_DEV_USB3);
 
-	state = cbmem_add(CBMEM_ID_POWER_STATE, sizeof(*state));
-	if (state) {
-		acpi_fill_pm_gpe_state(state);
-		acpi_pm_gpe_add_events_print_events(state);
-	}
-
-	acpi_clear_pm_gpe_status();
+	/* Rely on these being in sync with devicetree */
+	sd = pcidev_path_on_root(SD_DEVFN);
+	aoac->sd_e = sd && sd->enabled ? 1 : 0;
+	sata = pcidev_path_on_root(SATA_DEVFN);
+	aoac->st_e = sata && sata->enabled ? 1 : 0;
+	aoac->espi = 1;
 }
 
-static void set_sb_final_nvs(void)
+static void set_sb_gnvs(struct global_nvs *gnvs)
 {
 	uintptr_t amdfw_rom;
 	uintptr_t xhci_fw;
 	uintptr_t fwaddr;
 	size_t fwsize;
-	const struct device *sd, *sata;
-
-	struct global_nvs *gnvs = acpi_get_gnvs();
-	if (gnvs == NULL)
-		return;
-
-	gnvs->aoac.ic0e = is_aoac_device_enabled(FCH_AOAC_DEV_I2C0);
-	gnvs->aoac.ic1e = is_aoac_device_enabled(FCH_AOAC_DEV_I2C1);
-	gnvs->aoac.ic2e = is_aoac_device_enabled(FCH_AOAC_DEV_I2C2);
-	gnvs->aoac.ic3e = is_aoac_device_enabled(FCH_AOAC_DEV_I2C3);
-	gnvs->aoac.ut0e = is_aoac_device_enabled(FCH_AOAC_DEV_UART0);
-	gnvs->aoac.ut1e = is_aoac_device_enabled(FCH_AOAC_DEV_UART1);
-	gnvs->aoac.ehce = is_aoac_device_enabled(FCH_AOAC_DEV_USB2);
-	gnvs->aoac.xhce = is_aoac_device_enabled(FCH_AOAC_DEV_USB3);
-	/* Rely on these being in sync with devicetree */
-	sd = pcidev_path_on_root(SD_DEVFN);
-	gnvs->aoac.sd_e = sd && sd->enabled ? 1 : 0;
-	sata = pcidev_path_on_root(SATA_DEVFN);
-	gnvs->aoac.st_e = sata && sata->enabled ? 1 : 0;
-	gnvs->aoac.espi = 1;
 
 	amdfw_rom = 0x20000 - (0x80000 << CONFIG_AMD_FWM_POSITION_INDEX);
 	xhci_fw = read32((void *)(amdfw_rom + XHCI_FW_SIG_OFFSET));
@@ -472,7 +451,7 @@ static void set_sb_final_nvs(void)
 			& ~PCI_BASE_ADDRESS_MEM_ATTR_MASK;
 }
 
-void southbridge_final(void *chip_info)
+void fch_final(void *chip_info)
 {
 	uint8_t restored_power = PM_S5_AT_POWER_RECOVERY;
 
@@ -480,7 +459,11 @@ void southbridge_final(void *chip_info)
 		restored_power = PM_RESTORE_S0_IF_PREV_S0;
 	pm_write8(PM_RTC_SHADOW, restored_power);
 
-	set_sb_final_nvs();
+	struct global_nvs *gnvs = acpi_get_gnvs();
+	if (gnvs) {
+		set_sb_aoac(&gnvs->aoac);
+		set_sb_gnvs(gnvs);
+	}
 }
 
 /*

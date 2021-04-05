@@ -196,8 +196,12 @@ static void asmlinkage ap_init(unsigned int cpu)
 	/* Fix up APIC id with reality. */
 	info->cpu->path.apic.apic_id = lapicid();
 
-	printk(BIOS_INFO, "AP: slot %d apic_id %x.\n", cpu,
-		info->cpu->path.apic.apic_id);
+	if (cpu_is_intel())
+		printk(BIOS_INFO, "AP: slot %d apic_id %x, MCU rev: 0x%08x\n", cpu,
+		       info->cpu->path.apic.apic_id, get_current_microcode_rev());
+	else
+		printk(BIOS_INFO, "AP: slot %d apic_id %x\n", cpu,
+		       info->cpu->path.apic.apic_id);
 
 	/* Walk the flight plan */
 	ap_do_flight_plan();
@@ -681,7 +685,11 @@ struct mp_state {
 	int cpu_count;
 	uintptr_t perm_smbase;
 	size_t perm_smsize;
+	/* Size of the real CPU save state */
+	size_t smm_real_save_state_size;
+	/* Size of allocated CPU save state, MAX(real save state size, stub size) */
 	size_t smm_save_state_size;
+	uintptr_t reloc_start32_offset;
 	int do_smm;
 } mp_state;
 
@@ -704,15 +712,12 @@ static void smm_enable(void)
 static void asmlinkage smm_do_relocation(void *arg)
 {
 	const struct smm_module_params *p;
-	const struct smm_runtime *runtime;
 	int cpu;
-	uintptr_t curr_smbase;
+	const uintptr_t curr_smbase = SMM_DEFAULT_BASE;
 	uintptr_t perm_smbase;
 
 	p = arg;
-	runtime = p->runtime;
 	cpu = p->cpu;
-	curr_smbase = runtime->smbase;
 
 	if (cpu >= CONFIG_MAX_CPUS) {
 		printk(BIOS_CRIT,
@@ -725,17 +730,16 @@ static void asmlinkage smm_do_relocation(void *arg)
 	 * the location of the new SMBASE. If using SMM modules then this
 	 * calculation needs to match that of the module loader.
 	 */
-#if CONFIG(X86_SMM_LOADER_VERSION2)
-	perm_smbase = smm_get_cpu_smbase(cpu);
-	mp_state.perm_smbase = perm_smbase;
-	if (!perm_smbase) {
-		printk(BIOS_ERR, "%s: bad SMBASE for CPU %d\n", __func__, cpu);
-		return;
+	if (CONFIG(X86_SMM_LOADER_VERSION2)) {
+		perm_smbase = smm_get_cpu_smbase(cpu);
+		if (!perm_smbase) {
+			printk(BIOS_ERR, "%s: bad SMBASE for CPU %d\n", __func__, cpu);
+			return;
+		}
+	} else {
+		perm_smbase = mp_state.perm_smbase;
+		perm_smbase -= cpu * mp_state.smm_save_state_size;
 	}
-#else
-	perm_smbase = mp_state.perm_smbase;
-	perm_smbase -= cpu * runtime->save_state_size;
-#endif
 
 	/* Setup code checks this callback for validity. */
 	printk(BIOS_INFO, "%s : curr_smbase 0x%x perm_smbase 0x%x, cpu = %d\n",
@@ -751,20 +755,21 @@ static void asmlinkage smm_do_relocation(void *arg)
 		stm_setup(mseg, p->cpu,
 				perm_smbase,
 				mp_state.perm_smbase,
-				runtime->start32_offset);
+				mp_state.reloc_start32_offset);
 	}
 }
 
 static void adjust_smm_apic_id_map(struct smm_loader_params *smm_params)
 {
 	int i;
-	struct smm_runtime *runtime = smm_params->runtime;
+	struct smm_stub_params *stub_params = smm_params->stub_params;
 
 	for (i = 0; i < CONFIG_MAX_CPUS; i++)
-		runtime->apic_id_to_cpu[i] = cpu_get_apic_id(i);
+		stub_params->apic_id_to_cpu[i] = cpu_get_apic_id(i);
 }
 
-static int install_relocation_handler(int num_cpus, size_t save_state_size)
+static int install_relocation_handler(int num_cpus, size_t real_save_state_size,
+				      size_t save_state_size)
 {
 	int cpus = num_cpus;
 #if CONFIG(X86_SMM_LOADER_VERSION2)
@@ -777,6 +782,7 @@ static int install_relocation_handler(int num_cpus, size_t save_state_size)
 	struct smm_loader_params smm_params = {
 		.per_cpu_stack_size = CONFIG_SMM_STUB_STACK_SIZE,
 		.num_concurrent_stacks = cpus,
+		.real_cpu_save_state_size = real_save_state_size,
 		.per_cpu_save_state_size = save_state_size,
 		.num_concurrent_save_states = 1,
 		.handler = smm_do_relocation,
@@ -792,11 +798,14 @@ static int install_relocation_handler(int num_cpus, size_t save_state_size)
 	}
 	adjust_smm_apic_id_map(&smm_params);
 
+	mp_state.reloc_start32_offset = smm_params.stub_params->start32_offset;
+
 	return 0;
 }
 
 static int install_permanent_handler(int num_cpus, uintptr_t smbase,
-					size_t smsize, size_t save_state_size)
+				     size_t smsize, size_t real_save_state_size,
+				     size_t save_state_size)
 {
 	/*
 	 * All the CPUs will relocate to permanaent handler now. Set parameters
@@ -808,6 +817,7 @@ static int install_permanent_handler(int num_cpus, uintptr_t smbase,
 	struct smm_loader_params smm_params = {
 		.per_cpu_stack_size = CONFIG_SMM_MODULE_STACK_SIZE,
 		.num_concurrent_stacks = num_cpus,
+		.real_cpu_save_state_size = real_save_state_size,
 		.per_cpu_save_state_size = save_state_size,
 		.num_concurrent_save_states = num_cpus,
 	};
@@ -829,6 +839,7 @@ static int install_permanent_handler(int num_cpus, uintptr_t smbase,
 /* Load SMM handlers as part of MP flight record. */
 static void load_smm_handlers(void)
 {
+	size_t real_save_state_size = mp_state.smm_real_save_state_size;
 	size_t smm_save_state_size = mp_state.smm_save_state_size;
 
 	/* Do nothing if SMM is disabled.*/
@@ -837,13 +848,15 @@ static void load_smm_handlers(void)
 
 	/* Install handlers. */
 	if (install_relocation_handler(mp_state.cpu_count,
-		smm_save_state_size) < 0) {
+				       real_save_state_size,
+				       smm_save_state_size) < 0) {
 		printk(BIOS_ERR, "Unable to install SMM relocation handler.\n");
 		smm_disable();
 	}
 
 	if (install_permanent_handler(mp_state.cpu_count, mp_state.perm_smbase,
-		mp_state.perm_smsize, smm_save_state_size) < 0) {
+				      mp_state.perm_smsize, real_save_state_size,
+				      smm_save_state_size) < 0) {
 		printk(BIOS_ERR, "Unable to install SMM permanent handler.\n");
 		smm_disable();
 	}
@@ -988,6 +1001,28 @@ int mp_run_on_aps(void (*func)(void *), void *arg, int logical_cpu_num,
 	return run_ap_work(&lcb, expire_us);
 }
 
+int mp_run_on_all_aps(void (*func)(void *), void *arg, long expire_us, bool run_parallel)
+{
+	int ap_index, bsp_index;
+
+	if (run_parallel)
+		return mp_run_on_aps(func, arg, 0, expire_us);
+
+	bsp_index = cpu_index();
+
+	const int total_threads = global_num_aps + 1; /* +1 for BSP */
+
+	for (ap_index = 0; ap_index < total_threads; ap_index++) {
+		/* skip if BSP */
+		if (ap_index == bsp_index)
+			continue;
+		if (mp_run_on_aps(func, arg, ap_index, expire_us))
+			return CB_ERR;
+	}
+
+	return CB_SUCCESS;
+}
+
 int mp_run_on_all_cpus(void (*func)(void *), void *arg)
 {
 	/* Run on BSP first. */
@@ -1031,6 +1066,19 @@ static struct mp_flight_record mp_steps[] = {
 	MP_FR_BLOCK_APS(ap_wait_for_instruction, NULL),
 };
 
+static size_t smm_stub_size(void)
+{
+	extern unsigned char _binary_smmstub_start[];
+	struct rmodule smm_stub;
+
+	if (rmodule_parse(&_binary_smmstub_start, &smm_stub)) {
+		printk(BIOS_ERR, "%s: unable to get SMM module size\n", __func__);
+		return 0;
+	}
+
+	return rmodule_memory_size(&smm_stub);
+}
+
 static void fill_mp_state(struct mp_state *state, const struct mp_ops *ops)
 {
 	/*
@@ -1044,7 +1092,9 @@ static void fill_mp_state(struct mp_state *state, const struct mp_ops *ops)
 
 	if (ops->get_smm_info != NULL)
 		ops->get_smm_info(&state->perm_smbase, &state->perm_smsize,
-					&state->smm_save_state_size);
+					&state->smm_real_save_state_size);
+
+	state->smm_save_state_size = MAX(state->smm_real_save_state_size, smm_stub_size());
 
 	/*
 	 * Make sure there is enough room for the SMM descriptor

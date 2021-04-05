@@ -1,24 +1,18 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
 #include <acpi/acpi.h>
-#include <acpi/acpi_gnvs.h>
 #include <acpi/acpigen.h>
 #include <arch/ioapic.h>
 #include <arch/smp/mpspec.h>
-#include <cbmem.h>
+#include <cpu/intel/haswell/haswell.h>
 #include <device/pci_ops.h>
-#include <cpu/x86/smm.h>
 #include <console/console.h>
 #include <types.h>
-#include <string.h>
-#include <arch/cpu.h>
 #include <cpu/x86/msr.h>
 #include <cpu/intel/turbo.h>
 #include <soc/acpi.h>
-#include <soc/cpu.h>
 #include <soc/iomap.h>
 #include <soc/lpc.h>
-#include <soc/msr.h>
 #include <soc/pci_devs.h>
 #include <soc/pm.h>
 #include <soc/systemagent.h>
@@ -27,7 +21,8 @@
 unsigned long acpi_fill_mcfg(unsigned long current)
 {
 	current += acpi_create_mcfg_mmconfig((acpi_mcfg_mmconfig_t *)current,
-					     MCFG_BASE_ADDRESS, 0, 0, 255);
+					     CONFIG_MMCONF_BASE_ADDRESS, 0, 0,
+					     CONFIG_MMCONF_BUS_NUMBER - 1);
 	return current;
 }
 

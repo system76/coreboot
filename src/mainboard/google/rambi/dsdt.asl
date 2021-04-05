@@ -12,6 +12,7 @@ DefinitionBlock(
 	0x20110725	// OEM revision
 )
 {
+	#include <acpi/dsdt_top.asl>
 	#include <soc/intel/baytrail/acpi/platform.asl>
 
 	// global NVS and variables
@@ -30,8 +31,6 @@ DefinitionBlock(
 		/* Dynamic Platform Thermal Framework */
 		#include "acpi/dptf.asl"
 	}
-
-	#include <vendorcode/google/chromeos/acpi/chromeos.asl>
 
 	#include <southbridge/intel/common/acpi/sleepstates.asl>
 

@@ -12,7 +12,9 @@
 #include <stdint.h>
 #include <device/pci_def.h>
 #include <device/pci_ops.h>
-#include <soc/cpu.h>
+#include <amdblocks/cpu.h>
+#include <amdblocks/data_fabric.h>
+#include <amdblocks/ioapic.h>
 #include <soc/data_fabric.h>
 #include <soc/pci_devs.h>
 #include <stdlib.h>
@@ -59,7 +61,7 @@ unsigned long acpi_fill_ivrs_ioapic(acpi_ivrs_t *ivrs, unsigned long current)
 	ivhd_ioapic->dte_setting = IVHD_DTE_LINT_1_PASS | IVHD_DTE_LINT_0_PASS |
 				   IVHD_DTE_SYS_MGT_NO_TRANS | IVHD_DTE_NMI_PASS |
 				   IVHD_DTE_EXT_INT_PASS | IVHD_DTE_INIT_PASS;
-	ivhd_ioapic->handle = CONFIG_PICASSO_FCH_IOAPIC_ID;
+	ivhd_ioapic->handle = FCH_IOAPIC_ID;
 	ivhd_ioapic->source_dev_id = PCI_DEVFN(SMBUS_DEV, SMBUS_FUNC);
 	ivhd_ioapic->variety = IVHD_SPECIAL_DEV_IOAPIC;
 	current += sizeof(ivrs_ivhd_special_t);
@@ -68,7 +70,7 @@ unsigned long acpi_fill_ivrs_ioapic(acpi_ivrs_t *ivrs, unsigned long current)
 	memset(ivhd_ioapic, 0, sizeof(*ivhd_ioapic));
 
 	ivhd_ioapic->type = IVHD_DEV_8_BYTE_EXT_SPECIAL_DEV;
-	ivhd_ioapic->handle = CONFIG_PICASSO_GNB_IOAPIC_ID;
+	ivhd_ioapic->handle = GNB_IOAPIC_ID;
 	ivhd_ioapic->source_dev_id = PCI_DEVFN(0, 1);
 	ivhd_ioapic->variety = IVHD_SPECIAL_DEV_IOAPIC;
 	current += sizeof(ivrs_ivhd_special_t);
@@ -543,16 +545,16 @@ static unsigned long gen_crat_memory_entries(struct acpi_crat_header *crat,
 	for (size_t dram_map_idx = 0; dram_map_idx < PICASSO_NUM_DRAM_REG;
 	     dram_map_idx++) {
 		dram_base_reg =
-			data_fabric_read_reg32(0, DF_DRAM_BASE(dram_map_idx), IOMS0_FABRIC_ID);
+			data_fabric_read32(0, DF_DRAM_BASE(dram_map_idx), IOMS0_FABRIC_ID);
 
 		if (dram_base_reg & DRAM_BASE_REG_VALID) {
-			dram_limit_reg = data_fabric_read_reg32(0, DF_DRAM_LIMIT(dram_map_idx),
+			dram_limit_reg = data_fabric_read32(0, DF_DRAM_LIMIT(dram_map_idx),
 								IOMS0_FABRIC_ID);
 			memory_length =
 				((dram_limit_reg & DRAM_LIMIT_ADDR) >> DRAM_LIMIT_ADDR_SHFT) + 1
 				- ((dram_base_reg & DRAM_BASE_ADDR) >> DRAM_BASE_ADDR_SHFT);
 			memory_length = memory_length << 28;
-			memory_base = (dram_base_reg & DRAM_BASE_ADDR)
+			memory_base = (uint64_t)(dram_base_reg & DRAM_BASE_ADDR)
 				      << (28 - DRAM_BASE_ADDR_SHFT);
 
 			if (memory_base == 0) {
@@ -564,13 +566,13 @@ static unsigned long gen_crat_memory_entries(struct acpi_crat_header *crat,
 			}
 
 			if (dram_base_reg & DRAM_BASE_HOLE_EN) {
-				dram_hole_ctl = data_fabric_read_reg32(0, D18F0_DRAM_HOLE_CTL,
+				dram_hole_ctl = data_fabric_read32(0, D18F0_DRAM_HOLE_CTL,
 								       IOMS0_FABRIC_ID);
 				hole_base = (dram_hole_ctl & DRAM_HOLE_CTL_BASE);
 				size_below_hole = hole_base - memory_base;
 				current = create_crat_memory_entry(0, memory_base,
 								   size_below_hole, current);
-				memory_length = (((dram_limit_reg & DRAM_LIMIT_ADDR)
+				memory_length = (uint64_t)(((dram_limit_reg & DRAM_LIMIT_ADDR)
 						  >> DRAM_LIMIT_ADDR_SHFT)
 						 + 1 - 0x10)
 						<< 28;

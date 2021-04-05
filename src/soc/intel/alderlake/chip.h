@@ -7,8 +7,9 @@
 #include <intelblocks/cfg.h>
 #include <intelblocks/gpio.h>
 #include <intelblocks/gspi.h>
+#include <intelblocks/power_limit.h>
+#include <intelblocks/pcie_rp.h>
 #include <soc/gpe.h>
-#include <soc/pch.h>
 #include <soc/pci_devs.h>
 #include <soc/pmc.h>
 #include <soc/serialio.h>
@@ -23,6 +24,9 @@ struct soc_intel_alderlake_config {
 
 	/* Common struct containing soc config data required by common code */
 	struct soc_intel_common_config common_soc_config;
+
+	/* Common struct containing power limits configuration information */
+	struct soc_power_limits_config power_limits_config;
 
 	/* Gpio group routed to each dword of the GPE0 block. Values are
 	 * of the form PMC_GPP_[A:U] or GPD. */
@@ -118,36 +122,9 @@ struct soc_intel_alderlake_config {
 	uint8_t PchHdaIDispLinkFrequency;
 	uint8_t PchHdaIDispCodecDisconnect;
 
-	/* CPU PCIe Root Ports */
-	uint8_t CpuPcieRpEnable[CONFIG_MAX_CPU_ROOT_PORTS];
-
-	/* PCH PCIe Root Ports */
-	uint8_t PchPcieRpEnable[CONFIG_MAX_PCH_ROOT_PORTS];
-	uint8_t PcieRpHotPlug[CONFIG_MAX_PCH_ROOT_PORTS];
-	/* PCIe output clocks type to PCIe devices.
-	 * 0-23: PCH rootport, 0x70: LAN, 0x80: unspecified but in use,
-	 * 0xFF: not used */
-	uint8_t PcieClkSrcUsage[CONFIG_MAX_PCIE_CLOCKS];
-	/* PCIe ClkReq-to-ClkSrc mapping, number of clkreq signal assigned to
-	 * clksrc. */
-	uint8_t PcieClkSrcClkReq[CONFIG_MAX_PCIE_CLOCKS];
-
-	/* Probe CLKREQ# signal before enabling CLKREQ# based power management.*/
-	uint8_t PcieRpClkReqDetect[CONFIG_MAX_PCH_ROOT_PORTS];
-
-	/* PCIe RP L1 substate */
-	enum L1_substates_control {
-		L1_SS_FSP_DEFAULT,
-		L1_SS_DISABLED,
-		L1_SS_L1_1,
-		L1_SS_L1_2,
-	} PcieRpL1Substates[CONFIG_MAX_PCH_ROOT_PORTS];
-
-	/* PCIe LTR: Enable (1) / Disable (0) */
-	uint8_t PcieRpLtrEnable[CONFIG_MAX_PCH_ROOT_PORTS];
-
-	/* PCIE RP Advanced Error Report: Enable (1) / Disable (0) */
-	uint8_t PcieRpAdvancedErrorReporting[CONFIG_MAX_PCH_ROOT_PORTS];
+	struct pcie_rp_config pch_pcie_rp[CONFIG_MAX_PCH_ROOT_PORTS];
+	struct pcie_rp_config cpu_pcie_rp[CONFIG_MAX_CPU_ROOT_PORTS];
+	uint8_t pcie_clk_config_flag[CONFIG_MAX_PCIE_CLOCK_SRC];
 
 	/* Gfx related */
 	enum {
@@ -233,11 +210,11 @@ struct soc_intel_alderlake_config {
 	/* Enable Pch iSCLK */
 	uint8_t pch_isclk;
 
+	/* CNVi BT Core Enable/Disable */
+	bool CnviBtCore;
+
 	/* CNVi BT Audio Offload: Enable/Disable BT Audio Offload. */
-	enum {
-		FORCE_DISABLE,
-		FORCE_ENABLE,
-	} CnviBtAudioOffload;
+	bool CnviBtAudioOffload;
 
 	/*
 	 * IOM Port Config

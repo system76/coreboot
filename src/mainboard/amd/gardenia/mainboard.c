@@ -75,16 +75,13 @@ static void mainboard_init(void *chip_info)
 /*************************************************
  * enable the dedicated function in gardenia board.
  *************************************************/
-static void gardenia_enable(struct device *dev)
+static void mainboard_enable(struct device *dev)
 {
-	printk(BIOS_INFO, "Mainboard "
-				CONFIG_MAINBOARD_PART_NUMBER " Enable.\n");
-
 	/* Initialize the PIRQ data structures for consumption */
 	pirq_setup();
 }
 
 struct chip_operations mainboard_ops = {
 	.init = mainboard_init,
-	.enable_dev = gardenia_enable,
+	.enable_dev = mainboard_enable,
 };

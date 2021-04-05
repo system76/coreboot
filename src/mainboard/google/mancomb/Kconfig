@@ -1,0 +1,60 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+
+config BOARD_GOOGLE_BASEBOARD_MANCOMB
+	def_bool n
+
+if BOARD_GOOGLE_BASEBOARD_MANCOMB
+
+config BOARD_SPECIFIC_OPTIONS
+	def_bool y
+	select AMD_SOC_CONSOLE_UART
+	select BOARD_ROMSIZE_KB_16384
+	select HAVE_ACPI_RESUME
+	select MAINBOARD_HAS_CHROMEOS
+	select SOC_AMD_CEZANNE
+	select SOC_AMD_COMMON_BLOCK_USE_ESPI
+
+config CHROMEOS
+	select EC_GOOGLE_CHROMEEC
+	select EC_GOOGLE_CHROMEEC_ESPI
+	select EC_GOOGLE_CHROMEEC_SWITCHES
+
+config VBOOT
+	select VBOOT_SEPARATE_VERSTAGE
+	select VBOOT_STARTS_IN_BOOTBLOCK
+
+config FMDFILE
+	string
+	default "src/mainboard/\$(CONFIG_MAINBOARD_DIR)/chromeos.fmd"
+
+config MAINBOARD_DIR
+	string
+	default "google/mancomb"
+
+config MAINBOARD_PART_NUMBER
+	string
+	default "Mancomb" if BOARD_GOOGLE_MANCOMB
+
+config AMD_FWM_POSITION_INDEX
+	int
+	default 3
+	help
+	  TODO: might need to be adapted for better placement of files in cbfs
+
+config VARIANT_DIR
+	string
+	default "mancomb" if BOARD_GOOGLE_MANCOMB
+
+config DEVICETREE
+	string
+	default "variants/baseboard/devicetree.cb"
+
+config OVERRIDE_DEVICETREE
+	string
+	default "variants/\$(CONFIG_VARIANT_DIR)/overridetree.cb"
+
+config MAINBOARD_FAMILY
+	string
+	default "Google_Mancomb"
+
+endif # BOARD_GOOGLE_BASEBOARD_MANCOMB

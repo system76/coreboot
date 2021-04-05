@@ -3,9 +3,6 @@
 #ifndef DELTALAKE_VPD_H
 #define DELTALAKE_VPD_H
 
-/* VPD variable maximum length */
-#define VPD_LEN 10
-
 /* VPD variable for enabling/disabling FRB2 timer. 1/0: Enable/disable */
 #define FRB2_TIMER "frb2_timer_enable"
 #define FRB2_TIMER_DEFAULT 1 /* Default value when the VPD variable is not found */
@@ -39,5 +36,9 @@
 /* FSPM MemRefreshWatermark: 0:Auto, 1: high(default), 2: low */
 #define FSPM_MEMREFRESHWATERMARK "fspm_mem_refresh_watermark"
 #define FSPM_MEMREFRESHWATERMARK_DEFAULT 1
+
+/* coreboot uart io select: 0 = 0x3f8, 1 = 0x2f8, 2 = 0x3e8, 3 = 0x2e8 */
+#define COREBOOT_UART_IO "coreboot_uart_io"
+#define COREBOOT_UART_IO_DEFAULT 1
 
 #endif

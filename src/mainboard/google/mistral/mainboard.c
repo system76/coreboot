@@ -19,10 +19,9 @@ static void setup_usb(void)
 
 static void mainboard_init(struct device *dev)
 {
-	if (CONFIG(CHROMEOS)) {
-		/* Copy WIFI calibration data into CBMEM. */
+	/* Copy WIFI calibration data into CBMEM. */
+	if (CONFIG(CHROMEOS))
 		cbmem_add_vpd_calibration_data();
-	}
 
 	setup_usb();
 }
@@ -33,6 +32,5 @@ static void mainboard_enable(struct device *dev)
 }
 
 struct chip_operations mainboard_ops = {
-	.name = CONFIG_MAINBOARD_PART_NUMBER,
 	.enable_dev = mainboard_enable,
 };

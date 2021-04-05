@@ -8,6 +8,7 @@
 #include <intelblocks/cfg.h>
 #include <intelblocks/gpio.h>
 #include <intelblocks/gspi.h>
+#include <intelblocks/pcie_rp.h>
 #include <intelblocks/power_limit.h>
 #include <soc/gpe.h>
 #include <soc/gpio.h>
@@ -105,6 +106,9 @@ struct soc_intel_tigerlake_config {
 	/* Common struct containing power limits configuration information */
 	struct soc_power_limits_config power_limits_config[POWER_LIMITS_MAX];
 
+	/* Configuration for boot TDP selection; */
+	uint8_t ConfigTdpLevel;
+
 	/* Gpio group routed to each dword of the GPE0 block. Values are
 	 * of the form PMC_GPP_[A:U] or GPD. */
 	uint8_t pmc_gpe0_dw0; /* GPE0_31_0 STS/EN */
@@ -171,6 +175,8 @@ struct soc_intel_tigerlake_config {
 	uint16_t usb2_wake_enable_bitmap;
 	/* Wake Enable Bitmap for USB3 ports */
 	uint16_t usb3_wake_enable_bitmap;
+	/* PCH USB2 PHY Power Gating disable */
+	uint8_t usb2_phy_sus_pg_disable;
 
 	/*
 	 * Acoustic Noise Mitigation
@@ -248,12 +254,7 @@ struct soc_intel_tigerlake_config {
 	uint8_t PciePtm[CONFIG_MAX_ROOT_PORTS];
 
 	/* PCIe RP L1 substate */
-	enum L1_substates_control {
-		L1_SS_FSP_DEFAULT,
-		L1_SS_DISABLED,
-		L1_SS_L1_1,
-		L1_SS_L1_2,
-	} PcieRpL1Substates[CONFIG_MAX_ROOT_PORTS];
+	enum L1_substates_control PcieRpL1Substates[CONFIG_MAX_ROOT_PORTS];
 
 	/* PCIe LTR: Enable (1) / Disable (0) */
 	uint8_t PcieRpLtrEnable[CONFIG_MAX_ROOT_PORTS];
@@ -318,11 +319,11 @@ struct soc_intel_tigerlake_config {
 		DEBUG_INTERFACE_TRACEHUB = (1 << 5),
 	} debug_interface_flag;
 
+	/* CNVi BT Core Enable/Disable */
+	bool CnviBtCore;
+
 	/* CNVi BT Audio Offload: Enable/Disable BT Audio Offload. */
-	enum {
-		FORCE_DISABLE,
-		FORCE_ENABLE,
-	} CnviBtAudioOffload;
+	bool CnviBtAudioOffload;
 
 	/* TCSS USB */
 	uint8_t TcssXhciEn;
@@ -502,6 +503,29 @@ struct soc_intel_tigerlake_config {
 	 */
 	uint8_t PchPmPwrCycDur;
 
+	/*
+	 * External Clock Gate
+	 * true = Mainboard design uses external clock gating
+	 * false = Mainboard design does not use external clock gating
+	 *
+	 */
+	bool external_clk_gated;
+
+	/*
+	 * External PHY Gate
+	 * true = Mainboard design uses external phy gating
+	 * false = Mainboard design does not use external phy gating
+	 *
+	 */
+	bool external_phy_gated;
+
+	/*
+	 * External Bypass Enable
+	 * true = Mainboard design uses external bypass rail
+	 * false = Mainboard design does not use external bypass rail
+	 *
+	 */
+	bool external_bypass;
 
 	/* i915 struct for GMA backlight control */
 	struct i915_gpu_controller_info gfx;

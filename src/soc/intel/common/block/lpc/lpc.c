@@ -1,6 +1,5 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 
-#include <acpi/acpi_gnvs.h>
 #include <device/device.h>
 #include <device/pci.h>
 #include <device/pci_ids.h>
@@ -59,14 +58,6 @@ static void pch_lpc_loop_resources(struct device *dev)
 	for (res = dev->resource_list; res; res = res->next) {
 		if (res->flags & IORESOURCE_IO)
 			lpc_open_pmio_window(res->base, res->size);
-
-		if (res->flags & IORESOURCE_MEM) {
-			/* Check if this is already decoded. */
-			if (lpc_fits_fixed_mmio_window(res->base, res->size))
-				continue;
-
-			lpc_open_mmio_window(res->base, res->size);
-		}
 	}
 	pch_lpc_set_child_resources(dev);
 }
@@ -306,6 +297,39 @@ static const unsigned short pci_device_ids[] = {
 	PCI_DEVICE_ID_INTEL_ADP_S_ESPI_29,
 	PCI_DEVICE_ID_INTEL_ADP_S_ESPI_30,
 	PCI_DEVICE_ID_INTEL_ADP_S_ESPI_31,
+	PCI_DEVICE_ID_INTEL_ADP_P_ESPI_32,
+	PCI_DEVICE_ID_INTEL_ADP_M_ESPI_0,
+	PCI_DEVICE_ID_INTEL_ADP_M_ESPI_1,
+	PCI_DEVICE_ID_INTEL_ADP_M_ESPI_2,
+	PCI_DEVICE_ID_INTEL_ADP_M_ESPI_3,
+	PCI_DEVICE_ID_INTEL_ADP_M_ESPI_4,
+	PCI_DEVICE_ID_INTEL_ADP_M_ESPI_5,
+	PCI_DEVICE_ID_INTEL_ADP_M_ESPI_7,
+	PCI_DEVICE_ID_INTEL_ADP_M_ESPI_8,
+	PCI_DEVICE_ID_INTEL_ADP_M_ESPI_9,
+	PCI_DEVICE_ID_INTEL_ADP_M_ESPI_10,
+	PCI_DEVICE_ID_INTEL_ADP_M_ESPI_11,
+	PCI_DEVICE_ID_INTEL_ADP_M_ESPI_12,
+	PCI_DEVICE_ID_INTEL_ADP_M_ESPI_13,
+	PCI_DEVICE_ID_INTEL_ADP_M_ESPI_14,
+	PCI_DEVICE_ID_INTEL_ADP_M_ESPI_15,
+	PCI_DEVICE_ID_INTEL_ADP_M_ESPI_16,
+	PCI_DEVICE_ID_INTEL_ADP_M_ESPI_17,
+	PCI_DEVICE_ID_INTEL_ADP_M_ESPI_18,
+	PCI_DEVICE_ID_INTEL_ADP_M_ESPI_19,
+	PCI_DEVICE_ID_INTEL_ADP_M_ESPI_20,
+	PCI_DEVICE_ID_INTEL_ADP_M_ESPI_21,
+	PCI_DEVICE_ID_INTEL_ADP_M_ESPI_22,
+	PCI_DEVICE_ID_INTEL_ADP_M_ESPI_23,
+	PCI_DEVICE_ID_INTEL_ADP_M_ESPI_24,
+	PCI_DEVICE_ID_INTEL_ADP_M_ESPI_25,
+	PCI_DEVICE_ID_INTEL_ADP_M_ESPI_26,
+	PCI_DEVICE_ID_INTEL_ADP_M_ESPI_27,
+	PCI_DEVICE_ID_INTEL_ADP_M_ESPI_28,
+	PCI_DEVICE_ID_INTEL_ADP_M_ESPI_29,
+	PCI_DEVICE_ID_INTEL_ADP_M_ESPI_30,
+	PCI_DEVICE_ID_INTEL_ADP_M_ESPI_31,
+	PCI_DEVICE_ID_INTEL_SPR_ESPI_1,
 	0
 };
 

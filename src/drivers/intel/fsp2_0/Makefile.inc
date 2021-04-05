@@ -22,14 +22,15 @@ ramstage-y += hand_off_block.c
 ramstage-$(CONFIG_DISPLAY_FSP_HEADER) += header_display.c
 ramstage-$(CONFIG_DISPLAY_HOBS) += hob_display.c
 ramstage-$(CONFIG_VERIFY_HOBS) += hob_verify.c
-ramstage-$(CONFIG_FSP2_0_DISPLAY_LOGO) += logo.c
 ramstage-y += notify.c
 ramstage-y += silicon_init.c
 ramstage-$(CONFIG_DISPLAY_UPD_DATA) += upd_display.c
 ramstage-y += util.c
 ramstage-$(CONFIG_MMA) += mma_core.c
 
+ifneq ($(CONFIG_NO_FSP_TEMP_RAM_EXIT),y)
 postcar-$(CONFIG_FSP_CAR) += temp_ram_exit.c
+endif
 postcar-$(CONFIG_FSP_CAR) += util.c
 postcar-$(CONFIG_DISPLAY_FSP_HEADER) += header_display.c
 postcar-y += hand_off_block.c
@@ -84,7 +85,7 @@ $(obj)/Fsp_T.fd: $(call strip_quotes,$(CONFIG_FSP_FD_PATH)) $(obj)/Fsp_M.fd
 endif
 
 # Add logo to the cbfs image
-cbfs-files-$(CONFIG_FSP2_0_DISPLAY_LOGO) += logo.bmp
+cbfs-files-$(CONFIG_BMP_LOGO) += logo.bmp
 logo.bmp-file := $(call strip_quotes,$(CONFIG_FSP2_0_LOGO_FILE_NAME))
 logo.bmp-type := raw
 logo.bmp-compression := LZMA
@@ -93,7 +94,6 @@ ifneq ($(call strip_quotes,$(CONFIG_FSP_HEADER_PATH)),)
 CPPFLAGS_common+=-I$(CONFIG_FSP_HEADER_PATH)
 endif
 
-# Include PPI directory of CONFIG_FSP_PEIM_TO_PEIM_INTERFACE is enable
-subdirs-$(CONFIG_FSP_PEIM_TO_PEIM_INTERFACE) += ppi
+subdirs-y += ppi
 
 endif

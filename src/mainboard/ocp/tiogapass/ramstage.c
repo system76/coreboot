@@ -1,14 +1,11 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 
-#include <soc/ramstage.h>
 #include <bootstate.h>
 #include <drivers/ipmi/ipmi_ops.h>
 #include <drivers/ocp/dmi/ocp_dmi.h>
 #include <gpio.h>
 #include <soc/ramstage.h>
 #include <soc/lewisburg_pch_gpio_defs.h>
-
-#include "ipmi.h"
 
 extern struct fru_info_str fru_strings;
 
@@ -186,14 +183,6 @@ static void mainboard_enable(struct device *dev)
 
 static void mainboard_final(void *chip_info)
 {
-	struct ppin_req req;
-
-	req.cpu0_lo = xeon_sp_ppin[0].lo;
-	req.cpu0_hi = xeon_sp_ppin[0].hi;
-	req.cpu1_lo = xeon_sp_ppin[1].lo;
-	req.cpu1_hi = xeon_sp_ppin[1].hi;
-	/* Set PPIN to BMC */
-	ipmi_set_ppin(&req);
 }
 
 struct chip_operations mainboard_ops = {

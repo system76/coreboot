@@ -4,8 +4,6 @@
 #include <commonlib/helpers.h>
 #include <console/console.h>
 #include <cpu/intel/model_206ax/model_206ax.h>
-#include <string.h>
-#include <arch/cpu.h>
 #include <device/mmio.h>
 #include <device/pci_ops.h>
 #include <northbridge/intel/sandybridge/chip.h>
@@ -68,7 +66,7 @@ void dram_find_common_params(ramctr_timing *ctrl)
 
 	FOR_ALL_CHANNELS for (slot = 0; slot < 2; slot++) {
 
-		const dimm_attr *dimm = &dimms->dimm[channel][slot];
+		const struct dimm_attr_ddr3_st *dimm = &dimms->dimm[channel][slot];
 		if (dimm->dram_type != SPD_MEMORY_TYPE_SDRAM_DDR3)
 			continue;
 
@@ -172,15 +170,16 @@ void dram_timing_regs(ramctr_timing *ctrl)
 
 	/* Other parameters */
 	const union tc_othp_reg tc_othp = {
-		.tXPDLL  = ctrl->tXPDLL,
-		.tXP     = ctrl->tXP,
+		.tXPDLL  = MIN(ctrl->tXPDLL, 31),
+		.tXP     = MIN(ctrl->tXP, 7),
 		.tAONPD  = ctrl->tAONPD,
 		.tCPDED  = 2,
 		.tPRPDEN = 1,
 	};
 
 	/*
-	 * If tXP and tXPDLL are very high, we need to increase them by one.
+	 * If tXP and tXPDLL are very high, they no longer fit in the bitfields
+	 * of the TC_OTHP register. If so, we set bits in TC_DTP to compensate.
 	 * This can only happen on Ivy Bridge, and when overclocking the RAM.
 	 */
 	const union tc_dtp_reg tc_dtp = {
@@ -246,7 +245,7 @@ void dram_dimm_mapping(ramctr_timing *ctrl)
 	dimm_info *info = &ctrl->info;
 
 	FOR_ALL_CHANNELS {
-		dimm_attr *dimmA, *dimmB;
+		struct dimm_attr_ddr3_st *dimmA, *dimmB;
 		u32 reg = 0;
 
 		if (info->dimm[channel][0].size_mb >= info->dimm[channel][1].size_mb) {
@@ -339,24 +338,6 @@ void dram_zones(ramctr_timing *ctrl, int training)
 	}
 }
 
-#define DEFAULT_PCI_MMIO_SIZE 2048
-
-static unsigned int get_mmio_size(void)
-{
-	const struct device *dev;
-	const struct northbridge_intel_sandybridge_config *cfg = NULL;
-
-	dev = pcidev_path_on_root(PCI_DEVFN(0, 0));
-	if (dev)
-		cfg = dev->chip_info;
-
-	/* If this is zero, it just means devicetree.cb didn't set it */
-	if (!cfg || cfg->pci_mmio_size == 0)
-		return DEFAULT_PCI_MMIO_SIZE;
-	else
-		return cfg->pci_mmio_size;
-}
-
 /*
  * Returns the ECC mode the NB is running at. It takes precedence over ECC capability.
  * The ME/PCU/.. has the ability to change this.
@@ -383,6 +364,8 @@ bool get_host_ecc_cap(void)
 	return !(reg32 & (1 << 25));
 }
 
+#define DEFAULT_PCI_MMIO_SIZE 2048
+
 void dram_memorymap(ramctr_timing *ctrl, int me_uma_size)
 {
 	u32 reg, val, reclaim, tom, gfxstolen, gttsize;
@@ -390,7 +373,7 @@ void dram_memorymap(ramctr_timing *ctrl, int me_uma_size)
 	size_t tsegsize, touudbase, remaplimit, mestolenbase, tsegbasedelta;
 	uint16_t ggc;
 
-	mmiosize = get_mmio_size();
+	mmiosize = DEFAULT_PCI_MMIO_SIZE;
 
 	ggc = pci_read_config16(HOST_BRIDGE, GGC);
 	if (!(ggc & 2)) {
@@ -685,7 +668,7 @@ static void write_mrreg(ramctr_timing *ctrl, int channel, int slotrank, int reg,
 }
 
 /* Obtain optimal power down mode for current configuration */
-static enum pdwm_mode get_power_down_mode(ramctr_timing *ctrl)
+static enum power_down_mode get_power_down_mode(ramctr_timing *ctrl)
 {
 	if (ctrl->tXP > 8)
 		return PDM_NONE;
@@ -704,7 +687,7 @@ static u32 make_mr0(ramctr_timing *ctrl, u8 rank)
 	u16 mr0reg, mch_cas, mch_wr;
 	static const u8 mch_wr_t[12] = { 1, 2, 3, 4, 0, 5, 0, 6, 0, 7, 0, 0 };
 
-	const enum pdwm_mode power_down = get_power_down_mode(ctrl);
+	const enum power_down_mode power_down = get_power_down_mode(ctrl);
 
 	const bool slow_exit = power_down == PDM_DLL_OFF || power_down == PDM_APD_DLL_OFF;
 
@@ -1712,7 +1695,7 @@ static void train_write_flyby(ramctr_timing *ctrl)
 					.rank    = slotrank,
 				},
 			},
-			/* DRAM command RD */
+			/* DRAM command RDA */
 			[2] = {
 				.sp_cmd_ctrl = {
 					.command    = IOSAV_RD,

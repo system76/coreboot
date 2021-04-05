@@ -4,7 +4,7 @@
 #include <cf9_reset.h>
 #include <device/pci_ops.h>
 #include <cpu/x86/lapic.h>
-#include <timestamp.h>
+#include <romstage_handoff.h>
 #include "sandybridge.h"
 #include <arch/romstage.h>
 #include <device/pci_def.h>
@@ -62,8 +62,6 @@ void mainboard_romstage_entry(void)
 
 	perform_raminit(s3resume);
 
-	timestamp_add_now(TS_AFTER_INITRAM);
-
 	post_code(0x3b);
 	/* Perform some initialization that must run before stage2 */
 	early_pch_reset_pmcon();
@@ -75,7 +73,9 @@ void mainboard_romstage_entry(void)
 
 	post_code(0x3d);
 
-	northbridge_romstage_finalize(s3resume);
+	northbridge_romstage_finalize();
 
 	post_code(0x3f);
+
+	romstage_handoff_init(s3resume);
 }

@@ -11,33 +11,8 @@ DefinitionBlock (
 	0x00010001	/* OEM Revision */
 	)
 {	/* Start of ASL file */
+	#include <acpi/dsdt_top.asl>
 
-	/* Data to be patched by the BIOS during POST */
-	/* FIXME the patching is not done yet! */
-	/* Memory related values */
-	Name(LOMH, 0x0)	/* Start of unused memory in C0000-E0000 range */
-	Name(PBAD, 0x0)	/* Address of BIOS area (If TOM2 != 0, Addr >> 16) */
-	Name(PBLN, 0x0)	/* Length of BIOS area */
-
-	Name(PCBA, CONFIG_MMCONF_BASE_ADDRESS)	/* Base address of PCIe config space */
-	Name(HPBA, 0xFED00000)	/* Base address of HPET table */
-
-	/* USB overcurrent mapping pins.   */
-	Name(UOM0, 0)
-	Name(UOM1, 2)
-	Name(UOM2, 0)
-	Name(UOM3, 7)
-	Name(UOM4, 2)
-	Name(UOM5, 2)
-	Name(UOM6, 6)
-	Name(UOM7, 2)
-	Name(UOM8, 6)
-	Name(UOM9, 6)
-
-	/* Some global data */
-	Name(OSVR, 3)		/* Assume nothing. WinXp = 1, Vista = 2, Linux = 3, WinCE = 4 */
-	Name(OSV, Ones)	/* Assume nothing */
-	Name(PMOD, One)	/* Assume APIC */
 
 	/*
 	 * Processor Object
@@ -61,32 +36,6 @@ DefinitionBlock (
 		Name (_UID, 3)
 		}
 	} /* End _SB scope */
-
-	/* PIC IRQ mapping registers, C00h-C01h. */
-	OperationRegion(PRQM, SystemIO, 0x00000C00, 0x00000002)
-		Field(PRQM, ByteAcc, NoLock, Preserve) {
-		PRQI, 0x00000008,
-		PRQD, 0x00000008,  /* Offset: 1h */
-	}
-	IndexField(PRQI, PRQD, ByteAcc, NoLock, Preserve) {
-		PIRA, 0x00000008,	/* Index 0 */
-		PIRB, 0x00000008,	/* Index 1 */
-		PIRC, 0x00000008,	/* Index 2 */
-		PIRD, 0x00000008,	/* Index 3 */
-		PIRE, 0x00000008,	/* Index 4 */
-		PIRF, 0x00000008,	/* Index 5 */
-		PIRG, 0x00000008,	/* Index 6 */
-		PIRH, 0x00000008,	/* Index 7 */
-	}
-
-	/* PCI Error control register */
-	OperationRegion(PERC, SystemIO, 0x00000C14, 0x00000001)
-		Field(PERC, ByteAcc, NoLock, Preserve) {
-		SENS, 0x00000001,
-		PENS, 0x00000001,
-		SENE, 0x00000001,
-		PENE, 0x00000001,
-	}
 
 	/* Client Management index/data registers */
 	OperationRegion(CMT, SystemIO, 0x00000C50, 0x00000002)
@@ -257,593 +206,19 @@ DefinitionBlock (
 		PWDA, 1,
 	}
 
-	Scope(\_SB) {
-		/* PCIe Configuration Space for 16 busses */
-		OperationRegion(PCFG, SystemMemory, PCBA, 0x01000000) /* Each bus consumes 1MB */
-			Field(PCFG, ByteAcc, NoLock, Preserve) {
-			/* Byte offsets are computed using the following technique:
-			 * ((bus number + 1) * ((device number * 8) * 4096)) + register offset
-			 * The 8 comes from 8 functions per device, and 4096 bytes per function config space
-			*/
-			Offset(0x00088024),	/* Byte offset to SATA register 24h - Bus 0, Device 17, Function 0 */
-			STB5, 32,
-			Offset(0x00098042),	/* Byte offset to OHCI0 register 42h - Bus 0, Device 19, Function 0 */
-			PT0D, 1,
-			PT1D, 1,
-			PT2D, 1,
-			PT3D, 1,
-			PT4D, 1,
-			PT5D, 1,
-			PT6D, 1,
-			PT7D, 1,
-			PT8D, 1,
-			PT9D, 1,
-			Offset(0x000A0004),	/* Byte offset to SMBUS	register 4h - Bus 0, Device 20, Function 0 */
-			SBIE, 1,
-			SBME, 1,
-			Offset(0x000A0008),	/* Byte offset to SMBUS	register 8h - Bus 0, Device 20, Function 0 */
-			SBRI, 8,
-			Offset(0x000A0014),	/* Byte offset to SMBUS	register 14h - Bus 0, Device 20, Function 0 */
-			SBB1, 32,
-			Offset(0x000A0078),	/* Byte offset to SMBUS	register 78h - Bus 0, Device 20, Function 0 */
-			,14,
-			P92E, 1,		/* Port92 decode enable */
-		}
-
-		OperationRegion(SB5, SystemMemory, STB5, 0x1000)
-			Field(SB5, AnyAcc, NoLock, Preserve){
-			/* Port 0 */
-			Offset(0x120),		/* Port 0 Task file status */
-			P0ER, 1,
-			, 2,
-			P0DQ, 1,
-			, 3,
-			P0BY, 1,
-			Offset(0x128),		/* Port 0 Serial ATA status */
-			P0DD, 4,
-			, 4,
-			P0IS, 4,
-			Offset(0x12C),		/* Port 0 Serial ATA control */
-			P0DI, 4,
-			Offset(0x130),		/* Port 0 Serial ATA error */
-			, 16,
-			P0PR, 1,
-
-			/* Port 1 */
-			offset(0x1A0),		/* Port 1 Task file status */
-			P1ER, 1,
-			, 2,
-			P1DQ, 1,
-			, 3,
-			P1BY, 1,
-			Offset(0x1A8),		/* Port 1 Serial ATA status */
-			P1DD, 4,
-			, 4,
-			P1IS, 4,
-			Offset(0x1AC),		/* Port 1 Serial ATA control */
-			P1DI, 4,
-			Offset(0x1B0),		/* Port 1 Serial ATA error */
-			, 16,
-			P1PR, 1,
-
-			/* Port 2 */
-			Offset(0x220),		/* Port 2 Task file status */
-			P2ER, 1,
-			, 2,
-			P2DQ, 1,
-			, 3,
-			P2BY, 1,
-			Offset(0x228),		/* Port 2 Serial ATA status */
-			P2DD, 4,
-			, 4,
-			P2IS, 4,
-			Offset(0x22C),		/* Port 2 Serial ATA control */
-			P2DI, 4,
-			Offset(0x230),		/* Port 2 Serial ATA error */
-			, 16,
-			P2PR, 1,
-
-			/* Port 3 */
-			Offset(0x2A0),		/* Port 3 Task file status */
-			P3ER, 1,
-			, 2,
-			P3DQ, 1,
-			, 3,
-			P3BY, 1,
-			Offset(0x2A8),		/* Port 3 Serial ATA status */
-			P3DD, 4,
-			, 4,
-			P3IS, 4,
-			Offset(0x2AC),		/* Port 3 Serial ATA control */
-			P3DI, 4,
-			Offset(0x2B0),		/* Port 3 Serial ATA error */
-			, 16,
-			P3PR, 1,
-		}
-	}
-
-
 	#include "acpi/routing.asl"
 
-	Scope(\_SB) {
-
-		Method(OSFL, 0){
-
-			if(LNotEqual(OSVR, Ones)) {Return(OSVR)}	/* OS version was already detected */
-
-			if(CondRefOf(\_OSI))
-			{
-				Store(1, OSVR)                /* Assume some form of XP */
-				if (\_OSI("Windows 2006"))      /* Vista */
-				{
-					Store(2, OSVR)
-				}
-			} else {
-				If(WCMP(\_OS,"Linux")) {
-					Store(3, OSVR)            /* Linux */
-				} Else {
-					Store(4, OSVR)            /* Gotta be WinCE */
-				}
-			}
-			Return(OSVR)
-		}
-
-		Method(_PIC, 0x01, NotSerialized)
-		{
-			If (Arg0)
-			{
-				\_SB.CIRQ()
-			}
-			Store(Arg0, PMOD)
-		}
-		Method(CIRQ, 0x00, NotSerialized){
-			Store(0, PIRA)
-			Store(0, PIRB)
-			Store(0, PIRC)
-			Store(0, PIRD)
-			Store(0, PIRE)
-			Store(0, PIRF)
-			Store(0, PIRG)
-			Store(0, PIRH)
-		}
-
-		Name(IRQB, ResourceTemplate(){
-			IRQ(Level,ActiveLow,Shared){15}
-		})
-
-		Name(IRQP, ResourceTemplate(){
-			IRQ(Level,ActiveLow,Exclusive){3, 4, 5, 7, 10, 11, 12, 15}
-		})
-
-		Name(PITF, ResourceTemplate(){
-			IRQ(Level,ActiveLow,Exclusive){9}
-		})
-
-		Device(INTA) {
-			Name(_HID, EISAID("PNP0C0F"))
-			Name(_UID, 1)
-
-			Method(_STA, 0) {
-				if (PIRA) {
-					Return(0x0B) /* sata is invisible */
-				} else {
-					Return(0x09) /* sata is disabled */
-				}
-			} /* End Method(_SB.INTA._STA) */
-
-			Method(_DIS ,0) {
-				Store(0, PIRA)
-			} /* End Method(_SB.INTA._DIS) */
-
-			Method(_PRS ,0) {
-				Return(IRQP)
-			} /* Method(_SB.INTA._PRS) */
-
-			Method(_CRS ,0) {
-				CreateWordField(IRQB, 0x1, IRQN)
-				ShiftLeft(1, PIRA, IRQN)
-				Return(IRQB)
-			} /* Method(_SB.INTA._CRS) */
-
-			Method(_SRS, 1) {
-				CreateWordField(ARG0, 1, IRQM)
-
-				/* Use lowest available IRQ */
-				FindSetRightBit(IRQM, Local0)
-				if (Local0) {
-					Decrement(Local0)
-				}
-				Store(Local0, PIRA)
-			} /* End Method(_SB.INTA._SRS) */
-		} /* End Device(INTA) */
-
-		Device(INTB) {
-			Name(_HID, EISAID("PNP0C0F"))
-			Name(_UID, 2)
-
-			Method(_STA, 0) {
-				if (PIRB) {
-					Return(0x0B) /* sata is invisible */
-				} else {
-					Return(0x09) /* sata is disabled */
-				}
-			} /* End Method(_SB.INTB._STA) */
-
-			Method(_DIS ,0) {
-				Store(0, PIRB)
-			} /* End Method(_SB.INTB._DIS) */
-
-			Method(_PRS ,0) {
-				Return(IRQP)
-			} /* Method(_SB.INTB._PRS) */
-
-			Method(_CRS ,0) {
-				CreateWordField(IRQB, 0x1, IRQN)
-				ShiftLeft(1, PIRB, IRQN)
-				Return(IRQB)
-			} /* Method(_SB.INTB._CRS) */
-
-			Method(_SRS, 1) {
-				CreateWordField(ARG0, 1, IRQM)
-
-				/* Use lowest available IRQ */
-				FindSetRightBit(IRQM, Local0)
-				if (Local0) {
-					Decrement(Local0)
-				}
-				Store(Local0, PIRB)
-			} /* End Method(_SB.INTB._SRS) */
-		} /* End Device(INTB)  */
-
-		Device(INTC) {
-			Name(_HID, EISAID("PNP0C0F"))
-			Name(_UID, 3)
-
-			Method(_STA, 0) {
-				if (PIRC) {
-					Return(0x0B) /* sata is invisible */
-				} else {
-					Return(0x09) /* sata is disabled */
-				}
-			} /* End Method(_SB.INTC._STA) */
-
-			Method(_DIS ,0) {
-				Store(0, PIRC)
-			} /* End Method(_SB.INTC._DIS) */
-
-			Method(_PRS ,0) {
-				Return(IRQP)
-			} /* Method(_SB.INTC._PRS) */
-
-			Method(_CRS ,0) {
-				CreateWordField(IRQB, 0x1, IRQN)
-				ShiftLeft(1, PIRC, IRQN)
-				Return(IRQB)
-			} /* Method(_SB.INTC._CRS) */
-
-			Method(_SRS, 1) {
-				CreateWordField(ARG0, 1, IRQM)
-
-				/* Use lowest available IRQ */
-				FindSetRightBit(IRQM, Local0)
-				if (Local0) {
-					Decrement(Local0)
-				}
-				Store(Local0, PIRC)
-			} /* End Method(_SB.INTC._SRS) */
-		} /* End Device(INTC)  */
-
-		Device(INTD) {
-			Name(_HID, EISAID("PNP0C0F"))
-			Name(_UID, 4)
-
-			Method(_STA, 0) {
-				if (PIRD) {
-					Return(0x0B) /* sata is invisible */
-				} else {
-					Return(0x09) /* sata is disabled */
-				}
-			} /* End Method(_SB.INTD._STA) */
-
-			Method(_DIS ,0) {
-				Store(0, PIRD)
-			} /* End Method(_SB.INTD._DIS) */
-
-			Method(_PRS ,0) {
-				Return(IRQP)
-			} /* Method(_SB.INTD._PRS) */
-
-			Method(_CRS ,0) {
-				CreateWordField(IRQB, 0x1, IRQN)
-				ShiftLeft(1, PIRD, IRQN)
-				Return(IRQB)
-			} /* Method(_SB.INTD._CRS) */
-
-			Method(_SRS, 1) {
-				CreateWordField(ARG0, 1, IRQM)
-
-				/* Use lowest available IRQ */
-				FindSetRightBit(IRQM, Local0)
-				if (Local0) {
-					Decrement(Local0)
-				}
-				Store(Local0, PIRD)
-			} /* End Method(_SB.INTD._SRS) */
-		} /* End Device(INTD)  */
-
-		Device(INTE) {
-			Name(_HID, EISAID("PNP0C0F"))
-			Name(_UID, 5)
-
-			Method(_STA, 0) {
-				if (PIRE) {
-					Return(0x0B) /* sata is invisible */
-				} else {
-					Return(0x09) /* sata is disabled */
-				}
-			} /* End Method(_SB.INTE._STA) */
-
-			Method(_DIS ,0) {
-				Store(0, PIRE)
-			} /* End Method(_SB.INTE._DIS) */
-
-			Method(_PRS ,0) {
-				Return(IRQP)
-			} /* Method(_SB.INTE._PRS) */
-
-			Method(_CRS ,0) {
-				CreateWordField(IRQB, 0x1, IRQN)
-				ShiftLeft(1, PIRE, IRQN)
-				Return(IRQB)
-			} /* Method(_SB.INTE._CRS) */
-
-			Method(_SRS, 1) {
-				CreateWordField(ARG0, 1, IRQM)
-
-				/* Use lowest available IRQ */
-				FindSetRightBit(IRQM, Local0)
-				if (Local0) {
-					Decrement(Local0)
-				}
-				Store(Local0, PIRE)
-			} /* End Method(_SB.INTE._SRS) */
-		} /* End Device(INTE)  */
-
-		Device(INTF) {
-			Name(_HID, EISAID("PNP0C0F"))
-			Name(_UID, 6)
-
-			Method(_STA, 0) {
-				if (PIRF) {
-					Return(0x0B) /* sata is invisible */
-				} else {
-					Return(0x09) /* sata is disabled */
-				}
-			} /* End Method(_SB.INTF._STA) */
-
-			Method(_DIS ,0) {
-				Store(0, PIRF)
-			} /* End Method(_SB.INTF._DIS) */
-
-			Method(_PRS ,0) {
-				Return(PITF)
-			} /* Method(_SB.INTF._PRS) */
-
-			Method(_CRS ,0) {
-				CreateWordField(IRQB, 0x1, IRQN)
-				ShiftLeft(1, PIRF, IRQN)
-				Return(IRQB)
-			} /* Method(_SB.INTF._CRS) */
-
-			Method(_SRS, 1) {
-				CreateWordField(ARG0, 1, IRQM)
-
-				/* Use lowest available IRQ */
-				FindSetRightBit(IRQM, Local0)
-				if (Local0) {
-					Decrement(Local0)
-				}
-				Store(Local0, PIRF)
-			} /*  End Method(_SB.INTF._SRS) */
-		} /* End Device(INTF)  */
-
-		Device(INTG) {
-			Name(_HID, EISAID("PNP0C0F"))
-			Name(_UID, 7)
-
-			Method(_STA, 0) {
-				if (PIRG) {
-					Return(0x0B) /* sata is invisible */
-				} else {
-					Return(0x09) /* sata is disabled */
-				}
-			} /* End Method(_SB.INTG._STA)  */
-
-			Method(_DIS ,0) {
-				Store(0, PIRG)
-			} /* End Method(_SB.INTG._DIS)  */
-
-			Method(_PRS ,0) {
-				Return(IRQP)
-			} /* Method(_SB.INTG._CRS)  */
-
-			Method(_CRS ,0) {
-				CreateWordField(IRQB, 0x1, IRQN)
-				ShiftLeft(1, PIRG, IRQN)
-				Return(IRQB)
-			} /* Method(_SB.INTG._CRS)  */
-
-			Method(_SRS, 1) {
-				CreateWordField(ARG0, 1, IRQM)
-
-				/* Use lowest available IRQ */
-				FindSetRightBit(IRQM, Local0)
-				if (Local0) {
-					Decrement(Local0)
-				}
-				Store(Local0, PIRG)
-			} /* End Method(_SB.INTG._SRS)  */
-		} /* End Device(INTG)  */
-
-		Device(INTH) {
-			Name(_HID, EISAID("PNP0C0F"))
-			Name(_UID, 8)
-
-			Method(_STA, 0) {
-				if (PIRH) {
-					Return(0x0B) /* sata is invisible */
-				} else {
-					Return(0x09) /* sata is disabled */
-				}
-			} /* End Method(_SB.INTH._STA)  */
-
-			Method(_DIS ,0) {
-				Store(0, PIRH)
-			} /* End Method(_SB.INTH._DIS)  */
-
-			Method(_PRS ,0) {
-				Return(IRQP)
-			} /* Method(_SB.INTH._CRS)  */
-
-			Method(_CRS ,0) {
-				CreateWordField(IRQB, 0x1, IRQN)
-				ShiftLeft(1, PIRH, IRQN)
-				Return(IRQB)
-			} /* Method(_SB.INTH._CRS)  */
-
-			Method(_SRS, 1) {
-				CreateWordField(ARG0, 1, IRQM)
-
-				/* Use lowest available IRQ */
-				FindSetRightBit(IRQM, Local0)
-				if (Local0) {
-					Decrement(Local0)
-				}
-				Store(Local0, PIRH)
-			} /* End Method(_SB.INTH._SRS)  */
-		} /* End Device(INTH)   */
-
-	}   /* End Scope(_SB)  */
+	#include <southbridge/amd/cimx/sb800/acpi/pcie.asl>
 
 	/* Contains the supported sleep states for this chipset */
 	#include <southbridge/amd/common/acpi/sleepstates.asl>
 
-	/* Wake status package */
-	Name(WKST,Package(){Zero, Zero})
+	/* Contains the Sleep methods (WAK, PTS, GTS, etc.) */
+	#include "acpi/sleep.asl"
 
-	/*
-	* \_PTS - Prepare to Sleep method
-	*
-	*	Entry:
-	*		Arg0=The value of the sleeping state S1=1, S2=2, etc
-	*
-	* Exit:
-	*		-none-
-	*
-	* The _PTS control method is executed at the beginning of the sleep process
-	* for S1-S5. The sleeping value is passed to the _PTS control method.  This
-	* control method may be executed a relatively long time before entering the
-	* sleep state and the OS may abort the operation without notification to
-	* the ACPI driver.  This method cannot modify the configuration or power
-	* state of any device in the system.
-	*/
-	Method(\_PTS, 1) {
+	#include "acpi/gpe.asl"
 
-		/* Don't allow PCIRST# to reset USB */
-		if (LEqual(Arg0,3)){
-			Store(0,URRE)
-		}
-
-		/* Clear wake status structure. */
-		Store(0, Index(WKST,0))
-		Store(0, Index(WKST,1))
-	} /* End Method(\_PTS) */
-
-	/*
-	*  \_WAK System Wake method
-	*
-	*	Entry:
-	*		Arg0=The value of the sleeping state S1=1, S2=2
-	*
-	*	Exit:
-	*		Return package of 2 DWords
-	*		Dword 1 - Status
-	*			0x00000000	wake succeeded
-	*			0x00000001	Wake was signaled but failed due to lack of power
-	*			0x00000002	Wake was signaled but failed due to thermal condition
-	*		Dword 2 - Power Supply state
-	*			if non-zero the effective S-state the power supply entered
-	*/
-	Method(\_WAK, 1) {
-
-		/* Re-enable HPET */
-		Store(1,HPDE)
-
-		/* Restore PCIRST# so it resets USB */
-		if (LEqual(Arg0,3)){
-			Store(1,URRE)
-		}
-
-		/* Arbitrarily clear PciExpWakeStatus */
-		Store(PWST, Local1)
-		Store(Local1, PWST)
-
-		Return(WKST)
-	} /* End Method(\_WAK) */
-
-	Scope(\_GPE) {	/* Start Scope GPE */
-
-		/*  General event 3  */
-		Method(_L03) {
-			Notify(\_SB.PWRB, 0x02) /* NOTIFY_DEVICE_WAKE */
-		}
-
-		/*  Legacy PM event  */
-		Method(_L08) {
-		}
-
-		/*  Temp warning (TWarn) event  */
-		Method(_L09) {
-		}
-
-		/*  USB controller PME#  */
-		Method(_L0B) {
-			Notify(\_SB.PCI0.UOH1, 0x02) /* NOTIFY_DEVICE_WAKE */
-			Notify(\_SB.PCI0.UOH2, 0x02) /* NOTIFY_DEVICE_WAKE */
-			Notify(\_SB.PCI0.UOH3, 0x02) /* NOTIFY_DEVICE_WAKE */
-			Notify(\_SB.PCI0.UOH4, 0x02) /* NOTIFY_DEVICE_WAKE */
-			Notify(\_SB.PCI0.UOH5, 0x02) /* NOTIFY_DEVICE_WAKE */
-			Notify(\_SB.PCI0.UOH6, 0x02) /* NOTIFY_DEVICE_WAKE */
-			Notify(\_SB.PCI0.UEH1, 0x02) /* NOTIFY_DEVICE_WAKE */
-			Notify(\_SB.PWRB, 0x02) /* NOTIFY_DEVICE_WAKE */
-		}
-
-		/*  ExtEvent0 SCI event  */
-		Method(_L10) {
-		}
-
-		/*  ExtEvent1 SCI event  */
-		Method(_L11) {
-		}
-
-		/*  GPIO0 or GEvent8 event  */
-		Method(_L18) {
-			Notify(\_SB.PCI0.PBR2, 0x02) /* NOTIFY_DEVICE_WAKE */
-			Notify(\_SB.PCI0.PBR4, 0x02) /* NOTIFY_DEVICE_WAKE */
-			Notify(\_SB.PCI0.PBR5, 0x02) /* NOTIFY_DEVICE_WAKE */
-			Notify(\_SB.PCI0.PBR6, 0x02) /* NOTIFY_DEVICE_WAKE */
-			Notify(\_SB.PCI0.PBR7, 0x02) /* NOTIFY_DEVICE_WAKE */
-			Notify(\_SB.PWRB, 0x02) /* NOTIFY_DEVICE_WAKE */
-		}
-
-		/*  Azalia SCI event  */
-		Method(_L1B) {
-			Notify(\_SB.PCI0.AZHD, 0x02) /* NOTIFY_DEVICE_WAKE */
-			Notify(\_SB.PWRB, 0x02) /* NOTIFY_DEVICE_WAKE */
-		}
-	}	/* End Scope GPE */
-
-	#include "acpi/usb.asl"
+	#include "acpi/usb_oc.asl"
 
 	/* System Bus */
 	Scope(\_SB) { /* Start \_SB scope */
@@ -861,7 +236,7 @@ DefinitionBlock (
 			Method (_OSC, 4)
 			{
 				/* Check for PCI/PCI-X/PCIe GUID */
-				If (LEqual (Arg0, ToUUID("33DB4D5B-1FF7-401C-9657-7441C03DD766")))
+				If (Arg0 == ToUUID("33DB4D5B-1FF7-401C-9657-7441C03DD766"))
 				{
 					/* Let OS control everything */
 					Return (Arg3)
@@ -870,7 +245,7 @@ DefinitionBlock (
 				{
 					/* Unrecognized UUID, so set bit 2 of Arg3 to 1 */
 					CreateDWordField (Arg3, 0, CDW1)
-					Or (CDW1, 4, CDW1)
+					CDW1 |= 4
 					Return (Arg3)
 				}
 			} /* End _OSC */
@@ -883,7 +258,7 @@ DefinitionBlock (
 			}
 
 			Method(_PRT,0) {
-				If(PMOD){ Return(APR0) }   /* APIC mode */
+				If(PICM){ Return(APR0) }   /* APIC mode */
 				Return (PR0)                  /* PIC Mode */
 			} /* end _PRT */
 
@@ -906,7 +281,7 @@ DefinitionBlock (
 				Name(_ADR, 0x00020000)
 				Name(_PRW, Package() {0x18, 4})
 				Method(_PRT,0) {
-					If(PMOD){ Return(APS2) }   /* APIC mode */
+					If(PICM){ Return(APS2) }   /* APIC mode */
 					Return (PS2)                  /* PIC Mode */
 				} /* end _PRT */
 			} /* end PBR2 */
@@ -917,7 +292,7 @@ DefinitionBlock (
 				Name(_ADR, 0x00040000)
 				Name(_PRW, Package() {0x18, 4})
 				Method(_PRT,0) {
-					If(PMOD){ Return(APS4) }   /* APIC mode */
+					If(PICM){ Return(APS4) }   /* APIC mode */
 					Return (PS4)                  /* PIC Mode */
 				} /* end _PRT */
 			} /* end PBR4 */
@@ -926,7 +301,7 @@ DefinitionBlock (
 				Name(_ADR, 0x00050000)
 				Name(_PRW, Package() {0x18, 4})
 				Method(_PRT,0) {
-					If(PMOD){ Return(APS5) }   /* APIC mode */
+					If(PICM){ Return(APS5) }   /* APIC mode */
 					Return (PS5)                  /* PIC Mode */
 				} /* end _PRT */
 			} /* end PBR5 */
@@ -935,7 +310,7 @@ DefinitionBlock (
 				Name(_ADR, 0x00060000)
 				Name(_PRW, Package() {0x18, 4})
 				Method(_PRT,0) {
-					If(PMOD){ Return(APS6) }   /* APIC mode */
+					If(PICM){ Return(APS6) }   /* APIC mode */
 					Return (PS6)                  /* PIC Mode */
 				} /* end _PRT */
 			} /* end PBR6 */
@@ -945,7 +320,7 @@ DefinitionBlock (
 				Name(_ADR, 0x00070000)
 				Name(_PRW, Package() {0x18, 4})
 				Method(_PRT,0) {
-					If(PMOD){ Return(APS7) }   /* APIC mode */
+					If(PICM){ Return(APS7) }   /* APIC mode */
 					Return (PS7)                  /* PIC Mode */
 				} /* end _PRT */
 			} /* end PBR7 */
@@ -955,7 +330,7 @@ DefinitionBlock (
 				Name(_ADR, 0x00090000)
 				Name(_PRW, Package() {0x18, 4})
 				Method(_PRT,0) {
-					If(PMOD){ Return(APS9) }   /* APIC mode */
+					If(PICM){ Return(APS9) }   /* APIC mode */
 					Return (PS9)                  /* PIC Mode */
 				} /* end _PRT */
 			} /* end PBR9 */
@@ -964,8 +339,8 @@ DefinitionBlock (
 				Name(_ADR, 0x000A0000)
 				Name(_PRW, Package() {0x18, 4})
 				Method(_PRT,0) {
-					If(PMOD){ Return(APSa) }   /* APIC mode */
-					Return (PSa)                  /* PIC Mode */
+					If(PICM){ Return(APSA) }   /* APIC mode */
+					Return (PSA)                  /* PIC Mode */
 				} /* end _PRT */
 			} /* end PBRa */
 
@@ -973,7 +348,7 @@ DefinitionBlock (
 				Name(_ADR, 0x00150000)
 				Name(_PRW, Package() {0x18, 4})
 				Method(_PRT,0) {
-					If(PMOD){ Return(APE0) }   /* APIC mode */
+					If(PICM){ Return(APE0) }   /* APIC mode */
 					Return (PE0)                  /* PIC Mode */
 				} /* end _PRT */
 			} /* end PE20 */
@@ -981,7 +356,7 @@ DefinitionBlock (
 				Name(_ADR, 0x00150001)
 				Name(_PRW, Package() {0x18, 4})
 				Method(_PRT,0) {
-					If(PMOD){ Return(APE1) }   /* APIC mode */
+					If(PICM){ Return(APE1) }   /* APIC mode */
 					Return (PE1)                  /* PIC Mode */
 				} /* end _PRT */
 			} /* end PE21 */
@@ -989,7 +364,7 @@ DefinitionBlock (
 				Name(_ADR, 0x00150002)
 				Name(_PRW, Package() {0x18, 4})
 				Method(_PRT,0) {
-					If(PMOD){ Return(APE2) }   /* APIC mode */
+					If(PICM){ Return(APE2) }   /* APIC mode */
 					Return (APE2)                  /* PIC Mode */
 				} /* end _PRT */
 			} /* end PE22 */
@@ -997,7 +372,7 @@ DefinitionBlock (
 				Name(_ADR, 0x00150003)
 				Name(_PRW, Package() {0x18, 4})
 				Method(_PRT,0) {
-					If(PMOD){ Return(APE3) }   /* APIC mode */
+					If(PICM){ Return(APE3) }   /* APIC mode */
 					Return (PE3)                  /* PIC Mode */
 				} /* end _PRT */
 			} /* end PE23 */
@@ -1210,26 +585,14 @@ DefinitionBlock (
 				 * 32bit (0x00000000 - TOM1) will wrap and give the same
 				 * result as 64bit (0x100000000 - TOM1).
 				 */
-				Store(TOM1, MM1B)
-				ShiftLeft(0x10000000, 4, Local0)
-				Subtract(Local0, TOM1, Local0)
-				Store(Local0, MM1L)
+				MM1B = TOM1
+				Local0 = 0x10000000 << 4
+				Local0 -= TOM1
+				MM1L = Local0
 
 				Return(CRES) /* note to change the Name buffer */
 			} /* end of Method(_SB.PCI0._CRS) */
 
-			/*
-			*
-			*               FIRST METHOD CALLED UPON BOOT
-			*
-			*  1. If debugging, print current OS and ACPI interpreter.
-			*  2. Get PCI Interrupt routing from ACPI VSM, this
-			*     value is based on user choice in BIOS setup.
-			*/
-			Method(_INI, 0) {
-				/* Determine the OS we're running on */
-				OSFL()
-			} /* End Method(_SB._INI) */
 		} /* End Device(PCI0)  */
 
 		Device(PWRB) {	/* Start Power button device */
@@ -1239,10 +602,5 @@ DefinitionBlock (
 			Name(_STA, 0x0B) /* sata is invisible */
 		}
 	} /* End \_SB scope */
-
-	Scope(\_SI) {
-		Method(_SST, 1) {
-		}
-	} /* End Scope SI */
 }
 /* End of ASL file */

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 #
 #
 
@@ -25,6 +25,20 @@ CBMEM_PATH=""
 
 # Used if nvramtool is not in default $PATH, e.g. not installed or when using `sudo`
 NVRAMTOOL_PATH=""
+
+case $(uname) in
+	FreeBSD)
+		if [ ! -x /usr/local/bin/gmake ]; then
+			echo "Please install gmake, or build and install devel/gmake from ports."
+			exit $EXIT_FAILURE
+		else
+			MAKE='gmake'
+		fi
+		;;
+	*)
+		MAKE='make'
+		;;
+esac
 
 # test a command
 #
@@ -198,7 +212,21 @@ Long options:
 "
 }
 
-getopt -T
+case $(uname) in
+	FreeBSD)
+		if [ ! -x /usr/local/bin/getopt ]; then
+			echo "Please install getopt, or build and install misc/getopt from ports."
+			exit $EXIT_FAILURE
+		else
+			GETOPT=/usr/local/bin/getopt
+		fi
+		;;
+	*)
+	GETOPT=/usr/bin/getopt
+	;;
+esac
+
+$GETOPT -T
 if [ $? -ne 4 ]; then
 	echo "GNU-compatible getopt(1) required."
 	exit $EXIT_FAILURE
@@ -208,7 +236,7 @@ LONGOPTS="cbmem:,clobber,help,image:,remote-host:,upload-results"
 LONGOPTS="${LONGOPTS},serial-device:,serial-speed:"
 LONGOPTS="${LONGOPTS},ssh-port:"
 
-ARGS=$(getopt -o c:n:Chi:r:s:S:u -l "$LONGOPTS" -n "$0" -- "$@");
+ARGS=$($GETOPT -o c:n:Chi:r:s:S:u -l "$LONGOPTS" -n "$0" -- "$@");
 if [ $? != 0 ] ; then echo "Terminating..." >&2 ; exit 1 ; fi
 eval set -- "$ARGS"
 while true ; do
@@ -287,7 +315,14 @@ fi
 
 # Results will be placed in a temporary location until we're ready to upload.
 # If the user does not wish to upload, results will remain in /tmp.
-tmpdir=$(mktemp -d --tmpdir coreboot_board_status.XXXXXXXX)
+case $(uname) in
+	FreeBSD)
+		tmpdir=$(mktemp -d -t coreboot_board_status)
+		;;
+	*)
+		tmpdir=$(mktemp -d --tmpdir coreboot_board_status.XXXXXXXX)
+		;;
+esac
 
 # Obtain coreboot config by running cbfstool on the ROM image. cbfstool may
 # already exist in build/ or util/cbfstool/, but if not then we'll build it
@@ -302,7 +337,7 @@ if [ ! -x $cbfstool_cmd ]; then
 			exit $EXIT_FAILURE
 		fi
 	else
-		make -C util/cbfstool/
+		$MAKE -C util/cbfstool/
 		do_clean_cbfstool=1
 	fi
 fi
@@ -313,7 +348,7 @@ echo "Extracting config.txt from $COREBOOT_IMAGE"
 $cbfstool_cmd "$COREBOOT_IMAGE" extract -n config -f "${tmpdir}/config.txt" >/dev/null 2>&1
 mv "${tmpdir}/config.txt" "${tmpdir}/config.short.txt"
 cp "${tmpdir}/config.short.txt" "${tmpcfg}"
-yes "" | make "DOTCONFIG=${tmpcfg}" oldconfig 2>/dev/null >/dev/null
+yes "" | $MAKE "DOTCONFIG=${tmpcfg}" oldconfig 2>/dev/null >/dev/null
 mv "${tmpcfg}" "${tmpdir}/config.txt"
 rm -f "${tmpcfg}.old"
 $cbfstool_cmd "$COREBOOT_IMAGE" print > "${tmpdir}/cbfs.txt"
@@ -326,10 +361,17 @@ if [ -n "$(echo $rom_contents | grep payload_version)" ]; then
 	echo "Extracting payload_version from $COREBOOT_IMAGE"
 	$cbfstool_cmd "$COREBOOT_IMAGE" extract -n payload_version -f "${tmpdir}/payload_version.txt" >/dev/null 2>&1
 fi
-md5sum -b "$COREBOOT_IMAGE" > "${tmpdir}/rom_checksum.txt"
+case $(uname) in
+	FreeBSD)
+		md5 "$COREBOOT_IMAGE" > "${tmpdir}/rom_checksum.txt"
+		;;
+	*)
+		md5sum -b "$COREBOOT_IMAGE" > "${tmpdir}/rom_checksum.txt"
+		;;
+esac
 
 if test $do_clean_cbfstool -eq 1; then
-	make -C util/cbfstool clean
+	$MAKE -C util/cbfstool clean
 fi
 
 # Obtain board and revision info to form the directory structure:

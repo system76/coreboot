@@ -14,6 +14,9 @@ chip soc/intel/alderlake
 
 	# FSP configuration
 
+	# Enable CNVi BT
+	register "CnviBtCore" = "true"
+
 	register "usb2_ports[0]" = "USB2_PORT_MID(OC0)"		# Type-C Port1
 	register "usb2_ports[1]" = "USB2_PORT_MID(OC0)"		# Type-C Port2
 	register "usb2_ports[2]" = "USB2_PORT_MID(OC3)"		# Type-C Port3
@@ -37,72 +40,86 @@ chip soc/intel/alderlake
 	register "gen3_dec" = "0x00fc0901"
 	register "gen4_dec" = "0x000c0081"
 
+	# This disabled autonomous GPIO power management, otherwise
+	# old cr50 FW only supports short pulses; need to clarify
+	# the minimum PCH IRQ pulse width with Intel, b/180111628
+	register "gpio_override_pm" = "1"
+	register "gpio_pm[COMM_0]" = "0"
+	register "gpio_pm[COMM_1]" = "0"
+	register "gpio_pm[COMM_2]" = "0"
+	register "gpio_pm[COMM_4]" = "0"
+	register "gpio_pm[COMM_5]" = "0"
+
 	register "PrmrrSize" = "0"
 
 	# Enable PCH PCIE RP 5 using CLK 2
-	register "PchPcieRpEnable[4]" = "1"
-	register "PcieClkSrcClkReq[2]" = "2"
-	register "PcieClkSrcUsage[2]" = "0x4"
-	register "PcieRpClkReqDetect[4]" = "1"
+	register "pch_pcie_rp[PCH_RP(5)]" = "{
+		.clk_src = 2,
+		.clk_req = 2,
+		.flags = PCIE_RP_CLK_REQ_DETECT,
+	}"
 
 	# Enable PCH PCIE RP 6 using CLK 5
-	register "PchPcieRpEnable[5]" = "1"
-	register "PcieClkSrcClkReq[5]" = "5"
-	register "PcieClkSrcUsage[5]" = "0x5"
-	register "PcieRpClkReqDetect[5]" = "1"
+	register "pch_pcie_rp[PCH_RP(6)]" = "{
+		.clk_src = 5,
+		.clk_req = 5,
+		.flags = PCIE_RP_CLK_REQ_DETECT,
+	}"
 
-	# Enable PCH PCIE RP 8 using CLK 6
-	register "PchPcieRpEnable[7]" = "1"
-	register "PcieClkSrcClkReq[7]" = "6" # CLKSRC -> 7 and CLKREQ -> 6
-	register "PcieClkSrcUsage[6]" = "PCIE_CLK_FREE" # CLK 6 is using free running CLK
-	register "PcieRpClkReqDetect[6]" = "1"
+	# Enable PCH PCIE RP 8 using free running CLK (0x80)
+	# Clock source is shared with LAN and hence marked as free running.
+	register "pch_pcie_rp[PCH_RP(8)]" = "{
+		.flags = PCIE_RP_CLK_SRC_UNUSED,
+	}"
+	register "pcie_clk_config_flag[6]" = "PCIE_CLK_FREE_RUNNING"
 
 	# Enable PCH PCIE RP 9 using CLK 1
-	register "PchPcieRpEnable[8]" = "1"
-	register "PcieClkSrcClkReq[1]" = "1"
-	register "PcieClkSrcUsage[1]" = "0x8"
-	register "PcieRpClkReqDetect[8]" = "1"
+	register "pch_pcie_rp[PCH_RP(9)]" = "{
+		.clk_src = 1,
+		.clk_req = 1,
+		.flags = PCIE_RP_CLK_REQ_DETECT,
+	}"
 
 	# Enable PCH PCIE RP 11 for optane
-	register "PchPcieRpEnable[10]" = "1"
+	register "pch_pcie_rp[PCH_RP(11)]" = "{
+		.flags = PCIE_RP_CLK_SRC_UNUSED,
+	}"
+
 	# Hybrid storage mode
 	register "HybridStorageMode" = "1"
 
 	# Enable CPU PCIE RP 1 using CLK 0
-	register "CpuPcieRpEnable[0]" = "1"
-	register "PcieClkSrcUsage[0]" = "0x40"
+	register "cpu_pcie_rp[CPU_RP(1)]" = "{
+		.clk_req = 0,
+		.clk_src = 0,
+	}"
 
 	# Enable CPU PCIE RP 2 using CLK 3
-	register "CpuPcieRpEnable[1]" = "1"
-	register "PcieClkSrcUsage[3]" = "0x41"
+	register "cpu_pcie_rp[CPU_RP(2)]" = "{
+		.clk_req = 3,
+		.clk_src = 3,
+        }"
 
 	# Enable CPU PCIE RP 3 using CLK 4
-	register "CpuPcieRpEnable[2]" = "1"
-	register "PcieClkSrcUsage[4]" = "0x42"
-
-	# W/A to FSP issue where FSP is using PCH PCIE port
-	# enable UPD to download FW on CPU PCIE
-	register "PchPcieRpEnable[0]" = "1"
-	register "PchPcieRpEnable[2]" = "1"
-	register "PchPcieRpEnable[3]" = "1"
-
-	# Mark LAN CLK pins as unused as GbE 0:0x1f.6 is disabled below
-	register "PcieClkSrcUsage[7]" = "PCIE_CLK_NOTUSED"
+	register "cpu_pcie_rp[CPU_RP(3)]" = "{
+		.clk_req = 4,
+		.clk_src = 4,
+	}"
 
 	register "SataSalpSupport" = "1"
 
 	register "SataPortsEnable" = "{
-		[0]  = 1,
-		[1]  = 1,
-		[2]  = 1,
-		[3]  = 1,
+		[0] = 1,
+		[1] = 1,
+		[2] = 1,
+		[3] = 1,
 	}"
 
 	register "SataPortsDevSlp" = "{
-		[0]  = 1,
-		[1]  = 1,
-		[2]  = 1,
-		[3]  = 1,
+		[0] = 1,
+		[1] = 1,
+		[2] = 1,
+		[3] = 1,
 	}"
 
 	# Enable EDP in PortA
@@ -117,12 +134,12 @@ chip soc/intel/alderlake
 	register "s0ix_enable" = "1"
 
 	register "SerialIoI2cMode" = "{
-		[PchSerialIoIndexI2C0]  = PchSerialIoPci,
-		[PchSerialIoIndexI2C1]  = PchSerialIoPci,
-		[PchSerialIoIndexI2C2]  = PchSerialIoPci,
-		[PchSerialIoIndexI2C3]  = PchSerialIoPci,
-		[PchSerialIoIndexI2C4]  = PchSerialIoDisabled,
-		[PchSerialIoIndexI2C5]  = PchSerialIoPci,
+		[PchSerialIoIndexI2C0] = PchSerialIoPci,
+		[PchSerialIoIndexI2C1] = PchSerialIoPci,
+		[PchSerialIoIndexI2C2] = PchSerialIoPci,
+		[PchSerialIoIndexI2C3] = PchSerialIoPci,
+		[PchSerialIoIndexI2C4] = PchSerialIoDisabled,
+		[PchSerialIoIndexI2C5] = PchSerialIoPci,
 	}"
 
 	register "SerialIoGSpiMode" = "{
@@ -166,6 +183,8 @@ chip soc/intel/alderlake
 	# Not disconnected/enumerable
 	register "PchHdaIDispCodecDisconnect" = "0"
 
+	register "CnviBtAudioOffload" = "true"
+
 	# Intel Common SoC Config
 	register "common_soc_config" = "{
 		.chipset_lockdown = CHIPSET_LOCKDOWN_COREBOOT,
@@ -208,7 +227,6 @@ chip soc/intel/alderlake
 		device pci 0e.0 off end # VMD
 		device pci 10.0 off end
 		device pci 10.1 off end
-		device pci 10.2 on  end # CNVi: BT
 		device pci 10.6 off end # THC0
 		device pci 10.7 off end # THC1
 		device pci 11.0 off end

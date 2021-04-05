@@ -17,9 +17,11 @@
 #include <soc/lpc.h>
 #include <soc/pci_devs.h>
 #include <soc/pm.h>
-#include <soc/gpio.h>
 #include <security/vboot/vbnv.h>
 #include <stdint.h>
+
+#define GPIO_ALT_GPI_SMI_STS	0x50
+#define GPIO_ALT_GPI_SMI_EN	0x54
 
 static inline uint16_t get_gpiobase(void)
 {
@@ -410,34 +412,6 @@ void disable_gpe(u32 mask)
 	u32 gpe0_en = inl(get_pmbase() + GPE0_EN(GPE_STD));
 	gpe0_en &= ~mask;
 	outl(gpe0_en, get_pmbase() + GPE0_EN(GPE_STD));
-}
-
-int acpi_sci_irq(void)
-{
-	int scis = pci_read_config32(PCH_DEV_LPC, ACPI_CNTL) & SCI_IRQ_SEL;
-	int sci_irq = 9;
-
-	/* Determine how SCI is routed. */
-	switch (scis) {
-	case SCIS_IRQ9:
-	case SCIS_IRQ10:
-	case SCIS_IRQ11:
-		sci_irq = scis - SCIS_IRQ9 + 9;
-		break;
-	case SCIS_IRQ20:
-	case SCIS_IRQ21:
-	case SCIS_IRQ22:
-	case SCIS_IRQ23:
-		sci_irq = scis - SCIS_IRQ20 + 20;
-		break;
-	default:
-		printk(BIOS_DEBUG, "Invalid SCI route! Defaulting to IRQ9.\n");
-		sci_irq = 9;
-		break;
-	}
-
-	printk(BIOS_DEBUG, "SCI is IRQ%d\n", sci_irq);
-	return sci_irq;
 }
 
 int platform_is_resuming(void)

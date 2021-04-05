@@ -7,12 +7,11 @@
 . = CONFIG_DCACHE_RAM_BASE;
 .car.data . (NOLOAD) : {
 	_car_region_start = . ;
+	. += CONFIG_FSP_M_RC_HEAP_SIZE;
 #if CONFIG(PAGING_IN_CACHE_AS_RAM)
 	/* Page table pre-allocation. CONFIG_DCACHE_RAM_BASE should be 4KiB
 	 * aligned when using this option. */
-	_pagetables = . ;
-	. += 4096 * CONFIG_NUM_CAR_PAGE_TABLE_PAGES;
-	_epagetables = . ;
+	REGION(pagetables, ., 4K * CONFIG_NUM_CAR_PAGE_TABLE_PAGES, 4K)
 #endif
 #if CONFIG(VBOOT_STARTS_IN_BOOTBLOCK)
 	/* Vboot work buffer only needs to be available when verified boot
@@ -27,9 +26,7 @@
 	/* Stack for CAR stages. Since it persists across all stages that
 	 * use CAR it can be reused. The chipset/SoC is expected to provide
 	 * the stack size. */
-	_car_stack = .;
-	. += CONFIG_DCACHE_BSP_STACK_SIZE;
-	_ecar_stack = .;
+	REGION(car_stack, ., CONFIG_DCACHE_BSP_STACK_SIZE, 4)
 	/* The pre-ram cbmem console as well as the timestamp region are fixed
 	 * in size. Therefore place them above the car global section so that
 	 * multiple stages (romstage and verstage) have a consistent
@@ -41,9 +38,7 @@
 	 * totalling 32 bytes that need to be 32-byte aligned. The reason the
 	 * pdpt are not colocated with the rest of the page tables is to reduce
 	 * fragmentation of the CAR space that persists across stages. */
-	_pdpt = .;
-	. += 32;
-	_epdpt = .;
+	REGION(pdpt, ., 32, 32)
 #endif
 
 	TIMESTAMP(., 0x200)
@@ -55,10 +50,8 @@
 	FMAP_CACHE(., FMAP_SIZE)
 #endif
 
-	_car_ehci_dbg_info = .;
 	/* Reserve sizeof(struct ehci_dbg_info). */
-	. += 80;
-	_ecar_ehci_dbg_info = .;
+	REGION(car_ehci_dbg_info, ., 80, 1)
 
 	/* _bss and _ebss provide symbols to per-stage
 	 * variables that are not shared like the timestamp and the pre-ram
@@ -74,17 +67,28 @@
 	*(.sbss.*)
 	. = ALIGN(ARCH_POINTER_ALIGN_SIZE);
 	_ebss = .;
+	RECORD_SIZE(bss)
 
 #if ENV_ROMSTAGE && CONFIG(ASAN_IN_ROMSTAGE)
 	_shadow_size = (_ebss - _car_region_start) >> 3;
 	REGION(asan_shadow, ., _shadow_size, ARCH_POINTER_ALIGN_SIZE)
 #endif
 	_car_unallocated_start = .;
-	_car_region_end = . + CONFIG_DCACHE_RAM_SIZE - (. - _car_region_start);
+	_car_region_end = . + CONFIG_DCACHE_RAM_SIZE - (. - _car_region_start)
+			  - CONFIG_FSP_T_RESERVED_SIZE;
 }
+
+. = _car_region_start;
+.car.fspm_rc_heap . (NOLOAD) : {
+. += CONFIG_FSP_M_RC_HEAP_SIZE;
+}
+
 . = _car_region_end;
 .car.mrc_var . (NOLOAD) : {
 	. += CONFIG_DCACHE_RAM_MRC_VAR_SIZE;
+}
+.car.fspt_reserved . (NOLOAD) : {
+	. +=  CONFIG_FSP_T_RESERVED_SIZE;
 }
 
 #if ENV_BOOTBLOCK

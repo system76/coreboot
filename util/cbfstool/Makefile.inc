@@ -22,7 +22,9 @@ cbfsobj += elfheaders.o
 cbfsobj += rmodule.o
 cbfsobj += xdr.o
 cbfsobj += partitioned_file.o
+cbfsobj += platform_fixups.o
 # COMMONLIB
+cbfsobj += cbfs_private.o
 cbfsobj += fsp_relocate.o
 # FMAP
 cbfsobj += fmap.o
@@ -87,13 +89,14 @@ amdcompobj += elfheaders.o
 amdcompobj += common.o
 amdcompobj += xdr.o
 
-TOOLCFLAGS ?= -Werror -Wall -Wextra
+TOOLCFLAGS ?= -Werror -Wall -Wextra -Wshadow
 TOOLCFLAGS += -Wcast-qual -Wmissing-prototypes -Wredundant-decls -Wshadow
 TOOLCFLAGS += -Wstrict-prototypes -Wwrite-strings
 TOOLCFLAGS += -O2
 TOOLCPPFLAGS ?= -D_DEFAULT_SOURCE # memccpy() from string.h
 TOOLCPPFLAGS += -D_BSD_SOURCE -D_SVID_SOURCE # _DEFAULT_SOURCE for older glibc
 TOOLCPPFLAGS += -D_XOPEN_SOURCE=700 # strdup() from string.h
+TOOLCPPFLAGS += -D_GNU_SOURCE # memmem() from string.h
 TOOLCPPFLAGS += -I$(top)/util/cbfstool/flashmap
 TOOLCPPFLAGS += -I$(top)/util/cbfstool
 TOOLCPPFLAGS += -I$(objutil)/cbfstool
@@ -199,6 +202,8 @@ $(objutil)/cbfstool/fmd_scanner.o: TOOLCFLAGS += -Wno-redundant-decls
 $(objutil)/cbfstool/fmd_scanner.o: TOOLCFLAGS += -Wno-unused-function
 # Tolerate lzma sdk warnings
 $(objutil)/cbfstool/LzmaEnc.o: TOOLCFLAGS += -Wno-sign-compare -Wno-cast-qual
+# Tolerate commonlib warnings
+$(objutil)/cbfstool/cbfs_private.o: TOOLCFLAGS += -Wno-sign-compare
 # Tolerate lz4 warnings
 $(objutil)/cbfstool/lz4.o: TOOLCFLAGS += -Wno-missing-prototypes
 $(objutil)/cbfstool/lz4_wrapper.o: TOOLCFLAGS += -Wno-attributes

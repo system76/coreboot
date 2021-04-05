@@ -1,9 +1,9 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+#include <amdblocks/reset.h>
 #include <cpu/x86/msr.h>
 #include <acpi/acpi.h>
 #include <soc/cpu.h>
-#include <soc/reset.h>
 #include <console/console.h>
 #include <arch/bert_storage.h>
 #include <cper.h>
@@ -136,11 +136,12 @@ failed:
 static const char *const mca_bank_name[] = {
 	"Load-store unit",
 	"Instruction fetch unit",
-	"Combined unit",
-	"Reserved",
-	"Northbridge",
+	"L2 cache unit",
+	"Decode unit",
+	"",
 	"Execution unit",
-	"Floating point unit"
+	"Floating point unit",
+	"L3 cache unit"
 };
 
 /* Check the Legacy Machine Check Architecture registers */
@@ -161,7 +162,8 @@ void check_mca(void)
 				int core = cpuid_ebx(1) >> 24;
 
 				printk(BIOS_WARNING, "#MC Error: core %d, bank %d %s\n",
-						core, i, mca_bank_name[i]);
+				       core, i,
+				       i < ARRAY_SIZE(mca_bank_name) ? mca_bank_name[i] : "");
 
 				printk(BIOS_WARNING, "   MC%d_STATUS =   %08x_%08x\n",
 						i, mci.sts.hi, mci.sts.lo);

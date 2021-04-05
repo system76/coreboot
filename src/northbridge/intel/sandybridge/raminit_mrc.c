@@ -227,9 +227,9 @@ struct mrc_var_data {
 
 static void northbridge_fill_pei_data(struct pei_data *pei_data)
 {
-	pei_data->mchbar       = (uintptr_t)DEFAULT_MCHBAR;
-	pei_data->dmibar       = (uintptr_t)DEFAULT_DMIBAR;
-	pei_data->epbar        = DEFAULT_EPBAR;
+	pei_data->mchbar       = CONFIG_FIXED_MCHBAR_MMIO_BASE;
+	pei_data->dmibar       = CONFIG_FIXED_DMIBAR_MMIO_BASE;
+	pei_data->epbar        = CONFIG_FIXED_EPBAR_MMIO_BASE;
 	pei_data->pciexbar     = CONFIG_MMCONF_BASE_ADDRESS;
 	pei_data->hpet_address = CONFIG_HPET_ADDRESS;
 	pei_data->thermalbase  = 0xfed08000;
@@ -361,6 +361,7 @@ void perform_raminit(int s3resume)
 	pei_data.boot_mode = s3resume ? 2 : 0;
 	timestamp_add_now(TS_BEFORE_INITRAM);
 	sdram_initialize(&pei_data);
+	timestamp_add_now(TS_AFTER_INITRAM);
 
 	/* Sanity check mrc_var location by verifying a known field */
 	mrc_var = (void *)DCACHE_RAM_MRC_VAR_BASE;

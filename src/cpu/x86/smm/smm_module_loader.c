@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+#include <stdint.h>
 #include <string.h>
 #include <acpi/acpi_gnvs.h>
 #include <rmodule.h>
@@ -25,18 +26,6 @@ __attribute__((aligned(16)));
  *
  * The components are assumed to consist of one consecutive region.
  */
-
-/* These parameters are used by the SMM stub code. A pointer to the params
- * is also passed to the C-base handler. */
-struct smm_stub_params {
-	u32 stack_size;
-	u32 stack_top;
-	u32 c_handler;
-	u32 c_handler_arg;
-	u32 fxsave_area;
-	u32 fxsave_area_size;
-	struct smm_runtime runtime;
-} __packed;
 
 /*
  * The stub is the entry point that sets up protected mode and stacks for each
@@ -209,12 +198,6 @@ static int smm_module_setup_stub(void *smbase, size_t smm_size,
 	smm_stub_size = rmodule_memory_size(&smm_stub);
 	stub_entry_offset = rmodule_entry_offset(&smm_stub);
 
-	if (smm_stub_size > params->per_cpu_save_state_size) {
-		printk(BIOS_ERR, "SMM Module: SMM stub size larger than save state size\n");
-		printk(BIOS_ERR, "SMM Module: Staggered entry points will overlap stub\n");
-		return -1;
-	}
-
 	/* Assume the stub is always small enough to live within upper half of
 	 * SMRAM region after the save state space has been allocated. */
 	smm_stub_loc = &base[SMM_ENTRY_OFFSET];
@@ -261,24 +244,18 @@ static int smm_module_setup_stub(void *smbase, size_t smm_size,
 	stub_params->stack_top = (uintptr_t)stacks_top;
 	stub_params->stack_size = params->per_cpu_stack_size;
 	stub_params->c_handler = (uintptr_t)params->handler;
-	stub_params->c_handler_arg = (uintptr_t)params->handler_arg;
 	stub_params->fxsave_area = (uintptr_t)fxsave_area;
 	stub_params->fxsave_area_size = FXSAVE_SIZE;
-	stub_params->runtime.smbase = (uintptr_t)smbase;
-	stub_params->runtime.smm_size = smm_size;
-	stub_params->runtime.save_state_size = params->per_cpu_save_state_size;
-	stub_params->runtime.num_cpus = params->num_concurrent_stacks;
-	stub_params->runtime.gnvs_ptr = (uintptr_t)acpi_get_gnvs();
 
 	/* Initialize the APIC id to CPU number table to be 1:1 */
 	for (i = 0; i < params->num_concurrent_stacks; i++)
-		stub_params->runtime.apic_id_to_cpu[i] = i;
+		stub_params->apic_id_to_cpu[i] = i;
 
 	/* Allow the initiator to manipulate SMM stub parameters. */
-	params->runtime = &stub_params->runtime;
+	params->stub_params = stub_params;
 
-	printk(BIOS_DEBUG, "SMM Module: stub loaded at %p. Will call %p(%p)\n",
-	       smm_stub_loc, params->handler, params->handler_arg);
+	printk(BIOS_DEBUG, "SMM Module: stub loaded at %p. Will call %p\n",
+	       smm_stub_loc, params->handler);
 
 	return 0;
 }
@@ -336,6 +313,7 @@ int smm_setup_relocation_handler(struct smm_loader_params *params)
 int smm_load_module(void *smram, size_t size, struct smm_loader_params *params)
 {
 	struct rmodule smm_mod;
+	struct smm_runtime *handler_mod_params;
 	size_t total_stack_size;
 	size_t handler_size;
 	size_t module_alignment;
@@ -402,7 +380,17 @@ int smm_load_module(void *smram, size_t size, struct smm_loader_params *params)
 		return -1;
 
 	params->handler = rmodule_entry(&smm_mod);
-	params->handler_arg = rmodule_parameters(&smm_mod);
+	handler_mod_params = rmodule_parameters(&smm_mod);
+	handler_mod_params->smbase = (uintptr_t)smram;
+	handler_mod_params->smm_size = size;
+	handler_mod_params->save_state_size = params->real_cpu_save_state_size;
+	handler_mod_params->num_cpus = params->num_concurrent_stacks;
+	handler_mod_params->gnvs_ptr = (uintptr_t)acpi_get_gnvs();
+
+	for (int i = 0; i < CONFIG_MAX_CPUS; i++) {
+		handler_mod_params->save_state_top[i] = (uintptr_t)smram + SMM_DEFAULT_SIZE
+			- params->per_cpu_save_state_size * i;
+	}
 
 	return smm_module_setup_stub(smram, size, params, fxsave_area);
 }

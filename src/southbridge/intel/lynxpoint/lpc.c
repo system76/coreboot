@@ -11,17 +11,15 @@
 #include <arch/io.h>
 #include <arch/ioapic.h>
 #include <acpi/acpi.h>
-#include <acpi/acpi_gnvs.h>
 #include <cpu/x86/smm.h>
-#include <string.h>
 #include "chip.h"
 #include "iobp.h"
-#include "nvs.h"
 #include "pch.h"
 #include <acpi/acpigen.h>
 #include <southbridge/intel/common/acpi_pirq_gen.h>
 #include <southbridge/intel/common/rtc.h>
 #include <southbridge/intel/common/spi.h>
+#include <types.h>
 
 #define NMI_OFF	0
 
@@ -288,10 +286,118 @@ static void pch_power_options(struct device *dev)
 	RCBA16(0x3f02) = reg16;
 }
 
+static void configure_dmi_pm(struct device *dev)
+{
+	struct device *const pcie_dev = pcidev_on_root(0x1c, 0);
+
+	/* Additional PCH DMI programming steps */
+
+	/* EL0 */
+	u32 reg32 = 3 << 12;
+
+	/* EL1 */
+	if (pcie_dev && !(pci_read_config8(pcie_dev, 0xf5) & 1 << 0))
+		reg32 |= 2 << 15;
+	else
+		reg32 |= 4 << 15;
+
+	RCBA32_AND_OR(0x21a4, ~(7 << 15 | 7 << 12), reg32);
+
+	RCBA32_AND_OR(0x2348, ~0xf, 0);
+
+	/* Clear prior to enabling DMI ASPM */
+	RCBA32_AND_OR(0x2304, ~(1 << 10), 0);
+
+	RCBA32_OR(0x21a4, 3 << 10);
+
+	RCBA16(0x21a8) |= 3 << 0;
+
+	/* Set again after enabling DMI ASPM */
+	RCBA32_OR(0x2304, 1 << 10);
+}
+
 /* LynxPoint PCH Power Management init */
 static void lpt_pm_init(struct device *dev)
 {
-	printk(BIOS_DEBUG, "LynxPoint PM init\n");
+	struct southbridge_intel_lynxpoint_config *config = dev->chip_info;
+
+	struct device *const pcie_dev = pcidev_on_root(0x1c, 0);
+
+	printk(BIOS_DEBUG, "LynxPoint H PM init\n");
+
+	/* Configure additional PM */
+	pci_write_config8(dev, 0xa9, 0x46);
+
+	pci_or_config32(dev, PMIR, PMIR_CF9LOCK);
+
+	/* Step 3 is skipped */
+
+	/* Program DMI Hardware Width Control (thermal throttling) */
+	u32 reg32 = 0;
+	reg32 |= 1 <<  0;	/* DMI Thermal Sensor Autonomous Width Enable */
+	reg32 |= 0 <<  4;	/* Thermal Sensor 0 Target Width */
+	reg32 |= 1 <<  6;	/* Thermal Sensor 1 Target Width */
+	reg32 |= 1 <<  8;	/* Thermal Sensor 2 Target Width */
+	reg32 |= 2 << 10;	/* Thermal Sensor 3 Target Width */
+	RCBA32(0x2238) = reg32;
+
+	RCBA32_OR(0x232c, 1 << 0);
+	RCBA32_OR(0x1100, 3 << 13);	/* Assume trunk clock gating is to be enabled */
+
+	RCBA32(0x2304) = 0xc07b8400;	/* DMI misc control */
+
+	RCBA32_OR(0x2314, 1 << 23 | 1 << 5);
+
+	if (pcie_dev)
+		pci_update_config8(pcie_dev, 0xf5, ~0xf, 0x5);
+
+	RCBA32_OR(0x2320, 1 << 1);
+
+	RCBA32(0x3314) = 0x000007bf;
+
+	/* NOTE: Preserve bit 5 */
+	RCBA32_OR(0x3318, 0x0dcf0000);
+
+	RCBA32(0x3324) = 0x04000000;
+	RCBA32(0x3340) = 0x020ddbff;
+
+	RCBA32_OR(0x3344, 1 << 0);
+
+	RCBA32(0x3368) = 0x00041000;
+	RCBA32(0x3378) = 0x3f8ddbff;
+	RCBA32(0x337c) = 0x000001e1;
+	RCBA32(0x3388) = 0x00001000;
+	RCBA32(0x33a0) = 0x00000800;
+	RCBA32(0x33ac) = 0x00001000;
+	RCBA32(0x33b0) = 0x00001000;
+	RCBA32(0x33c0) = 0x00011900;
+	RCBA32(0x33d0) = 0x06000802;
+	RCBA32(0x3a28) = 0x01010000;
+	RCBA32(0x3a2c) = 0x01010404;
+
+	RCBA32_OR(0x33a4, 1 << 0);
+
+	/* DMI power optimizer */
+	RCBA32_OR(0x33d4, 1 << 27);
+	RCBA32_OR(0x33c8, 1 << 27);
+	RCBA32(0x2b14) = 0x1e0a0317;
+	RCBA32(0x2b24) = 0x4000000b;
+	RCBA32(0x2b28) = 0x00000002;
+	RCBA32(0x2b2c) = 0x00008813;
+
+	RCBA32(0x3a80) = 0x01040000;
+	reg32 = 0x01041001;
+	/* Port 1 and 0 disabled */
+	if (config && (config->sata_port_map & ((1 << 1) | (1 << 0))) == 0)
+		reg32 |= (1 << 20) | (1 << 18);
+	/* Port 3 and 2 disabled */
+	if (config && (config->sata_port_map & ((1 << 3) | (1 << 2))) == 0)
+		reg32 |= (1 << 24) | (1 << 26);
+	RCBA32(0x3a84) = reg32;
+	RCBA32(0x3a88) = 0x00000001;
+	RCBA32(0x33d4) = 0xc80bc000;
+
+	configure_dmi_pm(dev);
 }
 
 /* LynxPoint LP PCH Power Management init */
@@ -378,9 +484,6 @@ static void lpt_lp_pm_init(struct device *dev)
 	/* Set RCBA 0x2b1c[29]=1 if DSP disabled */
 	if (RCBA32(FD) & PCH_DISABLE_ADSPD)
 		RCBA32_OR(0x2b1c, (1 << 29));
-
-	/* Lock */
-	RCBA32_OR(0x3a6c, 0x00000001);
 
 	/* Set RCBA 0x33D4 after other setup */
 	RCBA32_OR(0x33d4, 0x2fff2fb1);
@@ -477,26 +580,6 @@ static void pch_set_acpi_mode(void)
 		apm_control(APM_CNT_ACPI_DISABLE);
 }
 
-static void pch_disable_smm_only_flashing(struct device *dev)
-{
-	printk(BIOS_SPEW, "Enabling BIOS updates outside of SMM... ");
-
-	pci_and_config8(dev, BIOS_CNTL, ~(1 << 5));
-}
-
-static void pch_fixups(struct device *dev)
-{
-	/* Indicate DRAM init done for MRC S3 to know it can resume */
-	pci_or_config8(dev, GEN_PMCON_2, 1 << 7);
-
-	/*
-	 * Enable DMI ASPM in the PCH
-	 */
-	RCBA32_AND_OR(0x2304, ~(1 << 10), 0);
-	RCBA32_OR(0x21a4, (1 << 11) | (1 << 10));
-	RCBA32_OR(0x21a8, 0x3);
-}
-
 static void lpc_init(struct device *dev)
 {
 	printk(BIOS_DEBUG, "pch: %s\n", __func__);
@@ -535,11 +618,10 @@ static void lpc_init(struct device *dev)
 	/* Interrupt 9 should be level triggered (SCI) */
 	i8259_configure_irq_trigger(9, 1);
 
-	pch_disable_smm_only_flashing(dev);
-
 	pch_set_acpi_mode();
 
-	pch_fixups(dev);
+	/* Indicate DRAM init done for MRC S3 to know it can resume */
+	pci_or_config8(dev, GEN_PMCON_2, 1 << 7);
 }
 
 static void pch_lpc_add_mmio_resources(struct device *dev)
@@ -559,10 +641,10 @@ static void pch_lpc_add_mmio_resources(struct device *dev)
 	res->flags = IORESOURCE_MEM | IORESOURCE_ASSIGNED | IORESOURCE_FIXED;
 
 	/* RCBA */
-	if ((uintptr_t)DEFAULT_RCBA < default_decode_base) {
+	if (CONFIG_FIXED_RCBA_MMIO_BASE < default_decode_base) {
 		res = new_resource(dev, RCBA);
-		res->base = (resource_t)(uintptr_t)DEFAULT_RCBA;
-		res->size = 16 * 1024;
+		res->base = (resource_t)CONFIG_FIXED_RCBA_MMIO_BASE;
+		res->size = CONFIG_RCBA_LENGTH;
 		res->flags = IORESOURCE_MEM | IORESOURCE_ASSIGNED |
 			     IORESOURCE_FIXED | IORESOURCE_RESERVE;
 	}
@@ -679,28 +761,6 @@ static void pch_lpc_enable(struct device *dev)
 	pch_enable(dev);
 }
 
-size_t gnvs_size_of_array(void)
-{
-	return sizeof(struct global_nvs);
-}
-
-uint32_t *gnvs_cbmc_ptr(struct global_nvs *gnvs)
-{
-	return &gnvs->cbmc;
-}
-
-void *gnvs_chromeos_ptr(struct global_nvs *gnvs)
-{
-	return &gnvs->chromeos;
-}
-
-void soc_fill_gnvs(struct global_nvs *gnvs)
-{
-	gnvs->apic = 1;
-	gnvs->mpen = 1; /* Enable Multi Processing */
-	gnvs->pcnt = dev_count_cpu();
-}
-
 static const char *lpc_acpi_name(const struct device *dev)
 {
 	return "LPCB";
@@ -716,7 +776,6 @@ static unsigned long southbridge_write_acpi_tables(const struct device *device,
 						   struct acpi_rsdp *rsdp)
 {
 	unsigned long current;
-	acpi_header_t *ssdt;
 
 	current = start;
 
@@ -730,12 +789,14 @@ static unsigned long southbridge_write_acpi_tables(const struct device *device,
 
 	current = acpi_align_current(current);
 
-	printk(BIOS_DEBUG, "ACPI:     * SSDT2\n");
-	ssdt = (acpi_header_t *)current;
-	acpi_create_serialio_ssdt(ssdt);
-	current += ssdt->length;
-	acpi_add_table(rsdp, ssdt);
-	current = acpi_align_current(current);
+	if (pch_is_lp()) {
+		printk(BIOS_DEBUG, "ACPI:     * SSDT2\n");
+		acpi_header_t *ssdt = (acpi_header_t *)current;
+		acpi_create_serialio_ssdt(ssdt);
+		current += ssdt->length;
+		acpi_add_table(rsdp, ssdt);
+		current = acpi_align_current(current);
+	}
 
 	printk(BIOS_DEBUG, "current = %lx\n", current);
 	return current;
@@ -744,6 +805,9 @@ static unsigned long southbridge_write_acpi_tables(const struct device *device,
 static void lpc_final(struct device *dev)
 {
 	spi_finalize_ops();
+
+	/* Lock */
+	RCBA32_OR(0x3a6c, 0x00000001);
 
 	if (acpi_is_wakeup_s3() || CONFIG(INTEL_CHIPSET_LOCKDOWN))
 		apm_control(APM_CNT_FINALIZE);

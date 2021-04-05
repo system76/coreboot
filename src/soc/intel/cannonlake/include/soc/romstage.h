@@ -6,9 +6,7 @@
 #include <fsp/api.h>
 
 void mainboard_memory_init_params(FSPM_UPD *mupd);
-
 void systemagent_early_init(void);
-void romstage_pch_init(void);
 
 /* Board type */
 enum board_type {

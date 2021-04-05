@@ -6,6 +6,7 @@
 #include <bootmode.h>
 #include <commonlib/helpers.h>
 #include <console/console.h>
+#include <cpu/intel/haswell/haswell.h>
 #include <delay.h>
 #include <device/device.h>
 #include <device/pci.h>
@@ -16,7 +17,6 @@
 #include <drivers/intel/gma/i915_reg.h>
 #include <drivers/intel/gma/libgfxinit.h>
 #include <drivers/intel/gma/opregion.h>
-#include <soc/cpu.h>
 #include <soc/pm.h>
 #include <soc/ramstage.h>
 #include <soc/systemagent.h>
@@ -476,6 +476,7 @@ static void igd_cdclk_init(struct device *dev, const int is_broadwell)
 		dpdiv = 338;
 		reg_em4 = 8;
 		reg_em5 = 225;
+		break;
 	default:
 		return;
 	}
@@ -512,22 +513,12 @@ static void igd_init(struct device *dev)
 	if (!CONFIG(NO_GFX_INIT))
 		pci_or_config16(dev, PCI_COMMAND, PCI_COMMAND_MASTER);
 
-	/* Wait for any configured pre-graphics delay */
-	if (!acpi_is_wakeup_s3()) {
-#if CONFIG(CHROMEOS)
-		if (display_init_required())
-			mdelay(CONFIG_PRE_GRAPHICS_DELAY);
-#else
-		mdelay(CONFIG_PRE_GRAPHICS_DELAY);
-#endif
-	}
-
 	/* Early init steps */
 	if (is_broadwell) {
 		reg_script_run_on_dev(dev, broadwell_early_init_script);
 
 		/* Set GFXPAUSE based on stepping */
-		if (cpu_stepping() <= (CPUID_BROADWELL_E0 & 0xf) &&
+		if (cpu_stepping() <= (CPUID_BROADWELL_ULT_E0 & 0xf) &&
 		    systemagent_revision() <= 9) {
 			gtt_write(0xa000, 0x300ff);
 		} else {

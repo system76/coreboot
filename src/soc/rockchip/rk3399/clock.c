@@ -249,14 +249,8 @@ enum {
 	CLK_I2C3_DIV_CON_SHIFT		= 0,
 
 	/* CRU_SOFTRST_CON4 */
-	RESETN_DDR0_REQ_MASK		= 1,
-	RESETN_DDR0_REQ_SHIFT		= 8,
-	RESETN_DDRPHY0_REQ_MASK		= 1,
-	RESETN_DDRPHY0_REQ_SHIFT	= 9,
-	RESETN_DDR1_REQ_MASK		= 1,
-	RESETN_DDR1_REQ_SHIFT		= 12,
-	RESETN_DDRPHY1_REQ_MASK		= 1,
-	RESETN_DDRPHY1_REQ_SHIFT	= 13,
+#define RESETN_DDR_REQ_SHIFT(ch)	(8 + (ch) * 4)
+#define RESETN_DDRPHY_REQ_SHIFT(ch)	(9 + (ch) * 4)
 };
 
 #define VCO_MAX_KHZ	(3200 * (MHz / KHz))
@@ -648,6 +642,13 @@ void rkclk_configure_ddr(unsigned int hz)
 
 	if (CONFIG(RK3399_SPREAD_SPECTRUM_DDR))
 		rkclk_set_dpllssc(&dpll_cfg);
+}
+
+void rkclk_ddr_reset(u32 ch, u32 ctl, u32 phy)
+{
+	write32(&cru_ptr->softrst_con[4], RK_CLRSETBITS(
+		1 << RESETN_DDR_REQ_SHIFT(ch) | 1 << RESETN_DDRPHY_REQ_SHIFT(ch),
+		ctl << RESETN_DDR_REQ_SHIFT(ch) | phy << RESETN_DDRPHY_REQ_SHIFT(ch)));
 }
 
 #define SPI_CLK_REG_VALUE(bus, clk_div) \

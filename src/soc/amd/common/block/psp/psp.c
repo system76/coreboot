@@ -7,7 +7,7 @@
 #include <soc/iomap.h>
 #include "psp_def.h"
 
-static const char *psp_status_nobase = "error: PSP BAR3 not assigned";
+static const char *psp_status_nobase = "error: PSP_ADDR_MSR and PSP BAR3 not assigned";
 static const char *psp_status_halted = "error: PSP in halted state";
 static const char *psp_status_recovery = "error: PSP recovery required";
 static const char *psp_status_errcmd = "error sending command";
@@ -50,7 +50,7 @@ void psp_print_cmd_status(int cmd_status, struct mbox_buffer_header *header)
 		printk(BIOS_DEBUG, "buffer status=0x%x ", rd_resp_sts(header));
 
 	if (cmd_status)
-		printk(BIOS_DEBUG, "%s\n", status_to_string(cmd_status));
+		printk(BIOS_WARNING, "%s\n", status_to_string(cmd_status));
 	else
 		printk(BIOS_DEBUG, "OK\n");
 }

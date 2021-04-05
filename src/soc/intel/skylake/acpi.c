@@ -2,22 +2,22 @@
 
 #include <acpi/acpi.h>
 #include <acpi/acpi_gnvs.h>
+#include <acpi/acpi_pm.h>
 #include <acpi/acpigen.h>
 #include <arch/cpu.h>
 #include <arch/ioapic.h>
 #include <arch/smp/mpspec.h>
-#include <cbmem.h>
 #include <console/console.h>
 #include <cpu/x86/smm.h>
 #include <cpu/x86/msr.h>
 #include <cpu/intel/common/common.h>
 #include <cpu/intel/turbo.h>
+#include <intelblocks/acpi_wake_source.h>
 #include <intelblocks/cpulib.h>
 #include <intelblocks/lpc_lib.h>
 #include <intelblocks/sgx.h>
 #include <intelblocks/uart.h>
 #include <intelblocks/systemagent.h>
-#include <soc/intel/common/acpi.h>
 #include <soc/acpi.h>
 #include <soc/cpu.h>
 #include <soc/iomap.h>
@@ -29,7 +29,6 @@
 #include <soc/systemagent.h>
 #include <string.h>
 #include <types.h>
-#include <wrdd.h>
 #include <device/pci_ops.h>
 
 #include "chip.h"
@@ -160,17 +159,8 @@ void soc_fill_gnvs(struct global_nvs *gnvs)
 {
 	const struct soc_intel_skylake_config *config = config_of_soc();
 
-	/* Set unknown wake source */
-	gnvs->pm1i = -1;
-
-	/* CPU core count */
-	gnvs->pcnt = dev_count_cpu();
-
 	/* Enable DPTF based on mainboard configuration */
 	gnvs->dpte = config->dptf_enable;
-
-	/* Fill in the Wifi Region id */
-	gnvs->cid1 = wifi_regulatory_domain();
 
 	/* Set USB2/USB3 wake enable bitmaps. */
 	gnvs->u2we = config->usb2_wake_enable_bitmap;
@@ -187,7 +177,7 @@ unsigned long acpi_fill_mcfg(unsigned long current)
 {
 	current += acpi_create_mcfg_mmconfig((acpi_mcfg_mmconfig_t *)current,
 					     CONFIG_MMCONF_BASE_ADDRESS, 0, 0,
-					     (CONFIG_SA_PCIEX_LENGTH >> 20) - 1);
+					     CONFIG_MMCONF_BUS_NUMBER - 1);
 	return current;
 }
 
@@ -523,19 +513,14 @@ unsigned long southbridge_write_acpi_tables(const struct device *device,
 }
 
 /* Save wake source information for calculating ACPI _SWS values */
-int soc_fill_acpi_wake(uint32_t *pm1, uint32_t **gpe0)
+int soc_fill_acpi_wake(const struct chipset_power_state *ps, uint32_t *pm1, uint32_t **gpe0)
 {
 	const struct soc_intel_skylake_config *config = config_of_soc();
-	struct chipset_power_state *ps;
 	static uint32_t gpe0_sts[GPE0_REG_MAX];
 	uint32_t pm1_en;
 	uint32_t gpe0_std;
 	int i;
 	const int last_index = GPE0_REG_MAX - 1;
-
-	ps = cbmem_find(CBMEM_ID_POWER_STATE);
-	if (ps == NULL)
-		return -1;
 
 	pm1_en = ps->pm1_en;
 	gpe0_std = ps->gpe0_en[3];
@@ -562,150 +547,4 @@ int soc_fill_acpi_wake(uint32_t *pm1, uint32_t **gpe0)
 	gpe0_sts[last_index] = ps->gpe0_sts[last_index] & gpe0_std;
 
 	return GPE0_REG_MAX;
-}
-
-const char *soc_acpi_name(const struct device *dev)
-{
-	if (dev->path.type == DEVICE_PATH_DOMAIN)
-		return "PCI0";
-
-	if (dev->path.type == DEVICE_PATH_USB) {
-		switch (dev->path.usb.port_type) {
-		case 0:
-			/* Root Hub */
-			return "RHUB";
-		case 2:
-			/* USB2 ports */
-			switch (dev->path.usb.port_id) {
-			case 0: return "HS01";
-			case 1: return "HS02";
-			case 2: return "HS03";
-			case 3: return "HS04";
-			case 4: return "HS05";
-			case 5: return "HS06";
-			case 6: return "HS07";
-			case 7: return "HS08";
-			case 8: return "HS09";
-			case 9: return "HS10";
-			}
-			break;
-		case 3:
-			/* USB3 ports */
-			switch (dev->path.usb.port_id) {
-			case 0: return "SS01";
-			case 1: return "SS02";
-			case 2: return "SS03";
-			case 3: return "SS04";
-			case 4: return "SS05";
-			case 5: return "SS06";
-			}
-			break;
-		}
-		return NULL;
-	}
-
-	if (dev->path.type != DEVICE_PATH_PCI)
-		return NULL;
-
-	/* Match functions 0 and 1 for possible GPUs on a secondary bus */
-	if (dev->bus && dev->bus->secondary > 0) {
-		switch (PCI_FUNC(dev->path.pci.devfn)) {
-		case 0: return "DEV0";
-		case 1: return "DEV1";
-		}
-		return NULL;
-	}
-
-	switch (dev->path.pci.devfn) {
-	case SA_DEVFN_ROOT:	return "MCHC";
-	case SA_DEVFN_PEG0:	return "PEGP";
-	case SA_DEVFN_IGD:	return "GFX0";
-	case PCH_DEVFN_ISH:	return "ISHB";
-	case PCH_DEVFN_XHCI:	return "XHCI";
-	case PCH_DEVFN_USBOTG:	return "XDCI";
-	case PCH_DEVFN_THERMAL:	return "THRM";
-	case PCH_DEVFN_CIO:	return "ICIO";
-	case PCH_DEVFN_I2C0:	return "I2C0";
-	case PCH_DEVFN_I2C1:	return "I2C1";
-	case PCH_DEVFN_I2C2:	return "I2C2";
-	case PCH_DEVFN_I2C3:	return "I2C3";
-	case PCH_DEVFN_CSE:	return "CSE1";
-	case PCH_DEVFN_CSE_2:	return "CSE2";
-	case PCH_DEVFN_CSE_IDER:	return "CSED";
-	case PCH_DEVFN_CSE_KT:	return "CSKT";
-	case PCH_DEVFN_CSE_3:	return "CSE3";
-	case PCH_DEVFN_SATA:	return "SATA";
-	case PCH_DEVFN_UART2:	return "UAR2";
-	case PCH_DEVFN_I2C4:	return "I2C4";
-	case PCH_DEVFN_I2C5:	return "I2C5";
-	case PCH_DEVFN_PCIE1:	return "RP01";
-	case PCH_DEVFN_PCIE2:	return "RP02";
-	case PCH_DEVFN_PCIE3:	return "RP03";
-	case PCH_DEVFN_PCIE4:	return "RP04";
-	case PCH_DEVFN_PCIE5:	return "RP05";
-	case PCH_DEVFN_PCIE6:	return "RP06";
-	case PCH_DEVFN_PCIE7:	return "RP07";
-	case PCH_DEVFN_PCIE8:	return "RP08";
-	case PCH_DEVFN_PCIE9:	return "RP09";
-	case PCH_DEVFN_PCIE10:	return "RP10";
-	case PCH_DEVFN_PCIE11:	return "RP11";
-	case PCH_DEVFN_PCIE12:	return "RP12";
-	case PCH_DEVFN_PCIE13:	return "RP13";
-	case PCH_DEVFN_PCIE14:	return "RP14";
-	case PCH_DEVFN_PCIE15:	return "RP15";
-	case PCH_DEVFN_PCIE16:	return "RP16";
-	case PCH_DEVFN_UART0:	return "UAR0";
-	case PCH_DEVFN_UART1:	return "UAR1";
-	case PCH_DEVFN_GSPI0:	return "SPI0";
-	case PCH_DEVFN_GSPI1:	return "SPI1";
-	case PCH_DEVFN_EMMC:	return "EMMC";
-	case PCH_DEVFN_SDIO:	return "SDIO";
-	case PCH_DEVFN_SDCARD:	return "SDXC";
-	case PCH_DEVFN_P2SB:	return "P2SB";
-	case PCH_DEVFN_PMC:	return "PMC_";
-	case PCH_DEVFN_HDA:	return "HDAS";
-	case PCH_DEVFN_SMBUS:	return "SBUS";
-	case PCH_DEVFN_SPI:	return "FSPI";
-	case PCH_DEVFN_GBE:	return "IGBE";
-	case PCH_DEVFN_TRACEHUB:return "THUB";
-	}
-
-	return NULL;
-}
-
-static int acpigen_soc_gpio_op(const char *op, unsigned int gpio_num)
-{
-	/* op (gpio_num) */
-	acpigen_emit_namestring(op);
-	acpigen_write_integer(gpio_num);
-	return 0;
-}
-
-static int acpigen_soc_get_gpio_state(const char *op, unsigned int gpio_num)
-{
-	/* Store (op (gpio_num), Local0) */
-	acpigen_write_store();
-	acpigen_soc_gpio_op(op, gpio_num);
-	acpigen_emit_byte(LOCAL0_OP);
-	return 0;
-}
-
-int acpigen_soc_read_rx_gpio(unsigned int gpio_num)
-{
-	return acpigen_soc_get_gpio_state("\\_SB.PCI0.GRXS", gpio_num);
-}
-
-int acpigen_soc_get_tx_gpio(unsigned int gpio_num)
-{
-	return acpigen_soc_get_gpio_state("\\_SB.PCI0.GTXS", gpio_num);
-}
-
-int acpigen_soc_set_tx_gpio(unsigned int gpio_num)
-{
-	return acpigen_soc_gpio_op("\\_SB.PCI0.STXS", gpio_num);
-}
-
-int acpigen_soc_clear_tx_gpio(unsigned int gpio_num)
-{
-	return acpigen_soc_gpio_op("\\_SB.PCI0.CTXS", gpio_num);
 }

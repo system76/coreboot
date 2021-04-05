@@ -288,14 +288,6 @@ struct soc_intel_skylake_config {
 	u8 SkipExtGfxScan;
 	u8 ScanExtGfxForLegacyOpRom;
 
-	/*
-	 * The following fields come from fsp_vpd.h
-	 * These are configuration values that are passed to FSP during
-	 * SiliconInit.
-	 */
-	u32 LogoPtr;
-	u32 LogoSize;
-
 	/* GPIO IRQ Route  The valid values is 14 or 15*/
 	u8 GpioIrqSelect;
 	/* SCI IRQ Select  The valid values is 9, 10, 11 and 20 21, 22, 23*/
@@ -307,7 +299,7 @@ struct soc_intel_skylake_config {
 	u8 LockDownConfigGlobalSmi;
 	/*
 	 * Enable RTC lower and upper 128 byte Lock bits to lock Bytes 38h-3Fh
-	 * in the upper and and lower 128-byte bank of RTC RAM.
+	 * in the upper and lower 128-byte bank of RTC RAM.
 	 */
 	u8 LockDownConfigRtcLock;
 
@@ -435,12 +427,9 @@ struct soc_intel_skylake_config {
 	 *
 	 * GpioInt (Edge, ActiveBoth, SharedAndWake, PullNone, 10000,
 	 *          "\\_SB.PCI0.GPIO", 0, ResourceConsumer)
-	 *          { sdcard_cd_gpio_default }
+	 *          { sdcard_cd_gpio }
 	 */
-	unsigned int sdcard_cd_gpio_default;
-
-	/* Use custom SD card detect GPIO configuration */
-	struct acpi_gpio sdcard_cd_gpio;
+	unsigned int sdcard_cd_gpio;
 
 	/* Wake Enable Bitmap for USB2 ports */
 	u16 usb2_wake_enable_bitmap;

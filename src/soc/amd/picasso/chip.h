@@ -48,7 +48,32 @@ union __packed usb3_force_gen1 {
 		uint8_t usb3_port_force_gen1_en;
 };
 
+enum rfmux_configuration_setting {
+	USB_PD_RFMUX_SAFE_STATE = 0x0,
+	USB_PD_RFMUX_USB31_MODE = 0x1,
+	USB_PD_RFMUX_USB31_MODE_FLIP = 0x2,
+	USB_PD_RFMUX_ATE_MODE = 0x3,
+	USB_PD_RFMUX_DP_X2_MODE = 0x4,
+	USB_PD_RFMUX_MF_MODE_ALT_D_F = 0x6,
+	USB_PD_RFMUX_DP_X2_MODE_FLIP = 0x8,
+	USB_PD_RFMUX_MF_MODE_ALT_D_F_FLIP = 0x9,
+	USB_PD_RFMUX_DP_X4_MODE = 0xc,
+};
+
+struct usb_pd_control {
+		uint8_t rfmux_override_en;
+		uint32_t rfmux_config;
+};
+
 #define USB_PORT_COUNT	6
+
+struct __packed usb3_phy_tune {
+	uint8_t rx_eq_delta_iq_ovrd_val;
+	uint8_t rx_eq_delta_iq_ovrd_en;
+};
+/* the RV2 USB3 port count */
+#define RV2_USB3_PORT_COUNT 4
+#define USB_PD_PORT_COUNT 2
 
 enum sd_emmc_driver_strength {
 	SD_EMMC_DRIVE_STRENGTH_B,
@@ -57,18 +82,30 @@ enum sd_emmc_driver_strength {
 	SD_EMMC_DRIVE_STRENGTH_D,
 };
 
+/* dpphy_override */
+enum sysinfo_dpphy_override {
+	ENABLE_DVI_TUNINGSET = 0x01,
+	ENABLE_HDMI_TUNINGSET = 0x02,
+	ENABLE_HDMI6G_TUNINGSET = 0x04,
+	ENABLE_DP_TUNINGSET = 0x08,
+	ENABLE_DP_HBR3_TUNINGSET = 0x10,
+	ENABLE_DP_HBR_TUNINGSET = 0x20,
+	ENABLE_DP_HBR2_TUNINGSET = 0x40,
+	ENABLE_EDP_TUNINGSET = 0x80,
+};
+
 struct soc_amd_picasso_config {
 	struct soc_amd_common_config common_config;
 	/*
-	 * If sb_reset_i2c_slaves() is called, this devicetree register
+	 * If sb_reset_i2c_peripherals() is called, this devicetree register
 	 * defines which I2C SCL will be toggled 9 times at 100 KHz.
-	 * For example, should we need I2C0 and  I2C3 have their slave
+	 * For example, should we need I2C0 and  I2C3 have their peripheral
 	 * devices reseted by toggling SCL, use:
 	 *
 	 * register i2c_scl_reset = (GPIO_I2C0_SCL | GPIO_I2C3_SCL)
 	 */
 	u8 i2c_scl_reset;
-	struct dw_i2c_bus_config i2c[I2C_MASTER_DEV_COUNT];
+	struct dw_i2c_bus_config i2c[I2C_CTRLR_COUNT];
 	enum {
 		I2S_PINS_MAX_HDA = 0,	/* HDA w/reset  3xSDI, SW w/Data0 */
 		I2S_PINS_MAX_MHDA = 1,	/* HDA no reset 3xSDI, SW w/Data0-1 */
@@ -82,21 +119,6 @@ struct soc_amd_picasso_config {
 	u8 acp_i2s_wake_enable;
 	/* Enable ACP PME (0 = disable, 1 = enable) */
 	u8 acp_pme_enable;
-
-	/**
-	 * IRQ 0 - 15 have a default trigger of edge and default polarity of high.
-	 * If you have a device that requires a different configuration you can override the
-	 * settings here.
-	 */
-	struct {
-		uint8_t irq;
-		/* See MP_IRQ_* from mpspec.h */
-		uint8_t flags;
-	} irq_override[16];
-
-	/* Options for these are in src/arch/x86/include/acpi/acpi.h */
-	uint16_t fadt_boot_arch;
-	uint32_t fadt_flags;
 
 	/* System config index */
 	uint8_t system_config;
@@ -217,10 +239,63 @@ struct soc_amd_picasso_config {
 		USB_OC_NONE	= 0xf,
 	} usb_port_overcurrent_pin[USB_PORT_COUNT];
 
+	/* RV2 SOC Usb 3.1 PHY Parameters */
+	uint8_t usb3_phy_override;
+	/*
+	 * 1,RX_EQ_DELTA_IQ_OVRD_VAL- Override value for rx_eq_delta_iq. Range 0-0xF
+	 * 2,RX_EQ_DELTA_IQ_OVRD_EN - Enable override value for rx_eq_delta_iq. Range 0-0x1
+	 */
+	struct usb3_phy_tune usb3_phy_tune_params[RV2_USB3_PORT_COUNT];
+	/* Override value for rx_vref_ctrl. Range 0 - 0x1F */
+	uint8_t usb3_rx_vref_ctrl;
+	/* Enable override value for rx_vref_ctrl. Range 0 - 0x1 */
+	uint8_t usb3_rx_vref_ctrl_en;
+	/* Override value for tx_vboost_lvl: 0 - 0x7. */
+	uint8_t usb_3_tx_vboost_lvl;
+	/* Enable override value for tx_vboost_lvl. Range: 0 - 0x1 */
+	uint8_t usb_3_tx_vboost_lvl_en;
+	/* Override value for rx_vref_ctrl. Range 0 - 0x1F.*/
+	uint8_t usb_3_rx_vref_ctrl_x;
+	/* Enable override value for rx_vref_ctrl. Range 0 - 0x1. */
+	uint8_t usb_3_rx_vref_ctrl_en_x;
+	/* Override value for tx_vboost_lvl: 0 - 0x7. */
+	uint8_t usb_3_tx_vboost_lvl_x;
+	/* Enable override value for tx_vboost_lvl. Range: 0 - 0x1. */
+	uint8_t usb_3_tx_vboost_lvl_en_x;
+
 	/* The array index is the general purpose PCIe clock output number. */
 	enum gpp_clk_req_setting gpp_clk_config[GPP_CLK_OUTPUT_COUNT];
 	/* If using an external 48MHz OSC for codec, will disable internal X48M_OSC */
 	bool acp_i2s_use_external_48mhz_osc;
+
+	/* eDP phy tuning settings */
+	uint16_t edp_phy_override;
+	/* bit vector of phy, bit0=1: DP0, bit1=1: DP1, bit2=1: DP2 bit3=1: DP3 */
+	uint8_t edp_physel;
+
+	struct {
+		uint8_t dp_vs_pemph_level;
+		uint8_t deemph_6db4;
+		uint8_t boostadj;
+		uint16_t margin_deemph;
+	} edp_tuningset;
+
+	/*
+	 * eDP panel power sequence control
+	 * all pwr sequence numbers below are in uint of 4ms and "0" as default value
+	 */
+	uint8_t edp_pwr_adjust_enable;
+	uint8_t pwron_digon_to_de;
+	uint8_t pwron_de_to_varybl;
+	uint8_t pwrdown_varybloff_to_de;
+	uint8_t pwrdown_de_to_digoff;
+	uint8_t pwroff_delay;
+	uint8_t pwron_varybl_to_blon;
+	uint8_t pwrdown_bloff_to_varybloff;
+	uint8_t min_allowed_bl_level;
+
+	/* allow USB PD port setting override */
+	struct usb_pd_control usb_pd_config_override[USB_PD_PORT_COUNT];
 };
 
 #endif /* __PICASSO_CHIP_H__ */

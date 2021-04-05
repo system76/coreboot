@@ -14,13 +14,15 @@
 #include "cbfs_sections.h"
 #include "elfparsing.h"
 #include "partitioned_file.h"
+#include "lz4/lib/xxhash.h"
+#include <commonlib/bsd/cbfs_private.h>
+#include <commonlib/bsd/compression.h>
+#include <commonlib/bsd/metadata_hash.h>
 #include <commonlib/fsp.h>
 #include <commonlib/endian.h>
 #include <commonlib/helpers.h>
 #include <commonlib/region.h>
 #include <vboot_host.h>
-
-#define SECTION_WITH_FIT_TABLE	"BOOTBLOCK"
 
 struct command {
 	const char *name;
@@ -115,6 +117,167 @@ static struct param {
 	.region_name = SECTION_NAME_PRIMARY_CBFS,
 	.u64val = -1,
 };
+
+/*
+ * This "metadata_hash cache" caches the value and location of the CBFS metadata
+ * hash embedded in the bootblock when CBFS verification is enabled. The first
+ * call to get_mh_cache() searches for the cache by scanning the whole bootblock
+ * for its 8-byte signature, later calls will just return the previously found
+ * information again. If the cbfs_hash.algo member in the result is
+ * VB2_HASH_INVALID, that means no metadata hash was found and this image does
+ * not use CBFS verification.
+ */
+struct mh_cache {
+	const char *region;
+	size_t offset;
+	struct vb2_hash cbfs_hash;
+	platform_fixup_func fixup;
+	bool initialized;
+};
+
+static struct mh_cache *get_mh_cache(void)
+{
+	static struct mh_cache mhc;
+
+	if (mhc.initialized)
+		return &mhc;
+
+	mhc.initialized = true;
+
+	const struct fmap *fmap = partitioned_file_get_fmap(param.image_file);
+	if (!fmap)
+		goto no_metadata_hash;
+
+	/* Find the bootblock. If there is a "BOOTBLOCK" FMAP section, it's
+	   there. If not, it's a normal file in the primary CBFS section. */
+	size_t offset, size;
+	struct buffer buffer;
+	if (fmap_find_area(fmap, SECTION_NAME_BOOTBLOCK)) {
+		if (!partitioned_file_read_region(&buffer, param.image_file,
+						  SECTION_NAME_BOOTBLOCK))
+			goto no_metadata_hash;
+		mhc.region = SECTION_NAME_BOOTBLOCK;
+		offset = 0;
+		size = buffer.size;
+	} else {
+		struct cbfs_image cbfs;
+		struct cbfs_file *bootblock;
+		if (!partitioned_file_read_region(&buffer, param.image_file,
+						  SECTION_NAME_PRIMARY_CBFS))
+			goto no_metadata_hash;
+		mhc.region = SECTION_NAME_PRIMARY_CBFS;
+		if (cbfs_image_from_buffer(&cbfs, &buffer, param.headeroffset))
+			goto no_metadata_hash;
+		bootblock = cbfs_get_entry(&cbfs, "bootblock");
+		if (!bootblock || ntohl(bootblock->type) != CBFS_TYPE_BOOTBLOCK)
+			goto no_metadata_hash;
+		offset = (void *)bootblock + ntohl(bootblock->offset) -
+			 buffer_get(&cbfs.buffer);
+		size = ntohl(bootblock->len);
+	}
+
+	/* Find and validate the metadata hash anchor inside the bootblock and
+	   record its exact byte offset from the start of the FMAP region. */
+	struct metadata_hash_anchor *anchor = memmem(buffer_get(&buffer) + offset,
+			size, METADATA_HASH_ANCHOR_MAGIC, sizeof(anchor->magic));
+	if (anchor) {
+		if (!vb2_digest_size(anchor->cbfs_hash.algo)) {
+			ERROR("Unknown CBFS metadata hash type: %d\n",
+			      anchor->cbfs_hash.algo);
+			goto no_metadata_hash;
+		}
+		mhc.cbfs_hash = anchor->cbfs_hash;
+		mhc.offset = (void *)anchor - buffer_get(&buffer);
+		mhc.fixup = platform_fixups_probe(&buffer, mhc.offset,
+						  mhc.region);
+		return &mhc;
+	}
+
+no_metadata_hash:
+	mhc.cbfs_hash.algo = VB2_HASH_INVALID;
+	return &mhc;
+}
+
+static void update_and_info(const char *name, void *dst, void *src, size_t size)
+{
+	if (!memcmp(dst, src, size))
+		return;
+	char *src_str = bintohex(src, size);
+	char *dst_str = bintohex(dst, size);
+	INFO("Updating %s from %s to %s\n", name, dst_str, src_str);
+	memcpy(dst, src, size);
+	free(src_str);
+	free(dst_str);
+}
+
+static int update_anchor(struct mh_cache *mhc, uint8_t *fmap_hash)
+{
+	struct buffer buffer;
+	if (!partitioned_file_read_region(&buffer, param.image_file,
+					  mhc->region))
+		return -1;
+	struct metadata_hash_anchor *anchor = buffer_get(&buffer) + mhc->offset;
+	/* The metadata hash anchor should always still be where we left it. */
+	assert(!memcmp(anchor->magic, METADATA_HASH_ANCHOR_MAGIC,
+		      sizeof(anchor->magic)) &&
+	       anchor->cbfs_hash.algo == mhc->cbfs_hash.algo);
+	update_and_info("CBFS metadata hash", anchor->cbfs_hash.raw,
+		mhc->cbfs_hash.raw, vb2_digest_size(anchor->cbfs_hash.algo));
+	if (fmap_hash) {
+		update_and_info("FMAP hash",
+				metadata_hash_anchor_fmap_hash(anchor), fmap_hash,
+				vb2_digest_size(anchor->cbfs_hash.algo));
+	}
+	if (mhc->fixup && mhc->fixup(&buffer, mhc->offset) != 0)
+		return -1;
+	if (!partitioned_file_write_region(param.image_file, &buffer))
+		return -1;
+	return 0;
+
+}
+
+/* This should be called after every time CBFS metadata might have changed. It
+   will recalculate and update the metadata hash in the bootblock if needed. */
+static int maybe_update_metadata_hash(struct cbfs_image *cbfs)
+{
+	if (strcmp(param.region_name, SECTION_NAME_PRIMARY_CBFS))
+		return 0;  /* Metadata hash only embedded in primary CBFS. */
+
+	struct mh_cache *mhc = get_mh_cache();
+	if (mhc->cbfs_hash.algo == VB2_HASH_INVALID)
+		return 0;
+
+	cb_err_t err = cbfs_walk(cbfs, NULL, NULL, &mhc->cbfs_hash,
+				 CBFS_WALK_WRITEBACK_HASH);
+	if (err != CB_CBFS_NOT_FOUND) {
+		ERROR("Unexpected cbfs_walk() error %d\n", err);
+		return -1;
+	}
+
+	return update_anchor(mhc, NULL);
+}
+
+/* This should be called after every time the FMAP or the bootblock itself might
+   have changed, and will write the new FMAP hash into the metadata hash anchor
+   in the bootblock if required (usually when the bootblock is first added). */
+static int maybe_update_fmap_hash(void)
+{
+	if (strcmp(param.region_name, SECTION_NAME_BOOTBLOCK) &&
+	    strcmp(param.region_name, SECTION_NAME_FMAP) &&
+	    param.type != CBFS_TYPE_BOOTBLOCK)
+		return 0;	/* FMAP and bootblock didn't change. */
+
+	struct mh_cache *mhc = get_mh_cache();
+	if (mhc->cbfs_hash.algo == VB2_HASH_INVALID)
+		return 0;
+
+	uint8_t fmap_hash[VB2_MAX_DIGEST_SIZE];
+	const struct fmap *fmap = partitioned_file_get_fmap(param.image_file);
+	if (!fmap || vb2_digest_buffer((const void *)fmap, fmap_size(fmap),
+			mhc->cbfs_hash.algo, fmap_hash, sizeof(fmap_hash)))
+		return -1;
+	return update_anchor(mhc, fmap_hash);
+}
 
 static bool region_is_flashmap(const char *region)
 {
@@ -255,7 +418,8 @@ static int find_mmap_window(enum mmap_addr_type addr_type, unsigned int addr)
 		else
 			reg = &mmap_window_table[i].flash_space;
 
-		if (region_offset(reg) <= addr && region_end(reg) >= addr)
+		if (region_offset(reg) <= addr &&
+		   ((uint64_t)region_offset(reg) + (uint64_t)region_sz(reg) - 1) >= addr)
 			return i;
 	}
 
@@ -343,7 +507,7 @@ static int convert_region_offset(unsigned int offset, uint32_t *region_offset)
 	return 0;
 }
 
-static int do_cbfs_locate(int32_t *cbfs_addr, size_t metadata_size,
+static int do_cbfs_locate(uint32_t *cbfs_addr, size_t metadata_size,
 			size_t data_size)
 {
 	if (!param.filename) {
@@ -397,6 +561,8 @@ static int do_cbfs_locate(int32_t *cbfs_addr, size_t metadata_size,
 		if (param.baseaddress_assigned || param.stage_xip)
 			metadata_size += sizeof(struct cbfs_file_attr_position);
 	}
+	if (param.precompression || param.compression != CBFS_COMPRESS_NONE)
+		metadata_size += sizeof(struct cbfs_file_attr_compression);
 
 	/* Take care of the hash attribute if it is used */
 	if (param.hash != VB2_HASH_INVALID)
@@ -405,7 +571,7 @@ static int do_cbfs_locate(int32_t *cbfs_addr, size_t metadata_size,
 	int32_t address = cbfs_locate_entry(&image, data_size, param.pagesize,
 						param.alignment, metadata_size);
 
-	if (address == -1) {
+	if (address < 0) {
 		ERROR("'%s' can't fit in CBFS for page-size %#x, align %#x.\n",
 		      param.name, param.pagesize, param.alignment);
 		return 1;
@@ -450,13 +616,21 @@ static int cbfs_add_integer_component(const char *name,
 
 	header = cbfs_create_file_header(CBFS_TYPE_RAW,
 		buffer.size, name);
+
+	enum vb2_hash_algorithm algo = get_mh_cache()->cbfs_hash.algo;
+	if (algo != VB2_HASH_INVALID)
+		if (cbfs_add_file_hash(header, &buffer, algo)) {
+			ERROR("couldn't add hash for '%s'\n", name);
+			goto done;
+		}
+
 	if (cbfs_add_entry(&image, &buffer, offset, header, 0) != 0) {
 		ERROR("Failed to add %llu into ROM image as '%s'.\n",
 					(long long unsigned)u64val, name);
 		goto done;
 	}
 
-	ret = 0;
+	ret = maybe_update_metadata_hash(&image);
 
 done:
 	free(header);
@@ -563,6 +737,7 @@ static int cbfs_add_master_header(void)
 	h->offset = htonl(offset);
 	h->architecture = htonl(CBFS_ARCHITECTURE_UNKNOWN);
 
+	/* Never add a hash attribute to the master header. */
 	header = cbfs_create_file_header(CBFS_TYPE_CBFSHEADER,
 		buffer_size(&buffer), name);
 	if (cbfs_add_entry(&image, &buffer, 0, header, 0) != 0) {
@@ -593,7 +768,7 @@ static int cbfs_add_master_header(void)
 			return 1;
 	}
 
-	ret = 0;
+	ret = maybe_update_metadata_hash(&image);
 
 done:
 	free(header);
@@ -642,11 +817,16 @@ static int add_topswap_bootblock(struct buffer *buffer, uint32_t *offset)
 static int cbfs_add_component(const char *filename,
 			      const char *name,
 			      uint32_t type,
-			      uint32_t offset,
 			      uint32_t headeroffset,
 			      convert_buffer_t convert)
 {
 	size_t len_align = 0;
+	uint32_t offset = param.baseaddress_assigned ? param.baseaddress : 0;
+
+	if (param.alignment && param.baseaddress_assigned) {
+		ERROR("Cannot specify both alignment and base address\n");
+		return 1;
+	}
 
 	if (!filename) {
 		ERROR("You need to specify -f/--filename.\n");
@@ -678,30 +858,50 @@ static int cbfs_add_component(const char *filename,
 		return 1;
 	}
 
+	struct cbfs_file *header =
+		cbfs_create_file_header(type, buffer.size, name);
+
+	/* Bootblock and CBFS header should never have file hashes. When adding
+	   the bootblock it is important that we *don't* look up the metadata
+	   hash yet (before it is added) or we'll cache an outdated result. */
+	if (type != CBFS_TYPE_BOOTBLOCK && type != CBFS_TYPE_CBFSHEADER) {
+		enum vb2_hash_algorithm mh_algo = get_mh_cache()->cbfs_hash.algo;
+		if (mh_algo != VB2_HASH_INVALID && param.hash != mh_algo) {
+			if (param.hash == VB2_HASH_INVALID) {
+				param.hash = mh_algo;
+			} else {
+				ERROR("Cannot specify hash %s that's different from metadata hash algorithm %s\n",
+				      vb2_get_hash_algorithm_name(param.hash),
+				      vb2_get_hash_algorithm_name(mh_algo));
+				goto error;
+			}
+		}
+	}
+
+	/* This needs to run after potentially updating param.hash above. */
+	if (param.alignment)
+		if (do_cbfs_locate(&offset, 0, 0))
+			goto error;
+
 	/*
 	 * Check if Intel CPU topswap is specified this will require a
 	 * second bootblock to be added.
 	 */
 	if (type == CBFS_TYPE_BOOTBLOCK && param.topswap_size)
 		if (add_topswap_bootblock(&buffer, &offset))
-			return 1;
-
-	struct cbfs_file *header =
-		cbfs_create_file_header(type, buffer.size, name);
+			goto error;
 
 	if (convert && convert(&buffer, &offset, header) != 0) {
 		ERROR("Failed to parse file '%s'.\n", filename);
-		buffer_delete(&buffer);
-		return 1;
+		goto error;
 	}
 
-	if (param.hash != VB2_HASH_INVALID)
-		if (cbfs_add_file_hash(header, &buffer, param.hash) == -1) {
-			ERROR("couldn't add hash for '%s'\n", name);
-			free(header);
-			buffer_delete(&buffer);
-			return 1;
-		}
+	/* This needs to run after convert(). */
+	if (param.hash != VB2_HASH_INVALID &&
+	    cbfs_add_file_hash(header, &buffer, param.hash) == -1) {
+		ERROR("couldn't add hash for '%s'\n", name);
+		goto error;
+	}
 
 	if (param.autogen_attr) {
 		/* Add position attribute if assigned */
@@ -712,17 +912,8 @@ static int cbfs_add_component(const char *filename,
 					CBFS_FILE_ATTR_TAG_POSITION,
 					sizeof(struct cbfs_file_attr_position));
 			if (attrs == NULL)
-				return -1;
-			/* If we add a stage or a payload, we need to take  */
-			/* care about the additional metadata that is added */
-			/* to the cbfs file and therefore set the position  */
-			/* the real beginning of the data. */
-			if (type == CBFS_TYPE_STAGE)
-				attrs->position = htonl(offset - sizeof(struct cbfs_stage));
-			else if (type == CBFS_TYPE_SELF)
-				attrs->position = htonl(offset - sizeof(struct cbfs_payload));
-			else
-				attrs->position = htonl(offset);
+				goto error;
+			attrs->position = htonl(offset);
 		}
 		/* Add alignment attribute if used */
 		if (param.alignment) {
@@ -732,7 +923,7 @@ static int cbfs_add_component(const char *filename,
 					CBFS_FILE_ATTR_TAG_ALIGNMENT,
 					sizeof(struct cbfs_file_attr_align));
 			if (attrs == NULL)
-				return -1;
+				goto error;
 			attrs->alignment = htonl(param.alignment);
 		}
 	}
@@ -743,21 +934,22 @@ static int cbfs_add_component(const char *filename,
 				CBFS_FILE_ATTR_TAG_IBB,
 				sizeof(struct cbfs_file_attribute));
 		if (attrs == NULL)
-			return -1;
+			goto error;
 		/* For Intel TXT minimum align is 16 */
 		len_align = 16;
 	}
 
 	if (param.padding) {
 		const uint32_t hs = sizeof(struct cbfs_file_attribute);
-		uint32_t size = MAX(hs, param.padding);
+		uint32_t size = ALIGN_UP(MAX(hs, param.padding),
+					 CBFS_ATTRIBUTE_ALIGN);
 		INFO("Padding %d bytes\n", size);
 		struct cbfs_file_attribute *attr =
 			(struct cbfs_file_attribute *)cbfs_add_file_attr(
 					header, CBFS_FILE_ATTR_TAG_PADDING,
 					size);
 		if (attr == NULL)
-			return -1;
+			goto error;
 	}
 
 	if (IS_HOST_SPACE_ADDRESS(offset))
@@ -765,14 +957,18 @@ static int cbfs_add_component(const char *filename,
 
 	if (cbfs_add_entry(&image, &buffer, offset, header, len_align) != 0) {
 		ERROR("Failed to add '%s' into ROM image.\n", filename);
-		free(header);
-		buffer_delete(&buffer);
-		return 1;
+		goto error;
 	}
 
 	free(header);
 	buffer_delete(&buffer);
-	return 0;
+
+	return maybe_update_metadata_hash(&image) || maybe_update_fmap_hash();
+
+error:
+	free(header);
+	buffer_delete(&buffer);
+	return 1;
 }
 
 static int cbfstool_convert_raw(struct buffer *buffer,
@@ -899,43 +1095,94 @@ static int cbfstool_convert_mkstage(struct buffer *buffer, uint32_t *offset,
 	struct cbfs_file *header)
 {
 	struct buffer output;
+	size_t data_size;
 	int ret;
 
+	if (elf_program_file_size(buffer, &data_size) < 0) {
+		ERROR("Could not obtain ELF size\n");
+		return 1;
+	}
+
+	/*
+	 * If we already did a locate for alignment we need to locate again to
+	 * take the stage header into account. XIP stage parsing also needs the
+	 * location. But don't locate in other cases, because it will ignore
+	 * compression (not applied yet) and thus may cause us to refuse adding
+	 * stages that would actually fit once compressed.
+	 */
+	if ((param.alignment || param.stage_xip) &&
+	     do_cbfs_locate(offset, sizeof(struct cbfs_file_attr_stageheader),
+			    data_size))  {
+		ERROR("Could not find location for stage.\n");
+		return 1;
+	}
+
+	struct cbfs_file_attr_stageheader *stageheader = (void *)
+		cbfs_add_file_attr(header, CBFS_FILE_ATTR_TAG_STAGEHEADER,
+				   sizeof(struct cbfs_file_attr_stageheader));
+	if (!stageheader)
+		return -1;
+
 	if (param.stage_xip) {
-		int32_t address;
-		size_t data_size;
-
-		if (elf_program_file_size(buffer, &data_size) < 0) {
-			ERROR("Could not obtain ELF size\n");
-			return 1;
-		}
-
-		if (do_cbfs_locate(&address, sizeof(struct cbfs_stage),
-			data_size))  {
-			ERROR("Could not find location for XIP stage.\n");
-			return 1;
-		}
-
 		/*
 		 * Ensure the address is a memory mapped one. This assumes
 		 * x86 semantics about the boot media being directly mapped
 		 * below 4GiB in the CPU address space.
 		 **/
-		*offset = convert_addr_space(param.image_region, address);
+		*offset = convert_addr_space(param.image_region, *offset);
 
 		ret = parse_elf_to_xip_stage(buffer, &output, offset,
-						param.ignore_section);
-	} else
-		ret = parse_elf_to_stage(buffer, &output, param.compression,
-					 offset, param.ignore_section);
-
+					     param.ignore_section,
+					     stageheader);
+	} else {
+		ret = parse_elf_to_stage(buffer, &output, param.ignore_section,
+					 stageheader);
+	}
 	if (ret != 0)
 		return -1;
+
+	/* Store a hash of original uncompressed stage to compare later. */
+	size_t decmp_size = buffer_size(&output);
+	uint32_t decmp_hash = XXH32(buffer_get(&output), decmp_size, 0);
+
+	/* Chain to base conversion routine to handle compression. */
+	ret = cbfstool_convert_raw(&output, offset, header);
+	if (ret != 0)
+		goto fail;
+
+	/* Special care must be taken for LZ4-compressed stages that the BSS is
+	   large enough to provide scratch space for in-place decompression. */
+	if (!param.precompression && param.compression == CBFS_COMPRESS_LZ4) {
+		size_t memlen = ntohl(stageheader->memlen);
+		size_t compressed_size = buffer_size(&output);
+		uint8_t *compare_buffer = malloc(memlen);
+		uint8_t *start = compare_buffer + memlen - compressed_size;
+		if (!compare_buffer) {
+			ERROR("Out of memory\n");
+			goto fail;
+		}
+		memcpy(start, buffer_get(&output), compressed_size);
+		ret = ulz4fn(start, compressed_size, compare_buffer, memlen);
+		if  (ret == 0) {
+			ERROR("Not enough scratch space to decompress LZ4 in-place -- increase BSS size or disable compression!\n");
+			free(compare_buffer);
+			goto fail;
+		} else if (ret != (int)decmp_size ||
+			   decmp_hash != XXH32(compare_buffer, decmp_size, 0)) {
+			ERROR("LZ4 compression BUG! Report to mailing list.\n");
+			free(compare_buffer);
+			goto fail;
+		}
+		free(compare_buffer);
+	}
+
 	buffer_delete(buffer);
-	// Direct assign, no dupe.
-	memcpy(buffer, &output, sizeof(*buffer));
-	header->len = htonl(output.size);
+	buffer_clone(buffer, &output);
 	return 0;
+
+fail:
+	buffer_delete(&output);
+	return -1;
 }
 
 static int cbfstool_convert_mkpayload(struct buffer *buffer,
@@ -995,16 +1242,7 @@ static int cbfstool_convert_mkflatpayload(struct buffer *buffer,
 
 static int cbfs_add(void)
 {
-	int32_t address;
-	convert_buffer_t convert;
-	uint32_t local_baseaddress = param.baseaddress;
-
-	if (param.alignment && param.baseaddress) {
-		ERROR("Cannot specify both alignment and base address\n");
-		return 1;
-	}
-
-	convert = cbfstool_convert_raw;
+	convert_buffer_t convert = cbfstool_convert_raw;
 
 	/* Set the alignment to 4KiB minimum for FSP blobs when no base address
 	 * is provided so that relocation can occur. */
@@ -1017,18 +1255,9 @@ static int cbfs_add(void)
 		return 1;
 	}
 
-	if (param.alignment) {
-		/* CBFS compression file attribute is unconditionally added. */
-		size_t metadata_sz = sizeof(struct cbfs_file_attr_compression);
-		if (do_cbfs_locate(&address, metadata_sz, 0))
-			return 1;
-		local_baseaddress = address;
-	}
-
 	return cbfs_add_component(param.filename,
 				  param.name,
 				  param.type,
-				  local_baseaddress,
 				  param.headeroffset,
 				  convert);
 }
@@ -1050,7 +1279,6 @@ static int cbfs_add_stage(void)
 	return cbfs_add_component(param.filename,
 				  param.name,
 				  CBFS_TYPE_STAGE,
-				  param.baseaddress,
 				  param.headeroffset,
 				  cbfstool_convert_mkstage);
 }
@@ -1060,7 +1288,6 @@ static int cbfs_add_payload(void)
 	return cbfs_add_component(param.filename,
 				  param.name,
 				  CBFS_TYPE_SELF,
-				  param.baseaddress,
 				  param.headeroffset,
 				  cbfstool_convert_mkpayload);
 }
@@ -1080,7 +1307,6 @@ static int cbfs_add_flat_binary(void)
 	return cbfs_add_component(param.filename,
 				  param.name,
 				  CBFS_TYPE_SELF,
-				  param.baseaddress,
 				  param.headeroffset,
 				  cbfstool_convert_mkflatpayload);
 }
@@ -1115,7 +1341,7 @@ static int cbfs_remove(void)
 		return 1;
 	}
 
-	return 0;
+	return maybe_update_metadata_hash(&image);
 }
 
 static int cbfs_create(void)
@@ -1286,6 +1512,33 @@ static int cbfs_print(void)
 		cbfs_print_directory(&image);
 	}
 
+	if (verbose) {
+		struct mh_cache *mhc = get_mh_cache();
+		if (mhc->cbfs_hash.algo == VB2_HASH_INVALID)
+			return 0;
+
+		struct vb2_hash real_hash = { .algo = mhc->cbfs_hash.algo };
+		cb_err_t err = cbfs_walk(&image, NULL, NULL, &real_hash,
+					 CBFS_WALK_WRITEBACK_HASH);
+		if (err != CB_CBFS_NOT_FOUND) {
+			ERROR("Unexpected cbfs_walk() error %d\n", err);
+			return 1;
+		}
+		char *hash_str = bintohex(real_hash.raw,
+				vb2_digest_size(real_hash.algo));
+		printf("[METADATA HASH]\t%s:%s",
+		       vb2_get_hash_algorithm_name(real_hash.algo), hash_str);
+		if (!strcmp(param.region_name, SECTION_NAME_PRIMARY_CBFS)) {
+			if (!memcmp(mhc->cbfs_hash.raw, real_hash.raw,
+				    vb2_digest_size(real_hash.algo)))
+				printf(":valid");
+			else
+				printf(":invalid");
+		}
+		printf("\n");
+		free(hash_str);
+	}
+
 	return 0;
 }
 
@@ -1384,7 +1637,8 @@ static int cbfs_write(void)
 	memcpy(param.image_region->data + offset, new_content.data,
 							new_content.size);
 	buffer_delete(&new_content);
-	return 0;
+
+	return maybe_update_fmap_hash();
 }
 
 static int cbfs_read(void)
@@ -1689,7 +1943,7 @@ static void usage(char *name)
 			"Find a place for a file of that size\n"
 	     " layout [-w]                                                 "
 			"List mutable (or, with -w, readable) image regions\n"
-	     " print [-r image,regions]                                    "
+	     " print [-r image,regions] [-k]                               "
 			"Show the contents of the ROM\n"
 	     " extract [-r image,regions] [-m ARCH] -n NAME -f FILE [-U]   "
 			"Extracts a file from ROM\n"

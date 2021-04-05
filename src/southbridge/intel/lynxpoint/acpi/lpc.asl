@@ -2,6 +2,8 @@
 
 // Intel LPC Bus Device  - 0:1f.0
 
+#include <southbridge/intel/lynxpoint/pch.h>
+
 Device (LPCB)
 {
 	Name (_ADR, 0x001f0000)
@@ -69,17 +71,7 @@ Device (LPCB)
 
 		Method (_STA, 0)	// Device Status
 		{
-			If (HPTE) {
-				// Note: Ancient versions of Windows don't want
-				// to see the HPET in order to work right
-				If (OSYS >= 2001) {
-					Return (0xf)	// Enable and show device
-				} Else {
-					Return (0xb)	// Enable and don't show device
-				}
-			}
-
-			Return (0x0)	// Not enabled, don't show.
+			Return (\HPTS(HPTE))
 		}
 
 		Method (_CRS, 0, Serialized) // Current resources

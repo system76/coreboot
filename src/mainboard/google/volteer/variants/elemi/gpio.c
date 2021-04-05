@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 
+#include <acpi/acpi.h>
 #include <baseboard/gpio.h>
 #include <baseboard/variants.h>
 #include <commonlib/helpers.h>
@@ -18,8 +19,6 @@ static const struct pad_config override_gpio_table[] = {
 	PAD_CFG_NF(GPP_A16, NONE, DEEP, NF1),
 	/* A18 : DDSP_HPDB ==> HDMI_HPD */
 	PAD_CFG_NF(GPP_A18, NONE, DEEP, NF1),
-	/* A21 : DDPC_CTRCLK ==> EN_FP_PWR */
-	PAD_CFG_GPO(GPP_A21, 1, DEEP),
 	/* A22 : DDPC_CTRLDATA ==> EN_HDMI_PWR */
 	PAD_CFG_GPO(GPP_A22, 1, DEEP),
 	/* A23 : I2S1_SCLK ==> I2S1_SPKR_SCLK */
@@ -31,10 +30,6 @@ static const struct pad_config override_gpio_table[] = {
 	PAD_CFG_GPI(GPP_B3, NONE, DEEP),
 	/* B4  : CPU_GP3==> EN_PP3300_EMMC */
 	PAD_CFG_GPO(GPP_B4, 1, DEEP),
-	/* B7  : ISH_12C1_SDA ==> ISH_I2C0_SENSOR_SDA */
-	PAD_CFG_NF(GPP_B7, NONE, DEEP, NF1),
-	/* B8  : ISH_I2C1_SCL ==> ISH_I2C0_SENSOR_SCL */
-	PAD_CFG_NF(GPP_B8, NONE, DEEP, NF1),
 	/* B9  : I2C5_SDA ==> PCH_I2C5_TRACKPAD_SDA */
 	PAD_CFG_NF(GPP_B9, NONE, DEEP, NF1),
 	/* B10 : I2C5_SCL ==> PCH_I2C5_TRACKPAD_SCL */
@@ -71,8 +66,6 @@ static const struct pad_config override_gpio_table[] = {
 	PAD_CFG_GPI_INT(GPP_C20, NONE, PLTRST, LEVEL),
 	/* C22 : UART2_RTS# ==> PCH_FPMCU_BOOT0 */
 	PAD_CFG_GPO(GPP_C22, 0, DEEP),
-	/* C23 : UART2_CTS# ==> FPMCU_RST_ODL */
-	PAD_CFG_GPO(GPP_C23, 1, DEEP),
 
 	/* D6  : SRCCLKREQ1# ==> WLAN_CLKREQ_ODL */
 	PAD_CFG_NF(GPP_D6, NONE, DEEP, NF1),
@@ -178,6 +171,11 @@ static const struct pad_config override_gpio_table[] = {
 
 /* Early pad configuration in bootblock */
 static const struct pad_config early_gpio_table[] = {
+	/* C8 : UART0 RX */
+	PAD_CFG_NF(GPP_C8, NONE, DEEP, NF1),
+	/* C9 : UART0 TX */
+	PAD_CFG_NF(GPP_C9, NONE, DEEP, NF1),
+
 	/* A12 : SATAXPCIE1 ==> M2_SSD_PEDET */
 	PAD_CFG_NF(GPP_A12, NONE, DEEP, NF1),
 	/* A13 : PMC_I2C_SCL ==> BT_DISABLE_L */
@@ -226,4 +224,20 @@ const struct pad_config *variant_early_gpio_table(size_t *num)
 {
 	*num = ARRAY_SIZE(early_gpio_table);
 	return early_gpio_table;
+}
+
+/* GPIO settings before entering S5 */
+static const struct pad_config s5_sleep_gpio_table[] = {
+	PAD_CFG_GPO(GPP_C23, 0, DEEP), /* FPMCU_RST_ODL */
+	PAD_CFG_GPO(GPP_A21, 0, DEEP), /* EN_FP_PWR */
+};
+
+const struct pad_config *variant_sleep_gpio_table(u8 slp_typ, size_t *num)
+{
+	if (slp_typ == ACPI_S5) {
+		*num = ARRAY_SIZE(s5_sleep_gpio_table);
+		return s5_sleep_gpio_table;
+	}
+	*num = 0;
+	return NULL;
 }

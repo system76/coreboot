@@ -27,18 +27,6 @@ __attribute__((aligned(16)));
  * The components are assumed to consist of one consecutive region.
  */
 
-/* These parameters are used by the SMM stub code. A pointer to the params
- * is also passed to the C-base handler. */
-struct smm_stub_params {
-	u32 stack_size;
-	u32 stack_top;
-	u32 c_handler;
-	u32 c_handler_arg;
-	u32 fxsave_area;
-	u32 fxsave_area_size;
-	struct smm_runtime runtime;
-} __packed;
-
 /*
  * The stub is the entry point that sets up protected mode and stacks for each
  * CPU. It then calls into the SMM handler module. It is encoded as an rmodule.
@@ -101,7 +89,7 @@ static int smm_create_map(uintptr_t smbase, unsigned int num_cpus,
 	unsigned int i;
 	struct rmodule smm_stub;
 	unsigned int ss_size = params->per_cpu_save_state_size, stub_size;
-	unsigned int smm_entry_offset = params->smm_main_entry_offset;
+	unsigned int smm_entry_offset = SMM_ENTRY_OFFSET;
 	unsigned int seg_count = 0, segments = 0, available;
 	unsigned int cpus_in_segment = 0;
 	unsigned int base = smbase;
@@ -129,15 +117,9 @@ static int smm_create_map(uintptr_t smbase, unsigned int num_cpus,
 		return 0;
 	}
 
-	if (sizeof(cpus) / sizeof(struct cpu_smm_info) < num_cpus) {
+	if (ARRAY_SIZE(cpus) < num_cpus) {
 		printk(BIOS_ERR,
 			"%s: increase MAX_CPUS in Kconfig\n", __func__);
-		return 0;
-	}
-
-	if (stub_size > ss_size) {
-		printk(BIOS_ERR, "%s: Save state larger than SMM stub size\n", __func__);
-		printk(BIOS_ERR, "    Decrease stub size or increase the size allocated for the save state\n");
 		return 0;
 	}
 
@@ -226,24 +208,19 @@ static int smm_place_entry_code(uintptr_t smbase, unsigned int num_cpus,
 {
 	unsigned int i;
 	unsigned int size;
-	if (smm_create_map(smbase, num_cpus, params)) {
-		/*
-		 * Ensure there was enough space and the last CPUs smbase
-		 * did not encroach upon the stack. Stack top is smram start
-		 * + size of stack.
-		 */
-		if (cpus[num_cpus].active) {
-			if (cpus[num_cpus - 1].smbase +
-				params->smm_main_entry_offset < stack_top) {
-				printk(BIOS_ERR, "%s: stack encroachment\n", __func__);
+
+	/*
+	 * Ensure there was enough space and the last CPUs smbase
+	 * did not encroach upon the stack. Stack top is smram start
+	 * + size of stack.
+	 */
+	if (cpus[num_cpus].active) {
+		if (cpus[num_cpus - 1].smbase + SMM_ENTRY_OFFSET < stack_top) {
+			printk(BIOS_ERR, "%s: stack encroachment\n", __func__);
 				printk(BIOS_ERR, "%s: smbase %zx, stack_top %lx\n",
-					__func__, cpus[num_cpus].smbase, stack_top);
+				       __func__, cpus[num_cpus].smbase, stack_top);
 				return 0;
-			}
 		}
-	} else {
-		printk(BIOS_ERR, "%s: unable to place smm entry code\n", __func__);
-		return 0;
 	}
 
 	printk(BIOS_INFO, "%s: smbase %zx, stack_top %lx\n",
@@ -266,8 +243,7 @@ static int smm_place_entry_code(uintptr_t smbase, unsigned int num_cpus,
  * Place stacks in base -> base + size region, but ensure the stacks don't
  * overlap the staggered entry points.
  */
-static void *smm_stub_place_stacks(char *base, size_t size,
-				   struct smm_loader_params *params)
+static void *smm_stub_place_stacks(char *base, struct smm_loader_params *params)
 {
 	size_t total_stack_size;
 	char *stacks_top;
@@ -279,15 +255,9 @@ static void *smm_stub_place_stacks(char *base, size_t size,
 	printk(BIOS_DEBUG, "%s: cpus: %zx : stack space: needed -> %zx\n",
 		__func__, params->num_concurrent_stacks,
 		total_stack_size);
-	printk(BIOS_DEBUG, "  available -> %zx : per_cpu_stack_size : %zx\n",
-		size, params->per_cpu_stack_size);
 
 	/* There has to be at least one stack user. */
 	if (params->num_concurrent_stacks < 1)
-		return NULL;
-
-	/* Total stack size cannot fit. */
-	if (total_stack_size > size)
 		return NULL;
 
 	/* Stacks extend down to SMBASE */
@@ -333,20 +303,20 @@ static int smm_stub_place_staggered_entry_points(char *base,
  *
  * The save state and smm stack are treated as contiguous for the number of
  * concurrent areas requested. The save state always lives at the top of the
- * the CPUS smbase (and the entry point is at offset 0x8000). This allows only a certain
+ * CPUS smbase (and the entry point is at offset 0x8000). This allows only a certain
  * number of CPUs with staggered entry points until the save state area comes
  * down far enough to overwrite/corrupt the entry code (stub code). Therefore,
  * an SMM map is created to avoid this corruption, see smm_create_map() above.
  * This module setup code works for the default (0x30000) SMM handler setup and the
  * permanent SMM handler.
  */
-static int smm_module_setup_stub(void *smbase, size_t smm_size,
+static int smm_module_setup_stub(void *const smbase, const size_t smm_size,
 				 struct smm_loader_params *params,
-				 void *fxsave_area)
+				 void *const fxsave_area,
+				 void *const smram_start)
 {
 	size_t total_save_state_size;
 	size_t smm_stub_size;
-	size_t stub_entry_offset;
 	char *smm_stub_loc;
 	void *stacks_top;
 	size_t size;
@@ -354,7 +324,6 @@ static int smm_module_setup_stub(void *smbase, size_t smm_size,
 	size_t i;
 	struct smm_stub_params *stub_params;
 	struct rmodule smm_stub;
-	unsigned int total_size_all;
 	base = smbase;
 	size = smm_size;
 
@@ -383,10 +352,10 @@ static int smm_module_setup_stub(void *smbase, size_t smm_size,
 	size -= total_save_state_size;
 
 	/* The save state size encroached over the first SMM entry point. */
-	if (size <= params->smm_main_entry_offset) {
+	if (size <= SMM_ENTRY_OFFSET) {
 		printk(BIOS_ERR, "%s: encroachment over SMM entry point\n", __func__);
 		printk(BIOS_ERR, "%s: state save size: %zx : smm_entry_offset -> %lx\n",
-			__func__, size, params->smm_main_entry_offset);
+		       __func__, size, (size_t)SMM_ENTRY_OFFSET);
 		return -1;
 	}
 
@@ -399,13 +368,12 @@ static int smm_module_setup_stub(void *smbase, size_t smm_size,
 
 	smm_stub_loc = NULL;
 	smm_stub_size = rmodule_memory_size(&smm_stub);
-	stub_entry_offset = rmodule_entry_offset(&smm_stub);
 
 	/* Put the stub at the main entry point */
-	smm_stub_loc = &base[params->smm_main_entry_offset];
+	smm_stub_loc = &base[SMM_ENTRY_OFFSET];
 
 	/* Stub is too big to fit. */
-	if (smm_stub_size > (size - params->smm_main_entry_offset)) {
+	if (smm_stub_size > (size - SMM_ENTRY_OFFSET)) {
 		printk(BIOS_ERR, "%s: stub is too big to fit\n", __func__);
 		return -1;
 	}
@@ -414,14 +382,9 @@ static int smm_module_setup_stub(void *smbase, size_t smm_size,
 	 * for default handler, but for relocated handler it lives at the beginning
 	 * of SMRAM which is TSEG base
 	 */
-	const size_t total_stack_size = params->num_concurrent_stacks *
-		params->per_cpu_stack_size;
-	stacks_top = smm_stub_place_stacks((char *)params->smram_start, total_stack_size,
-					   params);
+	stacks_top = smm_stub_place_stacks(smram_start, params);
 	if (stacks_top == NULL) {
-		printk(BIOS_ERR, "%s: not enough space for stacks\n", __func__);
-		printk(BIOS_ERR, "%s: ....need -> %p : available -> %zx\n", __func__,
-			base, total_stack_size);
+		printk(BIOS_ERR, "%s: error assigning stacks\n", __func__);
 		return -1;
 	}
 	params->stack_top = stacks_top;
@@ -441,49 +404,31 @@ static int smm_module_setup_stub(void *smbase, size_t smm_size,
 	stub_params->stack_top = (uintptr_t)stacks_top;
 	stub_params->stack_size = params->per_cpu_stack_size;
 	stub_params->c_handler = (uintptr_t)params->handler;
-	stub_params->c_handler_arg = (uintptr_t)params->handler_arg;
 	stub_params->fxsave_area = (uintptr_t)fxsave_area;
 	stub_params->fxsave_area_size = FXSAVE_SIZE;
-	stub_params->runtime.smbase = (uintptr_t)smbase;
-	stub_params->runtime.smm_size = smm_size;
-	stub_params->runtime.save_state_size = params->per_cpu_save_state_size;
-	stub_params->runtime.num_cpus = params->num_concurrent_stacks;
-	stub_params->runtime.gnvs_ptr = (uintptr_t)acpi_get_gnvs();
 
+	const size_t total_stack_size =
+		params->num_concurrent_stacks * params->per_cpu_stack_size;
 	printk(BIOS_DEBUG, "%s: stack_end = 0x%lx\n",
 		__func__, stub_params->stack_top - total_stack_size);
 	printk(BIOS_DEBUG,
 		"%s: stack_top = 0x%x\n", __func__, stub_params->stack_top);
 	printk(BIOS_DEBUG, "%s: stack_size = 0x%x\n",
 		__func__, stub_params->stack_size);
-	printk(BIOS_DEBUG, "%s: runtime.smbase = 0x%x\n",
-		__func__, stub_params->runtime.smbase);
 	printk(BIOS_DEBUG, "%s: runtime.start32_offset = 0x%x\n", __func__,
-		stub_params->runtime.start32_offset);
+		stub_params->start32_offset);
 	printk(BIOS_DEBUG, "%s: runtime.smm_size = 0x%zx\n",
 		__func__, smm_size);
-	printk(BIOS_DEBUG, "%s: per_cpu_save_state_size = 0x%x\n",
-		__func__, stub_params->runtime.save_state_size);
-	printk(BIOS_DEBUG, "%s: num_cpus = 0x%x\n", __func__,
-		stub_params->runtime.num_cpus);
-	printk(BIOS_DEBUG, "%s: total_save_state_size = 0x%x\n",
-		__func__, (stub_params->runtime.save_state_size *
-		stub_params->runtime.num_cpus));
-	total_size_all = stub_params->stack_size +
-		(stub_params->runtime.save_state_size *
-		stub_params->runtime.num_cpus);
-	printk(BIOS_DEBUG, "%s: total_size_all = 0x%x\n", __func__,
-		total_size_all);
 
 	/* Initialize the APIC id to CPU number table to be 1:1 */
 	for (i = 0; i < params->num_concurrent_stacks; i++)
-		stub_params->runtime.apic_id_to_cpu[i] = i;
+		stub_params->apic_id_to_cpu[i] = i;
 
 	/* Allow the initiator to manipulate SMM stub parameters. */
-	params->runtime = &stub_params->runtime;
+	params->stub_params = stub_params;
 
-	printk(BIOS_DEBUG, "SMM Module: stub loaded at %p. Will call %p(%p)\n",
-	       smm_stub_loc, params->handler, params->handler_arg);
+	printk(BIOS_DEBUG, "SMM Module: stub loaded at %p. Will call %p\n",
+	       smm_stub_loc, params->handler);
 	return 0;
 }
 
@@ -511,11 +456,8 @@ int smm_setup_relocation_handler(struct smm_loader_params *params)
 	if (params->num_concurrent_stacks == 0)
 		params->num_concurrent_stacks = CONFIG_MAX_CPUS;
 
-	params->smm_main_entry_offset = SMM_ENTRY_OFFSET;
-	params->smram_start = SMM_DEFAULT_BASE;
-	params->smram_end = SMM_DEFAULT_BASE + SMM_DEFAULT_SIZE;
 	return smm_module_setup_stub(smram, SMM_DEFAULT_SIZE,
-				params, fxsave_area_relocation);
+				params, fxsave_area_relocation, smram);
 	printk(BIOS_SPEW, "%s: exit\n", __func__);
 }
 
@@ -548,6 +490,7 @@ int smm_setup_relocation_handler(struct smm_loader_params *params)
 int smm_load_module(void *smram, size_t size, struct smm_loader_params *params)
 {
 	struct rmodule smm_mod;
+	struct smm_runtime *handler_mod_params;
 	size_t total_stack_size;
 	size_t handler_size;
 	size_t module_alignment;
@@ -556,7 +499,7 @@ int smm_load_module(void *smram, size_t size, struct smm_loader_params *params)
 	void *fxsave_area;
 	size_t total_size = 0;
 	char *base;
-
+	void *smram_start = smram;
 	if (size <= SMM_DEFAULT_SIZE)
 		return -1;
 
@@ -565,9 +508,6 @@ int smm_load_module(void *smram, size_t size, struct smm_loader_params *params)
 	 */
 	base = smram;
 	base += size;
-	params->smram_start = (uintptr_t)smram;
-	params->smram_end = params->smram_start + size;
-	params->smm_main_entry_offset = SMM_ENTRY_OFFSET;
 
 	/* Fail if can't parse the smm rmodule. */
 	if (rmodule_parse(&_binary_smm_start, &smm_mod))
@@ -630,7 +570,12 @@ int smm_load_module(void *smram, size_t size, struct smm_loader_params *params)
 		return -1;
 
 	params->handler = rmodule_entry(&smm_mod);
-	params->handler_arg = rmodule_parameters(&smm_mod);
+	handler_mod_params = rmodule_parameters(&smm_mod);
+	handler_mod_params->smbase = (uintptr_t)smram;
+	handler_mod_params->smm_size = size;
+	handler_mod_params->save_state_size = params->real_cpu_save_state_size;
+	handler_mod_params->num_cpus = params->num_concurrent_stacks;
+	handler_mod_params->gnvs_ptr = (uintptr_t)acpi_get_gnvs();
 
 	printk(BIOS_DEBUG, "%s: smram_start: 0x%p\n",
 		 __func__, smram);
@@ -642,8 +587,6 @@ int smm_load_module(void *smram, size_t size, struct smm_loader_params *params)
 		 __func__, params->handler);
 	printk(BIOS_DEBUG, "%s: handler_size %zx\n",
 		 __func__, handler_size);
-	printk(BIOS_DEBUG, "%s: handler_arg %p\n",
-		 __func__, params->handler_arg);
 	printk(BIOS_DEBUG, "%s: fxsave_area %p\n",
 		 __func__, fxsave_area);
 	printk(BIOS_DEBUG, "%s: fxsave_size %zx\n",
@@ -653,12 +596,30 @@ int smm_load_module(void *smram, size_t size, struct smm_loader_params *params)
 	printk(BIOS_DEBUG, "%s: CONFIG_BIOS_RESOURCE_LIST_SIZE 0x%x\n",
 		 __func__, CONFIG_BIOS_RESOURCE_LIST_SIZE);
 
+	printk(BIOS_DEBUG, "%s: handler_mod_params.smbase = 0x%x\n", __func__,
+	       handler_mod_params->smbase);
+	printk(BIOS_DEBUG, "%s: per_cpu_save_state_size = 0x%x\n", __func__,
+	       handler_mod_params->save_state_size);
+	printk(BIOS_DEBUG, "%s: num_cpus = 0x%x\n", __func__, handler_mod_params->num_cpus);
+	printk(BIOS_DEBUG, "%s: total_save_state_size = 0x%x\n", __func__,
+	       (handler_mod_params->save_state_size * handler_mod_params->num_cpus));
+
 	/* CPU 0 smbase goes first, all other CPUs
 	 * will be staggered below
 	 */
 	base -= SMM_CODE_SEGMENT_SIZE;
 	printk(BIOS_DEBUG, "%s: cpu0 entry: %p\n",
 		 __func__, base);
-	params->smm_entry = (uintptr_t)base + params->smm_main_entry_offset;
-	return smm_module_setup_stub(base, size, params, fxsave_area);
+
+	if (!smm_create_map((uintptr_t)base, params->num_concurrent_save_states, params)) {
+		printk(BIOS_ERR, "%s: Error creating CPU map\n", __func__);
+		return -1;
+	}
+
+	for (int i = 0; i < params->num_concurrent_stacks; i++) {
+		handler_mod_params->save_state_top[i] =
+			cpus[i].ss_start + params->per_cpu_save_state_size;
+	}
+
+	return smm_module_setup_stub(base, size, params, fxsave_area, smram_start);
 }

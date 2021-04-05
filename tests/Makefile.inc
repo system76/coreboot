@@ -32,7 +32,7 @@ TEST_CFLAGS += -I$(src)/include -I$(src)/commonlib/include \
 # -Wmissing-prototypes just make working with the test framework cumbersome.
 # Only put conservative warnings here that really detect code that's obviously
 # unintentional.
-TEST_CFLAGS += -Wall -Werror -Wundef -Wstrict-prototypes
+TEST_CFLAGS += -Wall -Werror -Wundef -Wstrict-prototypes -Wno-inline-asm
 
 # Path for Kconfig autoheader
 TEST_CFLAGS += -I$(dir $(TEST_KCONFIG_AUTOHEADER))
@@ -48,6 +48,10 @@ TEST_CFLAGS += -I$(cmockasrc)/include
 TEST_LDFLAGS = -L$(cmockaobj)/src -lcmocka -Wl,-rpath=$(cmockaobj)/src
 TEST_LDFLAGS += -Wl,--gc-sections
 
+# Some memlayout symbols don't work with userspace relocation -- disable it.
+TEST_CFLAGS += -fno-pie -fno-pic
+TEST_LDFLAGS += -no-pie
+
 # Extra attributes for unit tests, declared per test
 attributes:= srcs cflags mocks stage
 
@@ -55,8 +59,8 @@ stages:= decompressor bootblock romstage smm verstage
 stages+= ramstage rmodule postcar libagesa
 
 alltests:=
-subdirs:= tests/arch tests/commonlib tests/console tests/cpu tests/device
-subdirs+= tests/drivers tests/ec tests/lib tests/mainboard
+subdirs:= tests/arch tests/acpi tests/commonlib tests/console tests/cpu
+subdirs+= tests/device tests/drivers tests/ec tests/lib tests/mainboard
 subdirs+= tests/northbridge tests/security tests/soc tests/southbridge
 subdirs+= tests/superio tests/vendorcode
 
@@ -144,7 +148,7 @@ $(TEST_KCONFIG_AUTOCONFIG): $(TEST_KCONFIG_AUTOHEADER)
 
 ifeq ($(JUNIT_OUTPUT),y)
 $(alltests): export CMOCKA_MESSAGE_OUTPUT=xml
-$(alltests): export CMOCKA_XML_FILE=$(testobj)/junit-$(subst /,_,$^).xml
+$(alltests): export CMOCKA_XML_FILE=$(testobj)/junit-$(subst /,_,$^)-%g.xml
 endif
 
 $(alltests): $$($$(@)-bin)

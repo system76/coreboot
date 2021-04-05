@@ -1,12 +1,10 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 
-#include <acpi/acpi_gnvs.h>
+#include <acpi/acpi_pm.h>
 #include <acpi/acpigen.h>
 #include <arch/cpu.h>
 #include <arch/ioapic.h>
 #include <arch/smp/mpspec.h>
-#include <bootstate.h>
-#include <cbmem.h>
 #include <cf9_reset.h>
 #include <console/console.h>
 #include <cpu/intel/turbo.h>
@@ -14,14 +12,13 @@
 #include <cpu/intel/common/common.h>
 #include <cpu/x86/smm.h>
 #include <intelblocks/acpi.h>
+#include <intelblocks/acpi_wake_source.h>
 #include <intelblocks/lpc_lib.h>
 #include <intelblocks/pmclib.h>
 #include <intelblocks/uart.h>
 #include <soc/gpio.h>
 #include <soc/iomap.h>
-#include <soc/nvs.h>
 #include <soc/pm.h>
-#include <string.h>
 
 #define  CPUID_6_EAX_ISST	(1 << 7)
 
@@ -30,7 +27,7 @@ __attribute__((weak)) unsigned long acpi_fill_mcfg(unsigned long current)
 	/* PCI Segment Group 0, Start Bus Number 0, End Bus Number is 255 */
 	current += acpi_create_mcfg_mmconfig((void *)current,
 					     CONFIG_MMCONF_BASE_ADDRESS, 0, 0,
-					     (CONFIG_SA_PCIEX_LENGTH >> 20) - 1);
+					     CONFIG_MMCONF_BUS_NUMBER - 1);
 	return current;
 }
 
@@ -195,27 +192,20 @@ uint32_t acpi_fill_soc_wake(uint32_t generic_pm1_en,
 	return generic_pm1_en;
 }
 
-#if CONFIG(SOC_INTEL_COMMON_ACPI_WAKE_SOURCE)
 /*
  * Save wake source information for calculating ACPI _SWS values
  *
  * @pm1:  PM1_STS register with only enabled events set
  * @gpe0: GPE0_STS registers with only enabled events set
  *
- * return the number of registers in the gpe0 array or -1 if nothing
- * is provided by this function.
+ * return the number of registers in the gpe0 array
  */
 
-static int acpi_fill_wake(uint32_t *pm1, uint32_t **gpe0)
+int soc_fill_acpi_wake(const struct chipset_power_state *ps, uint32_t *pm1, uint32_t **gpe0)
 {
-	struct chipset_power_state *ps;
 	static uint32_t gpe0_sts[GPE0_REG_MAX];
 	uint32_t pm1_en;
 	int i;
-
-	ps = cbmem_find(CBMEM_ID_POWER_STATE);
-	if (ps == NULL)
-		return -1;
 
 	/*
 	 * PM1_EN to check the basic wake events which can happen through
@@ -234,7 +224,6 @@ static int acpi_fill_wake(uint32_t *pm1, uint32_t **gpe0)
 
 	return GPE0_REG_MAX;
 }
-#endif
 
 int common_calculate_power_ratio(int tdp, int p1_ratio, int ratio)
 {
@@ -446,64 +435,3 @@ void generate_cpu_entries(const struct device *device)
 	/* Add a method to notify processor nodes */
 	acpigen_write_processor_cnot(num_virt);
 }
-
-#if CONFIG(SOC_INTEL_COMMON_ACPI_WAKE_SOURCE)
-/* Save wake source data for ACPI _SWS methods in NVS */
-static void acpi_save_wake_source(void *unused)
-{
-	struct global_nvs *gnvs = acpi_get_gnvs();
-	uint32_t pm1, *gpe0;
-	int gpe_reg, gpe_reg_count;
-	int reg_size = sizeof(uint32_t) * 8;
-
-	if (!gnvs)
-		return;
-
-	gnvs->pm1i = -1;
-	gnvs->gpei = -1;
-
-	gpe_reg_count = acpi_fill_wake(&pm1, &gpe0);
-	if (gpe_reg_count < 0)
-		return;
-
-	/* Scan for first set bit in PM1 */
-	for (gnvs->pm1i = 0; gnvs->pm1i < reg_size; gnvs->pm1i++) {
-		if (pm1 & 1)
-			break;
-		pm1 >>= 1;
-	}
-
-	/* If unable to determine then return -1 */
-	if (gnvs->pm1i >= 16)
-		gnvs->pm1i = -1;
-
-	/* Scan for first set bit in GPE registers */
-	for (gpe_reg = 0; gpe_reg < gpe_reg_count; gpe_reg++) {
-		uint32_t gpe = gpe0[gpe_reg];
-		int start = gpe_reg * reg_size;
-		int end = start + reg_size;
-
-		if (gpe == 0) {
-			if (!gnvs->gpei)
-				gnvs->gpei = end;
-			continue;
-		}
-
-		for (gnvs->gpei = start; gnvs->gpei < end; gnvs->gpei++) {
-			if (gpe & 1)
-				break;
-			gpe >>= 1;
-		}
-	}
-
-	/* If unable to determine then return -1 */
-	if (gnvs->gpei >= gpe_reg_count * reg_size)
-		gnvs->gpei = -1;
-
-	printk(BIOS_DEBUG, "ACPI _SWS is PM1 Index %lld GPE Index %lld\n",
-	       (long long)gnvs->pm1i, (long long)gnvs->gpei);
-}
-
-BOOT_STATE_INIT_ENTRY(BS_OS_RESUME, BS_ON_ENTRY, acpi_save_wake_source, NULL);
-
-#endif

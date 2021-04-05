@@ -130,6 +130,7 @@
 #define GPIO_WAKE_S0i3			(1 << 13)
 #define GPIO_WAKE_S3			(1 << 14)
 #define GPIO_WAKE_S4_S5			(1 << 15)
+#define GPIO_WAKE_S0i3_S3		(GPIO_WAKE_S0i3 | GPIO_WAKE_S3)
 #define GPIO_WAKE_S0i3_S4_S5		(GPIO_WAKE_S0i3 | GPIO_WAKE_S4_S5)
 #define GPIO_WAKE_S3_S4_S5		(GPIO_WAKE_S3 | GPIO_WAKE_S4_S5)
 #define GPIO_WAKE_MASK			(7 << 13)
@@ -166,11 +167,16 @@
  * PAD_SCI		The pin is a SCI source
  *	pin		the pin to be programmed
  *	pull		pull up, pull down or no pull
- *	event trigger		LEVEL_LOW, LEVEL_HIGH, EDGE_LOW, EDGE_HIGH
+ *	event trigger	LEVEL_LOW, LEVEL_HIGH, EDGE_LOW, EDGE_HIGH
  * PAD_SMI		The pin is a SMI source
  *	pin		the pin to be programmed
  *	pull		pull up, pull down or no pull
- *	event trigger		LEVEL_LOW, LEVEL_HIGH
+ *      event trigger	LEVEL_LOW, LEVEL_HIGH
+ * PAD_NF_SCI		Define native alternate function and confiure SCI source
+ *	pin		the pin to be programmed
+ *	function	the native function
+ *	pull		pull up, pull down or no pull
+ *	event trigger	LEVEL_LOW, LEVEL_HIGH, EDGE_LOW, EDGE_HIGH
  * PAD_WAKE		The pin can wake, use after PAD_INT or PAD_SCI
  *	pin		the pin to be programmed
  *	pull		pull up, pull down or no pull
@@ -231,6 +237,12 @@
 		PAD_PULL(pull) | PAD_TRIGGER(LEVEL_HIGH),		\
 		PAD_FLAG_EVENT_TRIGGER(trigger) | GPIO_FLAG_SMI)
 
+/* Native function + SCI pad configuration */
+#define PAD_NF_SCI(pin, func, pull, trigger)				\
+	PAD_CFG_STRUCT_FLAGS(pin, pin ## _IOMUX_ ## func,		\
+		PAD_PULL(pull),						\
+		PAD_FLAG_EVENT_TRIGGER(trigger) | GPIO_FLAG_SCI)
+
 /* WAKE pad configuration */
 #define PAD_WAKE(pin, pull, trigger, type)				\
 	PAD_CFG_STRUCT(pin, pin ## _IOMUX_GPIOxx,			\
@@ -241,8 +253,47 @@
 	PAD_CFG_STRUCT(pin, pin ## _IOMUX_GPIOxx,			\
 		PAD_PULL(pull) | PAD_DEBOUNCE_CONFIG(type) | PAD_DEBOUNCE_CONFIG(time))
 
+/* Wake + debounce configuration */
+#define PAD_WAKE_DEBOUNCE(pin, pull, trigger, waketype, debtype, time)	\
+	PAD_CFG_STRUCT(pin, pin ## _IOMUX_GPIOxx,			\
+		PAD_PULL(pull) | PAD_TRIGGER(trigger) | PAD_WAKE_ENABLE(waketype) |	\
+		PAD_DEBOUNCE_CONFIG(debtype) | PAD_DEBOUNCE_CONFIG(time))
+
 /* No-connect pad - configured as input with PULL_DOWN */
 #define PAD_NC(pin)							\
 	PAD_CFG_STRUCT(pin, pin ## _IOMUX_GPIOxx, PAD_PULL(PULL_DOWN))
+
+#define GEVENT_0	0
+#define GEVENT_1	1
+#define GEVENT_2	2
+#define GEVENT_3	3
+#define GEVENT_4	4
+#define GEVENT_5	5
+#define GEVENT_6	6
+#define GEVENT_7	7
+#define GEVENT_8	8
+#define GEVENT_9	9
+#define GEVENT_10	10
+#define GEVENT_11	11
+#define GEVENT_12	12
+#define GEVENT_13	13
+#define GEVENT_14	14
+#define GEVENT_15	15
+#define GEVENT_16	16
+#define GEVENT_17	17
+#define GEVENT_18	18
+#define GEVENT_19	19
+#define GEVENT_20	20
+#define GEVENT_21	21
+#define GEVENT_22	22
+#define GEVENT_23	23
+#define GEVENT_24	24
+#define GEVENT_25	25
+#define GEVENT_26	26
+#define GEVENT_27	27
+#define GEVENT_28	28
+#define GEVENT_29	29
+#define GEVENT_30	30
+#define GEVENT_31	31
 
 #endif /* AMD_BLOCK_GPIO_DEFS_H */

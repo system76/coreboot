@@ -3,16 +3,12 @@ config CPU_INTEL_SOCKET_441
 
 if CPU_INTEL_SOCKET_441
 
-config SOCKET_SPECIFIC_OPTIONS # dummy
+config SOCKET_SPECIFIC_OPTIONS
 	def_bool y
 	select CPU_INTEL_MODEL_106CX
 	select MMX
 	select SSE
 	select SETUP_XIP_CACHE
-
-config C_ENV_BOOTBLOCK_SIZE
-	hex
-	default 0x8000
 
 config DCACHE_RAM_BASE
 	hex

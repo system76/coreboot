@@ -81,9 +81,6 @@ static void azalia_pch_init(struct device *dev, u8 *base)
 	if (!pch_is_lp())
 		pci_and_config32(dev, 0xd0, ~(1 << 31));
 
-	// Select Azalia mode
-	pci_or_config8(dev, 0x40, 1); // Audio Control
-
 	// Docking not supported
 	pci_and_config8(dev, 0x4d, (u8)~(1 << 7)); // Docking Status
 
@@ -124,11 +121,18 @@ static void azalia_init(struct device *dev)
 	}
 }
 
+static void azalia_final(struct device *dev)
+{
+	/* Set HDCFG.BCLD */
+	pci_or_config16(dev, 0x40, 1 << 1);
+}
+
 static struct device_operations azalia_ops = {
 	.read_resources		= pci_dev_read_resources,
 	.set_resources		= pci_dev_set_resources,
 	.enable_resources	= pci_dev_enable_resources,
 	.init			= azalia_init,
+	.final			= azalia_final,
 	.ops_pci		= &pci_dev_ops_pci,
 };
 

@@ -58,6 +58,16 @@ fw_config
 		option BOOT_SATA_DISABLED 0
 		option BOOT_SATA_ENABLED 1
 	end
+	field TOUCHPAD 25
+		option REGULAR_TOUCHPAD 0
+		option NUMPAD_TOUCHPAD 1
+	end
+	field WIFI_SAR_ID 26 27
+		option WIFI_SAR_ID_0 0
+		option WIFI_SAR_ID_1 1
+		option WIFI_SAR_ID_2 2
+		option WIFI_SAR_ID_3 3
+	end
 end
 
 chip soc/intel/tigerlake
@@ -251,6 +261,15 @@ chip soc/intel/tigerlake
 	# Enable DPTF
 	register "dptf_enable" = "1"
 
+	# Enable External Bypass
+	register "external_bypass" = "1"
+
+	# Enable External Clk Gate
+	register "external_clk_gated" = "1"
+
+	# Enable External Phy Gate
+	register "external_phy_gated" = "1"
+
 	register "power_limits_config[POWER_LIMITS_U_2_CORE]" = "{
 		.tdp_pl1_override = 15,
 		.tdp_pl2_override = 38,
@@ -276,7 +295,9 @@ chip soc/intel/tigerlake
 
 	register "tcc_offset" = "10"     # TCC of 90
 
-	register "CnviBtAudioOffload" = "FORCE_ENABLE"
+	register "CnviBtCore" = "true"
+
+	register "CnviBtAudioOffload" = "true"
 
 	# Intel Common SoC Config
 	#+-------------------+---------------------------+
@@ -448,7 +469,6 @@ chip soc/intel/tigerlake
 		end
 		device ref gna on end
 		device ref north_xhci on end
-		device ref cnvi_bt on end
 		device ref south_xhci on end
 		device ref shared_ram on end
 		device ref cnvi_wifi on

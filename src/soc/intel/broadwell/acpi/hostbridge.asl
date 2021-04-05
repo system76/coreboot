@@ -174,11 +174,11 @@ Device (PDRC)
 	Name (_UID, 1)
 
 	Name (PDRS, ResourceTemplate() {
-		Memory32Fixed (ReadWrite, RCBA_BASE_ADDRESS, RCBA_BASE_SIZE)
-		Memory32Fixed (ReadWrite, MCH_BASE_ADDRESS, MCH_BASE_SIZE)
-		Memory32Fixed (ReadWrite, DMI_BASE_ADDRESS, DMI_BASE_SIZE)
-		Memory32Fixed (ReadWrite, EP_BASE_ADDRESS, EP_BASE_SIZE)
-		Memory32Fixed (ReadWrite, MCFG_BASE_ADDRESS, MCFG_BASE_SIZE)
+		Memory32Fixed (ReadWrite, CONFIG_FIXED_RCBA_MMIO_BASE, CONFIG_RCBA_LENGTH)
+		Memory32Fixed (ReadWrite, CONFIG_FIXED_MCHBAR_MMIO_BASE, MCH_BASE_SIZE)
+		Memory32Fixed (ReadWrite, CONFIG_FIXED_DMIBAR_MMIO_BASE, DMI_BASE_SIZE)
+		Memory32Fixed (ReadWrite, CONFIG_FIXED_EPBAR_MMIO_BASE, EP_BASE_SIZE)
+		Memory32Fixed (ReadWrite, CONFIG_MMCONF_BASE_ADDRESS, CONFIG_MMCONF_LENGTH)
 		Memory32Fixed (ReadWrite, EDRAM_BASE_ADDRESS, EDRAM_BASE_SIZE)
 		Memory32Fixed (ReadWrite, GDXC_BASE_ADDRESS, GDXC_BASE_SIZE)
 	})
@@ -194,7 +194,7 @@ Device (PDRC)
 #include "pci_irqs.asl"
 
 /* Configurable TDP */
-#include "ctdp.asl"
+#include <northbridge/intel/haswell/acpi/ctdp.asl>
 
 /* Integrated graphics 0:2.0 */
 #include <drivers/intel/gma/acpi/gfx.asl>

@@ -28,13 +28,15 @@ const (
 	SPDManifestFileName = "lp4x_spd_manifest.generated.txt"
 
 	PlatformTGLADL = 0
-	PlatformJSL = 1
+	PlatformJSL    = 1
+	PlatformCZN    = 2
 )
 
-var platformMap = map[string]int {
+var platformMap = map[string]int{
 	"TGL": PlatformTGLADL,
 	"JSL": PlatformJSL,
 	"ADL": PlatformTGLADL,
+	"CZN": PlatformCZN,
 }
 
 var currPlatform int
@@ -42,39 +44,39 @@ var currPlatform int
 type memAttributes struct {
 	/* Primary attributes - must be provided by JSON file for each part */
 	DensityPerChannelGb int
-	Banks int
-	ChannelsPerDie int
-	DiesPerPackage int
-	BitWidthPerChannel int
-	RanksPerChannel int
-	SpeedMbps int
+	Banks               int
+	ChannelsPerDie      int
+	DiesPerPackage      int
+	BitWidthPerChannel  int
+	RanksPerChannel     int
+	SpeedMbps           int
 
 	/*
 	 * All the following parameters are optional and required only if the part requires
 	 * special parameters as per the datasheet.
 	 */
 	/* Timing parameters */
-	TRFCABNs int
-	TRFCPBNs int
+	TRFCABNs   int
+	TRFCPBNs   int
 	TRPABMinNs int
 	TRPPBMinNs int
-	TCKMinPs int
-	TCKMaxPs int
-	TAAMinPs int
-	TRCDMinNs int
+	TCKMinPs   int
+	TCKMaxPs   int
+	TAAMinPs   int
+	TRCDMinNs  int
 
 	/* CAS */
-	CASLatencies string
-	CASFirstByte byte
+	CASLatencies  string
+	CASFirstByte  byte
 	CASSecondByte byte
-	CASThirdByte byte
+	CASThirdByte  byte
 }
 
 /* This encodes the density in Gb to SPD values as per JESD 21-C */
-var densityGbToSPDEncoding = map[int]byte {
-	4: 0x4,
-	6: 0xb,
-	8: 0x5,
+var densityGbToSPDEncoding = map[int]byte{
+	4:  0x4,
+	6:  0xb,
+	8:  0x5,
 	12: 0x8,
 	16: 0x6,
 	24: 0x9,
@@ -86,10 +88,10 @@ var densityGbToSPDEncoding = map[int]byte {
  * Maps density per physical channel to row-column encoding as per JESD 21-C for a device with
  * x16 physical channel.
  */
-var densityGbx16ChannelToRowColumnEncoding = map[int]byte {
-	4: 0x19, /* 15 rows, 10 columns */
-	6: 0x21, /* 16 rows, 10 columns */
-	8: 0x21, /* 16 rows, 10 columns */
+var densityGbx16ChannelToRowColumnEncoding = map[int]byte{
+	4:  0x19, /* 15 rows, 10 columns */
+	6:  0x21, /* 16 rows, 10 columns */
+	8:  0x21, /* 16 rows, 10 columns */
 	12: 0x29, /* 17 rows, 10 columns */
 	16: 0x29, /* 17 rows, 10 columns */
 }
@@ -99,11 +101,11 @@ var densityGbx16ChannelToRowColumnEncoding = map[int]byte {
  * Maps density per physical channel to row-column encoding as per JESD 21-C for a device with
  * x8 physical channel.
  */
-var densityGbx8ChannelToRowColumnEncoding = map[int]byte {
-	3: 0x21, /* 16 rows, 10 columns */
-	4: 0x21, /* 16 rows, 10 columns */
-	6: 0x29, /* 17 rows, 10 columns */
-	8: 0x29, /* 17 rows, 10 columns */
+var densityGbx8ChannelToRowColumnEncoding = map[int]byte{
+	3:  0x21, /* 16 rows, 10 columns */
+	4:  0x21, /* 16 rows, 10 columns */
+	6:  0x29, /* 17 rows, 10 columns */
+	8:  0x29, /* 17 rows, 10 columns */
 	12: 0x31, /* 18 rows, 10 columns */
 	16: 0x31, /* 18 rows, 10 columns */
 }
@@ -118,7 +120,7 @@ type refreshTimings struct {
  * Maps density per physical channel to refresh timings. This is the same for x8 and x16
  * devices.
  */
-var densityGbPhysicalChannelToRefreshEncoding = map[int]refreshTimings {
+var densityGbPhysicalChannelToRefreshEncoding = map[int]refreshTimings{
 	3: {
 		TRFCABNs: 180,
 		TRFCPBNs: 90,
@@ -146,15 +148,15 @@ var densityGbPhysicalChannelToRefreshEncoding = map[int]refreshTimings {
 }
 
 type speedParams struct {
-	TCKMinPs int
-	TCKMaxPs int
+	TCKMinPs               int
+	TCKMaxPs               int
 	CASLatenciesx16Channel string
-	CASLatenciesx8Channel string
+	CASLatenciesx8Channel  string
 }
 
 const (
 	/* First Byte */
-	CAS6 = 1 << 1
+	CAS6  = 1 << 1
 	CAS10 = 1 << 4
 	CAS14 = 1 << 7
 	/* Second Byte */
@@ -179,28 +181,28 @@ const (
 	TCKMaxPsDefault = 31875
 )
 
-var speedMbpsToSPDEncoding = map[int]speedParams {
+var speedMbpsToSPDEncoding = map[int]speedParams{
 	4267: {
-		TCKMinPs: 468,           /* 1/4267 * 2 */
-		TCKMaxPs: TCKMaxPsDefault,
+		TCKMinPs:               468, /* 1/4267 * 2 */
+		TCKMaxPs:               TCKMaxPsDefault,
 		CASLatenciesx16Channel: "6 10 14 20 24 28 32 36",
-		CASLatenciesx8Channel: "6 10 16 22 26 32 36 40",
+		CASLatenciesx8Channel:  "6 10 16 22 26 32 36 40",
 	},
 	3733: {
-		TCKMinPs: 535,           /* 1/3733 * 2 */
-		TCKMaxPs: TCKMaxPsDefault,
+		TCKMinPs:               535, /* 1/3733 * 2 */
+		TCKMaxPs:               TCKMaxPsDefault,
 		CASLatenciesx16Channel: "6 10 14 20 24 28 32",
-		CASLatenciesx8Channel: "6 10 16 22 26 32 36",
+		CASLatenciesx8Channel:  "6 10 16 22 26 32 36",
 	},
 	3200: {
-		TCKMinPs: 625,           /* 1/3200 * 2 */
-		TCKMaxPs: TCKMaxPsDefault,
+		TCKMinPs:               625, /* 1/3200 * 2 */
+		TCKMaxPs:               TCKMaxPsDefault,
 		CASLatenciesx16Channel: "6 10 14 20 24 28",
-		CASLatenciesx8Channel: "6 10 16 22 26 32",
+		CASLatenciesx8Channel:  "6 10 16 22 26 32",
 	},
 }
 
-var bankEncoding = map[int]byte {
+var bankEncoding = map[int]byte{
 	4: 0 << 4,
 	8: 1 << 4,
 }
@@ -217,7 +219,7 @@ func getMRCDensity(memAttribs *memAttributes) int {
 		 * SPDIndexDensityBanks. Logical channel on TGL is an x16 channel.
 		 */
 		return memAttribs.DensityPerChannelGb * TGLLogicalChannelWidth / memAttribs.BitWidthPerChannel
-	} else if currPlatform == PlatformJSL {
+	} else if currPlatform == PlatformJSL || currPlatform == PlatformCZN {
 		/*
 		 * Intel MRC on JSL expects density per die to be encoded in
 		 * SPDIndexDensityBanks.
@@ -269,13 +271,16 @@ func encodePackage(dies int) byte {
 	return temp << 7
 }
 
+/* Per JESD209-4C Dies = ZQ balls on the package */
+/* Note that this can be different than the part's die count */
 func encodeDiesPerPackage(memAttribs *memAttributes) byte {
 	var dies int = 0
 	if currPlatform == PlatformTGLADL {
 		/* Intel MRC expects logical dies to be encoded for TGL. */
 		dies = memAttribs.ChannelsPerDie * memAttribs.RanksPerChannel * memAttribs.BitWidthPerChannel / 16
-	} else if currPlatform == PlatformJSL {
+	} else if currPlatform == PlatformJSL || currPlatform == PlatformCZN {
 		/* Intel MRC expects physical dies to be encoded for JSL. */
+		/* AMD PSP expects physical dies (ZQ balls) */
 		dies = memAttribs.DiesPerPackage
 	}
 
@@ -333,7 +338,7 @@ const (
 func encodeBusWidth(memAttribs *memAttributes) byte {
 	if currPlatform == PlatformTGLADL {
 		return SPDValueBusWidthTGL
-	} else if currPlatform == PlatformJSL {
+	} else if currPlatform == PlatformJSL || currPlatform == PlatformCZN {
 		return SPDValueBusWidthJSL
 	}
 	return 0
@@ -454,49 +459,49 @@ func encodeTRFCPBMinLsb(memAttribs *memAttributes) byte {
 	return byte(convNsToMtb(memAttribs.TRFCPBNs) & 0xff)
 }
 
-type SPDAttribFunc func (*memAttributes) byte
+type SPDAttribFunc func(*memAttributes) byte
 
 type SPDAttribTableEntry struct {
 	constVal byte
-	getVal SPDAttribFunc
+	getVal   SPDAttribFunc
 }
 
 const (
 	/* SPD Byte Index */
-	SPDIndexSize = 0
-	SPDIndexRevision = 1
-	SPDIndexMemoryType = 2
-	SPDIndexModuleType = 3
-	SPDIndexDensityBanks = 4
-	SPDIndexAddressing = 5
-	SPDIndexPackageType = 6
-	SPDIndexOptionalFeatures = 7
-	SPDIndexModuleOrganization = 12
-	SPDIndexBusWidth = 13
-	SPDIndexTimebases = 17
-	SPDIndexTCKMin = 18
-	SPDIndexTCKMax = 19
-	SPDIndexCASFirstByte = 20
-	SPDIndexCASSecondByte = 21
-	SPDIndexCASThirdByte = 22
-	SPDIndexCASFourthByte = 23
-	SPDIndexTAAMin = 24
-	SPDIndexReadWriteLatency = 25
-	SPDIndexTRCDMin = 26
-	SPDIndexTRPABMin = 27
-	SPDIndexTRPPBMin = 28
-	SPDIndexTRFCABMinLSB = 29
-	SPDIndexTRFCABMinMSB = 30
-	SPDIndexTRFCPBMinLSB = 31
-	SPDIndexTRFCPBMinMSB = 32
-	SPDIndexTRPPBMinFineOffset = 120
-	SPDIndexTRPABMinFineOffset = 121
-	SPDIndexTRCDMinFineOffset = 122
-	SPDIndexTAAMinFineOffset = 123
-	SPDIndexTCKMaxFineOffset = 124
-	SPDIndexTCKMinFineOffset = 125
+	SPDIndexSize                            = 0
+	SPDIndexRevision                        = 1
+	SPDIndexMemoryType                      = 2
+	SPDIndexModuleType                      = 3
+	SPDIndexDensityBanks                    = 4
+	SPDIndexAddressing                      = 5
+	SPDIndexPackageType                     = 6
+	SPDIndexOptionalFeatures                = 7
+	SPDIndexModuleOrganization              = 12
+	SPDIndexBusWidth                        = 13
+	SPDIndexTimebases                       = 17
+	SPDIndexTCKMin                          = 18
+	SPDIndexTCKMax                          = 19
+	SPDIndexCASFirstByte                    = 20
+	SPDIndexCASSecondByte                   = 21
+	SPDIndexCASThirdByte                    = 22
+	SPDIndexCASFourthByte                   = 23
+	SPDIndexTAAMin                          = 24
+	SPDIndexReadWriteLatency                = 25
+	SPDIndexTRCDMin                         = 26
+	SPDIndexTRPABMin                        = 27
+	SPDIndexTRPPBMin                        = 28
+	SPDIndexTRFCABMinLSB                    = 29
+	SPDIndexTRFCABMinMSB                    = 30
+	SPDIndexTRFCPBMinLSB                    = 31
+	SPDIndexTRFCPBMinMSB                    = 32
+	SPDIndexTRPPBMinFineOffset              = 120
+	SPDIndexTRPABMinFineOffset              = 121
+	SPDIndexTRCDMinFineOffset               = 122
+	SPDIndexTAAMinFineOffset                = 123
+	SPDIndexTCKMaxFineOffset                = 124
+	SPDIndexTCKMinFineOffset                = 125
 	SPDIndexManufacturerPartNumberStartByte = 329
-	SPDIndexManufacturerPartNumberEndByte = 348
+	SPDIndexManufacturerPartNumberEndByte   = 348
 
 	/* SPD Byte Value */
 
@@ -557,39 +562,39 @@ const (
 	SPDValueManufacturerPartNumberBlank = 0x20
 )
 
-var SPDAttribTable = map[int]SPDAttribTableEntry {
-	SPDIndexSize: { constVal: SPDValueSize },
-	SPDIndexRevision: { constVal: SPDValueRevision },
-	SPDIndexMemoryType: { constVal: SPDValueMemoryType },
-	SPDIndexModuleType: { constVal: SPDValueModuleType },
-	SPDIndexDensityBanks: { getVal: encodeDensityBanks },
-	SPDIndexAddressing: { getVal: encodeSdramAddressing },
-	SPDIndexPackageType: { getVal: encodePackageType },
-	SPDIndexOptionalFeatures: { constVal: SPDValueOptionalFeatures },
-	SPDIndexModuleOrganization: { getVal: encodeModuleOrganization },
-	SPDIndexBusWidth: { getVal: encodeBusWidth },
-	SPDIndexTimebases: { constVal: SPDValueTimebases },
-	SPDIndexTCKMin: { getVal: encodeTCKMin },
-	SPDIndexTCKMax: { getVal: encodeTCKMax },
-	SPDIndexTCKMaxFineOffset: { getVal: encodeTCKMaxFineOffset },
-	SPDIndexTCKMinFineOffset: { getVal: encodeTCKMinFineOffset },
-	SPDIndexCASFirstByte: { getVal: encodeCASFirstByte },
-	SPDIndexCASSecondByte: { getVal: encodeCASSecondByte },
-	SPDIndexCASThirdByte: { getVal: encodeCASThirdByte },
-	SPDIndexCASFourthByte: { constVal: SPDValueCASFourthByte },
-	SPDIndexTAAMin: { getVal: encodeTAAMin },
-	SPDIndexTAAMinFineOffset: { getVal: encodeTAAMinFineOffset },
-	SPDIndexReadWriteLatency: { constVal: SPDValueReadWriteLatency },
-	SPDIndexTRCDMin: { getVal: encodeTRCDMin },
-	SPDIndexTRCDMinFineOffset: { getVal: encodeTRCDMinFineOffset },
-	SPDIndexTRPABMin: { getVal: encodeTRPABMin },
-	SPDIndexTRPABMinFineOffset: { getVal: encodeTRPABMinFineOffset },
-	SPDIndexTRPPBMin: { getVal: encodeTRPPBMin },
-	SPDIndexTRPPBMinFineOffset: { getVal: encodeTRPPBMinFineOffset },
-	SPDIndexTRFCABMinLSB: { getVal: encodeTRFCABMinLsb },
-	SPDIndexTRFCABMinMSB: { getVal: encodeTRFCABMinMsb },
-	SPDIndexTRFCPBMinLSB: { getVal: encodeTRFCPBMinLsb },
-	SPDIndexTRFCPBMinMSB: { getVal: encodeTRFCPBMinMsb },
+var SPDAttribTable = map[int]SPDAttribTableEntry{
+	SPDIndexSize:               {constVal: SPDValueSize},
+	SPDIndexRevision:           {constVal: SPDValueRevision},
+	SPDIndexMemoryType:         {constVal: SPDValueMemoryType},
+	SPDIndexModuleType:         {constVal: SPDValueModuleType},
+	SPDIndexDensityBanks:       {getVal: encodeDensityBanks},
+	SPDIndexAddressing:         {getVal: encodeSdramAddressing},
+	SPDIndexPackageType:        {getVal: encodePackageType},
+	SPDIndexOptionalFeatures:   {constVal: SPDValueOptionalFeatures},
+	SPDIndexModuleOrganization: {getVal: encodeModuleOrganization},
+	SPDIndexBusWidth:           {getVal: encodeBusWidth},
+	SPDIndexTimebases:          {constVal: SPDValueTimebases},
+	SPDIndexTCKMin:             {getVal: encodeTCKMin},
+	SPDIndexTCKMax:             {getVal: encodeTCKMax},
+	SPDIndexTCKMaxFineOffset:   {getVal: encodeTCKMaxFineOffset},
+	SPDIndexTCKMinFineOffset:   {getVal: encodeTCKMinFineOffset},
+	SPDIndexCASFirstByte:       {getVal: encodeCASFirstByte},
+	SPDIndexCASSecondByte:      {getVal: encodeCASSecondByte},
+	SPDIndexCASThirdByte:       {getVal: encodeCASThirdByte},
+	SPDIndexCASFourthByte:      {constVal: SPDValueCASFourthByte},
+	SPDIndexTAAMin:             {getVal: encodeTAAMin},
+	SPDIndexTAAMinFineOffset:   {getVal: encodeTAAMinFineOffset},
+	SPDIndexReadWriteLatency:   {constVal: SPDValueReadWriteLatency},
+	SPDIndexTRCDMin:            {getVal: encodeTRCDMin},
+	SPDIndexTRCDMinFineOffset:  {getVal: encodeTRCDMinFineOffset},
+	SPDIndexTRPABMin:           {getVal: encodeTRPABMin},
+	SPDIndexTRPABMinFineOffset: {getVal: encodeTRPABMinFineOffset},
+	SPDIndexTRPPBMin:           {getVal: encodeTRPPBMin},
+	SPDIndexTRPPBMinFineOffset: {getVal: encodeTRPPBMinFineOffset},
+	SPDIndexTRFCABMinLSB:       {getVal: encodeTRFCABMinLsb},
+	SPDIndexTRFCABMinMSB:       {getVal: encodeTRFCABMinMsb},
+	SPDIndexTRFCPBMinLSB:       {getVal: encodeTRFCPBMinLsb},
+	SPDIndexTRFCPBMinMSB:       {getVal: encodeTRFCPBMinMsb},
 }
 
 type memParts struct {
@@ -597,8 +602,8 @@ type memParts struct {
 }
 
 type memPart struct {
-	Name string
-	Attribs memAttributes
+	Name        string
+	Attribs     memAttributes
 	SPDFileName string
 }
 
@@ -644,7 +649,7 @@ func createSPD(memAttribs *memAttributes) string {
 	for i := 0; i < 512; i++ {
 		b := getSPDByte(i, memAttribs)
 
-		if (i + 1) % 16 == 0 {
+		if (i+1)%16 == 0 {
 			s += fmt.Sprintf("%02X\n", b)
 		} else {
 			s += fmt.Sprintf("%02X ", b)
@@ -822,7 +827,7 @@ func updateCAS(memAttribs *memAttributes) error {
 
 	latencies := strings.Fields(memAttribs.CASLatencies)
 	for i := 0; i < len(latencies); i++ {
-		latency,err := strconv.Atoi(latencies[i])
+		latency, err := strconv.Atoi(latencies[i])
 		if err != nil {
 			return fmt.Errorf("Unable to convert latency ", latencies[i])
 		}
@@ -941,7 +946,11 @@ func usage() {
 	fmt.Printf("   where,\n")
 	fmt.Printf("   spd_dir = Directory path containing SPD files and manifest generated by gen_spd.go\n")
 	fmt.Printf("   mem_parts_list_json = JSON File containing list of memory parts and attributes\n")
-	fmt.Printf("   platform = SoC Platform for which the SPDs are being generated\n\n\n")
+	fmt.Printf("   platform = SoC Platform for which the SPDs are being generated\n")
+	fmt.Printf("              supported platforms: ")
+	keys := reflect.ValueOf(platformMap).MapKeys()
+	fmt.Println(keys)
+	fmt.Printf("\n\n\n")
 }
 
 func main() {

@@ -102,9 +102,6 @@ static void display_startup(void)
 			return;
 
 		printk(BIOS_INFO, "display init!\n");
-
-		/* Configure backlight */
-		gpio_output(GPIO_BACKLIGHT_ENABLE, 1);
 		display_init(&ed);
 		fb_new_framebuffer_info_from_edid(&ed, (uintptr_t)0);
 	} else
@@ -113,6 +110,11 @@ static void display_startup(void)
 
 static void mainboard_init(struct device *dev)
 {
+	/* Take FPMCU out of reset. Power was already applied
+	   in romstage and should have stabilized by now. */
+	if (CONFIG(TROGDOR_HAS_FINGERPRINT))
+		gpio_output(GPIO_FP_RST_L, 1);
+
 	setup_usb();
 	qi2s_configure_gpios();
 	load_qup_fw();
@@ -125,6 +127,5 @@ static void mainboard_enable(struct device *dev)
 }
 
 struct chip_operations mainboard_ops = {
-	.name = CONFIG_MAINBOARD_PART_NUMBER,
 	.enable_dev = mainboard_enable,
 };

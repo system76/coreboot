@@ -10,7 +10,6 @@ config BOARD_SPECIFIC_OPTIONS
 	select SUPERIO_FINTEK_F71869AD
 	select HAVE_OPTION_TABLE
 	select HAVE_PIRQ_TABLE
-	select HAVE_MP_TABLE
 	select HAVE_ACPI_RESUME
 	select HAVE_ACPI_TABLES
 	select BOARD_ROMSIZE_KB_2048
@@ -39,10 +38,6 @@ config IRQ_SLOT_COUNT
 config ONBOARD_VGA_IS_PRIMARY
 	bool
 	default y
-
-config VGA_BIOS
-	bool
-	default n
 
 #config VGA_BIOS_FILE
 #	string "VGA BIOS path and filename"

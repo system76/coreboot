@@ -1,4 +1,6 @@
 ramstage-y += haswell_init.c
+
+romstage-y += romstage.c
 romstage-y += ../car/romstage.c
 
 ramstage-y += acpi.c
@@ -23,3 +25,7 @@ subdirs-y += ../turbo
 
 cpu_microcode_bins += $(wildcard 3rdparty/intel-microcode/intel-ucode/06-3c-*)
 cpu_microcode_bins += $(wildcard 3rdparty/intel-microcode/intel-ucode/06-45-*)
+
+ifeq ($(CONFIG_SOC_INTEL_BROADWELL),y)
+cpu_microcode_bins += 3rdparty/blobs/soc/intel/broadwell/microcode.bin
+endif

@@ -16,9 +16,9 @@
 #include <device/device.h>
 #include <device/pci.h>
 #include <device/pci_ids.h>
-#include <romstage_handoff.h>
 #include <amdblocks/agesawrapper.h>
 #include <amdblocks/agesawrapper_call.h>
+#include <amdblocks/ioapic.h>
 #include <agesa_headers.h>
 #include <soc/cpu.h>
 #include <soc/northbridge.h>
@@ -160,19 +160,7 @@ static void set_resources(struct device *dev)
 
 static void northbridge_init(struct device *dev)
 {
-	setup_ioapic((u8 *)IO_APIC2_ADDR, CONFIG_MAX_CPUS+1);
-}
-
-unsigned long acpi_fill_mcfg(unsigned long current)
-{
-
-	current += acpi_create_mcfg_mmconfig((acpi_mcfg_mmconfig_t *)current,
-					     CONFIG_MMCONF_BASE_ADDRESS,
-					     0,
-					     0,
-					     CONFIG_MMCONF_BUS_NUMBER - 1);
-
-	return current;
+	setup_ioapic((u8 *)IO_APIC2_ADDR, GNB_IOAPIC_ID);
 }
 
 static unsigned long acpi_fill_hest(acpi_hest_t *hest)
@@ -408,7 +396,7 @@ void fam15_finalize(void *chip_info)
 void domain_enable_resources(struct device *dev)
 {
 	/* Must be called after PCI enumeration and resource allocation */
-	if (!romstage_handoff_is_resume())
+	if (!acpi_is_wakeup_s3())
 		do_agesawrapper(AMD_INIT_MID, "amdinitmid");
 }
 
@@ -531,22 +519,16 @@ void hda_soc_ssdt_quirks(const struct device *dev)
 
 	/*
 	 * Method (_INI, 0, NotSerialized) {
-	 *	If (LEqual (OSVR, 0x03)) {
-	 *		Store (Zero, NSEN)
-	 *		Store (One, NSDO)
-	 *		Store (One, NSDI)
-	 *	}
+	 *	Store (Zero, NSEN)
+	 *	Store (One, NSDO)
+	 *	Store (One, NSDI)
 	 * }
 	 */
 	acpigen_write_method("_INI", 0);
 
-	acpigen_write_if_lequal_namestr_int("OSVR", 0x03);
-
-	acpigen_write_store_op_to_namestr(ONE_OP, "NSEN");
-	acpigen_write_store_op_to_namestr(ZERO_OP, "NSDO");
-	acpigen_write_store_op_to_namestr(ZERO_OP, "NSDI");
-
-	acpigen_pop_len(); /* If */
+	acpigen_write_store_op_to_namestr(ZERO_OP, "NSEN");
+	acpigen_write_store_op_to_namestr(ONE_OP, "NSDO");
+	acpigen_write_store_op_to_namestr(ONE_OP, "NSDI");
 
 	acpigen_pop_len(); /* Method _INI */
 

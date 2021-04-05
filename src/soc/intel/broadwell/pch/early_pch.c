@@ -11,7 +11,6 @@
 #include <soc/pm.h>
 #include <soc/rcba.h>
 #include <soc/romstage.h>
-#include <soc/smbus.h>
 #include <soc/intel/broadwell/pch/chip.h>
 
 static void pch_route_interrupts(void)
@@ -54,7 +53,10 @@ static void pch_enable_lpc(void)
 	/* Lookup device tree in romstage */
 	const struct device *const dev = pcidev_on_root(0x1f, 0);
 
-	const struct soc_intel_broadwell_pch_config *config = config_of(dev);
+	if (!dev || !dev->chip_info)
+		return;
+
+	const struct soc_intel_broadwell_pch_config *config = dev->chip_info;
 
 	pci_write_config32(PCH_DEV_LPC, LPC_GEN1_DEC, config->gen1_dec);
 	pci_write_config32(PCH_DEV_LPC, LPC_GEN2_DEC, config->gen2_dec);
@@ -71,7 +73,7 @@ void pch_early_init(void)
 	enable_smbus();
 
 	/* 8.14 Additional PCI Express Programming Steps, step #1 */
-	pci_update_config32(_PCH_DEV(PCIE, 0), 0xf4, ~0x60, 0);
-	pci_update_config32(_PCH_DEV(PCIE, 0), 0xf4, ~0x80, 0x80);
-	pci_update_config32(_PCH_DEV(PCIE, 0), 0xe2, ~0x30, 0x30);
+	pci_and_config32(_PCH_DEV(PCIE, 0), 0xf4, ~0x60);
+	pci_or_config32(_PCH_DEV(PCIE, 0), 0xf4, 0x80);
+	pci_or_config32(_PCH_DEV(PCIE, 0), 0xe2, 0x30);
 }

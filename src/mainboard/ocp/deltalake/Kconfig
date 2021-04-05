@@ -16,6 +16,7 @@ config BOARD_SPECIFIC_OPTIONS
 	select IPMI_OCP
 	select MAINBOARD_HAS_LPC_TPM
 	select MAINBOARD_HAS_TPM2
+	select OVERRIDE_UART_FOR_CONSOLE
 
 config UART_FOR_CONSOLE
 	int
@@ -56,5 +57,12 @@ config DIMM_MAX
 config CONSOLE_POST
 	bool
 	default y
+
+config C_ENV_BOOTBLOCK_SIZE
+	hex
+	default 0xc000 if FIXED_BOOTBLOCK_SIZE
+	help
+	  This matches the IBB size used for CBnT. Adjust this to the
+	  used CBnT settings.
 
 endif # BOARD_OCP_DELTALAKE

@@ -117,32 +117,26 @@ uint32_t get_microcode_checksum(const void *microcode)
 	return ((struct microcode *)microcode)->cksum;
 }
 
-const void *intel_microcode_find(void)
+static const void *find_cbfs_microcode(void)
 {
 	const struct microcode *ucode_updates;
 	size_t microcode_len;
 	u32 eax;
 	u32 pf, rev, sig, update_size;
-	unsigned int x86_model, x86_family;
 	msr_t msr;
+	struct cpuinfo_x86 c;
 
 	ucode_updates = cbfs_map(MICROCODE_CBFS_FILE, &microcode_len);
 	if (ucode_updates == NULL)
 		return NULL;
 
-	/* CPUID sets MSR 0x8B if a microcode update has been loaded. */
-	msr.lo = 0;
-	msr.hi = 0;
-	wrmsr(IA32_BIOS_SIGN_ID, msr);
+	rev = read_microcode_rev();
 	eax = cpuid_eax(1);
-	msr = rdmsr(IA32_BIOS_SIGN_ID);
-	rev = msr.hi;
-	x86_model = (eax >> 4) & 0x0f;
-	x86_family = (eax >> 8) & 0x0f;
+	get_fms(&c, eax);
 	sig = eax;
 
 	pf = 0;
-	if ((x86_model >= 5) || (x86_family > 6)) {
+	if ((c.x86_model >= 5) || (c.x86 > 6)) {
 		msr = rdmsr(IA32_PLATFORM_ID);
 		pf = 1 << ((msr.hi >> 18) & 7);
 	}
@@ -176,6 +170,25 @@ const void *intel_microcode_find(void)
 	return NULL;
 }
 
+const void *intel_microcode_find(void)
+{
+	static bool microcode_checked;
+	static const void *ucode_update;
+
+	if (microcode_checked)
+		return ucode_update;
+
+	/*
+	 * Since this function caches the found microcode (NULL or a valid
+	 * microcode pointer), it is expected to be run from BSP before starting
+	 * any other APs. This sequence is not multithread safe otherwise.
+	 */
+	ucode_update = find_cbfs_microcode();
+	microcode_checked = true;
+
+	return ucode_update;
+}
+
 void intel_update_microcode_from_cbfs(void)
 {
 	const void *patch = intel_microcode_find();
@@ -188,7 +201,7 @@ void intel_update_microcode_from_cbfs(void)
 }
 
 #if ENV_RAMSTAGE
-__weak int soc_skip_ucode_update(u32 currrent_patch_id,
+__weak int soc_skip_ucode_update(u32 current_patch_id,
 	u32 new_patch_id)
 {
 	return 0;

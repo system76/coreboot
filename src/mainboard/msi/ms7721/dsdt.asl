@@ -11,10 +11,8 @@ DefinitionBlock (
 	0x00010001		/* OEM Revision */
 	)
 {	/* Start of ASL file */
+	#include <acpi/dsdt_top.asl>
 	#include <arch/x86/acpi/debug.asl>	/* Include global debug methods if needed */
-
-	/* Globals for the platform */
-	#include "acpi/mainboard.asl"
 
 	/* PCI IRQ mapping for the Southbridge */
 	#include <southbridge/amd/agesa/hudson/acpi/pcie.asl>
@@ -59,9 +57,5 @@ DefinitionBlock (
 
 	/* Define the Thermal zones and methods for the platform */
 	#include "acpi/thermal.asl"
-
-	/* Define the System Indicators for the platform */
-	#include "acpi/si.asl"
-
 }
 /* End of ASL file */

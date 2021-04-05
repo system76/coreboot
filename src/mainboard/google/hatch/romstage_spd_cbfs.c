@@ -1,13 +1,11 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
 #include <baseboard/variants.h>
-#include <console/console.h>
 #include <ec/google/chromeec/ec.h>
 #include <gpio.h>
 #include <memory_info.h>
 #include <soc/cnl_memcfg_init.h>
 #include <soc/romstage.h>
-#include <string.h>
 #include <variant/gpio.h>
 
 /*

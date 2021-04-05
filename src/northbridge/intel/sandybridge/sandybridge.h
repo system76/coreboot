@@ -37,9 +37,8 @@ enum platform_type {
  * MCHBAR
  */
 
-#define MCHBAR8(x)  (*((volatile u8  *)(DEFAULT_MCHBAR + (x))))
-#define MCHBAR16(x) (*((volatile u16 *)(DEFAULT_MCHBAR + (x))))
-#define MCHBAR32(x) (*((volatile u32 *)(DEFAULT_MCHBAR + (x))))
+#include <northbridge/intel/common/fixed_bars.h>
+
 #define MCHBAR8_AND(x,  and) (MCHBAR8(x)  = MCHBAR8(x)  & (and))
 #define MCHBAR16_AND(x, and) (MCHBAR16(x) = MCHBAR16(x) & (and))
 #define MCHBAR32_AND(x, and) (MCHBAR32(x) = MCHBAR32(x) & (and))
@@ -57,19 +56,11 @@ enum platform_type {
  * EPBAR - Egress Port Root Complex Register Block
  */
 
-#define EPBAR8(x)  (*((volatile u8  *)(DEFAULT_EPBAR + (x))))
-#define EPBAR16(x) (*((volatile u16 *)(DEFAULT_EPBAR + (x))))
-#define EPBAR32(x) (*((volatile u32 *)(DEFAULT_EPBAR + (x))))
-
 #include "registers/epbar.h"
 
 /*
  * DMIBAR
  */
-
-#define DMIBAR8(x)  (*((volatile u8  *)(DEFAULT_DMIBAR + (x))))
-#define DMIBAR16(x) (*((volatile u16 *)(DEFAULT_DMIBAR + (x))))
-#define DMIBAR32(x) (*((volatile u32 *)(DEFAULT_DMIBAR + (x))))
 
 #include "registers/dmibar.h"
 
@@ -81,7 +72,7 @@ void intel_sandybridge_finalize_smm(void);
 void systemagent_early_init(void);
 void sandybridge_init_iommu(void);
 void sandybridge_late_initialization(void);
-void northbridge_romstage_finalize(int s3resume);
+void northbridge_romstage_finalize(void);
 void early_init_dmi(void);
 
 /* mainboard_early_init: Optional callback, run after console init but before raminit. */
@@ -90,8 +81,6 @@ int mainboard_should_reset_usb(int s3resume);
 void perform_raminit(int s3resume);
 void report_memory_config(void);
 enum platform_type get_platform_type(void);
-
-int decode_pcie_bar(u32 *const base, u32 *const len);
 
 #include <device/device.h>
 

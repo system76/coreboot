@@ -19,15 +19,6 @@
 #include <soc/systemagent.h>
 #include <soc/pci_devs.h>
 
-#define MWAIT_RES(state, sub_state)                         \
-	{                                                   \
-		.addrl = (((state) << 4) | (sub_state)),    \
-		.space_id = ACPI_ADDRESS_SPACE_FIXED,       \
-		.bit_width = ACPI_FFIXEDHW_VENDOR_INTEL,    \
-		.bit_offset = ACPI_FFIXEDHW_CLASS_MWAIT,    \
-		.access_size = ACPI_FFIXEDHW_FLAG_HW_COORD, \
-	}
-
 #define CSTATE_RES(address_space, width, offset, address)		\
 	{								\
 	.space_id = address_space,					\
@@ -62,9 +53,6 @@ static acpi_cstate_t cstate_map[] = {
 
 void soc_fill_gnvs(struct global_nvs *gnvs)
 {
-	/* CPU core count */
-	gnvs->pcnt = dev_count_cpu();
-
 	/* Top of Low Memory (start of resource allocation) */
 	gnvs->tolm = (uintptr_t)cbmem_top();
 

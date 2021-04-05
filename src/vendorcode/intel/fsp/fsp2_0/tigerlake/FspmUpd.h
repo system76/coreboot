@@ -72,9 +72,11 @@ typedef struct {
 **/
   UINT8                       EnableAbove4GBMmio;
 
-/** Offset 0x004B - Reserved
+/** Offset 0x004B - Enable/Disable CrashLog Device 10
+  Enable(Default): Enable CPU CrashLog Device 10, Disable: Disable CPU CrashLog
+  $EN_DIS
 **/
-  UINT8                       Reserved0;
+  UINT8                       CpuCrashLogDevice;
 
 /** Offset 0x004C - MemorySpdPtr00
 **/
@@ -1304,9 +1306,14 @@ typedef struct {
 **/
   UINT8                       IsTPMPresence;
 
-/** Offset 0x0389 - Reserved
+/** Offset 0x0389 - ConfigTdpLevel
+  Configuration for boot TDP selection; <b>0: TDP Nominal</b>; 1: TDP Down; 2: TDP Up;0xFF : Deactivate
 **/
-  UINT8                       Reserved17[6];
+  UINT8                       ConfigTdpLevel;
+
+/** Offset 0x038A - Reserved
+**/
+  UINT8                       Reserved17[5];
 
 /** Offset 0x038F - Enable PCH HSIO PCIE Rx Set Ctle
   Enable PCH PCIe Gen 3 Set CTLE Value.

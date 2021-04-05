@@ -10,7 +10,7 @@ img/coreinfo-type := payload
 img/coreinfo-compression := $(CBFS_SECONDARY_PAYLOAD_COMPRESS_FLAG)
 
 cbfs-files-$(CONFIG_NVRAMCUI_SECONDARY_PAYLOAD) += img/nvramcui
-img/nvramcui-file := payloads/nvramcui/nvramcui.elf
+img/nvramcui-file := payloads/nvramcui/build/nvramcui.elf
 img/nvramcui-type := payload
 img/nvramcui-compression := $(CBFS_SECONDARY_PAYLOAD_COMPRESS_FLAG)
 
@@ -29,10 +29,14 @@ payloads/external/GRUB2 \
 payloads/external/LinuxBoot \
 payloads/external/Yabits \
 
-payloads/coreinfo/build/coreinfo.elf coreinfo:
+force-payload:
+
+payloads/coreinfo/build/coreinfo.elf coreinfo: export CCACHE := $(CCACHE)
+payloads/coreinfo/build/coreinfo.elf coreinfo: force-payload
 	$(MAKE) -C payloads/coreinfo defaultbuild
 
-payloads/nvramcui/nvramcui.elf nvramcui:
+payloads/nvramcui/build/nvramcui.elf nvramcui: export CCACHE := $(CCACHE)
+payloads/nvramcui/build/nvramcui.elf nvramcui: force-payload
 	$(MAKE) -C payloads/nvramcui
 
 clean-payloads:
@@ -44,4 +48,5 @@ distclean-payloads:
 print-repo-info-payloads:
 	-$(foreach payload, $(PAYLOADS_LIST), $(MAKE) -C $(payload) print-repo-info 2>/dev/null; )
 
-.PHONY: clean-payloads distclean-payloads print-repo-info-payloads nvramcui coreinfo
+.PHONY: force-payload coreinfo nvramcui
+.PHONY: clean-payloads distclean-payloads print-repo-info-payloads

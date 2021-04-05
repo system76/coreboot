@@ -9,7 +9,7 @@
 #include <fsp/car.h>
 #include <fsp/util.h>
 #include <soc/intel/common/mma.h>
-#include <soc/pm.h>		/* chip_power_state */
+#include <soc/pm.h>
 
 struct romstage_params {
 	uint32_t fsp_version;
@@ -34,7 +34,6 @@ void mainboard_add_dimm_info(struct romstage_params *params,
 			     struct memory_info *mem_info,
 			     int channel, int dimm, int index);
 void raminit(struct romstage_params *params);
-void report_memory_config(void);
 /* Initialize memory margin analysis settings. */
 void setup_mma(MEMORY_INIT_UPD *memory_upd);
 void soc_after_ram_init(struct romstage_params *params);

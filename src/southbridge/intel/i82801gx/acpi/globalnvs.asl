@@ -2,20 +2,10 @@
 
 /* Global Variables */
 
-Name(\PICM, 0)		// IOAPIC/8259
-
-/* Global ACPI memory region. This region is used for passing information
- * between coreboot (aka "the system bios"), ACPI, and the SMI handler.
- * Since we don't know where this will end up in memory at ACPI compile time,
- * we have to fix it up in coreboot's ACPI creation phase.
- */
-
-External(NVSA)
-OperationRegion (GNVS, SystemMemory, NVSA, 0x100)
 Field (GNVS, ByteAcc, NoLock, Preserve)
 {
 	/* Miscellaneous */
-	OSYS,	16,	// 0x00 - Operating System
+	,	16,	// 0x00 - Operating System
 	SMIF,	 8,	// 0x02 - SMI function
 	PRM0,	 8,	// 0x03 - SMI function parameter
 	PRM1,	 8,	// 0x04 - SMI function parameter
@@ -27,7 +17,7 @@ Field (GNVS, ByteAcc, NoLock, Preserve)
 	PRM5,	 8,	// 0x0a - Lock function parameter
 	P80D,	32,	// 0x0b - Debug port (IO 0x80) value
 	LIDS,	 8,	// 0x0f - LID state (open = 1)
-	PWRS,	 8,	// 0x10 - Power State (AC = 1)
+	,	 8,	// 0x10 - Power State (AC = 1)
 	DBGS,	 8,	// 0x11 - Debug State
 	LINX,    8,	// 0x12 - Linux OS
 	DCKN,	 8,	// 0x13 - PCIe docking state
@@ -52,8 +42,8 @@ Field (GNVS, ByteAcc, NoLock, Preserve)
 	B2SS,	 8,	// 0x24 - BAT2 stored status
 	/* Processor Identification */
 	Offset (0x28),
-	APIC,	 8,	// 0x28 - APIC Enabled by coreboot
-	MPEN,	 8,	// 0x29 - Multi Processor Enable
+	,	 8,	// 0x28 -  Enabled by coreboot
+	,	 8,	// 0x29 - Multi Processor Enable
 	PCP0,	 8,	// 0x2a - PDC CPU/CORE 0
 	PCP1,	 8,	// 0x2b - PDC CPU/CORE 1
 	PPCM,	 8,	// 0x2c - Max. PPC state
@@ -109,4 +99,6 @@ Field (GNVS, ByteAcc, NoLock, Preserve)
 	DOCK,	 8,	// 0xf0 - Docking Status
 	BTEN,	 8,	// 0xf1 - Bluetooth Enable
 	CBMC,	32,
+	PM1I,	32,	// System Wake Source - PM1 Index
+	GPEI,	32,	// GPE Wake Source
 }

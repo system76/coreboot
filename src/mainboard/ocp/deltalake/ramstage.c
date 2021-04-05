@@ -2,7 +2,6 @@
 
 #include <assert.h>
 #include <console/console.h>
-#include <bootstate.h>
 #include <drivers/ipmi/ipmi_ops.h>
 #include <drivers/ocp/dmi/ocp_dmi.h>
 #include <soc/ramstage.h>
@@ -23,31 +22,6 @@
 
 extern struct fru_info_str fru_strings;
 static char slot_id_str[SLOT_ID_LEN];
-
-/* Override SMBIOS type 16 error correction type. */
-unsigned int smbios_memory_error_correction_type(struct memory_info *meminfo)
-{
-	const struct SystemMemoryMapHob *hob;
-
-	hob = get_system_memory_map();
-	assert(hob != NULL);
-
-	switch (hob->RasModesEnabled) {
-	case CH_INDEPENDENT:
-		return MEMORY_ARRAY_ECC_SINGLE_BIT;
-	case FULL_MIRROR_1LM:
-	case PARTIAL_MIRROR_1LM:
-	case FULL_MIRROR_2LM:
-	case PARTIAL_MIRROR_2LM:
-		return MEMORY_ARRAY_ECC_MULTI_BIT;
-	case RK_SPARE:
-		return MEMORY_ARRAY_ECC_SINGLE_BIT;
-	case CH_LOCKSTEP:
-		return MEMORY_ARRAY_ECC_SINGLE_BIT;
-	default:
-		return MEMORY_ARRAY_ECC_MULTI_BIT;
-	}
-}
 
 /*
  * Update SMBIOS type 0 ec version.
@@ -80,6 +54,12 @@ const char *smbios_mainboard_location_in_chassis(void)
 	}
 	snprintf(slot_id_str, SLOT_ID_LEN, "%d", slot_id);
 	return slot_id_str;
+}
+
+/* Override SMBIOS type 2 Feature Flags */
+u8 smbios_mainboard_feature_flags(void)
+{
+	return SMBIOS_FEATURE_FLAGS_HOSTING_BOARD | SMBIOS_FEATURE_FLAGS_REPLACEABLE;
 }
 
 /*
@@ -213,7 +193,7 @@ static int create_smbios_type9(int *handle, unsigned long *current)
 	uint8_t characteristics_1 = 0;
 	uint8_t characteristics_2 = 0;
 	uint32_t vendor_device_id;
-	uint32_t stack_busnos[6];
+	uint8_t stack_busnos[MAX_IIO_STACK];
 	pci_devfn_t pci_dev;
 	unsigned int cap;
 	uint16_t sltcap;
@@ -221,7 +201,8 @@ static int create_smbios_type9(int *handle, unsigned long *current)
 	if (ipmi_get_pcie_config(&pcie_config) != CB_SUCCESS)
 		printk(BIOS_ERR, "Failed to get IPMI PCIe config\n");
 
-	get_stack_busnos(stack_busnos);
+	for (index = 0; index < ARRAY_SIZE(stack_busnos); index++)
+		stack_busnos[index] = get_stack_busno(index);
 
 	for (index = 0; index < ARRAY_SIZE(slotinfo); index++) {
 		if (pcie_config == PCIE_CONFIG_A) {
@@ -319,7 +300,7 @@ void smbios_fill_dimm_locator(const struct dimm_info *dimm, struct smbios_type17
 {
 	char buf[40];
 
-	snprintf(buf, sizeof(buf), "DIMM %c0", 'A' + dimm->channel_num);
+	snprintf(buf, sizeof(buf), "DIMM_%c0", 'A' + dimm->channel_num);
 	t->device_locator = smbios_add_string(t->eos, buf);
 
 	snprintf(buf, sizeof(buf), "_Node0_Channel%d_Dimm0", dimm->channel_num);
@@ -352,13 +333,6 @@ void mainboard_silicon_init_params(FSPS_UPD *params)
 
 static void mainboard_final(void *chip_info)
 {
-	struct ppin_req req = {0};
-
-	req.cpu0_lo = xeon_sp_ppin[0].lo;
-	req.cpu0_hi = xeon_sp_ppin[0].hi;
-	/* Set PPIN to BMC */
-	if (ipmi_set_ppin(&req) != CB_SUCCESS)
-		printk(BIOS_ERR, "ipmi_set_ppin failed\n");
 }
 
 struct chip_operations mainboard_ops = {

@@ -20,7 +20,6 @@
 #include "raminit_common.h"
 #include "sandybridge.h"
 
-/* FIXME: no ECC support */
 /* FIXME: no support for 3-channel chipsets */
 
 static void wait_txt_clear(void)
@@ -54,9 +53,9 @@ static void disable_channel(ramctr_timing *ctrl, int channel)
 	memset(&ctrl->info.dimm[channel][0], 0, sizeof(ctrl->info.dimm[0]));
 }
 
-static bool nb_supports_ecc(const uint32_t capid0_a)
+static uint8_t nb_get_ecc_type(const uint32_t capid0_a)
 {
-	return !(capid0_a & CAPID_ECCDIS);
+	return capid0_a & CAPID_ECCDIS ? MEMORY_ARRAY_ECC_NONE : MEMORY_ARRAY_ECC_SINGLE_BIT;
 }
 
 static uint16_t nb_slots_per_channel(const uint32_t capid0_a)
@@ -115,7 +114,7 @@ static void setup_sdram_meminfo(ramctr_timing *ctrl)
 
 	const uint16_t channels = nb_number_of_channels(capid0_a);
 
-	m->ecc_capable = nb_supports_ecc(capid0_a);
+	m->ecc_type = nb_get_ecc_type(capid0_a);
 	m->max_capacity_mib = channels * nb_max_chan_capacity_mib(capid0_a);
 	m->number_of_devices = channels * nb_slots_per_channel(capid0_a);
 }
@@ -175,7 +174,7 @@ static void dram_find_spds_ddr3(spd_raw_data *spd, ramctr_timing *ctrl)
 			spd_slot = 2 * channel + slot;
 			printk(BIOS_DEBUG, "SPD probe channel%d, slot%d\n", channel, slot);
 
-			dimm_attr *const dimm = &ctrl->info.dimm[channel][slot];
+			struct dimm_attr_ddr3_st *const dimm = &ctrl->info.dimm[channel][slot];
 
 			/* Search for XMP profile */
 			spd_xmp_decode_ddr3(dimm, spd[spd_slot],
@@ -298,6 +297,8 @@ static void init_dram_ddr3(int s3resume, const u32 cpuid)
 	spd_raw_data spds[4];
 	size_t mrc_size;
 	ramctr_timing *ctrl_cached = NULL;
+
+	timestamp_add_now(TS_BEFORE_INITRAM);
 
 	MCHBAR32(SAPMCTL) |= 1;
 
@@ -459,6 +460,8 @@ static void init_dram_ddr3(int s3resume, const u32 cpuid)
 
 	report_memory_config();
 
+	timestamp_add_now(TS_AFTER_INITRAM);
+
 	cbmem_was_inited = !cbmem_recovery(s3resume);
 	if (!fast_boot)
 		save_timings(&ctrl);
@@ -474,8 +477,5 @@ static void init_dram_ddr3(int s3resume, const u32 cpuid)
 void perform_raminit(int s3resume)
 {
 	post_code(0x3a);
-
-	timestamp_add_now(TS_BEFORE_INITRAM);
-
 	init_dram_ddr3(s3resume, cpu_get_cpuid());
 }

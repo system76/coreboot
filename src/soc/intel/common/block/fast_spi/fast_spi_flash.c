@@ -110,7 +110,7 @@ static int wait_for_hwseq_xfer(struct fast_spi_flash_ctx *ctx,
 	struct stopwatch sw;
 	uint32_t hsfsts;
 
-	stopwatch_init_msecs_expire(&sw, SPIBAR_HWSEQ_XFER_TIMEOUT);
+	stopwatch_init_msecs_expire(&sw, SPIBAR_HWSEQ_XFER_TIMEOUT_MS);
 	do {
 		hsfsts = fast_spi_flash_ctrlr_reg_read(ctx, SPIBAR_HSFSTS_CTL);
 
@@ -125,7 +125,7 @@ static int wait_for_hwseq_xfer(struct fast_spi_flash_ctx *ctx,
 	} while (!(stopwatch_expired(&sw)));
 
 	printk(BIOS_ERR, "SPI Transaction Timeout (Exceeded %d ms) at Flash Offset %x HSFSTS = 0x%08x\n",
-		SPIBAR_HWSEQ_XFER_TIMEOUT, flash_addr, hsfsts);
+		SPIBAR_HWSEQ_XFER_TIMEOUT_MS, flash_addr, hsfsts);
 	return E_TIMEOUT;
 }
 
@@ -299,30 +299,6 @@ static int fast_spi_flash_probe(const struct spi_slave *dev,
 	 */
 
 	flash->ops = &fast_spi_flash_ops;
-	return 0;
-}
-
-/*
- * Minimal set of commands to read WPSR from FAST_SPI.
- * Returns 0 on success, < 0 on failure.
- */
-int fast_spi_flash_read_wpsr(u8 *sr)
-{
-	uint8_t rdsr;
-	int ret = 0;
-
-	fast_spi_init();
-
-	/* sending NULL for spiflash struct parameter since we are not
-	 * calling HWSEQ read_status() call via Probe.
-	 */
-	ret = fast_spi_flash_status(NULL, &rdsr);
-	if (ret) {
-		printk(BIOS_ERR, "SPI rdsr failed\n");
-		return ret;
-	}
-	*sr = rdsr & WPSR_MASK_SRP0_BIT;
-
 	return 0;
 }
 

@@ -3,26 +3,41 @@
 #ifndef _CPU_INTEL_HASWELL_H
 #define _CPU_INTEL_HASWELL_H
 
+#include <arch/cpu.h>
 #include <stdint.h>
 
-/* Haswell CPU types */
-#define HASWELL_FAMILY_MOBILE		0x306c0
-#define HASWELL_FAMILY_ULT		0x40650
+/* CPU types without stepping */
+#define HASWELL_FAMILY_TRAD	0x306c0
+#define HASWELL_FAMILY_ULT	0x40650
+#define CRYSTALWELL_FAMILY	0x306c0
+#define BROADWELL_FAMILY_ULT	0x306d0
 
-/* Haswell CPU steppings */
-#define HASWELL_STEPPING_MOBILE_A0	1
-#define HASWELL_STEPPING_MOBILE_B0	2
-#define HASWELL_STEPPING_MOBILE_C0	3
-#define HASWELL_STEPPING_MOBILE_D0	4
-#define HASWELL_STEPPING_ULT_B0		0
-#define HASWELL_STEPPING_ULT_C0		1
+/* Haswell CPUIDs */
+#define CPUID_HASWELL_A0	0x306c1
+#define CPUID_HASWELL_B0	0x306c2
+#define CPUID_HASWELL_C0	0x306c3
 
-/* Haswell bus clock is fixed at 100MHz */
+#define CPUID_HASWELL_ULT_B0	0x40650
+#define CPUID_HASWELL_ULT_C0	0x40651
+
+/* Crystalwell CPUIDs */
+#define CPUID_CRYSTALWELL_B0	0x40660
+#define CPUID_CRYSTALWELL_C0	0x40661
+
+/* Broadwell CPUIDs */
+#define CPUID_BROADWELL_C0	0x40671
+
+#define CPUID_BROADWELL_ULT_C0	0x306d2
+#define CPUID_BROADWELL_ULT_D0	0x306d3
+#define CPUID_BROADWELL_ULT_E0	0x306d4
+
+/* Haswell and Broadwell bus clock is fixed at 100MHz */
 #define CPU_BCLK			100
 
 #define MSR_CORE_THREAD_COUNT		0x35
 #define MSR_PLATFORM_INFO		0xce
 #define  PLATFORM_INFO_SET_TDP		(1 << 29)
+#define  TIMED_MWAIT_SUPPORTED		(1 << (37 - 32))
 #define MSR_PKG_CST_CONFIG_CONTROL	0xe2
 #define MSR_PMG_IO_CAPTURE_BASE		0xe4
 #define MSR_FEATURE_CONFIG		0x13c
@@ -153,7 +168,19 @@ void intel_cpu_haswell_finalize_smm(void);
 void set_power_limits(u8 power_limit_1_time);
 int cpu_config_tdp_levels(void);
 
+void set_max_freq(void);
+
 /* CPU identification */
+static inline u32 cpu_family_model(void)
+{
+	return cpuid_eax(1) & 0x0fff0ff0;
+}
+
+static inline u32 cpu_stepping(void)
+{
+	return cpuid_eax(1) & 0xf;
+}
+
 static inline int haswell_is_ult(void)
 {
 	return CONFIG(INTEL_LYNXPOINT_LP);

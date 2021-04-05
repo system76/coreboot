@@ -2,12 +2,13 @@
 
 #include <baseboard/gpio.h>
 #include <baseboard/variants.h>
-#include <boardid.h>
 #include <gpio.h>
 #include <soc/gpio.h>
 #include <ec/google/chromeec/ec.h>
 
 static const struct soc_amd_gpio bid_gpio_set_stage_ram[] = {
+	/* PEN_DETECT_ODL - Not connected */
+	PAD_NC(GPIO_4),
 	/* AGPIO_5 - NC */
 	PAD_NC(GPIO_5),
 	/* EGPIO141 - NC */

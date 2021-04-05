@@ -7,7 +7,7 @@ Controller etc.
 ## Supported boards
 
 - [X11SSH-TF](x11ssh-tf/x11ssh-tf.md)
-- [X11SSH-F](x11ssh-f/x11ssh-f.md)
+- [X11SSH-F/LN4F](x11ssh-f/x11ssh-f.md)
 - [X11SSM-F](x11ssm-f/x11ssm-f.md)
 
 ## Required proprietary blobs
@@ -18,7 +18,7 @@ Controller etc.
 ## De-blobbing
 
 - [Intel FSP2.0] can not be removed as long as there is no free replacement
-- Intel ME can be cleaned using me_cleaner (~4.5 MB more free space)
+- Intel ME can be cleaned using me_cleaner (~4.5 MiB more free space)
 - Intel Ethernet Controller Firmware can be removed when it's extended functionality is not
   needed. For more details refer to the respective datasheet (e.g 333016-008 for I210).
 - Boards with [AST2400] BMC/IPMI: Firmware can be replaced by [OpenBMC]

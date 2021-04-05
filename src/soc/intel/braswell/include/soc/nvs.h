@@ -4,13 +4,10 @@
 #define _SOC_NVS_H_
 
 #include <stdint.h>
-#include <commonlib/helpers.h>
-#include <soc/device_nvs.h>
-#include <vendorcode/google/chromeos/gnvs.h>
 
 struct __packed global_nvs {
 	/* Miscellaneous */
-	u16	osys; /* 0x00 - Operating System */
+	u16	unused_was_osys; /* 0x00 - Operating System */
 	u8	smif; /* 0x02 - SMI function call ("TRAP") */
 	u8	prm0; /* 0x03 - SMI function call parameter */
 	u8	prm1; /* 0x04 - SMI function call parameter */
@@ -22,8 +19,8 @@ struct __packed global_nvs {
 	u8	prm5; /* 0x0a - Lock function parameter */
 	u32	p80d; /* 0x0b - Debug port (IO 0x80) value */
 	u8	lids; /* 0x0f - LID state (open = 1) */
-	u8	pwrs; /* 0x10 - Power state (AC = 1) */
-	u8      pcnt; /* 0x11 - Processor Count */
+	u8	unused_was_pwrs; /* 0x10 - Power state (AC = 1) */
+	u8      unused_was_pcnt; /* 0x11 - Processor Count */
 	u8	tpmp; /* 0x12 - TPM Present and Enabled */
 	u8	tlvl; /* 0x13 - Throttle Level */
 	u8	ppcm; /* 0x14 - Maximum P-state usable by OS */
@@ -47,17 +44,6 @@ struct __packed global_nvs {
 	u32	obsolete_cmem; /* 0x30 - CBMEM TOC */
 	u32	tolm; /* 0x34 - Top of Low Memory */
 	u32	cbmc; /* 0x38 - coreboot memconsole */
-	u8	rsvd3[120]; /* 0x3c - 0xb3 - unused */
-
-	u8	unused[76];
-
-	/* ChromeOS specific (0x100-0xfff) */
-	chromeos_acpi_t chromeos;
-
-	/* LPSS (0x1000) */
-	device_nvs_t dev;
 };
-
-check_member(global_nvs, chromeos, GNVS_CHROMEOS_ACPI_OFFSET);
 
 #endif /* _SOC_NVS_H_ */

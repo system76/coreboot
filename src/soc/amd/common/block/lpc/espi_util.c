@@ -98,6 +98,27 @@ static int espi_get_unused_io_window(void)
 	return -1;
 }
 
+void espi_clear_decodes(void)
+{
+	unsigned int idx;
+
+	/* First turn off all enable bits, then zero base, range, and size registers */
+	/*
+	 * There is currently a bug where the SMU will lock up at times if the port80h enable
+	 * bit is cleared.  See b/183974365
+	 */
+	espi_write16(ESPI_DECODE, (espi_read16(ESPI_DECODE) & ESPI_DECODE_IO_0x80_EN));
+
+	for (idx = 0; idx < ESPI_GENERIC_IO_WIN_COUNT; idx++) {
+		espi_write16(ESPI_IO_RANGE_BASE(idx), 0);
+		espi_write8(ESPI_IO_RANGE_SIZE(idx), 0);
+	}
+	for (idx = 0; idx < ESPI_GENERIC_MMIO_WIN_COUNT; idx++) {
+		espi_write32(ESPI_MMIO_RANGE_BASE(idx), 0);
+		espi_write16(ESPI_MMIO_RANGE_SIZE(idx), 0);
+	}
+}
+
 /*
  * Returns decode enable bits for standard IO port addresses. If port address is not supported
  * by standard decode or if the size of window is not 1, then it returns -1.
@@ -316,7 +337,7 @@ enum espi_cmd_type {
 #define  ESPI_SUB_DECODE_SLV_MASK		(0x3 << ESPI_SUB_DECODE_SLV_SHIFT)
 #define  ESPI_SUB_DECODE_EN			(1 << 2)
 
-#define SLAVE0_INT_STS				0x70
+#define ESPI_SLAVE0_INT_STS			0x70
 #define  ESPI_STATUS_DNCMD_COMPLETE		(1 << 28)
 #define  ESPI_STATUS_NON_FATAL_ERROR		(1 << 6)
 #define  ESPI_STATUS_FATAL_ERROR		(1 << 5)
@@ -397,9 +418,9 @@ static int espi_wait_ready(void)
 /* Clear interrupt status register */
 static void espi_clear_status(void)
 {
-	uint32_t status = espi_read32(SLAVE0_INT_STS);
+	uint32_t status = espi_read32(ESPI_SLAVE0_INT_STS);
 	if (status)
-		espi_write32(SLAVE0_INT_STS, status);
+		espi_write32(ESPI_SLAVE0_INT_STS, status);
 }
 
 /*
@@ -412,7 +433,7 @@ static int espi_poll_status(uint32_t *status)
 
 	stopwatch_init_usecs_expire(&sw, ESPI_CMD_TIMEOUT_US);
 	do {
-		*status = espi_read32(SLAVE0_INT_STS);
+		*status = espi_read32(ESPI_SLAVE0_INT_STS);
 		if (*status)
 			return 0;
 	} while (!stopwatch_expired(&sw));

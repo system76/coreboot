@@ -11,6 +11,7 @@ DefinitionBlock (
 	0x00010001	/* OEM Revision */
 	)
 {	/* Start of ASL file */
+	#include <acpi/dsdt_top.asl>
 
 	/* Globals for the platform */
 	#include "acpi/mainboard.asl"
@@ -56,8 +57,5 @@ DefinitionBlock (
 
 	/* Define the General Purpose Events for the platform */
 	#include "acpi/gpe.asl"
-
-	/* Define the System Indicators for the platform */
-	#include "acpi/si.asl"
 }
 /* End of ASL file */

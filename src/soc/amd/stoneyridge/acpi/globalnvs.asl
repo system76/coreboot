@@ -6,15 +6,12 @@
  *
  */
 
-External (NVSA)
-
-OperationRegion (GNVS, SystemMemory, NVSA, 0x1000)
 Field (GNVS, ByteAcc, NoLock, Preserve)
 {
 	/* Miscellaneous */
-	PCNT,	8,	// 0x00 - Processor Count
+	,	8,	// 0x00 - Processor Count
 	LIDS,	8,	// 0x01 - LID State
-	PWRS,	8,	// 0x02 - AC Power State
+	,	8,	// 0x02 - AC Power State
 	CBMC,	32,	// 0x03 - 0x06 - coreboot Memory Console
 	PM1I,	64,	// 0x07 - 0x0e - System Wake Source - PM1 Index
 	GPEI,	64,	// 0x0f - 0x16 - GPE Wake Source
@@ -45,7 +42,4 @@ Field (GNVS, ByteAcc, NoLock, Preserve)
 	FW01,	32,	// 0x28 - xHCI FW RAM addr, boot RAM
 	FW03,	32,	// 0x2c - xHCI FW RAM addr, Instruction RAM
 	EH10,	32,	// 0x30 - EHCI BAR
-	/* ChromeOS stuff (0x100 -> 0xfff, size 0xeff) */
-	Offset (0x100),
-	#include <vendorcode/google/chromeos/acpi/gnvs.asl>
 }

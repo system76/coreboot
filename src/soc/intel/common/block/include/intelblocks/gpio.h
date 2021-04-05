@@ -6,6 +6,10 @@
 #include <soc/gpio.h>
 #include "gpio_defs.h"
 
+/* GPIO community IOSF sideband VNNREQ/ACK handshake */
+#define MISCCFG_GPVNNREQEN	(1 << 7)
+/* GPIO community PGCB clock gating */
+#define MISCCFG_GPPGCBDPCGEN	(1 << 6)
 /* GPIO community IOSF sideband clock gating */
 #define MISCCFG_GPSIDEDPCGEN	(1 << 5)
 /* GPIO community RCOMP clock gating */
@@ -18,10 +22,6 @@
 #define MISCCFG_GPDPCGEN	(1 << 1)
 /* GPIO community local clock gating */
 #define MISCCFG_GPDLCGEN	(1 << 0)
-/* Enable GPIO community power management configuration */
-#define MISCCFG_ENABLE_GPIO_PM_CONFIG (MISCCFG_GPSIDEDPCGEN | \
-	MISCCFG_GPRCOMPCDLCGEN | MISCCFG_GPRTCDLCGEN | MISCCFG_GSXSLCGEN \
-	| MISCCFG_GPDPCGEN | MISCCFG_GPDLCGEN)
 
 #ifndef __ACPI__
 #include <types.h>
@@ -228,6 +228,14 @@ void gpio_pm_configure(const uint8_t *misccfg_pm_values, size_t num);
  * Shall be called by all SoCs that use intelblocks/gpio.
  */
 void block_gpio_enable(struct device *dev);
+
+/*
+ * Returns true if any GPIO that uses the specified IRQ is also programmed to
+ * route IRQs to IOAPIC.
+ */
+bool gpio_routes_ioapic_irq(unsigned int irq);
+
+size_t gpio_get_index_in_group(gpio_t pad);
 
 #endif
 #endif /* _SOC_INTELBLOCKS_GPIO_H_ */

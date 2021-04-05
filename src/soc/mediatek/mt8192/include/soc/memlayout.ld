@@ -9,10 +9,10 @@
  * It will be returned before starting the ramstage.
  * SRAM_L2C and SRAM can be cached, but only SRAM is DMA-able.
  */
-#define SRAM_L2C_START(addr) SYMBOL(sram_l2c, addr)
-#define SRAM_L2C_END(addr) SYMBOL(esram_l2c, addr)
+#define SRAM_L2C_START(addr) REGION_START(sram_l2c, addr)
+#define SRAM_L2C_END(addr) REGION_END(sram_l2c, addr)
 #define DRAM_INIT_CODE(addr, size) \
-	REGION(dram_init_code, addr, size, 4)
+	REGION(dram_init_code, addr, size, 64K)
 
 #define DRAM_DMA(addr, size) \
 	REGION(dram_dma, addr, size, 4K) \
@@ -26,7 +26,6 @@ SECTIONS
 	TPM_TCPA_LOG(0x00103000, 2K)
 	FMAP_CACHE(0x00103800, 2K)
 	WATCHDOG_TOMBSTONE(0x00104000, 4)
-	PRERAM_CBMEM_CONSOLE(0x00104004, 15K - 4)
 	CBFS_MCACHE(0x00107c00, 8K)
 	TIMESTAMP(0x00109c00, 1K)
 	STACK(0x0010a000, 12K)
@@ -40,11 +39,17 @@ SECTIONS
 	SRAM_END(0x00120000)
 
 	SRAM_L2C_START(0x00200000)
-	BOOTBLOCK(0x00201000, 64K)
-	OVERLAP_DECOMPRESSOR_VERSTAGE_ROMSTAGE(0x00211000, 188K)
-	DRAM_INIT_CODE(0x00240000, 208K)
-	PRERAM_CBFS_CACHE(0x00274000, 48K)
-	SRAM_L2C_END(0x00280000)
+	/* 4K reserved for BOOTROM until BOOTBLOCK is started */
+	BOOTBLOCK(0x00201000, 60K)
+	/*
+	 * The needed size can be obtained by:
+	 *  aarch64-cros-linux-gnu-objdump -x dram.elf | grep memsz
+	 */
+	DRAM_INIT_CODE(0x00210000, 240K)
+	OVERLAP_DECOMPRESSOR_VERSTAGE_ROMSTAGE(0x0024c000, 272K)
+	PRERAM_CBFS_CACHE(0x00290000, 48K)
+	PRERAM_CBMEM_CONSOLE(0x0029c000, 400K)
+	SRAM_L2C_END(0x00300000)
 
 	DRAM_START(0x40000000)
 	DRAM_DMA(0x40000000, 1M)

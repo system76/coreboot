@@ -3,6 +3,7 @@
 #define PROGRAM_LOADING_H
 
 #include <bootmem.h>
+#include <commonlib/bsd/cbfs_serialized.h>
 #include <commonlib/region.h>
 #include <stdint.h>
 #include <stddef.h>
@@ -40,18 +41,13 @@ void arch_segment_loaded(uintptr_t start, size_t size, int flags);
 
 /* Representation of a program. */
 struct prog {
-	/* The region_device is the source of program content to load. After
-	 * loading program it represents the memory region of the stages and
-	 * payload. For architectures that use a bounce buffer
-	 * then it would represent the bounce buffer. */
 	enum prog_type type;
-	uint32_t cbfs_type;
+	enum cbfs_type cbfs_type;
 	const char *name;
-	struct region_device rdev;
-	/* Entry to program with optional argument. It's up to the architecture
-	 * to decide if argument is passed. */
-	void (*entry)(void *);
-	void *arg;
+	void *start;		/* Program start in memory. */
+	size_t size;		/* Program size in memory (including BSS). */
+	void (*entry)(void *);		/* Function pointer to entry point. */
+	void *arg;	/* Optional argument (only valid for some archs). */
 };
 
 #define PROG_INIT(type_, name_)				\
@@ -70,26 +66,19 @@ static inline enum prog_type prog_type(const struct prog *prog)
 	return prog->type;
 }
 
-static inline uint32_t prog_cbfs_type(const struct prog *prog)
+static inline enum cbfs_type prog_cbfs_type(const struct prog *prog)
 {
 	return prog->cbfs_type;
 }
 
-static inline struct region_device *prog_rdev(struct prog *prog)
-{
-	return &prog->rdev;
-}
-
-/* Only valid for loaded programs. */
 static inline size_t prog_size(const struct prog *prog)
 {
-	return region_device_sz(&prog->rdev);
+	return prog->size;
 }
 
-/* Only valid for loaded programs. */
 static inline void *prog_start(const struct prog *prog)
 {
-	return rdev_mmap_full(&prog->rdev);
+	return prog->start;
 }
 
 static inline void *prog_entry(const struct prog *prog)
@@ -105,15 +94,18 @@ static inline void *prog_entry_arg(const struct prog *prog)
 /* region_device representing the 32-bit flat address space. */
 extern const struct mem_region_device addrspace_32bit;
 
-static inline void prog_memory_init(struct prog *prog, uintptr_t ptr,
-					size_t size)
+/* Can be used to get an rdev representation of program area in memory. */
+static inline void prog_chain_rdev(const struct prog *prog,
+				   struct region_device *rdev_out)
 {
-	rdev_chain(&prog->rdev, &addrspace_32bit.rdev, ptr, size);
+	rdev_chain(rdev_out, &addrspace_32bit.rdev,
+		   (uintptr_t)prog->start, prog->size);
 }
 
 static inline void prog_set_area(struct prog *prog, void *start, size_t size)
 {
-	prog_memory_init(prog, (uintptr_t)start, size);
+	prog->start = start;
+	prog->size = size;
 }
 
 static inline void prog_set_entry(struct prog *prog, void *e, void *arg)
@@ -127,13 +119,10 @@ static inline void prog_set_arg(struct prog *prog, void *arg)
 	prog->arg = arg;
 }
 
-/* Locate the identified program to run. Return 0 on success. < 0 on error. */
-int prog_locate(struct prog *prog);
 /* The prog_locate_hook() is called prior to CBFS traversal. The hook can be
- * used to implement policy that allows or prohibits further progress through
- * prog_locate(). The type and name field within struct prog are the only valid
- * fields. A 0 return value allows further progress while a non-zero return
- * value prohibits further progress */
+ * used to implement policy that allows or prohibits further program loading.
+ * The type and name field within struct prog are the only valid fields. A 0
+ * return value allows loading while a non-zero return value prohibits it. */
 int prog_locate_hook(struct prog *prog);
 
 /* Run the program described by prog. */
@@ -146,17 +135,6 @@ void arch_prog_run(struct prog *prog);
  * code it needs to that as well. */
 void platform_prog_run(struct prog *prog);
 
-struct prog_loader_ops {
-	const char *name;
-	/* Determine if the loader is the active one. If so returns 1 else 0
-	 * or < 0 on error. */
-	int (*is_loader_active)(struct prog *prog);
-	/* Returns < 0 on error or 0 on success. This function locates
-	 * the rdev representing the file data associated with the passed in
-	 * prog. */
-	int (*locate)(struct prog *prog);
-};
-
 /************************
  *   ROMSTAGE LOADING   *
  ************************/
@@ -165,7 +143,7 @@ struct prog_loader_ops {
 void run_romstage(void);
 
 /* Runtime selector for CBFS_PREFIX of romstage. */
-int legacy_romstage_selector(struct prog *romstage);
+int legacy_romstage_select_and_load(struct prog *romstage);
 
 /************************
  *   RAMSTAGE LOADING   *
@@ -197,5 +175,11 @@ void payload_run(void);
  */
 bool selfload_check(struct prog *payload, enum bootmem_type dest_type);
 bool selfload(struct prog *payload);
+/* Like selfload_check() but with the payload data already mapped to memory. */
+bool selfload_mapped(struct prog *payload, void *mapping,
+		     enum bootmem_type dest_type);
+
+/* Load a FIT payload. The payload data must already be mapped to memory. */
+void fit_payload(struct prog *payload, void *data);
 
 #endif /* PROGRAM_LOADING_H */

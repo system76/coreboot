@@ -180,7 +180,7 @@ enum cb_err fsp_load_component(struct fsp_load_descriptor *fspld, struct fsp_hea
 	uint32_t compression_algo;
 	size_t output_size;
 	void *dest;
-	struct region_device source_rdev;
+	struct region_device source_rdev, prog_rdev;
 	struct prog *fsp_prog = &fspld->fsp_prog;
 
 	if (fspld->get_destination == NULL)
@@ -201,7 +201,8 @@ enum cb_err fsp_load_component(struct fsp_load_descriptor *fspld, struct fsp_hea
 
 	prog_set_area(fsp_prog, dest, output_size);
 
-	if (fsp_validate_component(hdr, prog_rdev(fsp_prog)) != CB_SUCCESS) {
+	prog_chain_rdev(fsp_prog, &prog_rdev);
+	if (fsp_validate_component(hdr, &prog_rdev) != CB_SUCCESS) {
 		printk(BIOS_ERR, "Invalid FSP header after load!\n");
 		return CB_ERR;
 	}
@@ -222,6 +223,21 @@ void fsp_get_version(char *buf)
 	snprintf(buf, FSP_VER_LEN, "%u.%u-%u.%u.%u.%u", (hdr->spec_version >> 4),
 		hdr->spec_version & 0xf, revision.rev.major,
 		revision.rev.minor, revision.rev.revision, revision.rev.bld_num);
+}
+
+/* Check if the signature in the UPD header matches the expected one. If it doesn't match, the
+   FSP binaries in CBFS are for a different platform than the platform code trying to use it
+   in which case the function calls die(). */
+void fsp_verify_upd_header_signature(uint64_t upd_signature, uint64_t expected_signature)
+{
+	if (upd_signature != expected_signature) {
+		/* The UPD signatures are non-zero-terminated ASCII stored as a little endian
+		   uint64_t, so this needs some casts. */
+		die_with_post_code(POST_INVALID_VENDOR_BINARY,
+			"Invalid UPD signature! FSP provided \"%8s\", expected was \"%8s\".\n",
+			(char *)&upd_signature,
+			(char *)&expected_signature);
+	}
 }
 
 /* Add FSP version to coreboot table LB_TAG_PLATFORM_BLOB_VERSION */

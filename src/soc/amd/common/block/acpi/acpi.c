@@ -3,14 +3,13 @@
 #include <amdblocks/acpimmio.h>
 #include <amdblocks/acpi.h>
 #include <acpi/acpi.h>
-#include <acpi/acpi_gnvs.h>
+#include <acpi/acpi_pm.h>
 #include <bootmode.h>
 #include <console/console.h>
 #include <elog.h>
 #include <halt.h>
 #include <security/vboot/vboot_common.h>
 #include <soc/southbridge.h>
-#include <soc/nvs.h>
 
 void poweroff(void)
 {
@@ -106,8 +105,15 @@ void acpi_fill_pm_gpe_state(struct acpi_pm_gpe_state *state)
 	state->aligning_field = 0;
 }
 
-void acpi_pm_gpe_add_events_print_events(const struct acpi_pm_gpe_state *state)
+void acpi_pm_gpe_add_events_print_events(void)
 {
+	const struct chipset_power_state *ps;
+	const struct acpi_pm_gpe_state *state;
+
+	if (acpi_pm_state_for_elog(&ps) < 0)
+		return;
+
+	state = &ps->gpe_state;
 	log_pm1_status(state->pm1_sts);
 	print_pm1_status(state->pm1_sts);
 	log_gpe_events(state);
@@ -117,47 +123,6 @@ void acpi_clear_pm_gpe_status(void)
 {
 	acpi_write16(MMIO_ACPI_PM1_STS, acpi_read16(MMIO_ACPI_PM1_STS));
 	acpi_write32(MMIO_ACPI_GPE0_STS, acpi_read32(MMIO_ACPI_GPE0_STS));
-}
-
-static int get_index_bit(uint32_t value, uint16_t limit)
-{
-	uint16_t i;
-	uint32_t t;
-
-	if (limit >= TOTAL_BITS(uint32_t))
-		return -1;
-
-	/* get a mask of valid bits. Ex limit = 3, set bits 0-2 */
-	t = (1 << limit) - 1;
-	if ((value & t) == 0)
-		return -1;
-	t = 1;
-	for (i = 0; i < limit; i++) {
-		if (value & t)
-			break;
-		t <<= 1;
-	}
-	return i;
-}
-
-void pm_fill_gnvs(const struct acpi_pm_gpe_state *state)
-{
-	int index;
-	struct global_nvs *gnvs = acpi_get_gnvs();
-	if (gnvs == NULL)
-		return;
-
-	index = get_index_bit(state->pm1_sts & state->pm1_en, PM1_LIMIT);
-	if (index < 0)
-		gnvs->pm1i = ~0ULL;
-	else
-		gnvs->pm1i = index;
-
-	index = get_index_bit(state->gpe0_sts & state->gpe0_en, GPE0_LIMIT);
-	if (index < 0)
-		gnvs->gpei = ~0ULL;
-	else
-		gnvs->gpei = index;
 }
 
 int acpi_get_sleep_type(void)

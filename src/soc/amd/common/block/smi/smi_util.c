@@ -49,11 +49,32 @@ void configure_gevent_smi(uint8_t gevent, uint8_t mode, uint8_t level)
 	/* SMI0 source is GEVENT0 and so on */
 	configure_smi(gevent, mode);
 
-	/* And set set the trigger level */
+	/* And set the trigger level */
 	reg32 = smi_read32(SMI_REG_SMITRIG0);
 	reg32 &= ~(1 << gevent);
 	reg32 |= (level & 0x1) << gevent;
 	smi_write32(SMI_REG_SMITRIG0, reg32);
+}
+
+/** Set the EOS bit and enable SMI generation from southbridge */
+void global_smi_enable(void)
+{
+	uint32_t reg = smi_read32(SMI_REG_SMITRIG0);
+	reg &= ~SMITRG0_SMIENB;	/* Enable SMI generation */
+	reg |= SMITRG0_EOS;	/* Set EOS bit */
+	smi_write32(SMI_REG_SMITRIG0, reg);
+}
+
+void southbridge_smi_set_eos(void)
+{
+	uint32_t reg = smi_read32(SMI_REG_SMITRIG0);
+	reg |= SMITRG0_EOS;
+	smi_write32(SMI_REG_SMITRIG0, reg);
+}
+
+void soc_route_sci(uint8_t event)
+{
+	smi_write8(SMI_SCI_MAP(event), event);
 }
 
 /**
@@ -121,4 +142,20 @@ void disable_gevent_smi(uint8_t gevent)
 uint16_t pm_acpi_smi_cmd_port(void)
 {
 	return pm_read16(PM_ACPI_SMI_CMD);
+}
+
+void clear_all_smi_status(void)
+{
+	smi_write32(SMI_SCI_STATUS, smi_read32(SMI_SCI_STATUS));
+	smi_write32(SMI_EVENT_STATUS, smi_read32(SMI_EVENT_STATUS));
+	smi_write32(SMI_REG_SMISTS0, smi_read32(SMI_REG_SMISTS0));
+	smi_write32(SMI_REG_SMISTS1, smi_read32(SMI_REG_SMISTS1));
+	smi_write32(SMI_REG_SMISTS2, smi_read32(SMI_REG_SMISTS2));
+	smi_write32(SMI_REG_SMISTS3, smi_read32(SMI_REG_SMISTS3));
+	smi_write32(SMI_REG_SMISTS4, smi_read32(SMI_REG_SMISTS4));
+}
+
+void clear_smi_sci_status(void)
+{
+	smi_write32(SMI_SCI_STATUS, smi_read32(SMI_SCI_STATUS));
 }

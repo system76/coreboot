@@ -6,7 +6,6 @@
  * Chapter number: 14
  */
 
-#include <arch/cpu.h>
 #include <console/console.h>
 #include <device/pci.h>
 #include <cpu/x86/lapic.h>
@@ -19,7 +18,6 @@
 #include <intelblocks/cpulib.h>
 #include <intelblocks/mp_init.h>
 #include <intelblocks/msr.h>
-#include <romstage_handoff.h>
 #include <soc/cpu.h>
 #include <soc/msr.h>
 #include <soc/pci_devs.h>
@@ -27,7 +25,7 @@
 
 static void soc_fsp_load(void)
 {
-	fsps_load(romstage_handoff_is_resume());
+	fsps_load();
 }
 
 static void configure_misc(void)

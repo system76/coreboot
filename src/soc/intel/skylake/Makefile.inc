@@ -11,7 +11,6 @@ subdirs-y += ../../../cpu/x86/smm
 subdirs-y += ../../../cpu/x86/tsc
 
 bootblock-y += bootblock/bootblock.c
-bootblock-y += bootblock/cpu.c
 bootblock-y += i2c.c
 bootblock-y += bootblock/pch.c
 bootblock-y += bootblock/report_platform.c
@@ -58,7 +57,6 @@ ramstage-y += pmc.c
 ramstage-y += pmutil.c
 ramstage-y += reset.c
 ramstage-y += sd.c
-ramstage-y += smmrelocate.c
 ramstage-y += spi.c
 ramstage-y += systemagent.c
 ramstage-y += uart.c

@@ -2,7 +2,7 @@
 
 if BOARD_AMD_PADMELON
 
-config BOARD_SPECIFIC_OPTIONS # dummy
+config BOARD_SPECIFIC_OPTIONS
 	def_bool y
 	select SOC_AMD_STONEYRIDGE
 	select AMD_APU_PKG_FP4
@@ -16,7 +16,6 @@ config BOARD_SPECIFIC_OPTIONS # dummy
 	select SUPERIO_FINTEK_COMMON_PRE_RAM
 	select SUPERIO_FINTEK_FAN_CONTROL
 	select SUPERIO_FINTEK_FAN_API_CALL
-	select VGA_BIOS
 	select AZALIA_PLUGIN_SUPPORT
 
 config MAINBOARD_DIR
@@ -33,20 +32,13 @@ choice
 
 config PADMELON_MERLIN_FALCON
 	bool "Merlin Falcon"
+	select AMD_APU_MERLINFALCON
 
 config PADMELON_PRAIRIE_FALCON
 	bool "Prairie Falcon"
+	select AMD_APU_PRAIRIEFALCON
 
 endchoice
-
-config PADMELON_SOC_IN_USE
-	def_bool y
-	select AMD_APU_MERLINFALCON if PADMELON_MERLIN_FALCON
-	select AMD_APU_PRAIRIEFALCON if PADMELON_PRAIRIE_FALCON
-
-config HAVE_S3_SUPPORT
-	bool
-	default n
 
 config MAX_CPUS
 	int
@@ -55,6 +47,9 @@ config MAX_CPUS
 config IRQ_SLOT_COUNT
 	int
 	default 11
+
+config VGA_BIOS
+	default y if USE_AMD_BLOBS
 
 config HWM_PORT
 	hex

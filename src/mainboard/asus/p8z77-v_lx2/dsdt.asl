@@ -11,8 +11,8 @@ DefinitionBlock(
 	0x20141018	/* OEM revision */
 )
 {
+	#include <acpi/dsdt_top.asl>
 	#include "acpi/platform.asl"
-	#include "acpi/superio.asl"
 	#include <cpu/intel/common/acpi/cpu.asl>
 	#include <southbridge/intel/common/acpi/platform.asl>
 	#include <southbridge/intel/bd82x6x/acpi/globalnvs.asl>
@@ -21,7 +21,6 @@ DefinitionBlock(
 	Device (\_SB.PCI0)
 	{
 		#include <northbridge/intel/sandybridge/acpi/sandybridge.asl>
-		#include <drivers/intel/gma/acpi/default_brightness_levels.asl>
 		#include <southbridge/intel/bd82x6x/acpi/pch.asl>
 	}
 }

@@ -13,11 +13,15 @@ enum cbfs_compression {
 };
 
 enum cbfs_type {
+	/* QUERY is an alias for DELETED that can be passed to CBFS APIs to
+	   inquire about the type of a file, rather than constrain it. */
+	CBFS_TYPE_QUERY		= 0,
 	CBFS_TYPE_DELETED	= 0x00000000,
 	CBFS_TYPE_NULL		= 0xffffffff,
 	CBFS_TYPE_BOOTBLOCK	= 0x01,
 	CBFS_TYPE_CBFSHEADER	= 0x02,
-	CBFS_TYPE_STAGE		= 0x10,
+	CBFS_TYPE_LEGACY_STAGE	= 0x10,
+	CBFS_TYPE_STAGE		= 0x11,
 	CBFS_TYPE_SELF		= 0x20,
 	CBFS_TYPE_FIT		= 0x21,
 	CBFS_TYPE_OPTIONROM	= 0x30,
@@ -114,6 +118,9 @@ struct cbfs_file_attribute {
 	uint8_t data[0];
 } __packed;
 
+/* All attribute sizes must be divisible by this! */
+#define CBFS_ATTRIBUTE_ALIGN 4
+
 /* Depending on how the header was initialized, it may be backed with 0x00 or
  * 0xff. Support both. */
 enum cbfs_file_attr_tag {
@@ -125,6 +132,7 @@ enum cbfs_file_attr_tag {
 	CBFS_FILE_ATTR_TAG_ALIGNMENT	= 0x42434c41, /* BE: 'BCLA' */
 	CBFS_FILE_ATTR_TAG_IBB		= 0x32494242, /* BE: '2IBB' */
 	CBFS_FILE_ATTR_TAG_PADDING	= 0x47444150, /* BE: 'GNDP' */
+	CBFS_FILE_ATTR_TAG_STAGEHEADER	= 0x53746748, /* BE: 'StgH' */
 };
 
 struct cbfs_file_attr_compression {
@@ -154,21 +162,19 @@ struct cbfs_file_attr_align {
 	uint32_t alignment;
 } __packed;
 
+struct cbfs_file_attr_stageheader {
+	uint32_t tag;
+	uint32_t len;
+	uint64_t loadaddr;	/* Memory address to load the code to. */
+	uint32_t entry_offset;	/* Offset of entry point from loadaddr. */
+	uint32_t memlen;	/* Total length (including BSS) in memory. */
+} __packed;
+
+
 /*** Component sub-headers ***/
 
 /* Following are component sub-headers for the "standard"
    component types */
-
-/** This is the sub-header for stage components.  Stages are
-    loaded by coreboot during the normal boot process */
-
-struct cbfs_stage {
-	uint32_t compression;  /** Compression type */
-	uint64_t entry;  /** entry point */
-	uint64_t load;   /** Where to load in memory */
-	uint32_t len;          /** length of data to load */
-	uint32_t memlen;	   /** total length of object in memory */
-} __packed;
 
 /** this is the sub-header for payload components.  Payloads
     are loaded by coreboot at the end of the boot process */

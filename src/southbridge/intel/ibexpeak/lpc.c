@@ -13,14 +13,11 @@
 #include <device/pci_ops.h>
 #include <arch/ioapic.h>
 #include <acpi/acpi.h>
-#include <acpi/acpi_gnvs.h>
 #include <elog.h>
 #include <acpi/acpigen.h>
-#include <string.h>
 #include <cpu/x86/smm.h>
 #include "chip.h"
 #include "pch.h"
-#include "nvs.h"
 #include <southbridge/intel/common/pciehp.h>
 #include <southbridge/intel/common/acpi_pirq_gen.h>
 #include <southbridge/intel/common/spi.h>
@@ -405,16 +402,6 @@ static void pch_set_acpi_mode(void)
 	}
 }
 
-static void pch_disable_smm_only_flashing(struct device *dev)
-{
-	u8 reg8;
-
-	printk(BIOS_SPEW, "Enabling BIOS updates outside of SMM... ");
-	reg8 = pci_read_config8(dev, BIOS_CNTL);
-	reg8 &= ~(1 << 5);
-	pci_write_config8(dev, BIOS_CNTL, reg8);
-}
-
 static void pch_fixups(struct device *dev)
 {
 	/*
@@ -443,9 +430,6 @@ static void lpc_init(struct device *dev)
 	/* Initialize power management */
 	mobile5_pm_init(dev);
 
-	/* Set the state of the GPIO lines. */
-	//gpio_init(dev);
-
 	/* Initialize the real time clock. */
 	pch_rtc_init(dev);
 
@@ -463,8 +447,6 @@ static void lpc_init(struct device *dev)
 	/* The OS should do this? */
 	/* Interrupt 9 should be level triggered (SCI) */
 	i8259_configure_irq_trigger(9, 1);
-
-	pch_disable_smm_only_flashing(dev);
 
 	pch_set_acpi_mode();
 
@@ -541,18 +523,6 @@ static void pch_lpc_enable(struct device *dev)
 	pch_enable(dev);
 }
 
-size_t gnvs_size_of_array(void)
-{
-	return sizeof(struct global_nvs);
-}
-
-void soc_fill_gnvs(struct global_nvs *gnvs)
-{
-	gnvs->apic = 1;
-	gnvs->mpen = 1; /* Enable Multi Processing */
-	gnvs->pcnt = dev_count_cpu();
-}
-
 static const char *lpc_acpi_name(const struct device *dev)
 {
 	return "LPCB";
@@ -593,8 +563,18 @@ static struct device_operations device_ops = {
 };
 
 static const unsigned short pci_device_ids[] = {
+	PCI_DID_INTEL_IBEXPEAK_LPC_P55,
+	PCI_DID_INTEL_IBEXPEAK_LPC_PM55,
+	PCI_DID_INTEL_IBEXPEAK_LPC_H55,
 	PCI_DID_INTEL_IBEXPEAK_LPC_QM57,
+	PCI_DID_INTEL_IBEXPEAK_LPC_H57,
 	PCI_DID_INTEL_IBEXPEAK_LPC_HM55,
+	PCI_DID_INTEL_IBEXPEAK_LPC_Q57,
+	PCI_DID_INTEL_IBEXPEAK_LPC_HM57,
+	PCI_DID_INTEL_IBEXPEAK_LPC_QS57,
+	PCI_DID_INTEL_IBEXPEAK_LPC_3400,
+	PCI_DID_INTEL_IBEXPEAK_LPC_3420,
+	PCI_DID_INTEL_IBEXPEAK_LPC_3450,
 	0
 };
 

@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 
+#include <bootsplash.h>
 #include <cbfs.h>
 #include <cbmem.h>
 #include <commonlib/fsp.h>
@@ -81,24 +82,25 @@ static void do_silicon_init(struct fsp_header *hdr)
 	FSPS_UPD *upd, *supd;
 	fsp_silicon_init_fn silicon_init;
 	uint32_t status;
-	const struct cbmem_entry *logo_entry = NULL;
 	fsp_multi_phase_si_init_fn multi_phase_si_init;
 	struct fsp_multi_phase_params multi_phase_params;
 	struct fsp_multi_phase_get_number_of_phases_params multi_phase_get_number;
 
-	supd = (FSPS_UPD *) (hdr->cfg_region_offset + hdr->image_base);
+	supd = (FSPS_UPD *) (uintptr_t)(hdr->cfg_region_offset + hdr->image_base);
 
-	if (supd->FspUpdHeader.Signature != FSPS_UPD_SIGNATURE)
-		die_with_post_code(POST_INVALID_VENDOR_BINARY,
-			"Invalid FSPS signature\n");
+	fsp_verify_upd_header_signature(supd->FspUpdHeader.Signature, FSPS_UPD_SIGNATURE);
 
-	/* Disallow invalid config regions.  Default settings are likely bad
-	 * choices for coreboot, and different sized UPD from what the region
-	 * allows is potentially a build problem.
+	/* FSPS UPD and coreboot structure sizes should match. However, enforcing the exact
+	 * match mandates simultaneous updates to coreboot and FSP repos. Allow coreboot
+	 * to proceed if its UPD structure is smaller than FSP one to enable staggered UPD
+	 * update process on both sides. The mismatch indicates a temporary build problem,
+	 * don't leave it like this as FSP default settings can be bad choices for coreboot.
 	 */
-	if (!hdr->cfg_region_size || hdr->cfg_region_size != sizeof(FSPS_UPD))
+	if (!hdr->cfg_region_size || hdr->cfg_region_size < sizeof(FSPS_UPD))
 		die_with_post_code(POST_INVALID_VENDOR_BINARY,
 			"Invalid FSPS UPD region\n");
+	else if (hdr->cfg_region_size > sizeof(FSPS_UPD))
+		printk(BIOS_ERR, "FSP and coreboot are out of sync! FSPS UPD size > coreboot\n");
 
 	upd = xmalloc(hdr->cfg_region_size);
 
@@ -108,18 +110,18 @@ static void do_silicon_init(struct fsp_header *hdr)
 	platform_fsp_silicon_init_params_cb(upd);
 
 	/* Populate logo related entries */
-	if (CONFIG(FSP2_0_DISPLAY_LOGO))
-		logo_entry = soc_load_logo(upd);
+	if (CONFIG(BMP_LOGO))
+		soc_load_logo(upd);
 
 	/* Call SiliconInit */
-	silicon_init = (void *) (hdr->image_base +
+	silicon_init = (void *) (uintptr_t)(hdr->image_base +
 				 hdr->silicon_init_entry_offset);
 	fsp_debug_before_silicon_init(silicon_init, supd, upd);
 
 	timestamp_add_now(TS_FSP_SILICON_INIT_START);
 	post_code(POST_FSP_SILICON_INIT);
 
-	if (ENV_X86_64)
+	if (ENV_X86_64 && CONFIG(PLATFORM_USES_FSP2_X86_32))
 		status = protected_mode_call_1arg(silicon_init, (uintptr_t)upd);
 	else
 		status = silicon_init(upd);
@@ -129,8 +131,8 @@ static void do_silicon_init(struct fsp_header *hdr)
 	timestamp_add_now(TS_FSP_SILICON_INIT_END);
 	post_code(POST_FSP_SILICON_EXIT);
 
-	if (logo_entry)
-		cbmem_entry_remove(logo_entry);
+	if (CONFIG(BMP_LOGO))
+		bmp_release_logo();
 
 	fsp_debug_after_silicon_init(status);
 	fsps_return_value_handler(FSP_SILICON_INIT_API, status);
@@ -147,7 +149,7 @@ static void do_silicon_init(struct fsp_header *hdr)
 		return;
 
 	/* Call MultiPhaseSiInit */
-	multi_phase_si_init = (void *) (hdr->image_base +
+	multi_phase_si_init = (void *) (uintptr_t)(hdr->image_base +
 			 hdr->multi_phase_si_init_entry_offset);
 
 	/* Implementing multi_phase_si_init() is optional as per FSP 2.2 spec */
@@ -193,7 +195,7 @@ static int fsps_get_dest(const struct fsp_load_descriptor *fspld, void **dest,
 	return 0;
 }
 
-void fsps_load(bool s3wake)
+void fsps_load(void)
 {
 	struct fsp_load_descriptor fspld = {
 		.fsp_prog = PROG_INIT(PROG_REFCODE, CONFIG_FSP_S_CBFS),
@@ -205,10 +207,13 @@ void fsps_load(bool s3wake)
 	if (load_done)
 		return;
 
-	if (s3wake && !CONFIG(NO_STAGE_CACHE)) {
+	if (resume_from_stage_cache()) {
 		printk(BIOS_DEBUG, "Loading FSPS from stage_cache\n");
 		stage_cache_load_stage(STAGE_REFCODE, fsps);
-		if (fsp_validate_component(&fsps_hdr, prog_rdev(fsps)) != CB_SUCCESS)
+
+		struct region_device prog_rdev;
+		prog_chain_rdev(fsps, &prog_rdev);
+		if (fsp_validate_component(&fsps_hdr, &prog_rdev) != CB_SUCCESS)
 			die("On resume fsps header is invalid\n");
 		load_done = 1;
 		return;
@@ -222,14 +227,10 @@ void fsps_load(bool s3wake)
 	load_done = 1;
 }
 
-void fsp_silicon_init(bool s3wake)
+void fsp_silicon_init(void)
 {
-	fsps_load(s3wake);
+	fsps_load();
 	do_silicon_init(&fsps_hdr);
 }
 
-/* Load bmp and set FSP parameters, fsp_load_logo can be used */
-__weak const struct cbmem_entry *soc_load_logo(FSPS_UPD *supd)
-{
-	return NULL;
-}
+__weak void soc_load_logo(FSPS_UPD *supd) { }

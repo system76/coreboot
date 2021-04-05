@@ -9,7 +9,6 @@
 #include <cpu/x86/mp.h>
 #include <cpu/x86/lapic.h>
 #include <cpu/x86/tsc.h>
-#include <arch/cpu.h>
 #include <device/path.h>
 #include <device/device.h>
 #include <smp/spinlock.h>
@@ -124,7 +123,7 @@ static const char *cpu_vendor_name(int vendor)
 {
 	const char *name;
 	name = "<invalid CPU vendor>";
-	if ((vendor < (ARRAY_SIZE(x86_vendor_name))) &&
+	if ((vendor < ARRAY_SIZE(x86_vendor_name)) &&
 		(x86_vendor_name[vendor] != 0))
 		name = x86_vendor_name[vendor];
 	return name;
@@ -334,7 +333,7 @@ void arch_bootstate_coreboot_exit(void)
  * function will always getting called from coreboot context
  * (ESP stack pointer will always refer to coreboot).
  *
- * But with FSP_USES_MP_SERVICES_PPI implementation in coreboot this
+ * But with MP_SERVICES_PPI implementation in coreboot this
  * assumption might not be true, where FSP context (stack pointer refers
  * to FSP) will request to get cpu_index().
  *

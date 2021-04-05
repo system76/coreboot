@@ -5,6 +5,7 @@
 #include <console/debug.h>
 #include <cpu/x86/lapic.h>
 #include <device/pci.h>
+#include <intelblocks/acpi.h>
 #include <intelblocks/gpio.h>
 #include <intelblocks/lpc_lib.h>
 #include <intelblocks/p2sb.h>
@@ -25,7 +26,7 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *silupd)
 }
 
 #if CONFIG(HAVE_ACPI_TABLES)
-static const char *soc_acpi_name(const struct device *dev)
+const char *soc_acpi_name(const struct device *dev)
 {
 	if (dev->path.type == DEVICE_PATH_DOMAIN)
 		return "PC00";
@@ -67,6 +68,75 @@ static void chip_enable_dev(struct device *dev)
 	}
 }
 
+static void iio_write_mask(u16 bus, u16 dev, u8 func)
+{
+	pci_devfn_t device = PCI_DEV(bus, dev, func);
+	u32 val = pci_s_read_config32(device, IIO_XPUNCCERRMSK_REG);
+	val |= (SENT_PCIE_UNSUPP_MASK | RCVD_PCIE_CA_STS_MASK | RCVD_PCIE_UR_STS_MASK);
+	pci_s_write_config32(device, IIO_XPUNCCERRMSK_REG, val);
+
+	val = pci_s_read_config32(device, RP_UNCERRMSK);
+	val |= (SURPRISE_DWN_ERR_MSK | UNSUPPORTED_REQ_ERR_MSK);
+	pci_s_write_config32(device, RP_UNCERRMSK, val);
+}
+
+static void iio_dmi_en_masks(void)
+{
+	pci_devfn_t device;
+	u32 val;
+	device = PCI_DEV(DMI_BUS_INDEX, DMI_DEV, DMI_FUNC);
+	val = pci_s_read_config32(device, IIO_XPUNCCERRMSK_REG);
+	val |= (SENT_PCIE_UNSUPP_MASK | RCVD_PCIE_CA_STS_MASK | RCVD_PCIE_UR_STS_MASK);
+	pci_s_write_config32(device, IIO_XPUNCCERRMSK_REG, val);
+
+	val = pci_s_read_config32(device, DMI_UNCERRMSK);
+	val |= (ECRC_ERR | MLFRMD_TLP | RCV_BUF_OVRFLOW | FLOW_CNTR | POISON_TLP | DLL_PRT_ERR);
+	pci_s_write_config32(device, DMI_UNCERRMSK, val);
+}
+
+static void iio_enable_masks(void)
+{
+	struct iiostack_resource iio = {0};
+	get_iiostack_info(&iio);
+	int i, k;
+	for (i = 0; i < iio.no_of_stacks; i++) {
+		const STACK_RES *st = &iio.res[i];
+		if (st->BusBase > 0 && st->BusBase != 0xff) {
+			for (k = 0; k < DEVICES_PER_IIO_STACK; k++) {
+				printk(BIOS_DEBUG, "%s: bus:%x dev:%x func:%x\n", __func__,
+					st->BusBase, k, 0);
+				iio_write_mask(st->BusBase, k, 0);
+			}
+		}
+	}
+	iio_dmi_en_masks();
+}
+
+static void set_pcu_locks(void)
+{
+	for (uint32_t socket = 0; socket < soc_get_num_cpus(); ++socket) {
+		uint32_t bus = get_socket_stack_busno(socket, PCU_IIO_STACK);
+
+		/* configure PCU_CR0_FUN csrs */
+		const struct device *cr0_dev = PCU_DEV_CR0(bus);
+		pci_or_config32(cr0_dev, PCU_CR0_P_STATE_LIMITS, P_STATE_LIMITS_LOCK);
+		pci_or_config32(cr0_dev, PCU_CR0_PACKAGE_RAPL_LIMIT_UPR, PKG_PWR_LIM_LOCK_UPR);
+
+		/* configure PCU_CR1_FUN csrs */
+		const struct device *cr1_dev = PCU_DEV_CR1(bus);
+		pci_or_config32(cr1_dev, PCU_CR1_SAPMCTL, SAPMCTL_LOCK_MASK);
+
+		/* configure PCU_CR2_FUN csrs */
+		const struct device *cr2_dev = PCU_DEV_CR2(bus);
+		pci_or_config32(cr2_dev, PCU_CR2_DRAM_PLANE_POWER_LIMIT, PP_PWR_LIM_LOCK);
+
+		/* configure PCU_CR3_FUN csrs */
+		const struct device *cr3_dev = PCU_DEV_CR3(bus);
+		pci_or_config32(cr3_dev, PCU_CR3_CONFIG_TDP_CONTROL, TDP_LOCK);
+	}
+
+}
+
 static void chip_final(void *data)
 {
 	/* Lock SBI */
@@ -83,15 +153,17 @@ static void chip_final(void *data)
 	uint8_t reg8 = pci_io_read_config8(PCI_DEV(0, 0, 0), 0x88);
 	pci_io_write_config8(PCI_DEV(0, 0, 0), 0x88, reg8 | (1 << 4));
 
-	p2sb_hide();
+	set_pcu_locks();
 
+	p2sb_hide();
+	iio_enable_masks();
 	set_bios_init_completion();
 }
 
 static void chip_init(void *data)
 {
 	printk(BIOS_DEBUG, "coreboot: calling fsp_silicon_init\n");
-	fsp_silicon_init(false);
+	fsp_silicon_init();
 	override_hpet_ioapic_bdf();
 	pch_enable_ioapic();
 	pch_lock_dmictl();

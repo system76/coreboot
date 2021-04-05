@@ -12,6 +12,7 @@ config VBOOT
 
 config BOARD_SPECIFIC_OPTIONS
 	def_bool y
+	select RTC
 	select SOC_MEDIATEK_MT8192
 	select BOARD_ROMSIZE_KB_8192
 	select MAINBOARD_HAS_CHROMEOS
@@ -37,6 +38,7 @@ config MAINBOARD_PART_NUMBER
 	string
 	default "Asurada" if BOARD_GOOGLE_ASURADA
 	default "Hayato" if BOARD_GOOGLE_HAYATO
+	default "Spherion" if BOARD_GOOGLE_SPHERION
 
 config DRIVER_TPM_SPI_BUS
 	hex
@@ -51,5 +53,9 @@ config BOOT_DEVICE_SPI_FLASH_BUS
 config EC_GOOGLE_CHROMEEC_SPI_BUS
 	hex
 	default 0x1
+
+config CONSOLE_CBMEM_BUFFER_SIZE
+	hex
+	default 0x80000
 
 endif

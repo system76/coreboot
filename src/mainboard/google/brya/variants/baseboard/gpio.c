@@ -3,6 +3,7 @@
 #include <baseboard/gpio.h>
 #include <baseboard/variants.h>
 #include <commonlib/helpers.h>
+#include <soc/gpio.h>
 #include <vendorcode/google/chromeos/chromeos.h>
 
 /* Pad configuration in ramstage */
@@ -235,13 +236,13 @@ static const struct pad_config gpio_table[] = {
 	/* F13 : GSXDOUT ==> GSPI_PCH_DI_FPMCU_DO */
 	PAD_CFG_NF(GPP_F13, NONE, DEEP, NF4),
 	/* F14 : GSXDIN ==> TCHPAD_INT_ODL */
-	PAD_CFG_GPI_IRQ_WAKE(GPP_F14, NONE, DEEP, LEVEL, INVERT),
+	PAD_CFG_GPI_IRQ_WAKE(GPP_F14, NONE, PLTRST, LEVEL, INVERT),
 	/* F15 : GSXSRESET# ==> FPMCU_INT_L */
 	PAD_CFG_GPI_IRQ_WAKE(GPP_F15, NONE, DEEP, LEVEL, INVERT),
 	/* F16 : GSXCLK ==> GSPI_PCH_CS_FPMCU_R_L */
 	PAD_CFG_NF(GPP_F16, NONE, DEEP, NF4),
 	/* F17 : THC1_SPI2_RST# ==> EC_PCH_INT_ODL */
-	PAD_CFG_GPI_APIC(GPP_F17, NONE, PLTRST, LEVEL, INVERT),
+	PAD_CFG_GPI_IRQ_WAKE(GPP_F17, NONE, DEEP, LEVEL, INVERT),
 	/* F18 : THC1_SPI2_INT# ==> EC_IN_RW_OD */
 	PAD_CFG_GPI(GPP_F18, NONE, DEEP),
 	/* F19 : SRCCLKREQ6# ==> WWAN_SIM1_DET_OD */
@@ -342,8 +343,8 @@ static const struct pad_config gpio_table[] = {
 	PAD_CFG_NF(GPD0, NONE, DEEP, NF1),
 	/* GPD1: ACPRESENT ==> PCH_ACPRESENT */
 	PAD_CFG_NF(GPD1, NONE, DEEP, NF1),
-	/* GPD2: LAN_WAKE# ==> EC_PCH_WAKE_ODL */
-	PAD_CFG_NF(GPD2, NONE, DEEP, NF1),
+	/* GPD2: LAN_WAKE# ==> NC */
+	PAD_NC(GPD2, NONE),
 	/* GPD3: PWRBTN# ==> EC_PCH_PWR_BTN_ODL */
 	PAD_CFG_NF(GPD3, NONE, DEEP, NF1),
 	/* GPD4: SLP_S3# ==> SLP_S3_L */
@@ -397,6 +398,8 @@ const struct pad_config *__weak variant_early_gpio_table(size_t *num)
 }
 
 static const struct cros_gpio cros_gpios[] = {
+	CROS_GPIO_REC_AL(CROS_GPIO_VIRTUAL, CROS_GPIO_DEVICE_NAME),
+	CROS_GPIO_WP_AH(GPIO_PCH_WP, CROS_GPIO_DEVICE_NAME),
 };
 
 const struct cros_gpio *__weak variant_cros_gpios(size_t *num)

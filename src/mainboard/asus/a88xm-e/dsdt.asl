@@ -11,9 +11,7 @@ DefinitionBlock (
 	0x00010001		/* OEM Revision */
 	)
 {	/* Start of ASL file */
-
-	/* Globals for the platform */
-	#include "acpi/mainboard.asl"
+	#include <acpi/dsdt_top.asl>
 
 	/* Describe the USB Overcurrent pins */
 	#include "acpi/usb_oc.asl"

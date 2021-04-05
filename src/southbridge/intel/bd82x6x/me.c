@@ -9,6 +9,7 @@
  */
 
 #include <acpi/acpi.h>
+#include <cf9_reset.h>
 #include <device/mmio.h>
 #include <device/device.h>
 #include <device/pci.h>
@@ -19,179 +20,26 @@
 #include <string.h>
 #include <delay.h>
 #include <elog.h>
+#include <halt.h>
+#include <option.h>
+#include <southbridge/intel/common/me.h>
 
 #include "me.h"
 #include "pch.h"
-
-/* Send END OF POST message to the ME */
-static int __unused mkhi_end_of_post(void)
-{
-	struct mkhi_header mkhi = {
-		.group_id	= MKHI_GROUP_ID_GEN,
-		.command	= MKHI_END_OF_POST,
-	};
-	struct mei_header mei = {
-		.is_complete	= 1,
-		.host_address	= MEI_HOST_ADDRESS,
-		.client_address	= MEI_ADDRESS_MKHI,
-		.length		= sizeof(mkhi),
-	};
-
-	/* Send request and wait for response */
-	if (mei_sendrecv(&mei, &mkhi, NULL, NULL, 0) < 0) {
-		printk(BIOS_ERR, "ME: END OF POST message failed\n");
-		return -1;
-	}
-
-	printk(BIOS_INFO, "ME: END OF POST message successful\n");
-	return 0;
-}
-
-/* Get ME firmware version */
-static int __unused mkhi_get_fw_version(void)
-{
-	struct me_fw_version version;
-	struct mkhi_header mkhi = {
-		.group_id	= MKHI_GROUP_ID_GEN,
-		.command	= MKHI_GET_FW_VERSION,
-	};
-	struct mei_header mei = {
-		.is_complete	= 1,
-		.host_address	= MEI_HOST_ADDRESS,
-		.client_address	= MEI_ADDRESS_MKHI,
-		.length		= sizeof(mkhi),
-	};
-
-	/* Send request and wait for response */
-	if (mei_sendrecv(&mei, &mkhi, NULL, &version, sizeof(version)) < 0) {
-		printk(BIOS_ERR, "ME: GET FW VERSION message failed\n");
-		return -1;
-	}
-
-	printk(BIOS_INFO, "ME: Firmware Version %u.%u.%u.%u (code) "
-	       "%u.%u.%u.%u (recovery)\n",
-	       version.code_major, version.code_minor,
-	       version.code_build_number, version.code_hot_fix,
-	       version.recovery_major, version.recovery_minor,
-	       version.recovery_build_number, version.recovery_hot_fix);
-
-	return 0;
-}
-
-static inline void print_cap(const char *name, int state)
-{
-	printk(BIOS_DEBUG, "ME Capability: %-30s : %sabled\n",
-	       name, state ? "en" : "dis");
-}
-
-/* Get ME Firmware Capabilities */
-static int __unused mkhi_get_fwcaps(void)
-{
-	u32 rule_id = 0;
-	struct me_fwcaps cap;
-	struct mkhi_header mkhi = {
-		.group_id	= MKHI_GROUP_ID_FWCAPS,
-		.command	= MKHI_FWCAPS_GET_RULE,
-	};
-	struct mei_header mei = {
-		.is_complete	= 1,
-		.host_address	= MEI_HOST_ADDRESS,
-		.client_address	= MEI_ADDRESS_MKHI,
-		.length		= sizeof(mkhi) + sizeof(rule_id),
-	};
-
-	/* Send request and wait for response */
-	if (mei_sendrecv(&mei, &mkhi, &rule_id, &cap, sizeof(cap)) < 0) {
-		printk(BIOS_ERR, "ME: GET FWCAPS message failed\n");
-		return -1;
-	}
-
-	print_cap("Full Network manageability", cap.caps_sku.full_net);
-	print_cap("Regular Network manageability", cap.caps_sku.std_net);
-	print_cap("Manageability", cap.caps_sku.manageability);
-	print_cap("Small business technology", cap.caps_sku.small_business);
-	print_cap("Level III manageability", cap.caps_sku.l3manageability);
-	print_cap("IntelR Anti-Theft (AT)", cap.caps_sku.intel_at);
-	print_cap("IntelR Capability Licensing Service (CLS)",
-		  cap.caps_sku.intel_cls);
-	print_cap("IntelR Power Sharing Technology (MPC)",
-		  cap.caps_sku.intel_mpc);
-	print_cap("ICC Over Clocking", cap.caps_sku.icc_over_clocking);
-	print_cap("Protected Audio Video Path (PAVP)", cap.caps_sku.pavp);
-	print_cap("IPV6", cap.caps_sku.ipv6);
-	print_cap("KVM Remote Control (KVM)", cap.caps_sku.kvm);
-	print_cap("Outbreak Containment Heuristic (OCH)", cap.caps_sku.och);
-	print_cap("Virtual LAN (VLAN)", cap.caps_sku.vlan);
-	print_cap("TLS", cap.caps_sku.tls);
-	print_cap("Wireless LAN (WLAN)", cap.caps_sku.wlan);
-
-	return 0;
-}
-
-#ifdef __SIMPLE_DEVICE__
-
-static void intel_me7_finalize_smm(void)
-{
-	struct me_hfs hfs;
-	u32 reg32;
-
-	update_mei_base_address();
-
-	/* S3 path will have hidden this device already */
-	if (!is_mei_base_address_valid())
-		return;
-
-	/* Make sure ME is in a mode that expects EOP */
-	reg32 = pci_read_config32(PCH_ME_DEV, PCI_ME_HFS);
-	memcpy(&hfs, &reg32, sizeof(u32));
-
-	/* Abort and leave device alone if not normal mode */
-	if (hfs.fpt_bad ||
-	    hfs.working_state != ME_HFS_CWS_NORMAL ||
-	    hfs.operation_mode != ME_HFS_MODE_NORMAL)
-		return;
-
-	/* Try to send EOP command so ME stops accepting other commands */
-	mkhi_end_of_post();
-
-	/* Make sure IO is disabled */
-	pci_and_config16(PCH_ME_DEV, PCI_COMMAND,
-			 ~(PCI_COMMAND_MASTER | PCI_COMMAND_MEMORY | PCI_COMMAND_IO));
-
-	/* Hide the PCI device */
-	RCBA32_OR(FD2, PCH_DISABLE_MEI1);
-}
-
-void intel_me_finalize_smm(void)
-{
-	u16 did = pci_read_config16(PCH_ME_DEV, PCI_DEVICE_ID);
-	switch (did) {
-	case 0x1c3a:
-		intel_me7_finalize_smm();
-		break;
-	case 0x1e3a:
-		intel_me8_finalize_smm();
-		break;
-	default:
-		printk(BIOS_ERR, "No finalize handler for ME %04x.\n", did);
-	}
-}
-
-#else
 
 /* Determine the path that we should take based on ME status */
 static me_bios_path intel_me_path(struct device *dev)
 {
 	me_bios_path path = ME_DISABLE_BIOS_PATH;
-	struct me_hfs hfs;
-	struct me_gmes gmes;
+	union me_hfs hfs;
+	union me_gmes gmes;
 
 	/* S3 wake skips all MKHI messages */
 	if (acpi_is_wakeup_s3())
 		return ME_S3WAKE_BIOS_PATH;
 
-	pci_read_dword_ptr(dev, &hfs, PCI_ME_HFS);
-	pci_read_dword_ptr(dev, &gmes, PCI_ME_GMES);
+	hfs.raw = pci_read_config32(dev, PCI_ME_HFS);
+	gmes.raw = pci_read_config32(dev, PCI_ME_GMES);
 
 	/* Check and dump status */
 	intel_me_status(&hfs, &gmes);
@@ -244,16 +92,109 @@ static me_bios_path intel_me_path(struct device *dev)
 	return path;
 }
 
+/* Get ME firmware version */
+static int mkhi_get_fw_version(void)
+{
+	struct me_fw_version version;
+	struct mkhi_header mkhi = {
+		.group_id	= MKHI_GROUP_ID_GEN,
+		.command	= MKHI_GET_FW_VERSION,
+	};
+	struct mei_header mei = {
+		.is_complete	= 1,
+		.host_address	= MEI_HOST_ADDRESS,
+		.client_address	= MEI_ADDRESS_MKHI,
+		.length		= sizeof(mkhi),
+	};
+
+	/* Send request and wait for response */
+	if (mei_sendrecv(&mei, &mkhi, NULL, &version, sizeof(version)) < 0) {
+		printk(BIOS_ERR, "ME: GET FW VERSION message failed\n");
+		return -1;
+	}
+
+	printk(BIOS_INFO, "ME: Firmware Version %u.%u.%u.%u (code) "
+	       "%u.%u.%u.%u (recovery)\n",
+	       version.code_major, version.code_minor,
+	       version.code_build_number, version.code_hot_fix,
+	       version.recovery_major, version.recovery_minor,
+	       version.recovery_build_number, version.recovery_hot_fix);
+
+	return 0;
+}
+
+static inline void print_cap(const char *name, int state)
+{
+	printk(BIOS_DEBUG, "ME Capability: %-30s : %sabled\n",
+	       name, state ? "en" : "dis");
+}
+
+/* Get ME Firmware Capabilities */
+static int mkhi_get_fwcaps(void)
+{
+	u32 rule_id = 0;
+	struct me_fwcaps cap;
+	struct mkhi_header mkhi = {
+		.group_id	= MKHI_GROUP_ID_FWCAPS,
+		.command	= MKHI_FWCAPS_GET_RULE,
+	};
+	struct mei_header mei = {
+		.is_complete	= 1,
+		.host_address	= MEI_HOST_ADDRESS,
+		.client_address	= MEI_ADDRESS_MKHI,
+		.length		= sizeof(mkhi) + sizeof(rule_id),
+	};
+
+	/* Send request and wait for response */
+	if (mei_sendrecv(&mei, &mkhi, &rule_id, &cap, sizeof(cap)) < 0) {
+		printk(BIOS_ERR, "ME: GET FWCAPS message failed\n");
+		return -1;
+	}
+
+	print_cap("Full Network manageability", cap.caps_sku.full_net);
+	print_cap("Regular Network manageability", cap.caps_sku.std_net);
+	print_cap("Manageability", cap.caps_sku.manageability);
+	print_cap("Small business technology", cap.caps_sku.small_business);
+	print_cap("Level III manageability", cap.caps_sku.l3manageability);
+	print_cap("IntelR Anti-Theft (AT)", cap.caps_sku.intel_at);
+	print_cap("IntelR Capability Licensing Service (CLS)",
+		  cap.caps_sku.intel_cls);
+	print_cap("IntelR Power Sharing Technology (MPC)",
+		  cap.caps_sku.intel_mpc);
+	print_cap("ICC Over Clocking", cap.caps_sku.icc_over_clocking);
+	print_cap("Protected Audio Video Path (PAVP)", cap.caps_sku.pavp);
+	print_cap("IPV6", cap.caps_sku.ipv6);
+	print_cap("KVM Remote Control (KVM)", cap.caps_sku.kvm);
+	print_cap("Outbreak Containment Heuristic (OCH)", cap.caps_sku.och);
+	print_cap("Virtual LAN (VLAN)", cap.caps_sku.vlan);
+	print_cap("TLS", cap.caps_sku.tls);
+	print_cap("Wireless LAN (WLAN)", cap.caps_sku.wlan);
+
+	return 0;
+}
+
+
 /* Check whether ME is present and do basic init */
 static void intel_me_init(struct device *dev)
 {
 	me_bios_path path = intel_me_path(dev);
+	u8 me_state = 0, me_state_prev = 0;
+	bool need_reset = false;
+	union me_hfs hfs;
 
 	/* Do initial setup and determine the BIOS path */
 	printk(BIOS_NOTICE, "ME: BIOS path: %s\n", me_get_bios_path_string(path));
 
+	get_option(&me_state, "me_state");
+	get_option(&me_state_prev, "me_state_prev");
+
+	printk(BIOS_DEBUG, "ME: me_state=%u, me_state_prev=%u\n", me_state, me_state_prev);
+
 	switch (path) {
 	case ME_S3WAKE_BIOS_PATH:
+#if CONFIG(HIDE_MEI_ON_ERROR)
+	case ME_ERROR_BIOS_PATH:
+#endif
 		intel_me_hide(dev);
 		break;
 
@@ -273,17 +214,67 @@ static void intel_me_init(struct device *dev)
 			mkhi_get_fwcaps();
 		}
 
+		/* Put ME in Software Temporary Disable Mode, if needed */
+		if (me_state == CMOS_ME_STATE_DISABLED
+				&& CMOS_ME_STATE(me_state_prev) == CMOS_ME_STATE_NORMAL) {
+			printk(BIOS_INFO, "ME: disabling ME\n");
+			if (enter_soft_temp_disable()) {
+				enter_soft_temp_disable_wait();
+				need_reset = true;
+			} else {
+				printk(BIOS_ERR, "ME: failed to enter Soft Temporary Disable mode\n");
+			}
+
+			break;
+		}
+
 		/*
 		 * Leave the ME unlocked in this path.
 		 * It will be locked via SMI command later.
 		 */
 		break;
 
-	case ME_ERROR_BIOS_PATH:
-	case ME_RECOVERY_BIOS_PATH:
 	case ME_DISABLE_BIOS_PATH:
+		/* Bring ME out of Soft Temporary Disable mode, if needed */
+		hfs.raw = pci_read_config32(dev, PCI_ME_HFS);
+		if (hfs.operation_mode == ME_HFS_MODE_DIS
+				&& me_state == CMOS_ME_STATE_NORMAL
+				&& (CMOS_ME_STATE(me_state_prev) == CMOS_ME_STATE_DISABLED
+					|| !CMOS_ME_CHANGED(me_state_prev))) {
+			printk(BIOS_INFO, "ME: re-enabling ME\n");
+
+			exit_soft_temp_disable(dev);
+			exit_soft_temp_disable_wait(dev);
+
+			/*
+			 * ME starts loading firmware immediately after writing to H_GS,
+			 * but Lenovo BIOS performs a reboot after bringing ME back to
+			 * Normal mode. Assume that global reset is needed.
+			 */
+			need_reset = true;
+		} else {
+			intel_me_hide(dev);
+		}
+		break;
+
+#if !CONFIG(HIDE_MEI_ON_ERROR)
+	case ME_ERROR_BIOS_PATH:
+#endif
+	case ME_RECOVERY_BIOS_PATH:
 	case ME_FIRMWARE_UPDATE_BIOS_PATH:
 		break;
+	}
+
+	/* To avoid boot loops if ME fails to get back from disabled mode,
+	   set the 'changed' bit here. */
+	if (me_state != CMOS_ME_STATE(me_state_prev) || need_reset) {
+		u8 new_state = me_state | CMOS_ME_STATE_CHANGED;
+		set_option("me_state_prev", &new_state);
+	}
+
+	if (need_reset) {
+		set_global_reset(true);
+		full_reset();
 	}
 }
 
@@ -300,5 +291,3 @@ static const struct pci_driver intel_me __pci_driver = {
 	.vendor	= PCI_VENDOR_ID_INTEL,
 	.device	= 0x1c3a,
 };
-
-#endif /* __SIMPLE_DEVICE__ */

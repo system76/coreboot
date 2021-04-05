@@ -11,8 +11,7 @@ DefinitionBlock (
 	0x00010001	/* OEM Revision */
 	)
 {	/* Start of ASL file */
-
-	#include "acpi/mainboard.asl"
+	#include <acpi/dsdt_top.asl>
 
 	#include <cpu/amd/agesa/family14/acpi/cpu.asl>
 
@@ -40,6 +39,7 @@ DefinitionBlock (
 	#include "acpi/sleep.asl"
 
 	#include "acpi/gpe.asl"
+	#include "acpi/usb_oc.asl"
 
 	/* Contains the GPIO led and button setup for this board */
 	#include "acpi/buttons.asl"

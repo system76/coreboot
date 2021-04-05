@@ -5,7 +5,7 @@ config SOUTHBRIDGE_INTEL_IBEXPEAK
 
 if SOUTHBRIDGE_INTEL_IBEXPEAK
 
-config SOUTH_BRIDGE_OPTIONS # dummy
+config SOUTH_BRIDGE_OPTIONS
 	def_bool y
 	select ACPI_INTEL_HARDWARE_SLEEP_VALUES
 	select AZALIA_PLUGIN_SUPPORT
@@ -20,6 +20,7 @@ config SOUTH_BRIDGE_OPTIONS # dummy
 	select SOUTHBRIDGE_INTEL_COMMON_EARLY_SMBUS
 	select SOUTHBRIDGE_INTEL_COMMON_SPI_ICH9
 	select SOUTHBRIDGE_INTEL_COMMON_SMM
+	select SOUTHBRIDGE_INTEL_COMMON_ME
 	select SOUTHBRIDGE_INTEL_COMMON_PMCLIB
 	select SOUTHBRIDGE_INTEL_COMMON_PMBASE
 	select SOUTHBRIDGE_INTEL_COMMON_RTC
@@ -51,5 +52,13 @@ config SERIRQ_CONTINUOUS_MODE
 config HPET_MIN_TICKS
 	hex
 	default 0x80
+
+config HIDE_MEI_ON_ERROR
+	bool "Hide MEI device on error"
+	default n
+	help
+	  If you enable this option, the Management Engine Interface
+	  device will be hidden when ME is in an inoperable mode, e.g.
+	  if me_cleaner was used.
 
 endif

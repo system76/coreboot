@@ -1,10 +1,8 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#include <acpi/acpi_gnvs.h>
 #include <acpi/acpigen.h>
 #include <arch/smp/mpspec.h>
 #include <assert.h>
-#include <cbmem.h>
 #include <cpu/intel/turbo.h>
 #include <device/mmio.h>
 #include <device/pci.h>
@@ -14,26 +12,10 @@
 #include <soc/cpu.h>
 #include <soc/iomap.h>
 #include <soc/msr.h>
-#include <soc/nvs.h>
 #include <soc/pci_devs.h>
 #include <soc/pm.h>
 #include <soc/soc_util.h>
 #include <soc/util.h>
-
-/* TODO: Check if the common/acpi weak function can be used */
-unsigned long acpi_fill_mcfg(unsigned long current)
-{
-	current += acpi_create_mcfg_mmconfig((acpi_mcfg_mmconfig_t *)current,
-		CONFIG_MMCONF_BASE_ADDRESS, 0, 0, 255);
-	return current;
-}
-
-void soc_fill_gnvs(struct global_nvs *gnvs)
-{
-	/* CPU core count */
-	gnvs->pcnt = dev_count_cpu();
-	printk(BIOS_DEBUG, "%s gnvs->pcnt: %d\n", __func__, gnvs->pcnt);
-}
 
 int soc_madt_sci_irq_polarity(int sci)
 {

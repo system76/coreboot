@@ -4,11 +4,11 @@
 #include <arch/header.ld>
 #include <soc/psp_transfer.h>
 
-#define EARLY_RESERVED_DRAM_START(addr)		SYMBOL(early_reserved_dram, addr)
-#define EARLY_RESERVED_DRAM_END(addr)		SYMBOL(eearly_reserved_dram, addr)
+#define EARLY_RESERVED_DRAM_START(addr)		REGION_START(early_reserved_dram, addr)
+#define EARLY_RESERVED_DRAM_END(addr)		REGION_END(early_reserved_dram, addr)
 
-#define PSP_SHAREDMEM_DRAM_START(addr)		SYMBOL(psp_sharedmem_dram, addr)
-#define PSP_SHAREDMEM_DRAM_END(addr)		SYMBOL(epsp_sharedmem_dram, addr)
+#define PSP_SHAREDMEM_DRAM_START(addr)		REGION_START(psp_sharedmem_dram, addr)
+#define PSP_SHAREDMEM_DRAM_END(addr)		REGION_END(psp_sharedmem_dram, addr)
 
 BOOTBLOCK_END = CONFIG_ROMSTAGE_ADDR;
 BOOTBLOCK_ADDR = BOOTBLOCK_END - CONFIG_C_ENV_BOOTBLOCK_SIZE;
@@ -78,13 +78,13 @@ SECTIONS
 	EARLYRAM_STACK(., CONFIG_EARLYRAM_BSP_STACK_SIZE)
 	REGION(apob, CONFIG_PSP_APOB_DRAM_ADDRESS, 64K, 1)
 
-#if CONFIG(VBOOT)
+#if CONFIG(VBOOT_STARTS_BEFORE_BOOTBLOCK)
 	PSP_SHAREDMEM_DRAM_START(CONFIG_PSP_SHAREDMEM_BASE)
 #endif
 
 #include "memlayout_transfer_buffer.inc"
 
-#if CONFIG(VBOOT)
+#if CONFIG(VBOOT_STARTS_BEFORE_BOOTBLOCK)
 	PSP_SHAREDMEM_DRAM_END(CONFIG_PSP_SHAREDMEM_BASE + CONFIG_PSP_SHAREDMEM_SIZE)
 #endif
 	_ = ASSERT(BOOTBLOCK_END == ((BOOTBLOCK_END + 0xFFFF) & 0xFFFF0000), "Bootblock end must be 16 bit aligned");
@@ -109,6 +109,22 @@ SECTIONS {
 	/* Trigger an error if I have an unusable start address */
 	_TOO_LOW = _X86_RESET_VECTOR - 0xfff0;
 	_bogus = ASSERT(_start16bit >= _TOO_LOW, "_start16bit too low. Please report.");
+
+	. = _X86_RESET_VECTOR - EARLYASM_SZ;
+	. = ALIGN(16);
+	BOOTBLOCK_TOP = .;
+	.init (.) : {
+		*(.init._start);
+		*(.init);
+		*(.init.*);
+	}
+
+	/*
+	 * Allocation reserves extra space here. Alignment requirements
+	 * may cause the total size of a section to change when the start
+	 * address gets applied.
+	 */
+	EARLYASM_SZ = SIZEOF(.init) + 16;
 
 	. = BOOTBLOCK_END - 0x10;
 	_X86_RESET_VECTOR = .;

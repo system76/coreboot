@@ -449,8 +449,8 @@ void main(void)
 	threads_initialize();
 
 	/* Initialise GNVS early. */
-	if (CONFIG(HAVE_ACPI_TABLES))
-		gnvs_get_or_create();
+	if (CONFIG(ACPI_SOC_NVS))
+		acpi_create_gnvs();
 
 	/* Schedule the static boot state entries. */
 	boot_state_schedule_static_entries();

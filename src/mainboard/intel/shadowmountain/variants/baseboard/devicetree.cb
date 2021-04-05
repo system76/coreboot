@@ -1,5 +1,351 @@
 chip soc/intel/alderlake
+
 	device cpu_cluster 0 on
 		device lapic 0 on end
+	end
+
+	# GPE configuration
+	# Note that GPE events called out in ASL code rely on this
+	# route. i.e. If this route changes then the affected GPE
+	# offset bits also need to be changed.
+	register "pmc_gpe0_dw0" = "GPP_C"
+	register "pmc_gpe0_dw1" = "GPP_D"
+	register "pmc_gpe0_dw2" = "GPP_E"
+
+	# TCSS
+	register "TcssAuxOri" = "1"
+	register "IomTypeCPortPadCfg[0]" = "0x09020005"
+	register "IomTypeCPortPadCfg[1]" = "0x09020006"
+
+	# Enable heci communication
+	register "HeciEnabled" = "1"
+
+	# FSP configuration
+	register "SaGv" = "SaGv_Disabled"
+
+	# S0ix enable
+	register "s0ix_enable" = "1"
+
+	register "usb2_ports[0]" = "USB2_PORT_MID(OC1)"		# Type-A Port A0
+	register "usb2_ports[1]" = "USB2_PORT_MID(OC2)"		# Type-A Port A1
+	register "usb2_ports[2]" = "USB2_PORT_MID(OC_SKIP)"	# M.2 WWAN
+	register "usb2_ports[3]" = "USB2_PORT_MID(OC0)"		# Type-A / Type-C Cl
+	register "usb2_ports[4]" = "USB2_PORT_MID(OC_SKIP)"	# M.2 Camera
+	register "usb2_ports[5]" = "USB2_PORT_MID(OC3)"		# Type-A / Type-C Co
+	register "usb2_ports[9]" = "USB2_PORT_MID(OC_SKIP)"	# M.2 Bluetooth
+
+	register "usb3_ports[0]" = "USB3_PORT_DEFAULT(OC1)"	# USB3/2 Type A port A0
+	register "usb3_ports[1]" = "USB3_PORT_DEFAULT(OC2)"	# USB3/2 Type A port A1
+	register "usb3_ports[2]" = "USB3_PORT_DEFAULT(OC_SKIP)"	# M.2 WWAN
+
+	# EC host command ranges are in 0x800-0x8ff & 0x200-0x20f
+	register "gen1_dec" = "0x00fc0801"
+	register "gen2_dec" = "0x000c0201"
+	# EC memory map range is 0x900-0x9ff
+	register "gen3_dec" = "0x00fc0901"
+	register "PrmrrSize" = "0"
+
+	# Enable PCH PCIE RP 5 using CLK 1
+	register "pch_pcie_rp[PCH_RP(5)]" = "{
+		.clk_src = 1,
+		.clk_req = 1,
+		.flags = PCIE_RP_CLK_REQ_DETECT,
+	}"
+
+	# Enable NVMe PCIE 9 using clk 0
+	register "pch_pcie_rp[PCH_RP(9)]" = "{
+		.clk_src = 0,
+		.clk_req = 0,
+		.flags = PCIE_RP_LTR,
+	}"
+
+	# Enable SD Card PCIE 8 using clk 3
+	register "pch_pcie_rp[PCH_RP(8)]" = "{
+		.clk_src = 3,
+		.clk_req = 3,
+		.flags = PCIE_RP_HOTPLUG | PCIE_RP_LTR,
+	}"
+
+	# Enable SATA
+	register "SataEnable" = "1"
+	register "SataMode" = "0"
+	register "SataSalpSupport" = "1"
+	register "SataPortsEnable[0]" = "0"
+	register "SataPortsEnable[1]" = "1"
+	register "SataPortsDevSlp[0]" = "0"
+	register "SataPortsDevSlp[1]" = "1"
+	register "SataPortsEnableDitoConfig[1]" = "1"
+
+	register "SerialIoI2cMode" = "{
+		[PchSerialIoIndexI2C0]  = PchSerialIoPci,
+		[PchSerialIoIndexI2C1]  = PchSerialIoPci,
+		[PchSerialIoIndexI2C2]  = PchSerialIoPci,
+		[PchSerialIoIndexI2C3]  = PchSerialIoPci,
+		[PchSerialIoIndexI2C4]  = PchSerialIoDisabled,
+		[PchSerialIoIndexI2C5]  = PchSerialIoPci,
+	}"
+
+	register "SerialIoGSpiMode" = "{
+		[PchSerialIoIndexGSPI0] = PchSerialIoPci,
+		[PchSerialIoIndexGSPI1] = PchSerialIoPci,
+		[PchSerialIoIndexGSPI2] = PchSerialIoDisabled,
+		[PchSerialIoIndexGSPI3] = PchSerialIoDisabled,
+	}"
+
+	register "SerialIoGSpiCsMode" = "{
+		[PchSerialIoIndexGSPI0] = 1,
+		[PchSerialIoIndexGSPI1] = 1,
+	}"
+
+	register "SerialIoGSpiCsState" = "{
+		[PchSerialIoIndexGSPI0] = 1,
+		[PchSerialIoIndexGSPI1] = 1,
+	}"
+
+	register "SerialIoUartMode" = "{
+		[PchSerialIoIndexUART0] = PchSerialIoPci,
+		[PchSerialIoIndexUART1] = PchSerialIoDisabled,
+		[PchSerialIoIndexUART2] = PchSerialIoDisabled,
+	}"
+
+	# HD Audio
+	register "PchHdaDspEnable" = "1"
+	register "PchHdaAudioLinkHdaEnable" = "0"
+	register "PchHdaAudioLinkDmicEnable[0]" = "0"
+	register "PchHdaAudioLinkDmicEnable[1]" = "0"
+	register "PchHdaAudioLinkSspEnable[0]" = "0"
+	register "PchHdaAudioLinkSspEnable[1]" = "0"
+	register "PchHdaAudioLinkSndwEnable[0]" = "0"
+	register "PchHdaAudioLinkSndwEnable[1]" = "0"
+	# iDisp-Link T-Mode 0: 2T, 2: 4T, 3: 8T, 4: 16T
+	register "PchHdaIDispLinkTmode" = "3"
+	# iDisp-Link Freq 4: 96MHz, 3: 48MHz.
+	register "PchHdaIDispLinkFrequency" = "4"
+	# Not disconnected/enumerable
+	register "PchHdaIDispCodecDisconnect" = "0"
+
+	# DP port
+	register "DdiPortAConfig" = "1"	# eDP
+	register "DdiPortBConfig" = "0"
+
+	register "DdiPortAHpd" = "1"
+	register "DdiPortBHpd" = "1"
+	register "DdiPortCHpd" = "0"
+	register "DdiPort1Hpd" = "1"
+	register "DdiPort2Hpd" = "1"
+	register "DdiPort3Hpd" = "0"
+	register "DdiPort4Hpd" = "0"
+
+	register "DdiPortADdc" = "0"
+	register "DdiPortBDdc" = "1"
+	register "DdiPortCDdc" = "0"
+	register "DdiPort1Ddc" = "0"
+	register "DdiPort2Ddc" = "0"
+	register "DdiPort3Ddc" = "0"
+	register "DdiPort4Ddc" = "0"
+
+	# Intel Common SoC Config
+	#+-------------------+---------------------------+
+	#| Field             |  Value                    |
+	#+-------------------+---------------------------+
+	#| chipset_lockdown  | CHIPSET_LOCKDOWN_COREBOOT |
+	#| GSPI0             | cr50 TPM. Early init is   |
+	#|                   | required to set up a BAR  |
+	#|                   | for TPM communication     |
+	#|                   | before memory is up       |
+	#| GSPI1             | Fingerprint MCU           |
+	#| I2C0              | SAR0, WWAN, HDMI          |
+	#| I2C1              | Camera                    |
+	#| I2C2              | Audio                     |
+	#| I2C3              | Touchscreen, USI          |
+	#| I2C5              | Trackpad                  |
+	#+-------------------+---------------------------+
+	register "common_soc_config" = "{
+		.chipset_lockdown = CHIPSET_LOCKDOWN_COREBOOT,
+		.gspi[0] = {
+			.speed_mhz = 1,
+			.early_init = 1,
+		},
+		.i2c[0] = {
+			.speed = I2C_SPEED_FAST,
+		},
+		.i2c[1] = {
+			.speed = I2C_SPEED_FAST,
+		},
+		.i2c[2] = {
+			.speed = I2C_SPEED_FAST,
+		},
+		.i2c[3] = {
+			.speed = I2C_SPEED_FAST,
+		},
+		.i2c[5] = {
+			.speed = I2C_SPEED_FAST,
+		},
+	}"
+
+	device domain 0 on
+		device pci 00.0 on  end # Host Bridge
+		device pci 02.0 on  end # Graphics
+		device pci 04.0 on  end # DPTF
+		device pci 05.0 on  end # IPU
+		device pci 06.0 off end # PEG60
+		device pci 07.0 on  end # TBT_PCIe0
+		device pci 07.1 on  end # TBT_PCIe1
+		device pci 07.2 on  end # TBT_PCIe2
+		device pci 07.3 on  end # TBT_PCIe3
+		device pci 08.0 off end # GNA
+		device pci 09.0 off end # NPK
+		device pci 0a.0 off end # Crash-log SRAM
+		device pci 0d.0 on  end # USB xHCI
+		device pci 0d.1 off end # USB xDCI (OTG)
+		device pci 0d.2 on
+			chip drivers/intel/usb4/retimer
+				register "power_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_H19)"
+				device generic 0 on end
+			end
+		end
+		device pci 0d.3 on  end # TBT DMA1
+		device pci 0e.0 off end # VMD
+		device pci 10.0 off end
+		device pci 10.1 off end
+		device pci 10.2 on  end # CNVi: BT
+		device pci 10.6 off end # THC0
+		device pci 10.7 off end # THC1
+		device pci 11.0 off end
+		device pci 11.1 off end
+		device pci 11.2 off end
+		device pci 11.3 off end
+		device pci 11.4 off end
+		device pci 11.5 off end
+		device pci 12.0 off end # SensorHUB
+		device pci 12.5 off end
+		device pci 12.6 off end # GSPI2
+		device pci 13.0 off end # GSPI3
+		device pci 13.1 off end
+		device pci 14.0 on
+			chip drivers/usb/acpi
+				register "desc" = ""Root Hub""
+				register "type" = "UPC_TYPE_HUB"
+				device usb 0.0 on
+					chip drivers/usb/acpi
+						register "desc" = ""Bluetooth""
+						register "type" = "UPC_TYPE_INTERNAL"
+						register "reset_gpio" =
+							"ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_A13)"
+						device usb 2.9 on end
+					end
+				end
+			end
+		end # USB3.1 xHCI
+		device pci 14.1 off end # USB3.1 xDCI
+		device pci 14.2 off end # Shared RAM
+		device pci 14.3 on
+			chip drivers/wifi/generic
+				register "wake" = "GPE0_PME_B0"
+				device generic 0 on end
+			end
+		end # CNVi: WiFi
+		device pci 15.0 on  end # I2C0
+		device pci 15.1 on  end # I2C1
+		device pci 15.2 on
+			chip drivers/i2c/generic
+				register "hid" = ""10EC5682""
+				register "name" = ""RT58""
+				register "desc" = ""Headset Codec""
+				register "irq_gpio" = "ACPI_GPIO_IRQ_EDGE_BOTH(GPP_F9)"
+				# Set the jd_src to RT5668_JD1 for jack detection
+				register "property_count" = "1"
+				register "property_list[0].type" = "ACPI_DP_TYPE_INTEGER"
+				register "property_list[0].name" = ""realtek,jd-src""
+				register "property_list[0].integer" = "1"
+				device i2c 1a on end
+			end
+			chip drivers/i2c/max98373
+				register "vmon_slot_no" = "0"
+				register "imon_slot_no" = "1"
+				register "uid" = "0"
+				register "desc" = ""Right Speaker Amp""
+				register "name" = ""MAXR""
+				device i2c 31 on end
+			end
+			chip drivers/i2c/max98373
+				register "vmon_slot_no" = "2"
+				register "imon_slot_no" = "3"
+				register "uid" = "1"
+				register "desc" = ""Left Speaker Amp""
+				register "name" = ""MAXL""
+				device i2c 32 on end
+			end
+		end # I2C2
+		device pci 15.3 on  end # I2C3
+		device pci 16.0 off end # HECI1
+		device pci 16.1 off end # HECI2
+		device pci 16.2 off end # CSME
+		device pci 16.3 off end # CSME
+		device pci 16.4 off end # HECI3
+		device pci 16.5 off end # HECI4
+		device pci 17.0 on  end # SATA
+		device pci 19.0 off end # I2C4
+		device pci 19.1 on
+			chip drivers/i2c/generic
+				register "hid" = ""ELAN0000""
+				register "desc" = ""ELAN Touchpad""
+				register "irq" = "ACPI_IRQ_WAKE_LEVEL_LOW(GPP_E15_IRQ)"
+				register "wake" = "GPE0_DW2_15"
+				register "probed" = "1"
+				device i2c 15 on end
+			end
+		end # I2C5
+		device pci 19.2 off end # UART2
+		device pci 1c.0 off end # RP1
+		device pci 1c.1 off end # RP2
+		device pci 1c.2 off end # RP3
+		device pci 1c.3 off end # RP4
+		device pci 1c.4 on  end # RP5
+		device pci 1c.5 off end # RP6
+		device pci 1c.6 off end # RP7
+		device pci 1c.7 on  end # RP8
+		device pci 1d.0 on  end # RP9
+		device pci 1d.1 off end # RP10
+		device pci 1d.2 off end # RP11
+		device pci 1d.3 off end # RP12
+		device pci 1e.0 on  end # UART0
+		device pci 1e.1 off end # UART1
+		device pci 1e.2 on  end # GSPI0
+		device pci 1e.3 off end # GSPI1
+		device pci 1f.0 on
+			chip ec/google/chromeec
+				use conn0 as mux_conn[0]
+				use conn1 as mux_conn[1]
+				device pnp 0c09.0 on end
+			end
+		end # eSPI
+		device pci 1f.1 on  end # P2SB
+		device pci 1f.2 hidden
+			# The pmc_mux chip driver is a placeholder for the
+			# PMC.MUX device in the ACPI hierarchy.
+			chip drivers/intel/pmc_mux
+				device generic 0 on
+					chip drivers/intel/pmc_mux/conn
+						register "usb2_port_number" = "6"
+						register "usb3_port_number" = "1"
+						# SBU is fixed, HSL follows CC
+						register "sbu_orientation" = "TYPEC_ORIENTATION_NORMAL"
+						device generic 0 alias conn0 on end
+					end
+					chip drivers/intel/pmc_mux/conn
+						register "usb2_port_number" = "4"
+						register "usb3_port_number" = "2"
+						# SBU is fixed, HSL follows CC
+						register "sbu_orientation" = "TYPEC_ORIENTATION_NORMAL"
+						device generic 1 alias conn1 on end
+					end
+				end
+			end
+		end # PMC
+		device pci 1f.3 on  end # Intel Audio SNDW
+		device pci 1f.4 on  end # SMBus
+		device pci 1f.5 on  end # SPI
+		device pci 1f.6 off end # GbE
 	end
 end

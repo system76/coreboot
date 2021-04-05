@@ -1,18 +1,19 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
 #include <acpi/acpigen.h>
+#include <amdblocks/acpi.h>
+#include <amdblocks/memmap.h>
+#include <amdblocks/ioapic.h>
 #include <arch/ioapic.h>
 #include <assert.h>
 #include <cbmem.h>
 #include <console/console.h>
 #include <cpu/amd/msr.h>
-#include <cpu/amd/mtrr.h>
 #include <device/device.h>
 #include <device/pci.h>
 #include <device/pci_ids.h>
 #include <fsp/util.h>
 #include <stdint.h>
-#include <soc/memmap.h>
 #include <soc/iomap.h>
 #include "chip.h"
 
@@ -184,7 +185,7 @@ static void read_resources(struct device *dev)
 
 static void root_complex_init(struct device *dev)
 {
-	setup_ioapic((u8 *)GNB_IO_APIC_ADDR, CONFIG_PICASSO_GNB_IOAPIC_ID);
+	setup_ioapic((u8 *)GNB_IO_APIC_ADDR, GNB_IOAPIC_ID);
 }
 
 static void dptc_call_alib(const char *buf_name, uint8_t *buffer, size_t size)
@@ -227,8 +228,6 @@ static void acipgen_dptci(void)
 	dptc_call_alib("TABB", (uint8_t *)(void *)&tablet_mode_input,
 			sizeof(tablet_mode_input));
 
-	acpigen_pop_len(); /* If */
-
 	/* Else */
 	acpigen_write_else();
 
@@ -240,32 +239,15 @@ static void acipgen_dptci(void)
 	acpigen_pop_len(); /* Scope \_SB */
 }
 
-/* Used by \_SB.PCI0._CRS */
 static void root_complex_fill_ssdt(const struct device *device)
 {
-	msr_t msr;
-	const char *scope;
-
-	assert(device);
-
-	scope = acpi_device_scope(device);
-	assert(scope);
-	acpigen_write_scope(scope);
-
-	msr = rdmsr(TOP_MEM);
-	acpigen_write_name_dword("TOM1", msr.lo);
-	msr = rdmsr(TOP_MEM2);
-	/*
-	 * Since XP only implements parts of ACPI 2.0, we can't use a qword
-	 * here.
-	 * See http://www.acpi.info/presentations/S01USMOBS169_OS%2520new.ppt
-	 * slide 22ff.
-	 * Shift value right by 20 bit to make it fit into 32bit,
-	 * giving us 1MB granularity and a limit of almost 4Exabyte of memory.
-	 */
-	acpigen_write_name_dword("TOM2", (msr.hi << 12) | msr.lo >> 20);
-	acpigen_pop_len();
+	acpi_fill_root_complex_tom(device);
 	acipgen_dptci();
+}
+
+static const char *gnb_acpi_name(const struct device *dev)
+{
+	return "GNB";
 }
 
 static struct device_operations root_complex_operations = {
@@ -273,6 +255,7 @@ static struct device_operations root_complex_operations = {
 	.set_resources		= noop_set_resources,
 	.enable_resources	= pci_dev_enable_resources,
 	.init			= root_complex_init,
+	.acpi_name		= gnb_acpi_name,
 	.acpi_fill_ssdt		= root_complex_fill_ssdt,
 };
 

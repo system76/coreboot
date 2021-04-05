@@ -3,7 +3,6 @@
 #include <baseboard/variants.h>
 #include <soc/gpio.h>
 #include <soc/southbridge.h>
-#include <boardid.h>
 #include <variant/gpio.h>
 
 /*
@@ -267,18 +266,6 @@ struct soc_amd_gpio *variant_gpio_table(size_t *size)
 {
 	*size = ARRAY_SIZE(gpio_set_stage_ram);
 	return gpio_set_stage_ram;
-}
-
-/*
- * This function is still needed for boards that sets gevents above 23
- * that will generate SCI or SMI, such as kahlee. Normally this function
- * points to a table of gevents and what needs to be set. The code that
- * calls it was modified so that when this function returns NULL then the
- * caller does nothing.
- */
-const __weak struct sci_source *get_gpe_table(size_t *num)
-{
-	return NULL;
 }
 
 int __weak variant_get_xhci_oc_map(uint16_t *map)

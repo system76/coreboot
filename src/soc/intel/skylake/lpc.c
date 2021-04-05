@@ -7,27 +7,12 @@
 #include <arch/ioapic.h>
 #include <intelblocks/itss.h>
 #include <intelblocks/lpc_lib.h>
-#include <intelblocks/pcr.h>
 #include <reg_script.h>
 #include <soc/iomap.h>
 #include <soc/pcr_ids.h>
 #include <soc/intel/common/block/lpc/lpc_def.h>
 
 #include "chip.h"
-
-/**
-  PCH preserved MMIO range, 24 MB, from 0xFD000000 to 0xFE7FFFFF
-**/
-
-static const struct lpc_mmio_range skl_lpc_fixed_mmio_ranges[] = {
-	{ PCH_PRESERVED_BASE_ADDRESS, PCH_PRESERVED_BASE_SIZE },
-	{ 0, 0 }
-};
-
-const struct lpc_mmio_range *soc_get_fixed_mmio_ranges(void)
-{
-	return skl_lpc_fixed_mmio_ranges;
-}
 
 void soc_get_gen_io_dec_range(uint32_t *gen_io_dec)
 {
@@ -37,15 +22,6 @@ void soc_get_gen_io_dec_range(uint32_t *gen_io_dec)
 	gen_io_dec[1] = config->gen2_dec;
 	gen_io_dec[2] = config->gen3_dec;
 	gen_io_dec[3] = config->gen4_dec;
-}
-
-void soc_setup_dmi_pcr_io_dec(uint32_t *gen_io_dec)
-{
-	/* Mirror these same settings in DMI PCR */
-	pcr_write32(PID_DMI, PCR_DMI_LPCLGIR1, gen_io_dec[0]);
-	pcr_write32(PID_DMI, PCR_DMI_LPCLGIR2, gen_io_dec[1]);
-	pcr_write32(PID_DMI, PCR_DMI_LPCLGIR3, gen_io_dec[2]);
-	pcr_write32(PID_DMI, PCR_DMI_LPCLGIR4, gen_io_dec[3]);
 }
 
 static const struct reg_script pch_misc_init_script[] = {

@@ -1,13 +1,11 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #include <baseboard/variants.h>
-#include <console/console.h>
 #include <ec/google/chromeec/ec.h>
 #include <gpio.h>
 #include <memory_info.h>
 #include <soc/meminit.h>
 #include <soc/romstage.h>
-#include <string.h>
 #include <variant/gpio.h>
 
 void mainboard_memory_init_params(FSPM_UPD *memupd)

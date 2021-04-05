@@ -8,17 +8,9 @@
 #include <soc/romstage.h>
 #include <superio/ite/common/ite.h>
 #include <superio/ite/it8772f/it8772f.h>
-#include <mainboard/google/jecht/spd/spd.h>
 #include "onboard.h"
 
-void mainboard_pre_raminit(struct romstage_params *rp)
-{
-	/* Fill out PEI DATA */
-	mainboard_fill_pei_data(&rp->pei_data);
-	mainboard_fill_spd_data(&rp->pei_data);
-}
-
-void mainboard_post_raminit(struct romstage_params *rp)
+void mainboard_post_raminit(const int s3resume)
 {
 	if (CONFIG(CHROMEOS))
 		init_bootmode_straps();

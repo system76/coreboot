@@ -8,6 +8,7 @@ if SOC_INTEL_BRASWELL
 config CPU_SPECIFIC_OPTIONS
 	def_bool y
 	select ACPI_INTEL_HARDWARE_SLEEP_VALUES
+	select ACPI_HAS_DEVICE_NVS
 	select ARCH_ALL_STAGES_X86_32
 	select BOOT_DEVICE_SPI_FLASH_NO_EARLY_WRITES
 	select BOOT_DEVICE_SUPPORTS_WRITES
@@ -51,17 +52,16 @@ config DCACHE_BSP_STACK_SIZE
 	  The amount of anticipated stack usage in CAR by bootblock and
 	  other stages.
 
-config C_ENV_BOOTBLOCK_SIZE
-	hex
-	default 0x8000
-
 config VBOOT
 	select VBOOT_MUST_REQUEST_DISPLAY
 	select VBOOT_STARTS_IN_ROMSTAGE
 
 config MMCONF_BASE_ADDRESS
-	hex
 	default 0xe0000000
+
+config MMCONF_BUS_NUMBER
+	int
+	default 256
 
 config MAX_CPUS
 	int

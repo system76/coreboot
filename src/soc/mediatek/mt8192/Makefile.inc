@@ -12,10 +12,6 @@ bootblock-$(CONFIG_SPI_FLASH) += ../common/spi.c spi.c
 bootblock-y += ../common/timer.c
 bootblock-y += ../common/uart.c
 bootblock-y += ../common/wdt.c
-bootblock-y += pmif.c pmif_clk.c pmif_spi.c pmif_spmi.c
-bootblock-y += ../common/rtc.c ../common/rtc_osc_init.c rtc.c
-bootblock-y += mt6315.c
-bootblock-y += mt6359p.c
 
 verstage-y += ../common/auxadc.c
 verstage-y += ../common/flash_controller.c
@@ -27,34 +23,38 @@ verstage-y += ../common/uart.c
 
 romstage-y += ../common/auxadc.c
 romstage-y += ../common/cbmem.c
-romstage-y += dramc_pi_main.c dramc_pi_basic_api.c dramc_pi_calibration_api.c
-romstage-y += dramc_utility.c dramc_dvfs.c
-romstage-y += emi.c
+romstage-y += clkbuf.c srclken_rc.c
+romstage-y += ../common/dram_init.c
+romstage-y += ../common/dramc_param.c
 romstage-y += ../common/flash_controller.c
 romstage-y += ../common/gpio.c gpio.c
 romstage-y += ../common/i2c.c i2c.c
+romstage-y += ../common/memory.c ../common/memory_test.c
 romstage-y += ../common/mmu_operations.c mmu_operations.c
-romstage-y += memory.c dramc_param.c ../common/memory_test.c
+romstage-y += ../common/pll.c pll.c
 romstage-$(CONFIG_SPI_FLASH) += ../common/spi.c spi.c
 romstage-y += ../common/timer.c
 romstage-y += ../common/uart.c
 romstage-y += pmif.c pmif_clk.c pmif_spi.c pmif_spmi.c
+romstage-y += ../common/rtc.c ../common/rtc_osc_init.c rtc.c
+romstage-y += mt6315.c
 romstage-y += mt6359p.c
 
 ramstage-y += ../common/auxadc.c
 ramstage-y += ../common/ddp.c ddp.c
 ramstage-y += devapc.c
-ramstage-y += dpm.c
+ramstage-y += ../common/dpm.c
 ramstage-y += ../common/dsi.c ../common/mtk_mipi_dphy.c
 ramstage-y += ../common/flash_controller.c
 ramstage-y += ../common/gpio.c gpio.c
 ramstage-y += ../common/i2c.c i2c.c
-ramstage-y += emi.c
 ramstage-$(CONFIG_SPI_FLASH) += ../common/spi.c spi.c
 ramstage-y += ../common/mcu.c
 ramstage-y += mcupm.c
 ramstage-y += ../common/mmu_operations.c mmu_operations.c
 ramstage-y += ../common/mtcmos.c mtcmos.c
+ramstage-y += pmif.c
+ramstage-y += ../common/rtc.c rtc.c
 ramstage-y += soc.c
 ramstage-y += spm.c
 ramstage-y += sspm.c
@@ -75,7 +75,7 @@ mcu-firmware-files := \
 $(foreach fw, $(call strip_quotes,$(mcu-firmware-files)), \
 	  $(eval $(fw)-file := $(MT8192_BLOB_DIR)/$(fw)) \
 	  $(eval $(fw)-type := raw) \
-	  $(eval $(fw)-compression := $(CBFS_COMPRESS_FLAG)) \
+	  $(eval $(fw)-compression := LZ4) \
 	  $(if $(wildcard $($(fw)-file)), $(eval cbfs-files-y += $(fw)), ) \
 )
 
@@ -91,6 +91,7 @@ BL31_MAKEARGS += PLAT=mt8192
 
 CPPFLAGS_common += -Isrc/soc/mediatek/mt8192/include
 CPPFLAGS_common += -Isrc/soc/mediatek/common/include
+CPPFLAGS_common += -Isrc/vendorcode/mediatek/mt8192/include
 
 $(objcbfs)/bootblock.bin: $(objcbfs)/bootblock.raw.bin
 	./util/mtkheader/gen-bl-img.py mt8183 sf $< $@

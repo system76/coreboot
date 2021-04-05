@@ -3,7 +3,7 @@
 #ifndef AMD_BLOCK_SMI_H
 #define AMD_BLOCK_SMI_H
 
-#include <stdint.h>
+#include <types.h>
 
 enum smi_mode {
 	SMI_MODE_DISABLE = 0,
@@ -47,5 +47,7 @@ void configure_scimap(const struct sci_source *sci);
 void disable_gevent_smi(uint8_t gevent);
 void gpe_configure_sci(const struct sci_source *scis, size_t num_gpes);
 void soc_route_sci(uint8_t event);
+void clear_all_smi_status(void);
+void clear_smi_sci_status(void);
 
 #endif /* AMD_BLOCK_SMI_H */

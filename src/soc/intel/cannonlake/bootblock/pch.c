@@ -6,6 +6,7 @@
 #include <device/pci_ops.h>
 #include <intelblocks/dmi.h>
 #include <intelblocks/fast_spi.h>
+#include <intelblocks/gpio.h>
 #include <intelblocks/gspi.h>
 #include <intelblocks/lpc_lib.h>
 #include <intelblocks/p2sb.h>
@@ -38,21 +39,12 @@
 #define PCR_DMI_PMBASEA		0x27AC
 #define PCR_DMI_PMBASEC		0x27B0
 
-#define PCR_DMI_LPCIOD		0x2770
-#define PCR_DMI_LPCIOE		0x2774
-
 static uint32_t get_pmc_reg_base(void)
 {
-	uint8_t pch_series;
-
-	pch_series = get_pch_series();
-
-	if (pch_series == PCH_H)
+	if (CONFIG(SOC_INTEL_CANNONLAKE_PCH_H))
 		return PCR_PSF3_TO_SHDW_PMC_REG_BASE_CNP_H;
-	else if (pch_series == PCH_LP)
-		return PCR_PSF3_TO_SHDW_PMC_REG_BASE_CNP_LP;
 	else
-		return 0;
+		return PCR_PSF3_TO_SHDW_PMC_REG_BASE_CNP_LP;
 }
 
 static void soc_config_pwrmbase(void)
@@ -122,20 +114,6 @@ static void soc_config_acpibase(void)
 	}
 }
 
-static int pch_check_decode_enable(void)
-{
-	uint32_t dmi_control;
-
-	/*
-	 * This cycle decoding is only allowed to set when
-	 * DMICTL.SRLOCK is 0.
-	 */
-	dmi_control = pcr_read32(PID_DMI, PCR_DMI_DMICTL);
-	if (dmi_control & PCR_DMI_DMICTL_SRLOCK)
-		return -1;
-	return 0;
-}
-
 void pch_early_iorange_init(void)
 {
 	uint16_t io_enables = LPC_IOE_EC_4E_4F | LPC_IOE_SUPERIO_2E_2F | LPC_IOE_KBC_60_64 |
@@ -146,19 +124,7 @@ void pch_early_iorange_init(void)
 		lpc_io_setup_comm_a_b();
 
 	/* IO Decode Enable */
-	if (pch_check_decode_enable() == 0) {
-		io_enables = lpc_enable_fixed_io_ranges(io_enables);
-		/*
-		 * Set LPC IO Enables PCR[DMI] + 2774h [15:0] to the same
-		 * value programmed in LPC PCI offset 82h.
-		 */
-		pcr_write16(PID_DMI, PCR_DMI_LPCIOE, io_enables);
-		/*
-		 * Set LPC IO Decode Ranges PCR[DMI] + 2770h [15:0] to the same
-		 * value programmed in LPC PCI offset 80h.
-		 */
-		pcr_write16(PID_DMI, PCR_DMI_LPCIOD, lpc_get_fixed_io_decode());
-	}
+	lpc_enable_fixed_io_ranges(io_enables);
 
 	/* Program generic IO Decode Range */
 	pch_enable_lpc();
@@ -166,6 +132,12 @@ void pch_early_iorange_init(void)
 
 void bootblock_pch_init(void)
 {
+	/*
+	 * Clear the GPI interrupt status and enable registers. These
+	 * registers do not get reset to default state when booting from S5.
+	 */
+	gpi_clear_int_cfg();
+
 	/*
 	 * Enabling ABASE for accessing PM1_STS, PM1_EN, PM1_CNT,
 	 * GPE0_STS, GPE0_EN registers.

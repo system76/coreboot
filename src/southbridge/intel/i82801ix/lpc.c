@@ -12,13 +12,10 @@
 #include <device/pci_ops.h>
 #include <arch/ioapic.h>
 #include <acpi/acpi.h>
-#include <acpi/acpi_gnvs.h>
 #include <cpu/x86/smm.h>
 #include <acpi/acpigen.h>
-#include <string.h>
 #include "chip.h"
 #include "i82801ix.h"
-#include "nvs.h"
 #include <southbridge/intel/common/pciehp.h>
 #include <southbridge/intel/common/pmutil.h>
 #include <southbridge/intel/common/acpi_pirq_gen.h>
@@ -190,7 +187,7 @@ static void i82801ix_power_options(struct device *dev)
 	}
 
 	reg8 |= (3 << 4);	/* avoid #S4 assertions */
-	reg8 &= ~(1 << 3);	/* minimum asssertion is 1 to 2 RTCCLK */
+	reg8 &= ~(1 << 3);	/* minimum assertion is 1 to 2 RTCCLK */
 
 	pci_write_config8(dev, D31F0_GEN_PMCON_3, reg8);
 	printk(BIOS_INFO, "Set power %s after power failure.\n", state);
@@ -450,17 +447,6 @@ static void i82801ix_lpc_read_resources(struct device *dev)
 	res->base = IO_APIC_ADDR;
 	res->size = 0x00001000;
 	res->flags = IORESOURCE_MEM | IORESOURCE_ASSIGNED | IORESOURCE_FIXED;
-}
-
-size_t gnvs_size_of_array(void)
-{
-	return sizeof(struct global_nvs);
-}
-
-/* To build emulation/qemu-q35 with CHROMEOS. */
-void *gnvs_chromeos_ptr(struct global_nvs *gnvs)
-{
-	return 0;
 }
 
 static const char *lpc_acpi_name(const struct device *dev)

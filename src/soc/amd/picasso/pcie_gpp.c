@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #include <acpi/acpigen.h>
+#include <acpi/acpigen_pci.h>
 #include <arch/ioapic.h>
 #include <assert.h>
 #include <amdblocks/amd_pci_util.h>
@@ -21,20 +22,20 @@
 struct pci_routing {
 	unsigned int devfn;
 	unsigned int group;
-	const char intx[5];
+	uint8_t pin[4];
 };
 
 /* See AMD PPR 55570 - IOAPIC Initialization for the table that AGESA sets up */
 static const struct pci_routing pci_routing_table[] = {
-	{PCIE_GPP_0_DEVFN, 0, "ABCD"},
-	{PCIE_GPP_1_DEVFN, 1, "ABCD"},
-	{PCIE_GPP_2_DEVFN, 2, "ABCD"},
-	{PCIE_GPP_3_DEVFN, 3, "ABCD"},
-	{PCIE_GPP_4_DEVFN, 4, "ABCD"},
-	{PCIE_GPP_5_DEVFN, 5, "ABCD"},
-	{PCIE_GPP_6_DEVFN, 6, "ABCD"},
-	{PCIE_GPP_A_DEVFN, 7, "ABCD"},
-	{PCIE_GPP_B_DEVFN, 7, "CDAB"},
+	{PCIE_GPP_0_DEVFN, 0, {PIRQ_A, PIRQ_B, PIRQ_C, PIRQ_D} },
+	{PCIE_GPP_1_DEVFN, 1, {PIRQ_A, PIRQ_B, PIRQ_C, PIRQ_D} },
+	{PCIE_GPP_2_DEVFN, 2, {PIRQ_A, PIRQ_B, PIRQ_C, PIRQ_D} },
+	{PCIE_GPP_3_DEVFN, 3, {PIRQ_A, PIRQ_B, PIRQ_C, PIRQ_D} },
+	{PCIE_GPP_4_DEVFN, 4, {PIRQ_A, PIRQ_B, PIRQ_C, PIRQ_D} },
+	{PCIE_GPP_5_DEVFN, 5, {PIRQ_A, PIRQ_B, PIRQ_C, PIRQ_D} },
+	{PCIE_GPP_6_DEVFN, 6, {PIRQ_A, PIRQ_B, PIRQ_C, PIRQ_D} },
+	{PCIE_GPP_A_DEVFN, 7, {PIRQ_A, PIRQ_B, PIRQ_C, PIRQ_D} },
+	{PCIE_GPP_B_DEVFN, 7, {PIRQ_C, PIRQ_D, PIRQ_A, PIRQ_B} },
 };
 
 /*
@@ -42,20 +43,7 @@ static const struct pci_routing pci_routing_table[] = {
  * by amd/common/block/pci/amd_pci_util to write the PCI_INT_LINE register
  * to each PCI device.
  */
-static struct pirq_struct pirq_data[] = {
-	{ PCIE_GPP_0_DEVFN },
-	{ PCIE_GPP_1_DEVFN },
-	{ PCIE_GPP_2_DEVFN },
-	{ PCIE_GPP_3_DEVFN },
-	{ PCIE_GPP_4_DEVFN },
-	{ PCIE_GPP_5_DEVFN },
-	{ PCIE_GPP_6_DEVFN },
-	{ PCIE_GPP_A_DEVFN },
-	{ PCIE_GPP_B_DEVFN },
-};
-
-_Static_assert(ARRAY_SIZE(pci_routing_table) == ARRAY_SIZE(pirq_data),
-	"PCI and PIRQ tables must be the same size");
+static struct pirq_struct pirq_data[ARRAY_SIZE(pci_routing_table)];
 
 static const struct pci_routing *get_pci_routing(unsigned int devfn)
 {
@@ -71,7 +59,7 @@ static unsigned int calculate_irq(const struct pci_routing *pci_routing, unsigne
 {
 	unsigned int irq_index;
 	irq_index = pci_routing->group * 4;
-	irq_index += pci_routing->intx[i] - 'A';
+	irq_index += pci_routing->pin[i];
 
 	return irq_index;
 }
@@ -84,10 +72,9 @@ void populate_pirq_data(void)
 
 	for (size_t i = 0; i < ARRAY_SIZE(pirq_data); ++i) {
 		pirq = &pirq_data[i];
-		pci_routing = get_pci_routing(pirq->devfn);
-		if (!pci_routing)
-			die("%s: devfn %u not found\n", __func__, pirq->devfn);
+		pci_routing = &pci_routing_table[i];
 
+		pirq->devfn = pci_routing->devfn;
 		for (size_t j = 0; j < 4; ++j) {
 			irq_index = calculate_irq(pci_routing, j);
 
@@ -141,9 +128,9 @@ static void acpigen_write_PRT(const struct device *dev)
 
 	acpigen_write_method("_PRT", 0);
 
-	/* If (PMOD) */
+	/* If (PICM) */
 	acpigen_write_if();
-	acpigen_emit_namestring("PMOD");
+	acpigen_emit_namestring("PICM");
 
 	/* Return (Package{...}) */
 	acpigen_emit_byte(RETURN_OP);
@@ -153,6 +140,7 @@ static void acpigen_write_PRT(const struct device *dev)
 		irq_index = calculate_irq(pci_routing, i);
 
 		acpigen_write_package(4);
+		/* There is only one device attached to the bridge */
 		acpigen_write_dword(0x0000FFFF);
 		acpigen_write_byte(i);
 		acpigen_write_byte(0); /* Source: GSI  */
@@ -161,7 +149,6 @@ static void acpigen_write_PRT(const struct device *dev)
 		acpigen_pop_len();
 	}
 	acpigen_pop_len(); /* Package - APIC Routing */
-	acpigen_pop_len(); /* End If */
 
 	/* Else */
 	acpigen_write_else();
@@ -176,6 +163,7 @@ static void acpigen_write_PRT(const struct device *dev)
 		link_template[8] = 'A' + (irq_index % 8);
 
 		acpigen_write_package(4);
+		/* There is only one device attached to the bridge */
 		acpigen_write_dword(0x0000FFFF);
 		acpigen_write_byte(i);
 		acpigen_emit_namestring(link_template);
@@ -204,7 +192,7 @@ static void acpigen_write_PRT(const struct device *dev)
  *
  *         Method (_PRT, 0, NotSerialized)  // _PRT: PCI Routing Table
  *         {
- *             If (PMOD)
+ *             If (PICM)
  *             {
  *                 Return (Package (0x04)
  *                 {

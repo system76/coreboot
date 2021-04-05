@@ -4,6 +4,7 @@
 #include <soc/pci_devs.h>
 #include <fw_config.h>
 #include <sar.h>
+#include "chip.h"
 
 static const fsp_ddi_descriptor hdmi_ddi_descriptors[] = {
 	{ // DDI0, DP0, eDP
@@ -39,9 +40,23 @@ void variant_devtree_update(void)
 	struct soc_amd_picasso_config *soc_cfg;
 	soc_cfg = config_of_soc();
 
+	if (board_id() <= 2 || board_id() == BOARD_ID_UNKNOWN)
+		return;
+
 	/* b:/174121847 Use external OSC to mitigate noise for WWAN sku. */
-	if (variant_has_wwan())
+	if (variant_has_wwan()) {
 		soc_cfg->acp_i2s_use_external_48mhz_osc = 1;
+
+		/* eDP phy tuning settings */
+		soc_cfg->edp_phy_override = ENABLE_EDP_TUNINGSET;
+		/* bit vector of phy, bit0=1: DP0, bit1=1: DP1, bit2=1: DP2 bit3=1: DP3 */
+		soc_cfg->edp_physel = 0x1;
+		/* override for 0.6v 0db swing 1, pre-emphasis 0 */
+		soc_cfg->edp_tuningset.dp_vs_pemph_level = 0x01;
+		soc_cfg->edp_tuningset.margin_deemph = 0x004b;
+		soc_cfg->edp_tuningset.deemph_6db4 = 0x00;
+		soc_cfg->edp_tuningset.boostadj = 0x80;
+	}
 }
 
 /*
@@ -60,33 +75,23 @@ void variant_devtree_update(void)
 
 const char *get_wifi_sar_cbfs_filename(void)
 {
-	const char *filename = NULL;
 	int sar_config;
 
 	sar_config = variant_gets_sar_config();
 
 	switch (sar_config) {
 	case 1:
-		filename = "wifi_sar-vilboz-0.hex";
-		break;
+		return "wifi_sar-vilboz-0.hex";
 	case 3:
 		/*
 		TODO: Set default first. It will be replaced after the
 		new table is generated.
 		*/
-		filename = "wifi_sar_defaults.hex";
-		break;
+		return WIFI_SAR_CBFS_DEFAULT_FILENAME;
 	case 5:
-		filename = "wifi_sar-vilboz-1.hex";
-		break;
 	case 7:
-		/*
-		TODO: Set default first. It will be replaced after the
-		new table is generated.
-		*/
-		filename = "wifi_sar_defaults.hex";
-		break;
+		return "wifi_sar-vilboz-1.hex";
+	default:
+		return WIFI_SAR_CBFS_DEFAULT_FILENAME;
 	}
-
-	return filename;
 }

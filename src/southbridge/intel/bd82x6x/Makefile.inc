@@ -26,7 +26,7 @@ ramstage-y += me_status.c
 
 ramstage-$(CONFIG_ELOG) += elog.c
 
-smm-y += smihandler.c me.c me_8.x.c pch.c me_common.c
+smm-y += smihandler.c me_smm.c pch.c me_common.c
 
 romstage-y += me_status.c
 romstage-y += early_rcba.c
@@ -37,5 +37,7 @@ romstage-y += early_thermal.c early_me.c early_usb.c
 else
 romstage-y += early_me_mrc.c early_usb_mrc.c
 endif
+
+CPPFLAGS_common += -I$(src)/southbridge/intel/bd82x6x/include
 
 endif

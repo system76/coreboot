@@ -11,7 +11,6 @@ chip soc/intel/tigerlake
 	register "usb2_ports[4]" = "USB2_PORT_TYPE_C(OC0)"	# Type-A / Type-C Port 0
 
 	register "usb3_ports[0]" = "USB3_PORT_DEFAULT(OC0)"	# Type-A / Type-C Port 0
-	register "usb3_ports[1]" = "USB3_PORT_DEFAULT(OC1)"	# Type-A / Type-C Port 1
 
 	# Disable SRCCLKREQ1#
 	register "PcieClkSrcUsage[1]" = "PCIE_CLK_NOTUSED"
@@ -46,6 +45,59 @@ chip soc/intel/tigerlake
 	}"
 
 	device domain 0 on
+		device ref dptf on
+			chip drivers/intel/dptf
+				## Disable Active Policy
+				register "policies.active" = "{[0] = {.target=DPTF_NONE}}"
+
+				## Passive Policy
+				register "policies.passive" = "{
+					[0] = DPTF_PASSIVE(CPU,		CPU,	       57, 30000),
+					[1] = DPTF_PASSIVE(CPU,		TEMP_SENSOR_1, 45, 10000),
+					[2] = DPTF_PASSIVE(CHARGER,	TEMP_SENSOR_0, 56, 30000),
+					[3] = DPTF_PASSIVE(CPU,		TEMP_SENSOR_2, 54, 10000),
+					[4] = DPTF_PASSIVE(CPU,		TEMP_SENSOR_3, 46, 10000)}"
+
+				## Critical Policy
+				register "policies.critical" = "{
+					[0] = DPTF_CRITICAL(CPU,	       100, SHUTDOWN),
+					[1] = DPTF_CRITICAL(TEMP_SENSOR_0,	75, SHUTDOWN),
+					[2] = DPTF_CRITICAL(TEMP_SENSOR_1,	75, SHUTDOWN),
+					[3] = DPTF_CRITICAL(TEMP_SENSOR_2,	75, SHUTDOWN),
+					[4] = DPTF_CRITICAL(TEMP_SENSOR_3,	75, SHUTDOWN)}"
+
+				## Power Limits Control
+				# 7-9W PL1 in 200mW increments, avg over 28-32s interval
+				# PL2 is fixed at 40W, avg over 28-32s interval
+				register "controls.power_limits" = "{
+					.pl1 = {.min_power = 7000,
+						.max_power = 9000,
+						.time_window_min = 28 * MSECS_PER_SEC,
+						.time_window_max = 32 * MSECS_PER_SEC,
+						.granularity = 200,},
+					.pl2 = {.min_power = 40000,
+						.max_power = 40000,
+						.time_window_min = 28 * MSECS_PER_SEC,
+						.time_window_max = 32 * MSECS_PER_SEC,
+						.granularity = 1000,}}"
+
+				## Charger Performance Control (Control, mA)
+				register "controls.charger_perf" = "{
+					[0] = { 255, 2500 },
+					[1] = {  24, 1900 },
+					[2] = {  16, 1500 },
+					[3] = {   8, 1000 }}"
+
+				## Fan Performance Control (Percent, Speed, Noise, Power)
+				register "controls.fan_perf" = "{[0] = {0}}"
+
+				## Fan options
+				register "options.fan.fine_grained_control" = "0"
+				register "options.fan.step_size" = "0"
+
+				device generic 0 on end
+			end
+		end
 		device ref i2c0 on
 			chip drivers/i2c/generic
 				register "hid" = ""10EC5682""
@@ -95,16 +147,41 @@ chip soc/intel/tigerlake
 				register "hid_desc_reg_offset" = "0x01"
 				device i2c 10 on end
 			end
+			chip drivers/generic/gpio_keys
+				register "name" = ""PENH""
+				# GPP_E17 is the IRQ source, and GPP_E1 is the wake source
+				register "gpio" = "ACPI_GPIO_INPUT_ACTIVE_LOW(GPP_E17)"
+				register "key.wake_gpe" = "GPE0_DW2_01"
+				register "key.wakeup_route" = "WAKEUP_ROUTE_SCI"
+				register "key.wakeup_event_action" = "EV_ACT_DEASSERTED"
+				register "key.dev_name" = ""EJCT""
+				register "key.linux_code" = "SW_PEN_INSERTED"
+				register "key.linux_input_type" = "EV_SW"
+				register "key.label" = ""pen_eject""
+				device generic 0 on end
+			end
 		end
 		device ref i2c5 on
+			chip drivers/i2c/generic
+				register "hid" = ""ELAN0000""
+				register "desc" = ""ELAN Touchpad""
+				register "irq" = "ACPI_IRQ_WAKE_LEVEL_LOW(GPP_E15_IRQ)"
+				register "wake" = "GPE0_DW2_15"
+				register "probed" = "1"
+				device i2c 15 on
+					probe TOUCHPAD REGULAR_TOUCHPAD
+				end
+			end
 			chip drivers/i2c/hid
-				register "generic.hid" = ""ELAN0000""
+				register "generic.hid" = ""ELAN2701""
 				register "generic.desc" = ""ELAN Touchpad""
 				register "generic.irq" = "ACPI_IRQ_WAKE_LEVEL_LOW(GPP_E15_IRQ)"
 				register "generic.wake" = "GPE0_DW2_15"
 				register "generic.probed" = "1"
 				register "hid_desc_reg_offset" = "0x01"
-				device i2c 15 on end
+				device i2c 15 on
+					probe TOUCHPAD NUMPAD_TOUCHPAD
+				end
 			end
 		end
 		device ref pch_espi on
@@ -155,14 +232,16 @@ chip soc/intel/tigerlake
 					chip drivers/usb/acpi
 						register "desc" = ""USB3 Type-C Port C0 (MLB)""
 						register "type" = "UPC_TYPE_C_USB2_SS_SWITCH"
-						register "group" = "ACPI_PLD_GROUP(3, 2)"
+						register "group" = "ACPI_PLD_GROUP(4, 2)"
 						device ref tcss_usb3_port1 on end
 					end
 					chip drivers/usb/acpi
 						register "desc" = ""USB3 Type-C Port C1 (MLB)""
 						register "type" = "UPC_TYPE_C_USB2_SS_SWITCH"
-						register "group" = "ACPI_PLD_GROUP(2, 2)"
-						device ref tcss_usb3_port2 on end
+						register "group" = "ACPI_PLD_GROUP(3, 2)"
+						device ref tcss_usb3_port2 on
+							probe DB_USB USB4_GEN3
+						end
 					end
 				end
 			end
@@ -174,24 +253,26 @@ chip soc/intel/tigerlake
 						register "desc" = ""USB2 Type-A Port A0 (MLB)""
 						register "type" = "UPC_TYPE_A"
 						register "group" = "ACPI_PLD_GROUP(1, 1)"
-						device ref usb2_port2 on end
+						device ref usb2_port1 on end
 					end
 					chip drivers/usb/acpi
 						register "desc" = ""USB2 Type-C Port C1 (MLB)""
 						register "type" = "UPC_TYPE_C_USB2_SS_SWITCH"
-						register "group" = "ACPI_PLD_GROUP(2, 1)"
-						device ref usb2_port4 on end
+						register "group" = "ACPI_PLD_GROUP(3, 1)"
+						device ref usb2_port3 on
+							probe DB_USB USB4_GEN3
+						end
 					end
 					chip drivers/usb/acpi
 						register "desc" = ""USB2 Camera""
 						register "type" = "UPC_TYPE_INTERNAL"
-						device ref usb2_port5 on end
+						device ref usb2_port4 on end
 					end
 					chip drivers/usb/acpi
 						register "desc" = ""USB2 Type-C Port C0 (MLB)""
 						register "type" = "UPC_TYPE_C_USB2_SS_SWITCH"
-						register "group" = "ACPI_PLD_GROUP(3, 1)"
-						device ref usb2_port9 on end
+						register "group" = "ACPI_PLD_GROUP(4, 1)"
+						device ref usb2_port5 on end
 					end
 					chip drivers/usb/acpi
 						register "desc" = ""USB2 Bluetooth""

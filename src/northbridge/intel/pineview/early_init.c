@@ -99,7 +99,7 @@ static void early_misc_setup(void)
 {
 	MCHBAR32(HIT0);
 	MCHBAR32(HIT0) = 0x00021800;
-	DMIBAR32(HTBONUS1) = 0x86000040;
+	DMIBAR32(0x2c) = 0x86000040;
 	pci_write_config32(PCI_DEV(0, 0x1e, 0), 0x18, 0x00020200);
 	pci_write_config32(PCI_DEV(0, 0x1e, 0), 0x18, 0x00000000);
 
@@ -136,9 +136,9 @@ static void pineview_setup_bars(void)
 	pci_write_config8(HOST_BRIDGE, 0x08, 0x69);
 
 	/* Set up all hardcoded northbridge BARs */
-	pci_write_config32(HOST_BRIDGE, EPBAR,   DEFAULT_EPBAR   | 1);
-	pci_write_config32(HOST_BRIDGE, MCHBAR,  DEFAULT_MCHBAR  | 1);
-	pci_write_config32(HOST_BRIDGE, DMIBAR,  DEFAULT_DMIBAR  | 1);
+	pci_write_config32(HOST_BRIDGE, EPBAR,  CONFIG_FIXED_EPBAR_MMIO_BASE  | 1);
+	pci_write_config32(HOST_BRIDGE, MCHBAR, CONFIG_FIXED_MCHBAR_MMIO_BASE | 1);
+	pci_write_config32(HOST_BRIDGE, DMIBAR, CONFIG_FIXED_DMIBAR_MMIO_BASE | 1);
 	pci_write_config32(HOST_BRIDGE, PMIOBAR, DEFAULT_PMIOBAR | 1);
 
 	/* Set C0000-FFFFF to access RAM on both reads and writes */

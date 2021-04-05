@@ -55,33 +55,6 @@
       for (rank = 0; rank < NUM_RANKS; rank++)			\
 	if (info->populated_ranks[channel][slot][rank])
 
-/* [REG_178][CHANNEL][2 * SLOT + RANK][LANE] */
-typedef struct {
-	u8 smallest;
-	u8 largest;
-} timing_bounds_t[2][2][2][9];
-
-#define MRC_CACHE_VERSION 3
-
-struct ram_training {
-	/* [TM][CHANNEL][SLOT][RANK][LANE] */
-	u16 lane_timings[4][2][2][2][9];
-	u16 reg_178;
-	u16 reg_10b;
-
-	u8 reg178_center;
-	u8 reg178_smallest;
-	u8 reg178_largest;
-	timing_bounds_t timing_bounds[2];
-	u16 timing_offset[2][2][2][9];
-	u16 timing2_offset[2][2][2][9];
-	u16 timing2_bounds[2][2][2][9][2];
-	u8 reg274265[2][3];	/* [CHANNEL][REGISTER] */
-	u8 reg2ca9_bit0;
-	u32 reg_6dc;
-	u32 reg_6e8;
-};
-
 #include <lib.h>		/* Prototypes */
 
 typedef struct _u128 {
@@ -177,51 +150,8 @@ static u32 gav_real(int line, u32 in)
 
 #define gav(x) gav_real (__LINE__, (x))
 
-struct raminfo {
-	u16 clock_speed_index;	/* clock_speed (REAL, not DDR) / 133.(3) - 3 */
-	u16 fsb_frequency;	/* in 1.(1)/2 MHz.  */
-	u8 is_x16_module[2][2];	/* [CHANNEL][SLOT] */
-	u8 density[2][2];	/* [CHANNEL][SLOT] */
-	u8 populated_ranks[2][2][2];	/* [CHANNEL][SLOT][RANK] */
-	int rank_start[2][2][2];
-	u8 cas_latency;
-	u8 board_lane_delay[9];
-	u8 use_ecc;
-	u8 revision;
-	u8 max_supported_clock_speed_index;
-	u8 uma_enabled;
-	u8 spd[2][2][151];	/* [CHANNEL][SLOT][BYTE]  */
-	u8 silicon_revision;
-	u8 populated_ranks_mask[2];
-	u8 max_slots_used_in_channel;
-	u8 mode4030[2];
-	u16 avg4044[2];
-	u16 max4048[2];
-	unsigned int total_memory_mb;
-	unsigned int interleaved_part_mb;
-	unsigned int non_interleaved_part_mb;
-
-	unsigned int memory_reserved_for_heci_mb;
-
-	struct ram_training training;
-	u32 last_500_command[2];
-
-	u32 delay46_ps[2];
-	u32 delay54_ps[2];
-	u8 revision_flag_1;
-	u8 some_delay_1_cycle_floor;
-	u8 some_delay_2_halfcycles_ceil;
-	u8 some_delay_3_ps_rounded;
-
-	const struct ram_training *cached_training;
-};
-
 /* Global allocation of timings_car */
 timing_bounds_t timings_car[64];
-
-static void
-write_500(struct raminfo *info, int channel, u32 val, u16 addr, int bits,
-	  int flag);
 
 /* OK */
 static u16
@@ -258,6 +188,12 @@ write_500(struct raminfo *info, int channel, u32 val, u16 addr, int bits,
 	MCHBAR32(0x500 + (channel << 10)) = 0x40000000 | addr;
 	while (MCHBAR32(0x500 + (channel << 10)) & 0x800000)
 		;
+}
+
+static void rmw_500(struct raminfo *info, int channel, u16 addr, int bits, u32 and, u32 or)
+{
+	const u32 val = read_500(info, channel, addr, bits) & and;
+	write_500(info, channel, val | or, addr, bits, 1);
 }
 
 static int rw_test(int rank)
@@ -325,12 +261,22 @@ static void write_26c(int channel, u16 si)
 	MCHBAR16(0x2b9 + (channel << 10)) = si;
 }
 
+static void toggle_1d0_142_5ff(void)
+{
+	u32 reg32 = gav(read_1d0(0x142, 3));
+	if (reg32 & (1 << 1))
+		write_1d0(0, 0x142, 3, 1);
+
+	MCHBAR8(0x5ff) = 0x0;
+	MCHBAR8(0x5ff) = 0x80;
+	if (reg32 & (1 << 1))
+		write_1d0(0x2, 0x142, 3, 1);
+}
+
 static u32 get_580(int channel, u8 addr)
 {
 	u32 ret;
-	gav(read_1d0(0x142, 3));
-	MCHBAR8(0x5ff) = 0x0;
-	MCHBAR8(0x5ff) = 0x80;
+	toggle_1d0_142_5ff();
 	MCHBAR32(0x580 + (channel << 10)) = 0x8493c012 | addr;
 	MCHBAR8_OR(0x580 + (channel << 10), 1);
 	while (!((ret = MCHBAR32(0x580 + (channel << 10))) & 0x10000))
@@ -339,9 +285,6 @@ static u32 get_580(int channel, u8 addr)
 	return ret;
 }
 
-#define NUM_CHANNELS 2
-#define NUM_SLOTS 2
-#define NUM_RANKS 2
 #define RANK_SHIFT 28
 #define CHANNEL_SHIFT 10
 
@@ -380,10 +323,9 @@ static void seq9(struct raminfo *info, int channel, int slot, int rank)
 		gav(get_580(channel, ((i + 1) << 2) | (rank << 5)));
 	}
 
-	gav(read_1d0(0x142, 3));	// = 0x10408118
-	MCHBAR8(0x5ff) = 0x0;
-	MCHBAR8(0x5ff) = 0x80;
+	toggle_1d0_142_5ff();
 	write_1d0(0x2, 0x142, 3, 1);
+
 	for (lane = 0; lane < 8; lane++) {
 		//      printk (BIOS_ERR, "before: %x\n", info->training.lane_timings[2][channel][slot][rank][lane]);
 		info->training.lane_timings[2][channel][slot][rank][lane] =
@@ -436,14 +378,13 @@ config_rank(struct raminfo *info, int s3resume, int channel, int slot, int rank)
 	MCHBAR8(0x5ff) = 0x80;
 }
 
-static void set_4cf(struct raminfo *info, int channel, u8 val)
+static void set_4cf(struct raminfo *info, int channel, u8 bit, u8 val)
 {
-	gav(read_500(info, channel, 0x4cf, 4));	// = 0xc2300cf9
-	write_500(info, channel, val, 0x4cf, 4, 1);
-	gav(read_500(info, channel, 0x659, 4));	// = 0x80300839
-	write_500(info, channel, val, 0x659, 4, 1);
-	gav(read_500(info, channel, 0x697, 4));	// = 0x80300839
-	write_500(info, channel, val, 0x697, 4, 1);
+	const u16 regtable[] = { 0x4cf, 0x659, 0x697 };
+
+	val &= 1;
+	for (int i = 0; i < ARRAY_SIZE(regtable); i++)
+		rmw_500(info, channel, regtable[i], 4, ~(1 << bit), val << bit);
 }
 
 static void set_334(int zero)
@@ -490,11 +431,11 @@ static void set_334(int zero)
 		;
 }
 
-static void rmw_1d0(u16 addr, u32 and, u32 or, int split, int flag)
+static void rmw_1d0(u16 addr, u32 and, u32 or, int split)
 {
 	u32 v;
 	v = read_1d0(addr, split);
-	write_1d0((v & and) | or, addr, split, flag);
+	write_1d0((v & and) | or, addr, split, 1);
 }
 
 static int find_highest_bit_set(u16 val)
@@ -758,27 +699,10 @@ static void program_base_timings(struct raminfo *info)
 	}
 }
 
-static unsigned int fsbcycle_ps(struct raminfo *info)
-{
-	return 900000 / info->fsb_frequency;
-}
-
-/* The time of DDR transfer in ps.  */
-static unsigned int halfcycle_ps(struct raminfo *info)
-{
-	return 3750 / (info->clock_speed_index + 3);
-}
-
 /* The time of clock cycle in ps.  */
 static unsigned int cycle_ps(struct raminfo *info)
 {
 	return 2 * halfcycle_ps(info);
-}
-
-/* Frequency in 1.(1)=10/9 MHz units. */
-static unsigned int frequency_11(struct raminfo *info)
-{
-	return (info->clock_speed_index + 3) * 120;
 }
 
 /* Frequency in 0.1 MHz units. */
@@ -1207,7 +1131,7 @@ static void program_board_delay(struct raminfo *info)
 		if (info->revision >= 0x10 && info->clock_speed_index <= 1
 		    && (info->silicon_revision == 2
 			|| info->silicon_revision == 3))
-			rmw_1d0(0x116, 5, 2, 4, 1);
+			rmw_1d0(0x116, 5, 2, 4);
 	}
 	MCHBAR32(0x120) = (1 << (info->max_slots_used_in_channel + 28)) |
 		0x188e7f9f;
@@ -1349,23 +1273,6 @@ static void program_board_delay(struct raminfo *info)
 }
 
 #define DEFAULT_PCI_MMIO_SIZE 2048
-#define HOST_BRIDGE	PCI_DEVFN(0, 0)
-
-static unsigned int get_mmio_size(void)
-{
-	const struct device *dev;
-	const struct northbridge_intel_ironlake_config *cfg = NULL;
-
-	dev = pcidev_path_on_root(HOST_BRIDGE);
-	if (dev)
-		cfg = dev->chip_info;
-
-	/* If this is zero, it just means devicetree.cb didn't set it */
-	if (!cfg || cfg->pci_mmio_size == 0)
-		return DEFAULT_PCI_MMIO_SIZE;
-	else
-		return cfg->pci_mmio_size;
-}
 
 static void program_total_memory_map(struct raminfo *info)
 {
@@ -1399,7 +1306,7 @@ static void program_total_memory_map(struct raminfo *info)
 		uma_size_gtt = uma_sizes_gtt[(t >> 8) & 0xF];
 	}
 
-	mmio_size = get_mmio_size();
+	mmio_size = DEFAULT_PCI_MMIO_SIZE;
 
 	tom = info->total_memory_mb;
 	if (tom == 4096)
@@ -1470,20 +1377,14 @@ static void collect_system_info(struct raminfo *info)
 	int i;
 	unsigned int channel;
 
-	/* Wait for some bit, maybe TXT clear. */
-	while (!(read8((u8 *)0xfed40000) & (1 << 7)))
-		;
-
-	if (!info->memory_reserved_for_heci_mb) {
-		/* Wait for ME to be ready */
-		intel_early_me_init();
-		info->memory_reserved_for_heci_mb = intel_early_me_uma_size();
+	for (i = 0; i < 3; i++) {
+		capid0[i] = pci_read_config32(NORTHBRIDGE, CAPID0 | (i << 2));
+		printk(BIOS_DEBUG, "CAPID0[%d] = 0x%08x\n", i, capid0[i]);
 	}
+	info->revision = pci_read_config8(NORTHBRIDGE, PCI_REVISION_ID);
+	printk(BIOS_DEBUG, "Revision ID: 0x%x\n", info->revision);
+	printk(BIOS_DEBUG, "Device ID: 0x%x\n", pci_read_config16(NORTHBRIDGE, PCI_DEVICE_ID));
 
-	for (i = 0; i < 3; i++)
-		gav(capid0[i] =
-		    pci_read_config32(NORTHBRIDGE, CAPID0 | (i << 2)));
-	gav(info->revision = pci_read_config8(NORTHBRIDGE, PCI_REVISION_ID));
 	info->max_supported_clock_speed_index = (~capid0[1] & 7);
 
 	if ((capid0[1] >> 11) & 1)
@@ -1731,8 +1632,20 @@ static int recv_heci_packet(struct mei_header *head, u32 *packet, u32 *packet_si
 	return 0;
 }
 
+union uma_reply {
+	struct {
+		u8 group_id;
+		u8 command;
+		u8 reserved;
+		u8 result;
+		u8 field2;
+		u8 unk3[0x48 - 4 - 1];
+	};
+	u32 dwords[0x48 / sizeof(u32)];
+} __packed;
+
 /* FIXME: Add timeout.  */
-static int recv_heci_message(u32 *message, u32 *message_size)
+static int recv_heci_message(union uma_reply *message, u32 *message_size)
 {
 	struct mei_header head;
 	int current_position;
@@ -1742,7 +1655,7 @@ static int recv_heci_message(u32 *message, u32 *message_size)
 		u32 current_size;
 		current_size = *message_size - current_position;
 		if (recv_heci_packet
-		    (&head, message + (current_position >> 2),
+		    (&head, &message->dwords[current_position / sizeof(u32)],
 		     &current_size) == -1)
 			break;
 		if (!current_size)
@@ -1762,17 +1675,7 @@ static int recv_heci_message(u32 *message, u32 *message_size)
 
 static void send_heci_uma_message(const u64 heci_uma_addr, const unsigned int heci_uma_size)
 {
-	volatile struct uma_reply {
-		u8 group_id;
-		u8 command;
-		u8 reserved;
-		u8 result;
-		u8 field2;
-		u8 unk3[0x48 - 4 - 1];
-	} __packed reply;
-
-	/* FIXME: recv_heci_message() does not always initialize 'reply' */
-	reply.command = 0;
+	union uma_reply reply;
 
 	struct uma_message {
 		u8 group_id;
@@ -1798,7 +1701,7 @@ static void send_heci_uma_message(const u64 heci_uma_addr, const unsigned int he
 	send_heci_message((u8 *) &msg, sizeof(msg), 0, 7);
 
 	reply_size = sizeof(reply);
-	if (recv_heci_message((u32 *) &reply, &reply_size) == -1)
+	if (recv_heci_message(&reply, &reply_size) == -1)
 		return;
 
 	if (reply.command != (MKHI_SET_UMA | (1 << 7)))
@@ -1807,7 +1710,7 @@ static void send_heci_uma_message(const u64 heci_uma_addr, const unsigned int he
 
 static void setup_heci_uma(struct raminfo *info)
 {
-	if (!info->memory_reserved_for_heci_mb && !(pci_read_config32(HECIDEV, 0x40) & 0x20))
+	if (!info->memory_reserved_for_heci_mb || !(pci_read_config32(HECIDEV, 0x40) & 0x20))
 		return;
 
 	const u64 heci_uma_addr =
@@ -1818,19 +1721,18 @@ static void setup_heci_uma(struct raminfo *info)
 	pci_read_config32(NORTHBRIDGE, DMIBAR);
 	if (info->memory_reserved_for_heci_mb) {
 		DMIBAR32(DMIVC0RCTL) &= ~0x80;
-		write32(DEFAULT_RCBA   + 0x14, read32(DEFAULT_RCBA   + 0x14) & ~0x80);
+		RCBA32(0x14) &= ~0x80;
 		DMIBAR32(DMIVC1RCTL) &= ~0x80;
-		write32(DEFAULT_RCBA   + 0x20, read32(DEFAULT_RCBA   + 0x20) & ~0x80);
+		RCBA32(0x20) &= ~0x80;
 		DMIBAR32(DMIVCPRCTL) &= ~0x80;
-		write32(DEFAULT_RCBA   + 0x30, read32(DEFAULT_RCBA   + 0x30) & ~0x80);
+		RCBA32(0x30) &= ~0x80;
 		DMIBAR32(DMIVCMRCTL) &= ~0x80;
-		write32(DEFAULT_RCBA   + 0x40, read32(DEFAULT_RCBA   + 0x40) & ~0x80);
+		RCBA32(0x40) &= ~0x80;
 
-		write32(DEFAULT_RCBA   + 0x40, 0x87000080);	// OK
+		RCBA32(0x40) = 0x87000080;	// OK
 		DMIBAR32(DMIVCMRCTL) = 0x87000080;	// OK
 
-		while ((read16(DEFAULT_RCBA + 0x46) & 2) &&
-			DMIBAR16(DMIVCMRSTS) & VCMNP)
+		while ((RCBA16(0x46) & 2) && DMIBAR16(DMIVCMRSTS) & VCMNP)
 			;
 	}
 
@@ -3165,318 +3067,7 @@ static void ram_training(struct raminfo *info)
 	MCHBAR16(0xfc4) = saved_fc4;
 }
 
-static unsigned int gcd(unsigned int a, unsigned int b)
-{
-	unsigned int t;
-	if (a > b) {
-		t = a;
-		a = b;
-		b = t;
-	}
-	/* invariant a < b.  */
-	while (a) {
-		t = b % a;
-		b = a;
-		a = t;
-	}
-	return b;
-}
-
-static inline int div_roundup(int a, int b)
-{
-	return DIV_ROUND_UP(a, b);
-}
-
-static unsigned int lcm(unsigned int a, unsigned int b)
-{
-	return (a * b) / gcd(a, b);
-}
-
-struct stru1 {
-	u8 freqs_reversed;
-	u8 freq_diff_reduced;
-	u8 freq_min_reduced;
-	u8 divisor_f4_to_fmax;
-	u8 divisor_f3_to_fmax;
-	u8 freq4_to_max_remainder;
-	u8 freq3_to_2_remainder;
-	u8 freq3_to_2_remaindera;
-	u8 freq4_to_2_remainder;
-	int divisor_f3_to_f1, divisor_f4_to_f2;
-	int common_time_unit_ps;
-	int freq_max_reduced;
-};
-
-static void
-compute_frequence_ratios(struct raminfo *info, u16 freq1, u16 freq2,
-			 int num_cycles_2, int num_cycles_1, int round_it,
-			 int add_freqs, struct stru1 *result)
-{
-	int g;
-	int common_time_unit_ps;
-	int freq1_reduced, freq2_reduced;
-	int freq_min_reduced;
-	int freq_max_reduced;
-	int freq3, freq4;
-
-	g = gcd(freq1, freq2);
-	freq1_reduced = freq1 / g;
-	freq2_reduced = freq2 / g;
-	freq_min_reduced = MIN(freq1_reduced, freq2_reduced);
-	freq_max_reduced = MAX(freq1_reduced, freq2_reduced);
-
-	common_time_unit_ps = div_roundup(900000, lcm(freq1, freq2));
-	freq3 = div_roundup(num_cycles_2, common_time_unit_ps) - 1;
-	freq4 = div_roundup(num_cycles_1, common_time_unit_ps) - 1;
-	if (add_freqs) {
-		freq3 += freq2_reduced;
-		freq4 += freq1_reduced;
-	}
-
-	if (round_it) {
-		result->freq3_to_2_remainder = 0;
-		result->freq3_to_2_remaindera = 0;
-		result->freq4_to_max_remainder = 0;
-		result->divisor_f4_to_f2 = 0;
-		result->divisor_f3_to_f1 = 0;
-	} else {
-		if (freq2_reduced < freq1_reduced) {
-			result->freq3_to_2_remainder =
-			    result->freq3_to_2_remaindera =
-			    freq3 % freq1_reduced - freq1_reduced + 1;
-			result->freq4_to_max_remainder =
-			    -(freq4 % freq1_reduced);
-			result->divisor_f3_to_f1 = freq3 / freq1_reduced;
-			result->divisor_f4_to_f2 =
-			    (freq4 -
-			     (freq1_reduced - freq2_reduced)) / freq2_reduced;
-			result->freq4_to_2_remainder =
-			    -(char)((freq1_reduced - freq2_reduced) +
-				    ((u8) freq4 -
-				     (freq1_reduced -
-				      freq2_reduced)) % (u8) freq2_reduced);
-		} else {
-			if (freq2_reduced > freq1_reduced) {
-				result->freq4_to_max_remainder =
-				    (freq4 % freq2_reduced) - freq2_reduced + 1;
-				result->freq4_to_2_remainder =
-				    freq4 % freq_max_reduced -
-				    freq_max_reduced + 1;
-			} else {
-				result->freq4_to_max_remainder =
-				    -(freq4 % freq2_reduced);
-				result->freq4_to_2_remainder =
-				    -(char)(freq4 % freq_max_reduced);
-			}
-			result->divisor_f4_to_f2 = freq4 / freq2_reduced;
-			result->divisor_f3_to_f1 =
-			    (freq3 -
-			     (freq2_reduced - freq1_reduced)) / freq1_reduced;
-			result->freq3_to_2_remainder = -(freq3 % freq2_reduced);
-			result->freq3_to_2_remaindera =
-			    -(char)((freq_max_reduced - freq_min_reduced) +
-				    (freq3 -
-				     (freq_max_reduced -
-				      freq_min_reduced)) % freq1_reduced);
-		}
-	}
-	result->divisor_f3_to_fmax = freq3 / freq_max_reduced;
-	result->divisor_f4_to_fmax = freq4 / freq_max_reduced;
-	if (round_it) {
-		if (freq2_reduced > freq1_reduced) {
-			if (freq3 % freq_max_reduced)
-				result->divisor_f3_to_fmax++;
-		}
-		if (freq2_reduced < freq1_reduced) {
-			if (freq4 % freq_max_reduced)
-				result->divisor_f4_to_fmax++;
-		}
-	}
-	result->freqs_reversed = (freq2_reduced < freq1_reduced);
-	result->freq_diff_reduced = freq_max_reduced - freq_min_reduced;
-	result->freq_min_reduced = freq_min_reduced;
-	result->common_time_unit_ps = common_time_unit_ps;
-	result->freq_max_reduced = freq_max_reduced;
-}
-
-static void
-set_2d5x_reg(struct raminfo *info, u16 reg, u16 freq1, u16 freq2,
-	     int num_cycles_2, int num_cycles_1, int num_cycles_3,
-	     int num_cycles_4, int reverse)
-{
-	struct stru1 vv;
-	char multiplier;
-
-	compute_frequence_ratios(info, freq1, freq2, num_cycles_2, num_cycles_1,
-				 0, 1, &vv);
-
-	multiplier =
-	    div_roundup(MAX
-			(div_roundup(num_cycles_2, vv.common_time_unit_ps) +
-			 div_roundup(num_cycles_3, vv.common_time_unit_ps),
-			 div_roundup(num_cycles_1,
-				     vv.common_time_unit_ps) +
-			 div_roundup(num_cycles_4, vv.common_time_unit_ps))
-			+ vv.freq_min_reduced - 1, vv.freq_max_reduced) - 1;
-
-	u32 y =
-	    (u8) ((vv.freq_max_reduced - vv.freq_min_reduced) +
-		  vv.freq_max_reduced * multiplier)
-	    | (vv.
-	       freqs_reversed << 8) | ((u8) (vv.freq_min_reduced *
-					     multiplier) << 16) | ((u8) (vv.
-									 freq_min_reduced
-									 *
-									 multiplier)
-								   << 24);
-	u32 x =
-	    vv.freq3_to_2_remaindera | (vv.freq4_to_2_remainder << 8) | (vv.
-									 divisor_f3_to_f1
-									 << 16)
-	    | (vv.divisor_f4_to_f2 << 20) | (vv.freq_min_reduced << 24);
-	if (reverse) {
-		MCHBAR32(reg) = y;
-		MCHBAR32(reg + 4) = x;
-	} else {
-		MCHBAR32(reg + 4) = y;
-		MCHBAR32(reg) = x;
-	}
-}
-
-static void
-set_6d_reg(struct raminfo *info, u16 reg, u16 freq1, u16 freq2,
-	   int num_cycles_1, int num_cycles_2, int num_cycles_3,
-	   int num_cycles_4)
-{
-	struct stru1 ratios1;
-	struct stru1 ratios2;
-
-	compute_frequence_ratios(info, freq1, freq2, num_cycles_1, num_cycles_2,
-				 0, 1, &ratios2);
-	compute_frequence_ratios(info, freq1, freq2, num_cycles_3, num_cycles_4,
-				 0, 1, &ratios1);
-	printk(RAM_SPEW, "[%x] <= %x\n", reg,
-		       ratios1.freq4_to_max_remainder | (ratios2.
-							 freq4_to_max_remainder
-							 << 8)
-		       | (ratios1.divisor_f4_to_fmax << 16) | (ratios2.
-							       divisor_f4_to_fmax
-							       << 20));
-	MCHBAR32(reg) = ratios1.freq4_to_max_remainder |
-		(ratios2.freq4_to_max_remainder << 8) |
-		(ratios1.divisor_f4_to_fmax << 16) |
-		(ratios2.divisor_f4_to_fmax << 20);
-}
-
-static void
-set_2dx8_reg(struct raminfo *info, u16 reg, u8 mode, u16 freq1, u16 freq2,
-	     int num_cycles_2, int num_cycles_1, int round_it, int add_freqs)
-{
-	struct stru1 ratios;
-
-	compute_frequence_ratios(info, freq1, freq2, num_cycles_2, num_cycles_1,
-				 round_it, add_freqs, &ratios);
-	switch (mode) {
-	case 0:
-		MCHBAR32(reg + 4) = ratios.freq_diff_reduced |
-			(ratios.freqs_reversed << 8);
-		MCHBAR32(reg) = ratios.freq3_to_2_remainder |
-			(ratios.freq4_to_max_remainder << 8) |
-			(ratios.divisor_f3_to_fmax << 16) |
-			(ratios.divisor_f4_to_fmax << 20) |
-			(ratios.freq_min_reduced << 24);
-		break;
-
-	case 1:
-		MCHBAR32(reg) = ratios.freq3_to_2_remainder |
-			(ratios.divisor_f3_to_fmax << 16);
-		break;
-
-	case 2:
-		MCHBAR32(reg) = ratios.freq3_to_2_remainder |
-			(ratios.freq4_to_max_remainder << 8) |
-			(ratios.divisor_f3_to_fmax << 16) |
-			(ratios.divisor_f4_to_fmax << 20);
-		break;
-
-	case 4:
-		MCHBAR32(reg) = (ratios.divisor_f3_to_fmax << 4) |
-			(ratios.divisor_f4_to_fmax << 8) |
-			(ratios.freqs_reversed << 12) |
-			(ratios.freq_min_reduced << 16) |
-			(ratios.freq_diff_reduced << 24);
-		break;
-	}
-}
-
-static void set_2dxx_series(struct raminfo *info, int s3resume)
-{
-	set_2dx8_reg(info, 0x2d00, 0, 0x78, frequency_11(info) / 2, 1359, 1005,
-		     0, 1);
-	set_2dx8_reg(info, 0x2d08, 0, 0x78, 0x78, 3273, 5033, 1, 1);
-	set_2dx8_reg(info, 0x2d10, 0, 0x78, info->fsb_frequency, 1475, 1131, 0,
-		     1);
-	set_2dx8_reg(info, 0x2d18, 0, 2 * info->fsb_frequency,
-		     frequency_11(info), 1231, 1524, 0, 1);
-	set_2dx8_reg(info, 0x2d20, 0, 2 * info->fsb_frequency,
-		     frequency_11(info) / 2, 1278, 2008, 0, 1);
-	set_2dx8_reg(info, 0x2d28, 0, info->fsb_frequency, frequency_11(info),
-		     1167, 1539, 0, 1);
-	set_2dx8_reg(info, 0x2d30, 0, info->fsb_frequency,
-		     frequency_11(info) / 2, 1403, 1318, 0, 1);
-	set_2dx8_reg(info, 0x2d38, 0, info->fsb_frequency, 0x78, 3460, 5363, 1,
-		     1);
-	set_2dx8_reg(info, 0x2d40, 0, info->fsb_frequency, 0x3c, 2792, 5178, 1,
-		     1);
-	set_2dx8_reg(info, 0x2d48, 0, 2 * info->fsb_frequency, 0x78, 2738, 4610,
-		     1, 1);
-	set_2dx8_reg(info, 0x2d50, 0, info->fsb_frequency, 0x78, 2819, 5932, 1,
-		     1);
-	set_2dx8_reg(info, 0x6d4, 1, info->fsb_frequency,
-		     frequency_11(info) / 2, 4000, 0, 0, 0);
-	set_2dx8_reg(info, 0x6d8, 2, info->fsb_frequency,
-		     frequency_11(info) / 2, 4000, 4000, 0, 0);
-
-	if (s3resume) {
-		printk(RAM_SPEW, "[6dc] <= %x\n",
-			info->cached_training->reg_6dc);
-		MCHBAR32(0x6dc) = info->cached_training->reg_6dc;
-	} else
-		set_6d_reg(info, 0x6dc, 2 * info->fsb_frequency, frequency_11(info), 0,
-			   info->delay46_ps[0], 0,
-			   info->delay54_ps[0]);
-	set_2dx8_reg(info, 0x6e0, 1, 2 * info->fsb_frequency,
-		     frequency_11(info), 2500, 0, 0, 0);
-	set_2dx8_reg(info, 0x6e4, 1, 2 * info->fsb_frequency,
-		     frequency_11(info) / 2, 3500, 0, 0, 0);
-	if (s3resume) {
-		printk(RAM_SPEW, "[6e8] <= %x\n",
-			info->cached_training->reg_6e8);
-		MCHBAR32(0x6e8) = info->cached_training->reg_6e8;
-	} else
-		set_6d_reg(info, 0x6e8, 2 * info->fsb_frequency, frequency_11(info), 0,
-			   info->delay46_ps[1], 0,
-			   info->delay54_ps[1]);
-	set_2d5x_reg(info, 0x2d58, 0x78, 0x78, 864, 1195, 762, 786, 0);
-	set_2d5x_reg(info, 0x2d60, 0x195, info->fsb_frequency, 1352, 725, 455,
-		     470, 0);
-	set_2d5x_reg(info, 0x2d68, 0x195, 0x3c, 2707, 5632, 3277, 2207, 0);
-	set_2d5x_reg(info, 0x2d70, 0x195, frequency_11(info) / 2, 1276, 758,
-		     454, 459, 0);
-	set_2d5x_reg(info, 0x2d78, 0x195, 0x78, 1021, 799, 510, 513, 0);
-	set_2d5x_reg(info, 0x2d80, info->fsb_frequency, 0xe1, 0, 2862, 2579,
-		     2588, 0);
-	set_2d5x_reg(info, 0x2d88, info->fsb_frequency, 0xe1, 0, 2690, 2405,
-		     2405, 0);
-	set_2d5x_reg(info, 0x2da0, 0x78, 0xe1, 0, 2560, 2264, 2251, 0);
-	set_2d5x_reg(info, 0x2da8, 0x195, frequency_11(info), 1060, 775, 484,
-		     480, 0);
-	set_2d5x_reg(info, 0x2db0, 0x195, 0x78, 4183, 6023, 2217, 2048, 0);
-	MCHBAR32(0x2dbc) = ((frequency_11(info) / 2) - 1) | 0xe00000;
-	MCHBAR32(0x2db8) = ((info->fsb_frequency - 1) << 16) | 0x77;
-}
-
-static u16 get_max_timing(struct raminfo *info, int channel)
+u16 get_max_timing(struct raminfo *info, int channel)
 {
 	int slot, rank, lane;
 	u16 ret = 0;
@@ -3496,117 +3087,6 @@ static u16 get_max_timing(struct raminfo *info, int channel)
 								(lane, 0, slot,
 								 rank), 9));
 	return ret;
-}
-
-static void set_274265(struct raminfo *info)
-{
-	int delay_a_ps, delay_b_ps, delay_c_ps, delay_d_ps;
-	int delay_e_ps, delay_e_cycles, delay_f_cycles;
-	int delay_e_over_cycle_ps;
-	int cycletime_ps;
-	int channel;
-
-	delay_a_ps = 4 * halfcycle_ps(info) + 6 * fsbcycle_ps(info);
-	info->training.reg2ca9_bit0 = 0;
-	for (channel = 0; channel < NUM_CHANNELS; channel++) {
-		cycletime_ps =
-		    900000 / lcm(2 * info->fsb_frequency, frequency_11(info));
-		delay_d_ps =
-		    (halfcycle_ps(info) * get_max_timing(info, channel) >> 6)
-		    - info->some_delay_3_ps_rounded + 200;
-		if (!
-		    ((info->silicon_revision == 0
-		      || info->silicon_revision == 1)
-		     && (info->revision >= 8)))
-			delay_d_ps += halfcycle_ps(info) * 2;
-		delay_d_ps +=
-		    halfcycle_ps(info) * (!info->revision_flag_1 +
-					  info->some_delay_2_halfcycles_ceil +
-					  2 * info->some_delay_1_cycle_floor +
-					  info->clock_speed_index +
-					  2 * info->cas_latency - 7 + 11);
-		delay_d_ps += info->revision >= 8 ? 2758 : 4428;
-
-		MCHBAR32_AND_OR(0x140, 0xfaffffff, 0x2000000);
-		MCHBAR32_AND_OR(0x138, 0xfaffffff, 0x2000000);
-		if ((MCHBAR8(0x144) & 0x1f) > 0x13)
-			delay_d_ps += 650;
-		delay_c_ps = delay_d_ps + 1800;
-		if (delay_c_ps <= delay_a_ps)
-			delay_e_ps = 0;
-		else
-			delay_e_ps =
-			    cycletime_ps * div_roundup(delay_c_ps - delay_a_ps,
-						       cycletime_ps);
-
-		delay_e_over_cycle_ps = delay_e_ps % (2 * halfcycle_ps(info));
-		delay_e_cycles = delay_e_ps / (2 * halfcycle_ps(info));
-		delay_f_cycles =
-		    div_roundup(2500 - delay_e_over_cycle_ps,
-				2 * halfcycle_ps(info));
-		if (delay_f_cycles > delay_e_cycles) {
-			info->delay46_ps[channel] = delay_e_ps;
-			delay_e_cycles = 0;
-		} else {
-			info->delay46_ps[channel] =
-			    delay_e_over_cycle_ps +
-			    2 * halfcycle_ps(info) * delay_f_cycles;
-			delay_e_cycles -= delay_f_cycles;
-		}
-
-		if (info->delay46_ps[channel] < 2500) {
-			info->delay46_ps[channel] = 2500;
-			info->training.reg2ca9_bit0 = 1;
-		}
-		delay_b_ps = halfcycle_ps(info) + delay_c_ps;
-		if (delay_b_ps <= delay_a_ps)
-			delay_b_ps = 0;
-		else
-			delay_b_ps -= delay_a_ps;
-		info->delay54_ps[channel] =
-		    cycletime_ps * div_roundup(delay_b_ps,
-					       cycletime_ps) -
-		    2 * halfcycle_ps(info) * delay_e_cycles;
-		if (info->delay54_ps[channel] < 2500)
-			info->delay54_ps[channel] = 2500;
-		info->training.reg274265[channel][0] = delay_e_cycles;
-		if (delay_d_ps + 7 * halfcycle_ps(info) <=
-		    24 * halfcycle_ps(info))
-			info->training.reg274265[channel][1] = 0;
-		else
-			info->training.reg274265[channel][1] =
-				div_roundup(delay_d_ps + 7 * halfcycle_ps(info),
-				4 * halfcycle_ps(info)) - 6;
-		MCHBAR32((channel << 10) + 0x274) =
-			info->training.reg274265[channel][1] |
-			(info->training.reg274265[channel][0] << 16);
-		info->training.reg274265[channel][2] =
-			div_roundup(delay_c_ps + 3 * fsbcycle_ps(info),
-			4 * halfcycle_ps(info)) + 1;
-		MCHBAR16((channel << 10) + 0x265) =
-			info->training.reg274265[channel][2] << 8;
-	}
-	if (info->training.reg2ca9_bit0)
-		MCHBAR8_OR(0x2ca9, 1);
-	else
-		MCHBAR8_AND(0x2ca9, ~1);
-}
-
-static void restore_274265(struct raminfo *info)
-{
-	int channel;
-
-	for (channel = 0; channel < NUM_CHANNELS; channel++) {
-		MCHBAR32((channel << 10) + 0x274) =
-			(info->cached_training->reg274265[channel][0] << 16) |
-			info->cached_training->reg274265[channel][1];
-		MCHBAR16((channel << 10) + 0x265) =
-			info->cached_training->reg274265[channel][2] << 8;
-	}
-	if (info->cached_training->reg2ca9_bit0)
-		MCHBAR8_OR(0x2ca9, 1);
-	else
-		MCHBAR8_AND(0x2ca9, ~1);
 }
 
 static void dmi_setup(void)
@@ -3663,33 +3143,38 @@ void chipset_init(const int s3resume)
 		MCHBAR32_AND_OR(0x2c44, 0, 0x1053687);
 		pci_read_config8(GMA, MSAC);	// = 0x2
 		pci_write_config8(GMA, MSAC, 0x2);
-		read8(DEFAULT_RCBA + 0x2318);
-		write8(DEFAULT_RCBA + 0x2318, 0x47);
-		read8(DEFAULT_RCBA + 0x2320);
-		write8(DEFAULT_RCBA + 0x2320, 0xfc);
+		RCBA8(0x2318);
+		RCBA8(0x2318) = 0x47;
+		RCBA8(0x2320);
+		RCBA8(0x2320) = 0xfc;
 	}
 
 	MCHBAR32_AND_OR(0x30, 0, 0x40);
 
 	pci_write_config16(NORTHBRIDGE, GGC, ggc);
-	gav(read32(DEFAULT_RCBA + 0x3428));
-	write32(DEFAULT_RCBA + 0x3428, 0x1d);
+	gav(RCBA32(0x3428));
+	RCBA32(0x3428) = 0x1d;
+}
+
+static u8 get_bits_420(const u32 reg32)
+{
+	u8 val = 0;
+	val |= (reg32 >> 4) & (1 << 0);
+	val |= (reg32 >> 2) & (1 << 1);
+	val |= (reg32 >> 0) & (1 << 2);
+	return val;
 }
 
 void raminit(const int s3resume, const u8 *spd_addrmap)
 {
 	unsigned int channel, slot, lane, rank;
-	int i;
 	struct raminfo info;
 	u8 x2ca8;
-	u16 deven;
 	int cbmem_wasnot_inited;
 
 	x2ca8 = MCHBAR8(0x2ca8);
 
 	printk(RAM_DEBUG, "Scratchpad MCHBAR8(0x2ca8): 0x%04x\n", x2ca8);
-
-	deven = pci_read_config16(NORTHBRIDGE, DEVEN);
 
 	memset(&info, 0x5a, sizeof(info));
 
@@ -3710,16 +3195,20 @@ void raminit(const int s3resume, const u8 *spd_addrmap)
 	info.training.reg_178 = 0;
 	info.training.reg_10b = 0;
 
-	info.memory_reserved_for_heci_mb = 0;
+	/* Wait for some bit, maybe TXT clear. */
+	while (!(read8((u8 *)0xfed40000) & (1 << 7)))
+		;
+
+	/* Wait for ME to be ready */
+	if (intel_early_me_init() == 0)
+		info.memory_reserved_for_heci_mb = intel_early_me_uma_size();
+	else
+		info.memory_reserved_for_heci_mb = 0;
 
 	/* before SPD */
 	timestamp_add_now(101);
 
 	if (!s3resume || 1) {	// possible error
-		pci_read_config8(SOUTHBRIDGE, GEN_PMCON_2);	// = 0x80
-
-		collect_system_info(&info);
-
 		memset(&info.populated_ranks, 0, sizeof(info.populated_ranks));
 
 		info.use_ecc = 1;
@@ -3767,8 +3256,7 @@ void raminit(const int s3resume, const u8 *spd_addrmap)
 					continue;
 				for (addr = 0;
 				     addr <
-				     sizeof(useful_addresses) /
-				     sizeof(useful_addresses[0]); addr++)
+				     ARRAY_SIZE(useful_addresses); addr++)
 					gav(info.
 					    spd[channel][0][useful_addresses
 							    [addr]] =
@@ -3852,342 +3340,17 @@ void raminit(const int s3resume, const u8 *spd_addrmap)
 
 	compute_derived_timings(&info);
 
-	if (x2ca8 == 0) {
-		gav(MCHBAR8(0x164));
-		MCHBAR8(0x164) = 0x26;
-		MCHBAR16(0x2c20) = 0x10;
-	}
-
-	MCHBAR32_OR(0x18b4, 0x210000);
-	MCHBAR32_OR(0x1890, 0x2000000);
-	MCHBAR32_OR(0x18b4, 0x8000);
-
-	gav(pci_read_config32(QPI_PHY_0, QPI_PLL_STATUS));	// !!!!
-	pci_write_config8(QPI_PHY_0, QPI_PLL_RATIO, 0x12);
-
-	gav(MCHBAR16(0x2c10));
-	MCHBAR16(0x2c10) = 0x412;
-	gav(MCHBAR16(0x2c10));
-	MCHBAR16_OR(0x2c12, 0x100);
-
-	gav(MCHBAR8(0x2ca8));	// !!!!
-	MCHBAR32_AND_OR(0x1804, 0xfffffffc, 0x8400080);
-
-	pci_read_config32(QPI_PHY_0, QPI_PHY_CONTROL);	// !!!!
-	pci_write_config32(QPI_PHY_0, QPI_PHY_CONTROL, 0x40a0a0);
-	gav(MCHBAR32(0x1c04));	// !!!!
-	gav(MCHBAR32(0x1804));	// !!!!
-
-	if (x2ca8 == 0) {
-		MCHBAR8_OR(0x2ca8, 1);
-	}
-
-	MCHBAR32(0x18d8) = 0x120000;
-	MCHBAR32(0x18dc) = 0x30a484a;
-	pci_write_config32(QPI_PHY_0, QPI_PHY_EP_SELECT, 0x0);
-	pci_write_config32(QPI_PHY_0, QPI_PHY_EP_MCTR, 0x9444a);
-	MCHBAR32(0x18d8) = 0x40000;
-	MCHBAR32(0x18dc) = 0xb000000;
-	pci_write_config32(QPI_PHY_0, QPI_PHY_EP_SELECT, 0x60000);
-	pci_write_config32(QPI_PHY_0, QPI_PHY_EP_MCTR, 0x0);
-	MCHBAR32(0x18d8) = 0x180000;
-	MCHBAR32(0x18dc) = 0xc0000142;
-	pci_write_config32(QPI_PHY_0, QPI_PHY_EP_SELECT, 0x20000);
-	pci_write_config32(QPI_PHY_0, QPI_PHY_EP_MCTR, 0x142);
-	MCHBAR32(0x18d8) = 0x1e0000;
-
-	gav(MCHBAR32(0x18dc));	// !!!!
-	MCHBAR32(0x18dc) = 0x3;
-	gav(MCHBAR32(0x18dc));	// !!!!
-
-	if (x2ca8 == 0) {
-		MCHBAR8_OR(0x2ca8, 1);	// guess
-	}
-
-	MCHBAR32(0x188c) = 0x20bc09;
-	pci_write_config32(QPI_PHY_0, QPI_PHY_PWR_MGMT, 0x40b0c09);
-	MCHBAR32(0x1a10) = 0x4200010e;
-	MCHBAR32_OR(0x18b8, 0x200);
-	gav(MCHBAR32(0x1918));	// !!!!
-	MCHBAR32(0x1918) = 0x332;
-
-	gav(MCHBAR32(0x18b8));	// !!!!
-	MCHBAR32(0x18b8) = 0xe00;
-	gav(MCHBAR32(0x182c));	// !!!!
-	MCHBAR32(0x182c) = 0x10202;
-	gav(pci_read_config32(QPI_PHY_0, QPI_PHY_PRIM_TIMEOUT));	// !!!!
-	pci_write_config32(QPI_PHY_0, QPI_PHY_PRIM_TIMEOUT, 0x10202);
-	MCHBAR32_AND(0x1a1c, 0x8fffffff);
-	MCHBAR32_OR(0x1a70, 0x100000);
-
-	MCHBAR32_AND(0x18b4, 0xffff7fff);
-	gav(MCHBAR32(0x1a68));	// !!!!
-	MCHBAR32(0x1a68) = 0x343800;
-	gav(MCHBAR32(0x1e68));	// !!!!
-	gav(MCHBAR32(0x1a68));	// !!!!
-
-	if (x2ca8 == 0) {
-		MCHBAR8_OR(0x2ca8, 1);	// guess
-	}
-
-	pci_read_config32(QPI_LINK_0, QPI_QPILCL);	// !!!!
-	pci_write_config32(QPI_LINK_0, QPI_QPILCL, 0x140000);
-	pci_read_config32(QPI_LINK_0, QPI_DEF_RMT_VN_CREDITS);	// !!!!
-	pci_write_config32(QPI_LINK_0, QPI_DEF_RMT_VN_CREDITS, 0x64555);
-	pci_read_config32(QPI_LINK_0, QPI_DEF_RMT_VN_CREDITS);	// !!!!
-	pci_read_config32(QPI_NON_CORE, MIRROR_PORT_CTL);	// !!!!
-	pci_write_config32(QPI_NON_CORE, MIRROR_PORT_CTL, 0x180);
-	gav(MCHBAR32(0x1af0));	// !!!!
-	gav(MCHBAR32(0x1af0));	// !!!!
-	MCHBAR32(0x1af0) = 0x1f020003;
-	gav(MCHBAR32(0x1af0));	// !!!!
-
-	if (x2ca8 == 0) {
-		MCHBAR8_OR(0x2ca8, 1);	// guess
-	}
-
-	gav(MCHBAR32(0x1890));	// !!!!
-	MCHBAR32(0x1890) = 0x80102;
-	gav(MCHBAR32(0x18b4));	// !!!!
-	MCHBAR32(0x18b4) = 0x216000;
-	MCHBAR32(0x18a4) = 0x22222222;
-	MCHBAR32(0x18a8) = 0x22222222;
-	MCHBAR32(0x18ac) = 0x22222;
-
-	udelay(1000);
+	early_quickpath_init(&info, x2ca8);
 
 	info.cached_training = get_cached_training();
 
-	if (x2ca8 == 0) {
-		int j;
-		if (s3resume && info.cached_training) {
-			restore_274265(&info);
-			printk(RAM_SPEW, "reg2ca9_bit0 = %x\n",
-			       info.cached_training->reg2ca9_bit0);
-			for (i = 0; i < 2; i++)
-				for (j = 0; j < 3; j++)
-					printk(RAM_SPEW, "reg274265[%d][%d] = %x\n",
-					       i, j, info.cached_training->reg274265[i][j]);
-		} else {
-			set_274265(&info);
-			printk(RAM_SPEW, "reg2ca9_bit0 = %x\n",
-			       info.training.reg2ca9_bit0);
-			for (i = 0; i < 2; i++)
-				for (j = 0; j < 3; j++)
-					printk(RAM_SPEW, "reg274265[%d][%d] = %x\n",
-					       i, j, info.training.reg274265[i][j]);
-		}
+	if (x2ca8 == 0)
+		late_quickpath_init(&info, s3resume);
 
-		set_2dxx_series(&info, s3resume);
+	MCHBAR32_OR(0x2c80, (1 << 24));
+	MCHBAR32(0x1804) = MCHBAR32(0x1c04) & ~(1 << 27);
 
-		if (!(deven & 8)) {
-			MCHBAR32_AND_OR(0x2cb0, 0, 0x40);
-		}
-
-		udelay(1000);
-
-		if (deven & 8) {
-			MCHBAR32_OR(0xff8, 0x1800);
-			MCHBAR32_AND(0x2cb0, 0x00);
-			pci_read_config8(PCI_DEV (0, 0x2, 0x0), 0x4c);
-			pci_read_config8(PCI_DEV (0, 0x2, 0x0), 0x4c);
-			pci_read_config8(PCI_DEV (0, 0x2, 0x0), 0x4e);
-
-			MCHBAR8(0x1150);
-			MCHBAR8(0x1151);
-			MCHBAR8(0x1022);
-			MCHBAR8(0x16d0);
-			MCHBAR32(0x1300) = 0x60606060;
-			MCHBAR32(0x1304) = 0x60606060;
-			MCHBAR32(0x1308) = 0x78797a7b;
-			MCHBAR32(0x130c) = 0x7c7d7e7f;
-			MCHBAR32(0x1310) = 0x60606060;
-			MCHBAR32(0x1314) = 0x60606060;
-			MCHBAR32(0x1318) = 0x60606060;
-			MCHBAR32(0x131c) = 0x60606060;
-			MCHBAR32(0x1320) = 0x50515253;
-			MCHBAR32(0x1324) = 0x54555657;
-			MCHBAR32(0x1328) = 0x58595a5b;
-			MCHBAR32(0x132c) = 0x5c5d5e5f;
-			MCHBAR32(0x1330) = 0x40414243;
-			MCHBAR32(0x1334) = 0x44454647;
-			MCHBAR32(0x1338) = 0x48494a4b;
-			MCHBAR32(0x133c) = 0x4c4d4e4f;
-			MCHBAR32(0x1340) = 0x30313233;
-			MCHBAR32(0x1344) = 0x34353637;
-			MCHBAR32(0x1348) = 0x38393a3b;
-			MCHBAR32(0x134c) = 0x3c3d3e3f;
-			MCHBAR32(0x1350) = 0x20212223;
-			MCHBAR32(0x1354) = 0x24252627;
-			MCHBAR32(0x1358) = 0x28292a2b;
-			MCHBAR32(0x135c) = 0x2c2d2e2f;
-			MCHBAR32(0x1360) = 0x10111213;
-			MCHBAR32(0x1364) = 0x14151617;
-			MCHBAR32(0x1368) = 0x18191a1b;
-			MCHBAR32(0x136c) = 0x1c1d1e1f;
-			MCHBAR32(0x1370) = 0x10203;
-			MCHBAR32(0x1374) = 0x4050607;
-			MCHBAR32(0x1378) = 0x8090a0b;
-			MCHBAR32(0x137c) = 0xc0d0e0f;
-			MCHBAR8(0x11cc) = 0x4e;
-			MCHBAR32(0x1110) = 0x73970404;
-			MCHBAR32(0x1114) = 0x72960404;
-			MCHBAR32(0x1118) = 0x6f950404;
-			MCHBAR32(0x111c) = 0x6d940404;
-			MCHBAR32(0x1120) = 0x6a930404;
-			MCHBAR32(0x1124) = 0x68a41404;
-			MCHBAR32(0x1128) = 0x66a21404;
-			MCHBAR32(0x112c) = 0x63a01404;
-			MCHBAR32(0x1130) = 0x609e1404;
-			MCHBAR32(0x1134) = 0x5f9c1404;
-			MCHBAR32(0x1138) = 0x5c961404;
-			MCHBAR32(0x113c) = 0x58a02404;
-			MCHBAR32(0x1140) = 0x54942404;
-			MCHBAR32(0x1190) = 0x900080a;
-			MCHBAR16(0x11c0) = 0xc40b;
-			MCHBAR16(0x11c2) = 0x303;
-			MCHBAR16(0x11c4) = 0x301;
-			MCHBAR32_AND_OR(0x1190, 0, 0x8900080a);
-			MCHBAR32(0x11b8) = 0x70c3000;
-			MCHBAR8(0x11ec) = 0xa;
-			MCHBAR16(0x1100) = 0x800;
-			MCHBAR32_AND_OR(0x11bc, 0, 0x1e84800);
-			MCHBAR16(0x11ca) = 0xfa;
-			MCHBAR32(0x11e4) = 0x4e20;
-			MCHBAR8(0x11bc) = 0xf;
-			MCHBAR16(0x11da) = 0x19;
-			MCHBAR16(0x11ba) = 0x470c;
-			MCHBAR32(0x1680) = 0xe6ffe4ff;
-			MCHBAR32(0x1684) = 0xdeffdaff;
-			MCHBAR32(0x1688) = 0xd4ffd0ff;
-			MCHBAR32(0x168c) = 0xccffc6ff;
-			MCHBAR32(0x1690) = 0xc0ffbeff;
-			MCHBAR32(0x1694) = 0xb8ffb0ff;
-			MCHBAR32(0x1698) = 0xa8ff0000;
-			MCHBAR32(0x169c) = 0xc00;
-			MCHBAR32(0x1290) = 0x5000000;
-		}
-
-		MCHBAR32(0x124c) = 0x15040d00;
-		MCHBAR32(0x1250) = 0x7f0000;
-		MCHBAR32(0x1254) = 0x1e220004;
-		MCHBAR32(0x1258) = 0x4000004;
-		MCHBAR32(0x1278) = 0x0;
-		MCHBAR32(0x125c) = 0x0;
-		MCHBAR32(0x1260) = 0x0;
-		MCHBAR32(0x1264) = 0x0;
-		MCHBAR32(0x1268) = 0x0;
-		MCHBAR32(0x126c) = 0x0;
-		MCHBAR32(0x1270) = 0x0;
-		MCHBAR32(0x1274) = 0x0;
-	}
-
-	if ((deven & 8) && x2ca8 == 0) {
-		MCHBAR16(0x1214) = 0x320;
-		MCHBAR32(0x1600) = 0x40000000;
-		MCHBAR32_AND_OR(0x11f4, 0, 0x10000000);
-		MCHBAR16_AND_OR(0x1230, 0, 0x8000);
-		MCHBAR32(0x1400) = 0x13040020;
-		MCHBAR32(0x1404) = 0xe090120;
-		MCHBAR32(0x1408) = 0x5120220;
-		MCHBAR32(0x140c) = 0x5120330;
-		MCHBAR32(0x1410) = 0xe090220;
-		MCHBAR32(0x1414) = 0x1010001;
-		MCHBAR32(0x1418) = 0x1110000;
-		MCHBAR32(0x141c) = 0x9020020;
-		MCHBAR32(0x1420) = 0xd090220;
-		MCHBAR32(0x1424) = 0x2090220;
-		MCHBAR32(0x1428) = 0x2090330;
-		MCHBAR32(0x142c) = 0xd090220;
-		MCHBAR32(0x1430) = 0x1010001;
-		MCHBAR32(0x1434) = 0x1110000;
-		MCHBAR32(0x1438) = 0x11040020;
-		MCHBAR32(0x143c) = 0x4030220;
-		MCHBAR32(0x1440) = 0x1060220;
-		MCHBAR32(0x1444) = 0x1060330;
-		MCHBAR32(0x1448) = 0x4030220;
-		MCHBAR32(0x144c) = 0x1010001;
-		MCHBAR32(0x1450) = 0x1110000;
-		MCHBAR32(0x1454) = 0x4010020;
-		MCHBAR32(0x1458) = 0xb090220;
-		MCHBAR32(0x145c) = 0x1090220;
-		MCHBAR32(0x1460) = 0x1090330;
-		MCHBAR32(0x1464) = 0xb090220;
-		MCHBAR32(0x1468) = 0x1010001;
-		MCHBAR32(0x146c) = 0x1110000;
-		MCHBAR32(0x1470) = 0xf040020;
-		MCHBAR32(0x1474) = 0xa090220;
-		MCHBAR32(0x1478) = 0x1120220;
-		MCHBAR32(0x147c) = 0x1120330;
-		MCHBAR32(0x1480) = 0xa090220;
-		MCHBAR32(0x1484) = 0x1010001;
-		MCHBAR32(0x1488) = 0x1110000;
-		MCHBAR32(0x148c) = 0x7020020;
-		MCHBAR32(0x1490) = 0x1010220;
-		MCHBAR32(0x1494) = 0x10210;
-		MCHBAR32(0x1498) = 0x10320;
-		MCHBAR32(0x149c) = 0x1010220;
-		MCHBAR32(0x14a0) = 0x1010001;
-		MCHBAR32(0x14a4) = 0x1110000;
-		MCHBAR32(0x14a8) = 0xd040020;
-		MCHBAR32(0x14ac) = 0x8090220;
-		MCHBAR32(0x14b0) = 0x1111310;
-		MCHBAR32(0x14b4) = 0x1111420;
-		MCHBAR32(0x14b8) = 0x8090220;
-		MCHBAR32(0x14bc) = 0x1010001;
-		MCHBAR32(0x14c0) = 0x1110000;
-		MCHBAR32(0x14c4) = 0x3010020;
-		MCHBAR32(0x14c8) = 0x7090220;
-		MCHBAR32(0x14cc) = 0x1081310;
-		MCHBAR32(0x14d0) = 0x1081420;
-		MCHBAR32(0x14d4) = 0x7090220;
-		MCHBAR32(0x14d8) = 0x1010001;
-		MCHBAR32(0x14dc) = 0x1110000;
-		MCHBAR32(0x14e0) = 0xb040020;
-		MCHBAR32(0x14e4) = 0x2030220;
-		MCHBAR32(0x14e8) = 0x1051310;
-		MCHBAR32(0x14ec) = 0x1051420;
-		MCHBAR32(0x14f0) = 0x2030220;
-		MCHBAR32(0x14f4) = 0x1010001;
-		MCHBAR32(0x14f8) = 0x1110000;
-		MCHBAR32(0x14fc) = 0x5020020;
-		MCHBAR32(0x1500) = 0x5090220;
-		MCHBAR32(0x1504) = 0x2071310;
-		MCHBAR32(0x1508) = 0x2071420;
-		MCHBAR32(0x150c) = 0x5090220;
-		MCHBAR32(0x1510) = 0x1010001;
-		MCHBAR32(0x1514) = 0x1110000;
-		MCHBAR32(0x1518) = 0x7040120;
-		MCHBAR32(0x151c) = 0x2090220;
-		MCHBAR32(0x1520) = 0x70b1210;
-		MCHBAR32(0x1524) = 0x70b1310;
-		MCHBAR32(0x1528) = 0x2090220;
-		MCHBAR32(0x152c) = 0x1010001;
-		MCHBAR32(0x1530) = 0x1110000;
-		MCHBAR32(0x1534) = 0x1010110;
-		MCHBAR32(0x1538) = 0x1081310;
-		MCHBAR32(0x153c) = 0x5041200;
-		MCHBAR32(0x1540) = 0x5041310;
-		MCHBAR32(0x1544) = 0x1081310;
-		MCHBAR32(0x1548) = 0x1010001;
-		MCHBAR32(0x154c) = 0x1110000;
-		MCHBAR32(0x1550) = 0x1040120;
-		MCHBAR32(0x1554) = 0x4051210;
-		MCHBAR32(0x1558) = 0xd051200;
-		MCHBAR32(0x155c) = 0xd051200;
-		MCHBAR32(0x1560) = 0x4051210;
-		MCHBAR32(0x1564) = 0x1010001;
-		MCHBAR32(0x1568) = 0x1110000;
-		MCHBAR16(0x1222) = 0x220a;
-		MCHBAR16(0x123c) = 0x1fc0;
-		MCHBAR16(0x1220) = 0x1388;
-	}
-
-	MCHBAR32_AND_OR(0x2c80, 0, 0x1053688);	// !!!!
-	MCHBAR32(0x1c04);	// !!!!
-	MCHBAR32(0x1804) = 0x406080;
-
-	MCHBAR8(0x2ca8);
+	MCHBAR8(0x2ca8);	// !!!!
 
 	if (x2ca8 == 0) {
 		MCHBAR8_AND(0x2ca8, ~3);
@@ -4203,14 +3366,26 @@ void raminit(const int s3resume, const u8 *spd_addrmap)
 		halt();
 	}
 
-	MCHBAR8(0x2ca8) = MCHBAR8(0x2ca8);
-	MCHBAR32_AND_OR(0x2c80, 0, 0x53688);	// !!!!
+	MCHBAR8(0x2ca8) = MCHBAR8(0x2ca8);	// !!!!
+
+	MCHBAR32_AND(0x2c80, ~(1 << 24));
+
 	pci_write_config32(QPI_NON_CORE, MAX_RTIDS, 0x20220);
-	MCHBAR16(0x2c20);	// !!!!
-	MCHBAR16(0x2c10);	// !!!!
-	MCHBAR16(0x2c00);	// !!!!
-	MCHBAR16(0x2c00) = 0x8c0;
-	udelay(1000);
+
+	{
+		u8 x2c20 = (MCHBAR16(0x2c20) >> 8) & 3;
+		u16 x2c10 = MCHBAR16(0x2c10);
+		u16 value = MCHBAR16(0x2c00);
+		if (x2c20 == 0 && (x2c10 & 0x300) == 0)
+			value |= (1 << 7);
+		else
+			value &= ~(1 << 0);
+
+		MCHBAR16(0x2c00) = value;
+	}
+
+	udelay(1000);	// !!!!
+
 	write_1d0(0, 0x33d, 0, 0);
 	write_500(&info, 0, 0, 0xb61, 0, 0);
 	write_500(&info, 1, 0, 0xb61, 0, 0);
@@ -4248,7 +3423,7 @@ void raminit(const int s3resume, const u8 *spd_addrmap)
 	write_500(&info, 1, 1, 0x6b3, 4, 1);
 	write_500(&info, 1, 1, 0x6cf, 4, 1);
 
-	rmw_1d0(0x21c, 0x38, 0, 6, 1);
+	rmw_1d0(0x21c, 0x38, 0, 6);
 
 	write_1d0(((!info.populated_ranks[1][0][0]) << 1) | ((!info.
 							      populated_ranks[0]
@@ -4270,15 +3445,18 @@ void raminit(const int s3resume, const u8 *spd_addrmap)
 	write_1d0(0x0, 0xeb, 3, 1);
 	write_1d0(0x0, 0xf3, 6, 1);
 
-	for (channel = 0; channel < NUM_CHANNELS; channel++)
-		for (lane = 0; lane < 9; lane++) {
-			u16 addr = 0x125 + get_lane_offset(0, 0, lane);
-			u8 a;
-			a = read_500(&info, channel, addr, 6);	// = 0x20040080 //!!!!
-			write_500(&info, channel, a, addr, 6, 1);
-		}
+	for (channel = 0; channel < NUM_CHANNELS; channel++) {
+		u8 a = 0;
+		if (info.populated_ranks[channel][0][1] && info.clock_speed_index > 1)
+			a = 3;
+		if (info.silicon_revision == 0 || info.silicon_revision == 1)
+			a = 3;
 
-	udelay(1000);
+		for (lane = 0; lane < 9; lane++) {
+			const u16 addr = 0x125 + get_lane_offset(0, 0, lane);
+			rmw_500(&info, channel, addr, 6, 0xf, a);
+		}
+	}
 
 	if (s3resume) {
 		if (info.cached_training == NULL) {
@@ -4313,8 +3491,9 @@ void raminit(const int s3resume, const u8 *spd_addrmap)
 
 	MCHBAR32_AND_OR(0x1f4, 0, 0x20000);	// !!!!
 	MCHBAR32(0x1f0) = 0x1d000200;
-	MCHBAR8_AND_OR(0x1f0, 0, 0x1);	// !!!!
-	MCHBAR8(0x1f0);	// !!!!
+	MCHBAR8_OR(0x1f0, 0x1);
+	while (MCHBAR8(0x1f0) & 1)
+		;
 
 	program_board_delay(&info);
 
@@ -4325,25 +3504,19 @@ void raminit(const int s3resume, const u8 *spd_addrmap)
 	MCHBAR32_AND(0x130, 0xfffffffd);	// | 2 when ?
 	while (MCHBAR32(0x130) & 1)
 		;
-	gav(read_1d0(0x14b, 7));	// = 0x81023100
-	write_1d0(0x30, 0x14b, 7, 1);
-	read_1d0(0xd6, 6);	// = 0xfa008080 // !!!!
-	write_1d0(7, 0xd6, 6, 1);
-	read_1d0(0x328, 6);	// = 0xfa018080 // !!!!
-	write_1d0(7, 0x328, 6, 1);
+
+	rmw_1d0(0x14b, 0x47, 0x30, 7);
+	rmw_1d0(0xd6,  0x38, 7, 6);
+	rmw_1d0(0x328, 0x38, 7, 6);
 
 	for (channel = 0; channel < NUM_CHANNELS; channel++)
-		set_4cf(&info, channel,
-			info.populated_ranks[channel][0][0] ? 8 : 0);
+		set_4cf(&info, channel, 1, 0);
 
-	read_1d0(0x116, 4);	// = 0x4040432 // !!!!
-	write_1d0(2, 0x116, 4, 1);
-	read_1d0(0xae, 6);	// = 0xe8088080 // !!!!
-	write_1d0(0, 0xae, 6, 1);
-	read_1d0(0x300, 4);	// = 0x48088080 // !!!!
-	write_1d0(0, 0x300, 6, 1);
-	MCHBAR16_AND_OR(0x356, 0, 0x1040);	// !!!!
-	MCHBAR16_AND_OR(0x756, 0, 0x1040);	// !!!!
+	rmw_1d0(0x116, 0xe,  0, 4);
+	rmw_1d0(0xae,  0x3e, 0, 6);
+	rmw_1d0(0x300, 0x3e, 0, 6);
+	MCHBAR16_AND(0x356, 0x7fff);
+	MCHBAR16_AND(0x756, 0x7fff);
 	MCHBAR32_AND(0x140, ~0x07000000);
 	MCHBAR32_AND(0x138, ~0x07000000);
 	MCHBAR32(0x130) = 0x31111301;
@@ -4351,55 +3524,53 @@ void raminit(const int s3resume, const u8 *spd_addrmap)
 	while (MCHBAR32(0x130) & 1)
 		;
 
+	u8 value_a1;
 	{
-		u32 t;
-		u8 val_a1;
-		val_a1 = read_1d0(0xa1, 6);	// = 0x1cf4040 // !!!!
-		t = read_1d0(0x2f3, 6);	// = 0x10a4040 // !!!!
-		rmw_1d0(0x320, 0x07,
-			(t & 4) | ((t & 8) >> 2) | ((t & 0x10) >> 4), 6, 1);
-		rmw_1d0(0x14b, 0x78,
-			((((val_a1 >> 2) & 4) | (val_a1 & 8)) >> 2) | (val_a1 &
-								       4), 7,
-			1);
-		rmw_1d0(0xce, 0x38,
-			((((val_a1 >> 2) & 4) | (val_a1 & 8)) >> 2) | (val_a1 &
-								       4), 6,
-			1);
+		const u8 val_xa1 = get_bits_420(read_1d0(0xa1, 6));	// = 0x1cf4040 // !!!!
+		const u8 val_2f3 = get_bits_420(read_1d0(0x2f3, 6));	// = 0x10a4040 // !!!!
+		value_a1 = val_xa1;
+		rmw_1d0(0x320, 0x38, val_2f3, 6);
+		rmw_1d0(0x14b, 0x78, val_xa1, 7);
+		rmw_1d0(0xce,  0x38, val_xa1, 6);
 	}
 
 	for (channel = 0; channel < NUM_CHANNELS; channel++)
-		set_4cf(&info, channel,
-			info.populated_ranks[channel][0][0] ? 9 : 1);
+		set_4cf(&info, channel, 1, 1);
 
-	rmw_1d0(0x116, 0xe, 1, 4, 1);	// = 0x4040432 // !!!!
-	MCHBAR32(0x144);	// !!!!
-	write_1d0(2, 0xae, 6, 1);
-	write_1d0(2, 0x300, 6, 1);
-	write_1d0(2, 0x121, 3, 1);
-	read_1d0(0xd6, 6);	// = 0xfa00c0c7 // !!!!
-	write_1d0(4, 0xd6, 6, 1);
-	read_1d0(0x328, 6);	// = 0xfa00c0c7 // !!!!
-	write_1d0(4, 0x328, 6, 1);
+	rmw_1d0(0x116, 0xe, 1, 4);	// = 0x4040432 // !!!!
+	{
+		if ((MCHBAR32(0x144) & 0x1f) < 0x13)
+			value_a1 += 2;
+		else
+			value_a1 += 1;
+
+		if (value_a1 > 7)
+			value_a1 = 7;
+
+		write_1d0(2, 0xae, 6, 1);
+		write_1d0(2, 0x300, 6, 1);
+		write_1d0(value_a1, 0x121, 3, 1);
+		rmw_1d0(0xd6,  0x38, 4, 6);
+		rmw_1d0(0x328, 0x38, 4, 6);
+	}
 
 	for (channel = 0; channel < NUM_CHANNELS; channel++)
-		set_4cf(&info, channel,
-			info.populated_ranks[channel][0][0] ? 9 : 0);
+		set_4cf(&info, channel, 2, 0);
 
 	MCHBAR32(0x130) = 0x11111301 | (info.populated_ranks[1][0][0] << 30) |
 		(info.populated_ranks[0][0][0] << 29);
 	while (MCHBAR8(0x130) & 1)
 		;
-	read_1d0(0xa1, 6);	// = 0x1cf4054 // !!!!
-	read_1d0(0x2f3, 6);	// = 0x10a4054 // !!!!
-	read_1d0(0x21c, 6);	// = 0xafa00c0 // !!!!
-	write_1d0(0, 0x21c, 6, 1);
-	read_1d0(0x14b, 7);	// = 0x810231b0 // !!!!
-	write_1d0(0x35, 0x14b, 7, 1);
+
+	{
+		const u8 val_xa1 = get_bits_420(read_1d0(0xa1, 6));
+		read_1d0(0x2f3, 6);		// = 0x10a4054 // !!!!
+		rmw_1d0(0x21c, 0x38, 0, 6);
+		rmw_1d0(0x14b, 0x78, val_xa1, 7);
+	}
 
 	for (channel = 0; channel < NUM_CHANNELS; channel++)
-		set_4cf(&info, channel,
-			info.populated_ranks[channel][0][0] ? 0xb : 0x2);
+		set_4cf(&info, channel, 2, 1);
 
 	set_334(1);
 
@@ -4450,8 +3621,8 @@ void raminit(const int s3resume, const u8 *spd_addrmap)
 
 	MCHBAR8(0x12c) = 0x9f;
 
-	MCHBAR8_AND_OR(0x271, 0, 0xe);	// 2 // !!!!
-	MCHBAR8_AND_OR(0x671, 0, 0xe);	// !!!!
+	MCHBAR8_AND_OR(0x271, 0xcf, 0xe);
+	MCHBAR8_AND_OR(0x671, 0xcf, 0xe);
 
 	if (!s3resume) {
 		for (channel = 0; channel < NUM_CHANNELS; channel++) {
@@ -4476,8 +3647,7 @@ void raminit(const int s3resume, const u8 *spd_addrmap)
 		write_1d0(7, 0x1c0, 3, 1);
 		write_1d0(4, 0x1c6, 4, 1);
 		write_1d0(4, 0x1cc, 4, 1);
-		read_1d0(0x151, 4);	// = 0x408c6d74 // !!!!
-		write_1d0(4, 0x151, 4, 1);
+		rmw_1d0(0x151, 0xf, 0x4, 4);
 		MCHBAR32(0x584) = 0xfffff;
 		MCHBAR32(0x984) = 0xfffff;
 
@@ -4706,13 +3876,8 @@ void raminit(const int s3resume, const u8 *spd_addrmap)
 	if (!s3resume)
 		save_timings(&info);
 	if (s3resume && cbmem_wasnot_inited) {
-		u32 reg32;
 		printk(BIOS_ERR, "Failed S3 resume.\n");
-		ram_check(0x100000, 0x200000);
-
-		/* Clear SLP_TYPE.  */
-		reg32 = inl(DEFAULT_PMBASE + 0x04);
-		outl(reg32 & ~(7 << 10), DEFAULT_PMBASE + 0x04);
+		ram_check_nodie(1 * MiB);
 
 		/* Failed S3 resume, reset to come up cleanly */
 		full_reset();

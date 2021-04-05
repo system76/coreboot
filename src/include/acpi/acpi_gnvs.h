@@ -5,17 +5,20 @@
 
 #include <types.h>
 
-void *acpi_get_gnvs(void);
-void *gnvs_get_or_create(void);
-
-void gnvs_assign_chromeos(void);
-void gnvs_set_ecfw_rw(void);
-
-/* Platform code must implement these. */
 struct global_nvs;
-size_t gnvs_size_of_array(void);
-uint32_t *gnvs_cbmc_ptr(struct global_nvs *gnvs);
-void *gnvs_chromeos_ptr(struct global_nvs *gnvs);
+
+void acpi_create_gnvs(void);
+#if CONFIG(ACPI_SOC_NVS)
+void *acpi_get_gnvs(void);
+void *acpi_get_device_nvs(void);
+int acpi_reset_gnvs_for_wake(struct global_nvs **gnvs);
+#else
+static inline void *acpi_get_gnvs(void) { return NULL; }
+static inline int acpi_reset_gnvs_for_wake(struct global_nvs **gnvs) { return -1; }
+#endif
+
+void gnvs_assign_chromeos(void *gnvs_section);
+void gnvs_set_ecfw_rw(void);
 
 /*
  * These functions populate the gnvs structure in acpi table.

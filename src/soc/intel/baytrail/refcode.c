@@ -17,34 +17,20 @@ static void ABI_X86 send_to_console(unsigned char b)
 	console_tx_byte(b);
 }
 
-static efi_wrapper_entry_t load_refcode_from_cache(void)
-{
-	struct prog refcode;
-
-	printk(BIOS_DEBUG, "refcode loading from cache.\n");
-
-	stage_cache_load_stage(STAGE_REFCODE, &refcode);
-
-	return (efi_wrapper_entry_t)prog_entry(&refcode);
-}
-
 static efi_wrapper_entry_t load_reference_code(void)
 {
+	if (resume_from_stage_cache()) {
+		struct prog prog;
+		stage_cache_load_stage(STAGE_REFCODE, &prog);
+		return prog_entry(&prog);
+	}
+
 	struct prog prog =
 		PROG_INIT(PROG_REFCODE, CONFIG_CBFS_PREFIX "/refcode");
 	struct rmod_stage_load refcode = {
 		.cbmem_id = CBMEM_ID_REFCODE,
 		.prog = &prog,
 	};
-
-	if (acpi_is_wakeup_s3()) {
-		return load_refcode_from_cache();
-	}
-
-	if (prog_locate(&prog)) {
-		printk(BIOS_DEBUG, "Couldn't locate reference code.\n");
-		return NULL;
-	}
 
 	if (rmodule_stage_load(&refcode)) {
 		printk(BIOS_DEBUG, "Error loading reference code.\n");

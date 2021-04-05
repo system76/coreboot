@@ -18,6 +18,15 @@ __weak void smbios_fill_dimm_locator(const struct dimm_info *dimm, struct smbios
 	t->bank_locator = smbios_add_string(t->eos, locator);
 }
 
+__weak void smbios_fill_dimm_asset_tag(const struct dimm_info *dimm, struct smbios_type17 *t)
+{
+	char buf[40];
+
+	snprintf(buf, sizeof(buf), "Channel-%d-DIMM-%d-AssetTag",
+		dimm->channel_num, dimm->dimm_num);
+	t->asset_tag = smbios_add_string(t->eos, buf);
+}
+
 __weak const char *smbios_mainboard_bios_version(void)
 {
 	return NULL;
@@ -60,7 +69,7 @@ __weak const char *smbios_mainboard_location_in_chassis(void)
 
 __weak smbios_board_type smbios_mainboard_board_type(void)
 {
-	return SMBIOS_BOARD_TYPE_UNKNOWN;
+	return SMBIOS_BOARD_TYPE_MOTHERBOARD;
 }
 
 __weak void smbios_ec_revision(uint8_t *ec_major_revision, uint8_t *ec_minor_revision)
@@ -142,4 +151,9 @@ __weak const char *smbios_chassis_serial_number(void)
 __weak const char *smbios_processor_serial_number(void)
 {
 	return "";
+}
+
+__weak u8 smbios_chassis_power_cords(void)
+{
+	return 1;
 }

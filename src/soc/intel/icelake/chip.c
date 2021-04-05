@@ -9,7 +9,6 @@
 #include <intelblocks/gpio.h>
 #include <intelblocks/itss.h>
 #include <intelblocks/xdci.h>
-#include <romstage_handoff.h>
 #include <soc/intel/common/vbt.h>
 #include <soc/itss.h>
 #include <soc/pci_devs.h>
@@ -99,7 +98,7 @@ static void soc_fill_gpio_pm_configuration(void)
 		memcpy(value, config->gpio_pm, sizeof(uint8_t) *
 			TOTAL_GPIO_COMM);
 	else
-		memset(value, MISCCFG_ENABLE_GPIO_PM_CONFIG, sizeof(uint8_t) *
+		memset(value, MISCCFG_GPIO_PM_CONFIG_BITS, sizeof(uint8_t) *
 			TOTAL_GPIO_COMM);
 
 	gpio_pm_configure(value, TOTAL_GPIO_COMM);
@@ -112,7 +111,7 @@ void soc_init_pre_device(void *chip_info)
 	itss_snapshot_irq_polarities(GPIO_IRQ_START, GPIO_IRQ_END);
 
 	/* Perform silicon specific init. */
-	fsp_silicon_init(romstage_handoff_is_resume());
+	fsp_silicon_init();
 
 	 /* Display FIRMWARE_VERSION_INFO_HOB */
 	fsp_display_fvi_version_hob();

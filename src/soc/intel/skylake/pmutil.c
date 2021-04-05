@@ -5,6 +5,8 @@
  * and the differences between PCH variants.
  */
 
+#define __SIMPLE_DEVICE__
+
 #include <acpi/acpi.h>
 #include <device/mmio.h>
 #include <device/pci_ops.h>
@@ -33,27 +35,25 @@
 const char *const *soc_smi_sts_array(size_t *smi_arr)
 {
 	static const char *const smi_sts_bits[] = {
-		[2] = "BIOS",
-		[3] = "LEGACY_USB",
-		[4] = "SLP_SMI",
-		[5] = "APM",
-		[6] = "SWSMI_TMR",
-		[8] = "PM1",
-		[9] = "GPE0",
-		[10] = "GPI",
-		[11] = "MCSMI",
-		[12] = "DEVMON",
-		[13] = "TCO",
-		[14] = "PERIODIC",
-		[15] = "SERIRQ_SMI",
-		[16] = "SMBUS_SMI",
-		[17] = "LEGACY_USB2",
-		[18] = "INTEL_USB2",
-		[20] = "PCI_EXP_SMI",
-		[21] = "MONITOR",
-		[26] = "SPI",
-		[27] = "GPIO_UNLOCK",
-		[28] = "ESPI_SMI",
+		[BIOS_STS_BIT] = "BIOS",
+		[LEGACY_USB_STS_BIT] = "LEGACY_USB",
+		[SMI_ON_SLP_EN_STS_BIT] = "SLP_SMI",
+		[APM_STS_BIT] = "APM",
+		[SWSMI_TMR_STS_BIT] = "SWSMI_TMR",
+		[PM1_STS_BIT] = "PM1",
+		[GPE0_STS_BIT] = "GPE0",
+		[GPIO_STS_BIT] = "GPI",
+		[MCSMI_STS_BIT] = "MCSMI",
+		[DEVMON_STS_BIT] = "DEVMON",
+		[TCO_STS_BIT] = "TCO",
+		[PERIODIC_STS_BIT] = "PERIODIC",
+		[SERIRQ_SMI_STS_BIT] = "SERIRQ_SMI",
+		[SMBUS_SMI_STS_BIT] = "SMBUS_SMI",
+		[PCI_EXP_SMI_STS_BIT] = "PCI_EXP_SMI",
+		[MONITOR_STS_BIT] = "MONITOR",
+		[SPI_SMI_STS_BIT] = "SPI",
+		[GPIO_UNLOCK_SMI_STS_BIT] = "GPIO_UNLOCK",
+		[ESPI_SMI_STS_BIT] = "ESPI_SMI",
 	};
 
 	*smi_arr = ARRAY_SIZE(smi_sts_bits);
@@ -185,11 +185,8 @@ int rtc_failure(void)
 	u8 reg8;
 	int rtc_failed;
 	/* PMC Controller Device 0x1F, Func 02 */
-#if defined(__SIMPLE_DEVICE__)
-	pci_devfn_t dev = PCH_DEV_PMC;
-#else
-	struct device *dev = PCH_DEV_PMC;
-#endif
+	const pci_devfn_t dev = PCH_DEV_PMC;
+
 	reg8 = pci_read_config8(dev, GEN_PMCON_B);
 	rtc_failed = reg8 & RTC_BATTERY_DEAD;
 	if (rtc_failed) {
@@ -207,8 +204,7 @@ int vbnv_cmos_failed(void)
 }
 
 /* Return 0, 3, or 5 to indicate the previous sleep state. */
-int soc_prev_sleep_state(const struct chipset_power_state *ps,
-						int prev_sleep_state)
+int soc_prev_sleep_state(const struct chipset_power_state *ps, int prev_sleep_state)
 {
 	/*
 	 * Check for any power failure to determine if this a wake from
@@ -245,8 +241,7 @@ void soc_fill_power_state(struct chipset_power_state *ps)
 	ps->tco1_sts = tco_read_reg(TCO1_STS);
 	ps->tco2_sts = tco_read_reg(TCO2_STS);
 
-	printk(BIOS_DEBUG, "TCO_STS:   %04x %04x\n",
-	       ps->tco1_sts, ps->tco2_sts);
+	printk(BIOS_DEBUG, "TCO_STS:   %04x %04x\n", ps->tco1_sts, ps->tco2_sts);
 
 	ps->gen_pmcon_a = pci_read_config32(PCH_DEV_PMC, GEN_PMCON_A);
 	ps->gen_pmcon_b = pci_read_config32(PCH_DEV_PMC, GEN_PMCON_B);

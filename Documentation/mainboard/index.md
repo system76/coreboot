@@ -56,6 +56,7 @@ The boards in this section are not real mainboards, but emulators.
 
 ## Gigabyte
 
+- [GA-G41M-ES2L](gigabyte/ga-g41m-es2l.md)
 - [GA-H61M-S2PV](gigabyte/ga-h61m-s2pv.md)
 
 ## HP
@@ -175,7 +176,9 @@ The boards in this section are not real mainboards, but emulators.
 
 ## System76
 
+- [Gazelle 15](system76/gaze15.md)
 - [Lemur Pro](system76/lemp9.md)
+- [Oryx Pro 5](system76/oryp5.md)
 
 ## Texas Instruments
 

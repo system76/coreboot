@@ -331,33 +331,13 @@ void smihandler_southbridge_apmc(
 {
 	uint8_t reg8;
 
-	/* Emulate B2 register as the FADT / Linux expects it */
-
-	reg8 = inb(APM_CNT);
+	reg8 = apm_get_apmc();
 	switch (reg8) {
-	case APM_CNT_CST_CONTROL:
-		/*
-		 * Calling this function seems to cause
-		 * some kind of race condition in Linux
-		 * and causes a kernel oops
-		 */
-		printk(BIOS_DEBUG, "C-state control\n");
-		break;
-	case APM_CNT_PST_CONTROL:
-		/*
-		 * Calling this function seems to cause
-		 * some kind of race condition in Linux
-		 * and causes a kernel oops
-		 */
-		printk(BIOS_DEBUG, "P-state control\n");
-		break;
 	case APM_CNT_ACPI_DISABLE:
 		pmc_disable_pm1_control(SCI_EN);
-		printk(BIOS_DEBUG, "SMI#: ACPI disabled.\n");
 		break;
 	case APM_CNT_ACPI_ENABLE:
 		pmc_enable_pm1_control(SCI_EN);
-		printk(BIOS_DEBUG, "SMI#: ACPI enabled.\n");
 		break;
 	case APM_CNT_ELOG_GSMI:
 		if (CONFIG(ELOG_GSMI))
@@ -455,16 +435,6 @@ void smihandler_southbridge_espi(
 	mainboard_smi_espi_handler();
 }
 
-/* SMI handlers that should be serviced in SCI mode too. */
-static uint32_t smihandler_soc_get_sci_mask(void)
-{
-	uint32_t sci_mask =
-		SMI_HANDLER_SCI_EN(APM_STS_BIT) |
-		SMI_HANDLER_SCI_EN(SMI_ON_SLP_EN_STS_BIT);
-
-	return sci_mask;
-}
-
 void southbridge_smi_handler(void)
 {
 	int i;
@@ -478,12 +448,14 @@ void southbridge_smi_handler(void)
 	smi_sts = pmc_clear_smi_status();
 
 	/*
-	 * In SCI mode, execute only those SMI handlers that have
-	 * declared themselves as available for service in that mode
-	 * using smihandler_soc_get_sci_mask.
+	 * When the SCI_EN bit is set, PM1 and GPE0 events will trigger a SCI
+	 * instead of a SMI#. However, SMI_STS bits PM1_STS and GPE0_STS can
+	 * still be set. Therefore, when SCI_EN is set, ignore PM1 and GPE0
+	 * events in the SMI# handler, as these events have triggered a SCI.
+	 * Do not ignore any other SMI# types, since they cannot cause a SCI.
 	 */
 	if (pmc_read_pm1_control() & SCI_EN)
-		smi_sts &= smihandler_soc_get_sci_mask();
+		smi_sts &= ~(1 << PM1_STS_BIT | 1 << GPE0_STS_BIT);
 
 	if (!smi_sts)
 		return;

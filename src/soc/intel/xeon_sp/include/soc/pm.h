@@ -36,12 +36,29 @@
 #define  GBL_SMI_EN		(1 <<  0)
 #define SMI_STS			0x34
 #define  SMI_STS_BITS			32
+#define  XHCI_SMI_STS_BIT		31
+#define  ME_SMI_STS_BIT			30
+#define  SERIAL_IO_SMI_STS_BIT		29
+#define  ESPI_SMI_STS_BIT		28
 #define  GPIO_UNLOCK_SMI_STS_BIT	27
+#define  SPI_SMI_STS_BIT		26
+#define  SCC_SMI_STS_BIT		25
+#define  IE_SMI_STS_BIT			23
+#define  MONITOR_STS_BIT		21
+#define  PCI_EXP_SMI_STS_BIT		20
+#define  SMBUS_SMI_STS_BIT		16
+#define  SERIRQ_SMI_STS_BIT		15
 #define  PERIODIC_STS_BIT		14
 #define  TCO_STS_BIT			13
+#define  DEVMON_STS_BIT			12
+#define  MCSMI_STS_BIT			11
+#define  GPIO_STS_BIT			10
+#define  GPE0_STS_BIT			9
 #define  PM1_STS_BIT			8
+#define  SWSMI_TMR_STS_BIT		6
 #define  APM_STS_BIT			5
 #define  SMI_ON_SLP_EN_STS_BIT		4
+#define  LEGACY_USB_STS_BIT		3
 #define  BIOS_STS_BIT			2
 #define GPE_CNTL		0x42
 #define  SWGPE_CTRL		(1 << 1)
@@ -49,8 +66,8 @@
 #define PM2_CNT			0x50
 #define GPE0_REG_MAX		4
 #define GPE0_REG_SIZE		32
-#define GPE0_STS(x)		(0x80 + (x * 4))
-#define GPE0_EN(x)		(0x90 + (x * 4))
+#define GPE0_STS(x)		(0x80 + ((x) * 4))
+#define GPE0_EN(x)		(0x90 + ((x) * 4))
 #define  GPE_STD		3	/* 0x8c/0x9c = Standard GPE */
 #define GPE_STS_RSVD            GPE_STD
 #define   GPIO_T2_STS		(1 << 15)
@@ -59,7 +76,7 @@
 #define   PCI_EXP_STS		(1 << 9)
 #define   SMB_WAK_STS		(1 << 7)
 #define   TCOSCI_STS		(1 << 6)
-#define GPE0_EN(x)		(0x90 + (x * 4))
+#define GPE0_EN(x)		(0x90 + ((x) * 4))
 #define   GPIO_T2_EN		(1 << 15)
 #define   ESPI_EN		(1 << 14)
 #define   PME_B0_EN		(1 << 13)
@@ -107,5 +124,7 @@ void pmc_set_disb(void);
 int rtc_failure(void);
 
 uint16_t get_pmbase(void);
+
+void pmc_lock_smi(void);
 
 #endif

@@ -5,6 +5,8 @@ Name(_CID,EISAID("PNP0A03"))	// PCI
 
 Name(_BBN, 0)
 
+Name(\PPCM, 0)
+
 Device (MCHC)
 {
 	Name(_ADR, 0x00000000)	// 0:0.0
@@ -48,7 +50,7 @@ Device (MCHC)
 	Name (CTCD, 1)		/* CTDP Down Select */
 	Name (CTCU, 2)		/* CTDP Up Select */
 
-	OperationRegion (MCHB, SystemMemory, DEFAULT_MCHBAR, 0x8000)
+	OperationRegion (MCHB, SystemMemory, CONFIG_FIXED_MCHBAR_MMIO_BASE, 0x8000)
 	Field (MCHB, DWordAcc, Lock, Preserve)
 	{
 		Offset (0x5930),

@@ -10,8 +10,6 @@
 
 #include "memmap.h"
 
-#include <southbridge/intel/lynxpoint/pch.h>
-
 /* Everything below this line is ignored in the DSDT */
 #ifndef __ACPI__
 
@@ -22,11 +20,32 @@
 
 /* Device 0:1.0 PCI configuration space (PCIe Graphics) */
 
+#define PEG_CAP		0xa2
+#define PEG_DCAP	0xa4
+
+#define PEG_LCAP	0xac
+
+#define PEG_DSTS	0xaa
+
+#define PEG_SLOTCAP	0xb4
+
 #define PEG_DCAP2	0xc4	/* 32bit */
+
+#define PEG_LCTL2	0xd0
+
+#define PEG_VC0RCTL	0x114
 
 #define PEG_ESD		0x144	/* 32bit */
 #define PEG_LE1D	0x150	/* 32bit */
 #define PEG_LE1A	0x158	/* 64bit */
+
+#define PEG_UESTS	0x1c4
+#define PEG_UESEV	0x1cc
+#define PEG_CESTS	0x1d0
+
+#define PEG_L0SLAT	0x22c
+
+#define PEG_AFE_PM_TMR	0xc28
 
 /* Device 0:2.0 PCI configuration space (Graphics Device) */
 
@@ -36,9 +55,8 @@
  * MCHBAR
  */
 
-#define MCHBAR8(x)  (*((volatile u8  *)(DEFAULT_MCHBAR + (x))))
-#define MCHBAR16(x) (*((volatile u16 *)(DEFAULT_MCHBAR + (x))))
-#define MCHBAR32(x) (*((volatile u32 *)(DEFAULT_MCHBAR + (x))))
+#include <northbridge/intel/common/fixed_bars.h>
+
 #define MCHBAR8_AND(x,  and) (MCHBAR8(x)  = MCHBAR8(x)  & (and))
 #define MCHBAR16_AND(x, and) (MCHBAR16(x) = MCHBAR16(x) & (and))
 #define MCHBAR32_AND(x, and) (MCHBAR32(x) = MCHBAR32(x) & (and))
@@ -64,27 +82,15 @@
  * EPBAR - Egress Port Root Complex Register Block
  */
 
-#define EPBAR8(x)  *((volatile u8  *)(DEFAULT_EPBAR + (x)))
-#define EPBAR16(x) *((volatile u16 *)(DEFAULT_EPBAR + (x)))
-#define EPBAR32(x) *((volatile u32 *)(DEFAULT_EPBAR + (x)))
-#define EPBAR64(x) *((volatile u64 *)(DEFAULT_EPBAR + (x)))
-
 #include "registers/epbar.h"
 
 /*
  * DMIBAR
  */
 
-#define DMIBAR8(x)  *((volatile u8  *)(DEFAULT_DMIBAR + (x)))
-#define DMIBAR16(x) *((volatile u16 *)(DEFAULT_DMIBAR + (x)))
-#define DMIBAR32(x) *((volatile u32 *)(DEFAULT_DMIBAR + (x)))
-#define DMIBAR64(x) *((volatile u64 *)(DEFAULT_DMIBAR + (x)))
-
 #include "registers/dmibar.h"
 
 #ifndef __ASSEMBLER__
-
-void intel_northbridge_haswell_finalize_smm(void);
 
 void mb_late_romstage_setup(void); /* optional */
 
@@ -93,8 +99,6 @@ void haswell_late_initialization(void);
 void haswell_unhide_peg(void);
 
 void report_platform_info(void);
-
-int decode_pcie_bar(u32 *const base, u32 *const len);
 
 #include <device/device.h>
 

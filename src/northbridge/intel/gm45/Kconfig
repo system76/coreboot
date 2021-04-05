@@ -5,7 +5,7 @@ config NORTHBRIDGE_INTEL_GM45
 
 if NORTHBRIDGE_INTEL_GM45
 
-config NORTHBRIDGE_SPECIFIC_OPTIONS # dummy
+config NORTHBRIDGE_SPECIFIC_OPTIONS
 	def_bool y
 	select HAVE_DEBUG_RAM_SETUP
 	select VGA
@@ -27,8 +27,11 @@ config VGA_BIOS_ID
 	default "8086,2a42"
 
 config MMCONF_BASE_ADDRESS
-	hex
 	default 0xf0000000
+
+config MMCONF_BUS_NUMBER
+	int
+	default 64
 
 config SMM_RESERVED_SIZE
 	hex
@@ -39,5 +42,14 @@ config INTEL_GMA_BCLV_OFFSET
 
 config INTEL_GMA_BCLM_OFFSET
 	default 0x61256
+
+config FIXED_MCHBAR_MMIO_BASE
+	default 0xfed14000
+
+config FIXED_DMIBAR_MMIO_BASE
+	default 0xfed18000
+
+config FIXED_EPBAR_MMIO_BASE
+	default 0xfed19000
 
 endif

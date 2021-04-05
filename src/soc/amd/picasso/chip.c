@@ -14,7 +14,7 @@
 #include <fsp/api.h>
 
 /* Supplied by i2c.c */
-extern struct device_operations picasso_i2c_mmio_ops;
+extern struct device_operations soc_amd_i2c_mmio_ops;
 /* Supplied by uart.c */
 extern struct device_operations picasso_uart_mmio_ops;
 
@@ -25,30 +25,13 @@ struct device_operations cpu_bus_ops = {
 	.acpi_fill_ssdt   = generate_cpu_entries,
 };
 
-const char *soc_acpi_name(const struct device *dev)
+static const char *soc_acpi_name(const struct device *dev)
 {
 	if (dev->path.type == DEVICE_PATH_DOMAIN)
 		return "PCI0";
 
 	if (dev->path.type != DEVICE_PATH_PCI)
 		return NULL;
-
-	if (dev->bus->dev->path.type == DEVICE_PATH_DOMAIN) {
-		switch (dev->path.pci.devfn) {
-		case GNB_DEVFN:
-			return "GNB";
-		case IOMMU_DEVFN:
-			return "IOMM";
-		case LPC_DEVFN:
-			return "LPCB";
-		case SMBUS_DEVFN:
-			return "SBUS";
-		default:
-			printk(BIOS_WARNING, "Unknown root PCI device: dev: %d, fn: %d\n",
-			       PCI_SLOT(dev->path.pci.devfn), PCI_FUNC(dev->path.pci.devfn));
-			return NULL;
-		}
-	}
 
 	printk(BIOS_WARNING, "Unknown PCI device: dev: %d, fn: %d\n",
 	       PCI_SLOT(dev->path.pci.devfn), PCI_FUNC(dev->path.pci.devfn));
@@ -68,7 +51,7 @@ static void set_mmio_dev_ops(struct device *dev)
 	case APU_I2C2_BASE:
 	case APU_I2C3_BASE:
 	case APU_I2C4_BASE:
-		dev->ops = &picasso_i2c_mmio_ops;
+		dev->ops = &soc_amd_i2c_mmio_ops;
 		break;
 	case APU_UART0_BASE:
 	case APU_UART1_BASE:
@@ -82,12 +65,18 @@ static void set_mmio_dev_ops(struct device *dev)
 static void enable_dev(struct device *dev)
 {
 	/* Set the operations if it is a special bus type */
-	if (dev->path.type == DEVICE_PATH_DOMAIN) {
+	switch (dev->path.type) {
+	case DEVICE_PATH_DOMAIN:
 		dev->ops = &pci_domain_ops;
-	} else if (dev->path.type == DEVICE_PATH_CPU_CLUSTER) {
+		break;
+	case DEVICE_PATH_CPU_CLUSTER:
 		dev->ops = &cpu_bus_ops;
-	} else if (dev->path.type == DEVICE_PATH_MMIO) {
+		break;
+	case DEVICE_PATH_MMIO:
 		set_mmio_dev_ops(dev);
+		break;
+	default:
+		break;
 	}
 }
 
@@ -95,15 +84,15 @@ static void soc_init(void *chip_info)
 {
 	default_dev_ops_root.write_acpi_tables = agesa_write_acpi_tables;
 
-	fsp_silicon_init(acpi_is_wakeup_s3());
+	fsp_silicon_init();
 
 	data_fabric_set_mmio_np();
-	southbridge_init(chip_info);
+	fch_init(chip_info);
 }
 
 static void soc_final(void *chip_info)
 {
-	southbridge_final(chip_info);
+	fch_final(chip_info);
 }
 
 struct chip_operations soc_amd_picasso_ops = {

@@ -1,9 +1,8 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+#include <acpi/acpi_pm.h>
 #include <bootstate.h>
-#include <cbmem.h>
 #include <commonlib/helpers.h>
-#include <console/console.h>
 #include <device/mmio.h>
 #include <device/pci_ops.h>
 #include <stdint.h>
@@ -131,7 +130,7 @@ static void pch_log_rp_wake_source(void)
 	}
 }
 
-static void pch_log_wake_source(struct chipset_power_state *ps)
+static void pch_log_wake_source(const struct chipset_power_state *ps)
 {
 	/* Power Button */
 	if (ps->pm1_sts & PWRBTN_STS)
@@ -173,7 +172,7 @@ static void pch_log_wake_source(struct chipset_power_state *ps)
 	pch_log_gpio_gpe(ps->gpe0_sts[GPE_STD], ps->gpe0_en[GPE_STD], 96);
 }
 
-static void pch_log_power_and_resets(struct chipset_power_state *ps)
+static void pch_log_power_and_resets(const struct chipset_power_state *ps)
 {
 	bool deep_sx;
 
@@ -231,13 +230,10 @@ static void pch_log_power_and_resets(struct chipset_power_state *ps)
 
 static void pch_log_state(void *unused)
 {
-	struct chipset_power_state *ps = cbmem_find(CBMEM_ID_POWER_STATE);
+	const struct chipset_power_state *ps;
 
-	if (ps == NULL) {
-		printk(BIOS_ERR,
-			"Not logging power state information. Power state not found in cbmem.\n");
+	if (acpi_pm_state_for_elog(&ps) < 0)
 		return;
-	}
 
 	/* Power and Reset */
 	pch_log_power_and_resets(ps);

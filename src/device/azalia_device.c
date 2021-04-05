@@ -6,11 +6,12 @@
 #include <device/azalia_device.h>
 #include <device/mmio.h>
 #include <delay.h>
+#include <timer.h>
 
 int azalia_set_bits(void *port, u32 mask, u32 val)
 {
+	struct stopwatch sw;
 	u32 reg32;
-	int count;
 
 	/* Write (val & mask) to port */
 	val &= mask;
@@ -20,16 +21,16 @@ int azalia_set_bits(void *port, u32 mask, u32 val)
 	write32(port, reg32);
 
 	/* Wait for readback of register to match what was just written to it */
-	count = 50;
+	stopwatch_init_msecs_expire(&sw, 50);
 	do {
 		/* Wait 1ms based on BKDG wait time */
 		mdelay(1);
 		reg32 = read32(port);
 		reg32 &= mask;
-	} while ((reg32 != val) && --count);
+	} while ((reg32 != val) && !stopwatch_expired(&sw));
 
 	/* Timeout occurred */
-	if (!count)
+	if (stopwatch_expired(&sw))
 		return -1;
 	return 0;
 }
@@ -46,30 +47,32 @@ int azalia_exit_reset(u8 *base)
 	return azalia_set_bits(base + HDA_GCTL_REG, HDA_GCTL_CRST, HDA_GCTL_CRST);
 }
 
-static int codec_detect(u8 *base)
+static u16 codec_detect(u8 *base)
 {
-	u32 reg32;
-	int count;
+	struct stopwatch sw;
+	const u16 codec_mask = (1 << CONFIG_AZALIA_MAX_CODECS) - 1;
+	u16 reg16;
 
 	if (azalia_exit_reset(base) < 0)
 		goto no_codec;
 
 	/* clear STATESTS bits (BAR + 0xe)[2:0] */
-	reg32 = read32(base + HDA_STATESTS_REG);
-	reg32 |= 7;
-	write32(base + HDA_STATESTS_REG, reg32);
+	reg16 = read16(base + HDA_STATESTS_REG);
+	reg16 |= codec_mask;
+	write16(base + HDA_STATESTS_REG, reg16);
 
 	/* Wait for readback of register to
 	 * match what was just written to it
 	 */
-	count = 50;
+	stopwatch_init_msecs_expire(&sw, 50);
 	do {
 		/* Wait 1ms based on BKDG wait time */
 		mdelay(1);
-		reg32 = read32(base + HDA_STATESTS_REG);
-	} while ((reg32 != 0) && --count);
+		reg16 = read16(base + HDA_STATESTS_REG);
+	} while ((reg16 != 0) && !stopwatch_expired(&sw));
+
 	/* Timeout occurred */
-	if (!count)
+	if (stopwatch_expired(&sw))
 		goto no_codec;
 
 	if (azalia_enter_reset(base) < 0)
@@ -79,12 +82,12 @@ static int codec_detect(u8 *base)
 		goto no_codec;
 
 	/* Read in Codec location (BAR + 0xe)[2..0] */
-	reg32 = read32(base + HDA_STATESTS_REG);
-	reg32 &= 0x0f;
-	if (!reg32)
+	reg16 = read16(base + HDA_STATESTS_REG);
+	reg16 &= codec_mask;
+	if (!reg16)
 		goto no_codec;
 
-	return reg32;
+	return reg16;
 
 no_codec:
 	/* Codec Not found */
@@ -145,10 +148,11 @@ u32 azalia_find_verb(const u32 *verb_table, u32 verb_table_bytes, u32 viddid, co
 
 static int wait_for_ready(u8 *base)
 {
+	struct stopwatch sw;
 	/* Use a 50 usec timeout - the Linux kernel uses the same duration */
-	int timeout = 50;
+	stopwatch_init_usecs_expire(&sw, 50);
 
-	while (timeout--) {
+	while (!stopwatch_expired(&sw)) {
 		u32 reg32 = read32(base + HDA_ICII_REG);
 		if (!(reg32 & HDA_ICII_BUSY))
 			return 0;
@@ -159,26 +163,30 @@ static int wait_for_ready(u8 *base)
 }
 
 /*
- * Wait 50usec for the codec to indicate that it accepted the previous command.
- * No response would imply that the code is non-operative.
+ * Wait for the codec to indicate that it accepted the previous command.
+ * No response would imply that the codec is non-operative.
  */
 
 static int wait_for_valid(u8 *base)
 {
+	struct stopwatch sw;
 	u32 reg32;
-	/* Use a 50 usec timeout - the Linux kernel uses the same duration */
-	int timeout = 25;
 
 	/* Send the verb to the codec */
 	reg32 = read32(base + HDA_ICII_REG);
 	reg32 |= HDA_ICII_BUSY | HDA_ICII_VALID;
 	write32(base + HDA_ICII_REG, reg32);
 
-	while (timeout--) {
-		udelay(1);
-	}
-	timeout = 50;
-	while (timeout--) {
+	/*
+	 * The timeout is never reached when the codec is functioning properly.
+	 * Using a small timeout value can result in spurious errors with some
+	 * codecs, e.g. a codec that is slow to respond but operates correctly.
+	 * When a codec is non-operative, the timeout is only reached once per
+	 * verb table, thus the impact on booting time is relatively small. So,
+	 * use a reasonably long enough timeout to cover all possible cases.
+	 */
+	stopwatch_init_msecs_expire(&sw, 1);
+	while (!stopwatch_expired(&sw)) {
 		reg32 = read32(base + HDA_ICII_REG);
 		if ((reg32 & (HDA_ICII_VALID | HDA_ICII_BUSY)) == HDA_ICII_VALID)
 			return 0;
@@ -188,12 +196,37 @@ static int wait_for_valid(u8 *base)
 	return -1;
 }
 
+static int azalia_write_verb(u8 *base, u32 verb)
+{
+	if (wait_for_ready(base) < 0)
+		return -1;
+
+	write32(base + HDA_IC_REG, verb);
+
+	return wait_for_valid(base);
+}
+
+int azalia_program_verb_table(u8 *base, const u32 *verbs, u32 verb_size)
+{
+	if (!verbs)
+		return 0;
+
+	for (u32 i = 0; i < verb_size; i++) {
+		if (azalia_write_verb(base, verbs[i]) < 0)
+			return -1;
+	}
+	return 0;
+}
+
+__weak void mainboard_azalia_program_runtime_verbs(u8 *base, u32 viddid)
+{
+}
+
 static void codec_init(struct device *dev, u8 *base, int addr)
 {
 	u32 reg32;
 	const u32 *verb;
 	u32 verb_size;
-	int i;
 
 	printk(BIOS_DEBUG, "azalia_audio: Initializing codec #%d\n", addr);
 
@@ -220,36 +253,32 @@ static void codec_init(struct device *dev, u8 *base, int addr)
 		printk(BIOS_DEBUG, "azalia_audio: No verb!\n");
 		return;
 	}
-	printk(BIOS_DEBUG, "azalia_audio: verb_size: %d\n", verb_size);
+	printk(BIOS_DEBUG, "azalia_audio: verb_size: %u\n", verb_size);
 
 	/* 3 */
-	for (i = 0; i < verb_size; i++) {
-		if (wait_for_ready(base) < 0)
-			return;
-
-		write32(base + HDA_IC_REG, verb[i]);
-
-		if (wait_for_valid(base) < 0)
-			return;
-	}
+	azalia_program_verb_table(base, verb, verb_size);
 	printk(BIOS_DEBUG, "azalia_audio: verb loaded.\n");
+
+	mainboard_azalia_program_runtime_verbs(base, reg32);
 }
 
-static void codecs_init(struct device *dev, u8 *base, u32 codec_mask)
+static void codecs_init(struct device *dev, u8 *base, u16 codec_mask)
 {
 	int i;
 
-	for (i = 2; i >= 0; i--) {
+	for (i = CONFIG_AZALIA_MAX_CODECS - 1; i >= 0; i--) {
 		if (codec_mask & (1 << i))
 			codec_init(dev, base, i);
 	}
+
+	azalia_program_verb_table(base, pc_beep_verbs, pc_beep_verbs_size);
 }
 
 void azalia_audio_init(struct device *dev)
 {
 	u8 *base;
 	struct resource *res;
-	u32 codec_mask;
+	u16 codec_mask;
 
 	res = find_resource(dev, PCI_BASE_ADDRESS_0);
 	if (!res)

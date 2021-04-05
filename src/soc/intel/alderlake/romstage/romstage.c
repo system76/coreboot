@@ -7,6 +7,7 @@
 #include <intelblocks/cfg.h>
 #include <intelblocks/cse.h>
 #include <intelblocks/pmclib.h>
+#include <intelblocks/smbus.h>
 #include <memory_info.h>
 #include <soc/intel/common/smbios.h>
 #include <soc/iomap.h>
@@ -120,14 +121,23 @@ void mainboard_romstage_entry(void)
 
 	/* Program MCHBAR, DMIBAR, GDXBAR and EDRAMBAR */
 	systemagent_early_init();
-	/* Perform PCH init */
-	romstage_pch_init();
+	/* Program SMBus base address and enable it */
+	smbus_common_init();
 	/* Initialize HECI interface */
 	heci_init(HECI1_BASE_ADDRESS);
 
 	s3wake = pmc_fill_power_state(ps) == ACPI_S3;
 	fsp_memory_init(s3wake);
 	pmc_set_disb();
-	if (!s3wake)
+	if (!s3wake) {
+		/*
+		 * cse_fw_sync() must be called after DRAM initialization as
+		 * HMRFPO_ENABLE HECI command (which is used by cse_fw_sync())
+		 * is expected to be executed after DRAM initialization.
+		 */
+		if (CONFIG(SOC_INTEL_CSE_LITE_SKU))
+			cse_fw_sync();
+
 		save_dimm_info();
+	}
 }

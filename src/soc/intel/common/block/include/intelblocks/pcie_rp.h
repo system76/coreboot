@@ -6,18 +6,78 @@
 #include <stdint.h>
 
 /*
+ * In schematic PCIe root port numbers are 1-based, but FSP use 0-based indexes for
+ * the configuration arrays and so this macro subtracts 1 to convert RP# to array index.
+ */
+#define PCIE_RP(x)      ((x) - 1)
+#define PCH_RP(x)       PCIE_RP(x)
+#define CPU_RP(x)       PCIE_RP(x)
+
+enum pcie_rp_flags {
+	PCIE_RP_HOTPLUG = (1 << 0),
+	PCIE_RP_LTR = (1 << 1),
+	/* PCIE RP Advanced Error Report */
+	PCIE_RP_AER = (1 << 2),
+	/* Clock source is not used by the root port. */
+	PCIE_RP_CLK_SRC_UNUSED = (1 << 3),
+	/*
+	 * Clock request signal requires probing before enabling CLKREQ# based power
+	 * management.
+	 */
+	PCIE_RP_CLK_REQ_DETECT = (1 << 4),
+	/* Clock request signal is not used by the root port. */
+	PCIE_RP_CLK_REQ_UNUSED = (1 << 5),
+};
+
+enum pcie_clk_src_flags {
+	PCIE_CLK_FREE_RUNNING = (1 << 0),
+	PCIE_CLK_LAN = (1 << 1),
+};
+
+/* This enum is for passing into an FSP UPD, typically PcieRpL1Substates */
+enum L1_substates_control {
+	L1_SS_FSP_DEFAULT,
+	L1_SS_DISABLED,
+	L1_SS_L1_1,
+	L1_SS_L1_2,
+};
+
+/* PCIe Root Ports */
+struct pcie_rp_config {
+	/* CLKOUT_PCIE_P/N# used by this root port as per schematics. */
+	uint8_t clk_src;
+	/* SRCCLKREQ# used by this root port as per schematics. */
+	uint8_t clk_req;
+	enum pcie_rp_flags flags;
+	/* PCIe RP L1 substate */
+	enum L1_substates_control PcieRpL1Substates;
+};
+
+/*
  * The PCIe Root Ports usually come in groups of up to 8 PCI-device
  * functions.
  *
  * `slot` is the PCI device/slot number of such a group.
- * `count` is the number of functions within the group. It is assumed that
- * the first group includes the RPs 1 to the first group's `count` and that
- * adjacent groups follow without gaps in the numbering.
+ * `start` is the initial PCI function number within the group. This is useful
+ * in case the root port numbers are not contiguous within the slot.
+ * `count` is the number of functions within the group starting with the `start`
+ * function number.
  */
 struct pcie_rp_group {
 	unsigned int slot;
+	unsigned int start;
 	unsigned int count;
 };
+
+static inline unsigned int rp_start_fn(const struct pcie_rp_group *group)
+{
+	return group->start;
+}
+
+static inline unsigned int rp_end_fn(const struct pcie_rp_group *group)
+{
+	return group->start + group->count - 1;
+}
 
 /*
  * Update PCI paths of the root ports in the devicetree.
@@ -33,19 +93,21 @@ struct pcie_rp_group {
  * enumeration.
  *
  * `groups` points to a list of groups terminated by an entry with `count == 0`.
+ * It is assumed that the first group includes the RPs 1 to the first group's
+ * `count` and that adjacent groups follow without gaps in the numbering.
  */
 void pcie_rp_update_devicetree(const struct pcie_rp_group *groups);
 
 /*
- * Return mask of PCIe root ports that are enabled by mainboard. Mask is set in the same order
- * as the root ports in pcie_rp_group groups table.
+ * Return mask of PCIe root ports that are enabled by mainboard. Mask is set in
+ * the same order as the root ports in pcie_rp_group groups table.
  *
- * Thus, the status of first root port in the groups table is indicated by bit 0 in the returned
- * mask, second root port by bit 1 and so on.
+ * Thus, the status of first root port in the groups table is indicated by bit 0
+ * in the returned mask, second root port by bit 1 and so on.
 
- * 1 in the bit position indicates root port is enabled, whereas 0 indicates root port is
- * disabled. This function assumes that the maximum count of root ports in the groups table is
- * <= 32.
+ * 1 in the bit position indicates root port is enabled, whereas 0 indicates root
+ * port is disabled. This function assumes that the maximum count of root ports
+ * in the groups table is <= 32.
  */
 uint32_t pcie_rp_enable_mask(const struct pcie_rp_group *groups);
 

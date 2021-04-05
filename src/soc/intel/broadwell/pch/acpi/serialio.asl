@@ -6,46 +6,22 @@
 #define SIO_BAR_LEN 0x1000
 
 // Put SerialIO device in D0 state
-// Arg0 - BAR1 of device
-// Arg1 - Set if device is in ACPI mode
-Method (LPD0, 2, Serialized)
+// Arg0 - Ref to offset 0x84 of device's PCI config space
+Method (LPD0, 1, Serialized)
 {
-	// PCI mode devices will be handled by OS PCI bus driver
-	If (Arg1 == 0) {
-		Return
-	}
-
-	OperationRegion (SPRT, SystemMemory, Arg0 + 0x84, 4)
-	Field (SPRT, DWordAcc, NoLock, Preserve)
-	{
-		SPCS, 32
-	}
-
-	SPCS &= 0xFFFFFFFC
-	Local0 = SPCS // Read back after writing
+	DeRefOf (Arg0) &= 0xFFFFFFFC
+	Local0 = DeRefOf (Arg0) // Read back after writing
 
 	// Use Local0 to avoid iasl warning: Method Local is set but never used
 	Local0 &= Ones
 }
 
 // Put SerialIO device in D3 state
-// Arg0 - BAR1 of device
-// Arg1 - Set if device is in ACPI mode
-Method (LPD3, 2, Serialized)
+// Arg0 - Ref to offset 0x84 of device's PCI config space
+Method (LPD3, 1, Serialized)
 {
-	// PCI mode devices will be handled by OS PCI bus driver
-	If (Arg1 == 0) {
-		Return
-	}
-
-	OperationRegion (SPRT, SystemMemory, Arg0 + 0x84, 4)
-	Field (SPRT, DWordAcc, NoLock, Preserve)
-	{
-		SPCS, 32
-	}
-
-	SPCS |= 0x3
-	Local0 = SPCS // Read back after writing
+	DeRefOf (Arg0) |= 0x3
+	Local0 = DeRefOf (Arg0) // Read back after writing
 
 	// Use Local0 to avoid iasl warning: Method Local is set but never used
 	Local0 &= Ones
@@ -146,7 +122,6 @@ Device (SDMA)
 	// Serial IO DMA Controller
 	Name (_HID, "INTL9C60")
 	Name (_UID, 1)
-	Name (_ADR, 0x00150000)
 
 	// BAR0 is assigned during PCI enumeration and saved into NVS
 	Name (RBUF, ResourceTemplate ()
@@ -192,7 +167,6 @@ Device (I2C0)
 		Return ("INT33C2")
 	}
 	Name (_UID, 1)
-	Name (_ADR, 0x00150001)
 
 	Name (SSCN, Package () { 432, 507, 30 })
 	Name (FMCN, Package () { 72, 160, 30 })
@@ -238,14 +212,20 @@ Device (I2C0)
 		}
 	}
 
+	OperationRegion (SPRT, SystemMemory, \S1B1 + 0x84, 4)
+	Field (SPRT, DWordAcc, NoLock, Preserve)
+	{
+		SPCS, 32
+	}
+
 	Method (_PS0, 0, Serialized)
 	{
-		^^LPD0 (\S1B1, \S1EN)
+		^^LPD0 (RefOf (SPCS))
 	}
 
 	Method (_PS3, 0, Serialized)
 	{
-		^^LPD3 (\S1B1, \S1EN)
+		^^LPD3 (RefOf (SPCS))
 	}
 }
 
@@ -263,7 +243,6 @@ Device (I2C1)
 		Return ("INT33C3")
 	}
 	Name (_UID, 1)
-	Name (_ADR, 0x00150002)
 
 	Name (SSCN, Package () { 432, 507, 30 })
 	Name (FMCN, Package () { 72, 160, 30 })
@@ -309,14 +288,20 @@ Device (I2C1)
 		}
 	}
 
+	OperationRegion (SPRT, SystemMemory, \S2B1 + 0x84, 4)
+	Field (SPRT, DWordAcc, NoLock, Preserve)
+	{
+		SPCS, 32
+	}
+
 	Method (_PS0, 0, Serialized)
 	{
-		^^LPD0 (\S2B1, \S2EN)
+		^^LPD0 (RefOf (SPCS))
 	}
 
 	Method (_PS3, 0, Serialized)
 	{
-		^^LPD3 (\S2B1, \S2EN)
+		^^LPD3 (RefOf (SPCS))
 	}
 }
 
@@ -334,7 +319,6 @@ Device (SPI0)
 		Return ("INT33C0")
 	}
 	Name (_UID, 1)
-	Name (_ADR, 0x00150003)
 
 	// BAR0 is assigned during PCI enumeration and saved into NVS
 	Name (RBUF, ResourceTemplate ()
@@ -365,14 +349,20 @@ Device (SPI0)
 		}
 	}
 
+	OperationRegion (SPRT, SystemMemory, \S3B1 + 0x84, 4)
+	Field (SPRT, DWordAcc, NoLock, Preserve)
+	{
+		SPCS, 32
+	}
+
 	Method (_PS0, 0, Serialized)
 	{
-		^^LPD0 (\S3B1, \S3EN)
+		^^LPD0 (RefOf (SPCS))
 	}
 
 	Method (_PS3, 0, Serialized)
 	{
-		^^LPD3 (\S3B1, \S3EN)
+		^^LPD3 (RefOf (SPCS))
 	}
 }
 
@@ -390,7 +380,6 @@ Device (SPI1)
 		Return ("INT33C1")
 	}
 	Name (_UID, 1)
-	Name (_ADR, 0x00150004)
 
 	// BAR0 is assigned during PCI enumeration and saved into NVS
 	Name (RBUF, ResourceTemplate ()
@@ -433,14 +422,20 @@ Device (SPI1)
 		}
 	}
 
+	OperationRegion (SPRT, SystemMemory, \S4B1 + 0x84, 4)
+	Field (SPRT, DWordAcc, NoLock, Preserve)
+	{
+		SPCS, 32
+	}
+
 	Method (_PS0, 0, Serialized)
 	{
-		^^LPD0 (\S4B1, \S4EN)
+		^^LPD0 (RefOf (SPCS))
 	}
 
 	Method (_PS3, 0, Serialized)
 	{
-		^^LPD3 (\S4B1, \S4EN)
+		^^LPD3 (RefOf (SPCS))
 	}
 }
 
@@ -458,7 +453,6 @@ Device (UAR0)
 		Return ("INT33C4")
 	}
 	Name (_UID, 1)
-	Name (_ADR, 0x00150005)
 
 	// BAR0 is assigned during PCI enumeration and saved into NVS
 	Name (RBUF, ResourceTemplate ()
@@ -501,14 +495,20 @@ Device (UAR0)
 		}
 	}
 
+	OperationRegion (SPRT, SystemMemory, \S5B1 + 0x84, 4)
+	Field (SPRT, DWordAcc, NoLock, Preserve)
+	{
+		SPCS, 32
+	}
+
 	Method (_PS0, 0, Serialized)
 	{
-		^^LPD0 (\S5B1, \S5EN)
+		^^LPD0 (RefOf (SPCS))
 	}
 
 	Method (_PS3, 0, Serialized)
 	{
-		^^LPD3 (\S5B1, \S5EN)
+		^^LPD3 (RefOf (SPCS))
 	}
 }
 
@@ -526,7 +526,6 @@ Device (UAR1)
 		Return ("INT33C5")
 	}
 	Name (_UID, 1)
-	Name (_ADR, 0x00150006)
 
 	// BAR0 is assigned during PCI enumeration and saved into NVS
 	Name (RBUF, ResourceTemplate ()
@@ -557,14 +556,20 @@ Device (UAR1)
 		}
 	}
 
+	OperationRegion (SPRT, SystemMemory, \S6B1 + 0x84, 4)
+	Field (SPRT, DWordAcc, NoLock, Preserve)
+	{
+		SPCS, 32
+	}
+
 	Method (_PS0, 0, Serialized)
 	{
-		^^LPD0 (\S6B1, \S6EN)
+		^^LPD0 (RefOf (SPCS))
 	}
 
 	Method (_PS3, 0, Serialized)
 	{
-		^^LPD3 (\S6B1, \S6EN)
+		^^LPD3 (RefOf (SPCS))
 	}
 }
 
@@ -583,7 +588,6 @@ Device (SDIO)
 	}
 	Name (_CID, "PNP0D40")
 	Name (_UID, 1)
-	Name (_ADR, 0x00170000)
 
 	// BAR0 is assigned during PCI enumeration and saved into NVS
 	Name (RBUF, ResourceTemplate ()

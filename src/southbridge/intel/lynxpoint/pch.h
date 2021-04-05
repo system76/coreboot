@@ -63,11 +63,51 @@
 #define DEFAULT_GPIOSIZE	0x80
 #endif
 
-#define HPET_ADDR		0xfed00000
-
 #include <southbridge/intel/common/rcba.h>
 
 #ifndef __ACPI__
+
+#if CONFIG(INTEL_LYNXPOINT_LP)
+#define MAX_USB2_PORTS	10
+#define MAX_USB3_PORTS	4
+#else
+#define MAX_USB2_PORTS	14
+#define MAX_USB3_PORTS	6
+#endif
+
+/* There are 8 OC pins */
+#define USB_OC_PIN_SKIP	8
+
+enum usb2_port_location {
+	USB_PORT_SKIP = 0,
+	USB_PORT_BACK_PANEL,
+	USB_PORT_FRONT_PANEL,
+	USB_PORT_DOCK,
+	USB_PORT_MINI_PCIE,
+	USB_PORT_FLEX,
+	USB_PORT_INTERNAL,
+};
+
+/*
+ * USB port length is in MRC format: binary-coded decimal length in tenths of an inch.
+ *   4.2 inches -> 0x0042
+ *  12.7 inches -> 0x0127
+ */
+struct usb2_port_config {
+	uint16_t length;
+	bool enable;
+	unsigned short oc_pin;
+	enum usb2_port_location location;
+};
+
+struct usb3_port_config {
+	bool enable;
+	unsigned int oc_pin;
+};
+
+/* Mainboard-specific USB configuration */
+extern const struct usb2_port_config mainboard_usb2_ports[MAX_USB2_PORTS];
+extern const struct usb3_port_config mainboard_usb3_ports[MAX_USB3_PORTS];
 
 static inline int pch_is_lp(void)
 {
@@ -123,7 +163,7 @@ void pch_log_state(void);
 void acpi_create_serialio_ssdt(acpi_header_t *ssdt);
 
 void enable_usb_bar(void);
-int early_pch_init(void);
+void early_pch_init(void);
 void pch_enable_lpc(void);
 void mainboard_config_superio(void);
 void mainboard_config_rcba(void);
@@ -205,7 +245,7 @@ void mainboard_config_rcba(void);
 #define  COMB_LPC_EN		(1 << 1)  /* LPC_IO_DEC[6:4] */
 #define  COMA_LPC_EN		(1 << 0)  /* LPC_IO_DEC[2:0] */
 #define LPC_IBDF		0x6C /* I/O APIC bus/dev/fn */
-#define LPC_HnBDF(n)		(0x70 + n * 2) /* HPET n bus/dev/fn */
+#define LPC_HnBDF(n)		(0x70 + (n) * 2) /* HPET n bus/dev/fn */
 #define LPC_GEN1_DEC		0x84 /* LPC IF Generic Decode Range 1 */
 #define LPC_GEN2_DEC		0x88 /* LPC IF Generic Decode Range 2 */
 #define LPC_GEN3_DEC		0x8c /* LPC IF Generic Decode Range 3 */
@@ -249,7 +289,7 @@ void mainboard_config_rcba(void);
 #define  EHCI_USB_CMD_RUN	(1 << 0)
 #define  EHCI_USB_CMD_PSE	(1 << 4)
 #define  EHCI_USB_CMD_ASE	(1 << 5)
-#define EHCI_PORTSC(port)	(0x64 + (port * 4))
+#define EHCI_PORTSC(port)	(0x64 + (port) * 4)
 #define  EHCI_PORTSC_ENABLED	(1 << 2)
 #define  EHCI_PORTSC_SUSPEND	(1 << 7)
 
@@ -267,7 +307,7 @@ void mainboard_config_rcba(void);
 #define XHCI_USB3PDO		0xe8
 
 /* XHCI Memory Registers */
-#define XHCI_USB3_PORTSC(port)	((pch_is_lp() ? 0x510 : 0x570) + (port * 0x10))
+#define XHCI_USB3_PORTSC(port)	((pch_is_lp() ? 0x510 : 0x570) + ((port) * 0x10))
 #define  XHCI_USB3_PORTSC_CHST	(0x7f << 17)
 #define  XHCI_USB3_PORTSC_WCE	(1 << 25)	/* Wake on Connect */
 #define  XHCI_USB3_PORTSC_WDE	(1 << 26)	/* Wake on Disconnect */
@@ -335,7 +375,7 @@ void mainboard_config_rcba(void);
 #define SIO_REG_PPR_GEN			0x808
 #define  SIO_REG_PPR_GEN_LTR_MODE_MASK	 (1 << 2)
 #define  SIO_REG_PPR_GEN_VOLTAGE_MASK	 (1 << 3)
-#define  SIO_REG_PPR_GEN_VOLTAGE(x)	 ((x & 1) << 3)
+#define  SIO_REG_PPR_GEN_VOLTAGE(x)	 (((x) & 1) << 3)
 #define SIO_REG_AUTO_LTR		0x814
 
 #define SIO_REG_SDIO_PPR_GEN		0x1008
@@ -492,7 +532,7 @@ void mainboard_config_rcba(void);
 #define PCH_DISABLE_EHCI2	(1 << 13)
 #define PCH_DISABLE_LPC		(1 << 14)
 #define PCH_DISABLE_EHCI1	(1 << 15)
-#define PCH_DISABLE_PCIE(x)	(1 << (16 + x))
+#define PCH_DISABLE_PCIE(x)	(1 << (16 + (x)))
 #define PCH_DISABLE_THERMAL	(1 << 24)
 #define PCH_DISABLE_SATA2	(1 << 25)
 #define PCH_DISABLE_XHCI	(1 << 27)
@@ -594,9 +634,9 @@ void mainboard_config_rcba(void);
  */
 
 #define SPIBAR_OFFSET 0x3800
-#define SPIBAR8(x) RCBA8(x + SPIBAR_OFFSET)
-#define SPIBAR16(x) RCBA16(x + SPIBAR_OFFSET)
-#define SPIBAR32(x) RCBA32(x + SPIBAR_OFFSET)
+#define SPIBAR8(x) RCBA8((x) + SPIBAR_OFFSET)
+#define SPIBAR16(x) RCBA16((x) + SPIBAR_OFFSET)
+#define SPIBAR32(x) RCBA32((x) + SPIBAR_OFFSET)
 
 /* Reigsters within the SPIBAR */
 #define SSFC 0x91
@@ -609,13 +649,13 @@ void mainboard_config_rcba(void);
 #define  SPIBAR_HSFS_FCERR          (1 << 1) /* SPI Flash Cycle Error */
 #define  SPIBAR_HSFS_FDONE          (1 << 0) /* SPI Flash Cycle Done */
 #define SPIBAR_HSFC                 0x3806   /* SPI hardware sequence control */
-#define  SPIBAR_HSFC_BYTE_COUNT(c)  (((c - 1) & 0x3f) << 8)
+#define  SPIBAR_HSFC_BYTE_COUNT(c)  ((((c) - 1) & 0x3f) << 8)
 #define  SPIBAR_HSFC_CYCLE_READ     (0 << 1) /* Read cycle */
 #define  SPIBAR_HSFC_CYCLE_WRITE    (2 << 1) /* Write cycle */
 #define  SPIBAR_HSFC_CYCLE_ERASE    (3 << 1) /* Erase cycle */
 #define  SPIBAR_HSFC_GO             (1 << 0) /* GO: start SPI transaction */
 #define SPIBAR_FADDR                0x3808   /* SPI flash address */
-#define SPIBAR_FDATA(n)             (0x3810 + (4 * n)) /* SPI flash data */
+#define SPIBAR_FDATA(n)             (0x3810 + (4 * (n))) /* SPI flash data */
 
 #endif /* __ACPI__ */
 #endif /* SOUTHBRIDGE_INTEL_LYNXPOINT_PCH_H */

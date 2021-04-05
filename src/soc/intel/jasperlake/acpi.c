@@ -6,7 +6,6 @@
 #include <device/device.h>
 #include <device/mmio.h>
 #include <arch/smp/mpspec.h>
-#include <cbmem.h>
 #include <console/console.h>
 #include <device/pci_ops.h>
 #include <intelblocks/cpulib.h>
@@ -20,7 +19,6 @@
 #include <soc/soc_chip.h>
 #include <soc/systemagent.h>
 #include <string.h>
-#include <wrdd.h>
 
 /*
  * List of supported C-states in this processor.
@@ -40,15 +38,6 @@ enum {
 	C_STATE_C10,		/* 11 */
 	NUM_C_STATES
 };
-
-#define MWAIT_RES(state, sub_state)				\
-	{							\
-		.addrl = (((state) << 4) | (sub_state)),	\
-		.space_id = ACPI_ADDRESS_SPACE_FIXED,		\
-		.bit_width = ACPI_FFIXEDHW_VENDOR_INTEL,	\
-		.bit_offset = ACPI_FFIXEDHW_CLASS_MWAIT,	\
-		.access_size = ACPI_FFIXEDHW_FLAG_HW_COORD,	\
-	}
 
 static const acpi_cstate_t cstate_map[NUM_C_STATES] = {
 	[C_STATE_C0] = {},
@@ -277,17 +266,8 @@ void soc_fill_gnvs(struct global_nvs *gnvs)
 {
 	config_t *config = config_of_soc();
 
-	/* Set unknown wake source */
-	gnvs->pm1i = -1;
-
-	/* CPU core count */
-	gnvs->pcnt = dev_count_cpu();
-
 	/* Enable DPTF based on mainboard configuration */
 	gnvs->dpte = config->dptf_enable;
-
-	/* Fill in the Wifi Region id */
-	gnvs->cid1 = wifi_regulatory_domain();
 
 	/* Set USB2/USB3 wake enable bitmaps. */
 	gnvs->u2we = config->usb2_wake_enable_bitmap;
@@ -315,41 +295,4 @@ uint32_t acpi_fill_soc_wake(uint32_t generic_pm1_en,
 int soc_madt_sci_irq_polarity(int sci)
 {
 	return MP_IRQ_POLARITY_HIGH;
-}
-
-static int acpigen_soc_gpio_op(const char *op, unsigned int gpio_num)
-{
-	/* op (gpio_num) */
-	acpigen_emit_namestring(op);
-	acpigen_write_integer(gpio_num);
-	return 0;
-}
-
-static int acpigen_soc_get_gpio_state(const char *op, unsigned int gpio_num)
-{
-	/* Store (op (gpio_num), Local0) */
-	acpigen_write_store();
-	acpigen_soc_gpio_op(op, gpio_num);
-	acpigen_emit_byte(LOCAL0_OP);
-	return 0;
-}
-
-int acpigen_soc_read_rx_gpio(unsigned int gpio_num)
-{
-	return acpigen_soc_get_gpio_state("\\_SB.PCI0.GRXS", gpio_num);
-}
-
-int acpigen_soc_get_tx_gpio(unsigned int gpio_num)
-{
-	return acpigen_soc_get_gpio_state("\\_SB.PCI0.GTXS", gpio_num);
-}
-
-int acpigen_soc_set_tx_gpio(unsigned int gpio_num)
-{
-	return acpigen_soc_gpio_op("\\_SB.PCI0.STXS", gpio_num);
-}
-
-int acpigen_soc_clear_tx_gpio(unsigned int gpio_num)
-{
-	return acpigen_soc_gpio_op("\\_SB.PCI0.CTXS", gpio_num);
 }

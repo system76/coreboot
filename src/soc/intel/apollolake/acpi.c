@@ -9,7 +9,6 @@
 #include <arch/smp/mpspec.h>
 #include <assert.h>
 #include <device/pci_ops.h>
-#include <cbmem.h>
 #include <gpio.h>
 #include <intelblocks/acpi.h>
 #include <intelblocks/pmclib.h>
@@ -20,7 +19,6 @@
 #include <soc/nvs.h>
 #include <soc/pci_devs.h>
 #include <soc/systemagent.h>
-#include <string.h>
 
 #include "chip.h"
 
@@ -76,12 +74,6 @@ void soc_fill_gnvs(struct global_nvs *gnvs)
 {
 	struct soc_intel_apollolake_config *cfg;
 	cfg = config_of_soc();
-
-	/* Set unknown wake source */
-	gnvs->pm1i = ~0ULL;
-
-	/* CPU core count */
-	gnvs->pcnt = dev_count_cpu();
 
 	/* Enable DPTF based on mainboard configuration */
 	gnvs->dpte = cfg->dptf_enable;
@@ -262,8 +254,6 @@ static int acpigen_soc_get_gpio_val(unsigned int gpio_num, uint32_t mask)
 
 	/* Store (One, Local0) */
 	acpigen_write_store_ops(ONE_OP, LOCAL0_OP);
-
-	acpigen_pop_len();	/* If */
 
 	/* Else */
 	acpigen_write_else();

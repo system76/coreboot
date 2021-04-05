@@ -1,12 +1,12 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
 #include <device/mmio.h>
-#include <boardid.h>
 #include <console/console.h>
 #include <soc/addressmap.h>
 #include <soc/dramc_common.h>
 #include <soc/dramc_register.h>
 #include <soc/dramc_pi_api.h>
+#include <soc/dramc_soc.h>
 #include <soc/mt6391.h>
 #include <soc/pmic_wrap.h>
 #include <soc/pll.h>

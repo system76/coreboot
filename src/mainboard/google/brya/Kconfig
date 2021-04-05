@@ -3,15 +3,23 @@ config BOARD_GOOGLE_BASEBOARD_BRYA
 	select BOARD_ROMSIZE_KB_32768
 	select DRIVERS_I2C_GENERIC
 	select DRIVERS_I2C_HID
+	select DRIVERS_GENERIC_MAX98357A
 	select DRIVERS_I2C_SX9324
+	select DRIVERS_INTEL_PMC
 	select DRIVERS_SPI_ACPI
 	select DRIVERS_WIFI_GENERIC
 	select EC_GOOGLE_CHROMEEC
+	select EC_GOOGLE_CHROMEEC_ACPI_MEMMAP
+	select EC_GOOGLE_CHROMEEC_BOARDID
 	select EC_GOOGLE_CHROMEEC_ESPI
+	select EC_GOOGLE_CHROMEEC_SKUID
 	select HAVE_ACPI_RESUME
 	select HAVE_ACPI_TABLES
+	select HAVE_SPD_IN_CBFS
 	select INTEL_LPSS_UART_FOR_CONSOLE
 	select MAINBOARD_HAS_CHROMEOS
+	select MAINBOARD_HAS_I2C_TPM_CR50
+	select MAINBOARD_HAS_TPM2
 	select SOC_INTEL_ALDERLAKE
 
 if BOARD_GOOGLE_BASEBOARD_BRYA
@@ -21,15 +29,30 @@ config BASEBOARD_BRYA_LAPTOP
 	select SYSTEM_TYPE_LAPTOP
 
 config CHROMEOS
-	bool
-	default y
 	select EC_GOOGLE_CHROMEEC_SWITCHES
 	select GBB_FLAG_DISABLE_EC_SOFTWARE_SYNC
+	select HAS_RECOVERY_MRC_CACHE
 	select VBOOT_LID_SWITCH
 
 config DEVICETREE
 	string
 	default "variants/baseboard/devicetree.cb"
+
+config DRIVER_TPM_I2C_BUS
+	hex
+	default 0x3
+
+config DRIVER_TPM_I2C_ADDR
+	hex
+	default 0x50
+
+config TPM_TIS_ACPI_INTERRUPT
+	int
+	default 13 # GPE0_DW0_13 (GPP_A13_IRQ)
+
+config OVERRIDE_DEVICETREE
+	string
+	default "variants/\$(CONFIG_VARIANT_DIR)/overridetree.cb"
 
 config MAINBOARD_DIR
 	string
@@ -41,11 +64,15 @@ config MAINBOARD_FAMILY
 
 config MAINBOARD_PART_NUMBER
 	string
-	default "brya" if BOARD_GOOGLE_BRYA0
+	default "Brya" if BOARD_GOOGLE_BRYA0
 
 config VARIANT_DIR
 	string
 	default "brya0" if BOARD_GOOGLE_BRYA0
+
+config DIMM_SPD_SIZE
+	int
+	default 512
 
 config UART_FOR_CONSOLE
 	int

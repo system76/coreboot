@@ -19,6 +19,7 @@ DefinitionBlock (
 	1
 	)
 {
+	#include <acpi/dsdt_top.asl>
 	/* \_SB scope defining the main processor is generated in SSDT. */
 
 	OperationRegion(X80, SystemIO, 0x80, 1)
@@ -67,23 +68,23 @@ DefinitionBlock (
 	Method (\_PTS, 1, NotSerialized)
 	{
 		/* Disable fan, blink power LED, if not turning off */
-		If (LNotEqual (Arg0, 0x05))
+		If (Arg0 != 0x05)
 		{
-		    Store (Zero, FANM)
-		    Store (Zero, PLED)
+		    FANM = 0
+		    PLED = 0
 		}
 
 		/* Arms SMI for device 12 */
-		Store (One, TO12)
+		TO12 = 1
 		/* Put out a POST code */
-		Or (Arg0, 0xF0, P80)
+		P80 = Arg0 | 0xF0
 	}
 
 	Method (\_WAK, 1, NotSerialized)
 	{
 		/* Re-enable fan, stop power led blinking */
-		Store (One, FANM)
-		Store (One, PLED)
+		FANM = 1
+		PLED = 1
 		/* wake OK */
 		Return(Package(0x02){0x00, 0x00})
 	}
@@ -164,79 +165,7 @@ DefinitionBlock (
 			#include <northbridge/intel/i440bx/acpi/sb_pci0_crs.asl>
 			#include <southbridge/intel/i82371eb/acpi/isabridge.asl>
 
-			/* Begin southbridge block */
-			Device (PX40)
-			{
-				Name(_ADR, 0x00040000)
-				OperationRegion (PIRQ, PCI_Config, 0x60, 0x04)
-				Field (PIRQ, ByteAcc, NoLock, Preserve)
-				{
-					PIRA,   8,
-					PIRB,   8,
-					PIRC,   8,
-					PIRD,   8
-				}
-
-				/* PNP Motherboard Resources */
-				Device (SYSR)
-				{
-					Name (_HID, EisaId ("PNP0C02"))
-					Name (_UID, 0x02)
-					Method (_CRS, 0, NotSerialized)
-					{
-					Name (BUF1, ResourceTemplate ()
-					{
-						/* PM register ports */
-						IO (Decode16, 0x0000, 0x0000, 0x01, 0x40, _Y06)
-						/* SMBus register ports */
-						IO (Decode16, 0x0000, 0x0000, 0x01, 0x10, _Y07)
-						/* PIIX4E ports */
-						/* Aliased DMA ports */
-						IO (Decode16, 0x0010, 0x0010, 0x01, 0x10, )
-						/* Aliased PIC ports */
-						IO (Decode16, 0x0022, 0x0022, 0x01, 0x1E, )
-						/* Aliased timer ports */
-						IO (Decode16, 0x0050, 0x0050, 0x01, 0x04, )
-						IO (Decode16, 0x0062, 0x0062, 0x01, 0x02, )
-						IO (Decode16, 0x0065, 0x0065, 0x01, 0x0B, )
-						IO (Decode16, 0x0074, 0x0074, 0x01, 0x0C, )
-						IO (Decode16, 0x0091, 0x0091, 0x01, 0x03, )
-						IO (Decode16, 0x00A2, 0x00A2, 0x01, 0x1E, )
-						IO (Decode16, 0x00E0, 0x00E0, 0x01, 0x10, )
-						IO (Decode16, 0x0294, 0x0294, 0x01, 0x04, )
-						IO (Decode16, 0x03F0, 0x03F0, 0x01, 0x02, )
-						IO (Decode16, 0x04D0, 0x04D0, 0x01, 0x02, )
-					})
-					CreateWordField (BUF1, _Y06._MIN, PMLO)
-					CreateWordField (BUF1, _Y06._MAX, PMRL)
-					CreateWordField (BUF1, _Y07._MIN, SBLO)
-					CreateWordField (BUF1, _Y07._MAX, SBRL)
-
-					And (\_SB.PCI0.PX43.PM00, 0xFFFE, PMLO)
-					And (\_SB.PCI0.PX43.SB00, 0xFFFE, SBLO)
-					Store (PMLO, PMRL)
-					Store (SBLO, SBRL)
-					Return (BUF1)
-					}
-				}
-				#include <southbridge/intel/i82371eb/acpi/i82371eb.asl>
-			}
-			Device (PX43)
-			{
-				Name (_ADR, 0x00040003)  // _ADR: Address
-				OperationRegion (IPMU, PCI_Config, PMBA, 0x02)
-				Field (IPMU, ByteAcc, NoLock, Preserve)
-				{
-				    PM00,   16
-				}
-
-				OperationRegion (ISMB, PCI_Config, SMBBA, 0x02)
-				Field (ISMB, ByteAcc, NoLock, Preserve)
-				{
-				    SB00,   16
-				}
-			}
-
+			#include <southbridge/intel/i82371eb/acpi/i82371eb.asl>
 			#include <superio/winbond/w83977tf/acpi/superio.asl>
 		}
 	}
@@ -246,13 +175,13 @@ DefinitionBlock (
 	{
 		Method (_MSG, 1, NotSerialized)
 		{
-			If (LEqual (Arg0, Zero))
+			If (Arg0 == 0)
 			{
-				Store (One, MSG0)
+				MSG0 = 1
 			}
 			Else
 			{
-				Store (Zero, MSG0)
+				MSG0 = 0
 			}
 		}
 	}

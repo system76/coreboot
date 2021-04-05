@@ -115,7 +115,7 @@ Device (S76D) {
 
 	// Fan names
 	Method (NFAN, 0, Serialized) {
-		Return (Package (2) {
+		Return (Package() {
 			"CPU fan",
 #if CONFIG(EC_SYSTEM76_EC_DGPU)
 			"GPU fan",
@@ -123,7 +123,7 @@ Device (S76D) {
 		})
 	}
 
-	// Get fan duty and RPM as a single value
+	// Get fan duty cycle and RPM as a single value
 	Method (GFAN, 1, Serialized) {
 		Local0 = 0
 		Local1 = 0
@@ -145,7 +145,7 @@ Device (S76D) {
 
 	// Temperature names
 	Method (NTMP, 0, Serialized) {
-		Return (Package (2) {
+		Return (Package() {
 			"CPU temp",
 #if CONFIG(EC_SYSTEM76_EC_DGPU)
 			"GPU temp",

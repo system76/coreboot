@@ -2,7 +2,7 @@
 
 #include <console/console.h>
 #include <ec/google/chromeec/ec.h>
-#include <soc/gpio.h>
+#include <southbridge/intel/lynxpoint/lp_gpio.h>
 #include <soc/pm.h>
 #include <soc/romstage.h>
 #include <smbios.h>
@@ -21,19 +21,19 @@ int variant_smbios_data(struct device *dev, int *handle, unsigned long *current)
 	return 0;
 }
 
-void variant_romstage_entry(struct romstage_params *rp)
+void mainboard_post_raminit(const int s3resume)
 {
-	if (rp->power_state->prev_sleep_state != ACPI_S3)
+	if (!s3resume)
 		google_chromeec_kbbacklight(100);
 
 	printk(BIOS_INFO, "MLB: board version %s\n", samus_board_version());
 
 	/* Bring SSD out of reset */
-	set_gpio(BOARD_SSD_RESET_GPIO, GPIO_OUT_HIGH);
+	set_gpio(BOARD_SSD_RESET_GPIO, 1);
 
 	/*
 	 * Enable PP3300_AUTOBAHN_EN after initial GPIO setup
 	 * to prevent possible brownout.
 	 */
-	set_gpio(BOARD_PP3300_AUTOBAHN_GPIO, GPIO_OUT_HIGH);
+	set_gpio(BOARD_PP3300_AUTOBAHN_GPIO, 1);
 }

@@ -15,7 +15,7 @@
 #include <drivers/intel/gma/libgfxinit.h>
 #include <cpu/intel/haswell/haswell.h>
 #include <drivers/intel/gma/opregion.h>
-#include <string.h>
+#include <southbridge/intel/lynxpoint/pch.h>
 #include <types.h>
 
 #include "chip.h"
@@ -443,7 +443,6 @@ static void gma_func0_init(struct device *dev)
 
 	if (!lightup_ok) {
 		printk(BIOS_SPEW, "FUI did not run; using VBIOS\n");
-		mdelay(CONFIG_PRE_GRAPHICS_DELAY);
 		pci_dev_init(dev);
 	}
 

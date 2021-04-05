@@ -1,8 +1,10 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+#include <stdlib.h>
 #include <amdblocks/acpimmio.h>
 #include <console/console.h>
 #include <device/device.h>
+#include <southbridge/amd/common/amd_pci_util.h>
 #include <device/mmio.h>
 #include <device/pci_ops.h>
 #include <device/pci_def.h>
@@ -11,10 +13,19 @@
 #include <southbridge/amd/cimx/sb800/gpio_oem.h>
 #include "mainboard/lippert/frontrunner-af/sema.h"
 
+static const u8 mainboard_intr_data[] = {
+	[0x00] = 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,  /* INTA# - INTH# */
+	[0x08] = 0x00, 0x00, 0x00, 0x00, 0x1F, 0x1F, 0x1F, 0x1F,  /* Misc-nil, 0, 1, 2,  INT from Serial irq */
+	[0x10] = 0x09, 0x1F, 0x1F, 0x10, 0x1F, 0x12, 0x1F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x1F, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x12, 0x11, 0x12, 0x11, 0x12, 0x11, 0x12, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x11, 0x13, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x10, 0x11, 0x12, 0x13
+};
+
 static void init(struct device *dev)
 {
 	volatile u8 *spi_base;	/* base addr of Hudson's SPI host controller */
-	printk(BIOS_DEBUG, CONFIG_MAINBOARD_PART_NUMBER " ENTER %s\n", __func__);
 
 	/* Init Hudson GPIOs. */
 	printk(BIOS_DEBUG, "Init FCH GPIOs @ 0x%08x\n", ACPI_MMIO_BASE+GPIO_BASE);
@@ -78,7 +89,12 @@ static void init(struct device *dev)
 	 */
 	sema_send_alive();
 
-	printk(BIOS_DEBUG, CONFIG_MAINBOARD_PART_NUMBER " EXIT %s\n", __func__);
+}
+
+/* PIRQ Setup */
+static void pirq_setup(void)
+{
+	intr_data_ptr = mainboard_intr_data;
 }
 
 /**********************************************
@@ -86,7 +102,9 @@ static void init(struct device *dev)
  **********************************************/
 static void mainboard_enable(struct device *dev)
 {
-	printk(BIOS_INFO, "Mainboard " CONFIG_MAINBOARD_PART_NUMBER " Enable.\n");
+	/* Initialize the PIRQ data structures for consumption */
+	pirq_setup();
+
 	dev->ops->init = init;
 
 	/* enable GPP CLK0 thru CLK1 */

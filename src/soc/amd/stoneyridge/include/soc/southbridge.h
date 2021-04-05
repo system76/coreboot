@@ -70,8 +70,6 @@
 #define   PM_ACPI_WAKE_AS_GEVENT	BIT(27)
 #define   PM_ACPI_NB_PME_GEVENT		BIT(28)
 #define   PM_ACPI_RTC_WAKE_EN		BIT(29)
-#define PM_RST_CTRL1			0xbe
-#define   SLPTYPE_CONTROL_EN		BIT(5)
 #define PM_PCIB_CFG			0xea
 #define   PM_GENINT_DISABLE		BIT(0)
 #define PM_LPC_GATING			0xec
@@ -202,10 +200,8 @@ void soc_enable_psp_early(void);
 #define PSP_MAILBOX_OFFSET		0x70 /* offset from BAR3 value */
 
 #define PSP_BAR_ENABLES			0x48
-#define  PSP_MAILBOX_BAR_EN		0x10
-
-#define MSR_CU_CBBCFG			0xc00110a2 /* PSP Pvt Blk Base Addr */
-#define   BAR3HIDE			BIT(12) /* Bit to hide BAR3 addr */
+#define  BAR3HIDE			BIT(12) /* Bit to hide BAR3 addr */
+#define  PSP_MAILBOX_BAR_EN		BIT(4)
 
 typedef struct aoac_devs {
 	unsigned int :5;
@@ -233,15 +229,15 @@ typedef struct aoac_devs {
 #define XHCI_FW_SIZE_OFFSET			0x8
 #define XHCI_FW_BOOTRAM_SIZE			0x8000
 
-void enable_aoac_devices(void);
-void sb_clk_output_48Mhz(u32 osc);
-void sb_enable(struct device *dev);
-void southbridge_final(void *chip_info);
-void southbridge_init(void *chip_info);
-void sb_read_mode(u32 mode);
-void sb_set_spi100(u16 norm, u16 fast, u16 alt, u16 tpm);
 void bootblock_fch_early_init(void);
 void bootblock_fch_init(void);
+void fch_init(void *chip_info);
+void fch_final(void *chip_info);
+
+void enable_aoac_devices(void);
+void sb_clk_output_48Mhz(u32 osc);
+void sb_read_mode(u32 mode);
+void sb_set_spi100(u16 norm, u16 fast, u16 alt, u16 tpm);
 
 /*
  * Call the mainboard to get the USB Over Current Map. The mainboard
@@ -251,11 +247,5 @@ void bootblock_fch_init(void);
  */
 int mainboard_get_xhci_oc_map(uint16_t *usb_oc_map);
 int mainboard_get_ehci_oc_map(uint16_t *usb_oc_map);
-
-/* Initialize all the i2c buses that are marked with early init. */
-void i2c_soc_early_init(void);
-
-/* Initialize all the i2c buses that are not marked with early init. */
-void i2c_soc_init(void);
 
 #endif /* AMD_STONEYRIDGE_SOUTHBRIDGE_H */

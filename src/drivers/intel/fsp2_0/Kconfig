@@ -31,6 +31,13 @@ config PLATFORM_USES_FSP2_2
 
 if PLATFORM_USES_FSP2_0
 
+config PLATFORM_USES_FSP2_X86_32
+	bool
+	default y
+	help
+	  The FSP 2.0 runs in x86_32 protected mode.
+	  Once there's a x86_64 FSP this needs to default to n.
+
 config HAVE_INTEL_FSP_REPO
 	bool
 	help
@@ -113,9 +120,25 @@ config FSP_S_FILE
 config FSP_CAR
 	bool
 	default n
-	select NO_CBFS_MCACHE
+	select NO_CBFS_MCACHE if !NO_FSP_TEMP_RAM_EXIT
 	help
 	  Use FSP APIs to initialize & Tear Down the Cache-As-Ram
+
+config FSP_T_RESERVED_SIZE
+	hex
+	default 0x100 if FSP_CAR
+	default 0x0
+	help
+	  This is the size of the area reserved by FSP-T. This is not
+	  defined in the FSP specification but in the SOC integration
+	  guides.
+
+config NO_FSP_TEMP_RAM_EXIT
+	bool
+	depends on FSP_CAR
+	help
+	  Select this on a platform where you want to use FSP-T but use
+	  coreboot code to tear down CAR.
 
 config FSP_M_XIP
 	bool
@@ -157,21 +180,11 @@ config FSP_PLATFORM_MEMORY_SETTINGS_VERSIONS
 	  This allows deployed systems to bump their version number
 	  with the same FSP which will trigger a retrain of the memory.
 
-config FSP_PEIM_TO_PEIM_INTERFACE
-	bool
-	select FSP_USES_MP_SERVICES_PPI
-	help
-	  This option allows SOC user to create specific PPI for Intel FSP
-	  usage, coreboot will provide required PPI structure definitions
-	  along with all APIs as per EFI specification. So far this feature
-	  is limited till EFI_PEI_MP_SERVICE_PPI and this option might be
-	  useful to add further PPI if required.
-
 config HAVE_FSP_LOGO_SUPPORT
 	bool
 	default n
 
-config FSP2_0_DISPLAY_LOGO
+config BMP_LOGO
 	bool "Enable logo"
 	default n
 	depends on HAVE_FSP_LOGO_SUPPORT
@@ -182,7 +195,7 @@ config FSP2_0_DISPLAY_LOGO
 
 config FSP2_0_LOGO_FILE_NAME
 	string "Logo file"
-	depends on FSP2_0_DISPLAY_LOGO
+	depends on BMP_LOGO
 	default "3rdparty/blobs/mainboard/\$(MAINBOARDDIR)/logo.bmp"
 
 config FSP_COMPRESS_FSP_S_LZMA
@@ -255,9 +268,4 @@ config SOC_INTEL_COMMON_FSP_RESET
 	  Common code block to handle platform reset request raised by FSP. The FSP
 	  will use the FSP EAS v2.0 section 12.2.2 (OEM Status Code) to indicate that
 	  a reset is required.
-
-if FSP_PEIM_TO_PEIM_INTERFACE
-source "src/drivers/intel/fsp2_0/ppi/Kconfig"
-endif
-
 endif

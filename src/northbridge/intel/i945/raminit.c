@@ -45,7 +45,7 @@ static int get_dimm_spd_address(struct sys_info *sysinfo, int device)
 	if (sysinfo->spd_addresses)
 		return sysinfo->spd_addresses[device];
 	else
-		return DIMM0 + device;
+		return 0x50 + device;
 
 }
 
@@ -2124,6 +2124,9 @@ static void sdram_power_management(struct sys_info *sysinfo)
 	int integrated_graphics = 1;
 	int i;
 
+	if (!(pci_read_config8(HOST_BRIDGE, DEVEN) & (DEVEN_D2F0 | DEVEN_D2F1)))
+		integrated_graphics = false;
+
 	reg32 = MCHBAR32(C0DRT2);
 	reg32 &= 0xffffff00;
 	/* Idle timer = 8 clocks, CKE idle timer = 16 clocks */
@@ -2283,10 +2286,10 @@ static void sdram_power_management(struct sys_info *sysinfo)
 
 	MCHBAR32(PMCFG) |= (1 << 4);
 
-	reg32 = MCHBAR32(0xc30);
+	reg32 = MCHBAR32(UPMC4);
 	reg32 &= 0xffffff00;
 	reg32 |= 0x01;
-	MCHBAR32(0xc30) = reg32;
+	MCHBAR32(UPMC4) = reg32;
 
 	MCHBAR32(0xb18) &= ~(1 << 21);
 }

@@ -3,7 +3,8 @@
 #include <arch/cpu.h>
 #include <acpi/acpi.h>
 #include <acpi/acpi_gnvs.h>
-#include <cbmem.h>
+#include <acpi/acpi_pm.h>
+#include <bootstate.h>
 #include <console/console.h>
 #include <cpu/intel/microcode.h>
 #include <cpu/x86/cr.h>
@@ -11,7 +12,6 @@
 #include <device/device.h>
 #include <device/pci_def.h>
 #include <device/pci_ops.h>
-#include <string.h>
 
 #include <soc/gpio.h>
 #include <soc/lpc.h>
@@ -117,38 +117,41 @@ static void fill_in_pattrs(void)
 }
 
 /* Save bit index for first enabled event in PM1_STS for \_SB._SWS */
-static void s3_save_acpi_wake_source(struct global_nvs *gnvs)
+static void pm_fill_gnvs(struct global_nvs *gnvs, const struct chipset_power_state *ps)
 {
-	struct chipset_power_state *ps = cbmem_find(CBMEM_ID_POWER_STATE);
 	uint16_t pm1;
-
-	if (!ps)
-		return;
+	int index;
 
 	pm1 = ps->pm1_sts & ps->pm1_en;
 
 	/* Scan for first set bit in PM1 */
-	for (gnvs->pm1i = 0; gnvs->pm1i < 16; gnvs->pm1i++) {
+	for (index = 0; index < 16; index++) {
 		if (pm1 & 1)
 			break;
 		pm1 >>= 1;
 	}
 
-	/* If unable to determine then return -1 */
-	if (gnvs->pm1i >= 16)
-		gnvs->pm1i = -1;
+	if (index < 16)
+		gnvs->pm1i = index;
+}
+
+static void acpi_save_wake_source(void *unused)
+{
+	const struct chipset_power_state *ps;
+	struct global_nvs *gnvs;
+
+	if (acpi_reset_gnvs_for_wake(&gnvs) < 0)
+		return;
+	if (acpi_pm_state_for_wake(&ps) < 0)
+		return;
+
+	pm_fill_gnvs(gnvs, ps);
 
 	printk(BIOS_DEBUG, "ACPI System Wake Source is PM1 Index %d\n",
 	       gnvs->pm1i);
 }
 
-static void s3_resume_prepare(void)
-{
-	struct global_nvs *gnvs = acpi_get_gnvs();
-
-	if (gnvs && acpi_is_wakeup_s3())
-		s3_save_acpi_wake_source(gnvs);
-}
+BOOT_STATE_INIT_ENTRY(BS_PRE_DEVICE, BS_ON_ENTRY, acpi_save_wake_source, NULL);
 
 static void baytrail_enable_2x_refresh_rate(void)
 {
@@ -170,9 +173,6 @@ void baytrail_init_pre_device(struct soc_intel_baytrail_config *config)
 
 	/* Allow for SSE instructions to be executed. */
 	write_cr4(read_cr4() | CR4_OSFXSR | CR4_OSXMMEXCPT);
-
-	/* Indicate S3 resume to rest of ramstage. */
-	s3_resume_prepare();
 
 	/* Run reference code. */
 	baytrail_run_reference_code();

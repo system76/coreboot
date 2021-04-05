@@ -44,7 +44,6 @@ config CPU_SPECIFIC_OPTIONS
 	select SUPPORT_CPU_UCODE_IN_CBFS
 
 config MMCONF_BASE_ADDRESS
-	hex
 	default 0xe0000000
 
 config FSP_T_ADDR
@@ -156,10 +155,6 @@ config CONSOLE_UART_BASE_ADDRESS
 	depends on ENABLE_HSUART
 	hex "MMIO base address for UART"
 	default 0xd4000000
-
-config C_ENV_BOOTBLOCK_SIZE
-	hex
-	default 0x8000
 
 choice
 	prompt "Cache-as-ram implementation"

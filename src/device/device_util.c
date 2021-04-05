@@ -370,7 +370,8 @@ struct resource *new_resource(struct device *dev, unsigned int index)
 		resource->next = NULL;
 		tail = dev->resource_list;
 		if (tail) {
-			while (tail->next) tail = tail->next;
+			while (tail->next)
+				tail = tail->next;
 			tail->next = resource;
 		} else {
 			dev->resource_list = resource;
@@ -555,7 +556,7 @@ void search_bus_resources(struct bus *bus, unsigned long type_mask,
 
 			/* If it is a subtractive resource recurse. */
 			if (res->flags & IORESOURCE_SUBTRACTIVE) {
-				struct bus * subbus;
+				struct bus *subbus;
 				for (subbus = curdev->link_list; subbus;
 				     subbus = subbus->next)
 					if (subbus->link_num
@@ -604,11 +605,10 @@ void dev_set_enabled(struct device *dev, int enable)
 		return;
 
 	dev->enabled = enable;
-	if (dev->ops && dev->ops->enable) {
+	if (dev->ops && dev->ops->enable)
 		dev->ops->enable(dev);
-	} else if (dev->chip_ops && dev->chip_ops->enable_dev) {
+	else if (dev->chip_ops && dev->chip_ops->enable_dev)
 		dev->chip_ops->enable_dev(dev);
-	}
 }
 
 void disable_children(struct bus *bus)
@@ -814,7 +814,7 @@ void show_one_resource(int debug_level, struct device *dev,
 		  buf, resource_type(resource), comment);
 }
 
-void show_all_devs_resources(int debug_level, const char* msg)
+void show_all_devs_resources(int debug_level, const char *msg)
 {
 	struct device *dev;
 
@@ -862,24 +862,17 @@ void fixed_io_resource(struct device *dev, unsigned long index,
 		 IORESOURCE_RESERVE;
 }
 
-void mmconf_resource_init(struct resource *resource, resource_t base,
-	int buses)
+void mmconf_resource(struct device *dev, unsigned long index)
 {
-	resource->base = base;
-	resource->size = buses * MiB;
+	struct resource *resource = new_resource(dev, index);
+	resource->base = CONFIG_MMCONF_BASE_ADDRESS;
+	resource->size = CONFIG_MMCONF_LENGTH;
 	resource->flags = IORESOURCE_MEM | IORESOURCE_RESERVE |
 		IORESOURCE_FIXED | IORESOURCE_STORED | IORESOURCE_ASSIGNED;
 
 	printk(BIOS_DEBUG, "Adding PCIe enhanced config space BAR "
 			"0x%08lx-0x%08lx.\n", (unsigned long)(resource->base),
 			(unsigned long)(resource->base + resource->size));
-}
-
-void mmconf_resource(struct device *dev, unsigned long index)
-{
-	struct resource *resource = new_resource(dev, index);
-	mmconf_resource_init(resource, CONFIG_MMCONF_BASE_ADDRESS,
-		CONFIG_MMCONF_BUS_NUMBER);
 }
 
 void tolm_test(void *gp, struct device *dev, struct resource *new)

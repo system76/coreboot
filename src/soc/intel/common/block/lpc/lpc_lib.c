@@ -9,10 +9,12 @@
 #include <device/pci_ops.h>
 #include <intelblocks/itss.h>
 #include <intelblocks/lpc_lib.h>
+#include <intelblocks/pcr.h>
 #include <lib.h>
 #include "lpc_def.h"
 #include <soc/irq.h>
 #include <soc/pci_devs.h>
+#include <soc/pcr_ids.h>
 
 uint16_t lpc_enable_fixed_io_ranges(uint16_t io_enables)
 {
@@ -21,6 +23,8 @@ uint16_t lpc_enable_fixed_io_ranges(uint16_t io_enables)
 	reg_io_enables = pci_read_config16(PCH_DEV_LPC, LPC_IO_ENABLES);
 	io_enables |= reg_io_enables;
 	pci_write_config16(PCH_DEV_LPC, LPC_IO_ENABLES, io_enables);
+	if (CONFIG(SOC_INTEL_COMMON_BLOCK_LPC_MIRROR_TO_DMI))
+		pcr_write16(PID_DMI, PCR_DMI_LPCIOE, io_enables);
 
 	return io_enables;
 }
@@ -37,6 +41,8 @@ uint16_t lpc_set_fixed_io_ranges(uint16_t io_ranges, uint16_t mask)
 	reg_io_ranges = lpc_get_fixed_io_decode() & ~mask;
 	io_ranges |= reg_io_ranges & mask;
 	pci_write_config16(PCH_DEV_LPC, LPC_IO_DECODE, io_ranges);
+	if (CONFIG(SOC_INTEL_COMMON_BLOCK_LPC_MIRROR_TO_DMI))
+		pcr_write16(PID_DMI, PCR_DMI_LPCIOD, io_ranges);
 
 	return io_ranges;
 }
@@ -58,14 +64,6 @@ static int find_unused_pmio_window(void)
 	}
 
 	return -1;
-}
-
-void lpc_close_pmio_windows(void)
-{
-	size_t i;
-
-	for (i = 0; i < LPC_NUM_GENERIC_IO_RANGES; i++)
-		pci_write_config32(PCH_DEV_LPC, LPC_GENERIC_IO_RANGE(i), 0);
 }
 
 void lpc_open_pmio_window(uint16_t base, uint16_t size)
@@ -113,6 +111,8 @@ void lpc_open_pmio_window(uint16_t base, uint16_t size)
 		lgir_reg_offset = LPC_GENERIC_IO_RANGE(lgir_reg_num);
 
 		pci_write_config32(PCH_DEV_LPC, lgir_reg_offset, lgir);
+		if (CONFIG(SOC_INTEL_COMMON_BLOCK_LPC_MIRROR_TO_DMI))
+			pcr_write32(PID_DMI, PCR_DMI_LPCLGIR1 + lgir_reg_num * 4, lgir);
 
 		printk(BIOS_DEBUG,
 		       "LPC: Opened IO window LGIR%d: base %llx size %x\n",
@@ -146,28 +146,8 @@ void lpc_open_mmio_window(uintptr_t base, size_t size)
 	lgmr = (base & LPC_LGMR_ADDR_MASK) | LPC_LGMR_EN;
 
 	pci_write_config32(PCH_DEV_LPC, LPC_GENERIC_MEM_RANGE, lgmr);
-}
-
-bool lpc_fits_fixed_mmio_window(uintptr_t base, size_t size)
-{
-	resource_t res_end, range_end;
-	const struct lpc_mmio_range *range;
-	const struct lpc_mmio_range *lpc_fixed_mmio_ranges =
-		soc_get_fixed_mmio_ranges();
-
-	for (range = lpc_fixed_mmio_ranges; range->size; range++) {
-		range_end = range->base + range->size;
-		res_end = base + size;
-
-		if ((base >= range->base) && (res_end <= range_end)) {
-			printk(BIOS_DEBUG,
-			       "Resource %lx size %zx fits in fixed window"
-			       " %lx size %zx\n",
-			       base, size, range->base, range->size);
-			return true;
-		}
-	}
-	return false;
+	if (CONFIG(SOC_INTEL_COMMON_BLOCK_LPC_MIRROR_TO_DMI))
+		pcr_write32(PID_DMI, PCR_DMI_LPCGMR, lgmr);
 }
 
 /*
@@ -244,15 +224,17 @@ void lpc_io_setup_comm_a_b(void)
 	/* ComA Range 3F8h-3FFh [2:0] */
 	uint16_t com_ranges = LPC_IOD_COMA_RANGE;
 	uint16_t com_enable = LPC_IOE_COMA_EN;
+	uint16_t com_mask   = LPC_IOD_COMA_RANGE_MASK;
 
 	/* ComB Range 2F8h-2FFh [6:4] */
 	if (CONFIG(SOC_INTEL_COMMON_BLOCK_LPC_COMB_ENABLE)) {
 		com_ranges |= LPC_IOD_COMB_RANGE;
 		com_enable |= LPC_IOE_COMB_EN;
+		com_mask   |= LPC_IOD_COMB_RANGE_MASK;
 	}
 
 	/* Setup I/O Decode Range Register for LPC */
-	pci_write_config16(PCH_DEV_LPC, LPC_IO_DECODE, com_ranges);
+	lpc_set_fixed_io_ranges(com_ranges, com_mask);
 	/* Enable ComA and ComB Port */
 	lpc_enable_fixed_io_ranges(com_enable);
 }
@@ -263,9 +245,11 @@ static void lpc_set_gen_decode_range(
 	size_t i;
 
 	/* Set in PCI generic decode range registers */
-	for (i = 0; i < LPC_NUM_GENERIC_IO_RANGES; i++)
-		pci_write_config32(PCH_DEV_LPC, LPC_GENERIC_IO_RANGE(i),
-			gen_io_dec[i]);
+	for (i = 0; i < LPC_NUM_GENERIC_IO_RANGES; i++) {
+		pci_write_config32(PCH_DEV_LPC, LPC_GENERIC_IO_RANGE(i), gen_io_dec[i]);
+		if (CONFIG(SOC_INTEL_COMMON_BLOCK_LPC_MIRROR_TO_DMI))
+			pcr_write32(PID_DMI, PCR_DMI_LPCLGIR1 + i * 4, gen_io_dec[i]);
+	}
 }
 
 void pch_enable_lpc(void)
@@ -274,7 +258,6 @@ void pch_enable_lpc(void)
 
 	soc_get_gen_io_dec_range(gen_io_dec);
 	lpc_set_gen_decode_range(gen_io_dec);
-	soc_setup_dmi_pcr_io_dec(gen_io_dec);
 	if (ENV_PAYLOAD_LOADER)
 		pch_pirq_init();
 }

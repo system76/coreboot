@@ -8,7 +8,6 @@ subdirs-y += ../../../cpu/x86/lapic
 subdirs-y += ../../../cpu/x86/cache
 subdirs-y += ../../../cpu/x86/mtrr
 subdirs-y += ../../../cpu/x86/pae
-subdirs-y += ../../../cpu/x86/smm
 
 bootblock-y += uart.c
 bootblock-y += BiosCallOuts.c
@@ -58,11 +57,9 @@ ramstage-y += southbridge.c
 ramstage-y += northbridge.c
 ramstage-y += sata.c
 ramstage-y += memmap.c
-ramstage-$(CONFIG_HAVE_SMI_HANDLER) += smi.c
 ramstage-y += uart.c
 ramstage-y += usb.c
 ramstage-y += tsc_freq.c
-ramstage-y += finalize.c
 ramstage-y += psp.c
 
 all-y += reset.c
@@ -167,10 +164,10 @@ STONEYRIDGE_FWM_ROM_POSITION=$(call int-add, \
 	$(call int-shift-left, \
 	0x80000 $(CONFIG_AMD_FWM_POSITION_INDEX))) 0x20000)
 
-$(call add_intermediate, add_amdfw, $(obj)/coreboot.pre $(obj)/amdfw.rom)
+$(call add_intermediate, add_amdfw, $(obj)/amdfw.rom)
 	printf "    DD         Adding AMD Firmware at ROM offset 0x%x\n" \
 		"$(STONEYRIDGE_FWM_ROM_POSITION)"
-	flock $< dd if=$(obj)/amdfw.rom \
+	dd if=$(obj)/amdfw.rom \
 		of=$(obj)/coreboot.pre conv=notrunc bs=1 \
 		seek=$(STONEYRIDGE_FWM_ROM_POSITION) >/dev/null 2>&1
 

@@ -1,11 +1,11 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#include <stdint.h>
 #include <amdblocks/gpio_banks.h>
 #include <amdblocks/acpimmio.h>
 #include <amdblocks/smi.h>
 #include <soc/gpio.h>
 #include <soc/smi.h>
+#include <types.h>
 
 static const struct soc_amd_event gpio_event_table[] = {
 	{ GPIO_1, GEVENT_19 },
@@ -33,11 +33,6 @@ static const struct soc_amd_event gpio_event_table[] = {
 	{ GPIO_68, GEVENT_9 },
 	{ GPIO_69, GEVENT_17 },
 };
-
-void soc_route_sci(uint8_t event)
-{
-	smi_write8(SMI_SCI_MAP(event), event);
-}
 
 void soc_get_gpio_event_table(const struct soc_amd_event **table, size_t *items)
 {

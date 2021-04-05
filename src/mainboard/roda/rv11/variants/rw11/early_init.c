@@ -40,9 +40,9 @@ void mainboard_fill_pei_data(struct pei_data *const pei_data)
 {
 	const struct pei_data pei_data_template = {
 		.pei_version = PEI_VERSION,
-		.mchbar = DEFAULT_MCHBAR,
-		.dmibar = DEFAULT_DMIBAR,
-		.epbar = DEFAULT_EPBAR,
+		.mchbar = CONFIG_FIXED_MCHBAR_MMIO_BASE,
+		.dmibar = CONFIG_FIXED_DMIBAR_MMIO_BASE,
+		.epbar = CONFIG_FIXED_EPBAR_MMIO_BASE,
 		.pciexbar = CONFIG_MMCONF_BASE_ADDRESS,
 		.smbusbar = CONFIG_FIXED_SMBUS_IO_BASE,
 		.wdbbar = 0x4000000,
@@ -59,12 +59,6 @@ void mainboard_fill_pei_data(struct pei_data *const pei_data)
 		.ec_present = 1,
 		.gbe_enable = 1,
 		.ddr3lv_support = 0,
-		// 0 = leave channel enabled
-		// 1 = disable dimm 0 on channel
-		// 2 = disable dimm 1 on channel
-		// 3 = disable dimm 0+1 on channel
-		.dimm_channel0_disabled = 0,
-		.dimm_channel1_disabled = 0,
 		.max_ddr3_freq = 1600,
 		.usb_port_config = {
 			/* Enabled / OC PIN / Length */

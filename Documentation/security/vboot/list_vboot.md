@@ -154,7 +154,9 @@
 - Stout (Lenovo Thinkpad X131e Chromebook)
 - Bubs
 - Coachz
+- Homestar
 - Lazor
+- Marzipan
 - Pompom
 - Trogdor
 - Veyron_Jaq (Haier Chromebook 11)
@@ -253,7 +255,7 @@
 ## Supermicro
 - X11SSH-TF
 - X11SSM-F
-- X11SSH-F
+- X11SSH-F/X11SSH-LN4F
 
 ## UP
 - Squared

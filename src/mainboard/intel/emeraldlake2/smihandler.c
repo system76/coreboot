@@ -3,11 +3,10 @@
 #include <acpi/acpi.h>
 #include <arch/io.h>
 #include <cpu/x86/smm.h>
-#include <southbridge/intel/bd82x6x/nvs.h>
+#include <soc/nvs.h>
 #include <southbridge/intel/bd82x6x/pch.h>
 #include <southbridge/intel/bd82x6x/me.h>
 #include <northbridge/intel/sandybridge/sandybridge.h>
-#include <cpu/intel/model_206ax/model_206ax.h>
 
 /*
  * Change LED_POWER# (SIO GPIO 45) state based on sleep type.

@@ -1,6 +1,5 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#include <arch/cpu.h>
 #include <console/console.h>
 #include <device/device.h>
 #include <device/pci.h>
@@ -98,6 +97,10 @@ static void configure_c_states(void)
 /* All CPUs including BSP will run the following function. */
 void soc_core_init(struct device *cpu)
 {
+	/* Configure Core PRMRR for SGX. */
+	if (CONFIG(SOC_INTEL_COMMON_BLOCK_SGX_ENABLE))
+		prmrr_core_configure();
+
 	/* Clear out pending MCEs */
 	/* TODO(adurbin): This should only be done on a cold boot. Also, some
 	 * of these banks are core vs package scope. For now every CPU clears
@@ -127,16 +130,24 @@ void soc_core_init(struct device *cpu)
 
 	/* Enable Turbo */
 	enable_turbo();
-
-	/* Configure Core PRMRR for SGX. */
-	if (CONFIG(SOC_INTEL_COMMON_BLOCK_SGX_ENABLE))
-		prmrr_core_configure();
 }
 
 static void per_cpu_smm_trigger(void)
 {
 	/* Relocate the SMM handler. */
 	smm_relocate();
+}
+
+void smm_lock(void)
+{
+	struct device *sa_dev = pcidev_path_on_root(SA_DEVFN_ROOT);
+	/*
+	 * LOCK the SMM memory window and enable normal SMM.
+	 * After running this function, only a full reset can
+	 * make the SMM registers writable again.
+	 */
+	printk(BIOS_DEBUG, "Locking SMM.\n");
+	pci_write_config8(sa_dev, SMRAM, D_LCK | G_SMRAME | C_BASE_SEG);
 }
 
 static void vmx_configure(void *unused)
@@ -175,6 +186,11 @@ static void post_mp_init(void)
 
 	if (ret)
 		printk(BIOS_CRIT, "CRITICAL ERROR: MP post init failed\n");
+}
+
+static void soc_fsp_load(void)
+{
+	fsps_load();
 }
 
 static const struct mp_ops mp_ops = {

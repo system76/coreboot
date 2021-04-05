@@ -13,7 +13,7 @@
 #define MC_INIT_STATE_G		0x5030
 #define MRC_REVISION		0x5034 /* MRC Revision */
 
-#define MC_LOCK			0x50fc /* Memory Controlller Lock register */
+#define MC_LOCK			0x50fc /* Memory Controller Lock register */
 
 #define GFXVTBAR		0x5400 /* Base address for IGD */
 #define EDRAMBAR		0x5408 /* Base address for eDRAM */
@@ -46,6 +46,9 @@
 #define  MAILBOX_BIOS_CMD_FSM_MEASURE_INTVL	0x909
 #define  MAILBOX_BIOS_CMD_READ_PCH_POWER	0xa
 #define  MAILBOX_BIOS_CMD_READ_PCH_POWER_EXT	0xb
+#define  MAILBOX_BIOS_CMD_READ_C9C10_VOLTAGE	0x26
+#define  MAILBOX_BIOS_CMD_WRITE_C9C10_VOLTAGE	0x27
+
 /* Errors are returned back in bits 7:0 */
 #define  MAILBOX_BIOS_ERROR_NONE		0
 #define  MAILBOX_BIOS_ERROR_INVALID_COMMAND	1

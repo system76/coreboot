@@ -5,9 +5,13 @@
 
 /* Pad configuration in ramstage*/
 static const struct pad_config gpio_table[] = {
+	/* A10 : WWAN_EN */
+	PAD_CFG_GPO(GPP_A10, 1, PWROK),
 	/* A11 : TOUCH_RPT_EN ==> NC */
 	PAD_NC(GPP_A11, NONE),
 
+	/* B7  : PCIE_CLKREQ2_N ==> WWAN_SAR_DETECT_ODL*/
+	PAD_CFG_GPO(GPP_B7, 1, DEEP),
 	/* B8  : WLAN_CLKREQ_ODL ==> NC */
 	PAD_NC(GPP_B8, NONE),
 
@@ -16,6 +20,8 @@ static const struct pad_config gpio_table[] = {
 	/* C19 : AP_I2C_EMR_SCL ==> NC */
 	PAD_NC(GPP_C19, NONE),
 
+	/* D0  : WWAN_HOST_WAKE ==> WWAN_WDISABLE_L */
+	PAD_CFG_GPO(GPP_D0, 1, DEEP),
 	/* D1  : WLAN_PERST_L ==> NC */
 	PAD_NC(GPP_D1, NONE),
 	/* D3  : WLAN_PCIE_WAKE_ODL ==> NC */
@@ -42,9 +48,6 @@ static const struct pad_config gpio_table[] = {
 	/* E2  : CLK_24M_WCAM ==> NC */
 	PAD_NC(GPP_E2, NONE),
 
-	/* G7  : SD_SDIO_WP ==> NC */
-	PAD_NC(GPP_G7, NONE),
-
 	/* H4  : AP_I2C_TS_SDA ==> NC */
 	PAD_NC(GPP_H4, NONE),
 	/* H5  : AP_I2C_TS_SCL ==> NC */
@@ -53,6 +56,8 @@ static const struct pad_config gpio_table[] = {
 	PAD_NC(GPP_H6, NONE),
 	/* H7  : AP_I2C_CAM_SCL ==> NC */
 	PAD_NC(GPP_H7, NONE),
+	/* H17 : WWAN_RST_L */
+	PAD_CFG_GPO(GPP_H17, 0, PLTRST),
 
 	/* S2  : DMIC1_CLK ==> NC */
 	PAD_NC(GPP_S2, NONE),

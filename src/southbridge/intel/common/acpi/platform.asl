@@ -17,6 +17,7 @@ Field (POST, ByteAcc, Lock, Preserve)
 	DBG0, 8
 }
 
+#if CONFIG(ACPI_SOC_NVS)
 /* SMI I/O Trap */
 Method(TRAP, 1, Serialized)
 {
@@ -24,19 +25,7 @@ Method(TRAP, 1, Serialized)
 	TRP0 = 0		// Generate trap
 	Return (SMIF)		// Return value of SMI handler
 }
-
-/* The _PIC method is called by the OS to choose between interrupt
- * routing via the i8259 interrupt controller or the APIC.
- *
- * _PIC is called with a parameter of 0 for i8259 configuration and
- * with a parameter of 1 for Local Apic/IOAPIC configuration.
- */
-
-Method(_PIC, 1)
-{
-	// Remember the OS' IRQ routing choice.
-	PICM = Arg0
-}
+#endif /* ACPI_SOC_NVS */
 
 Method(GOS, 0)
 {
@@ -73,4 +62,20 @@ Method(GOS, 0)
 			OSYS = 2006
 		}
 	}
+}
+
+/* Arg0 is state of HPET hardware enablement. */
+Method (HPTS, 1)
+{
+	/* HPET hardware disabled. */
+	If (!Arg0) {
+		Return (0x0)
+	}
+
+	/* Ancient versions of Windows don't want to see the HPET. */
+	If (OSYS < 2001) {
+		Return (0xb)
+	}
+
+	Return (0xf)
 }

@@ -3,7 +3,7 @@ config CPU_INTEL_SOCKET_LGA775
 
 if CPU_INTEL_SOCKET_LGA775
 
-config SOCKET_SPECIFIC_OPTIONS # dummy
+config SOCKET_SPECIFIC_OPTIONS
 	def_bool y
 	select CPU_INTEL_MODEL_6FX
 	select CPU_INTEL_MODEL_F3X
@@ -17,7 +17,7 @@ config SOCKET_SPECIFIC_OPTIONS # dummy
 
 config DCACHE_RAM_SIZE
 	hex
-	default 0x4000 # 16 kB
+	default 0x8000 # 32 kB
 
 config DCACHE_BSP_STACK_SIZE
 	hex
@@ -25,6 +25,6 @@ config DCACHE_BSP_STACK_SIZE
 
 config DCACHE_RAM_BASE
 	hex
-	default 0xfeffc000 # 4GB - 16MB - DCACHE_RAM_SIZE
+	default 0xfeff8000 # 4GB - 16MB - DCACHE_RAM_SIZE
 
 endif # CPU_INTEL_SOCKET_LGA775

@@ -17,7 +17,7 @@
 #define PMC_IPC_CMD_SIZE_MASK		0xff
 
 #define PMC_IPC_CMD_FIELD(name, val) \
-	(((val) & PMC_IPC_CMD_##name##_MASK << PMC_IPC_CMD_##name##_SHIFT))
+	((((val) & PMC_IPC_CMD_##name##_MASK) << PMC_IPC_CMD_##name##_SHIFT))
 
 #define PMC_IPC_CMD_NO_MSI		0
 
@@ -58,7 +58,7 @@ enum cb_err pmc_send_ipc_cmd(uint32_t cmd, const struct pmc_ipc_buffer *wbuf,
  * Provides an ACPI method in the SSDT to read/write to the IPC mailbox which is
  * defined in the PMC device MMIO address space.
  *
- * One possible use of this method is to to enable/disable the clock for a
+ * One possible use of this method is to enable/disable the clock for a
  * particular PCIe root port at runtime when the device is in D3 state.
  *
  * The ACPI method takes 7 arguments:

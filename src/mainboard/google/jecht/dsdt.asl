@@ -10,6 +10,7 @@ DefinitionBlock(
 	0x20110725	// OEM revision
 )
 {
+	#include <acpi/dsdt_top.asl>
 	#include <southbridge/intel/common/acpi/platform.asl>
 	#include "acpi/platform.asl"
 
@@ -18,6 +19,7 @@ DefinitionBlock(
 
 	// global NVS and variables
 	#include <soc/intel/broadwell/pch/acpi/globalnvs.asl>
+	#include <soc/intel/broadwell/acpi/device_nvs.asl>
 
 	// CPU
 	#include <cpu/intel/common/acpi/cpu.asl>
@@ -29,9 +31,6 @@ DefinitionBlock(
 			#include <soc/intel/broadwell/pch/acpi/pch.asl>
 		}
 	}
-
-	// Chrome OS specific
-	#include <vendorcode/google/chromeos/acpi/chromeos.asl>
 
 	#include <southbridge/intel/common/acpi/sleepstates.asl>
 

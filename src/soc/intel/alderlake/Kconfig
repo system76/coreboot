@@ -3,6 +3,11 @@ config SOC_INTEL_ALDERLAKE
 	help
 	  Intel Alderlake support
 
+config SOC_INTEL_ALDERLAKE_PCH_M
+	bool
+	help
+	  Choose this option if you have PCH-M chipset.
+
 if SOC_INTEL_ALDERLAKE
 
 config CPU_SPECIFIC_OPTIONS
@@ -29,12 +34,12 @@ config CPU_SPECIFIC_OPTIONS
 	select INTEL_GMA_ADD_VBT if RUN_FSP_GOP
 	select IOAPIC
 	select INTEL_TME
+	select MP_SERVICES_PPI_V2
 	select MRC_SETTINGS_PROTECT
 	select PARALLEL_MP
 	select PARALLEL_MP_AP_WORK
 	select MICROCODE_BLOB_UNDISCLOSED
 	select PLATFORM_USES_FSP2_2
-	select FSP_PEIM_TO_PEIM_INTERFACE
 	select REG_SCRIPT
 	select PMC_GLOBAL_RESET_ENABLE_LOCK
 	select PMC_LOW_POWER_MODE_PROGRAM
@@ -42,20 +47,27 @@ config CPU_SPECIFIC_OPTIONS
 	select SOC_INTEL_COMMON_ACPI_WAKE_SOURCE
 	select SOC_INTEL_COMMON_BLOCK
 	select SOC_INTEL_COMMON_BLOCK_ACPI
+	select SOC_INTEL_COMMON_BLOCK_ACPI_GPIO
 	select SOC_INTEL_COMMON_BLOCK_CAR
 	select SOC_INTEL_COMMON_BLOCK_CHIP_CONFIG
 	select SOC_INTEL_COMMON_BLOCK_CPU
 	select SOC_INTEL_COMMON_BLOCK_CPU_MPINIT
+	select SOC_INTEL_COMMON_BLOCK_CPU_SMMRELOCATE
 	select SOC_INTEL_COMMON_BLOCK_DTT
 	select SOC_INTEL_COMMON_BLOCK_GPIO_DUAL_ROUTE_SUPPORT
 	select SOC_INTEL_COMMON_BLOCK_GSPI_VERSION_2
 	select SOC_INTEL_COMMON_BLOCK_HDA
+	select SOC_INTEL_COMMON_BLOCK_IPU
+	select SOC_INTEL_COMMON_BLOCK_MEMINIT
+	select SOC_INTEL_COMMON_BLOCK_POWER_LIMIT
 	select SOC_INTEL_COMMON_BLOCK_SA
 	select SOC_INTEL_COMMON_BLOCK_SMM
 	select SOC_INTEL_COMMON_BLOCK_SMM_IO_TRAP
 	select SOC_INTEL_COMMON_BLOCK_USB4
 	select SOC_INTEL_COMMON_BLOCK_USB4_PCIE
 	select SOC_INTEL_COMMON_BLOCK_USB4_XHCI
+	select SOC_INTEL_COMMON_BLOCK_XHCI
+	select SOC_INTEL_COMMON_BLOCK_XHCI_ELOG
 	select SOC_INTEL_COMMON_FSP_RESET
 	select SOC_INTEL_COMMON_PCH_BASE
 	select SOC_INTEL_COMMON_RESET
@@ -119,21 +131,54 @@ config HEAP_SIZE
 	hex
 	default 0x10000
 
+# Intel recommends reserving the following resources per PCIe TBT root port,
+# from ADL BIOS Spec (doc #627270) Revision 0.6.0 Section 7.2.5.1.5
+# - 42 buses
+# - 194 MiB Non-prefetchable memory
+# - 448 MiB Prefetchable memory
+config ADL_ENABLE_USB4_PCIE_RESOURCES
+	def_bool n
+	select PCIEXP_HOTPLUG
+
+if ADL_ENABLE_USB4_PCIE_RESOURCES
+
+config PCIEXP_HOTPLUG_BUSES
+	int
+	default 42
+
+config PCIEXP_HOTPLUG_MEM
+	hex
+	default 0xc200000
+
+config PCIEXP_HOTPLUG_PREFETCH_MEM
+	hex
+	default 0x1c000000
+
+endif # ADL_ENABLE_USB4_PCIE_RESOURCES
+
 config MAX_PCH_ROOT_PORTS
 	int
+	default 10 if SOC_INTEL_ALDERLAKE_PCH_M
 	default 12
 
 config MAX_CPU_ROOT_PORTS
 	int
+	default 1 if SOC_INTEL_ALDERLAKE_PCH_M
 	default 3
 
 config MAX_ROOT_PORTS
 	int
 	default MAX_PCH_ROOT_PORTS
 
-config MAX_PCIE_CLOCKS
+config MAX_PCIE_CLOCK_SRC
 	int
-	default 12
+	default 6 if SOC_INTEL_ALDERLAKE_PCH_M
+	default 7
+
+config MAX_PCIE_CLOCK_REQ
+	int
+	default 6 if SOC_INTEL_ALDERLAKE_PCH_M
+	default 10
 
 config SMM_TSEG_SIZE
 	hex
@@ -150,7 +195,6 @@ config PCR_BASE_ADDRESS
 	  This option allows you to select MMIO Base Address of sideband bus.
 
 config MMCONF_BASE_ADDRESS
-	hex
 	default 0xc0000000
 
 config CPU_BCLK_MHZ
@@ -185,6 +229,10 @@ config CONSOLE_UART_BASE_ADDRESS
 	default 0xfe03e000
 	depends on INTEL_LPSS_UART_FOR_CONSOLE
 
+config VBT_DATA_SIZE_KB
+	int
+	default 9
+
 # Clock divider parameters for 115200 baud rate
 # Baudrate = (UART source clcok * M) /(N *16)
 # ADL UART source clock: 120MHz
@@ -196,19 +244,12 @@ config SOC_INTEL_COMMON_LPSS_UART_CLK_N_VAL
 	hex
 	default 0x7fff
 
-config CHROMEOS
-	select CHROMEOS_RAMOOPS_DYNAMIC
-
 config VBOOT
 	select VBOOT_SEPARATE_VERSTAGE
 	select VBOOT_MUST_REQUEST_DISPLAY
 	select VBOOT_STARTS_IN_BOOTBLOCK
 	select VBOOT_VBNV_CMOS
 	select VBOOT_VBNV_CMOS_BACKUP_TO_FLASH
-
-config C_ENV_BOOTBLOCK_SIZE
-	hex
-	default 0xC000
 
 config CBFS_SIZE
 	hex
@@ -242,4 +283,17 @@ config SOC_INTEL_ALDERLAKE_DEBUG_CONSENT
 	  0:Disabled, 1:Enabled (DCI OOB+[DbC]), 2:Enabled (DCI OOB),
 	  3:Enabled (USB3 DbC), 4:Enabled (XDP/MIPI60), 5:Enabled (USB2 DbC),
 	  6:Enable (2-wire DCI OOB), 7:Manual
+
+config DATA_BUS_WIDTH
+	int
+	default 128
+
+config DIMMS_PER_CHANNEL
+	int
+	default 2
+
+config MRC_CHANNEL_WIDTH
+	int
+	default 16
+
 endif

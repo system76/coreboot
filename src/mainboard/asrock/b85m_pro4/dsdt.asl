@@ -11,8 +11,8 @@ DefinitionBlock(
 	0x20141018	/* OEM revision */
 )
 {
+	#include <acpi/dsdt_top.asl>
 	#include "acpi/platform.asl"
-	#include "acpi/superio.asl"
 	#include <southbridge/intel/common/acpi/platform.asl>
 	#include <southbridge/intel/lynxpoint/acpi/globalnvs.asl>
 	#include <southbridge/intel/common/acpi/sleepstates.asl>
@@ -22,6 +22,5 @@ DefinitionBlock(
 	{
 		#include <northbridge/intel/haswell/acpi/hostbridge.asl>
 		#include <southbridge/intel/lynxpoint/acpi/pch.asl>
-		#include <drivers/intel/gma/acpi/default_brightness_levels.asl>
 	}
 }

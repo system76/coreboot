@@ -20,79 +20,6 @@
 #include "haswell.h"
 #include "chip.h"
 
-#define MWAIT_RES(state, sub_state)                         \
-	{                                                   \
-		.addrl = (((state) << 4) | (sub_state)),    \
-		.space_id = ACPI_ADDRESS_SPACE_FIXED,       \
-		.bit_width = ACPI_FFIXEDHW_VENDOR_INTEL,    \
-		.bit_offset = ACPI_FFIXEDHW_CLASS_MWAIT,    \
-		.access_size = ACPI_FFIXEDHW_FLAG_HW_COORD, \
-	}
-
-static acpi_cstate_t cstate_map[NUM_C_STATES] = {
-	[C_STATE_C0] = { },
-	[C_STATE_C1] = {
-		.latency = 0,
-		.power = 1000,
-		.resource = MWAIT_RES(0, 0),
-	},
-	[C_STATE_C1E] = {
-		.latency = 0,
-		.power = 1000,
-		.resource = MWAIT_RES(0, 1),
-	},
-	[C_STATE_C3] = {
-		.latency = C_STATE_LATENCY_FROM_LAT_REG(0),
-		.power = 900,
-		.resource = MWAIT_RES(1, 0),
-	},
-	[C_STATE_C6_SHORT_LAT] = {
-		.latency = C_STATE_LATENCY_FROM_LAT_REG(1),
-		.power = 800,
-		.resource = MWAIT_RES(2, 0),
-	},
-	[C_STATE_C6_LONG_LAT] = {
-		.latency = C_STATE_LATENCY_FROM_LAT_REG(2),
-		.power = 800,
-		.resource = MWAIT_RES(2, 1),
-	},
-	[C_STATE_C7_SHORT_LAT] = {
-		.latency = C_STATE_LATENCY_FROM_LAT_REG(1),
-		.power = 700,
-		.resource = MWAIT_RES(3, 0),
-	},
-	[C_STATE_C7_LONG_LAT] = {
-		.latency = C_STATE_LATENCY_FROM_LAT_REG(2),
-		.power = 700,
-		.resource = MWAIT_RES(3, 1),
-	},
-	[C_STATE_C7S_SHORT_LAT] = {
-		.latency = C_STATE_LATENCY_FROM_LAT_REG(1),
-		.power = 700,
-		.resource = MWAIT_RES(3, 2),
-	},
-	[C_STATE_C7S_LONG_LAT] = {
-		.latency = C_STATE_LATENCY_FROM_LAT_REG(2),
-		.power = 700,
-		.resource = MWAIT_RES(3, 3),
-	},
-	[C_STATE_C8] = {
-		.latency = C_STATE_LATENCY_FROM_LAT_REG(3),
-		.power = 600,
-		.resource = MWAIT_RES(4, 0),
-	},
-	[C_STATE_C9] = {
-		.latency = C_STATE_LATENCY_FROM_LAT_REG(4),
-		.power = 500,
-		.resource = MWAIT_RES(5, 0),
-	},
-	[C_STATE_C10] = {
-		.latency = C_STATE_LATENCY_FROM_LAT_REG(5),
-		.power = 400,
-		.resource = MWAIT_RES(6, 0),
-	},
-};
-
 /* Convert time in seconds to POWER_LIMIT_1_TIME MSR value */
 static const u8 power_limit_time_sec_to_msr[] = {
 	[0]   = 0x00,
@@ -226,6 +153,26 @@ static u32 pcode_mailbox_read(u32 command)
 	return MCHBAR32(BIOS_MAILBOX_DATA);
 }
 
+static int pcode_mailbox_write(u32 command, u32 data)
+{
+	if (pcode_ready() < 0) {
+		printk(BIOS_ERR, "PCODE: mailbox timeout on wait ready.\n");
+		return -1;
+	}
+
+	MCHBAR32(BIOS_MAILBOX_DATA) = data;
+
+	/* Send command and start transaction */
+	MCHBAR32(BIOS_MAILBOX_INTERFACE) = command | MAILBOX_RUN_BUSY;
+
+	if (pcode_ready() < 0) {
+		printk(BIOS_ERR, "PCODE: mailbox timeout on completion.\n");
+		return -1;
+	}
+
+	return 0;
+}
+
 static void initialize_vr_config(void)
 {
 	struct cpu_vr_config vr_config = { 0 };
@@ -294,9 +241,15 @@ static void initialize_vr_config(void)
 	msr = rdmsr(MSR_VR_MISC_CONFIG2);
 	msr.lo &= ~0xffff;
 	/* Allow CPU to control minimum voltage completely (15:8) and
-	 * set the fast ramp voltage to 1110mV (0x6f in 10mV steps). */
-	msr.lo |= 0x006f;
+	   set the fast ramp voltage in 10mV steps. */
+	if (cpu_family_model() == BROADWELL_FAMILY_ULT)
+		msr.lo |= 0x006a; /* 1.56V */
+	else
+		msr.lo |= 0x006f; /* 1.60V */
 	wrmsr(MSR_VR_MISC_CONFIG2, msr);
+
+	/* Set C9/C10 VCC Min */
+	pcode_mailbox_write(MAILBOX_BIOS_CMD_WRITE_C9C10_VOLTAGE, 0x1f1f);
 }
 
 static void configure_pch_power_sharing(void)
@@ -431,7 +384,9 @@ void set_power_limits(u8 power_limit_1_time)
 
 static void configure_c_states(void)
 {
-	msr_t msr;
+	msr_t msr = rdmsr(MSR_PLATFORM_INFO);
+
+	const bool timed_mwait_capable = !!(msr.hi & TIMED_MWAIT_SUPPORTED);
 
 	msr = rdmsr(MSR_PKG_CST_CONFIG_CONTROL);
 	msr.lo |= (1 << 30);	// Package c-state Undemotion Enable
@@ -441,6 +396,10 @@ static void configure_c_states(void)
 	msr.lo |= (1 << 26);	// C1 Auto Demotion Enable
 	msr.lo |= (1 << 25);	// C3 Auto Demotion Enable
 	msr.lo &= ~(1 << 10);	// Disable IO MWAIT redirection
+
+	if (timed_mwait_capable)
+		msr.lo |= (1 << 31);	// Timed MWAIT Enable
+
 	/* The deepest package c-state defaults to factory-configured value. */
 	wrmsr(MSR_PKG_CST_CONFIG_CONTROL, msr);
 
@@ -689,18 +648,21 @@ static struct device_operations cpu_dev_ops = {
 };
 
 static const struct cpu_device_id cpu_table[] = {
-	{ X86_VENDOR_INTEL, 0x306c1 }, /* Intel Haswell 4+2 A0 */
-	{ X86_VENDOR_INTEL, 0x306c2 }, /* Intel Haswell 4+2 B0 */
-	{ X86_VENDOR_INTEL, 0x306c3 }, /* Intel Haswell C0 */
-	{ X86_VENDOR_INTEL, 0x40650 }, /* Intel Haswell ULT B0 */
-	{ X86_VENDOR_INTEL, 0x40651 }, /* Intel Haswell ULT B1 */
-	{ X86_VENDOR_INTEL, 0x40660 }, /* Intel Crystal Well C0 */
-	{ X86_VENDOR_INTEL, 0x40661 }, /* Intel Crystal Well C1 */
+	{ X86_VENDOR_INTEL, CPUID_HASWELL_A0 },
+	{ X86_VENDOR_INTEL, CPUID_HASWELL_B0 },
+	{ X86_VENDOR_INTEL, CPUID_HASWELL_C0 },
+	{ X86_VENDOR_INTEL, CPUID_HASWELL_ULT_B0 },
+	{ X86_VENDOR_INTEL, CPUID_HASWELL_ULT_C0 },
+	{ X86_VENDOR_INTEL, CPUID_CRYSTALWELL_B0 },
+	{ X86_VENDOR_INTEL, CPUID_CRYSTALWELL_C0 },
+	{ X86_VENDOR_INTEL, CPUID_BROADWELL_C0 },
+	{ X86_VENDOR_INTEL, CPUID_BROADWELL_ULT_C0 },
+	{ X86_VENDOR_INTEL, CPUID_BROADWELL_ULT_D0 },
+	{ X86_VENDOR_INTEL, CPUID_BROADWELL_ULT_E0 },
 	{ 0, 0 },
 };
 
 static const struct cpu_driver driver __cpu_driver = {
 	.ops      = &cpu_dev_ops,
 	.id_table = cpu_table,
-	.cstates  = cstate_map,
 };

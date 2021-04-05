@@ -11,9 +11,7 @@ DefinitionBlock (
 	0x00010001		/* OEM Revision */
 	)
 {	/* Start of ASL file */
-
-	/* Globals for the platform */
-	#include "acpi/mainboard.asl"
+	#include <acpi/dsdt_top.asl>
 
 	/* Describe the USB Overcurrent pins */
 	#include "acpi/usb_oc.asl"
@@ -52,7 +50,7 @@ DefinitionBlock (
 				Name(_ADR, 0x00150000)
 				Name(_PRW, Package() {0x18, 4})
 				Method(_PRT,0) {
-					If(PMOD){ Return(ABR0) }   /* APIC mode */
+					If(PICM){ Return(ABR0) }   /* APIC mode */
 					Return (PBR0)              /* PIC mode  */
 				}
 			}
@@ -61,7 +59,7 @@ DefinitionBlock (
 				Name(_ADR, 0x00150001)
 				Name(_PRW, Package() {0x18, 4})
 				Method(_PRT, 0) {
-					If(PMOD){ Return(ABR1) }   /* APIC mode */
+					If(PICM){ Return(ABR1) }   /* APIC mode */
 					Return (PBR1)              /* PIC mode  */
 				}
 			}
@@ -80,9 +78,5 @@ DefinitionBlock (
 
 	/* Define the Thermal zones and methods for the platform */
 	#include "acpi/thermal.asl"
-
-	/* Define the System Indicators for the platform */
-	#include "acpi/si.asl"
-
 }
 /* End of ASL file */

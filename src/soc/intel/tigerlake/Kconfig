@@ -30,12 +30,12 @@ config CPU_SPECIFIC_OPTIONS
 	select INTEL_GMA_ACPI
 	select INTEL_GMA_ADD_VBT if RUN_FSP_GOP
 	select IOAPIC
+	select MP_SERVICES_PPI_V1
 	select MRC_SETTINGS_PROTECT
 	select PARALLEL_MP
 	select PARALLEL_MP_AP_WORK
 	select MICROCODE_BLOB_UNDISCLOSED
 	select PLATFORM_USES_FSP2_2
-	select FSP_PEIM_TO_PEIM_INTERFACE
 	select REG_SCRIPT
 	select PMC_GLOBAL_RESET_ENABLE_LOCK
 	select PMC_LOW_POWER_MODE_PROGRAM
@@ -43,17 +43,20 @@ config CPU_SPECIFIC_OPTIONS
 	select SOC_INTEL_COMMON_ACPI_WAKE_SOURCE
 	select SOC_INTEL_COMMON_BLOCK
 	select SOC_INTEL_COMMON_BLOCK_ACPI
+	select SOC_INTEL_COMMON_BLOCK_ACPI_GPIO
 	select SOC_INTEL_COMMON_BLOCK_ACPI_LPIT
 	select SOC_INTEL_COMMON_BLOCK_CAR
 	select SOC_INTEL_COMMON_BLOCK_CHIP_CONFIG
 	select SOC_INTEL_COMMON_BLOCK_CNVI
 	select SOC_INTEL_COMMON_BLOCK_CPU
 	select SOC_INTEL_COMMON_BLOCK_CPU_MPINIT
+	select SOC_INTEL_COMMON_BLOCK_CPU_SMMRELOCATE
 	select SOC_INTEL_COMMON_BLOCK_DTT
 	select SOC_INTEL_COMMON_BLOCK_GPIO_DUAL_ROUTE_SUPPORT
 	select SOC_INTEL_COMMON_BLOCK_GPIO_IOSTANDBY
 	select SOC_INTEL_COMMON_BLOCK_GSPI_VERSION_2
 	select SOC_INTEL_COMMON_BLOCK_HDA
+	select SOC_INTEL_COMMON_BLOCK_MEMINIT
 	select SOC_INTEL_COMMON_BLOCK_PCIE_RTD3
 	select SOC_INTEL_COMMON_BLOCK_SA
 	select SOC_INTEL_COMMON_BLOCK_SMM
@@ -145,7 +148,6 @@ config PCR_BASE_ADDRESS
 	  This option allows you to select MMIO Base Address of sideband bus.
 
 config MMCONF_BASE_ADDRESS
-	hex
 	default 0xc0000000
 
 config CPU_BCLK_MHZ
@@ -191,9 +193,6 @@ config SOC_INTEL_COMMON_LPSS_UART_CLK_N_VAL
 	hex
 	default 0x7fff
 
-config CHROMEOS
-	select CHROMEOS_RAMOOPS_DYNAMIC
-
 # Tiger Lake SoC requires at least 100us interrupt pulses in order to guarantee detection
 # in all low power states.  Cr50 TPM, if used, needs to be told to generate longer pulses.
 config TPM_CR50
@@ -209,10 +208,6 @@ config VBOOT
 	select VBOOT_STARTS_IN_BOOTBLOCK
 	select VBOOT_VBNV_CMOS
 	select VBOOT_VBNV_CMOS_BACKUP_TO_FLASH
-
-config C_ENV_BOOTBLOCK_SIZE
-	hex
-	default 0xC000
 
 config CBFS_SIZE
 	hex
@@ -244,10 +239,23 @@ config PRERAM_CBMEM_CONSOLE_SIZE
 	hex
 	default 0x2000
 
-config EARLY_TCSS_DISPLAY
-	bool "Enable early TCSS display"
-	depends on RUN_FSP_GOP
+config DATA_BUS_WIDTH
+	int
+	default 128
+
+config DIMMS_PER_CHANNEL
+	int
+	default 2
+
+config MRC_CHANNEL_WIDTH
+	int
+	default 16
+
+config SOC_INTEL_CRASHLOG
+	def_bool n
+	select SOC_INTEL_COMMON_BLOCK_CRASHLOG
+	select ACPI_BERT
 	help
-	  Enable displays to be detected over Type-C ports during boot.
+	  Enables CrashLog.
 
 endif

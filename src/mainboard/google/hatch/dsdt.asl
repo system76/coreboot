@@ -13,6 +13,7 @@ DefinitionBlock(
 	0x20110725	/* OEM revision */
 )
 {
+	#include <acpi/dsdt_top.asl>
 	#include <soc/intel/common/block/acpi/acpi/platform.asl>
 
 	/* global NVS and variables */
@@ -31,11 +32,6 @@ DefinitionBlock(
 #endif
 		}
 	}
-
-#if CONFIG(CHROMEOS)
-	/* Chrome OS specific */
-	#include <vendorcode/google/chromeos/acpi/chromeos.asl>
-#endif
 
 	#include <southbridge/intel/common/acpi/sleepstates.asl>
 

@@ -11,15 +11,8 @@
 
 unsigned long acpi_fill_mcfg(unsigned long current)
 {
-	u32 length, pciexbar;
-
-	if (!decode_pcie_bar(&pciexbar, &length))
-		return current;
-
-	const int max_buses = length / MiB;
-
-	current += acpi_create_mcfg_mmconfig((acpi_mcfg_mmconfig_t *) current, pciexbar, 0, 0,
-					     max_buses - 1);
+	current += acpi_create_mcfg_mmconfig((acpi_mcfg_mmconfig_t *)current,
+			CONFIG_MMCONF_BASE_ADDRESS, 0, 0, CONFIG_MMCONF_BUS_NUMBER - 1);
 
 	return current;
 }
@@ -33,8 +26,13 @@ static unsigned long acpi_fill_dmar(unsigned long current)
 	const bool vtvc0en = MCHBAR32(VTVC0BAR) & 0x1;
 
 	/* iGFX has to be enabled; GFXVTBAR set, enabled, in 32-bit space */
-	if (igfx_dev && igfx_dev->enabled && gfxvtbar && gfxvten && !MCHBAR32(GFXVTBAR + 4)) {
+	const bool emit_igd =
+			igfx_dev && igfx_dev->enabled &&
+			gfxvtbar && gfxvten &&
+			!MCHBAR32(GFXVTBAR + 4);
 
+	/* First, add DRHD entries */
+	if (emit_igd) {
 		const unsigned long tmp = current;
 
 		current += acpi_create_dmar_drhd(current, 0, 0, gfxvtbar);
@@ -56,6 +54,21 @@ static unsigned long acpi_fill_dmar(unsigned long current)
 			current += acpi_create_dmar_ds_msi_hpet(current, 0, PCH_HPET_PCI_BUS,
 								PCH_HPET_PCI_SLOT, i);
 		acpi_dmar_drhd_fixup(tmp, current);
+	}
+
+	/* Then, add RMRR entries after all DRHD entries */
+	if (emit_igd) {
+		const unsigned long tmp = current;
+
+		const struct device *sa_dev = pcidev_on_root(0, 0);
+
+		/* Bit 0 is lock bit, not part of address */
+		const u32 tolud = pci_read_config32(sa_dev, TOLUD) & ~1;
+		const u32 bgsm  = pci_read_config32(sa_dev,  BGSM) & ~1;
+
+		current += acpi_create_dmar_rmrr(current, 0, bgsm, tolud - 1);
+		current += acpi_create_dmar_ds_pci(current, 0, 2, 0);
+		acpi_dmar_rmrr_fixup(tmp, current);
 	}
 
 	return current;

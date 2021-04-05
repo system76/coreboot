@@ -10,18 +10,17 @@
 #include <option.h>
 #include "x4x.h"
 #include <console/console.h>
-#include <romstage_handoff.h>
 
 void x4x_early_init(void)
 {
 	/* Setup MCHBAR. */
-	pci_write_config32(HOST_BRIDGE, D0F0_MCHBAR_LO, (uintptr_t)DEFAULT_MCHBAR | 1);
+	pci_write_config32(HOST_BRIDGE, D0F0_MCHBAR_LO, CONFIG_FIXED_MCHBAR_MMIO_BASE | 1);
 
 	/* Setup DMIBAR. */
-	pci_write_config32(HOST_BRIDGE, D0F0_DMIBAR_LO, (uintptr_t)DEFAULT_DMIBAR | 1);
+	pci_write_config32(HOST_BRIDGE, D0F0_DMIBAR_LO, CONFIG_FIXED_DMIBAR_MMIO_BASE | 1);
 
 	/* Setup EPBAR. */
-	pci_write_config32(HOST_BRIDGE, D0F0_EPBAR_LO, DEFAULT_EPBAR | 1);
+	pci_write_config32(HOST_BRIDGE, D0F0_EPBAR_LO, CONFIG_FIXED_EPBAR_MMIO_BASE | 1);
 
 	/* Setup HECIBAR */
 	pci_write_config32(PCI_DEV(0, 3, 0), 0x10, DEFAULT_HECIBAR);
@@ -216,14 +215,8 @@ static void init_dmi(void)
 	DMIBAR16(DMILCTL);
 }
 
-static void x4x_prepare_resume(int s3resume)
-{
-	romstage_handoff_init(s3resume);
-}
-
-void x4x_late_init(int s3resume)
+void x4x_late_init(void)
 {
 	init_egress();
 	init_dmi();
-	x4x_prepare_resume(s3resume);
 }

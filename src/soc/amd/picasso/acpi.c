@@ -7,7 +7,6 @@
 #include <string.h>
 #include <console/console.h>
 #include <acpi/acpi.h>
-#include <acpi/acpi_gnvs.h>
 #include <acpi/acpigen.h>
 #include <device/pci_ops.h>
 #include <arch/ioapic.h>
@@ -19,43 +18,27 @@
 #include <device/pci.h>
 #include <amdblocks/acpimmio.h>
 #include <amdblocks/acpi.h>
+#include <amdblocks/chip.h>
+#include <amdblocks/cpu.h>
+#include <amdblocks/ioapic.h>
 #include <soc/acpi.h>
 #include <soc/pci_devs.h>
-#include <soc/cpu.h>
 #include <soc/msr.h>
 #include <soc/southbridge.h>
-#include <soc/nvs.h>
 #include <soc/gpio.h>
 #include <version.h>
 #include "chip.h"
 
-unsigned long acpi_fill_mcfg(unsigned long current)
-{
-
-	current += acpi_create_mcfg_mmconfig((acpi_mcfg_mmconfig_t *)current,
-					     CONFIG_MMCONF_BASE_ADDRESS,
-					     0,
-					     0,
-					     CONFIG_MMCONF_BUS_NUMBER - 1);
-
-	return current;
-}
-
 unsigned long acpi_fill_madt(unsigned long current)
 {
-	const struct soc_amd_picasso_config *cfg = config_of_soc();
-	unsigned int i;
-	uint8_t irq;
-	uint8_t flags;
-
 	/* create all subtables for processors */
 	current = acpi_create_madt_lapics(current);
 
 	current += acpi_create_madt_ioapic((acpi_madt_ioapic_t *)current,
-			CONFIG_PICASSO_FCH_IOAPIC_ID, IO_APIC_ADDR, 0);
+			FCH_IOAPIC_ID, IO_APIC_ADDR, 0);
 
 	current += acpi_create_madt_ioapic((acpi_madt_ioapic_t *)current,
-			CONFIG_PICASSO_GNB_IOAPIC_ID, GNB_IO_APIC_ADDR, IO_APIC_INTERRUPTS);
+			GNB_IOAPIC_ID, GNB_IO_APIC_ADDR, IO_APIC_INTERRUPTS);
 
 	/* 0: mean bus 0--->ISA */
 	/* 0: PIC 0 */
@@ -67,16 +50,7 @@ unsigned long acpi_fill_madt(unsigned long current)
 		(acpi_madt_irqoverride_t *)current, 0, 9, 9,
 		MP_IRQ_TRIGGER_LEVEL | MP_IRQ_POLARITY_LOW);
 
-	for (i = 0; i < ARRAY_SIZE(cfg->irq_override); ++i) {
-		irq = cfg->irq_override[i].irq;
-		flags = cfg->irq_override[i].flags;
-
-		if (!flags)
-			continue;
-
-		current += acpi_create_madt_irqoverride((acpi_madt_irqoverride_t *)current, 0,
-							irq, irq, flags);
-	}
+	current = acpi_fill_madt_irqoverride(current);
 
 	/* create all subtables for processors */
 	current += acpi_create_madt_lapic_nmi((acpi_madt_lapic_nmi_t *)current,
@@ -92,9 +66,9 @@ unsigned long acpi_fill_madt(unsigned long current)
  */
 void acpi_fill_fadt(acpi_fadt_t *fadt)
 {
-	const struct soc_amd_picasso_config *cfg = config_of_soc();
+	const struct soc_amd_common_config *cfg = soc_get_common_config();
 
-	printk(BIOS_DEBUG, "pm_base: 0x%04x\n", PICASSO_ACPI_IO_BASE);
+	printk(BIOS_DEBUG, "pm_base: 0x%04x\n", ACPI_IO_BASE);
 
 	fadt->sci_int = 9;		/* IRQ 09 - ACPI SCI */
 
@@ -380,27 +354,14 @@ void generate_cpu_entries(const struct device *device)
 
 		acpigen_write_CST_package(cstate_info, ARRAY_SIZE(cstate_info));
 
-		acpigen_write_CSD_package(cpu >> 1, threads_per_core, HW_ALL, 0);
+		acpigen_write_CSD_package(cpu >> 1, threads_per_core, CSD_HW_ALL, 0);
 
 		acpigen_pop_len();
 	}
-}
 
-unsigned long southbridge_write_acpi_tables(const struct device *device,
-		unsigned long current,
-		struct acpi_rsdp *rsdp)
-{
-	return acpi_write_hpet(device, current, rsdp);
-}
-
-void soc_fill_gnvs(struct global_nvs *gnvs)
-{
-	/* Set unknown wake source */
-	gnvs->pm1i = ~0ULL;
-	gnvs->gpei = ~0ULL;
-
-	/* CPU core count */
-	gnvs->pcnt = dev_count_cpu();
+	acpigen_write_scope("\\");
+	acpigen_write_name_integer("PCNT", logical_cores);
+	acpigen_pop_len();
 }
 
 static int acpigen_soc_gpio_op(const char *op, unsigned int gpio_num)

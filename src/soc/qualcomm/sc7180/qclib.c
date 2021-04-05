@@ -2,8 +2,7 @@
 
 #include <cbfs.h>
 #include <fmap.h>
-#include <console/console.h>
-#include <soc/symbols.h>
+#include <soc/symbols_common.h>
 #include <soc/qclib_common.h>
 
 int qclib_soc_blob_load(void)

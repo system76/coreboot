@@ -11,6 +11,7 @@ DefinitionBlock(
 	0x20181220
 	)
 {
+	#include <acpi/dsdt_top.asl>
 	#include "acpi/platform.asl"
 	#include <southbridge/intel/common/acpi/platform.asl>
 	#include <southbridge/intel/lynxpoint/acpi/globalnvs.asl>
@@ -21,6 +22,5 @@ DefinitionBlock(
 	{
 		#include <northbridge/intel/haswell/acpi/hostbridge.asl>
 		#include <southbridge/intel/lynxpoint/acpi/pch.asl>
-		#include <drivers/intel/gma/acpi/default_brightness_levels.asl>
 	}
 }

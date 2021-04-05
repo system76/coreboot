@@ -162,7 +162,7 @@ Contents:
 
 * [Getting Started](getting_started/index.md)
 * [Tutorial](tutorial/index.md)
-* [Coding Style](coding_style.md)
+* [Coding Style](contributing/coding_style.md)
 * [Project Ideas](contributing/project_ideas.md)
 * [Documentation Ideas](contributing/documentation_ideas.md)
 * [Code of Conduct](community/code_of_conduct.md)
@@ -187,5 +187,6 @@ Contents:
 * [SuperIO](superio/index.md)
 * [Vendorcode](vendorcode/index.md)
 * [Utilities](util.md)
+* [coreboot infrastructure](infrastructure/index.md)
 * [Release notes for past releases](releases/index.md)
 * [Flashing firmware tutorial](flash_tutorial/index.md)

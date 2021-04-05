@@ -10,6 +10,7 @@ DefinitionBlock(
 	0x20110725	/* OEM revision */
 )
 {
+	#include <acpi/dsdt_top.asl>
 	#include <soc/intel/common/block/acpi/acpi/platform.asl>
 	#include <soc/intel/common/block/acpi/acpi/globalnvs.asl>
 	#include <cpu/intel/common/acpi/cpu.asl>
@@ -22,5 +23,5 @@ DefinitionBlock(
 
 	#include <southbridge/intel/common/acpi/sleepstates.asl>
 
-	#include "acpi/mainboard.asl"
+	#include <variant/acpi/variant.asl>
 }

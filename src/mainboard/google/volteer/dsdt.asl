@@ -13,6 +13,7 @@ DefinitionBlock(
 	0x20110725	// OEM revision
 )
 {
+	#include <acpi/dsdt_top.asl>
 	#include <soc/intel/common/block/acpi/acpi/platform.asl>
 
 	// global NVS and variables
@@ -34,9 +35,6 @@ DefinitionBlock(
 		/* Mainboard hooks */
 		#include "mainboard.asl"
 	}
-
-	// Chrome OS specific
-	#include <vendorcode/google/chromeos/acpi/chromeos.asl>
 
 	// Chrome OS Embedded Controller
 	Scope (\_SB.PCI0.LPCB)

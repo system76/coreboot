@@ -47,19 +47,12 @@
 #define CPUID_ELKHARTLAKE_B0	0x90661
 #define CPUID_ALDERLAKE_S_A0	0x90670
 #define CPUID_ALDERLAKE_P_A0	0x906a0
+#define CPUID_ALDERLAKE_M_A0	0x906a1
 /*
  * MP Init callback function to Find CPU Topology. This function is common
  * among all SOCs and thus its in Common CPU block.
  */
 int get_cpu_count(void);
-
-/*
- * Function to get the microcode patch pointer. Use this function to avoid
- * reading the microcode patch from the boot media. init_cpus() would
- * initialize microcode_patch global variable to point to microcode patch
- * in boot media and this function can be used to access the pointer.
- */
-const void *intel_mp_current_microcode(void);
 
 /*
  * MP Init callback function(get_microcode_info) to find the Microcode at

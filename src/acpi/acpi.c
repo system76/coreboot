@@ -23,6 +23,7 @@
 #include <commonlib/helpers.h>
 #include <cpu/cpu.h>
 #include <cbfs.h>
+#include <types.h>
 #include <version.h>
 #include <commonlib/sort.h>
 
@@ -637,6 +638,21 @@ unsigned long acpi_create_dmar_andd(unsigned long current, u8 device_number,
 	return andd->length;
 }
 
+unsigned long acpi_create_dmar_satc(unsigned long current, u8 flags,
+	u16 segment, const char *device_scope)
+{
+	dmar_satc_entry_t *satc = (dmar_satc_entry_t *)current;
+	int satc_len = sizeof(dmar_satc_entry_t) + strlen(device_scope) + 1;
+	memset(satc, 0, satc_len);
+	satc->type = DMAR_SATC;
+	satc->length = satc_len;
+	satc->flags = flags;
+	satc->segment_number = segment;
+	memcpy(&satc->device_scope, device_scope, strlen(device_scope));
+
+	return satc->length;
+}
+
 void acpi_dmar_drhd_fixup(unsigned long base, unsigned long current)
 {
 	dmar_entry_t *drhd = (dmar_entry_t *)base;
@@ -653,6 +669,12 @@ void acpi_dmar_atsr_fixup(unsigned long base, unsigned long current)
 {
 	dmar_atsr_entry_t *atsr = (dmar_atsr_entry_t *)base;
 	atsr->length = current - base;
+}
+
+void acpi_dmar_satc_fixup(unsigned long base, unsigned long current)
+{
+	dmar_satc_entry_t *satc = (dmar_satc_entry_t *)base;
+	satc->length = current - base;
 }
 
 static unsigned long acpi_create_dmar_ds(unsigned long current,
@@ -1331,6 +1353,14 @@ unsigned long acpi_create_lpi_desc_ncst(acpi_lpi_desc_ncst_t *lpi_desc, uint16_t
 	return lpi_desc->header.length;
 }
 
+/* BERT helpers */
+bool __weak acpi_is_boot_error_src_present(void)
+{
+	return false;
+}
+
+__weak void acpi_soc_fill_bert(acpi_bert_t *bert, void **region, size_t *length) {}
+
 unsigned long __weak fw_cfg_acpi_tables(unsigned long start)
 {
 	return 0;
@@ -1352,6 +1382,7 @@ unsigned long write_acpi_tables(unsigned long start)
 	acpi_tpm2_t *tpm2;
 	acpi_madt_t *madt;
 	acpi_lpit_t *lpit;
+	acpi_bert_t *bert;
 	struct device *dev;
 	unsigned long fw;
 	size_t slic_size, dsdt_size;
@@ -1473,7 +1504,8 @@ unsigned long write_acpi_tables(unsigned long start)
 
 		acpigen_set_current((char *) current);
 
-		acpi_fill_gnvs();
+		if (CONFIG(ACPI_SOC_NVS))
+			acpi_fill_gnvs();
 
 		for (dev = all_devices; dev; dev = dev->next)
 			if (dev->ops && dev->ops->acpi_inject_dsdt)
@@ -1571,6 +1603,20 @@ unsigned long write_acpi_tables(unsigned long start)
 	}
 
 	current = acpi_align_current(current);
+
+	if (acpi_is_boot_error_src_present()) {
+		void *region;
+		size_t size;
+		printk(BIOS_DEBUG, "ACPI:    * BERT\n");
+		bert = (acpi_bert_t *) current;
+		acpi_soc_fill_bert(bert, &region, &size);
+		acpi_write_bert(bert, (uintptr_t)region, size);
+		if (bert->header.length >= sizeof(acpi_bert_t)) {
+			current += bert->header.length;
+			acpi_add_table(rsdp, bert);
+		}
+		current = acpi_align_current(current);
+	}
 
 	printk(BIOS_DEBUG, "current = %lx\n", current);
 

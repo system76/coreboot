@@ -2,6 +2,7 @@
 
 #include "pci_xhci.h"
 #include <acpi/acpigen.h>
+#include <acpi/acpigen_pci.h>
 #include <console/console.h>
 #include <device/pci.h>
 #include <device/pci_ids.h>
@@ -255,6 +256,7 @@ static const unsigned short amd_pci_device_ids[] = {
 	PCI_DEVICE_ID_AMD_FAM17H_MODEL18H_XHCI0,
 	PCI_DEVICE_ID_AMD_FAM17H_MODEL18H_XHCI1,
 	PCI_DEVICE_ID_AMD_FAM17H_MODEL20H_XHCI0,
+	PCI_DEVICE_ID_AMD_FAM17H_MODEL60H_XHCI,
 	0
 };
 

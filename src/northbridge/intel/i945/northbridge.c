@@ -12,38 +12,6 @@
 #include <cpu/intel/smm_reloc.h>
 #include "i945.h"
 
-int decode_pcie_bar(u32 *const base, u32 *const len)
-{
-	*base = 0;
-	*len = 0;
-
-	struct device *dev = pcidev_on_root(0, 0);
-	if (!dev)
-		return 0;
-
-	const u32 pciexbar_reg = pci_read_config32(dev, PCIEXBAR);
-
-	if (!(pciexbar_reg & (1 << 0)))
-		return 0;
-
-	switch ((pciexbar_reg >> 1) & 3) {
-	case 0: /* 256MB */
-		*base = pciexbar_reg & (0x0f << 28);
-		*len = 256 * MiB;
-		return 1;
-	case 1: /* 128M */
-		*base = pciexbar_reg & (0x1f << 27);
-		*len = 128 * MiB;
-		return 1;
-	case 2: /* 64M */
-		*base = pciexbar_reg & (0x3f << 26);
-		*len = 64 * MiB;
-		return 1;
-	}
-
-	return 0;
-}
-
 static void mch_domain_read_resources(struct device *dev)
 {
 	uint32_t pci_tolm, tseg_sizek, cbmem_topk, delta_cbmem;
@@ -74,7 +42,7 @@ static void mch_domain_read_resources(struct device *dev)
 		printk(BIOS_DEBUG, "IGD decoded, subtracting ");
 		int uma_size = decode_igd_memory_size((reg16 >> 4) & 7);
 
-		printk(BIOS_DEBUG, "%dM UMA\n", uma_size >> 10);
+		printk(BIOS_DEBUG, "%dM UMA\n", uma_size / KiB);
 		tomk_stolen -= uma_size;
 
 		/* For reserving UMA memory in the memory map */
@@ -85,15 +53,15 @@ static void mch_domain_read_resources(struct device *dev)
 		       (unsigned int)uma_memory_base);
 	}
 
-	tseg_sizek = decode_tseg_size(pci_read_config8(d0f0, ESMRAMC)) >> 10;
-	printk(BIOS_DEBUG, "TSEG decoded, subtracting %dM\n", tseg_sizek >> 10);
+	tseg_sizek = decode_tseg_size(pci_read_config8(d0f0, ESMRAMC)) / KiB;
+	printk(BIOS_DEBUG, "TSEG decoded, subtracting %dM\n", tseg_sizek / KiB);
 	tomk_stolen -= tseg_sizek;
 	tseg_memory_base = tomk_stolen * 1024ULL;
 	tseg_memory_size = tseg_sizek * 1024ULL;
 
 	/* cbmem_top can be shifted downwards due to alignment.
 	   Mark the region between cbmem_top and tomk as unusable */
-	cbmem_topk = ((uint32_t)cbmem_top() >> 10);
+	cbmem_topk = ((uint32_t)cbmem_top() / KiB);
 	delta_cbmem = tomk_stolen - cbmem_topk;
 	tomk_stolen -= delta_cbmem;
 
@@ -103,16 +71,18 @@ static void mch_domain_read_resources(struct device *dev)
 	 * number is always 0
 	 */
 	printk(BIOS_INFO, "Available memory: %dK", (uint32_t)tomk_stolen);
-	printk(BIOS_INFO, " (%dM)\n", (uint32_t)(tomk_stolen >> 10));
+	printk(BIOS_INFO, " (%dM)\n", (uint32_t)(tomk_stolen / KiB));
 
 	/* Report the memory regions */
-	ram_resource(dev, 3, 0, 640);
-	ram_resource(dev, 4, 768, (tomk - 768));
-	uma_resource(dev, 5, uma_memory_base >> 10, uma_memory_size >> 10);
-	mmio_resource(dev, 6, tseg_memory_base >> 10, tseg_memory_size >> 10);
+	ram_resource(dev, 3, 0, 0xa0000 / KiB);
+	ram_resource(dev, 4, 1 * MiB / KiB, (tomk - 1 * MiB / KiB));
+	uma_resource(dev, 5, uma_memory_base / KiB, uma_memory_size / KiB);
+	mmio_resource(dev, 6, tseg_memory_base / KiB, tseg_memory_size / KiB);
 	uma_resource(dev, 7, cbmem_topk, delta_cbmem);
 	/* legacy VGA memory */
-	mmio_resource(dev, 8, 640, 768 - 640);
+	mmio_resource(dev, 8, 0xa0000 / KiB, (0xc0000 - 0xa0000) / KiB);
+	/* RAM to be used for option roms and BIOS */
+	reserved_ram_resource(dev, 9, 0xc0000 / KiB, (1 * MiB - 0xc0000) / KiB);
 }
 
 static void mch_domain_set_resources(struct device *dev)
@@ -151,9 +121,6 @@ void northbridge_write_smram(u8 smram)
 	pci_write_config8(dev, SMRAM, smram);
 }
 
-	/* TODO We could determine how many PCIe busses we need in
-	 * the bar. For now that number is hardcoded to a max of 64.
-	 */
 static struct device_operations pci_domain_ops = {
 	.read_resources   = mch_domain_read_resources,
 	.set_resources    = mch_domain_set_resources,
@@ -163,15 +130,9 @@ static struct device_operations pci_domain_ops = {
 
 static void mc_read_resources(struct device *dev)
 {
-	u32 pcie_config_base, pcie_config_len;
-
 	pci_dev_read_resources(dev);
 
-	if (decode_pcie_bar(&pcie_config_base, &pcie_config_len)) {
-		const int buses = pcie_config_len / MiB;
-		struct resource *resource = new_resource(dev, PCIEXBAR);
-		mmconf_resource_init(resource, pcie_config_base, buses);
-	}
+	mmconf_resource(dev, PCIEXBAR);
 }
 
 static struct device_operations mc_ops = {

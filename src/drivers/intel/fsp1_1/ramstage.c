@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
 #include <bootmode.h>
+#include <bootsplash.h>
 #include <acpi/acpi.h>
 #include <console/console.h>
 #include <fsp/ramstage.h>
@@ -50,7 +51,7 @@ static void display_hob_info(FSP_INFO_HEADER *fsp_info_header)
 	}
 }
 
-void fsp_run_silicon_init(FSP_INFO_HEADER *fsp_info_header, int is_s3_wakeup)
+static void fsp_run_silicon_init(FSP_INFO_HEADER *fsp_info_header)
 {
 	FSP_SILICON_INIT fsp_silicon_init;
 	SILICON_INIT_UPD *original_params;
@@ -58,7 +59,6 @@ void fsp_run_silicon_init(FSP_INFO_HEADER *fsp_info_header, int is_s3_wakeup)
 	EFI_STATUS status;
 	UPD_DATA_REGION *upd_ptr;
 	VPD_DATA_REGION *vpd_ptr;
-	const struct cbmem_entry *logo_entry = NULL;
 
 	/* Display the FSP header */
 	if (fsp_info_header == NULL) {
@@ -82,11 +82,12 @@ void fsp_run_silicon_init(FSP_INFO_HEADER *fsp_info_header, int is_s3_wakeup)
 
 	/* Locate VBT and pass to FSP GOP */
 	if (CONFIG(RUN_FSP_GOP))
-		load_vbt(is_s3_wakeup, &silicon_init_params);
+		load_vbt(&silicon_init_params);
 	mainboard_silicon_init_params(&silicon_init_params);
 
-	if (CONFIG(FSP1_1_DISPLAY_LOGO) && !is_s3_wakeup)
-		logo_entry = soc_load_logo(&silicon_init_params);
+	if (CONFIG(BMP_LOGO))
+		bmp_load_logo(&silicon_init_params.PcdLogoPtr,
+			      &silicon_init_params.PcdLogoSize);
 
 	/* Display the UPD data */
 	if (CONFIG(DISPLAY_UPD_DATA))
@@ -106,8 +107,8 @@ void fsp_run_silicon_init(FSP_INFO_HEADER *fsp_info_header, int is_s3_wakeup)
 	printk(BIOS_DEBUG, "FspSiliconInit returned 0x%08x\n", status);
 
 	/* The logo_entry can be freed up now as it is not required any longer */
-	if (logo_entry && !is_s3_wakeup)
-		cbmem_entry_remove(logo_entry);
+	if (CONFIG(BMP_LOGO))
+		bmp_release_logo();
 
 	/* Mark graphics init done after SiliconInit if VBT was provided */
 #if CONFIG(RUN_FSP_GOP)
@@ -143,63 +144,27 @@ void fsp_run_silicon_init(FSP_INFO_HEADER *fsp_info_header, int is_s3_wakeup)
 	soc_after_silicon_init();
 }
 
-static void fsp_cache_save(struct prog *fsp)
+static void fsp_load(void)
 {
-	if (CONFIG(NO_STAGE_CACHE))
-		return;
-
-	printk(BIOS_DEBUG, "FSP: Saving binary in cache\n");
-
-	if (prog_entry(fsp) == NULL) {
-		printk(BIOS_ERR, "ERROR: No FSP to save in cache.\n");
-		return;
-	}
-
-	stage_cache_add(STAGE_REFCODE, fsp);
-}
-
-static int fsp_find_and_relocate(struct prog *fsp)
-{
-	if (prog_locate(fsp)) {
-		printk(BIOS_ERR, "ERROR: Couldn't find %s\n", prog_name(fsp));
-		return -1;
-	}
-
-	if (fsp_relocate(fsp, prog_rdev(fsp))) {
-		printk(BIOS_ERR, "ERROR: FSP relocation failed.\n");
-		return -1;
-	}
-
-	return 0;
-}
-
-void fsp_load(void)
-{
-	static int load_done;
 	struct prog fsp = PROG_INIT(PROG_REFCODE, "fsp.bin");
-	int is_s3_wakeup = acpi_is_wakeup_s3();
 
-	if (load_done)
-		return;
-
-	if (is_s3_wakeup && !CONFIG(NO_STAGE_CACHE)) {
-		printk(BIOS_DEBUG, "FSP: Loading binary from cache\n");
+	if (resume_from_stage_cache()) {
 		stage_cache_load_stage(STAGE_REFCODE, &fsp);
 	} else {
-		fsp_find_and_relocate(&fsp);
-		fsp_cache_save(&fsp);
+		fsp_relocate(&fsp);
+
+		if (prog_entry(&fsp))
+			stage_cache_add(STAGE_REFCODE, &fsp);
 	}
 
 	/* FSP_INFO_HEADER is set as the program entry. */
 	fsp_update_fih(prog_entry(&fsp));
-
-	load_done = 1;
 }
 
 void intel_silicon_init(void)
 {
 	fsp_load();
-	fsp_run_silicon_init(fsp_get_fih(), acpi_is_wakeup_s3());
+	fsp_run_silicon_init(fsp_get_fih());
 }
 
 /* Initialize the UPD parameters for SiliconInit */

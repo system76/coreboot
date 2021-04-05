@@ -13,6 +13,7 @@ DefinitionBlock (
 	0x00010001	/* OEM Revision */
 	)
 {	/* Start of ASL file */
+	#include <acpi/dsdt_top.asl>
 
 	/* global NVS and variables */
 	#include <globalnvs.asl>
@@ -27,7 +28,7 @@ DefinitionBlock (
 	#include <cpu.asl>
 
 	/* Contains the supported sleep states for this chipset */
-	#include <sleepstates.asl>
+	#include <soc/amd/common/acpi/sleepstates.asl>
 
 	/* Contains the Sleep methods (WAK, PTS, GTS, etc.) */
 	#include <variant/acpi/sleep.asl>
@@ -50,9 +51,6 @@ DefinitionBlock (
 
 	/* Thermal handler */
 	#include <variant/acpi/thermal.asl>
-
-	/* Chrome OS specific */
-	#include <vendorcode/google/chromeos/acpi/chromeos.asl>
 
 	/* Chrome OS Embedded Controller */
 	Scope (\_SB.PCI0.LPCB)

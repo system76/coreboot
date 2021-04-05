@@ -15,11 +15,20 @@
  * newer SoCs, but not for the generations with separate FCH or Kabini.
  */
 #define PM_DECODE_EN			0x00
+#define   HPET_MSI_EN			(1 << 29)
+#define   HPET_WIDTH_SEL		(1 << 28) /* 0=32bit, 1=64bit */
 #define   SMBUS_ASF_IO_BASE_SHIFT	8
 #define   SMBUS_ASF_IO_BASE_MASK	(0xff << SMBUS_ASF_IO_BASE_SHIFT)
+#define   HPET_EN			(1 << 6) /* decode HPET MMIO at 0xfed00000 */
+#define   FCH_IOAPIC_EN			(1 << 5)
 #define   SMBUS_ASF_IO_EN		(1 << 4)
+#define   LEGACY_DMA_IO_80_EN		(1 << 3) /* pass 0x80-0x83 to legacy DMA IO range */
+#define   LEGACY_DMA_IO_EN		(1 << 2)
 #define   CF9_IO_EN			(1 << 1)
 #define   LEGACY_IO_EN			(1 << 0)
+#define PM_RST_CTRL1			0xbe
+#define   SLPTYPE_CONTROL_EN		(1 << 5)
+#define   KBRSTEN			(1 << 4)
 #define PM_RST_STATUS			0xc0
 
 /*
@@ -61,8 +70,6 @@ extern uint8_t *MAYBE_CONST acpimmio_iomux;
 extern uint8_t *MAYBE_CONST acpimmio_misc;
 extern uint8_t *MAYBE_CONST acpimmio_dpvga;
 extern uint8_t *MAYBE_CONST acpimmio_gpio0;
-extern uint8_t *MAYBE_CONST acpimmio_gpio1;
-extern uint8_t *MAYBE_CONST acpimmio_gpio2;
 extern uint8_t *MAYBE_CONST acpimmio_xhci_pm;
 extern uint8_t *MAYBE_CONST acpimmio_acdc_tmr;
 extern uint8_t *MAYBE_CONST acpimmio_aoac;
@@ -76,7 +83,11 @@ void enable_acpimmio_decode_pm24(void);
 void enable_acpimmio_decode_pm04(void);
 void fch_enable_cf9_io(void);
 void fch_enable_legacy_io(void);
+void fch_disable_legacy_dma_io(void);
 void fch_io_enable_legacy_io(void);
+void fch_enable_ioapic_decode(void);
+void fch_configure_hpet(void);
+void fch_disable_kb_rst(void);
 
 /* Access PM registers using IO cycles */
 uint8_t pm_io_read8(uint8_t reg);
@@ -307,29 +318,9 @@ static inline uint8_t gpio_100_read8(uint8_t reg)
 	return read8(acpimmio_gpio_100 + reg);
 }
 
-static inline uint16_t gpio_100_read16(uint8_t reg)
-{
-	return read16(acpimmio_gpio_100 + reg);
-}
-
-static inline uint32_t gpio_100_read32(uint8_t reg)
-{
-	return read32(acpimmio_gpio_100 + reg);
-}
-
 static inline void gpio_100_write8(uint8_t reg, uint8_t value)
 {
 	write8(acpimmio_gpio_100 + reg, value);
-}
-
-static inline void gpio_100_write16(uint8_t reg, uint16_t value)
-{
-	write16(acpimmio_gpio_100 + reg, value);
-}
-
-static inline void gpio_100_write32(uint8_t reg, uint32_t value)
-{
-	write32(acpimmio_gpio_100 + reg, value);
 }
 
 /* New GPIO banks configuration registers */
@@ -347,99 +338,6 @@ static inline uint32_t gpio_read32(uint8_t gpio_num)
 static inline void gpio_write32(uint8_t gpio_num, uint32_t value)
 {
 	write32(gpio_ctrl_ptr(gpio_num), value);
-}
-
-/* GPIO bank 0 */
-static inline uint8_t gpio0_read8(uint8_t reg)
-{
-	return read8(acpimmio_gpio0 + reg);
-}
-
-static inline uint16_t gpio0_read16(uint8_t reg)
-{
-	return read16(acpimmio_gpio0 + reg);
-}
-
-static inline uint32_t gpio0_read32(uint8_t reg)
-{
-	return read32(acpimmio_gpio0 + reg);
-}
-
-static inline void gpio0_write8(uint8_t reg, uint8_t value)
-{
-	write8(acpimmio_gpio0 + reg, value);
-}
-
-static inline void gpio0_write16(uint8_t reg, uint16_t value)
-{
-	write16(acpimmio_gpio0 + reg, value);
-}
-
-static inline void gpio0_write32(uint8_t reg, uint32_t value)
-{
-	write32(acpimmio_gpio0 + reg, value);
-}
-
-/* GPIO bank 1 */
-static inline uint8_t gpio1_read8(uint8_t reg)
-{
-	return read8(acpimmio_gpio1 + reg);
-}
-
-static inline uint16_t gpio1_read16(uint8_t reg)
-{
-	return read16(acpimmio_gpio1 + reg);
-}
-
-static inline uint32_t gpio1_read32(uint8_t reg)
-{
-	return read32(acpimmio_gpio1 + reg);
-}
-
-static inline void gpio1_write8(uint8_t reg, uint8_t value)
-{
-	write8(acpimmio_gpio1 + reg, value);
-}
-
-static inline void gpio1_write16(uint8_t reg, uint16_t value)
-{
-	write16(acpimmio_gpio1 + reg, value);
-}
-
-static inline void gpio1_write32(uint8_t reg, uint32_t value)
-{
-	write32(acpimmio_gpio1 + reg, value);
-}
-
-/* GPIO bank 2 */
-static inline uint8_t gpio2_read8(uint8_t reg)
-{
-	return read8(acpimmio_gpio2 + reg);
-}
-
-static inline uint16_t gpio2_read16(uint8_t reg)
-{
-	return read16(acpimmio_gpio2 + reg);
-}
-
-static inline uint32_t gpio2_read32(uint8_t reg)
-{
-	return read32(acpimmio_gpio2 + reg);
-}
-
-static inline void gpio2_write8(uint8_t reg, uint8_t value)
-{
-	write8(acpimmio_gpio2 + reg, value);
-}
-
-static inline void gpio2_write16(uint8_t reg, uint16_t value)
-{
-	write16(acpimmio_gpio2 + reg, value);
-}
-
-static inline void gpio2_write32(uint8_t reg, uint32_t value)
-{
-	write32(acpimmio_gpio2 + reg, value);
 }
 
 static inline uint8_t xhci_pm_read8(uint8_t reg)

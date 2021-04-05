@@ -10,6 +10,7 @@ DefinitionBlock(
 	0x20110725	// OEM revision
 )
 {
+	#include <acpi/dsdt_top.asl>
 	#include <soc/intel/broadwell/acpi/platform.asl>
 
 	// Thermal handler
@@ -29,9 +30,6 @@ DefinitionBlock(
 			#include <drivers/intel/gma/acpi/default_brightness_levels.asl>
 		}
 	}
-
-	// Chrome OS specific
-	#include <vendorcode/google/chromeos/acpi/chromeos.asl>
 
 	#include <southbridge/intel/common/acpi/sleepstates.asl>
 

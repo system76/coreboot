@@ -249,9 +249,13 @@ static const struct mp_ops mp_ops_no_smm = {
 	.get_cpu_count = fw_cfg_max_cpus,
 };
 
+extern const struct mp_ops mp_ops_with_smm;
+
 void mp_init_cpus(struct bus *cpu_bus)
 {
-	if (mp_init_with_smm(cpu_bus, &mp_ops_no_smm))
+	const struct mp_ops *ops = CONFIG(SMM_TSEG) ? &mp_ops_with_smm : &mp_ops_no_smm;
+
+	if (mp_init_with_smm(cpu_bus, ops))
 		printk(BIOS_ERR, "MP initialization failure.\n");
 }
 
@@ -271,6 +275,12 @@ static void cpu_bus_scan(struct device *bus)
 
 	if (max_cpus < 0)
 		return;
+	/*
+	 * Do not install more CPUs than supported by coreboot.
+	 * This will cause a buffer overflow where fixed arrays of CONFIG_MAX_CPUS
+	 * are used and might result in a boot failure.
+	 */
+	max_cpus = MIN(max_cpus, CONFIG_MAX_CPUS);
 
 	/*
 	 * TODO: This only handles the simple "qemu -smp $nr" case

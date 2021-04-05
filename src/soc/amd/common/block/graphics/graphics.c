@@ -4,6 +4,10 @@
 #include <acpi/acpigen.h>
 #include <device/pci.h>
 #include <device/pci_ids.h>
+#include <console/console.h>
+#include <fsp/graphics.h>
+#include <soc/intel/common/vbt.h>
+#include <timestamp.h>
 
 #define ATIF_FUNCTION_VERIFY_INTERFACE 0x0
 struct atif_verify_interface_output {
@@ -72,7 +76,6 @@ static void generate_atif(const struct device *dev)
 	/* Return (Buffer (0x0C) { ... } */
 	acpigen_write_return_byte_buffer((uint8_t *)(void *)&verify_output,
 		sizeof(verify_output));
-	acpigen_pop_len(); /* if (LEqual(Local0, 0) */
 
 	/* ElseIf ((Local0 == 0x10)) */
 	acpigen_write_else();
@@ -88,7 +91,6 @@ static void generate_atif(const struct device *dev)
 	/* Return (Buffer (0x0A) { ... } */
 	acpigen_write_return_byte_buffer((uint8_t *)(void *)&brightness_out,
 		sizeof(brightness_out));
-	acpigen_pop_len(); /* if (LEqual(Local2, ATIF_QBTC_REQUEST_LCD1) */
 	/* Else */
 	acpigen_write_else();
 	/* Return (Buffer (0x0A) */
@@ -106,7 +108,11 @@ static void generate_atif(const struct device *dev)
 static void graphics_fill_ssdt(const struct device *dev)
 {
 	acpi_device_write_pci_dev(dev);
-	pci_rom_ssdt(dev);
+
+	/* Use the VFCT copy when using GOP */
+	if (!CONFIG(RUN_FSP_GOP))
+		pci_rom_ssdt(dev);
+
 	if (CONFIG(SOC_AMD_COMMON_BLOCK_GRAPHICS_ATIF))
 		generate_atif(dev);
 }
@@ -116,11 +122,56 @@ static const char *graphics_acpi_name(const struct device *dev)
 	return "IGFX";
 }
 
+/*
+ * Even though AMD does not need VBT we still need to implement the
+ * vbt_get() function to not break the build with GOP driver enabled
+ * (see fsps_return_value_handler() in fsp2_0/silicon_init.c
+ */
+void *vbt_get(void)
+{
+	return NULL;
+}
+
+static void graphics_set_resources(struct device *const dev)
+{
+	struct rom_header *rom, *ram;
+
+	pci_dev_set_resources(dev);
+
+	if (!CONFIG(RUN_FSP_GOP))
+		return;
+
+	timestamp_add_now(TS_OPROM_INITIALIZE);
+	rom = pci_rom_probe(dev);
+	if (rom == NULL)
+		return;
+	ram = pci_rom_load(dev, rom);
+	if (ram == NULL)
+		return;
+	timestamp_add_now(TS_OPROM_COPY_END);
+}
+
+static void graphics_dev_init(struct device *const dev)
+{
+	if (CONFIG(RUN_FSP_GOP)) {
+		struct resource *res = probe_resource(dev, PCI_BASE_ADDRESS_0);
+
+		if (res && res->base)
+			fsp_report_framebuffer_info(res->base);
+		else
+			printk(BIOS_ERR, "%s: Unable to find resource for %s\n",
+			       __func__, dev_path(dev));
+	}
+
+	/* Initialize PCI device, load/execute BIOS Option ROM */
+	pci_dev_init(dev);
+}
+
 static const struct device_operations graphics_ops = {
 	.read_resources		= pci_dev_read_resources,
-	.set_resources		= pci_dev_set_resources,
+	.set_resources		= graphics_set_resources,
 	.enable_resources	= pci_dev_enable_resources,
-	.init			= pci_dev_init,
+	.init			= graphics_dev_init,
 	.ops_pci		= &pci_dev_ops_pci,
 	.write_acpi_tables	= pci_rom_write_acpi_tables,
 	.acpi_fill_ssdt		= graphics_fill_ssdt,
@@ -129,6 +180,7 @@ static const struct device_operations graphics_ops = {
 
 static const unsigned short pci_device_ids[] = {
 	PCI_DEVICE_ID_ATI_FAM17H_MODEL18H_GPU,
+	PCI_DEVICE_ID_ATI_FAM19H_MODEL51H_GPU,
 	0,
 };
 

@@ -725,6 +725,11 @@ static const struct pad_config gpio_table[] = {
 	/* SMB_DATA - SMB_DATA */
 	PAD_CFG_NF_IOSTANDBY_IGNORE(SMB_DATA, UP_20K, DEEP, NF1),
 
+	/*
+	 * LPC
+	 * Note: It's unconfirmed if this redundancy to the bootblock table is necessary.
+	 */
+
 	/* LPC_ILB_SERIRQ - LPC_ILB_SERIRQ */
 	PAD_CFG_NF_IOSTANDBY_IGNORE(LPC_ILB_SERIRQ, UP_20K, DEEP, NF1),
 
@@ -751,6 +756,25 @@ static const struct pad_config gpio_table[] = {
 
 	/* LPC_FRAMEB - LPC_FRAMEB */
 	PAD_CFG_NF_IOSSTATE_IOSTERM(LPC_FRAMEB, UP_20K, DEEP, NF1, HIZCRx1, DISPUPD),
+
+	/*  ------- GPIO Group North ------- */
+
+	/*
+	 * LPSS UART
+	 * Note: It's unconfirmed if this redundancy to the bootblock table is necessary.
+	 */
+
+	/* GPIO_38 - LPSS_UART0_RXD */
+	PAD_CFG_NF_IOSSTATE_IOSTERM(GPIO_38, UP_20K, DEEP, NF1, HIZCRx1, DISPUPD),
+
+	/* GPIO_39 - LPSS_UART0_TXD */
+	PAD_CFG_NF_IOSSTATE_IOSTERM(GPIO_39, UP_20K, DEEP, NF1, TxLASTRxE, DISPUPD),
+
+	/* GPIO_42 - LPSS_UART1_RXD */
+	PAD_CFG_NF_IOSSTATE_IOSTERM(GPIO_42, UP_20K, DEEP, NF1, HIZCRx1, DISPUPD),
+
+	/* GPIO_43 - LPSS_UART1_TXD */
+	PAD_CFG_NF_IOSSTATE_IOSTERM(GPIO_43, UP_20K, DEEP, NF1, HIZCRx0, DISPUPD),
 };
 
 #endif /* CFG_GPIO_H */

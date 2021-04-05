@@ -12,19 +12,18 @@
 #include <arch/io.h>
 #include <arch/ioapic.h>
 #include <acpi/acpi.h>
-#include <acpi/acpi_gnvs.h>
 #include <acpi/acpigen.h>
 #include <cpu/x86/smm.h>
 #include <string.h>
 #include "chip.h"
 #include "pch.h"
-#include "nvs.h"
 #include <northbridge/intel/sandybridge/sandybridge.h>
 #include <southbridge/intel/common/pciehp.h>
 #include <southbridge/intel/common/acpi_pirq_gen.h>
 #include <southbridge/intel/common/pmutil.h>
 #include <southbridge/intel/common/rtc.h>
 #include <southbridge/intel/common/spi.h>
+#include <types.h>
 
 #define NMI_OFF	0
 
@@ -406,13 +405,6 @@ static void pch_set_acpi_mode(void)
 	}
 }
 
-static void pch_disable_smm_only_flashing(struct device *dev)
-{
-	printk(BIOS_SPEW, "Enabling BIOS updates outside of SMM... ");
-
-	pci_and_config8(dev, BIOS_CNTL, ~(1 << 5));
-}
-
 static void pch_fixups(struct device *dev)
 {
 	/* Indicate DRAM init done for MRC S3 to know it can resume */
@@ -538,9 +530,6 @@ static void lpc_init(struct device *dev)
 		printk(BIOS_ERR, "Unknown Chipset: 0x%04x\n", dev->device);
 	}
 
-	/* Set the state of the GPIO lines. */
-	//gpio_init(dev);
-
 	/* Initialize the real time clock. */
 	sb_rtc_init();
 
@@ -558,8 +547,6 @@ static void lpc_init(struct device *dev)
 	/* The OS should do this? */
 	/* Interrupt 9 should be level triggered (SCI) */
 	i8259_configure_irq_trigger(9, 1);
-
-	pch_disable_smm_only_flashing(dev);
 
 	pch_set_acpi_mode();
 
@@ -639,23 +626,6 @@ static void pch_lpc_enable(struct device *dev)
 	RCBA32_OR(FD2, PCH_ENABLE_DBDF);
 
 	pch_enable(dev);
-}
-
-size_t gnvs_size_of_array(void)
-{
-	return sizeof(struct global_nvs);
-}
-
-void *gnvs_chromeos_ptr(struct global_nvs *gnvs)
-{
-	return &gnvs->chromeos;
-}
-
-void soc_fill_gnvs(struct global_nvs *gnvs)
-{
-	gnvs->apic = 1;
-	gnvs->mpen = 1; /* Enable Multi Processing */
-	gnvs->pcnt = dev_count_cpu();
 }
 
 static const char *lpc_acpi_name(const struct device *dev)

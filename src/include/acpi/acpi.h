@@ -49,6 +49,7 @@
 #include <device/device.h>
 #include <uuid.h>
 #include <cper.h>
+#include <romstage_handoff.h>
 #include <types.h>
 
 #define RSDP_SIG		"RSD PTR "  /* RSDT pointer signature */
@@ -409,7 +410,8 @@ enum dmar_type {
 	DMAR_RMRR = 1,
 	DMAR_ATSR = 2,
 	DMAR_RHSA = 3,
-	DMAR_ANDD = 4
+	DMAR_ANDD = 4,
+	DMAR_SATC = 5
 };
 
 enum {
@@ -464,6 +466,15 @@ typedef struct dmar_andd_entry {
 	u8 device_name[];
 } __packed dmar_andd_entry_t;
 
+typedef struct dmar_satc_entry {
+	u16 type;
+	u16 length;
+	u8 flags;
+	u8 reserved;
+	u16 segment_number;
+	u8 device_scope[];
+} __packed dmar_satc_entry_t;
+
 /* DMAR (DMA Remapping Reporting Structure) */
 typedef struct acpi_dmar {
 	acpi_header_t header;
@@ -512,6 +523,8 @@ typedef struct acpi_madt_lapic_nmi {
 	u16 flags;			/* MPS INTI flags */
 	u8 lint;			/* Local APIC LINT# */
 } __packed acpi_madt_lapic_nmi_t;
+
+#define ACPI_MADT_LAPIC_NMI_ALL_PROCESSORS 0xff
 
 /* MADT: I/O APIC Structure */
 typedef struct acpi_madt_ioapic {
@@ -1052,9 +1065,12 @@ unsigned long acpi_create_dmar_rhsa(unsigned long current, u64 base_addr,
 				    u32 proximity_domain);
 unsigned long acpi_create_dmar_andd(unsigned long current, u8 device_number,
 				    const char *device_name);
+unsigned long acpi_create_dmar_satc(unsigned long current, u8 flags,
+				    u16 segment, const char *device_scope);
 void acpi_dmar_drhd_fixup(unsigned long base, unsigned long current);
 void acpi_dmar_rmrr_fixup(unsigned long base, unsigned long current);
 void acpi_dmar_atsr_fixup(unsigned long base, unsigned long current);
+void acpi_dmar_satc_fixup(unsigned long base, unsigned long current);
 unsigned long acpi_create_dmar_ds_pci_br(unsigned long current,
 					   u8 bus, u8 dev, u8 fn);
 unsigned long acpi_create_dmar_ds_pci(unsigned long current,
@@ -1074,11 +1090,14 @@ unsigned long acpi_create_hest_error_source(acpi_hest_t *hest,
 void acpi_create_lpit(acpi_lpit_t *lpit);
 unsigned long acpi_create_lpi_desc_ncst(acpi_lpi_desc_ncst_t *lpi_desc, uint16_t uid);
 
+/* For crashlog. */
+bool acpi_is_boot_error_src_present(void);
+void acpi_soc_fill_bert(acpi_bert_t *bert, void **region, size_t *length);
+
 /* For ACPI S3 support. */
 void __noreturn acpi_resume(void *wake_vec);
 void mainboard_suspend_resume(void);
 void *acpi_find_wakeup_vector(void);
-int acpi_handoff_wakeup_s3(void);
 
 /* ACPI_Sn assignments are defined to always equal the sleep state numbers */
 enum {
@@ -1134,7 +1153,7 @@ static inline int acpi_is_wakeup_s3(void)
 	if (ENV_ROMSTAGE_OR_BEFORE)
 		return (acpi_get_sleep_type() == ACPI_S3);
 
-	return acpi_handoff_wakeup_s3();
+	return romstage_handoff_is_resume();
 }
 
 static inline uintptr_t acpi_align_current(uintptr_t current)

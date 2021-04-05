@@ -19,6 +19,17 @@ chip soc/intel/tigerlake
 	# Disable SRCCLKREQ1#
 	register "PcieClkSrcUsage[1]" = "PCIE_CLK_NOTUSED"
 
+	# Acoustic settings
+	register "AcousticNoiseMitigation" = "1"
+	register "SlowSlewRate[VR_DOMAIN_IA]" = "SLEW_FAST_8"
+	register "SlowSlewRate[VR_DOMAIN_GT]" = "SLEW_FAST_8"
+	register "SlowSlewRate[VR_DOMAIN_SA]" = "SLEW_FAST_8"
+	register "SlowSlewRate[VR_DOMAIN_VLCC]" = "SLEW_FAST_8"
+	register "FastPkgCRampDisable[VR_DOMAIN_IA]" = "1"
+	register "FastPkgCRampDisable[VR_DOMAIN_GT]" = "1"
+	register "FastPkgCRampDisable[VR_DOMAIN_SA]" = "1"
+	register "FastPkgCRampDisable[VR_DOMAIN_VLCC]" = "1"
+
 	device domain 0 on
 		device ref dptf on
 			chip drivers/intel/dptf
@@ -146,6 +157,19 @@ chip soc/intel/tigerlake
 				register "has_power_resource" = "1"
 				device i2c 39 on end
 			end
+			chip drivers/generic/gpio_keys
+				register "name" = ""PENH""
+				# GPP_B3 is the IRQ source, and GPP_E1 is the wake source
+				register "gpio" = "ACPI_GPIO_INPUT_ACTIVE_LOW(GPP_B3)"
+				register "key.wake_gpe" = "GPE0_DW2_01"
+				register "key.wakeup_route" = "WAKEUP_ROUTE_SCI"
+				register "key.wakeup_event_action" = "EV_ACT_DEASSERTED"
+				register "key.dev_name" = ""EJCT""
+				register "key.linux_code" = "SW_PEN_INSERTED"
+				register "key.linux_input_type" = "EV_SW"
+				register "key.label" = ""pen_eject""
+				device generic 0 on end
+			end
 		end
 		device ref i2c2 on
 			chip drivers/i2c/sx9310
@@ -153,29 +177,15 @@ chip soc/intel/tigerlake
 				register "irq" = "ACPI_IRQ_LEVEL_LOW(GPP_F14_IRQ)"
 				register "speed" = "I2C_SPEED_FAST"
 				register "uid" = "0"
-				register "reg_prox_ctrl0" = "0x10"
-				register "reg_prox_ctrl1" = "0x00"
-				register "reg_prox_ctrl2" = "0x84"
-				register "reg_prox_ctrl3" = "0x0e"
-				register "reg_prox_ctrl4" = "0x07"
-				register "reg_prox_ctrl5" = "0xc6"
-				register "reg_prox_ctrl6" = "0x20"
-				register "reg_prox_ctrl7" = "0x0d"
-				register "reg_prox_ctrl8" = "0x8d"
-				register "reg_prox_ctrl9" = "0x43"
-				register "reg_prox_ctrl10" = "0x1f"
-				register "reg_prox_ctrl11" = "0x00"
-				register "reg_prox_ctrl12" = "0x00"
-				register "reg_prox_ctrl13" = "0x00"
-				register "reg_prox_ctrl14" = "0x00"
-				register "reg_prox_ctrl15" = "0x00"
-				register "reg_prox_ctrl16" = "0x00"
-				register "reg_prox_ctrl17" = "0x00"
-				register "reg_prox_ctrl18" = "0x00"
-				register "reg_prox_ctrl19" = "0x00"
-				register "reg_sar_ctrl0" = "0x50"
-				register "reg_sar_ctrl1" = "0x8a"
-				register "reg_sar_ctrl2" = "0x3c"
+				register "cs0_ground" = "0x0"
+				register "combined_sensors_count" = "3"
+				register "combined_sensors[0]" = "0"
+				register "combined_sensors[1]" = "1"
+				register "combined_sensors[2]" = "2"
+				register "resolution" = "SX9310_FINEST"
+				register "avg_pos_strength" = "512"
+				register "startup_sensor" = "0"
+				register "proxraw_strength" = "0"
 				device i2c 28 on end
 			end
 		end

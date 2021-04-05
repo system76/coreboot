@@ -9,7 +9,6 @@
 #include <soc/pmif_spmi.h>
 #include <soc/pmif_sw.h>
 #include <soc/spmi.h>
-#include <string.h>
 
 #define PMIF_CMD_PER_3	(0x1 << PMIF_CMD_EXT_REG_LONG)
 #define PMIF_CMD_PER_1_3	((0x1 << PMIF_CMD_REG) | (0x1 << PMIF_CMD_EXT_REG_LONG))
@@ -62,7 +61,7 @@ static int spmi_config_master(void)
 	/* Software reset */
 	SET32_BITFIELDS(&mtk_rug->wdt_swsysrst2, SPMI_MST_RST, 1, UNLOCK_KEY, 0x85);
 
-	SET32_BITFIELDS(&mtk_topckgen->clk_cfg_15,
+	SET32_BITFIELDS(&mtk_topckgen->clk_cfg_15_clr,
 			CLK_SPMI_MST_SEL, 0x7,
 			CLK_SPMI_MST_INT, 1,
 			PDN_SPMI_MST, 1);

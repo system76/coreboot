@@ -8,8 +8,11 @@
 
 #include <device/device.h>
 #include <device/pci.h>
+#include <delay.h>
+#include <intelblocks/power_limit.h>
 #include <intelblocks/systemagent.h>
 #include <soc/iomap.h>
+#include <soc/soc_chip.h>
 #include <soc/systemagent.h>
 
 /*
@@ -21,7 +24,7 @@
 void soc_add_fixed_mmio_resources(struct device *dev, int *index)
 {
 	static const struct sa_mmio_descriptor soc_fixed_resources[] = {
-		{ PCIEXBAR, CONFIG_MMCONF_BASE_ADDRESS, CONFIG_SA_PCIEX_LENGTH,
+		{ PCIEXBAR, CONFIG_MMCONF_BASE_ADDRESS, CONFIG_MMCONF_LENGTH,
 				"PCIEXBAR" },
 		{ MCHBAR, MCH_BASE_ADDRESS, MCH_BASE_SIZE, "MCHBAR" },
 		{ DMIBAR, DMI_BASE_ADDRESS, DMI_BASE_SIZE, "DMIBAR" },
@@ -48,12 +51,20 @@ void soc_add_fixed_mmio_resources(struct device *dev, int *index)
  */
 void soc_systemagent_init(struct device *dev)
 {
+	struct soc_power_limits_config *soc_config;
+	config_t *config;
+
 	/* Enable Power Aware Interrupt Routing */
 	enable_power_aware_intr();
 
 	/* Enable BIOS Reset CPL */
 	enable_bios_reset_cpl();
-	/* TODO: Add set_power_limits() */
+
+	/* Configure turbo power limits 1ms after reset complete bit */
+	mdelay(1);
+	config = config_of_soc();
+	soc_config = &config->power_limits_config;
+	set_power_limits(MOBILE_SKU_PL1_TIME_SEC, soc_config);
 }
 
 uint32_t soc_systemagent_max_chan_capacity_mib(u8 capid0_a_ddrsz)

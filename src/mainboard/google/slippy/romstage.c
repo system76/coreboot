@@ -1,9 +1,8 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#include <stdint.h>
-#include <northbridge/intel/haswell/haswell.h>
 #include <northbridge/intel/haswell/raminit.h>
 #include <southbridge/intel/lynxpoint/pch.h>
+
 #include "variant.h"
 
 void mainboard_config_rcba(void)
@@ -41,13 +40,9 @@ void mainboard_config_rcba(void)
 	RCBA16(D23IR) = DIR_ROUTE(PIRQH, PIRQH, PIRQH, PIRQH); /* SDIO */
 }
 
-void mb_get_spd_map(uint8_t spd_map[4])
+void mb_get_spd_map(struct spd_info *spdi)
 {
-	spd_map[0] = 0xff;
-	spd_map[2] = 0xff;
-}
-
-void mainboard_fill_pei_data(struct pei_data *pei_data)
-{
-	variant_romstage_entry(pei_data);
+	spdi->spd_index = variant_get_spd_index();
+	spdi->addresses[0] = SPD_MEMORY_DOWN;
+	spdi->addresses[2] = variant_is_dual_channel(spdi->spd_index) ? SPD_MEMORY_DOWN : 0;
 }

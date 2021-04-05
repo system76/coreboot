@@ -42,6 +42,7 @@ COREBOOT_EXPORTS += MAINBOARDDIR VARIANT_DIR CARRIER_DIR
 ## rom image file, are placed under $(objcbfs).
 ## These typically have suffixes .debug .elf .bin and .map
 objcbfs := $(obj)/cbfs/$(CONFIG_CBFS_PREFIX)
+additional-dirs += $(objcbfs)
 COREBOOT_EXPORTS += objcbfs
 
 ## Based on the active configuration, Makefile conditionally collects
@@ -49,6 +50,7 @@ COREBOOT_EXPORTS += objcbfs
 ## Such files that do not have a clear one-to-one relation to a source
 ## file under src/ are placed and built under $(objgenerated)
 objgenerated := $(obj)/generated
+additional-dirs += $(objgenerated)
 COREBOOT_EXPORTS += objgenerated
 
 ## CCACHE_EXTRAFILES can be set by individual rules to help CCACHE
@@ -58,7 +60,7 @@ COREBOOT_EXPORTS += CCACHE_EXTRAFILES
 #######################################################################
 # root rule to resolve if in build mode (ie. configuration exists)
 real-target: $(obj)/config.h coreboot files_added
-coreboot: build-dirs $(obj)/coreboot.rom $(obj)/cbfstool $(obj)/rmodtool $(obj)/ifwitool
+coreboot: $(obj)/coreboot.rom $(obj)/cbfstool $(obj)/rmodtool $(obj)/ifwitool
 
 # This target can be used in site local to run scripts or additional
 # targets after the build completes by creating a Makefile.inc in the
@@ -73,7 +75,7 @@ files_added:: build_complete
 
 #######################################################################
 # our phony targets
-PHONY+= clean-abuild coreboot check-style build-dirs build_complete
+PHONY+= clean-abuild coreboot check-style build_complete
 
 #######################################################################
 # root source directories of coreboot
@@ -259,14 +261,14 @@ EMPTY_RESOURCE_TEMPLATE_WARNING = 3150
 # Redundant offset remarks are not useful in any way and are masking useful
 # ones that might indicate an issue so it is better to hide them.
 REDUNDANT_OFFSET_REMARK = 2158
-# Ignore _HID & _ADR coexisting in Intel Lynxpoint and Broadwell ASL code.
-# See cb:38803 & cb:38802
+# Ignore _HID & _ADR coexisting in Intel Lynxpoint ASL code.
+# See cb:38802
 # "Multiple types (Device object requires either a _HID or _ADR, but not both)"
 MULTIPLE_TYPES_WARNING = 3073
 
 IASL_WARNINGS_LIST = $(EMPTY_RESOURCE_TEMPLATE_WARNING) $(REDUNDANT_OFFSET_REMARK)
 
-ifeq ($(CONFIG_SOUTHBRIDGE_INTEL_LYNXPOINT)$(CONFIG_SOC_INTEL_BROADWELL),y)
+ifeq ($(CONFIG_SOUTHBRIDGE_INTEL_LYNXPOINT),y)
 IASL_WARNINGS_LIST += $(MULTIPLE_TYPES_WARNING)
 endif
 
@@ -335,7 +337,7 @@ endef
 cbfs-files-processor-struct= \
 	$(eval $(2): $(1) $(obj)/build.h $(KCONFIG_AUTOHEADER); \
 		printf "    CC+STRIP   $(1)\n"; \
-		$(CC_ramstage) -MMD $(CPPFLAGS_ramstage) $(CFLAGS_ramstage) $$(ramstage-c-ccopts) -include $(KCONFIG_AUTOHEADER) -MT $(2) -o $(2).tmp -c $(1) && \
+		$(CC_ramstage) -MMD $(CPPFLAGS_ramstage) $(CFLAGS_ramstage) --param asan-globals=0 $$(ramstage-c-ccopts) -include $(KCONFIG_AUTOHEADER) -MT $(2) -o $(2).tmp -c $(1) && \
 		$(OBJCOPY_ramstage) -O binary --set-section-flags .bss*=alloc,contents,load $(2).tmp $(2); \
 		rm -f $(2).tmp) \
 	$(eval DEPENDENCIES += $(2).d)
@@ -426,7 +428,7 @@ CFLAGS_common += -pipe -g -nostdinc -std=gnu11
 CFLAGS_common += -nostdlib -Wall -Wundef -Wstrict-prototypes -Wmissing-prototypes
 CFLAGS_common += -Wwrite-strings -Wredundant-decls -Wno-trigraphs -Wimplicit-fallthrough
 CFLAGS_common += -Wshadow -Wdate-time -Wtype-limits -Wvla
-CFLAGS_common += -Wlogical-op -Wduplicated-cond -Wdangling-else
+CFLAGS_common += -Wdangling-else
 CFLAGS_common += -fno-common -ffreestanding -fno-builtin -fomit-frame-pointer
 CFLAGS_common += -fstrict-aliasing -ffunction-sections -fdata-sections -fno-pie
 ifeq ($(CONFIG_COMPILER_GCC),y)
@@ -435,6 +437,7 @@ ifeq ($(CCC_ANALYZER_OUTPUT_FORMAT),)
 CFLAGS_common += -Wno-packed-not-aligned
 CFLAGS_common += -fconserve-stack
 CFLAGS_common += -Wnull-dereference -Wreturn-type
+CFLAGS_common += -Wlogical-op -Wduplicated-cond
 # cf. commit f69a99db (coreboot: x86: enable gc-sections)
 CFLAGS_common += -Wno-unused-but-set-variable
 endif
@@ -484,7 +487,13 @@ ADAFLAGS_common += -gnatwa.eeD.HHTU.U.W.Y
 # Disable style checks for now
 ADAFLAGS_common += -gnatyN
 
-LDFLAGS_common := --gc-sections -nostdlib -nostartfiles -static --emit-relocs
+LDFLAGS_common := --gc-sections -nostdlib -nostartfiles -static
+
+# Workaround for RISC-V linker bug, merge back into above line when fixed.
+# https://sourceware.org/bugzilla/show_bug.cgi?id=27180
+ifneq ($(CONFIG_ARCH_RISCV),y)
+LDFLAGS_common += --emit-relocs
+endif
 
 ifeq ($(CONFIG_WARNINGS_ARE_ERRORS),y)
 CFLAGS_common += -Werror
@@ -501,7 +510,7 @@ ifeq ($(CONFIG_DEBUG_ADA_CODE),y)
 ADAFLAGS_common += -gnata
 endif
 
-additional-dirs := $(objutil)/cbfstool $(objutil)/ifdtool \
+additional-dirs += $(objutil)/cbfstool $(objutil)/ifdtool \
 		   $(objutil)/options $(objutil)/amdfwtool \
 		   $(objutil)/cbootimage
 
@@ -528,9 +537,6 @@ build_h_check := \
 $(build_h): $$(shell $$(build_h_check))
 	@printf "    GEN        build.h\n"
 	mv $< $@
-
-build-dirs $(objcbfs) $(objgenerated):
-	mkdir -p $(objcbfs) $(objgenerated)
 
 $(obj)/build_info:
 	@echo 'COREBOOT_VERSION: $(call strip_quotes,$(KERNELVERSION))' > $@.tmp
@@ -763,7 +769,7 @@ $(objcbfs)/bootblock.raw.bin: $(objcbfs)/bootblock.raw.elf
 	$(OBJCOPY_bootblock) -O binary $< $@
 
 ifneq ($(CONFIG_HAVE_BOOTBLOCK),y)
-$(objcbfs)/bootblock.bin: $(objcbfs)
+$(objcbfs)/bootblock.bin:
 	dd if=/dev/zero of=$@ bs=64 count=1
 endif
 
@@ -1145,7 +1151,7 @@ RAMSTAGE=
 endif
 
 add_intermediate = \
-	$(1): $(2) | $(INTERMEDIATE) \
+	$(1): $(obj)/coreboot.pre $(2) | $(INTERMEDIATE) \
 	$(eval INTERMEDIATE+=$(1)) $(eval PHONY+=$(1))
 
 $(obj)/coreboot.rom: $(obj)/coreboot.pre $(RAMSTAGE) $(CBFSTOOL) $$(INTERMEDIATE)
@@ -1251,7 +1257,7 @@ cbfs-get-segments-cmd = $(CBFSTOOL) $(obj)/coreboot.pre print -v | sed -n \
 ramstage-symbol-addr-cmd = $(OBJDUMP_ramstage) -t $(objcbfs)/ramstage.elf | \
 	sed -n '/ $(1)$$/s/^\([0-9a-fA-F]*\) .*/0x\1/p'
 
-$(call add_intermediate, check-ramstage-overlaps, $(obj)/coreboot.pre)
+$(call add_intermediate, check-ramstage-overlaps)
 	programs=$$($(foreach file,$(check-ramstage-overlap-files), \
 		$(call cbfs-get-segments-cmd,$(file)) ; )) ; \
 	regions=$$($(foreach region,$(check-ramstage-overlap-regions), \

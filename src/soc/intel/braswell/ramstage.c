@@ -2,7 +2,7 @@
 
 #include <arch/cpu.h>
 #include <acpi/acpi.h>
-#include <cbmem.h>
+#include <acpi/acpi_pm.h>
 #include <console/console.h>
 #include <cpu/intel/microcode.h>
 #include <cpu/x86/cr.h>
@@ -10,6 +10,7 @@
 #include <device/device.h>
 #include <device/pci_def.h>
 #include <device/pci_ops.h>
+#include <intelblocks/acpi_wake_source.h>
 #include <fsp/util.h>
 #include <soc/gpio.h>
 #include <soc/lpc.h>
@@ -18,8 +19,6 @@
 #include <soc/pci_devs.h>
 #include <soc/pm.h>
 #include <soc/ramstage.h>
-#include <soc/intel/common/acpi.h>
-#include <string.h>
 
 #define SHOW_PATTRS 1
 
@@ -120,13 +119,9 @@ static void fill_in_pattrs(void)
 }
 
 /* Save wake source information for calculating ACPI _SWS values */
-int soc_fill_acpi_wake(uint32_t *pm1, uint32_t **gpe0)
+int soc_fill_acpi_wake(const struct chipset_power_state *ps, uint32_t *pm1, uint32_t **gpe0)
 {
-	struct chipset_power_state *ps = cbmem_find(CBMEM_ID_POWER_STATE);
 	static uint32_t gpe0_sts;
-
-	if (!ps)
-		return -1;
 
 	*pm1 = ps->pm1_sts & ps->pm1_en;
 

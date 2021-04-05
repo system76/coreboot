@@ -12,6 +12,16 @@ void setup_chromeos_gpios(void)
 	gpio_input_pullup(GPIO_SD_CD_L);
 	gpio_input_irq(GPIO_H1_AP_INT, IRQ_TYPE_RISING_EDGE, GPIO_PULL_UP);
 	gpio_output(GPIO_AMP_ENABLE, 0);
+
+	gpio_output(GPIO_BACKLIGHT_ENABLE, 0);
+	gpio_output(GPIO_EN_PP3300_DX_EDP, 0);
+	gpio_output(GPIO_EDP_BRIDGE_ENABLE, 0);
+
+	if (CONFIG(TROGDOR_HAS_FINGERPRINT)) {
+		gpio_output(GPIO_FPMCU_BOOT0, 0);
+		gpio_output(GPIO_FP_RST_L, 0);
+		gpio_output(GPIO_EN_FP_RAILS, 0);
+	}
 }
 
 void fill_lb_gpios(struct lb_gpios *gpios)
@@ -27,6 +37,8 @@ void fill_lb_gpios(struct lb_gpios *gpios)
 			"SD card detect"},
 		{GPIO_AMP_ENABLE.addr, ACTIVE_HIGH, gpio_get(GPIO_AMP_ENABLE),
 			"speaker enable"},
+		{GPIO_BACKLIGHT_ENABLE.addr, ACTIVE_HIGH,
+			gpio_get(GPIO_BACKLIGHT_ENABLE), "backlight"},
 	};
 
 	lb_add_gpios(gpios, chromeos_gpios, ARRAY_SIZE(chromeos_gpios));

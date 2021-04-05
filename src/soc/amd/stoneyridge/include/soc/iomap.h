@@ -15,6 +15,12 @@
 #define I2C_DEVICE_SIZE			0x00001000
 #define I2C_DEVICE_COUNT		4
 
+#define I2C_BUS_ADDRESS(x)		(I2C_BASE_ADDRESS + I2C_DEVICE_SIZE * (x))
+#define I2CA_BASE_ADDRESS		(I2C_BUS_ADDRESS(0))
+#define I2CB_BASE_ADDRESS		(I2C_BUS_ADDRESS(1))
+#define I2CC_BASE_ADDRESS		(I2C_BUS_ADDRESS(2))
+#define I2CD_BASE_ADDRESS		(I2C_BUS_ADDRESS(3))
+
 #if CONFIG(HPET_ADDRESS_OVERRIDE)
 #error HPET address override is not allowed and must be fixed at 0xfed00000
 #endif
@@ -26,17 +32,16 @@
 #define FLASH_BASE_ADDR			((0xffffffff - CONFIG_ROM_SIZE) + 1)
 
 /* I/O Ranges */
-#define ACPI_SMI_CTL_PORT		0xb2
-#define STONEYRIDGE_ACPI_IO_BASE	CONFIG_STONEYRIDGE_ACPI_IO_BASE
-#define  ACPI_PM_EVT_BLK	(STONEYRIDGE_ACPI_IO_BASE + 0x00) /* 4 bytes */
-#define  ACPI_PM1_STS		(ACPI_PM_EVT_BLK + 0x00)	  /* 2 bytes */
-#define  ACPI_PM1_EN		(ACPI_PM_EVT_BLK + 0x02)	  /* 2 bytes */
-#define  ACPI_PM1_CNT_BLK	(STONEYRIDGE_ACPI_IO_BASE + 0x04) /* 2 bytes */
-#define  ACPI_CPU_CONTROL	(STONEYRIDGE_ACPI_IO_BASE + 0x08) /* 6 bytes */
-#define  ACPI_GPE0_BLK		(STONEYRIDGE_ACPI_IO_BASE + 0x10) /* 8 bytes */
-#define  ACPI_GPE0_STS		(ACPI_GPE0_BLK + 0x00)		  /* 4 bytes */
-#define  ACPI_GPE0_EN		(ACPI_GPE0_BLK + 0x04)		  /* 4 bytes */
-#define  ACPI_PM_TMR_BLK	(STONEYRIDGE_ACPI_IO_BASE + 0x18) /* 4 bytes */
+#define ACPI_IO_BASE			0x400
+#define  ACPI_PM_EVT_BLK		(ACPI_IO_BASE + 0x00)		/* 4 bytes */
+#define  ACPI_PM1_STS			(ACPI_PM_EVT_BLK + 0x00)	/* 2 bytes */
+#define  ACPI_PM1_EN			(ACPI_PM_EVT_BLK + 0x02)	/* 2 bytes */
+#define  ACPI_PM1_CNT_BLK		(ACPI_IO_BASE + 0x04)		/* 2 bytes */
+#define  ACPI_CPU_CONTROL		(ACPI_IO_BASE + 0x08)		/* 6 bytes */
+#define  ACPI_GPE0_BLK			(ACPI_IO_BASE + 0x10)		/* 8 bytes */
+#define  ACPI_GPE0_STS			(ACPI_GPE0_BLK + 0x00)		/* 4 bytes */
+#define  ACPI_GPE0_EN			(ACPI_GPE0_BLK + 0x04)		/* 4 bytes */
+#define  ACPI_PM_TMR_BLK		(ACPI_IO_BASE + 0x18)		/* 4 bytes */
 #define SMB_BASE_ADDR			0xb00
 #define PM2_INDEX			0xcd0
 #define PM2_DATA			0xcd1

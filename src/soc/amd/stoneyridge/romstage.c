@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+#include <amdblocks/acpi.h>
 #include <amdblocks/biosram.h>
 #include <device/pci_ops.h>
 #include <arch/cpu.h>
@@ -20,13 +21,12 @@
 #include <amdblocks/agesawrapper_call.h>
 #include <soc/northbridge.h>
 #include <soc/pci_devs.h>
-#include <soc/romstage.h>
 #include <soc/southbridge.h>
 #include <amdblocks/psp.h>
 
 #include "chip.h"
 
-void __weak mainboard_romstage_entry_s3(int s3_resume)
+void __weak mainboard_romstage_entry(void)
 {
 	/* By default, don't do anything */
 }
@@ -54,7 +54,7 @@ asmlinkage void car_stage_entry(void)
 	msr_t base, mask;
 	msr_t mtrr_cap = rdmsr(MTRR_CAP_MSR);
 	int vmtrrs = mtrr_cap.lo & MTRR_CAP_VCNT;
-	int s3_resume = acpi_s3_resume_allowed() && acpi_is_wakeup_s3();
+	int s3_resume = acpi_is_wakeup_s3();
 	int i;
 
 	console_init();
@@ -63,7 +63,7 @@ asmlinkage void car_stage_entry(void)
 	if (CONFIG(SOC_AMD_PSP_SELECTABLE_SMU_FW))
 		psp_load_named_blob(BLOB_SMU_FW, "smu_fw");
 
-	mainboard_romstage_entry_s3(s3_resume);
+	mainboard_romstage_entry();
 	elog_boot_notify(s3_resume);
 
 	bsp_agesa_call();
@@ -80,7 +80,7 @@ asmlinkage void car_stage_entry(void)
 		 *
 		 * After setting up DRAM, AGESA also completes the configuration
 		 * of the MTRRs, setting regions to WB.  Anything written to
-		 * memory between now and and when CAR is dismantled will be
+		 * memory between now and when CAR is dismantled will be
 		 * in cache and lost.  For now, set the regions UC to ensure
 		 * the writes get to DRAM.
 		 */
@@ -205,3 +205,15 @@ void soc_customize_init_early(AMD_EARLY_PARAMS *InitEarly)
 		platform->PlatStapmConfig.CfgStapmBoost = StapmBoostEnabled;
 	}
 }
+
+static void migrate_power_state(int is_recovery)
+{
+	struct chipset_power_state *state;
+	state = cbmem_add(CBMEM_ID_POWER_STATE, sizeof(*state));
+	if (state) {
+		acpi_fill_pm_gpe_state(&state->gpe_state);
+		acpi_pm_gpe_add_events_print_events();
+	}
+	acpi_clear_pm_gpe_status();
+}
+ROMSTAGE_CBMEM_INIT_HOOK(migrate_power_state)

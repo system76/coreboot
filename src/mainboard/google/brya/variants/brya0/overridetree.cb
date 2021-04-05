@@ -1,20 +1,9 @@
 chip soc/intel/alderlake
-	register "pmc_gpe0_dw0" = "GPP_A"
-	register "pmc_gpe0_dw1" = "GPP_E"
-	register "pmc_gpe0_dw2" = "GPP_F"
-
 	register "SaGv" = "SaGv_Disabled"
 
-	# Acoustic settings
-	register "AcousticNoiseMitigation" = "1"
-	register "SlowSlewRate[VR_DOMAIN_IA]" = "SLEW_FAST_8"
-	register "SlowSlewRate[VR_DOMAIN_GT]" = "SLEW_FAST_8"
-	register "SlowSlewRate[VR_DOMAIN_SA]" = "SLEW_FAST_8"
-	register "SlowSlewRate[VR_DOMAIN_VLCC]" = "SLEW_FAST_8"
-	register "FastPkgCRampDisable[VR_DOMAIN_IA]" = "1"
-	register "FastPkgCRampDisable[VR_DOMAIN_GT]" = "1"
-	register "FastPkgCRampDisable[VR_DOMAIN_SA]" = "1"
-	register "FastPkgCRampDisable[VR_DOMAIN_VLCC]" = "1"
+	register "usb2_ports[7]" = "USB2_PORT_MID(OC_SKIP)"	# Type-A MLB Port
+
+	register "usb3_ports[1]" = "USB3_PORT_DEFAULT(OC_SKIP)" # USB3/2 Type A MLB port
 
 	device domain 0 on
 		device ref cnvi_wifi on
@@ -80,7 +69,7 @@ chip soc/intel/alderlake
 				register "desc" = ""SAR1 Proximity Sensor""
 				register "irq" = "ACPI_IRQ_LEVEL_LOW(GPP_H19_IRQ)"
 				register "speed" = "I2C_SPEED_FAST"
-				register "uid" = "2"
+				register "uid" = "1"
 				register "reg_gnrl_ctrl0" = "0x16"
 				register "reg_gnrl_ctrl1" = "0x21"
 				register "reg_afe_ctrl0" = "0x00"
@@ -190,6 +179,7 @@ chip soc/intel/alderlake
 				register "sdmode_gpio" =
 						"ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_A11)"
 				register "sdmode_delay" = "5"
+				device generic 0 on end
 			end
 		end
 		device ref gspi1 on
@@ -205,29 +195,52 @@ chip soc/intel/alderlake
 		end
 		device ref pch_espi on
 			chip ec/google/chromeec
+				use conn0 as mux_conn[0]
+				use conn1 as mux_conn[1]
+				use conn2 as mux_conn[2]
 				device pnp 0c09.0 on end
 			end
 		end
-		device ref pmc hidden end
+		device ref pmc hidden
+			chip drivers/intel/pmc_mux
+				device generic 0 on
+					chip drivers/intel/pmc_mux/conn
+						register "usb2_port_number" = "1"
+						register "usb3_port_number" = "1"
+						device generic 0 alias conn0 on end
+					end
+					chip drivers/intel/pmc_mux/conn
+						register "usb2_port_number" = "2"
+						register "usb3_port_number" = "2"
+						device generic 1 alias conn1 on end
+					end
+					chip drivers/intel/pmc_mux/conn
+						register "usb2_port_number" = "3"
+						register "usb3_port_number" = "3"
+						device generic 2 alias conn2 on end
+					end
+				end
+			end
+		end
 		device ref tcss_xhci on
 			chip drivers/usb/acpi
 				device ref tcss_root_hub on
 					chip drivers/usb/acpi
 						register "desc" = ""USB3 Type-C Port C0 (MLB)""
 						register "type" = "UPC_TYPE_C_USB2_SS_SWITCH"
-						register "group" = "ACPI_PLD_GROUP(4, 1)"
+						register "group" = "ACPI_PLD_GROUP(1, 1)"
 						device ref tcss_usb3_port1 on end
 					end
 					chip drivers/usb/acpi
 						register "desc" = ""USB3 Type-C Port C1 (DB)""
 						register "type" = "UPC_TYPE_C_USB2_SS_SWITCH"
-						register "group" = "ACPI_PLD_GROUP(3, 2)"
+						register "group" = "ACPI_PLD_GROUP(2, 1)"
 						device ref tcss_usb3_port2 on end
 					end
 					chip drivers/usb/acpi
 						register "desc" = ""USB3 Type-C Port C2 (MLB)""
 						register "type" = "UPC_TYPE_C_USB2_SS_SWITCH"
-						register "group" = "ACPI_PLD_GROUP(4, 2)"
+						register "group" = "ACPI_PLD_GROUP(3, 1)"
 						device ref tcss_usb3_port3 on end
 					end
 				end
@@ -265,7 +278,13 @@ chip soc/intel/alderlake
 						device ref usb2_port6 on end
 					end
 					chip drivers/usb/acpi
-						register "desc" = ""USB2 Type-A Port A0 (MLB)""
+						register "desc" = ""USB2 Type-A Port (MLB)""
+						register "type" = "UPC_TYPE_A"
+						register "group" = "ACPI_PLD_GROUP(4, 1)"
+						device ref usb2_port8 on end
+					end
+					chip drivers/usb/acpi
+						register "desc" = ""USB2 Type-A Port A0 (DB)""
 						register "type" = "UPC_TYPE_A"
 						register "group" = "ACPI_PLD_GROUP(1, 2)"
 						device ref usb2_port9 on end
@@ -274,19 +293,25 @@ chip soc/intel/alderlake
 						register "desc" = ""USB2 Bluetooth""
 						register "type" = "UPC_TYPE_INTERNAL"
 						register "reset_gpio" =
-							"ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_F4)"
+							"ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_D4)"
 						device ref usb2_port10 on end
 					end
 					chip drivers/usb/acpi
-						register "desc" = ""USB3 Type-A Port A0 (MLB)""
+						register "desc" = ""USB3 Type-A Port A0 (DB)""
 						register "type" = "UPC_TYPE_USB3_A"
 						register "group" = "ACPI_PLD_GROUP(1, 2)"
 						device ref usb3_port1 on end
 					end
 					chip drivers/usb/acpi
+						register "desc" = ""USB3 Type-A Port (MLB)""
+						register "type" = "UPC_TYPE_USB3_A"
+						register "group" = "ACPI_PLD_GROUP(4, 1)"
+						device ref usb3_port2 on end
+					end
+					chip drivers/usb/acpi
 						register "desc" = ""USB3 WWAN""
 						register "type" = "UPC_TYPE_INTERNAL"
-						device ref usb3_port3 on end
+						device ref usb3_port4 on end
 					end
 				end
 			end

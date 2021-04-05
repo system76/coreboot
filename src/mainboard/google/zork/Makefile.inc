@@ -4,14 +4,13 @@ bootblock-y += bootblock.c
 
 romstage-y += chromeos.c
 romstage-y += sku_id.c
+romstage-y += romstage.c
 
 ramstage-y += chromeos.c
 ramstage-y += ec.c
 ramstage-y += sku_id.c
 
 verstage-y += verstage.c
-
-smm-y += smihandler.c
 
 subdirs-y += variants/baseboard
 subdirs-y += spd

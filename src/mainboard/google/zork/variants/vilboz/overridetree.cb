@@ -1,5 +1,12 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 
+fw_config
+	field AUDIO_AMP 35
+		option AUDIO_AMP_I2C_MODE	0
+		option AUDIO_AMP_AUTO_MODE	1
+	end
+end
+
 chip soc/amd/picasso
 
 	# Start : OPN Performance Configuration
@@ -18,13 +25,103 @@ chip soc/amd/picasso
 
 	# End : OPN Performance Configuration
 
-	register "telemetry_vddcr_vdd_slope_mA" = "26939"
-	register "telemetry_vddcr_vdd_offset" = "125"
-	register "telemetry_vddcr_soc_slope_mA" = "20001"
-	register "telemetry_vddcr_soc_offset" = "168"
+	register "telemetry_vddcr_vdd_slope_mA" = "27225"
+	register "telemetry_vddcr_vdd_offset" = "187"
+	register "telemetry_vddcr_soc_slope_mA" = "26559"
+	register "telemetry_vddcr_soc_offset" = "89"
+
+	# eDP power sequence. all pwr sequence numbers below are in uint of 4ms,
+	# and "0" as default value
+	register "edp_pwr_adjust_enable" = "1"
+	register "pwron_digon_to_de" = "0"
+	register "pwron_de_to_varybl" = "0"
+	register "pwrdown_varybloff_to_de" = "0"
+	register "pwrdown_de_to_digoff" = "0"
+	register "pwroff_delay" = "0"
+	register "pwron_varybl_to_blon" = "5"
+	register "pwrdown_bloff_to_varybloff" = "5"
+	register "min_allowed_bl_level" = "0"
 
 	# USB OC pin mapping
 	register "usb_port_overcurrent_pin[1]" = "USB_OC_NONE"	# LTE instead of USB C1
+
+	# Controller0 Port0
+	register "usb_2_port_tune_params[0]" = "{
+		.com_pds_tune = 0x07,
+		.sq_rx_tune = 0x3,
+		.tx_fsls_tune = 0x3,
+		.tx_pre_emp_amp_tune = 0x03,
+		.tx_pre_emp_pulse_tune = 0x0,
+		.tx_rise_tune = 0x1,
+		.tx_vref_tune = 0x6,
+		.tx_hsxv_tune = 0x3,
+		.tx_res_tune = 0x01,
+	}"
+
+	# Controller0 Port1
+	register "usb_2_port_tune_params[1]" = "{
+		.com_pds_tune = 0x07,
+		.sq_rx_tune = 0x3,
+		.tx_fsls_tune = 0x3,
+		.tx_pre_emp_amp_tune = 0x03,
+		.tx_pre_emp_pulse_tune = 0x0,
+		.tx_rise_tune = 0x1,
+		.tx_vref_tune = 0x6,
+		.tx_hsxv_tune = 0x3,
+		.tx_res_tune = 0x01,
+	}"
+
+	# Controller0 Port2
+	register "usb_2_port_tune_params[2]" = "{
+		.com_pds_tune = 0x07,
+		.sq_rx_tune = 0x3,
+		.tx_fsls_tune = 0x3,
+		.tx_pre_emp_amp_tune = 0x03,
+		.tx_pre_emp_pulse_tune = 0x0,
+		.tx_rise_tune = 0x1,
+		.tx_vref_tune = 0x6,
+		.tx_hsxv_tune = 0x3,
+		.tx_res_tune = 0x01,
+	}"
+
+	# Controller0 Port3
+	register "usb_2_port_tune_params[3]" = "{
+		.com_pds_tune = 0x07,
+		.sq_rx_tune = 0x3,
+		.tx_fsls_tune = 0x3,
+		.tx_pre_emp_amp_tune = 0x03,
+		.tx_pre_emp_pulse_tune = 0x0,
+		.tx_rise_tune = 0x1,
+		.tx_vref_tune = 0x6,
+		.tx_hsxv_tune = 0x3,
+		.tx_res_tune = 0x01,
+	}"
+
+	# Controller1 Port0
+	register "usb_2_port_tune_params[4]" = "{
+		.com_pds_tune = 0x07,
+		.sq_rx_tune = 0x3,
+		.tx_fsls_tune = 0x3,
+		.tx_pre_emp_amp_tune = 0x03,
+		.tx_pre_emp_pulse_tune = 0x0,
+		.tx_rise_tune = 0x1,
+		.tx_vref_tune = 0x6,
+		.tx_hsxv_tune = 0x3,
+		.tx_res_tune = 0x01,
+	}"
+
+	# Controller1 Port1
+	register "usb_2_port_tune_params[5]" = "{
+		.com_pds_tune = 0x07,
+		.sq_rx_tune = 0x3,
+		.tx_fsls_tune = 0x3,
+		.tx_pre_emp_amp_tune = 0x03,
+		.tx_pre_emp_pulse_tune = 0x0,
+		.tx_rise_tune = 0x1,
+		.tx_vref_tune = 0x6,
+		.tx_hsxv_tune = 0x3,
+		.tx_res_tune = 0x01,
+	}"
 
 	# I2C2 for touchscreen and trackpad
 	register "i2c[2]" = "{
@@ -50,6 +147,12 @@ chip soc/amd/picasso
 	# See AMD 55570-B1 Table 13: PCI Device ID Assignments.
 	device domain 0 on
 		subsystemid 0x1022 0x1510 inherit
+		device pci 1.3 on
+			chip drivers/generic/bayhub_lv2
+				register "enable_power_saving" = "1"
+				device pci 00.0 on end
+			end
+		end # GPP Bridge 2 - SD
 		device pci 8.1 on
 			device pci 0.5 on
 				chip drivers/amd/i2s_machine_dev
@@ -64,7 +167,31 @@ chip soc/amd/picasso
 					# Set low (0) = Select DMIC0
 					# Set high (1) = Select DMIC1
 					register "dmic_select_gpio" = "ACPI_GPIO_OUTPUT(GPIO_67)"
-					device generic 0.0 on end
+					device generic 0.0 on
+						probe AUDIO_AMP AUDIO_AMP_I2C_MODE
+					end
+				end
+				chip drivers/amd/i2s_machine_dev
+					register "hid" = ""AMDP1015""
+					# DMIC select GPIO for ACP machine device
+					# This GPIO is used to select DMIC0 or DMIC1 by the
+					# kernel driver. It does not really have a polarity
+					# since low and high control the selection of DMIC and
+					# hence does not have an active polarity.
+					# Kernel driver does not use the polarity field and
+					# instead treats the GPIO selection as follows:
+					# Set low (0) = Select DMIC0
+					# Set high (1) = Select DMIC1
+					register "dmic_select_gpio" = "ACPI_GPIO_OUTPUT(GPIO_67)"
+					device generic 1.0 on
+						probe AUDIO_AMP AUDIO_AMP_AUTO_MODE
+					end
+				end
+				chip drivers/generic/alc1015
+					register "sdb" =  "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPIO_91)"
+					device generic 1.1 on
+						probe AUDIO_AMP AUDIO_AMP_AUTO_MODE
+					end
 				end
 			end # Audio
 		end
@@ -74,7 +201,7 @@ chip soc/amd/picasso
 					chip ec/google/chromeec/i2c_tunnel
 						register "uid" = "1"
 						register "remote_bus" = "8"
-						device generic 0.0 on
+						device generic 0.1 on
 							chip drivers/i2c/generic
 								register "hid" = ""10EC1015""
 								register "desc" = ""RT1015 Tweeter Left Speaker Amp""
@@ -89,6 +216,7 @@ chip soc/amd/picasso
 								register "name" = ""TR""
 								device i2c 29 on end
 							end
+							probe AUDIO_AMP AUDIO_AMP_I2C_MODE
 						end
 					end
 				end
