@@ -1,4 +1,4 @@
-if BOARD_SYSTEM76_GALP3_B
+if BOARD_SYSTEM76_GALP3 || BOARD_SYSTEM76_GALP3_B
 
 config BOARD_SPECIFIC_OPTIONS
 	def_bool y
@@ -22,10 +22,12 @@ config MAINBOARD_DIR
 
 config VARIANT_DIR
 	string
+	default "galp3" if BOARD_SYSTEM76_GALP3
 	default "galp3-b" if BOARD_SYSTEM76_GALP3_B
 
 config MAINBOARD_PART_NUMBER
 	string
+	default "galp3" if BOARD_SYSTEM76_GALP3
 	default "galp3-b" if BOARD_SYSTEM76_GALP3_B
 
 config MAINBOARD_SMBIOS_PRODUCT_NAME
@@ -34,6 +36,7 @@ config MAINBOARD_SMBIOS_PRODUCT_NAME
 
 config MAINBOARD_VERSION
 	string
+	default "galp3" if BOARD_SYSTEM76_GALP3
 	default "galp3-b" if BOARD_SYSTEM76_GALP3_B
 
 config CBFS_SIZE
@@ -66,7 +69,7 @@ config DIMM_SPD_SIZE
 
 config VGA_BIOS_ID
 	string
-	default "8086,5917" if BOARD_SYSTEM76_GALP3_B
+	default "8086,5917" if BOARD_SYSTEM76_GALP3 || BOARD_SYSTEM76_GALP3_B
 
 config POST_DEVICE
 	bool
