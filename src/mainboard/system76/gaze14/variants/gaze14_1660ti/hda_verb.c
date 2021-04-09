@@ -1,14 +1,11 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#ifndef HDA_VERB_H
-#define HDA_VERB_H
-
 #include <device/azalia_device.h>
 
 const u32 cim_verb_data[] = {
 	/* Realtek, ALC293 */
 	0x10ec0293, /* Vendor ID */
-	0x15588551, /* Subsystem ID */
+	0x15588550, /* Subsystem ID */
 	12, /* Number of entries */
 	AZALIA_SUBVENDOR(0, 0x15588550),
 	AZALIA_PIN_CFG(0, 0x12, 0x90a60130),
@@ -35,5 +32,3 @@ const u32 cim_verb_data[] = {
 const u32 pc_beep_verbs[] = {};
 
 AZALIA_ARRAY_SIZES;
-
-#endif
