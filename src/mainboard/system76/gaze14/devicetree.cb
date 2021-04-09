@@ -16,9 +16,6 @@ chip soc/intel/cannonlake
 		.tdp_pl2_override = 90,
 	}"
 
-	# Enable "Intel Speed Shift Technology"
-	register "speed_shift_enable" = "1"
-
 	# Enable Enhanced Intel SpeedStep
 	register "eist_enable" = "1"
 
@@ -70,7 +67,7 @@ chip soc/intel/cannonlake
 			register "PcieClkSrcClkReq[8]" = "8"
 		end
 		device pci 02.0 on      # Integrated Graphics Device
-			register "gfx" = "GMBA_DEFAULT_PANEL(0)"
+			register "gfx" = "GMA_DEFAULT_PANEL(0)"
 		end
 		device pci 04.0 on      # SA Thermal device
 			register "Device4Enable" = "1"
