@@ -2,9 +2,11 @@
 
 #include <bootblock_common.h>
 #include <gpio.h>
-#include <mainboard/gpio.h>
+#include "gpio.h"
+#include <drivers/system76/dgpu/bootblock.c>
 
-void bootblock_mainboard_early_init(void)
+void bootblock_mainboard_init(void)
 {
-	mainboard_configure_early_gpios();
+	gpio_configure_pads(early_gpio_table, ARRAY_SIZE(early_gpio_table));
+	dgpu_power_enable(1);
 }

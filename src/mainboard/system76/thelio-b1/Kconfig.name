@@ -1,0 +1,2 @@
+config BOARD_SYSTEM76_THELIO_B1
+	bool "thelio-b1"

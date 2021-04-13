@@ -27,9 +27,8 @@ chip soc/intel/cannonlake
 	register "SerialIoDevMode" = "{
 		[PchSerialIoIndexI2C0] = PchSerialIoPci, // Touchpad I2C bus
 		[PchSerialIoIndexI2C1] = PchSerialIoPci, // USB-C
-		[PchSerialIoIndexUART2] = PchSerialIoSkipInit, // Debug console
+		[PchSerialIoIndexUART2] = PchSerialIoPci, // Debug console
 	}"
-
 
 	# Misc
 	register "AcousticNoiseMitigation" = "1"
@@ -96,10 +95,9 @@ chip soc/intel/cannonlake
 		device pci 14.1 off end # USB xDCI (OTG)
 		device pci 14.2 on  end # Shared SRAM
 		device pci 14.3 on      # CNVi wifi
-			chip drivers/wifi/generic
-				register "wake" = "GPE0_PME_B0"
-				device generic 0 on end
-			end
+			#chip drivers/intel/wifi
+			#	register "wake" = "PME_B0_EN_BIT"
+			#end
 		end
 		device pci 14.5 off end # SDCard
 		device pci 15.0 on
@@ -147,7 +145,6 @@ chip soc/intel/cannonlake
 			register "PcieRpLtrEnable[20]" = "1"
 			register "PcieClkSrcUsage[11]" = "20"
 			register "PcieClkSrcClkReq[11]" = "11"
-			register "PcieRpSlotImplemented[20]" = "1"
 		end
 		device pci 1b.5 off end # PCI Express Port 22
 		device pci 1b.6 off end # PCI Express Port 23
@@ -166,7 +163,6 @@ chip soc/intel/cannonlake
 			register "PcieRpLtrEnable[8]" = "1"
 			register "PcieClkSrcUsage[10]" = "8"
 			register "PcieClkSrcClkReq[10]" = "10"
-			register "PcieRpSlotImplemented[8]" = "1"
 		end
 		device pci 1d.1 off end # PCI Express Port 10
 		device pci 1d.2 off end # PCI Express Port 11
@@ -178,7 +174,6 @@ chip soc/intel/cannonlake
 			register "PcieRpLtrEnable[13]" = "1"
 			register "PcieClkSrcUsage[6]" = "13"
 			register "PcieClkSrcClkReq[6]" = "6"
-			register "PcieRpSlotImplemented[13]" = "1"
 		end
 		device pci 1d.6 on      # PCI Express Port 15
 			# PCI Express root port #15 x1, Clock 5 (LAN)
@@ -186,7 +181,6 @@ chip soc/intel/cannonlake
 			register "PcieRpLtrEnable[14]" = "1"
 			register "PcieClkSrcUsage[5]" = "14"
 			register "PcieClkSrcClkReq[5]" = "5"
-			register "PcieRpSlotImplemented[14]" = "1"
 		end
 		device pci 1d.7 off end # PCI Express Port 16
 		device pci 1e.0 off end # UART #0
