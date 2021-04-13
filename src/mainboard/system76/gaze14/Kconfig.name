@@ -1,5 +1,2 @@
-config BOARD_SYSTEM76_GAZE14_1650
-	bool "gaze14 1650"
-
-config BOARD_SYSTEM76_GAZE14_1660TI
-	bool "gaze14 1660Ti"
+config BOARD_SYSTEM76_GAZE14
+	bool "gaze14"
