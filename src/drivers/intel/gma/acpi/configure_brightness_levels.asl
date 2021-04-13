@@ -148,7 +148,7 @@
 	{
 		If (LEqual(^BOX3.XBCM (Arg0), Ones))
 		{
-			^LEGA.XBCM (Arg0)
+			//TODO: fix Windows initial setup ^LEGA.XBCM (Arg0)
 		}
 	}
 
