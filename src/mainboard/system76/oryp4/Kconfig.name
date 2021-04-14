@@ -1,0 +1,2 @@
+config BOARD_SYSTEM76_ORYP4
+	bool "oryp4"
