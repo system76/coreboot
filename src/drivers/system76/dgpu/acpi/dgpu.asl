@@ -59,11 +59,11 @@ Device (\_SB.PCI0.PEGP.DEV0) {
 		Printf("} NVIDIA _PS3")
 	}
 
-    OperationRegion (PCIC, PCI_Config, 0x00, 0x50)
-    Field (PCIC, DwordAcc, NoLock, Preserve) {
-        Offset (0x40),
-        SSID, 32
-    }
+	OperationRegion (PCIC, PCI_Config, 0x00, 0x50)
+	Field (PCIC, DwordAcc, NoLock, Preserve) {
+		Offset (0x40),
+		SSID, 32
+	}
 
 	PowerResource (PWRR, 0, 0) {
 		Name (_STA, 1)
