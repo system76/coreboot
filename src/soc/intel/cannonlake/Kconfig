@@ -358,4 +358,8 @@ config INTEL_GMA_BCLM_OFFSET
 config INTEL_GMA_BCLM_WIDTH
 	default 32
 
+config DISABLE_ME
+	bool "Disable the IME by setting the HAP bit at run-time"
+	default y
+
 endif

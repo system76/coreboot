@@ -154,8 +154,7 @@ void dump_me_status(void *unused)
 		hfsts6.fields.txt_support ? "YES" : "NO");
 }
 
-#define DISABLE_ME 1
-#if DISABLE_ME
+#if CONFIG(DISABLE_ME)
 
 static void disable_me(void* unused)
 {
