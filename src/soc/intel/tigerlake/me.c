@@ -3,6 +3,7 @@
 #include <bootstate.h>
 #include <intelblocks/cse.h>
 #include <console/console.h>
+#include <option.h>
 #include <soc/me.h>
 #include <stdint.h>
 
@@ -167,21 +168,27 @@ static void dump_me_status(void *unused)
 
 static void disable_me(void* unused)
 {
-	printk(BIOS_DEBUG, "ME: send disable message\n");
+	uint8_t disable = 0;
+	get_option(&disable, "disable_ime");
 
-	struct disable_command {
-		uint32_t hdr;
-		uint32_t rule_id;
-		uint8_t rule_len;
-		uint32_t rule_data;
-	} __packed msg;
-	msg.hdr = 0x303;
-	msg.rule_id = 6;
-	msg.rule_len = 4;
-	msg.rule_data = 0;
+	if (disable) {
+		printk(BIOS_DEBUG, "ME: send disable message\n");
 
-	if (!heci_send(&msg, sizeof(msg), BIOS_HOST_ADDR, HECI_MKHI_ADDR))
-		printk(BIOS_ERR, "ME: Error sending DISABLE msg\n");
+		struct disable_command {
+			uint32_t hdr;
+			uint32_t rule_id;
+			uint8_t rule_len;
+			uint32_t rule_data;
+		} __packed msg;
+		msg.hdr = 0x303;
+		msg.rule_id = 6;
+		msg.rule_len = 4;
+		msg.rule_data = 0;
+
+		if (!heci_send(&msg, sizeof(msg), BIOS_HOST_ADDR, HECI_MKHI_ADDR))
+			printk(BIOS_ERR, "ME: Error sending DISABLE msg\n");
+	}
+
 	dump_me_status(unused);
 }
 
