@@ -1,2 +1,3 @@
 boot_option=Fallback
 preserve_smmstore=0
+disable_ime=0
