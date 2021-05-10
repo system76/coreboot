@@ -20,7 +20,7 @@ static const struct cnl_mb_cfg memcfg = {
 
 void mainboard_memory_init_params(FSPM_UPD *memupd)
 {
-	// Allow memory clocks higher than 2933 MHz
+	// Allow memory speeds higher than 2933 MT/s
 	memupd->FspmConfig.SaOcSupport = 1;
 	// Set primary display to internal graphics
 	memupd->FspmConfig.PrimaryDisplay = 0;
