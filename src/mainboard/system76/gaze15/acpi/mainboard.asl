@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#include "../gpio.h"
+#include <mainboard/gpio.h>
 #include <drivers/system76/dgpu/acpi/dgpu.asl>
 
 #define EC_GPE_SCI 0x03 /* GPP_K3 */
