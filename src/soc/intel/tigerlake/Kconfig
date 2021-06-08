@@ -3,6 +3,11 @@ config SOC_INTEL_TIGERLAKE
 	help
 	  Intel Tigerlake support
 
+config SOC_INTEL_TIGERLAKE_PCH_H
+	bool
+	help
+	  Choose this option if you have a PCH-H chipset.
+
 if SOC_INTEL_TIGERLAKE
 
 config CPU_SPECIFIC_OPTIONS
@@ -124,10 +129,12 @@ config HEAP_SIZE
 
 config MAX_ROOT_PORTS
 	int
+	default 24 if SOC_INTEL_TIGERLAKE_PCH_H
 	default 12
 
 config MAX_PCIE_CLOCKS
 	int
+	default 16 if SOC_INTEL_TIGERLAKE_PCH_H
 	default 7
 
 config SMM_TSEG_SIZE

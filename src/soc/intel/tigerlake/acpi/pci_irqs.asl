@@ -18,6 +18,13 @@ Name (PICP, Package () {
 	Package(){0x001CFFFF, 1, 0, 17 },
 	Package(){0x001CFFFF, 2, 0, 18 },
 	Package(){0x001CFFFF, 3, 0, 19 },
+#if CONFIG(SOC_INTEL_TIGERLAKE_PCH_H)
+	/* D27 */
+	Package(){0x001BFFFF, 0, 0, 16 },
+	Package(){0x001BFFFF, 1, 0, 17 },
+	Package(){0x001BFFFF, 2, 0, 18 },
+	Package(){0x001BFFFF, 3, 0, 19 },
+#endif
 	/* D25 */
 	Package(){0x0019FFFF, 0, 0, 31 },
 	Package(){0x0019FFFF, 1, 0, 32 },
@@ -93,6 +100,13 @@ Name (PICN, Package () {
 	Package(){0x001CFFFF, 1, 0, 10 },
 	Package(){0x001CFFFF, 2, 0, 11 },
 	Package(){0x001CFFFF, 3, 0, 11 },
+#if CONFIG(SOC_INTEL_TIGERLAKE_PCH_H)
+	/* D27 */
+	Package () { 0x001BFFFF, 0, 0, 11 },
+	Package () { 0x001BFFFF, 1, 0, 10 },
+	Package () { 0x001BFFFF, 2, 0, 11 },
+	Package () { 0x001BFFFF, 3, 0, 11 },
+#endif
 	/* D25 */
 	Package(){0x0019FFFF, 0, 0, 11 },
 	Package(){0x0019FFFF, 1, 0, 10 },
