@@ -40,7 +40,8 @@ chip soc/intel/tigerlake
 			register "usb3_ports[3]" = "USB3_PORT_DEFAULT(OC_SKIP)" # USB 3.2 Gen 1 (Left)
 		end
 		device ref sata on
-			#TODO: SATA on SATA0B (HDD) and SATA1A (SSD1)
+			register "SataPortsEnable[0]" = "1" # HDD (SATA0B)
+			register "SataPortsEnable[1]" = "1" # SSD1 (SATA1A)
 		end
 		device ref pcie_rp5 on
 			# PCIe root port #5 x1, Clock 5 (GLAN)
