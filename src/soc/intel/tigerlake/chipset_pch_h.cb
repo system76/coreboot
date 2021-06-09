@@ -62,6 +62,8 @@ chip soc/intel/tigerlake
 		device pci 10.2 alias cnvi_bt off end
 		device pci 10.6 alias thc0 off end
 		device pci 10.7 alias thc1 off end
+		device pci 11.0 alias uart3 off end
+		device pci 11.3 alias i2c6 off end
 		device pci 12.0 alias ish off end
 		device pci 12.6 alias gspi2 off end
 		device pci 13.0 alias gspi3 off end
