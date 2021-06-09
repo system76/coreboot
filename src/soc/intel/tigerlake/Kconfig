@@ -107,6 +107,7 @@ config FSP_TEMP_RAM_SIZE
 
 config CHIPSET_DEVICETREE
 	string
+	default "soc/intel/tigerlake/chipset_pch_h.cb" if SOC_INTEL_TIGERLAKE_PCH_H
 	default "soc/intel/tigerlake/chipset.cb"
 
 config EXT_BIOS_WIN_BASE
