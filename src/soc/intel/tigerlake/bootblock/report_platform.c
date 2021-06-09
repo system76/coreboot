@@ -83,6 +83,8 @@ static struct {
 	const char *name;
 } igd_table[] = {
 	{ PCI_DEVICE_ID_INTEL_TGL_GT0, "Tigerlake U GT0" },
+	{ PCI_DEVICE_ID_INTEL_TGL_GT1_H_32, "Tigerlake H GT1 32EU" },
+	{ PCI_DEVICE_ID_INTEL_TGL_GT1_H_16, "Tigerlake H GT1 16EU" },
 	{ PCI_DEVICE_ID_INTEL_TGL_GT2_ULT, "Tigerlake U GT2" },
 	{ PCI_DEVICE_ID_INTEL_TGL_GT2_ULX, "Tigerlake Y GT2" },
 	{ PCI_DEVICE_ID_INTEL_TGL_GT3_ULT, "Tigerlake U GT3" },
