@@ -100,6 +100,18 @@ chip soc/intel/tigerlake
 						device usb 2.9 alias usb2_port10 off end
 					end
 					chip drivers/usb/acpi
+						device usb 2.10 alias usb2_port11 off end
+					end
+					chip drivers/usb/acpi
+						device usb 2.11 alias usb2_port12 off end
+					end
+					chip drivers/usb/acpi
+						device usb 2.12 alias usb2_port13 off end
+					end
+					chip drivers/usb/acpi
+						device usb 2.13 alias usb2_port14 off end
+					end
+					chip drivers/usb/acpi
 						device usb 3.0 alias usb3_port1 off end
 					end
 					chip drivers/usb/acpi
@@ -110,6 +122,12 @@ chip soc/intel/tigerlake
 					end
 					chip drivers/usb/acpi
 						device usb 3.3 alias usb3_port4 off end
+					end
+					chip drivers/usb/acpi
+						device usb 3.4 alias usb3_port5 off end
+					end
+					chip drivers/usb/acpi
+						device usb 3.5 alias usb3_port6 off end
 					end
 				end
 			end
