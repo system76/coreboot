@@ -76,6 +76,7 @@ static struct {
 	{ PCI_DEVICE_ID_INTEL_TGP_ESPI_24, "Tigerlake-Base SKU" },
 	{ PCI_DEVICE_ID_INTEL_TGP_ESPI_25, "Tigerlake-Base SKU" },
 	{ PCI_DEVICE_ID_INTEL_TGP_ESPI_26, "Tigerlake-Base SKU" },
+	{ PCI_DEVICE_ID_INTEL_TGP_H_ESPI_HM570, "Tigerlake-H HM570" },
 };
 
 static struct {
