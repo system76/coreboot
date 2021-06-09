@@ -70,6 +70,7 @@ Method (IRQM, 1, Serialized) {
 #if CONFIG(SOC_INTEL_TIGERLAKE_PCH_H)
 		, 18, 22
 #endif
+		}) {
 			If (PICM) {
 				Return (IQBA)
 			} Else {
@@ -81,6 +82,7 @@ Method (IRQM, 1, Serialized) {
 #if CONFIG(SOC_INTEL_TIGERLAKE_PCH_H)
 		, 19, 23
 #endif
+		}) {
 			If (PICM) {
 				Return (IQCA)
 			} Else {
@@ -92,6 +94,7 @@ Method (IRQM, 1, Serialized) {
 #if CONFIG(SOC_INTEL_TIGERLAKE_PCH_H)
 		, 20, 24
 #endif
+		}) {
 			If (PICM) {
 				Return (IQDA)
 			} Else {
