@@ -2,7 +2,7 @@
 
 #include <bootblock_common.h>
 #include <gpio.h>
-#include "gpio.h"
+#include <variant/gpio.h>
 #include <drivers/system76/dgpu/bootblock.c>
 
 void bootblock_mainboard_init(void) {

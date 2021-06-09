@@ -1,4 +1,4 @@
-if BOARD_SYSTEM76_GAZE16
+if BOARD_SYSTEM76_GAZE16_3050 || BOARD_SYSTEM76_GAZE16_3060
 
 config BOARD_SPECIFIC_OPTIONS
 	def_bool y
@@ -41,6 +41,15 @@ config MAINBOARD_SMBIOS_PRODUCT_NAME
 config MAINBOARD_VERSION
 	string
 	default "gaze16"
+
+config VARIANT_DIR
+	string
+	default "3050" if BOARD_SYSTEM76_GAZE16_3050
+	default "3060" if BOARD_SYSTEM76_GAZE16_3060
+
+config OVERRIDE_DEVICETREE
+	string
+	default "variants/$(CONFIG_VARIANT_DIR)/overridetree.cb"
 
 config CBFS_SIZE
 	hex
