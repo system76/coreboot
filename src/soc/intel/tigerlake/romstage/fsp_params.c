@@ -7,7 +7,7 @@
 #include <fsp/util.h>
 #include <intelblocks/cpulib.h>
 #include <intelblocks/mp_init.h>
-#include <soc/gpio_soc_defs.h>
+#include <soc/gpio.h>
 #include <soc/iomap.h>
 #include <soc/msr.h>
 #include <soc/pci_devs.h>

@@ -16,7 +16,7 @@
 
 /* GPIO controller */
 #if CONFIG(SOC_INTEL_TIGERLAKE_PCH_H)
-#include "gpio_tgl_h.asl"
+#include "gpio_pch_h.asl"
 #else
 #include "gpio.asl"
 #endif
