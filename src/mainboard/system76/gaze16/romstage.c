@@ -8,10 +8,7 @@ static const struct mb_ddr4_cfg board_cfg = {
 	// dq_map unused on DDR4
 	// dqs_map unused on DDR4
 
-	// TGL-U does not support interleaved memory
-	.dq_pins_interleaved = 0,
-
-	//TODO: can we use early command training?
+	.dq_pins_interleaved = 1,
 	.ect = 0,
 };
 
@@ -26,9 +23,7 @@ static const struct spd_info spd = {
 };
 
 void mainboard_memory_init_params(FSPM_UPD *mupd) {
-	//TODO: Allow memory clocks higher than 2933 MHz
-	mupd->FspmConfig.SaOcSupport = 1;
-	//TODO: Set primary display to internal graphics
+	// Set primary display to internal graphics
 	mupd->FspmConfig.PrimaryDisplay = 0;
 
 	//TODO: what is this for?

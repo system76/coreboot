@@ -10,14 +10,8 @@ chip soc/intel/tigerlake
 	}"
 
 # ACPI (soc/intel/tigerlake/acpi.c)
-	# Disable DPTF
-	register "dptf_enable" = "0"
-
 	# Enable Enhanced Intel SpeedStep
 	register "eist_enable" = "1"
-
-	# Disable s0ix
-	register "s0ix_enable" = "0"
 
 # CPU (soc/intel/tigerlake/cpu.c)
 	# Power limits
@@ -41,9 +35,6 @@ chip soc/intel/tigerlake
 # FSP Memory (soc/intel/tigerlake/romstage/fsp_params.c)
 	# Enable C6 DRAM
 	register "enable_c6dram" = "1"
-
-	# System Agent dynamic frequency support
-	register "SaGv" = "SaGv_Enabled"
 
 # FSP Silicon (soc/intel/tigerlake/fsp_params.c)
 	# Acoustic settings

@@ -144,8 +144,10 @@ static const struct pad_config gpio_table[] = {
 	PAD_CFG_GPO(GPP_F5, 1, DEEP),
 	PAD_CFG_GPI(GPP_F6, NONE, DEEP),
 	PAD_CFG_GPI(GPP_F7, NONE, DEEP),
-	PAD_CFG_GPO(GPP_F8, 1, DEEP),
-	PAD_CFG_GPO(GPP_F9, 1, DEEP),
+	/* GPU enabled or not in bootblock.c
+	 * PAD_CFG_GPO(GPP_F8, 1, DEEP),
+	 * PAD_CFG_GPO(GPP_F9, 1, DEEP),
+	 */
 	PAD_CFG_GPI(GPP_F10, NONE, DEEP),
 	PAD_CFG_GPI(GPP_F11, NONE, DEEP),
 	PAD_CFG_GPO(GPP_F12, 1, DEEP),
