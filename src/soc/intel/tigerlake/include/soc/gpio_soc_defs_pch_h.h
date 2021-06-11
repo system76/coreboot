@@ -200,7 +200,7 @@
 #define GPP_G13			150
 #define GPP_G14			151
 #define GPP_G15			152
-#define GPP_GSPI2_CLK_LOOPBK			152
+#define GPP_GSPI2_CLK_LOOPBK			153
 
 /* Group vGPIO 154 - 180 */
 
