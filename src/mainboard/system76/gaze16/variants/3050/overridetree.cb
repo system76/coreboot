@@ -19,7 +19,7 @@ chip soc/intel/tigerlake
 		device ref peg0 on
 			# PCIe PEG0 x4, Clock 4 (SSD2)
 			register "PcieClkSrcUsage[4]" = "0x40"
-			register "PcieClkSrcClkReq[4]" = "7"
+			register "PcieClkSrcClkReq[4]" = "4"
 
 			#TODO: Hybrid storage mode?
 			register "HybridStorageMode" = "0"
