@@ -480,7 +480,7 @@ static const struct pad_config gpio_table[] = {
 	// ISH_GP_6_R
 	PAD_CFG_GPI(GPP_R11, NONE, DEEP),
 	// TP_ATTN#
-	_PAD_CFG_STRUCT(GPP_R12, 0x40100100, 0x0000),
+	PAD_CFG_GPI_INT(GPP_R12, NONE, PLTRST, LEVEL),
 	// NC
 	PAD_CFG_GPI(GPP_R13, NONE, DEEP),
 	// NC
