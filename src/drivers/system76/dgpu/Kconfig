@@ -10,3 +10,9 @@ config DRIVERS_SYSTEM76_DGPU_DEVICE
 	default 0x01
 	help
 		System76 switchable graphics root device number
+
+config DRIVERS_SYSTEM76_DGPU_FUNCTION
+	hex
+	default 0x00
+	help
+		System76 switchable graphics root device number
