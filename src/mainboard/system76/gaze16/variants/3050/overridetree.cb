@@ -1,8 +1,8 @@
 chip soc/intel/tigerlake
 	device domain 0 on
 		device ref peg2 on
-			# PCIe PEG1 x16, Clock 0 (DGPU)
-			register "PcieClkSrcUsage[0]" = "0x41"
+			# PCIe PEG2 x8, Clock 0 (DGPU)
+			register "PcieClkSrcUsage[0]" = "0x42"
 			register "PcieClkSrcClkReq[0]" = "0"
 			chip soc/intel/common/block/pcie/rtd3
 				register "enable_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_F9)" # DGPU_PWR_EN
