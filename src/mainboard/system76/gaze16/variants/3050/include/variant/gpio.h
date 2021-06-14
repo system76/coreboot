@@ -14,7 +14,6 @@
 
 /* Pad configuration in romstage. */
 static const struct pad_config early_gpio_table[] = {
-	PAD_CFG_NF(GPP_B5, NONE, DEEP, NF1), // GFX_CLKREQ0#
 	PAD_CFG_GPI(GPP_C20, NONE, DEEP), // UART2_RXD
 	PAD_CFG_GPI(GPP_C21, NONE, DEEP), // UART2_TXD
 	PAD_CFG_NF(GPP_F19, NONE, DEEP, NF1), // NB_ENAVDD
