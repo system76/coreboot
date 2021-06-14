@@ -160,9 +160,9 @@ static const struct pad_config gpio_table[] = {
 	// NC
 	PAD_CFG_GPI(GPP_C15, NONE, DEEP),
 	// I2C_SDA_TP
-	PAD_CFG_NF(GPP_C16, NONE, DEEP, NF1),
+	PAD_CFG_NF(GPP_C16, NONE, PWROK, NF1),
 	// I2C_SCL_TP
-	PAD_CFG_NF(GPP_C17, NONE, DEEP, NF1),
+	PAD_CFG_NF(GPP_C17, NONE, PWROK, NF1),
 	// SCI#
 	PAD_CFG_GPI(GPP_C18, NONE, DEEP),
 	// SWI#
