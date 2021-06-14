@@ -67,6 +67,14 @@ config DIMM_SPD_SIZE
 	int
 	default 512
 
+config DRIVERS_SYSTEM76_DGPU_DEVICE
+	hex
+	default 0x01
+
+config DRIVERS_SYSTEM76_DGPU_FUNCTION
+	hex
+	default 0x01
+
 config MAX_CPUS
 	int
 	default 16
