@@ -26,9 +26,6 @@ void mainboard_memory_init_params(FSPM_UPD *mupd) {
 	// Set primary display to internal graphics
 	mupd->FspmConfig.PrimaryDisplay = 0;
 
-	// TODO: do we have to enable PEG2?
-	mupd->FspmConfig.CpuPcieRpEnableMask = 7;
-
 	//TODO: what is this for?
 	const bool half_populated = false;
 	meminit_ddr4(&mupd->FspmConfig, &board_cfg, &spd, half_populated);

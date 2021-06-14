@@ -1,6 +1,6 @@
 chip soc/intel/tigerlake
 	device domain 0 on
-		device ref peg1 on
+		device ref peg2 on
 			# PCIe PEG1 x16, Clock 0 (DGPU)
 			register "PcieClkSrcUsage[0]" = "0x41"
 			register "PcieClkSrcClkReq[0]" = "0"
