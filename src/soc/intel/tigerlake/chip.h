@@ -27,7 +27,9 @@
 #define POWER_LIMITS_U_4_CORE	1
 #define POWER_LIMITS_Y_2_CORE	2
 #define POWER_LIMITS_Y_4_CORE	3
-#define POWER_LIMITS_MAX	4
+#define POWER_LIMITS_H_6_CORE	4
+#define POWER_LIMITS_H_8_CORE	5
+#define POWER_LIMITS_MAX	6
 
 /*
  * Enable External V1P05 Rail in: BIT0:S0i1/S0i2,
