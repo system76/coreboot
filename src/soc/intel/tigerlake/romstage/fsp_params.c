@@ -209,8 +209,23 @@ static void soc_memory_init_params(FSP_M_CONFIG *m_cfg,
 	m_cfg->SkipCpuReplacementCheck = !config->CpuReplacementCheck;
 
 	/* Skip CPU side PCIe enablement in FSP if device is disabled in devicetree */
+	m_cfg->CpuPcieRpEnableMask = 0;
 	dev = pcidev_path_on_root(SA_DEVFN_CPU_PCIE);
-	m_cfg->CpuPcieRpEnableMask = dev && dev->enabled;
+	if (is_dev_enabled(dev)) {
+		m_cfg->CpuPcieRpEnableMask |= (1 << 0);
+	}
+	dev = pcidev_path_on_root(SA_DEVFN_PEG1);
+	if (is_dev_enabled(dev)) {
+		m_cfg->CpuPcieRpEnableMask |= (1 << 1);
+	}
+	dev = pcidev_path_on_root(SA_DEVFN_PEG2);
+	if (is_dev_enabled(dev)) {
+		m_cfg->CpuPcieRpEnableMask |= (1 << 2);
+	}
+	dev = pcidev_path_on_root(SA_DEVFN_PEG3);
+	if (is_dev_enabled(dev)) {
+		m_cfg->CpuPcieRpEnableMask |= (1 << 3);
+	}
 
 	/* Change TmeEnable UPD value according to INTEL_TME Kconfig */
 	m_cfg->TmeEnable = CONFIG(INTEL_TME);
