@@ -107,6 +107,7 @@ config FSP_TEMP_RAM_SIZE
 
 config CHIPSET_DEVICETREE
 	string
+	default "soc/intel/tigerlake/chipset_pch_h.cb" if SOC_INTEL_TIGERLAKE_PCH_H
 	default "soc/intel/tigerlake/chipset.cb"
 
 config EXT_BIOS_WIN_BASE
@@ -129,10 +130,12 @@ config HEAP_SIZE
 
 config MAX_ROOT_PORTS
 	int
+	default 24 if SOC_INTEL_TIGERLAKE_PCH_H
 	default 12
 
 config MAX_PCIE_CLOCKS
 	int
+	default 16 if SOC_INTEL_TIGERLAKE_PCH_H
 	default 7
 
 config SMM_TSEG_SIZE
