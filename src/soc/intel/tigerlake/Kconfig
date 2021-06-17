@@ -3,6 +3,11 @@ config SOC_INTEL_TIGERLAKE
 	help
 	  Intel Tigerlake support
 
+config SOC_INTEL_TIGERLAKE_PCH_H
+	bool
+	help
+	  Choose this option if you have a PCH-H chipset.
+
 if SOC_INTEL_TIGERLAKE
 
 config CPU_SPECIFIC_OPTIONS
