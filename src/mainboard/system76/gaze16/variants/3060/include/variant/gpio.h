@@ -82,7 +82,7 @@ static const struct pad_config gpio_table[] = {
 	PAD_CFG_GPI(GPP_C2, NONE, DEEP), // SKIN_THRM_SNSR_ALERT_N
 	PAD_NC(GPP_C3, NONE),
 	PAD_NC(GPP_C4, NONE),
-	PAD_CFG_GPI(GPP_C5, NONE, DEEP), // eSPI/LPC select strap
+	PAD_CFG_NF(GPP_C5, NONE, DEEP, NF1), // eSPI/LPC select strap
 	PAD_NC(GPP_C6, NONE),
 	PAD_NC(GPP_C7, NONE),
 	PAD_CFG_GPI(GPP_C8, NONE, DEEP), // TPM_DET
