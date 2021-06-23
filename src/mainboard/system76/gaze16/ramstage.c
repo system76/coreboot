@@ -17,5 +17,8 @@ void mainboard_silicon_init_params(FSP_S_CONFIG *params) {
 	// Remap PEG2 as PEG1
 	params->CpuPcieRpFunctionSwap = 1;
 
+	// Low latency legacy I/O
+	params->PchLegacyIoLowLatency = 1;
+
 	gpio_configure_pads(gpio_table, ARRAY_SIZE(gpio_table));
 }
