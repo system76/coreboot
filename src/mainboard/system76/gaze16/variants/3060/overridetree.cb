@@ -1,8 +1,8 @@
 chip soc/intel/tigerlake
 	device domain 0 on
-		device ref peg2 on
-			# PCIe PEG2 (remapped to PEG1 by FSP) x8, Clock 9 (DGPU)
-			register "PcieClkSrcUsage[9]" = "0x42"
+		device ref peg1 on
+			# PCIe PEG1 x16, Clock 9 (DGPU)
+			register "PcieClkSrcUsage[9]" = "0x40"
 			register "PcieClkSrcClkReq[9]" = "9"
 			chip soc/intel/common/block/pcie/rtd3
 				register "enable_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_F9)" # DGPU_PWR_EN
@@ -11,7 +11,7 @@ chip soc/intel/tigerlake
 				register "enable_off_delay_ms" = "4"
 				register "reset_delay_ms" = "10"
 				register "reset_off_delay_ms" = "4"
-			 	#TODO: Support disable/enable CPU RP clock
+				#TODO: Support disable/enable CPU RP clock
 				register "srcclk_pin" = "-1" # PEG_CLKREQ#
 				device generic 0 on end
 			end

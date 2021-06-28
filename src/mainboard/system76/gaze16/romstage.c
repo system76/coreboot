@@ -24,7 +24,7 @@ static const struct spd_info spd = {
 
 void mainboard_memory_init_params(FSPM_UPD *mupd) {
 	// Enable PEG1 and PEG2
-	mupd->FspmConfig.CpuPcieRpEnableMask = 0b101;
+	mupd->FspmConfig.CpuPcieRpEnableMask = 0b111;
 
 	// Set primary display to internal graphics
 	mupd->FspmConfig.PrimaryDisplay = 0;
