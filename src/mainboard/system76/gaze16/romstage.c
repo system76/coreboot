@@ -3,6 +3,7 @@
 #include <fsp/util.h>
 #include <soc/meminit.h>
 #include <soc/romstage.h>
+#include "variant.h"
 
 static const struct mb_ddr4_cfg board_cfg = {
 	// dq_map unused on DDR4
@@ -23,8 +24,7 @@ static const struct spd_info spd = {
 };
 
 void mainboard_memory_init_params(FSPM_UPD *mupd) {
-	// Enable PEG1 and PEG2
-	mupd->FspmConfig.CpuPcieRpEnableMask = 0b111;
+	variant_memory_init_params(mupd);
 
 	// Set primary display to internal graphics
 	mupd->FspmConfig.PrimaryDisplay = 0;
