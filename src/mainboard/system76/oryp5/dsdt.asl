@@ -7,7 +7,7 @@ DefinitionBlock(
 	ACPI_DSDT_REV_2,
 	OEM_ID,
 	ACPI_TABLE_CREATOR,
-	0x20110725	// OEM revision
+	0x20110725	/* OEM revision */
 )
 {
 	#include <soc/intel/common/block/acpi/acpi/platform.asl>
