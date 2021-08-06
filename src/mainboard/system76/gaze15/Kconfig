@@ -24,7 +24,6 @@ config BOARD_SPECIFIC_OPTIONS
 	select SPD_READ_BY_WORD
 	select SYSTEM_TYPE_LAPTOP
 	select TPM_RDRESP_NEED_DELAY
-	select USE_LEGACY_8254_TIMER # Fix failure to boot GRUB
 	select USE_OPTION_TABLE
 
 config MAINBOARD_DIR
@@ -70,10 +69,6 @@ config DIMM_MAX
 config DIMM_SPD_SIZE
 	int
 	default 512
-
-config VGA_BIOS_FILE
-	string
-	default "pci8086,9bc4.rom"
 
 config VGA_BIOS_ID
 	string
