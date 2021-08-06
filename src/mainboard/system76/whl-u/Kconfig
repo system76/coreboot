@@ -37,7 +37,7 @@ config VARIANT_DIR
 
 config OVERRIDE_DEVICETREE
 	string
-	default "variants/$(CONFIG_VARIANT_DIR)/overridetree.cb"
+	default "variants/\$(CONFIG_VARIANT_DIR)/overridetree.cb"
 
 config MAINBOARD_PART_NUMBER
 	string
@@ -81,10 +81,6 @@ config DIMM_MAX
 config DIMM_SPD_SIZE
 	int
 	default 512
-
-config VGA_BIOS_FILE
-	string
-	default "pci8086,3ea0.rom"
 
 config VGA_BIOS_ID
 	string
