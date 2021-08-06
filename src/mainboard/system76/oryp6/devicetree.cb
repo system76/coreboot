@@ -26,7 +26,6 @@ chip soc/intel/cannonlake
 	# Serial I/O
 	register "SerialIoDevMode" = "{
 		[PchSerialIoIndexI2C0] = PchSerialIoPci, // Touchpad I2C bus
-		[PchSerialIoIndexUART2] = PchSerialIoSkipInit, // Debug console
 	}"
 
 	# Misc
@@ -94,9 +93,10 @@ chip soc/intel/cannonlake
 		device pci 14.1 off end # USB xDCI (OTG)
 		device pci 14.2 on  end # Shared SRAM
 		device pci 14.3 on      # CNVi wifi
-			#chip drivers/intel/wifi
-			#	register "wake" = "PME_B0_EN_BIT"
-			#end
+			chip drivers/wifi/generic
+				register "wake" = "PME_B0_EN_BIT"
+				device generic 0 on end
+			end
 		end
 		device pci 14.5 off end # SDCard
 		device pci 15.0 on
@@ -123,7 +123,7 @@ chip soc/intel/cannonlake
 		end
 		device pci 19.0 off end # I2C #4
 		device pci 19.1 off end # I2C #5
-		device pci 19.2 on  end # UART #2
+		device pci 19.2 off end # UART #2
 		device pci 1a.0 off end # eMMC
 		device pci 1b.0 on      # PCI Express Port 17
 			# PCI Express root port #17 x4, Clock 0 (Thunderbolt)
@@ -197,10 +197,9 @@ chip soc/intel/cannonlake
 		device pci 1e.2 off end # GSPI #0
 		device pci 1e.3 off end # GSPI #1
 		device pci 1f.0 on      # LPC Interface
-			register "gen1_dec" = "0x000c0081"
-			register "gen2_dec" = "0x00040069"
-			register "gen3_dec" = "0x00fc0e01"
-			register "gen4_dec" = "0x00fc0f01"
+			register "gen1_dec" = "0x00040069" # EC PM channel
+			register "gen2_dec" = "0x00fc0e01" # AP/EC command
+			register "gen3_dec" = "0x00fc0f01" # AP/EC debug
 			chip drivers/pc80/tpm
 				device pnp 0c31.0 on end
 			end

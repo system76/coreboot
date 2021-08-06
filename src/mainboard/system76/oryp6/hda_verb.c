@@ -1,8 +1,5 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#ifndef HDA_VERB_H
-#define HDA_VERB_H
-
 #include <device/azalia_device.h>
 
 const u32 cim_verb_data[] = {
@@ -25,11 +22,9 @@ const u32 cim_verb_data[] = {
 };
 
 const u32 pc_beep_verbs[] = {
-    // Enable DMIC microphone on ALC1220
-    0x02050036,
-    0x02042a6a,
+	// Enable DMIC microphone on ALC1220
+	0x02050036,
+	0x02042a6a,
 };
 
 AZALIA_ARRAY_SIZES;
-
-#endif
