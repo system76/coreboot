@@ -1,5 +1,7 @@
 chip soc/intel/tigerlake
 	device domain 0 on
+		subsystemid 0x1558 0x5015 inherit
+
 		device ref peg1 on
 			# PCIe PEG2 (remapped to PEG1 by FSP) x8, Clock 0 (DGPU)
 			register "PcieClkSrcUsage[0]" = "0x42"
