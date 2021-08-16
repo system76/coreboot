@@ -108,6 +108,8 @@ chip soc/intel/tigerlake
 	end
 
 	device domain 0 on
+		subsystemid 0x1558 0x51a1 inherit
+
 		#From CPU EDS(575683)
 		device ref system_agent on end
 		device ref igpu on
