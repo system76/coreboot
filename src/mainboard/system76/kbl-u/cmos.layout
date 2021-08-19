@@ -8,8 +8,13 @@ entries
 384	1	e	4	boot_option
 388	4	h	0	reboot_counter
 
-392	1	e	8	DisplayPort_Output
+# RTC_CLK_ALTCENTURY
+400	8	r	0	century
+
 408	1	h	1	preserve_smmstore
+#409	2	e	7	power_on_after_fail
+411	1	e	8	DisplayPort_Output
+412	4	e	6	debug_level
 984	16	h	0	check_sum
 
 enumerations
@@ -20,9 +25,23 @@ enumerations
 4	0	Fallback
 4	1	Normal
 
+6	0	Emergency
+6	1	Alert
+6	2	Critical
+6	3	Error
+6	4	Warning
+6	5	Notice
+6	6	Info
+6	7	Debug
+6	8	Spew
+
+7	0	Disable
+7	1	Enable
+7	2	Keep
+
 8	0	Mini_DisplayPort
 8	1	USB-C
 
 checksums
 
-checksum 392 983 984
+checksum 408 983 984
