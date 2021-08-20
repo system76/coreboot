@@ -38,17 +38,17 @@ static const struct reset_mapping rst_map_com2[] = {
  */
 static const struct pad_group tgl_community0_groups[] = {
 	INTEL_GPP_BASE(GPIO_COM0_START, 0, 24, 0),			/* GPP_A */
-	INTEL_GPP_BASE(GPIO_COM0_START, 25, 44, 128),			/* GPP_R */
-	INTEL_GPP_BASE(GPIO_COM0_START, 45, 70, 32),			/* GPP_B */
-	INTEL_GPP(GPIO_COM0_START, 71, 78),			/* vGPIO_0 */
+	INTEL_GPP_BASE(GPIO_COM0_START, 25, 44, 32),			/* GPP_R */
+	INTEL_GPP_BASE(GPIO_COM0_START, 45, 70, 64),			/* GPP_B */
+	INTEL_GPP_BASE(GPIO_COM0_START, 71, 78, 96),			/* vGPIO_0 */
 };
 
 static const struct pad_group tgl_community1_groups[] = {
-	INTEL_GPP_BASE(GPIO_COM1_START, 79, 104, 96),			/* GPP_D */
-	INTEL_GPP_BASE(GPIO_COM1_START, 105, 128, 64),			/* GPP_C */
-	INTEL_GPP_BASE(GPIO_COM1_START, 129, 136, 160),			/* GPP_S */
-	INTEL_GPP_BASE(GPIO_COM1_START, 137, 153, 192),			/* GPP_G */
-	INTEL_GPP_BASE(GPIO_COM1_START, 154, 180, 224),			/* vGPIO */
+	INTEL_GPP_BASE(GPIO_COM1_START, 79, 104, 128),			/* GPP_D */
+	INTEL_GPP_BASE(GPIO_COM1_START, 105, 128, 160),			/* GPP_C */
+	INTEL_GPP_BASE(GPIO_COM1_START, 129, 136, 192),			/* GPP_S */
+	INTEL_GPP_BASE(GPIO_COM1_START, 137, 153, 224),			/* GPP_G */
+	INTEL_GPP_BASE(GPIO_COM1_START, 154, 180, 256),			/* vGPIO */
 };
 
 /* Community 2 is not exposed to the OS */
@@ -57,18 +57,18 @@ static const struct pad_group tgl_community2_groups[] = {
 };
 
 static const struct pad_group tgl_community3_groups[] = {
-	INTEL_GPP_BASE(GPIO_COM3_START, 181, 193, 256),			/* GPP_E */
-	INTEL_GPP_BASE(GPIO_COM3_START, 194, 217, 288),			/* GPP_F */
+	INTEL_GPP_BASE(GPIO_COM3_START, 181, 193, 288),			/* GPP_E */
+	INTEL_GPP_BASE(GPIO_COM3_START, 194, 217, 320),			/* GPP_F */
 };
 
 static const struct pad_group tgl_community4_groups[] = {
-	INTEL_GPP_BASE(GPIO_COM4_START, 218, 241, 320),			/* GPP_H */
+	INTEL_GPP_BASE(GPIO_COM4_START, 218, 241, 352),			/* GPP_H */
 	INTEL_GPP_BASE(GPIO_COM4_START, 242, 251, 384),			/* GPP_J */
-	INTEL_GPP_BASE(GPIO_COM4_START, 252, 266, 352),			/* GPP_K */
+	INTEL_GPP_BASE(GPIO_COM4_START, 252, 266, 416),			/* GPP_K */
 };
 
 static const struct pad_group tgl_community5_groups[] = {
-	INTEL_GPP_BASE(GPIO_COM5_START, 267, 281, 416),			/* GPP_I */
+	INTEL_GPP_BASE(GPIO_COM5_START, 267, 281, 448),			/* GPP_I */
 	INTEL_GPP(GPIO_COM5_START, 282, 290),			/* JTAG */
 };
 
