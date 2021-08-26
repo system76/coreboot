@@ -13,9 +13,13 @@ chip soc/intel/tigerlake
 				register "enable_off_delay_ms" = "4"
 				register "reset_delay_ms" = "10"
 				register "reset_off_delay_ms" = "4"
-			 	#TODO: Support disable/enable CPU RP clock
+				#TODO: Support disable/enable CPU RP clock
 				register "srcclk_pin" = "-1" # GFX_CLKREQ0#
 				device generic 0 on end
+			end
+			chip drivers/system76/dgpu
+				device pci 00.0 on end # VGA controller
+				device pci 00.1 on end # Audio device
 			end
 		end
 		device ref peg0 on

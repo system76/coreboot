@@ -1,8 +1,10 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+#include <drivers/system76/dgpu/dgpu.h>
 #include <fsp/util.h>
 #include <soc/meminit.h>
 #include <soc/romstage.h>
+#include <variant/gpio.h>
 #include "variant.h"
 
 static const struct mb_ddr4_cfg board_cfg = {
@@ -23,7 +25,15 @@ static const struct spd_info spd = {
 	},
 };
 
-void mainboard_memory_init_params(FSPM_UPD *mupd) {
+void mainboard_memory_init_params(FSPM_UPD *mupd)
+{
+	struct system76_dgpu_config config = {
+		.enable_gpio = DGPU_PWR_EN,
+		.reset_gpio = DGPU_RST_N,
+		.enable = true,
+	};
+	dgpu_power_enable(&config);
+
 	variant_memory_init_params(mupd);
 
 	// Set primary display to internal graphics

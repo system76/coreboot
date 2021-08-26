@@ -1,7 +1,9 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+#include <drivers/system76/dgpu/dgpu.h>
 #include <soc/cnl_memcfg_init.h>
 #include <soc/romstage.h>
+#include "gpio.h"
 
 static const struct cnl_mb_cfg memcfg = {
 	.spd[0] = {
@@ -20,6 +22,13 @@ static const struct cnl_mb_cfg memcfg = {
 
 void mainboard_memory_init_params(FSPM_UPD *memupd)
 {
+	struct system76_dgpu_config config = {
+		.enable_gpio = DGPU_PWR_EN,
+		.reset_gpio = DGPU_RST_N,
+		.enable = true,
+	};
+	dgpu_power_enable(&config);
+
 	// Set primary display to internal graphics
 	memupd->FspmConfig.PrimaryDisplay = 0;
 
