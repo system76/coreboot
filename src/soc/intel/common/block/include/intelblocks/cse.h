@@ -8,6 +8,7 @@
 
 /* MKHI Command groups */
 #define MKHI_GROUP_ID_CBM	0x0
+#define MKHI_GROUP_ID_FWCAPS	0x3
 #define MKHI_GROUP_ID_HMRFPO	0x5
 #define MKHI_GROUP_ID_GEN	0xff
 #define MKHI_GROUP_ID_BUP_COMMON	0xf0
@@ -18,12 +19,23 @@
 /* Origin of Global Reset command */
 #define GR_ORIGIN_BIOS_POST	0x2
 
+/* Get/Set Firmware Capabilities Command IDs */
+#define MKHI_FWCAPS_GET_RULE	0x2
+#define MKHI_FWCAPS_SET_RULE	0x3
+
+/* Firmware Capabilities Rule IDs */
+#define ME_FWCAPS_GET_CAPS		0x0
+#define ME_FWCAPS_SET_ME_DISABLE	0x6
+
 /* HMRFPO Command Ids */
 #define MKHI_HMRFPO_ENABLE	0x1
 #define MKHI_HMRFPO_GET_STATUS	0x3
 
 /* Get Firmware Version Command Id */
 #define MKHI_GEN_GET_FW_VERSION	0x2
+
+/* Set ME Enable Command ID */
+#define MKHI_BUP_COMMON_SET_ME_ENABLE		0x03
 
 /* Boot partition info and set boot partition info command ids */
 #define MKHI_BUP_COMMON_GET_BOOT_PARTITION_INFO	0x1c
@@ -144,6 +156,19 @@ enum rst_req_type {
  * Returns 0 on failure and 1 on success.
  */
 int cse_request_global_reset(void);
+
+/*
+ * Sets the ME firmware to "Soft Temporary Disable" mode.
+ * Returns 0 on failure and 1 on success.
+ */
+int cse_soft_disable(void);
+
+/*
+ * Take the ME firmware out of "Soft Temporary Disable" mode.
+ * Returns 0 on failure and 1 on success.
+ */
+int cse_soft_enable(void);
+
 /*
  * Sends HMRFPO_ENABLE command.
  * HMRFPO - Host ME Region Flash Protection Override.

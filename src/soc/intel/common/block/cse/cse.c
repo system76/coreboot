@@ -672,6 +672,101 @@ int cse_request_global_reset(void)
 	return cse_request_reset(GLOBAL_RESET);
 }
 
+/* Sends FWCAPS_SET_RULE command with SET_ME_DISABLE rule to CSE */
+int cse_soft_disable(void)
+{
+	struct disable_msg {
+		struct mkhi_hdr hdr;
+		uint32_t rule_id;
+		uint8_t rule_len;
+		uint32_t rule_data;
+	} __packed;
+
+	struct disable_msg msg = {
+		.hdr = {
+			.group_id = MKHI_GROUP_ID_FWCAPS,
+			.command = MKHI_FWCAPS_SET_RULE,
+		},
+		.rule_id = ME_FWCAPS_SET_ME_DISABLE,
+		.rule_len = 4,
+		.rule_data = 0,
+	};
+
+	struct disable_resp {
+		struct mkhi_hdr hdr;
+		uint32_t rule_id;
+	} __packed;
+
+	struct disable_resp resp;
+	size_t resp_size = sizeof(resp);
+
+	printk(BIOS_DEBUG, "HECI: Send Set ME Disable message\n");
+
+	/*
+	 * Allow sending Set ME Disable mesasge only if:
+	 *  - CSE's current working state is Normal and current operation mode is Normal
+	 *  - Intel AMT is not opened in SoL, SRoU, or KVM session (TODO)
+	 */
+	if (!cse_is_hfs1_cws_normal() || !cse_is_hfs1_com_normal())
+		return 0;
+
+	if (!heci_send_receive(&msg, sizeof(msg), &resp, &resp_size))
+		return 0;
+
+	if (resp.hdr.result) {
+		printk(BIOS_ERR, "HECI: Set ME Disable failed: %d\n", resp.hdr.result);
+		return 0;
+	}
+
+	/* Global reset is required after issuing this message */
+	cse_request_global_reset();
+
+	return 1;
+}
+
+/* Sends ME_SOFT_ENABLE command to CSE */
+int cse_soft_enable(void)
+{
+	struct enable_msg {
+		struct mkhi_hdr hdr;
+	} __packed;
+
+	struct enable_msg msg = {
+		.hdr = {
+			.group_id = MKHI_GROUP_ID_BUP_COMMON,
+			.command = MKHI_BUP_COMMON_SET_ME_ENABLE,
+		},
+	};
+
+	struct enable_resp {
+		struct mkhi_hdr hdr;
+	} __packed;
+
+	struct enable_resp resp;
+	size_t resp_size = sizeof(resp);
+
+	printk(BIOS_DEBUG, "HECI: Send Set ME Enable message\n");
+
+	/*
+	 * Allow sending Set ME Enable mesasge only if:
+	 *  - CSE's current operation mode is Soft Temporary Disable
+	 */
+	if (!cse_is_hfs1_com_soft_temp_disable())
+		return 0;
+
+	if (!heci_send_receive(&msg, sizeof(msg), &resp, &resp_size))
+		return 0;
+
+	if (resp.hdr.result == 0) {
+		/* Global reset is required after issuing this message */
+		cse_request_global_reset();
+	} else {
+		printk(BIOS_ERR, "HECI: ME not in Soft Temporary Disable mode\n");
+	}
+
+	return 1;
+}
+
 static bool cse_is_hmrfpo_enable_allowed(void)
 {
 	/*
