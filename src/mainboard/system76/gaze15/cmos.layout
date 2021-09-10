@@ -14,12 +14,17 @@ entries
 408	1	h	1	preserve_smmstore
 #409	2	e	7	power_on_after_fail
 412	4	e	6	debug_level
+416	2	e	2	ime_mode
 984	16	h	0	check_sum
 
 enumerations
 
 1	0	Disable
 1	1	Enable
+
+2	0	Keep
+2	1	Disable
+2	2	Enable
 
 4	0	Fallback
 4	1	Normal

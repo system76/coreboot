@@ -1,3 +1,4 @@
 boot_option=Fallback
 debug_level=Debug
 preserve_smmstore=0
+ime_mode=Enable

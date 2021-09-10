@@ -2,3 +2,4 @@ boot_option=Fallback
 debug_level=Debug
 DisplayPort_Output=Mini_DisplayPort
 preserve_smmstore=0
+ime_mode=Disable
