@@ -154,33 +154,5 @@ void dump_me_status(void *unused)
 		hfsts6.fields.txt_support ? "YES" : "NO");
 }
 
-#if CONFIG(DISABLE_ME)
-
-static void disable_me(void* unused)
-{
-	printk(BIOS_DEBUG, "ME: send disable message\n");
-
-	struct disable_command {
-		uint32_t hdr;
-		uint32_t rule_id;
-		uint8_t rule_len;
-		uint32_t rule_data;
-	} __packed msg;
-	msg.hdr = 0x303;
-	msg.rule_id = 6;
-	msg.rule_len = 4;
-	msg.rule_data = 0;
-
-	if (!heci_send(&msg, sizeof(msg), BIOS_HOST_ADDR, HECI_MKHI_ADDR))
-		printk(BIOS_ERR, "ME: Error sending DISABLE msg\n");
-	dump_me_status(unused);
-}
-
-BOOT_STATE_INIT_ENTRY(BS_OS_RESUME_CHECK, BS_ON_EXIT, disable_me, NULL);
-
-#else // DISABLE_ME
-
 BOOT_STATE_INIT_ENTRY(BS_DEV_ENABLE, BS_ON_EXIT, print_me_fw_version, NULL);
 BOOT_STATE_INIT_ENTRY(BS_OS_RESUME_CHECK, BS_ON_EXIT, dump_me_status, NULL);
-
-#endif // DISABLE_ME

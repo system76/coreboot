@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
 #include <assert.h>
+#include <bootstate.h>
 #include <commonlib/helpers.h>
 #include <console/console.h>
 #include <device/mmio.h>
@@ -9,6 +10,7 @@
 #include <device/pci_ids.h>
 #include <device/pci_ops.h>
 #include <intelblocks/cse.h>
+#include <option.h>
 #include <soc/iomap.h>
 #include <soc/pci_devs.h>
 #include <soc/me.h>
@@ -766,6 +768,32 @@ int cse_soft_enable(void)
 
 	return 1;
 }
+
+static void cse_set_mode(void *unused)
+{
+	int ret = 0;
+	enum {
+		KEEP,
+		DISABLE,
+		ENABLE,
+	} mode;
+
+	if (get_option(&mode, "ime_mode") != CB_SUCCESS)
+		return;
+
+	if (mode == KEEP)
+		return;
+
+	if (mode == ENABLE)
+		ret = cse_soft_enable();
+	else if (mode == DISABLE)
+		ret = cse_soft_disable();
+
+	if (ret)
+		set_option("ime_mode", &mode);
+}
+
+BOOT_STATE_INIT_ENTRY(BS_OS_RESUME_CHECK, BS_ON_EXIT, cse_set_mode, NULL);
 
 static bool cse_is_hmrfpo_enable_allowed(void)
 {

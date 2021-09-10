@@ -258,9 +258,4 @@ config EARLY_TCSS_DISPLAY
 	help
 	  Enable displays to be detected over Type-C ports during boot.
 
-config DISABLE_ME
-	bool "Disable the IME by setting the HAP bit at run-time"
-	# XXX: Prevents CPU from reaching C10
-	default n
-
 endif
