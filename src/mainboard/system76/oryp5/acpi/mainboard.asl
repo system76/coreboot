@@ -1,5 +1,8 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+#include <mainboard/gpio.h>
+#include <drivers/gfx/nvidia/acpi/gpu.asl>
+
 #define EC_GPE_SCI 0x17 /* GPP_B23 */
 #define EC_GPE_SWI 0x26 /* GPP_G6 */
 #include <ec/system76/ec/acpi/ec.asl>
