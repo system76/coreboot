@@ -5,6 +5,12 @@
 
 #include <soc/gpio.h>
 
+#define DGPU_RST_N	GPP_U4
+#define DGPU_PWR_EN	GPP_U5
+#define DGPU_GC6	GPP_D2
+
+#ifndef __ACPI__
+
 static const struct pad_config early_gpio_table[] = {
 	PAD_CFG_NF(GPP_C20, UP_20K, DEEP, NF1), // UART2_RXD
 	PAD_CFG_NF(GPP_C21, UP_20K, DEEP, NF1), // UART2_TXD
@@ -221,5 +227,7 @@ static const struct pad_config gpio_table[] = {
 	//PAD_CFG_GPO(GPP_U4, 0, DEEP), // DGPU_RST#_PCH
 	//PAD_CFG_GPO(GPP_U5, 0, DEEP), // DGPU_PWR_EN
 };
+
+#endif /* __ACPI__ */
 
 #endif /* MAINBOARD_GPIO_H */
