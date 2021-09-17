@@ -3,6 +3,7 @@ if BOARD_SYSTEM76_GALP5
 config BOARD_SPECIFIC_OPTIONS
 	def_bool y
 	select BOARD_ROMSIZE_KB_16384
+	select DRIVERS_GFX_NVIDIA
 	select DRIVERS_I2C_HID
 	select DRIVERS_INTEL_PMC
 	select DRIVERS_INTEL_USB4_RETIMER
@@ -58,5 +59,8 @@ config UART_FOR_CONSOLE
 # PM Timer Disabled, saves power
 config USE_PM_ACPI_TIMER
 	default n
+
+config DRIVERS_GFX_NVIDIA_BRIDGE
+	default 0x1c
 
 endif
