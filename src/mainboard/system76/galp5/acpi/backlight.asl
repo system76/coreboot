@@ -2,7 +2,7 @@
 
 #include <drivers/intel/gma/acpi/gma.asl>
 
-Scope (GFX0) {
+Scope (RP05) {
        Name (BRIG, Package (22) {
                 40, /* default AC */
                 40, /* default Battery */
