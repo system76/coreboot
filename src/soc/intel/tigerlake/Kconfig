@@ -258,6 +258,18 @@ config EARLY_TCSS_DISPLAY
 	help
 	  Enable displays to be detected over Type-C ports during boot.
 
+config INTEL_GMA_BCLV_OFFSET
+	default 0xc8258
+
+config INTEL_GMA_BCLV_WIDTH
+	default 32
+
+config INTEL_GMA_BCLM_OFFSET
+	default 0xc8254
+
+config INTEL_GMA_BCLM_WIDTH
+	default 32
+
 config DISABLE_ME
 	bool "Disable the IME by setting the HAP bit at run-time"
 	# XXX: Prevents CPU from reaching C10
