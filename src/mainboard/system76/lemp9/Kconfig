@@ -23,6 +23,7 @@ config BOARD_SPECIFIC_OPTIONS
 	select SYSTEM_TYPE_LAPTOP
 	select TPM_MEASURED_BOOT
 	select USE_LEGACY_8254_TIMER # Fix failure to boot GRUB
+	select TPM_RDRESP_NEED_DELAY
 
 config MAINBOARD_DIR
 	default "system76/lemp9"
