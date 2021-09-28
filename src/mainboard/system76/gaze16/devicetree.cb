@@ -118,6 +118,9 @@ chip soc/intel/tigerlake
 			register "Device4Enable" = "1"
 		end
 		device ref gna on end
+		device ref north_xhci on
+			register "TcssXhciEn" = "1"
+		end
 
 		# From PCH EDS(615985)
 		device ref cnvi_bt on end
