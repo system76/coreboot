@@ -38,6 +38,9 @@ config MAINBOARD_SMBIOS_PRODUCT_NAME
 config MAINBOARD_VERSION
 	default "kudu6"
 
+config AMD_FWM_POSITION_INDEX
+	default 3
+
 config CBFS_SIZE
 	default 0xA00000
 
@@ -49,6 +52,21 @@ config DIMM_MAX
 
 config DIMM_SPD_SIZE
 	default 512
+
+config EFS_SPI_READ_MODE
+	default 4          # Dual IO (1-2-2)
+
+config EFS_SPI_SPEED
+	default 0	# 66MHz
+
+config EFS_SPI_MICRON_FLAG
+	default 0
+
+config NORMAL_READ_SPI_SPEED
+	default 1	# 33MHz
+
+config ALT_SPI_SPEED
+	default 0	# 66MHz
 
 config ONBOARD_VGA_IS_PRIMARY
 	default y
