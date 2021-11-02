@@ -1,0 +1,2 @@
+config BOARD_SYSTEM76_KUDU6
+	bool "kudu6"
