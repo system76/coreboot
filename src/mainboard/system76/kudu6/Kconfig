@@ -40,6 +40,9 @@ config MAINBOARD_VERSION
 config AMD_FWM_POSITION_INDEX
 	default 3
 
+config AMDFW_CONFIG_FILE
+	default "src/mainboard/\$(CONFIG_MAINBOARD_DIR)/amdfw.cfg"
+
 config CBFS_SIZE
 	default 0xA00000
 
