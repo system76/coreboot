@@ -56,13 +56,13 @@ config DIMM_SPD_SIZE
 	default 512
 
 config EFS_SPI_READ_MODE
-	default 4          # Dual IO (1-2-2)
+	default 5          # Quad IO (1-4-4)
 
 config EFS_SPI_SPEED
 	default 0	# 66MHz
 
 config EFS_SPI_MICRON_FLAG
-	default 0
+	default 2
 
 config NORMAL_READ_SPI_SPEED
 	default 1	# 33MHz
