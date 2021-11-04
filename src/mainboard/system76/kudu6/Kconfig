@@ -76,6 +76,9 @@ config ONBOARD_VGA_IS_PRIMARY
 config POST_DEVICE
 	default n
 
+config PSP_LOAD_MP2_FW
+	default y
+
 config PSP_POSTCODES_ON_ESPI
 	default n
 
