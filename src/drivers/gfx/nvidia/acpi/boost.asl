@@ -10,7 +10,7 @@
 #define GPS_FUNC_PSHARESTATUS		32
 #define GPS_FUNC_PSHAREPARAMS		42
 
-Method (NVGB, 2, NotSerialized)
+Method (GPS, 2, Serialized)
 {
 	Printf("GPS {")
 
@@ -24,13 +24,13 @@ Method (NVGB, 2, NotSerialized)
 
 		// Get current platform status, thermal budget
 		Case (GPS_FUNC_PSHARESTATUS) {
-			Printf("  GPS_FUNC_PSHARESTATUS")
+			Printf("  GPS_FUNC_PSHARESTATUS: %o", ToHexString(Arg1))
 			Local0 = Buffer (4) { 0 }
 		}
 
 		// Get GPU Boost platform parameters
 		Case (GPS_FUNC_PSHAREPARAMS) {
-			Printf("  GPS_FUNC_PSHAREPARAMS")
+			Printf("  GPS_FUNC_PSHAREPARAMS: %o", ToHexString(Arg1))
 			CreateField (Arg1, 0, 3, QTYP)		// Query Type
 			CreateField (Arg1, 8, 1, GTMP)		// GPU temperature status
 			CreateField (Arg1, 9, 1, CTMP)		// CPU temperature status
@@ -43,6 +43,8 @@ Method (NVGB, 2, NotSerialized)
 
 			VERS = 0x00010000
 			STAT = QTYP
+
+			Printf("    Query Type = %o", ToInteger(QTYP))
 
 			Switch (ToInteger(QTYP)) {
 				// Get current status
