@@ -7,19 +7,20 @@
 #define JT_FUNC_POWERCONTROL	3
 #define JT_FUNC_PLATPOLICY	4
 
-Method (NVJT, 2, NotSerialized)
+Method (NVJT, 2, Serialized)
 {
 	Printf("NVJT {")
 	Switch (ToInteger(Arg0)) {
 		Case (JT_FUNC_SUPPORT) {
 			Printf("  JT_FUNC_SUPPORT");
 			// Functions supported: 0, 1, 3, 4
-			Local0 = Buffer() { 0x1B, 0, 0, 0 }
+			//Local0 = Buffer() { 0x1B, 0, 0, 0 }
+			Local0 = Buffer() { 0x13, 0, 0, 0 }
 		}
 
 		Case (JT_FUNC_CAPS) {
 			Printf("  JT_FUNC_CAPS");
-			Local0 = Buffer(4) { 0, 0, 0, 0 }
+			Local0 = Buffer(4) { 0 }
 
 			// G-SYNC NVSR Power Features
 			CreateField (Local0, 0, 1, JTEN)
@@ -78,7 +79,7 @@ Method (NVJT, 2, NotSerialized)
 			GSW = 0
 
 			// Maximum Revision Supported
-			CreateField (Local0, 20, 16, MXRV)
+			CreateField (Local0, 20, 12, MXRV)
 			MXRV = JT_REVISION_ID
 		}
 
@@ -89,7 +90,7 @@ Method (NVJT, 2, NotSerialized)
 		}
 
 		Case (JT_FUNC_PLATPOLICY) {
-			Printf("  JT_FUNC_PLATPOLICY");
+			Printf("  JT_FUNC_PLATPOLICY: %o", ToHexString(Arg1));
 			//CreateField (Arg1, 2, 1, AUD)		// Azalia Audio Device
 			//CreateField (Arg1, 3, 1, ADM)		// Audio Disable Mask
 			//CreateField (Arg1, 4, 4, DGS)		// Driver expected State Mask
