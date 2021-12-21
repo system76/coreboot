@@ -43,6 +43,7 @@ Device (\_SB.PCI0.PEG0)
 	}
 
 	Name (_PR0, Package () { PWRR })
+	Name (_PR2, Package () { PWRR })
 	Name (_PR3, Package () { PWRR })
 }
 
@@ -54,10 +55,23 @@ Device (\_SB.PCI0.PEG0.DGPU)
 	Name (GPWR, 0)		// GPU Power
 	Name (GCST, 6)		// GCx State
 
+	Name (DPC, 0)		// Deferred power control
+	Name (DPCX, 0)		// Deferred power control on exit
+
+
+	Name (NVID, 0x00000000)
+
+	OperationRegion (PCIM, SystemMemory, 0x0E010000, 0xF0)
+	Field (PCIM, AnyAcc, Lock, Preserve)
+	{
+		Offset(0x2c),
+		SSID, 32,
+	}
+
 	// For supporting Hybrid Graphics, the package refers to the PCIe controller
 	// itself, which leverages GC6 Control methods under the dGPU namespace.
-	Name (_PR0, Package() { \_SB.PCI0.PEG0.PWRR })
-	Name (_PR3, Package() { \_SB.PCI0.PEG0.PWRR })
+	Name (_PR0, Package() { \_SB.PCI0.PEG0 })
+	Name (_PR3, Package() { \_SB.PCI0.PEG0 })
 
 	Method (_STA)
 	{
@@ -89,11 +103,32 @@ Device (\_SB.PCI0.PEG0.DGPU)
 
 		GPWR = 1
 		GCST = 0
+
+		/*
+		// TODO: Actually check link status
+		Printf("Wait for PCIe link")
+		Sleep(100)
+
+		Printf("Restore SSID: %o", NVID)
+		SSID = NVID
+		*/
+
 		Printf("} DGPU._ON")
 	}
 
 	Method (_OFF)
 	{
+		Printf("DGPU._OFF {")
+
+		/*
+		Printf("Save SSID: %o", SSID)
+		NVID = SSID
+
+		// TODO: Actually check link status
+		Printf("Wait for PCIe link")
+		Sleep(100)
+		*/
+
 		Printf("DGPU._OFF {")
 		Printf("  Put GPU in reset")
 		CTXS(DGPU_RST_N)
@@ -101,7 +136,6 @@ Device (\_SB.PCI0.PEG0.DGPU)
 
 		Printf("  Disable GPU power")
 		CTXS(DGPU_PWR_EN)
-		Sleep(10)
 
 		GPWR = 0
 		GCST = 6

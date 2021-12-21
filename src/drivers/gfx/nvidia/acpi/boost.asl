@@ -78,6 +78,6 @@ Method (GPS, 2, Serialized)
 		}
 	}
 
-	Printf("}")
+	Printf("} GPS")
 	Return(Local0)
 }
