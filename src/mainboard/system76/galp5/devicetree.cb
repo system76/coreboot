@@ -112,13 +112,15 @@ chip soc/intel/tigerlake
 			# PCIe PEG0 x4, Clock 0 (SSD1)
 			register "PcieClkSrcUsage[0]" = "0x40"
 			register "PcieClkSrcClkReq[0]" = "0"
-			chip soc/intel/common/block/pcie/rtd3
-				register "enable_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_D14)" # SSD1_PWR_DN#
-				register "reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_H0)" # GPP_H0_RTD3
-				# TODO: Support disable/enable CPU RP clock
-				register "srcclk_pin" = "-1" # SSD1_CLKREQ#
-				device generic 0 on end
-			end
+			# Causes errors on suspend: device can't reach D0 after s2idle
+			# TODO: Test with coreboot 4.16, which has SrcClk and ModPHY implemented
+			#chip soc/intel/common/block/pcie/rtd3
+			#	register "enable_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_D14)" # SSD1_PWR_DN#
+			#	register "reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_H0)" # GPP_H0_RTD3
+			#	# TODO: Support disable/enable CPU RP clock
+			#	register "srcclk_pin" = "0" # SSD1_CLKREQ#
+			#	device generic 0 on end
+			#end
 		end
 		device ref tbt_pcie_rp0 on end # J_TYPEC2
 		device ref gna on end
