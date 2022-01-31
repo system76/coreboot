@@ -14,6 +14,7 @@ fw_config
 	field AUDIO 8 10
 		option AUDIO_UNKNOWN		0
 		option MAX98360_ALC5682I_I2S	1
+		option MAX98360_ALC5682I_VS_I2S	2
 	end
 	field DB_LTE 11 12
 		option LTE_ABSENT		0
@@ -22,18 +23,14 @@ fw_config
 end
 
 chip soc/intel/alderlake
-	# This disabled autonomous GPIO power management, otherwise
-	# old cr50 FW only supports short pulses; need to clarify
-	# the minimum PCH IRQ pulse width with Intel, b/180111628
-	register "gpio_override_pm" = "1"
-	register "gpio_pm[COMM_0]" = "0"
-	register "gpio_pm[COMM_1]" = "0"
-	register "gpio_pm[COMM_2]" = "0"
-	register "gpio_pm[COMM_3]" = "0"
-	register "gpio_pm[COMM_4]" = "0"
-	register "gpio_pm[COMM_5]" = "0"
 	register "SaGv" = "SaGv_Enabled"
 	register "MaxDramSpeed" = "3733"
+	# Acoustic settings
+  	register "AcousticNoiseMitigation" = "1"
+  	register "SlowSlewRate[VR_DOMAIN_IA]" = "SLEW_FAST_8"
+  	register "SlowSlewRate[VR_DOMAIN_GT]" = "SLEW_FAST_8"
+  	register "FastPkgCRampDisable[VR_DOMAIN_IA]" = "1"
+  	register "FastPkgCRampDisable[VR_DOMAIN_GT]" = "1"
 
 	# Intel Common SoC Config
 	#+-------------------+---------------------------+
@@ -41,11 +38,11 @@ chip soc/intel/alderlake
 	#+-------------------+---------------------------+
 	#| GSPI1             | Fingerprint MCU           |
 	#| I2C0              | Audio                     |
-	#| I2C1              | Touchscreen               |
-	#| I2C2              |                           |
-	#| I2C3              | cr50 TPM. Early init is   |
+	#| I2C1              | cr50 TPM. Early init is   |
 	#|                   | required to set up a BAR  |
 	#|                   | for TPM communication     |
+	#| I2C2              |                           |
+	#| I2C3              | Touchscreen               |
 	#| I2C5              | Trackpad                  |
 	#+-------------------+---------------------------+
 	register "common_soc_config" = "{
@@ -53,14 +50,20 @@ chip soc/intel/alderlake
 			.speed = I2C_SPEED_FAST,
 		},
 		.i2c[1] = {
+			.early_init = 1,
 			.speed = I2C_SPEED_FAST,
+			.rise_time_ns = 600,
+			.fall_time_ns = 400,
+			.data_hold_time_ns = 50,
 		},
 		.i2c[2] = {
 			.speed = I2C_SPEED_FAST,
 		},
 		.i2c[3] = {
-			.early_init = 1,
 			.speed = I2C_SPEED_FAST,
+			.rise_time_ns = 650,
+			.fall_time_ns = 400,
+			.data_hold_time_ns = 50,
 		},
 		.i2c[5] = {
 			.speed = I2C_SPEED_FAST,
@@ -77,21 +80,32 @@ chip soc/intel/alderlake
 		device ref dtt on
 			chip drivers/intel/dptf
 				## sensor information
-				register "options.tsr[0].desc" = ""DRAM""
-				register "options.tsr[1].desc" = ""Charger""
+				register "options.tsr[0].desc" = ""CPU""
+				register "options.tsr[1].desc" = ""SSD""
+				register "options.tsr[2].desc" = ""CHARGER""
+				register "options.tsr[3].desc" = ""MEMORY""
+				register "options.tsr[4].desc" = ""TYPEC""
+				# TODO: below values are initial reference values only
 
 				## Passive Policy
 				register "policies.passive" = "{
-					[0] = DPTF_PASSIVE(CPU,         CPU,           95, 5000),
-					[1] = DPTF_PASSIVE(CPU,         TEMP_SENSOR_0, 75, 5000),
-					[2] = DPTF_PASSIVE(CHARGER,     TEMP_SENSOR_1, 75, 5000),
+					[0] = DPTF_PASSIVE(CPU,      CPU,               95, 5000),
+					[1] = DPTF_PASSIVE(CPU,      TEMP_SENSOR_0,     90, 5000),
+					[2] = DPTF_PASSIVE(CPU,      TEMP_SENSOR_1,     92, 5000),
+					[3] = DPTF_PASSIVE(CPU,      TEMP_SENSOR_2,     90, 5000),
+					[4] = DPTF_PASSIVE(CPU,      TEMP_SENSOR_3,     90, 5000),
+					[5] = DPTF_PASSIVE(CHARGER,  TEMP_SENSOR_4,     90, 5000),
+
 				}"
 
 				## Critical Policy
 				register "policies.critical" = "{
 					[0] = DPTF_CRITICAL(CPU,               105, SHUTDOWN),
 					[1] = DPTF_CRITICAL(TEMP_SENSOR_0,      85, SHUTDOWN),
-					[2] = DPTF_CRITICAL(TEMP_SENSOR_1,      85, SHUTDOWN),
+					[2] = DPTF_CRITICAL(TEMP_SENSOR_1,      89, SHUTDOWN),
+					[3] = DPTF_CRITICAL(TEMP_SENSOR_2,      85, SHUTDOWN),
+					[4] = DPTF_CRITICAL(TEMP_SENSOR_3,      85, SHUTDOWN),
+					[5] = DPTF_CRITICAL(TEMP_SENSOR_4,      85, SHUTDOWN),
 				}"
 
 				register "controls.power_limits" = "{
@@ -100,7 +114,7 @@ chip soc/intel/alderlake
 							.max_power = 15000,
 							.time_window_min = 28 * MSECS_PER_SEC,
 							.time_window_max = 32 * MSECS_PER_SEC,
-							.granularity = 200,
+							.granularity = 250,
 						},
 					.pl2 = {
 							.min_power = 55000,
@@ -128,6 +142,11 @@ chip soc/intel/alderlake
 			end
 		end
 		device ref pcie_rp3 on
+			chip soc/intel/common/block/pcie/rtd3
+				register "reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_B3)"
+				register "srcclk_pin" = "6"
+				device generic 0 alias emmc_rtd3 on end
+			end
 			# Enable PCIe-to-eMMC bridge PCIE 3 using clk 6
 			register "pch_pcie_rp[PCH_RP(3)]" = "{
 				.clk_src = 6,
@@ -177,12 +196,20 @@ chip soc/intel/alderlake
 				register "property_list[0].type" = "ACPI_DP_TYPE_INTEGER"
 				register "property_list[0].name" = ""realtek,jd-src""
 				register "property_list[0].integer" = "1"
-				device i2c 1a on
+				device i2c 1a alias audio_codec on
 					probe AUDIO MAX98360_ALC5682I_I2S
+					probe AUDIO MAX98360_ALC5682I_VS_I2S
 				end
 			end
 		end #I2C0
 		device ref i2c1 on
+			chip drivers/i2c/tpm
+				register "hid" = ""GOOG0005""
+				register "irq" = "ACPI_IRQ_EDGE_LOW(GPP_A13_IRQ)"
+				device i2c 50 on end
+			end
+		end
+		device ref i2c3 on
 			chip drivers/i2c/hid
 				register "generic.hid" = ""ELAN9050""
 				register "generic.desc" = ""ELAN Touchscreen""
@@ -199,6 +226,7 @@ chip soc/intel/alderlake
 							"ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_C6)"
 				register "generic.stop_off_delay_ms" = "1"
 				register "generic.has_power_resource" = "1"
+				register "generic.disable_gpio_export_in_crs" = "1"
 				register "hid_desc_reg_offset" = "0x01"
 				device i2c 0x10 on end
 			end
@@ -214,6 +242,7 @@ chip soc/intel/alderlake
 							"ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_C0)"
 				register "generic.enable_delay_ms" = "1"
 				register "generic.has_power_resource" = "1"
+				register "generic.disable_gpio_export_in_crs" = "1"
 				register "hid_desc_reg_offset" = "0x01"
 				device i2c 0x40 on end
 			end
@@ -245,6 +274,7 @@ chip soc/intel/alderlake
 				register "sdmode_delay" = "5"
 				device generic 0 on
 					probe AUDIO MAX98360_ALC5682I_I2S
+					probe AUDIO MAX98360_ALC5682I_VS_I2S
 				end
 			end
 		end
@@ -270,13 +300,13 @@ chip soc/intel/alderlake
 			chip drivers/intel/pmc_mux
 				device generic 0 on
 					chip drivers/intel/pmc_mux/conn
-						register "usb2_port_number" = "1"
-						register "usb3_port_number" = "1"
+						use usb2_port1 as usb2_port
+						use tcss_usb3_port1 as usb3_port
 						device generic 0 alias conn0 on end
 					end
 					chip drivers/intel/pmc_mux/conn
-						register "usb2_port_number" = "3"
-						register "usb3_port_number" = "3"
+						use usb2_port3 as usb2_port
+						use tcss_usb3_port3 as usb3_port
 						device generic 1 alias conn1 on end
 					end
 				end
@@ -294,7 +324,7 @@ chip soc/intel/alderlake
 					chip drivers/usb/acpi
 						register "desc" = ""USB3 Type-C Port C2 (MLB)""
 						register "type" = "UPC_TYPE_C_USB2_SS_SWITCH"
-						register "group" = "ACPI_PLD_GROUP(3, 1)"
+						register "group" = "ACPI_PLD_GROUP(2, 1)"
 						device ref tcss_usb3_port3 on end
 					end
 				end
@@ -312,7 +342,7 @@ chip soc/intel/alderlake
 					chip drivers/usb/acpi
 						register "desc" = ""USB2 Type-C Port C2 (MLB)""
 						register "type" = "UPC_TYPE_C_USB2_SS_SWITCH"
-						register "group" = "ACPI_PLD_GROUP(3, 1)"
+						register "group" = "ACPI_PLD_GROUP(2, 1)"
 						device ref usb2_port3 on end
 					end
 					chip drivers/usb/acpi

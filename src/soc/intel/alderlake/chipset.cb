@@ -2,16 +2,16 @@ chip soc/intel/alderlake
 
 	device cpu_cluster 0 on end
 
-	register "power_limits_config[ADL_P_282_CORE]" = "{
+	register "power_limits_config[ADL_P_142_242_282_15W_CORE]" = "{
 		.tdp_pl1_override = 15,
 		.tdp_pl2_override = 55,
 		.tdp_pl4 = 123,
 	}"
 
-	register "power_limits_config[ADL_P_482_CORE]" = "{
+	register "power_limits_config[ADL_P_282_482_28W_CORE]" = "{
 		.tdp_pl1_override = 28,
 		.tdp_pl2_override = 64,
-		.tdp_pl4 = 140,
+		.tdp_pl4 = 90,
 	}"
 
 	register "power_limits_config[ADL_P_682_28W_CORE]" = "{
@@ -20,7 +20,13 @@ chip soc/intel/alderlake
 		.tdp_pl4 = 140,
 	}"
 
-	register "power_limits_config[ADL_P_682_45W_CORE]" = "{
+	register "power_limits_config[ADL_P_442_482_45W_CORE]" = "{
+		.tdp_pl1_override = 45,
+		.tdp_pl2_override = 95,
+		.tdp_pl4 = 125,
+	}"
+
+	register "power_limits_config[ADL_P_642_682_45W_CORE]" = "{
 		.tdp_pl1_override = 45,
 		.tdp_pl2_override = 115,
 		.tdp_pl4 = 215,
@@ -42,11 +48,10 @@ chip soc/intel/alderlake
 		.tdp_pl4 = 68,
 	}"
 
-	register "power_limits_config[ADL_P_242_CORE]" = "{
-		.tdp_pl1_override = 15,
-		.tdp_pl2_override = 55,
-		.tdp_pl4 = 123,
-	}"
+	# NOTE: if any variant wants to override this value, use the same format
+	# as register "common_soc_config.pch_thermal_trip" = "value", instead of
+	# putting it under register "common_soc_config" in overridetree.cb file.
+	register "common_soc_config.pch_thermal_trip" = "100"
 
 	device domain 0 on
 		device gpio 0 alias pch_gpio on end
@@ -170,7 +175,7 @@ chip soc/intel/alderlake
 		device pci 15.1 alias i2c1 off end
 		device pci 15.2 alias i2c2 off end
 		device pci 15.3 alias i2c3 off end
-		device pci 16.0 alias heci1 off end
+		device pci 16.0 alias heci1 on  end
 		device pci 16.1 alias heci2 off end
 		device pci 16.2 alias ide_r off end
 		device pci 16.3 alias kt off end
@@ -180,6 +185,8 @@ chip soc/intel/alderlake
 		device pci 19.0 alias i2c4 off end
 		device pci 19.1 alias i2c5 off end
 		device pci 19.2 alias uart2 off end
+		# eMMC device is applicable only for ADL-N
+		device pci 1a.0 alias emmc off end
 		device pci 1c.0 alias pcie_rp1 off end
 		device pci 1c.1 alias pcie_rp2 off end
 		device pci 1c.2 alias pcie_rp3 off end

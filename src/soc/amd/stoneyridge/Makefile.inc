@@ -4,27 +4,28 @@ ifeq ($(CONFIG_SOC_AMD_STONEYRIDGE),y)
 
 subdirs-y += ../../../cpu/amd/mtrr/
 
+bootblock-y += aoac.c
 bootblock-y += uart.c
 bootblock-y += BiosCallOuts.c
 bootblock-y += bootblock.c
+bootblock-y += early_fch.c
 bootblock-y += gpio.c
 bootblock-y += i2c.c
 bootblock-y += enable_usbdebug.c
 bootblock-y += monotonic_timer.c
 bootblock-y += tsc_freq.c
-bootblock-y += southbridge.c
 
 romstage-y += BiosCallOuts.c
 romstage-y += i2c.c
 romstage-y += romstage.c
 romstage-y += enable_usbdebug.c
+romstage-y += fch_agesa.c
 romstage-y += gpio.c
 romstage-y += monotonic_timer.c
 romstage-y += smbus_spd.c
 romstage-y += memmap.c
 romstage-y += uart.c
 romstage-y += tsc_freq.c
-romstage-y += southbridge.c
 romstage-y += psp.c
 
 verstage-y += gpio.c
@@ -46,9 +47,10 @@ ramstage-y += cpu.c
 ramstage-y += mca.c
 ramstage-y += enable_usbdebug.c
 ramstage-$(CONFIG_HAVE_ACPI_TABLES) += acpi.c
+ramstage-y += fch.c
+ramstage-y += fch_agesa.c
 ramstage-y += gpio.c
 ramstage-y += monotonic_timer.c
-ramstage-y += southbridge.c
 ramstage-y += northbridge.c
 ramstage-y += sata.c
 ramstage-y += memmap.c
@@ -66,7 +68,6 @@ smm-$(CONFIG_DEBUG_SMI) += uart.c
 smm-y += gpio.c
 smm-y += psp.c
 
-CPPFLAGS_common += -I$(src)/soc/amd/stoneyridge
 CPPFLAGS_common += -I$(src)/soc/amd/stoneyridge/include
 CPPFLAGS_common += -I$(src)/soc/amd/stoneyridge/acpi
 
@@ -123,6 +124,7 @@ endif
 
 ifeq ($(FIRMWARE_TYPE),ST)
 OPT_COMBOCAPABLE=--combo-capable
+OPT_SOCNAME=--soc-name "Stoneyridge"
 endif
 
 ifeq ($(CONFIG_USE_PSPSECUREOS),y)
@@ -130,6 +132,9 @@ PSP_USE_PSPSECUREOS="--use-pspsecureos"
 endif
 
 OPT_PSP_USE_PSPSECUREOS=$(call strip_quotes, $(PSP_USE_PSPSECUREOS))
+
+OPT_EFS_SPI_READ_MODE=$(call add_opt_prefix, $(CONFIG_EFS_SPI_READ_MODE), --spi-read-mode)
+OPT_EFS_SPI_SPEED=$(call add_opt_prefix, $(CONFIG_EFS_SPI_SPEED), --spi-speed)
 
 # Add all the files listed in the config file
 POUND_SIGN=$(call strip_quotes, "\#")
@@ -146,7 +151,10 @@ $(obj)/amdfw.rom:	$(call strip_quotes, $(CONFIG_STONEYRIDGE_XHCI_FWM_FILE)) \
 		$(OPT_STONEYRIDGE_GEC_FWM_FILE) \
 		$(OPT_COMBOCAPABLE)\
 		$(OPT_PSP_USE_PSPSECUREOS) \
+		$(OPT_EFS_SPI_READ_MODE) \
+		$(OPT_EFS_SPI_SPEED) \
 		--config $(CONFIG_AMDFW_CONFIG_FILE) \
+		$(OPT_SOCNAME) \
 		--flashsize $(CONFIG_ROM_SIZE) \
 		--location $(shell printf "0x%x" $(STONEYRIDGE_FWM_POSITION)) \
 		--output	$@

@@ -65,10 +65,18 @@
 
 typedef uint32_t gpio_t;
 
+enum gpio_lock_action {
+	GPIO_UNLOCK		 = 0x0,
+	GPIO_LOCK_CONFIG	 = 0x1,
+	GPIO_LOCK_TX		 = 0x2,
+	GPIO_LOCK_FULL		 = GPIO_LOCK_CONFIG | GPIO_LOCK_TX,
+};
+
 struct pad_config {
-	int		pad;/* offset of pad within community */
+	gpio_t		pad;/* offset of pad within community */
 	uint32_t	pad_config[GPIO_NUM_PAD_CFG_REGS];/*
 			Pad config data corresponding to DW0, DW1,.... */
+	enum gpio_lock_action	lock_action; /* Pad lock configuration */
 };
 
 /*
@@ -199,10 +207,9 @@ void gpio_configure_pads_with_override(const struct pad_config *base_cfg,
  */
 void *gpio_dwx_address(const gpio_t pad);
 
-enum gpio_lock_action {
-	GPIO_LOCK_CONFIG = 0x1,
-	GPIO_LOCK_TX	 = 0x2,
-	GPIO_LOCK_FULL	 = GPIO_LOCK_CONFIG | GPIO_LOCK_TX,
+struct gpio_lock_config {
+	gpio_t			pad;
+	enum gpio_lock_action	lock_action;
 };
 
 /*
@@ -222,14 +229,41 @@ enum gpio_lock_action {
  * function may only be called in SMM.
  *
  * @param pad: GPIO pad number
- * @param action: Which register to lock.
+ * @param lock_action: Which register to lock.
  * @return 0 if successful,
  * 1 - unsuccessful
  * 2 - powered down
  * 3 - multi-cast mixed
  * -1 - sideband message failed or other error
  */
-int gpio_lock_pad(const gpio_t pad, enum gpio_lock_action action);
+int gpio_lock_pad(const gpio_t pad, enum gpio_lock_action lock_action);
+
+/*
+ * gpio_lock_pads() can be used to lock an array of gpio pads, avoiding
+ * the p2sb_unhide() and p2sb_hide() calls between each gpio lock that would
+ * occur if gpio_lock_pad() were used to lock each pad in the list.
+ *
+ * @param pad_list: array of gpio_lock_config structures, one for each gpio to lock
+ * @param count: number of gpio_lock_config structs in the pad_list array
+ * @return 0 if successful,
+ * 1 - unsuccessful
+ * 2 - powered down
+ * 3 - multi-cast mixed
+ * -1 - sideband message failed or other error
+ */
+int gpio_lock_pads(const struct gpio_lock_config *pad_list, const size_t count);
+
+/*
+ * Returns an array of gpio_lock_config entries that the SoC
+ * deems security risks that should be locked down.
+ */
+const struct gpio_lock_config *soc_gpio_lock_config(size_t *num);
+
+/*
+ * Returns an array of gpio_lock_config entries that the mainboard
+ * deems security risks that should be locked down.
+ */
+const struct gpio_lock_config *mb_gpio_lock_config(size_t *num);
 
 /*
  * Returns the pmc_gpe to gpio_gpe mapping table

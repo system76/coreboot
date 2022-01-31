@@ -4,7 +4,6 @@
 #include <acpi/acpi_crat.h>
 #include <acpi/acpi_ivrs.h>
 #include <arch/cpu.h>
-#include <console/console.h>
 #include <cpu/amd/cpuid.h>
 #include <cpu/amd/msr.h>
 #include <FspGuids.h>
@@ -19,7 +18,6 @@
 #include <amdblocks/ioapic.h>
 #include <soc/data_fabric.h>
 #include <soc/pci_devs.h>
-#include <stdlib.h>
 #include <arch/mmio.h>
 
 static unsigned long gen_crat_hsa_entry(struct acpi_crat_header *crat, unsigned long current)
@@ -82,7 +80,7 @@ static unsigned long gen_crat_memory_entries(struct acpi_crat_header *crat,
 			if (memory_base == 0) {
 				current =
 					create_crat_memory_entry(0, 0ull, 0xa0000ull, current);
-				memory_base = (1 * 1024 * 1024);
+				memory_base = 1 * MiB;
 				memory_length = memory_base;
 				new_entries++;
 			}

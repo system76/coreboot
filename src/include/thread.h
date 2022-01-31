@@ -4,7 +4,6 @@
 
 #include <arch/cpu.h>
 #include <bootstate.h>
-#include <commonlib/bsd/cb_err.h>
 #include <types.h>
 
 struct thread_mutex {
@@ -38,7 +37,7 @@ int thread_run_until(struct thread_handle *handle, enum cb_err (*func)(void *), 
 /* Waits until the thread has terminated and returns the error code */
 enum cb_err thread_join(struct thread_handle *handle);
 
-#if (ENV_RAMSTAGE || ENV_ROMSTAGE) && CONFIG(COOP_MULTITASKING)
+#if ENV_STAGE_SUPPORTS_COOP
 
 struct thread {
 	int id;

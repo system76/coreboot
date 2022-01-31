@@ -70,7 +70,7 @@ static __attribute__((noinline)) void do_ram_command(u32 command)
 	udelay(1);
 }
 
-static void ram_read32(u32 offset)
+static void ram_read32(uintptr_t offset)
 {
 	PRINTK_DEBUG("   RAM read: %08x\n", offset);
 
@@ -2121,7 +2121,7 @@ static void sdram_power_management(struct sys_info *sysinfo)
 {
 	u16 reg16;
 	u32 reg32;
-	int integrated_graphics = 1;
+	bool integrated_graphics = true;
 	int i;
 
 	if (!(pci_read_config8(HOST_BRIDGE, DEVEN) & (DEVEN_D2F0 | DEVEN_D2F1)))

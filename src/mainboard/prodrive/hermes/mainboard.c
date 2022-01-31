@@ -1,18 +1,33 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#include <arch/cpu.h>
 #include <acpi/acpigen.h>
+#include <arch/cpu.h>
+#include <bootstate.h>
 #include <cbmem.h>
 #include <console/console.h>
 #include <crc_byte.h>
-#include <bootstate.h>
 #include <device/device.h>
 #include <device/dram/spd.h>
+#include <drivers/intel/gma/opregion.h>
+#include <gpio.h>
+#include <intelblocks/gpio.h>
 #include <intelblocks/pmclib.h>
-#include <types.h>
 #include <smbios.h>
-#include "variants/baseboard/include/eeprom.h"
+#include <soc/gpio.h>
+#include <types.h>
+
+#include "eeprom.h"
 #include "gpio.h"
+
+const char *mainboard_vbt_filename(void)
+{
+	const struct eeprom_bmc_settings *bmc_cfg = get_bmc_settings();
+
+	if (bmc_cfg && bmc_cfg->efp3_displayport)
+		return "vbt-avalanche.bin";
+	else
+		return "vbt.bin"; /* Poseidon */
+}
 
 /* FIXME: Example code below */
 
@@ -138,7 +153,7 @@ static void mainboard_init(void *chip_info)
 		return;
 
 	/* Enable internal speaker amplifier */
-	if (board_cfg->internal_audio_connection == 2)
+	if (board_cfg->front_panel_audio == 2)
 		mb_hda_amp_enable(1);
 	else
 		mb_hda_amp_enable(0);

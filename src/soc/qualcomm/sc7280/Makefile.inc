@@ -30,13 +30,20 @@ romstage-y += shrm_load_reset.c
 romstage-y += ../common/qclib.c
 romstage-y += ../common/mmu.c
 romstage-y += mmu.c
+romstage-y += ../common/usb/usb.c
+romstage-y += carve_out.c
 romstage-$(CONFIG_DRIVERS_UART) += ../common/qupv3_uart.c
 
 ################################################################################
 ramstage-y += soc.c
+ramstage-y += carve_out.c
 ramstage-y += cbmem.c
 ramstage-$(CONFIG_DRIVERS_UART) += ../common/qupv3_uart.c
+ramstage-y += ../common/usb/usb.c
+ramstage-y += ../common/usb/snps_usb_phy.c
+ramstage-y += ../common/usb/qmpv4_usb_phy.c
 ramstage-y += ../common/aop_load_reset.c
+ramstage-y += cpucp_load_reset.c
 
 ################################################################################
 
@@ -44,6 +51,26 @@ CPPFLAGS_common += -Isrc/soc/qualcomm/sc7280/include
 CPPFLAGS_common += -Isrc/soc/qualcomm/common/include
 
 SC7280_BLOB := $(top)/3rdparty/qc_blobs/sc7280
+
+################################################################################
+BL31_MAKEARGS += PLAT=sc7280
+
+ifeq ($(CONFIG_QC_SDI_ENABLE),y)
+BL31_MAKEARGS += QTI_SDI_BUILD=1
+BL31_MAKEARGS += QTISECLIB_PATH=$(SC7280_BLOB)/qtiseclib/libqtisec_dbg.a
+else
+BL31_MAKEARGS += QTISECLIB_PATH=$(SC7280_BLOB)/qtiseclib/libqtisec.a
+endif # CONFIG_QC_SDI_ENABLE
+
+################################################################################
+ifeq ($(CONFIG_QC_SDI_ENABLE),y)
+QCSDI_FILE := $(SC7280_BLOB)/boot/QcSdi.elf
+QCSDI_CBFS := $(CONFIG_CBFS_PREFIX)/qcsdi
+$(QCSDI_CBFS)-file := $(QCSDI_FILE)
+$(QCSDI_CBFS)-type := stage
+$(QCSDI_CBFS)-compression := $(CBFS_COMPRESS_FLAG)
+cbfs-files-y += $(QCSDI_CBFS)
+endif
 
 ################################################################################
 QC_SEC_FILE := $(SC7280_BLOB)/qc_sec/qc_sec.mbn
@@ -110,6 +137,14 @@ $(AOP_CBFS)-file := $(AOP_FILE)
 $(AOP_CBFS)-type := payload
 $(AOP_CBFS)-compression := $(CBFS_COMPRESS_FLAG)
 cbfs-files-y += $(AOP_CBFS)
+
+################################################################################
+CPUCP_FILE := $(SC7280_BLOB)/cpucp/cpucp.elf
+CPUCP_CBFS := $(CONFIG_CBFS_PREFIX)/cpucp
+$(CPUCP_CBFS)-file := $(CPUCP_FILE)
+$(CPUCP_CBFS)-type := payload
+$(CPUCP_CBFS)-compression := $(CBFS_COMPRESS_FLAG)
+cbfs-files-y += $(CPUCP_CBFS)
 
 ################################################################################
 SHRM_FILE := $(SC7280_BLOB)/shrm/shrm.elf

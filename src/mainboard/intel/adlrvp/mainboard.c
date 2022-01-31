@@ -6,7 +6,6 @@
 #include <drivers/intel/gma/opregion.h>
 #include <ec/ec.h>
 #include <soc/gpio.h>
-#include <vendorcode/google/chromeos/chromeos.h>
 #include <smbios.h>
 #include <stdint.h>
 #include <string.h>
@@ -57,8 +56,6 @@ static void mainboard_smbios_strings(struct device *dev, struct smbios_type11 *t
 
 static void mainboard_enable(struct device *dev)
 {
-	dev->ops->acpi_inject_dsdt = chromeos_dsdt_generator;
-
 #if CONFIG(BOARD_INTEL_ADLRVP_M_EXT_EC)
 	dev->ops->get_smbios_strings = mainboard_smbios_strings;
 #endif
@@ -75,13 +72,14 @@ const char *mainboard_vbt_filename(void)
 	switch (sku_id) {
 	case ADL_P_LP5_1:
 	case ADL_P_LP5_2:
-	case ADL_M_LP5:
 		return "vbt_adlrvp_lp5.bin";
+	case ADL_M_LP5:
+		return "vbt_adlrvp_m_lp5.bin";
 	case ADL_P_DDR5_1:
 	case ADL_P_DDR5_2:
 		return "vbt_adlrvp_ddr5.bin";
 	case ADL_M_LP4:
-		return "vbt_adlrvp_lp4.bin";
+		return "vbt_adlrvp_m_lp4.bin";
 	default:
 		return "vbt.bin";
 	}

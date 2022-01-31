@@ -111,4 +111,20 @@ void pcie_rp_update_devicetree(const struct pcie_rp_group *groups);
  */
 uint32_t pcie_rp_enable_mask(const struct pcie_rp_group *groups);
 
+/* Get PCH root port groups */
+const struct pcie_rp_group *soc_get_pch_rp_groups(void);
+
+enum pcie_rp_type {
+	PCIE_RP_UNKNOWN,
+	PCIE_RP_CPU,
+	PCIE_RP_PCH,
+};
+
+/* For PCIe RTD3 support, each SoC that uses it must implement this function. */
+struct device; /* Not necessary to include all of device/device.h */
+enum pcie_rp_type soc_get_pcie_rp_type(const struct device *dev);
+
+/* Return the virtual wire index that represents CPU-side PCIe root ports */
+int soc_get_cpu_rp_vw_idx(const struct device *dev);
+
 #endif /* SOC_INTEL_COMMON_BLOCK_PCIE_RP_H */

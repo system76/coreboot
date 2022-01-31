@@ -10,7 +10,7 @@ static const struct pad_config override_gpio_table[] = {
 	/* A7  : SRCCLK_OE7# ==> PEN_DET_ODL */
 	PAD_CFG_GPI_GPIO_DRIVER(GPP_A7, NONE, DEEP),
 	/* A8  : SRCCLKREQ7# ==> PEN_DET_ODL */
-	PAD_CFG_GPI_SCI_LOW(GPP_A8, NONE, DEEP, EDGE_SINGLE),
+	PAD_CFG_GPI_SCI_HIGH(GPP_A8, NONE, DEEP, EDGE_SINGLE),
 	/* B3  : PROC_GP2 ==> NC */
 	PAD_NC(GPP_B3, NONE),
 	/* B5  : ISH_I2C0_SDA ==> NC */
@@ -114,10 +114,10 @@ static const struct pad_config early_gpio_table[] = {
 	PAD_CFG_GPI_APIC(GPP_A13, NONE, PLTRST, LEVEL, INVERT),
 	/* B4  : PROC_GP3 ==> SSD_PERST_L */
 	PAD_CFG_GPO(GPP_B4, 0, DEEP),
-	/* B7  : ISH_12C1_SDA ==> PCH_I2C_TPM_SDA */
-	PAD_CFG_NF(GPP_B7, NONE, DEEP, NF2),
-	/* B8  : ISH_12C1_SCL ==> PCH_I2C_TPM_SCL */
-	PAD_CFG_NF(GPP_B8, NONE, DEEP, NF2),
+	/* H6  : I2C1_SDA ==> PCH_I2C_TPM_SDA */
+	PAD_CFG_NF(GPP_H6, NONE, DEEP, NF1),
+	/* H7  : I2C1_SCL ==> PCH_I2C_TPM_SCL */
+	PAD_CFG_NF(GPP_H7, NONE, DEEP, NF1),
 	/* D11 : ISH_SPI_MISO ==> EN_PP3300_SSD */
 	PAD_CFG_GPO(GPP_D11, 1, DEEP),
 	/* D18 : UART1_TXD ==> SD_PE_RST_L */

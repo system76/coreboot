@@ -11,12 +11,12 @@
 #include <baseboard/variants.h>
 #include <boardid.h>
 #include <smbios.h>
+#include <soc/gpio.h>
 #include <soc/pci_devs.h>
 #include <soc/southbridge.h>
 #include <amdblocks/acpimmio.h>
 #include <variant/ec.h>
 #include <variant/thermal.h>
-#include <vendorcode/google/chromeos/chromeos.h>
 
 /***********************************************************
  * These arrays set up the FCH PCI_INTR registers 0xC00/0xC01.
@@ -146,7 +146,6 @@ static void mainboard_enable(struct device *dev)
 	/* Initialize the PIRQ data structures for consumption */
 	pirq_setup();
 
-	dev->ops->acpi_inject_dsdt = chromeos_dsdt_generator;
 }
 
 int mainboard_get_xhci_oc_map(uint16_t *map)

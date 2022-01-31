@@ -87,12 +87,8 @@ chip soc/intel/tigerlake
 	register "pmc_gpe0_dw1" = "GPP_D"
 	register "pmc_gpe0_dw2" = "GPP_E"
 
-	# Enable heci communication
-	register "HeciEnabled" = "1"
-
 	# FSP configuration
 	register "SaGv" = "SaGv_Enabled"
-	register "SmbusEnable" = "0"
 
 	register "usb2_ports[0]" = "USB2_PORT_MID(OC_SKIP)"	# Type-A Port A0
 	register "usb2_ports[1]" = "USB2_PORT_MID(OC_SKIP)"	# Type-A Port A1
@@ -121,11 +117,13 @@ chip soc/intel/tigerlake
 	register "PcieRpLtrEnable[8]" = "1"
 	register "PcieClkSrcUsage[0]" = "8"
 	register "PcieClkSrcClkReq[0]" = "0"
+	register "PcieRpSlotImplemented[8]" = "1"
 
 	# Enable Optane PCIE 11 using clk 0
 	register "PcieRpEnable[10]" = "1"
 	register "PcieRpLtrEnable[10]" = "1"
 	register "HybridStorageMode" = "0"
+	register "PcieRpSlotImplemented[10]" = "1"
 
 	# Enable SD Card PCIE 8 using clk 3
 	register "PcieRpEnable[7]" = "1"
@@ -139,6 +137,7 @@ chip soc/intel/tigerlake
 	register "PcieRpLtrEnable[6]" = "1"
 	register "PcieClkSrcUsage[1]" = "6"
 	register "PcieClkSrcClkReq[1]" = "1"
+	register "PcieRpSlotImplemented[6]" = "1"
 
 	# Mark SRCCLKREQ pins as unused that are routed for a Non-Clkreq functionality
 	register "PcieClkSrcUsage[2]" = "PCIE_CLK_NOTUSED"
@@ -147,8 +146,6 @@ chip soc/intel/tigerlake
 	register "PcieClkSrcUsage[6]" = "PCIE_CLK_NOTUSED"
 
 	# Enable SATA
-	register "SataEnable" = "1"
-	register "SataMode" = "0"
 	register "SataSalpSupport" = "1"
 	register "SataPortsEnable[0]" = "0"
 	register "SataPortsEnable[1]" = "1"
@@ -296,8 +293,6 @@ chip soc/intel/tigerlake
 		.tdp_pl2_override = 40,
 		.tdp_pl4 = 83,
 	}"
-
-	register "Device4Enable" = "1"
 
 	register "tcc_offset" = "10"     # TCC of 90
 

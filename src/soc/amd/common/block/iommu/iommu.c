@@ -14,7 +14,7 @@ static void iommu_read_resources(struct device *dev)
 
 	/* Add an extra subtractive resource for both memory and I/O. */
 	res = new_resource(dev, 0x44);
-	res->size = 512 * 1024;
+	res->size = 512 * KiB;
 	res->align = log2(res->size);
 	res->gran = log2(res->size);
 	res->limit = 0xffffffff;	/* 4G */
@@ -43,6 +43,7 @@ static const unsigned short pci_device_ids[] = {
 	PCI_DEVICE_ID_AMD_15H_MODEL_707F_NB_IOMMU,
 	PCI_DEVICE_ID_AMD_17H_MODEL_1020_NB_IOMMU,
 	PCI_DEVICE_ID_AMD_17H_MODEL_606F_NB_IOMMU,
+	PCI_DEVICE_ID_AMD_17H_MODEL_A0AF_NB_IOMMU,
 	0
 };
 

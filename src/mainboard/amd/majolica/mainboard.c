@@ -2,12 +2,10 @@
 
 #include <amdblocks/amd_pci_util.h>
 #include <commonlib/helpers.h>
-#include <console/console.h>
 #include <device/device.h>
 #include <soc/acpi.h>
 #include <string.h>
 #include <types.h>
-#include <vendorcode/google/chromeos/chromeos.h>
 
 /*
  * These arrays set up the FCH PCI_INTR registers 0xC00/0xC01.
@@ -95,8 +93,6 @@ static void mainboard_enable(struct device *dev)
 	init_tables();
 	/* Initialize the PIRQ data structures for consumption */
 	pirq_setup();
-
-	dev->ops->acpi_inject_dsdt = chromeos_dsdt_generator;
 }
 
 struct chip_operations mainboard_ops = {

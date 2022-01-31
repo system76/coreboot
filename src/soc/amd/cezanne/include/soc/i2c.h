@@ -1,9 +1,10 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#include <soc/gpio.h>
-
 #ifndef AMD_CEZANNE_I2C_H
 #define AMD_CEZANNE_I2C_H
+
+#include <soc/gpio.h>
+#include <types.h>
 
 #define GPIO_I2C0_SCL		BIT(0)
 #define GPIO_I2C1_SCL		BIT(1)

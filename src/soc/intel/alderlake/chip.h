@@ -21,14 +21,15 @@
 
 /* Types of different SKUs */
 enum soc_intel_alderlake_power_limits {
-	ADL_P_282_CORE,
-	ADL_P_482_CORE,
+	ADL_P_142_242_282_15W_CORE,
+	ADL_P_282_482_28W_CORE,
 	ADL_P_682_28W_CORE,
-	ADL_P_682_45W_CORE,
+	ADL_P_442_482_45W_CORE,
+	ADL_P_642_682_45W_CORE,
 	ADL_M_282_12W_CORE,
 	ADL_M_282_15W_CORE,
 	ADL_M_242_CORE,
-	ADL_P_242_CORE,
+	ADL_P_442_45W_CORE,
 	ADL_POWER_LIMITS_COUNT
 };
 
@@ -47,11 +48,16 @@ static const struct {
 	enum soc_intel_alderlake_power_limits limits;
 	enum soc_intel_alderlake_cpu_tdps cpu_tdp;
 } cpuid_to_adl[] = {
-	{ PCI_DEVICE_ID_INTEL_ADL_P_ID_7, ADL_P_282_CORE, TDP_15W },
-	{ PCI_DEVICE_ID_INTEL_ADL_P_ID_6, ADL_P_242_CORE, TDP_15W },
-	{ PCI_DEVICE_ID_INTEL_ADL_P_ID_5, ADL_P_482_CORE, TDP_28W },
+	{ PCI_DEVICE_ID_INTEL_ADL_P_ID_10, ADL_P_142_242_282_15W_CORE, TDP_15W },
+	{ PCI_DEVICE_ID_INTEL_ADL_P_ID_7, ADL_P_142_242_282_15W_CORE, TDP_15W },
+	{ PCI_DEVICE_ID_INTEL_ADL_P_ID_6, ADL_P_142_242_282_15W_CORE, TDP_15W },
+	{ PCI_DEVICE_ID_INTEL_ADL_P_ID_7, ADL_P_282_482_28W_CORE, TDP_28W },
+	{ PCI_DEVICE_ID_INTEL_ADL_P_ID_5, ADL_P_282_482_28W_CORE, TDP_28W },
 	{ PCI_DEVICE_ID_INTEL_ADL_P_ID_3, ADL_P_682_28W_CORE, TDP_28W },
-	{ PCI_DEVICE_ID_INTEL_ADL_P_ID_3, ADL_P_682_45W_CORE, TDP_45W },
+	{ PCI_DEVICE_ID_INTEL_ADL_P_ID_5, ADL_P_442_482_45W_CORE, TDP_45W },
+	{ PCI_DEVICE_ID_INTEL_ADL_P_ID_4, ADL_P_642_682_45W_CORE, TDP_45W },
+	{ PCI_DEVICE_ID_INTEL_ADL_P_ID_3, ADL_P_642_682_45W_CORE, TDP_45W },
+	{ PCI_DEVICE_ID_INTEL_ADL_P_ID_1, ADL_P_442_482_45W_CORE, TDP_45W },
 	{ PCI_DEVICE_ID_INTEL_ADL_M_ID_1, ADL_M_282_12W_CORE, TDP_12W },
 	{ PCI_DEVICE_ID_INTEL_ADL_M_ID_1, ADL_M_282_15W_CORE, TDP_15W },
 	{ PCI_DEVICE_ID_INTEL_ADL_M_ID_2, ADL_M_242_CORE, TDP_9W },
@@ -149,6 +155,21 @@ enum fivr_spread_spectrum_ratio {
 	FIVR_SS_4 = 34,
 	FIVR_SS_5 = 39,
 	FIVR_SS_6 = 44,
+};
+
+/*
+ * Slew Rate configuration for Deep Package C States for VR domain.
+ * They are fast time divided by 2.
+ * 0 - Fast/2
+ * 1 - Fast/4
+ * 2 - Fast/8
+ * 3 - Fast/16
+ */
+enum slew_rate {
+	SLEW_FAST_2,
+	SLEW_FAST_4,
+	SLEW_FAST_8,
+	SLEW_FAST_16
 };
 
 struct soc_intel_alderlake_config {
@@ -292,10 +313,6 @@ struct soc_intel_alderlake_config {
 		IGD_SM_60MB = 0xFE,
 	} IgdDvmt50PreAlloc;
 	uint8_t SkipExtGfxScan;
-
-	/* HeciEnabled decides the state of Heci1 at end of boot
-	 * Setting to 0 (default) disables Heci1 and hides the device from OS */
-	uint8_t HeciEnabled;
 
 	/* Enable/Disable EIST. 1b:Enabled, 0b:Disabled */
 	uint8_t eist_enable;
@@ -528,6 +545,20 @@ struct soc_intel_alderlake_config {
 	 *   0.5% = 0, 1% = 3, 1.5% = 8, 2% = 18, 3% = 28, 4% = 34, 5% = 39, 6% = 44.
 	 */
 	uint8_t FivrSpreadSpectrum;
+	/* Enable or Disable Acoustic Noise Mitigation feature */
+	uint8_t AcousticNoiseMitigation;
+	/* Disable Fast Slew Rate for Deep Package C States for VR domains */
+	uint8_t FastPkgCRampDisable[NUM_VR_DOMAINS];
+	/*
+	 * Slew Rate configuration for Deep Package C States for VR domains
+	 * 0: Fast/2, 1: Fast/4, 2: Fast/8, 3: Fast/16; see enum slew_rate for values
+	 */
+	uint8_t SlowSlewRate[NUM_VR_DOMAINS];
+
+	/* CNVi DDR RFIM Enable/Disable
+	 * Default 0. Setting this to 1 enable CNVi DDR RFIM.
+	 */
+	bool CnviDdrRfim;
 };
 
 typedef struct soc_intel_alderlake_config config_t;

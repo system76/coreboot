@@ -1,14 +1,12 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 
-#include <acpi/acpi.h>
 #include <baseboard/gpio.h>
 #include <baseboard/variants.h>
 #include <commonlib/helpers.h>
-#include <delay.h>
 #include <gpio.h>
 #include <soc/gpio.h>
 
-/* GPIO configuration in ramstage*/
+/* GPIO configuration in ramstage */
 /* Please make sure that *ALL* GPIOs are configured in this table */
 static const struct soc_amd_gpio base_gpio_table[] = {
 	/* PWR_BTN_L */
@@ -21,8 +19,8 @@ static const struct soc_amd_gpio base_gpio_table[] = {
 	PAD_GPO(GPIO_3, LOW),
 	/* SOC_PEN_DETECT_ODL */
 	PAD_WAKE(GPIO_4, PULL_NONE, EDGE_HIGH, S0i3),
-	/* SD_AUX_RESET_L  */
-	PAD_GPO(GPIO_5, HIGH),
+	/* Unused */
+	PAD_NC(GPIO_5),
 	/* EN_PP3300_WLAN */
 	PAD_GPO(GPIO_6, HIGH),
 	/* EN_PP3300_TCHPAD */
@@ -66,8 +64,8 @@ static const struct soc_amd_gpio base_gpio_table[] = {
 	PAD_GPO(GPIO_29, LOW),
 	/* ESPI_CS_L */
 	PAD_NF(GPIO_30, ESPI_CS_L, PULL_NONE),
-	/* EN_SPKR */
-	PAD_GPO(GPIO_31, HIGH),
+	/* Unused */
+	PAD_NC(GPIO_31),
 	/* Unused */
 	PAD_NC(GPIO_32),
 	/* GPIO_33 - GPIO_39: Not available */
@@ -81,10 +79,10 @@ static const struct soc_amd_gpio base_gpio_table[] = {
 	PAD_GPI(GPIO_67, PULL_NONE),
 	/* EN_PP3300_TCHSCR */
 	PAD_GPO(GPIO_68, HIGH),
-	/* Unused */
-	PAD_NC(GPIO_69),
-	/* Unused TP27  */
-	PAD_NC(GPIO_70),
+	/* SD_AUX_RESET_L  */
+	PAD_GPO(GPIO_69, HIGH),
+	/* EN_SPKR */
+	PAD_GPO(GPIO_70, HIGH),
 	/* GPIO_71 - GPIO_73: Not available */
 	/* Unused TP49 */
 	PAD_NC(GPIO_74),
@@ -170,16 +168,16 @@ static const struct soc_amd_gpio base_gpio_table[] = {
 /* Early GPIO configuration */
 static const struct soc_amd_gpio early_gpio_table[] = {
 	/* Assert all AUX reset lines */
-	/* SD_AUX_RESET_L  */
-	PAD_GPO(GPIO_5, LOW),
+	/* Unused */
+	PAD_NC(GPIO_5),
 	/* WWAN_AUX_RESET_L */
 	PAD_GPO(GPIO_18, LOW),
 	/* WLAN_AUX_RESET (ACTIVE HIGH) */
 	PAD_GPO(GPIO_29, HIGH),
 	/* SSD_AUX_RESET_L */
 	PAD_GPO(GPIO_40, LOW),
-	/* Guybrush BID >= 2: SD_AUX_RESET_L, Other variants: Unused */
-	PAD_NC(GPIO_69),
+	/* SD_AUX_RESET_L */
+	PAD_GPO(GPIO_69, LOW),
 	/* Guybrush BID>1, Other variants : Unused TP27; BID==1: SD_AUX_RESET_L */
 	PAD_NC(GPIO_70),
 
@@ -198,16 +196,6 @@ static const struct soc_amd_gpio early_gpio_table[] = {
 /* Put WWAN into reset */
 	/* WWAN_RST_L */
 	PAD_GPO(GPIO_24, LOW),
-
-/* Enable ESPI, GSC Interrupt & I2C Communication */
-	/* Unused */
-	PAD_NC(GPIO_3),
-	/* I2C3_SCL */
-	PAD_NF(GPIO_19, I2C3_SCL, PULL_NONE),
-	/* I2C3_SDA */
-	PAD_NF(GPIO_20, I2C3_SDA, PULL_NONE),
-	/* GSC_SOC_INT_L */
-	PAD_INT(GPIO_85, PULL_NONE, EDGE_LOW, STATUS_DELIVERY),
 
 /* Enable UART 0 */
 	/* UART0_RXD */
@@ -235,6 +223,15 @@ static const struct soc_amd_gpio espi_gpio_table[] = {
 	PAD_NF(GPIO_107, SPI2_HOLD_L_ESPI2_D3, PULL_NONE),
 	/* ESPI_ALERT_L */
 	PAD_NF(GPIO_108, ESPI_ALERT_D1, PULL_NONE),
+};
+
+static const struct soc_amd_gpio tpm_gpio_table[] = {
+	/* I2C3_SCL */
+	PAD_NF(GPIO_19, I2C3_SCL, PULL_NONE),
+	/* I2C3_SDA */
+	PAD_NF(GPIO_20, I2C3_SDA, PULL_NONE),
+	/* GSC_SOC_INT_L */
+	PAD_INT(GPIO_85, PULL_NONE, EDGE_LOW, STATUS_DELIVERY),
 };
 
 /* Power-on timing requirements:
@@ -278,16 +275,16 @@ static const struct soc_amd_gpio sleep_gpio_table[] = {
 /* PCIE_RST needs to be brought high before FSP-M runs */
 static const struct soc_amd_gpio pcie_gpio_table[] = {
 	/* Deassert all AUX_RESET lines & PCIE_RST */
-	/* SD_AUX_RESET_L  */
-	PAD_GPO(GPIO_5, HIGH),
+	/* Unused */
+	PAD_NC(GPIO_5),
 	/* WWAN_AUX_RESET_L */
 	PAD_GPO(GPIO_18, HIGH),
 	/* WLAN_AUX_RESET (ACTIVE HIGH) */
 	PAD_GPO(GPIO_29, LOW),
 	/* SSD_AUX_RESET_L */
 	PAD_GPO(GPIO_40, HIGH),
-	/* Guybrush BID >= 2: SD_AUX_RESET_L, Other variants: Unused */
-	PAD_NC(GPIO_69),
+	/* SD_AUX_RESET_L */
+	PAD_GPO(GPIO_69, HIGH),
 	/* Guybrush BID>1, Other variants : Unused TP27; BID==1: SD_AUX_RESET_L */
 	PAD_NC(GPIO_70),
 	/* PCIE_RST0_L */
@@ -352,4 +349,10 @@ const __weak struct soc_amd_gpio *variant_espi_gpio_table(size_t *size)
 {
 	*size = ARRAY_SIZE(espi_gpio_table);
 	return espi_gpio_table;
+}
+
+const __weak struct soc_amd_gpio *variant_tpm_gpio_table(size_t *size)
+{
+	*size = ARRAY_SIZE(tpm_gpio_table);
+	return tpm_gpio_table;
 }

@@ -10,7 +10,7 @@ Device (EC0)
 {
 	Name (_HID, EISAID ("PNP0C09"))
 	Name (_UID, 1)
-	Name (_GPE, Add(EC_SCI_GPI, 16)) // GPE for Runtime SCI
+	Name (_GPE, EC_SCI_GPI + 16) // GPE for Runtime SCI
 
 	// EC RAM fields
 	OperationRegion(ERAM, EmbeddedControl, 0, 0xFF)
@@ -556,8 +556,7 @@ Device (EC0)
 		// TODO Which temperature corresponds to the CPU?
 		Store (TMP0, Local0)
 		/* So that we don't get a warning that Local0 is unused.  */
-		Increment (Local0)
-
+		Local0++
 	}
 
 /* Attention Codes

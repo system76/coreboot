@@ -34,6 +34,10 @@ static const char *const sdram_configs[] = {
 	[0x15] = "sdram-lpddr4x-H9HCNNNFAMMLXR-NEE-8GB",
 	[0x16] = "sdram-lpddr4x-MT53E2G32D4NQ-046-8GB",
 	[0x17] = "sdram-lpddr4x-MT53E1G32D2NP-046-4GB",
+	[0x18] = "sdram-lpddr4x-MT53E1G32D4NQ-4GB",
+	[0x19] = "sdram-lpddr4x-H9HCNNNCPMALHR-4GB",
+	[0x1a] = "sdram-lpddr4x-K4UBE3D4AA-MGCL-4GB",
+	[0x1b] = "sdram-lpddr4x-H9HCNNNFAMMLXR-NEE-8GB",
 
 	/* Table shared by Kakadu and its variants, offset = 0x20 */
 	[0x20] = "sdram-lpddr4x-K4UBE3D4AA-MGCR-4GB",
@@ -55,6 +59,19 @@ static const char *const sdram_configs[] = {
 	[0x39] = "sdram-lpddr4x-MT53E2G32D4NQ-046-8GB",
 	[0x3a] = "sdram-lpddr4x-H9HCNNNCPMMLXR-NEE-4GB",
 	[0x3b] = "sdram-lpddr4x-H9HCNNNFAMMLXR-NEE-8GB",
+
+	/* Table shared by Kappa and its variants, offset = 0x40 */
+	[0x40] = "sdram-lpddr4x-K4UBE3D4AA-MGCR-4GB",
+	[0x41] = "sdram-lpddr4x-H9HCNNNCPMALHR-4GB",
+	[0x42] = "sdram-lpddr4x-MT53E1G32D4NQ-4GB",
+	[0x43] = "sdram-lpddr4x-MT53E1G32D2NP-046-4GB",
+	[0x44] = "sdram-lpddr4x-MT53E1G32D4NQ-4GB",
+	[0x45] = "sdram-lpddr4x-H9HCNNNCPMALHR-4GB",
+	[0x46] = "sdram-lpddr4x-K4UBE3D4AA-MGCL-4GB",
+	[0x48] = "sdram-lpddr4x-K4UBE3D4AA-MGCL-4GB",
+	[0x49] = "sdram-lpddr4x-MT53E2G32D4NQ-046-8GB",
+	[0x4a] = "sdram-lpddr4x-H9HCNNNCPMMLXR-NEE-4GB",
+	[0x4b] = "sdram-lpddr4x-MT29VZZZAD9GQFSM-046-4GB",
 };
 
 static struct sdram_params params;

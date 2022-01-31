@@ -11,8 +11,6 @@ testobj := $(obj)/tests
 endif
 coverage-dir := $(testobj)/coverage_reports
 
-coreboottop := ../../
-
 cmockasrc := $(coreboottop)/3rdparty/cmocka
 cmockaobj := $(objutil)/cmocka
 CMOCKA_LIB := $(cmockaobj)/src/libcmocka.so
@@ -34,16 +32,19 @@ TEST_CONFIG_ := CONFIG_LP_
 # Default includes
 TEST_CFLAGS := -include include/kconfig.h -include include/compiler.h
 TEST_CFLAGS += -Iinclude -Iinclude/mock
+TEST_CFLAGS += -I$(coreboottop)/src/commonlib/bsd/include
 TEST_CFLAGS += -I$(dir $(TEST_KCONFIG_AUTOHEADER))
+TEST_CFLAGS += -I$(VBOOT_SOURCE)/firmware/include
 
 # Test specific includes
-TEST_CFLAGS += -I$(testsrc)/include -I$(testsrc)/include/mocks
+TEST_CFLAGS += -I$(testsrc)/include
 TEST_CFLAGS += -I$(cmockasrc)/include
 
 # Minimal subset of warnings and errors. Tests can be less strict than actual build.
 TEST_CFLAGS += -Wall -Wundef -Wstrict-prototypes -Wvla
 TEST_CFLAGS += -Wwrite-strings -Wno-trigraphs -Wimplicit-fallthrough
 TEST_CFLAGS += -Wstrict-aliasing -Wshadow -Werror
+TEST_CFLAGS += -Wno-unknown-warning-option -Wno-source-mgr -Wno-main-return-type
 
 TEST_CFLAGS += -std=gnu11 -Os -ffunction-sections -fdata-sections -fno-builtin
 
@@ -140,10 +141,10 @@ $($(1)-objs): $(testobj)/$(1)/%.o: $$$$*.c $$($(1)-config-file)
 	objcopy_wrap_flags=''; \
 	for sym in $$($(1)-mocks); do \
 		sym_line="$$$$($(HOSTOBJDUMP) -t $$@.orig \
-			| grep -E \"[0-9a-fA-F]+\\s+w\\s+F\\s+.*\\s$$$$sym$$$$\")"; \
+			| grep -E "[0-9a-fA-F]+\\s+w\\s+F\\s+.*\\s+$$$$sym$$$$")"; \
 		if [ ! -z "$$$$sym_line" ] ; then \
-			addr="$$$$(echo \"$$$$sym_line\" | awk '{ print $$$$1 }')"; \
-			section="$$$$(echo \"$$$$sym_line\" | awk '{ print $$$$(NF - 2) }')"; \
+			addr="$$$$(echo "$$$$sym_line" | awk '{ print $$$$1 }')"; \
+			section="$$$$(echo "$$$$sym_line" | awk '{ print $$$$(NF - 2) }')"; \
 			objcopy_wrap_flags="$$$$objcopy_wrap_flags --add-symbol __real_$$$${sym}=$$$${section}:0x$$$${addr},function,global"; \
 		fi \
 	done ; \

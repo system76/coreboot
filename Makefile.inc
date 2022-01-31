@@ -189,29 +189,29 @@ ramstage-generic-ccopts += -D__RAMSTAGE__
 ifeq ($(CONFIG_COVERAGE),y)
 ramstage-c-ccopts += -fprofile-arcs -ftest-coverage
 endif
-
 ifneq ($(UPDATED_SUBMODULES),1)
 # try to fetch non-optional submodules if the source is under git
-forgetthis:=$(if $(GIT),$(shell git submodule update --init))
+forgetthis:=$(if $(GIT),$(shell git submodule update --init $(quiet_errors)))
 # Checkout Cmocka repository
-forgetthis:=$(if $(GIT),$(shell git submodule update --init --checkout 3rdparty/cmocka))
+forgetthis:=$(if $(GIT),$(shell git submodule update --init --checkout 3rdparty/cmocka $(quiet_errors)))
 ifeq ($(CONFIG_USE_BLOBS),y)
 # These items are necessary because each has update=none in .gitmodules.  They are ignored
 # until expressly requested and enabled with --checkout
-forgetthis:=$(if $(GIT),$(shell git submodule update --init --checkout 3rdparty/blobs))
-forgetthis:=$(if $(GIT),$(shell git submodule update --init --checkout 3rdparty/intel-microcode))
+forgetthis:=$(if $(GIT),$(shell git submodule update --init --checkout 3rdparty/blobs $(quiet_errors)))
+forgetthis:=$(if $(GIT),$(shell git submodule update --init --checkout 3rdparty/intel-microcode $(quiet_errors)))
 ifeq ($(CONFIG_FSP_USE_REPO),y)
-forgetthis:=$(if $(GIT),$(shell git submodule update --init --checkout 3rdparty/fsp))
+forgetthis:=$(if $(GIT),$(shell git submodule update --init --checkout 3rdparty/fsp $(quiet_errors)))
 endif
 ifeq ($(CONFIG_USE_AMD_BLOBS),y)
-forgetthis:=$(if $(GIT),$(shell git submodule update --init --checkout 3rdparty/amd_blobs))
+forgetthis:=$(if $(GIT),$(shell git submodule update --init --checkout 3rdparty/amd_blobs $(quiet_errors)))
 endif
 ifeq ($(CONFIG_USE_QC_BLOBS),y)
-forgetthis:=$(if $(GIT),$(shell git submodule update --init --checkout 3rdparty/qc_blobs))
+forgetthis:=$(if $(GIT),$(shell git submodule update --init --checkout 3rdparty/qc_blobs $(quiet_errors)))
 endif
 endif
 UPDATED_SUBMODULES:=1
 COREBOOT_EXPORTS += UPDATED_SUBMODULES
+
 endif
 
 postcar-c-deps:=$$(OPTION_TABLE_H)
@@ -263,15 +263,24 @@ EMPTY_RESOURCE_TEMPLATE_WARNING = 3150
 # Redundant offset remarks are not useful in any way and are masking useful
 # ones that might indicate an issue so it is better to hide them.
 REDUNDANT_OFFSET_REMARK = 2158
-# Ignore _HID & _ADR coexisting in Intel Lynxpoint ASL code.
-# See cb:38802
-# "Multiple types (Device object requires either a _HID or _ADR, but not both)"
-MULTIPLE_TYPES_WARNING = 3073
+# IASL compiler check for usage of _CRS, _DIS, _PRS, and _SRS objects:
+#	1) If _PRS is present, must have _CRS and _SRS
+#	2) If _SRS is present, must have _PRS (_PRS requires _CRS and _SRS)
+#	3) If _DIS is present, must have _SRS (_SRS requires _PRS, _PRS requires _CRS and _SRS)
+#	4) If _SRS is present, probably should have a _DIS (Remark only)
+# A warning will be issued for each of these cases.
+# For existing ASL code, ignore this warnings
+IASL_MISSING_DEPENDENCY = 3141
 
 IASL_WARNINGS_LIST = $(EMPTY_RESOURCE_TEMPLATE_WARNING) $(REDUNDANT_OFFSET_REMARK)
 
-ifeq ($(CONFIG_SOUTHBRIDGE_INTEL_LYNXPOINT),y)
-IASL_WARNINGS_LIST += $(MULTIPLE_TYPES_WARNING)
+ifeq ($(CONFIG_IGNORE_IASL_MISSING_DEPENDENCY),y)
+	IASL_WARNINGS_LIST += $(IASL_MISSING_DEPENDENCY)
+build_complete::
+	printf "*** WARNING: The ASL code for this platform is incomplete.  Please fix it. ***\n"
+	printf "*** If _PRS is present, must have _CRS and _SRS ***\n"
+	printf "*** If _SRS is present, must have _PRS, _CRS, and _SRS ***\n"
+	printf "*** If _DIS is present, must have _SRS, _PRS, _CRS, and _SRS ***\n"
 endif
 
 IGNORED_IASL_WARNINGS = $(addprefix -vw , $(IASL_WARNINGS_LIST))
@@ -280,6 +289,9 @@ define asl_template
 $(CONFIG_CBFS_PREFIX)/$(1).aml-file = $(obj)/$(1).aml
 $(CONFIG_CBFS_PREFIX)/$(1).aml-type = raw
 $(CONFIG_CBFS_PREFIX)/$(1).aml-compression = none
+ifeq ($(CONFIG_SOC_AMD_COMMON_BLOCK_LPC_SPI_DMA),y)
+$(CONFIG_CBFS_PREFIX)/$(1).aml-align = 64
+endif
 cbfs-files-$(if $(2),$(2),y) += $(CONFIG_CBFS_PREFIX)/$(1).aml
 -include $(obj)/$(1).d
 $(obj)/$(1).aml: $(src)/mainboard/$(MAINBOARDDIR)/$(1).asl $(obj)/config.h
@@ -441,6 +453,7 @@ ADAFLAGS_common += -pipe -g -nostdinc
 ADAFLAGS_common += -Wstrict-aliasing -Wshadow
 ADAFLAGS_common += -fno-common -fomit-frame-pointer
 ADAFLAGS_common += -ffunction-sections -fdata-sections
+ADAFLAGS_common += -fno-pie
 # Ada warning options:
 #
 #  a   Activate most optional warnings.
@@ -587,6 +600,8 @@ IFDTOOL:=$(objutil)/ifdtool/ifdtool
 AMDFWTOOL:=$(objutil)/amdfwtool/amdfwtool
 
 APCB_EDIT_TOOL:=$(top)/util/apcb/apcb_edit.py
+
+APCB_V3_EDIT_TOOL:=$(top)/util/apcb/apcb_v3_edit.py
 
 CBOOTIMAGE:=$(objutil)/cbootimage/cbootimage
 
@@ -1214,6 +1229,10 @@ cbfs-files-$(CONFIG_HAVE_RAMSTAGE) += $(CONFIG_CBFS_PREFIX)/ramstage
 $(CONFIG_CBFS_PREFIX)/ramstage-file := $(RAMSTAGE)
 $(CONFIG_CBFS_PREFIX)/ramstage-type := stage
 $(CONFIG_CBFS_PREFIX)/ramstage-compression := $(CBFS_COMPRESS_FLAG)
+# The AMD LPC SPI DMA controller requires source files to be 64 byte aligned.
+ifeq ($(CONFIG_SOC_AMD_COMMON_BLOCK_LPC_SPI_DMA),y)
+$(CONFIG_CBFS_PREFIX)/ramstage-align := 64
+endif
 
 cbfs-files-$(CONFIG_HAVE_REFCODE_BLOB) += $(CONFIG_CBFS_PREFIX)/refcode
 $(CONFIG_CBFS_PREFIX)/refcode-file := $(REFCODE_BLOB)

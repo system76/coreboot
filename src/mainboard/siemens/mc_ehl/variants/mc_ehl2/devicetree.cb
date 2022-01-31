@@ -12,13 +12,9 @@ chip soc/intel/elkhartlake
 	register "pmc_gpe0_dw1" = "GPP_F"
 	register "pmc_gpe0_dw2" = "GPP_E"
 
-	# Enable heci1 communication
-	register "HeciEnabled" = "1"
-
 	# FSP configuration
 	register "SaGv" = "SaGv_Disabled"
 	register "SmbusEnable" = "1"
-	register "Heci2Enable" = "1"
 
 	# Enable IBECC for the complete memory
 	register "ibecc" = "{
@@ -56,9 +52,9 @@ chip soc/intel/elkhartlake
 	register "PcieClkSrcUsage[0]" = "PCIE_CLK_FREE"
 	register "PcieClkSrcUsage[1]" = "PCIE_CLK_FREE"
 	register "PcieClkSrcUsage[2]" = "PCIE_CLK_FREE"
-	register "PcieClkSrcUsage[3]" = "PCIE_CLK_NOTUSED"
+	register "PcieClkSrcUsage[3]" = "PCIE_CLK_FREE"
 	register "PcieClkSrcUsage[4]" = "PCIE_CLK_FREE"
-	register "PcieClkSrcUsage[5]" = "PCIE_CLK_NOTUSED"
+	register "PcieClkSrcUsage[5]" = "PCIE_CLK_FREE"
 
 	register "PcieClkSrcClkReq[0]" = "PCIE_CLK_NOTUSED"
 	register "PcieClkSrcClkReq[1]" = "PCIE_CLK_NOTUSED"

@@ -1,6 +1,5 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#include <acpi/acpi.h>
 #include <baseboard/variants.h>
 #include <bootmode.h>
 #include <boot/coreboot_tables.h>
@@ -35,4 +34,10 @@ void mainboard_chromeos_acpi_generate(void)
 	cros_gpios = variant_cros_gpios(&num_gpios);
 
 	chromeos_acpi_gpio_generate(cros_gpios, num_gpios);
+}
+
+int get_ec_is_trusted(void)
+{
+	/* EC is trusted if not in RW. */
+	return !gpio_get(GPIO_EC_IN_RW);
 }

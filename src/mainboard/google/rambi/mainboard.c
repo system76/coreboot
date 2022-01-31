@@ -1,14 +1,12 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
 #include <device/device.h>
-#include <console/console.h>
 #include <smbios.h>
 #include "ec.h"
 #include <variant/onboard.h>
 #include <soc/gpio.h>
 #include <soc/int15.h>
 #include <bootstate.h>
-#include <vendorcode/google/chromeos/chromeos.h>
 
 static void mainboard_init(struct device *dev)
 {
@@ -54,7 +52,6 @@ static void mainboard_enable(struct device *dev)
 {
 	dev->ops->init = mainboard_init;
 	dev->ops->get_smbios_data = mainboard_smbios_data;
-	dev->ops->acpi_inject_dsdt = chromeos_dsdt_generator;
 
 	/* Install custom int15 handler for VGA OPROM */
 	if (CONFIG(VGA_ROM_RUN))

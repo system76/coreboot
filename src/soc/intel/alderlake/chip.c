@@ -61,6 +61,9 @@ const char *soc_acpi_name(const struct device *dev)
 
 	switch (dev->path.pci.devfn) {
 	case SA_DEVFN_ROOT:		return "MCHC";
+	case SA_DEVFN_CPU_PCIE1_0:	return "PEG2";
+	case SA_DEVFN_CPU_PCIE6_0:	return "PEG0";
+	case SA_DEVFN_CPU_PCIE6_2:	return "PEG1";
 	case SA_DEVFN_IGD:		return "GFX0";
 	case SA_DEVFN_TCSS_XHCI:	return "TXHC";
 	case SA_DEVFN_TCSS_XDCI:	return "TXDC";
@@ -139,6 +142,9 @@ void soc_init_pre_device(void *chip_info)
 
 	/* Swap enabled PCI ports in device tree if needed. */
 	pcie_rp_update_devicetree(get_pch_pcie_rp_table());
+
+	/* Swap enabled TBT root ports in device tree if needed. */
+	pcie_rp_update_devicetree(get_tbt_pcie_rp_table());
 }
 
 static void cpu_fill_ssdt(const struct device *dev)

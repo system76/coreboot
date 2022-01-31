@@ -22,48 +22,47 @@ fw_config
 	end
 end
 chip soc/intel/alderlake
-	# This disables autonomous GPIO power management, otherwise
-	# old cr50 FW only supports short pulses; need to clarify
-	# the minimum PCH IRQ pulse width with Intel, b/180111628
-	register "gpio_override_pm" = "1"
-	register "gpio_pm[COMM_0]" = "0"
-	register "gpio_pm[COMM_1]" = "0"
-	register "gpio_pm[COMM_2]" = "0"
-	register "gpio_pm[COMM_3]" = "0"
-	register "gpio_pm[COMM_4]" = "0"
-	register "gpio_pm[COMM_5]" = "0"
-
+	register "SaGv" = "SaGv_Enabled"
 	# Intel Common SoC Config
 	#+-------------------+---------------------------+
 	#| Field             |  Value                    |
 	#+-------------------+---------------------------+
 	#| GSPI1             | Fingerprint MCU           |
 	#| I2C0              | Audio                     |
-	#| I2C1              | Touchscreen               |
-	#| I2C2              |                           |
-	#| I2C3              | cr50 TPM. Early init is   |
+	#| I2C1              | cr50 TPM. Early init is   |
 	#|                   | required to set up a BAR  |
 	#|                   | for TPM communication     |
+	#| I2C3              | Touchscreen               |
 	#| I2C5              | Trackpad                  |
 	#+-------------------+---------------------------+
 	register "common_soc_config" = "{
 		.i2c[0] = {
 			.speed = I2C_SPEED_FAST,
+			.rise_time_ns = 650,
+			.fall_time_ns = 400,
+			.data_hold_time_ns = 50,
 		},
 		.i2c[1] = {
-			.speed = I2C_SPEED_FAST,
-		},
-		.i2c[2] = {
-			.speed = I2C_SPEED_FAST,
-		},
-		.i2c[3] = {
 			.early_init = 1,
 			.speed = I2C_SPEED_FAST,
+			.rise_time_ns = 600,
+			.fall_time_ns = 400,
+			.data_hold_time_ns = 50,
+		},
+		.i2c[3] = {
+			.speed = I2C_SPEED_FAST,
+			.rise_time_ns = 650,
+			.fall_time_ns = 400,
+			.data_hold_time_ns = 50,
 		},
 		.i2c[5] = {
 			.speed = I2C_SPEED_FAST,
+			.rise_time_ns = 650,
+			.fall_time_ns = 400,
+			.data_hold_time_ns = 50,
 		},
 	}"
+	register "tcc_offset" = "3"  # TCC of 97C
 	register "usb2_ports[1]" = "USB2_PORT_MID(OC_SKIP)"     # Type-A MLB Port
 	register "usb2_ports[6]" = "USB2_PORT_MID(OC_SKIP)"     # Smart Card
 	register "usb3_ports[2]" = "USB3_PORT_DEFAULT(OC_SKIP)" # USB3/2 Type A MLB port
@@ -72,6 +71,8 @@ chip soc/intel/alderlake
 			chip drivers/gfx/generic
 				register "device_count" = "1"
 				register "device[0].name" = ""LCD""
+				# Use Chrome OS privacy screen _HID
+				register "device[0].hid" = ""GOOG0010""
 				# Internal panel on the first port of the graphics chip
 				register "device[0].addr" = "0x80010400"
 				register "device[0].privacy.enabled" = "1"
@@ -199,6 +200,13 @@ chip soc/intel/alderlake
 			end
 		end #I2C0
 		device ref i2c1 on
+			chip drivers/i2c/tpm
+				register "hid" = ""GOOG0005""
+				register "irq" = "ACPI_IRQ_EDGE_LOW(GPP_A13_IRQ)"
+				device i2c 50 on end
+			end
+		end
+		device ref i2c3 on
 			chip drivers/i2c/generic
 				register "hid" = ""ELAN0001""
 				register "desc" = ""ELAN Touchscreen""
@@ -215,6 +223,7 @@ chip soc/intel/alderlake
 				register "stop_gpio" =
 							"ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_C6)"
 				register "has_power_resource" = "1"
+				register "disable_gpio_export_in_crs" = "1"
 				device i2c 10 on end
 			end
 			chip drivers/i2c/hid
@@ -229,6 +238,7 @@ chip soc/intel/alderlake
 							"ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_C0)"
 				register "generic.enable_delay_ms" = "1"
 				register "generic.has_power_resource" = "1"
+				register "generic.disable_gpio_export_in_crs" = "1"
 				register "hid_desc_reg_offset" = "0x01"
 				device i2c 40 on end
 			end
@@ -273,13 +283,13 @@ chip soc/intel/alderlake
 			chip drivers/intel/pmc_mux
 				device generic 0 on
 					chip drivers/intel/pmc_mux/conn
-						register "usb2_port_number" = "1"
-						register "usb3_port_number" = "1"
+						use usb2_port1 as usb2_port
+						use tcss_usb3_port1 as usb3_port
 						device generic 0 alias conn0 on end
 					end
 					chip drivers/intel/pmc_mux/conn
-						register "usb2_port_number" = "3"
-						register "usb3_port_number" = "3"
+						use usb2_port3 as usb2_port
+						use tcss_usb3_port3 as usb3_port
 						device generic 1 alias conn1 on end
 					end
 				end

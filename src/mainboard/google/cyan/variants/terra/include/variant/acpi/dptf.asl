@@ -173,7 +173,7 @@ Device (DPTF)
 	Method (_OSC, 4, Serialized)
 	{
 		/* Check for Passive Policy UUID */
-		If (LEqual (DeRefOf (Index (IDSP, 0)), Arg0)) {
+		If (LEqual (DeRefOf (IDSP[0]), Arg0)) {
 			/* Initialize Thermal Devices */
 			^TINI ()
 
@@ -206,7 +206,7 @@ Device (DPTF)
 		Multiply (Arg0, 10, Local0)
 
 		/* Convert to Kelvin */
-		Add (Local0, 2732, Local0)
+		Local0 += 2732
 
 		Return (Local0)
 	}

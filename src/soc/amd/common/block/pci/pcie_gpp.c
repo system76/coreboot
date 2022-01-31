@@ -5,7 +5,6 @@
 #include <acpi/acpigen_pci.h>
 #include <amdblocks/amd_pci_util.h>
 #include <assert.h>
-#include <console/console.h>
 #include <device/device.h>
 #include <device/pci.h>
 #include <device/pci_ids.h>
@@ -63,6 +62,7 @@ static const unsigned short internal_pci_gpp_ids[] = {
 	PCI_DEVICE_ID_AMD_FAM17H_MODEL18H_PCIE_GPP_BUSA,
 	PCI_DEVICE_ID_AMD_FAM17H_MODEL18H_PCIE_GPP_BUSB,
 	PCI_DEVICE_ID_AMD_FAM17H_MODEL60H_PCIE_GPP_BUSABC,
+	PCI_DEVICE_ID_AMD_FAM17H_MODELA0H_PCIE_GPP_BUSABC,
 	0
 };
 
@@ -86,6 +86,7 @@ static const unsigned short external_pci_gpp_ids[] = {
 	PCI_DEVICE_ID_AMD_FAM17H_MODEL18H_PCIE_GPP,
 	PCI_DEVICE_ID_AMD_FAM17H_MODEL60H_PCIE_GPP_D1,
 	PCI_DEVICE_ID_AMD_FAM17H_MODEL60H_PCIE_GPP_D2,
+	PCI_DEVICE_ID_AMD_FAM17H_MODELA0H_PCIE_GPP,
 	0
 };
 

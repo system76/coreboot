@@ -19,11 +19,25 @@
 #include <intelblocks/cpulib.h>
 #include <intelblocks/mp_init.h>
 #include <intelblocks/msr.h>
+#include <intelblocks/acpi.h>
 #include <soc/cpu.h>
 #include <soc/msr.h>
 #include <soc/pci_devs.h>
 #include <soc/soc_chip.h>
 #include <types.h>
+
+enum alderlake_model {
+	ADL_MODEL_P_M = 0x9A,
+	ADL_MODEL_N = 0xBE,
+};
+
+bool cpu_soc_is_in_untrusted_mode(void)
+{
+	msr_t msr;
+
+	msr = rdmsr(MSR_BIOS_DONE);
+	return !!(msr.lo & ENABLE_IA_UNTRUSTED);
+}
 
 static void soc_fsp_load(void)
 {
@@ -34,7 +48,7 @@ static void configure_misc(void)
 {
 	msr_t msr;
 
-	config_t *conf = config_of_soc();
+	const config_t *conf = config_of_soc();
 
 	msr = rdmsr(IA32_MISC_ENABLE);
 	msr.lo |= (1 << 0);	/* Fast String enable */
@@ -59,6 +73,32 @@ static void configure_misc(void)
 	msr.lo |= (1 << 0);	/* Enable Bi-directional PROCHOT as an input */
 	msr.lo |= (1 << 23);	/* Lock it */
 	wrmsr(MSR_POWER_CTL, msr);
+}
+
+enum core_type get_soc_cpu_type(void)
+{
+	struct cpuinfo_x86 cpuinfo;
+
+	if (cpu_is_hybrid_supported())
+		return cpu_get_cpu_type();
+
+	get_fms(&cpuinfo, cpuid_eax(1));
+
+	if (cpuinfo.x86 == 0x6 && cpuinfo.x86_model == ADL_MODEL_N)
+		return CPUID_CORE_TYPE_INTEL_ATOM;
+	else
+		return CPUID_CORE_TYPE_INTEL_CORE;
+}
+
+void soc_get_scaling_factor(u16 *big_core_scal_factor, u16 *small_core_scal_factor)
+{
+	*big_core_scal_factor = 127;
+	*small_core_scal_factor = 100;
+}
+
+bool soc_is_nominal_freq_supported(void)
+{
+	return true;
 }
 
 /* All CPUs including BSP will run the following function. */
@@ -149,6 +189,7 @@ enum adl_cpu_type get_adl_cpu_type(void)
 		PCI_DEVICE_ID_INTEL_ADL_P_ID_7,
 		PCI_DEVICE_ID_INTEL_ADL_P_ID_8,
 		PCI_DEVICE_ID_INTEL_ADL_P_ID_9,
+		PCI_DEVICE_ID_INTEL_ADL_P_ID_10
 	};
 	const uint16_t adl_s_mch_ids[] = {
 		PCI_DEVICE_ID_INTEL_ADL_S_ID_1,
@@ -166,6 +207,13 @@ enum adl_cpu_type get_adl_cpu_type(void)
 		PCI_DEVICE_ID_INTEL_ADL_S_ID_13,
 		PCI_DEVICE_ID_INTEL_ADL_S_ID_14,
 		PCI_DEVICE_ID_INTEL_ADL_S_ID_15,
+	};
+
+	const uint16_t adl_n_mch_ids[] = {
+		PCI_DEVICE_ID_INTEL_ADL_N_ID_1,
+		PCI_DEVICE_ID_INTEL_ADL_N_ID_2,
+		PCI_DEVICE_ID_INTEL_ADL_N_ID_3,
+		PCI_DEVICE_ID_INTEL_ADL_N_ID_4,
 	};
 
 	const uint16_t mchid = pci_s_read_config16(PCI_DEV(0, PCI_SLOT(SA_DEVFN_ROOT),
@@ -187,6 +235,11 @@ enum adl_cpu_type get_adl_cpu_type(void)
 			return ADL_S;
 	}
 
+	for (size_t i = 0; i < ARRAY_SIZE(adl_n_mch_ids); i++) {
+		if (adl_n_mch_ids[i] == mchid)
+			return ADL_N;
+	}
+
 	return ADL_UNKNOWN;
 }
 
@@ -195,6 +248,7 @@ uint8_t get_supported_lpm_mask(void)
 	enum adl_cpu_type type = get_adl_cpu_type();
 	switch (type) {
 	case ADL_M: /* fallthrough */
+	case ADL_N:
 	case ADL_P:
 		return LPM_S0i2_0 | LPM_S0i3_0;
 	case ADL_S:

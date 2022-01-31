@@ -17,8 +17,6 @@
 #include <console/console.h>
 #include <device/pci_ids.h>
 #include <device/pci_def.h>
-#include <string.h>
-#include <delay.h>
 #include <elog.h>
 #include <halt.h>
 #include <option.h>

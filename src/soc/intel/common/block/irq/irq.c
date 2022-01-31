@@ -11,7 +11,6 @@
 #include <soc/pci_devs.h>
 #include <southbridge/intel/common/acpi_pirq_gen.h>
 #include <stdlib.h>
-#include <string.h>
 #include <types.h>
 
 #define MIN_SHARED_IRQ		16
@@ -183,7 +182,7 @@ static bool assign_fixed_pirqs(const struct slot_irq_constraints *constraints,
 		   fixed pin */
 		const enum pci_pin pin = fn_pin_map[i];
 		if (pin == PCI_INT_NONE) {
-			printk(BIOS_ERR, "ERROR: Slot %u, pirq %u, no pin for function %lu\n",
+			printk(BIOS_ERR, "ERROR: Slot %u, pirq %u, no pin for function %zu\n",
 			       constraints->slot, fixed_pirq, i);
 			return false;
 		}

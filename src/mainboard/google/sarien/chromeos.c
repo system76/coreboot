@@ -1,6 +1,5 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#include <acpi/acpi.h>
 #include <bootmode.h>
 #include <boot/coreboot_tables.h>
 #include <gpio.h>
@@ -93,4 +92,11 @@ void mainboard_prepare_cr50_reset(void)
 	/* Ensure system powers up after CR50 reset */
 	if (ENV_RAMSTAGE)
 		pmc_soc_set_afterg3_en(true);
+}
+
+int get_ec_is_trusted(void)
+{
+	/* Do not have a Chrome EC involved in entering recovery mode;
+	   Always return trusted. */
+	return 1;
 }

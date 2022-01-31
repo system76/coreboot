@@ -1,6 +1,5 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#include <console/console.h>
 #include <bootmode.h>
 #include <boot/coreboot_tables.h>
 #include <device/pci_ops.h>
@@ -63,4 +62,11 @@ void mainboard_chromeos_acpi_generate(void)
 		chromeos_set_ecfw_rw();
 
 	chromeos_acpi_gpio_generate(cros_gpios, ARRAY_SIZE(cros_gpios));
+}
+
+int get_ec_is_trusted(void)
+{
+	/* Do not have a Chrome EC involved in entering recovery mode;
+	   Always return trusted. */
+	return 1;
 }

@@ -49,7 +49,7 @@ PowerResource (PXP, 0, 0)
 
 	Method (_ON, 0, Serialized)
 	{
-		If (LAnd (LEqual (PDST, 1), LNotEqual (\PRT0, 0))) {
+		If (LEqual (PDST, 1) && LNotEqual (\PRT0, 0)) {
 			/* Enter this condition if device
 			 * is connected
 			 */
@@ -75,7 +75,7 @@ PowerResource (PXP, 0, 0)
 					Break
 				}
 				Sleep (16)
-				Increment (Local0)
+				Local0++
 			}
 		} /* End PDS condition check */
 	}
@@ -83,7 +83,7 @@ PowerResource (PXP, 0, 0)
 	Method (_OFF, 0, Serialized)
 	{
 		/* Set L23_Rdy Entry Request (L23ER) */
-		If (LAnd (LEqual (PDST, 1), LNotEqual (\PRT0, 0))) {
+		If (LEqual (PDST, 1) && LNotEqual (\PRT0, 0)) {
 			/* enter this condition if device
 			 * is connected
 			 */
@@ -95,7 +95,7 @@ PowerResource (PXP, 0, 0)
 					Break
 				}
 				Sleep (16)
-				Increment (Local0)
+				Local0++
 			}
 			Store (1, BDQA) /* Set BLKDQDA to 1 */
 			Store (1, BPLL) /* Set BLKPLLEN to 1 */

@@ -3,6 +3,7 @@
 #include <console/console.h>
 #include <cpu/cpu.h>
 #include <cpu/x86/cr.h>
+#include <cpu/x86/lapic.h>
 #include <cpu/x86/mp.h>
 #include <cpu/x86/msr.h>
 #include <cpu/x86/mtrr.h>
@@ -14,13 +15,21 @@
 #include <device/device.h>
 #include <device/pci.h>
 #include <intelblocks/cpulib.h>
-
+#include <lib.h>
 #include <soc/msr.h>
 #include <soc/cpu.h>
 #include <soc/iomap.h>
 #include <soc/smm.h>
 #include <soc/soc_util.h>
 #include <types.h>
+
+bool cpu_soc_is_in_untrusted_mode(void)
+{
+	msr_t msr;
+
+	msr = rdmsr(MSR_POWER_MISC);
+	return !!(msr.lo & ENABLE_IA_UNTRUSTED);
+}
 
 static struct smm_relocation_attrs relo_attrs;
 
@@ -90,6 +99,9 @@ static void denverton_core_init(struct device *cpu)
 
 	/* Enable Turbo */
 	enable_turbo();
+
+	/* Enable the local CPU apics */
+	setup_lapic();
 
 	/* Enable speed step. Always ON.*/
 	msr = rdmsr(IA32_MISC_ENABLE);
@@ -178,28 +190,19 @@ static unsigned int detect_num_cpus_via_cpuid(void)
 	}
 }
 
-static int detect_num_cpus_via_mch(void)
+/* Assumes that FSP has already programmed the cores disabled register */
+static unsigned int detect_num_cpus_via_mch(void)
 {
-	/* Assumes that FSP has already programmed the cores disabled register
-	 */
-	u32 core_exists_mask, active_cores_mask;
-	u32 core_disable_mask;
-	register int active_cores = 0, total_cores = 0;
-	register int counter = 0;
-
 	/* Get Masks for Total Existing SOC Cores and Core Disable Mask */
-	core_exists_mask = MMIO32(DEFAULT_MCHBAR + MCH_BAR_CORE_EXISTS_MASK);
-	core_disable_mask = MMIO32(DEFAULT_MCHBAR + MCH_BAR_CORE_DISABLE_MASK);
-	active_cores_mask = (~core_disable_mask) & core_exists_mask;
+	const u32 core_exists_mask = MMIO32(DEFAULT_MCHBAR + MCH_BAR_CORE_EXISTS_MASK);
+	const u32 core_disable_mask = MMIO32(DEFAULT_MCHBAR + MCH_BAR_CORE_DISABLE_MASK);
+	const u32 active_cores_mask = ~core_disable_mask & core_exists_mask;
 
 	/* Calculate Number of Active Cores */
-	for (; counter < CONFIG_MAX_CPUS;
-	     counter++, active_cores_mask >>= 1, core_exists_mask >>= 1) {
-		active_cores += (active_cores_mask & CORE_BIT_MSK);
-		total_cores += (core_exists_mask & CORE_BIT_MSK);
-	}
+	const unsigned int active_cores = popcnt(active_cores_mask);
+	const unsigned int total_cores = popcnt(core_exists_mask);
 
-	printk(BIOS_DEBUG, "Number of Active Cores: %d of %d total.\n",
+	printk(BIOS_DEBUG, "Number of Active Cores: %u of %u total.\n",
 	       active_cores, total_cores);
 
 	return active_cores;

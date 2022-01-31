@@ -6,8 +6,6 @@ fw_config
 	field DB_SD 2 3
 		option DB_SD_ABSENT			0
 		option DB_SD_OZ711LV2LN			1
-		option DB_SD_GL9750			2
-		option DB_SD_RTS5232S			3
 	end
 	field KB_BL 4
 		option KB_BL_ABSENT			0
@@ -69,11 +67,11 @@ chip soc/intel/alderlake
 	#+-------------------+---------------------------+
 	#| GSPI1             | Fingerprint MCU           |
 	#| I2C0              | Audio                     |
-	#| I2C1              | Touchscreen               |
-	#| I2C2              | HPS                       |
-	#| I2C3              | cr50 TPM. Early init is   |
+	#| I2C1              | cr50 TPM. Early init is   |
 	#|                   | required to set up a BAR  |
 	#|                   | for TPM communication     |
+	#| I2C2              | HPS                       |
+	#| I2C3              | Touchscreen               |
 	#| I2C5              | Trackpad                  |
 	#+-------------------+---------------------------+
 	register "common_soc_config" = "{
@@ -81,7 +79,11 @@ chip soc/intel/alderlake
 			.speed = I2C_SPEED_FAST,
 		},
 		.i2c[1] = {
+			.early_init = 1,
 			.speed = I2C_SPEED_FAST,
+			.rise_time_ns = 600,
+			.fall_time_ns = 400,
+			.data_hold_time_ns = 50,
 		},
 		.i2c[2] = {
 			.speed = I2C_SPEED_FAST,
@@ -91,7 +93,15 @@ chip soc/intel/alderlake
 			.speed = I2C_SPEED_FAST,
 		},
 		.i2c[5] = {
-			.speed = I2C_SPEED_FAST,
+			.rise_time_ns = 650,
+			.fall_time_ns = 400,
+			.data_hold_time_ns = 500,
+			.speed_config[0] = {
+				.speed = I2C_SPEED_FAST,
+				.scl_lcnt = 160,
+				.scl_hcnt = 70,
+				.sda_hold = 40,
+			}
 		},
 	}"
 	# I2C Port Config
@@ -128,31 +138,31 @@ chip soc/intel/alderlake
 					[1] = {
 						.target = DPTF_TEMP_SENSOR_1,
 						.thresholds = {
-								TEMP_PCT(51, 74),
-								TEMP_PCT(47, 60),
-								TEMP_PCT(45, 45),
+								TEMP_PCT(50, 70),
+								TEMP_PCT(47, 58),
+								TEMP_PCT(45, 47),
 								TEMP_PCT(42, 45),
-								TEMP_PCT(37, 35),
+								TEMP_PCT(39, 39),
 						}
 					},
 					[2] = {
 						.target = DPTF_TEMP_SENSOR_2,
 						.thresholds = {
-								TEMP_PCT(51, 74),
-								TEMP_PCT(47, 60),
-								TEMP_PCT(45, 45),
+								TEMP_PCT(50, 70),
+								TEMP_PCT(47, 58),
+								TEMP_PCT(45, 47),
 								TEMP_PCT(42, 45),
-								TEMP_PCT(37, 35),
+								TEMP_PCT(39, 39),
 						}
 					},
 					[3] = {
 						.target = DPTF_TEMP_SENSOR_3,
 						.thresholds = {
-								TEMP_PCT(51, 74),
-								TEMP_PCT(47, 60),
-								TEMP_PCT(45, 45),
+								TEMP_PCT(50, 70),
+								TEMP_PCT(47, 58),
+								TEMP_PCT(45, 47),
 								TEMP_PCT(42, 45),
-								TEMP_PCT(37, 35),
+								TEMP_PCT(39, 39),
 						}
 					}
 				}"
@@ -178,7 +188,7 @@ chip soc/intel/alderlake
 				register "controls.power_limits" = "{
 					.pl1 = {
 							.min_power = 3000,
-							.max_power = 12000,
+							.max_power = 15000,
 							.time_window_min = 28 * MSECS_PER_SEC,
 							.time_window_max = 32 * MSECS_PER_SEC,
 							.granularity = 200,
@@ -205,11 +215,11 @@ chip soc/intel/alderlake
 					[0] = { 100, 6000, 220, 2200, },
 					[1] = {  92, 5500, 180, 1800, },
 					[2] = {  85, 5000, 145, 1450, },
-					[3] = {  74, 4620, 115, 1150, },
-					[4] = {  60, 4290,  90,  900, },
-					[5] = {  45, 3980,  55,  550, },
-					[6] = {  35, 3170,  30,  300, },
-					[7] = {  30, 2640,  15,  150, },
+					[3] = {  70, 4400, 115, 1150, },
+					[4] = {  56, 3900,  90,  900, },
+					[5] = {  45, 3300,  55,  550, },
+					[6] = {  38, 3000,  30,  300, },
+					[7] = {  33, 2900,  15,  150, },
 					[8] = {  10,  800,  10,  100, },
 					[9] = {   0,    0,   0,   50, }
 				}"
@@ -226,7 +236,9 @@ chip soc/intel/alderlake
 			register "cpu_pcie_rp[CPU_RP(1)]" = "{
 				.clk_req = 0,
 				.clk_src = 0,
+				.flags = PCIE_RP_LTR | PCIE_RP_AER,
 			}"
+			probe BOOT_NVME_MASK BOOT_NVME_ENABLED
 		end
 		device ref tbt_pcie_rp0 off end
 		device ref tbt_pcie_rp1 off end
@@ -262,6 +274,28 @@ chip soc/intel/alderlake
 			end
 		end
 		device ref i2c1 on
+			chip drivers/i2c/tpm
+				register "hid" = ""GOOG0005""
+				register "irq" = "ACPI_IRQ_EDGE_LOW(GPP_A13_IRQ)"
+				device i2c 50 on end
+			end
+		end
+		device ref i2c2 on
+			chip drivers/i2c/generic
+				register "hid" = ""GOOG0020""
+				register "desc" = ""Chrome OS HPS""
+				register "enable_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_E7)"  # EN_HPS_PWR
+				register "irq" = "ACPI_IRQ_LEVEL_LOW(GPP_E3_IRQ)"  # HPS_INT_ODL
+				# HPS uses I2C addresses 0x30 and 0x51.
+				# The address we provide here is not significant because
+				# neither coreboot nor Linux have a driver for HPS,
+				# it's only used from userspace.
+				device i2c 30 on
+					probe HPS HPS_PRESENT
+				end
+			end
+		end
+		device ref i2c3 on
 			chip drivers/i2c/hid
 				register "generic.hid" = ""GDIX0000""
 				register "generic.desc" = ""Goodix Touchscreen""
@@ -282,6 +316,7 @@ chip soc/intel/alderlake
 				# Parameter T4 >= 1ms
 				register "generic.stop_off_delay_ms" = "1"
 				register "generic.has_power_resource" = "1"
+				register "generic.disable_gpio_export_in_crs" = "1"
 				register "hid_desc_reg_offset" = "0x01"
 				device i2c 5d on end
 			end
@@ -297,22 +332,8 @@ chip soc/intel/alderlake
 						"ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_C0)"
 				register "enable_delay_ms" = "1"
 				register "has_power_resource" = "1"
+				register "disable_gpio_export_in_crs" = "1"
 				device i2c 10 on end
-			end
-		end
-		device ref i2c2 on
-			chip drivers/i2c/generic
-				register "hid" = ""GOOG0020""
-				register "desc" = ""Chrome OS HPS""
-				register "enable_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_E7)"  # EN_HPS_PWR
-				register "irq" = "ACPI_IRQ_LEVEL_LOW(GPP_E3_IRQ)"  # HPS_INT_ODL
-				# HPS uses I2C addresses 0x30 and 0x51.
-				# The address we provide here is not significant because
-				# neither coreboot nor Linux have a driver for HPS,
-				# it's only used from userspace.
-				device i2c 30 on
-					probe HPS HPS_PRESENT
-				end
 			end
 		end
 		device ref i2c5 on
@@ -320,7 +341,7 @@ chip soc/intel/alderlake
 				register "hid" = ""ELAN0000""
 				register "desc" = ""ELAN Touchpad""
 				register "irq" = "ACPI_IRQ_WAKE_LEVEL_LOW(GPP_F14_IRQ)"
-				register "wake" = "GPE0_DW2_15"
+				register "wake" = "GPE0_DW2_14"
 				register "probed" = "1"
 				device i2c 15 on end
 			end
@@ -328,7 +349,7 @@ chip soc/intel/alderlake
 				register "generic.hid" = ""PNP0C50""
 				register "generic.desc" = ""Synaptics Touchpad""
 				register "generic.irq" = "ACPI_IRQ_WAKE_LEVEL_LOW(GPP_F14_IRQ)"
-				register "generic.wake" = "GPE0_DW2_15"
+				register "generic.wake" = "GPE0_DW2_14"
 				register "generic.probed" = "1"
 				register "hid_desc_reg_offset" = "0x20"
 				device i2c 2c on end
@@ -367,18 +388,25 @@ chip soc/intel/alderlake
 				register "srcclk_pin" = "3"
 				device generic 0 on
 					probe DB_SD DB_SD_OZ711LV2LN
-					probe DB_SD DB_SD_GL9750
-					probe DB_SD DB_SD_RTS5232S
 				end
 			end
 		end
 		device ref pcie_rp9 on
+			# Enable NVMe PCIE 9 using clk 0
+			register "pch_pcie_rp[PCH_RP(9)]" = "{
+				.clk_src = 0,
+				.clk_req = 0,
+				.flags = PCIE_RP_LTR | PCIE_RP_AER,
+			}"
 			chip soc/intel/common/block/pcie/rtd3
 				register "enable_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_D11)"
 				register "reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_B4)"
-				register "srcclk_pin" = "1"
-				device generic 0 on end
+				register "srcclk_pin" = "0"
+				device generic 0 on
+					probe BOOT_EMMC_MASK BOOT_EMMC_ENABLED
+				end
 			end
+			probe BOOT_EMMC_MASK BOOT_EMMC_ENABLED
 		end
 		device ref gspi1 on
 			chip drivers/spi/acpi
@@ -402,13 +430,13 @@ chip soc/intel/alderlake
 			chip drivers/intel/pmc_mux
 				device generic 0 on
 					chip drivers/intel/pmc_mux/conn
-						register "usb2_port_number" = "1"
-						register "usb3_port_number" = "1"
+						use usb2_port1 as usb2_port
+						use tcss_usb3_port1 as usb3_port
 						device generic 0 alias conn0 on end
 					end
 					chip drivers/intel/pmc_mux/conn
-						register "usb2_port_number" = "3"
-						register "usb3_port_number" = "3"
+						use usb2_port3 as usb2_port
+						use tcss_usb3_port3 as usb3_port
 						device generic 2 alias conn1 on end
 					end
 				end
@@ -426,7 +454,7 @@ chip soc/intel/alderlake
 					chip drivers/usb/acpi
 						register "desc" = ""USB3 Type-C Port C1 (DB)""
 						register "type" = "UPC_TYPE_C_USB2_SS_SWITCH"
-						register "group" = "ACPI_PLD_GROUP(3, 1)"
+						register "group" = "ACPI_PLD_GROUP(2, 1)"
 						device ref tcss_usb3_port3 on
 							probe DB_USB DB_USB3_NO_A
 						end
@@ -446,7 +474,7 @@ chip soc/intel/alderlake
 					chip drivers/usb/acpi
 						register "desc" = ""USB2 Type-C Port C1 (DB)""
 						register "type" = "UPC_TYPE_C_USB2_SS_SWITCH"
-						register "group" = "ACPI_PLD_GROUP(3, 1)"
+						register "group" = "ACPI_PLD_GROUP(2, 1)"
 						device ref usb2_port3 on
 							probe DB_USB DB_USB3_NO_A
 						end

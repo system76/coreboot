@@ -12,13 +12,9 @@ chip soc/intel/elkhartlake
 	register "pmc_gpe0_dw1" = "GPP_F"
 	register "pmc_gpe0_dw2" = "GPP_E"
 
-	# Enable heci1 communication
-	register "HeciEnabled" = "1"
-
 	# FSP configuration
 	register "SaGv" = "SaGv_Disabled"
 	register "SmbusEnable" = "1"
-	register "Heci2Enable" = "1"
 
 	# Enable IBECC for the complete memory
 	register "ibecc" = "{

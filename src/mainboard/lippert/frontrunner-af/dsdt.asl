@@ -13,202 +13,11 @@ DefinitionBlock (
 {	/* Start of ASL file */
 	#include <acpi/dsdt_top.asl>
 
+	#include <cpu/amd/agesa/family14/acpi/cpu.asl>
 
-	/*
-	 * Processor Object
-	 *
-	 */
-	Scope (\_SB) {		/* define processor scope */
-		Device (C000) {
-		Name (_HID, "ACPI0007")
-		Name (_UID, 0)
-		}
-		Device (C001) {
-		Name (_HID, "ACPI0007")
-		Name (_UID, 1)
-		}
-		Device (C002) {
-		Name (_HID, "ACPI0007")
-		Name (_UID, 2)
-		}
-		Device (C003) {
-		Name (_HID, "ACPI0007")
-		Name (_UID, 3)
-		}
-	} /* End _SB scope */
-
-	/* Client Management index/data registers */
-	OperationRegion(CMT, SystemIO, 0x00000C50, 0x00000002)
-		Field(CMT, ByteAcc, NoLock, Preserve) {
-		CMTI,      8,
-		/* Client Management Data register */
-		G64E,   1,
-		G64O,      1,
-		G32O,      2,
-		,       2,
-		GPSL,     2,
-	}
-
-	/* GPM Port register */
-	OperationRegion(GPT, SystemIO, 0x00000C52, 0x00000001)
-		Field(GPT, ByteAcc, NoLock, Preserve) {
-		GPB0,1,
-		GPB1,1,
-		GPB2,1,
-		GPB3,1,
-		GPB4,1,
-		GPB5,1,
-		GPB6,1,
-		GPB7,1,
-	}
-
-	/* Flash ROM program enable register */
-	OperationRegion(FRE, SystemIO, 0x00000C6F, 0x00000001)
-		Field(FRE, ByteAcc, NoLock, Preserve) {
-		,     0x00000006,
-		FLRE, 0x00000001,
-	}
-
-	/* PM2 index/data registers */
-	OperationRegion(PM2R, SystemIO, 0x00000CD0, 0x00000002)
-		Field(PM2R, ByteAcc, NoLock, Preserve) {
-		PM2I, 0x00000008,
-		PM2D, 0x00000008,
-	}
-
-	/* Power Management I/O registers, TODO:PMIO is quite different in SB800. */
-	OperationRegion(PIOR, SystemIO, 0x00000CD6, 0x00000002)
-		Field(PIOR, ByteAcc, NoLock, Preserve) {
-		PIOI, 0x00000008,
-		PIOD, 0x00000008,
-	}
-	IndexField (PIOI, PIOD, ByteAcc, NoLock, Preserve) {
-		    , 1,	/* MiscControl */
-		T1EE, 1,
-		T2EE, 1,
-		Offset(0x01),	/* MiscStatus */
-		, 1,
-		T1E, 1,
-		T2E, 1,
-		Offset(0x04),	/* SmiWakeUpEventEnable3 */
-		, 7,
-		SSEN, 1,
-		Offset(0x07),	/* SmiWakeUpEventStatus3 */
-		, 7,
-		CSSM, 1,
-		Offset(0x10),	/* AcpiEnable */
-		, 6,
-		PWDE, 1,
-		Offset(0x1C),	/* ProgramIoEnable */
-		, 3,
-		MKME, 1,
-		IO3E, 1,
-		IO2E, 1,
-		IO1E, 1,
-		IO0E, 1,
-		Offset(0x1D),	/* IOMonitorStatus */
-		, 3,
-		MKMS, 1,
-		IO3S, 1,
-		IO2S, 1,
-		IO1S, 1,
-		IO0S,1,
-		Offset(0x20),	/* AcpiPmEvtBlk. TODO: should be 0x60 */
-		APEB, 16,
-		Offset(0x36),	/* GEvtLevelConfig */
-		, 6,
-		ELC6, 1,
-		ELC7, 1,
-		Offset(0x37),	/* GPMLevelConfig0 */
-		, 3,
-		PLC0, 1,
-		PLC1, 1,
-		PLC2, 1,
-		PLC3, 1,
-		PLC8, 1,
-		Offset(0x38),	/* GPMLevelConfig1 */
-		, 1,
-		 PLC4, 1,
-		 PLC5, 1,
-		, 1,
-		 PLC6, 1,
-		 PLC7, 1,
-		Offset(0x3B),	/* PMEStatus1 */
-		GP0S, 1,
-		GM4S, 1,
-		GM5S, 1,
-		APS, 1,
-		GM6S, 1,
-		GM7S, 1,
-		GP2S, 1,
-		STSS, 1,
-		Offset(0x55),	/* SoftPciRst */
-		SPRE, 1,
-		, 1,
-		, 1,
-		PNAT, 1,
-		PWMK, 1,
-		PWNS, 1,
-
-		Offset(0x65),	/* UsbPMControl */
-		, 4,
-		URRE, 1,
-		Offset(0x68),	/* MiscEnable68 */
-		, 3,
-		TMTE, 1,
-		, 1,
-		Offset(0x92),	/* GEVENTIN */
-		, 7,
-		E7IS, 1,
-		Offset(0x96),	/* GPM98IN */
-		G8IS, 1,
-		G9IS, 1,
-		Offset(0x9A),	/* EnhanceControl */
-		,7,
-		HPDE, 1,
-		Offset(0xA8),	/* PIO7654Enable */
-		IO4E, 1,
-		IO5E, 1,
-		IO6E, 1,
-		IO7E, 1,
-		Offset(0xA9),	/* PIO7654Status */
-		IO4S, 1,
-		IO5S, 1,
-		IO6S, 1,
-		IO7S, 1,
-	}
-
-	/* PM1 Event Block
-	* First word is PM1_Status, Second word is PM1_Enable
-	*/
-	OperationRegion(P1EB, SystemIO, APEB, 0x04)
-		Field(P1EB, ByteAcc, NoLock, Preserve) {
-		TMST, 1,
-		,    3,
-		BMST,    1,
-		GBST,   1,
-		Offset(0x01),
-		PBST, 1,
-		, 1,
-		RTST, 1,
-		, 3,
-		PWST, 1,
-		SPWS, 1,
-		Offset(0x02),
-		TMEN, 1,
-		, 4,
-		GBEN, 1,
-		Offset(0x03),
-		PBEN, 1,
-		, 1,
-		RTEN, 1,
-		, 3,
-		PWDA, 1,
-	}
+	#include <southbridge/amd/cimx/sb800/acpi/misc_io.asl>
 
 	#include "acpi/routing.asl"
-
-	#include <southbridge/amd/cimx/sb800/acpi/pcie.asl>
 
 	/* Contains the supported sleep states for this chipset */
 	#include <southbridge/amd/common/acpi/sleepstates.asl>
@@ -227,10 +36,9 @@ DefinitionBlock (
 		/*  _SB.PCI0 */
 		/* Note: Only need HID on Primary Bus */
 		Device(PCI0) {
-			External (TOM1)
-			External (TOM2)
-			Name(_HID, EISAID("PNP0A08"))	/* PCI Express Root Bridge */
-			Name(_CID, EISAID("PNP0A03"))	/* PCI Root Bridge */
+
+			/* Describe the AMD Northbridge */
+			#include <northbridge/amd/agesa/family14/acpi/northbridge.asl>
 
 			/* Operating System Capabilities Method */
 			Method (_OSC, 4)
@@ -262,122 +70,28 @@ DefinitionBlock (
 				Return (PR0)                  /* PIC Mode */
 			} /* end _PRT */
 
-			/* Describe the Northbridge devices */
-			Device(AMRT) {
-				Name(_ADR, 0x00000000)
-			} /* end AMRT */
 
-			/* The internal GFX bridge */
-			Device(AGPB) {
-				Name(_ADR, 0x00010000)
-				Name(_PRW, Package() {0x18, 4})
-				Method(_PRT,0) {
-					Return (APR1)
-				}
-			}  /* end AGPB */
 
-			/* The external GFX bridge */
-			Device(PBR2) {
-				Name(_ADR, 0x00020000)
-				Name(_PRW, Package() {0x18, 4})
-				Method(_PRT,0) {
-					If(PICM){ Return(APS2) }   /* APIC mode */
-					Return (PS2)                  /* PIC Mode */
-				} /* end _PRT */
-			} /* end PBR2 */
+			/* Describe the Southbridge devices */
 
-			/* Dev3 is also an external GFX bridge, not used in Herring */
+			#include <southbridge/amd/cimx/sb800/acpi/pcie.asl>
 
-			Device(PBR4) {
-				Name(_ADR, 0x00040000)
-				Name(_PRW, Package() {0x18, 4})
-				Method(_PRT,0) {
-					If(PICM){ Return(APS4) }   /* APIC mode */
-					Return (PS4)                  /* PIC Mode */
-				} /* end _PRT */
-			} /* end PBR4 */
+			Device(STCR) {
+				Name(_ADR, 0x00110000)
+				#include "acpi/sata.asl"
+			} /* end STCR */
 
-			Device(PBR5) {
-				Name(_ADR, 0x00050000)
-				Name(_PRW, Package() {0x18, 4})
-				Method(_PRT,0) {
-					If(PICM){ Return(APS5) }   /* APIC mode */
-					Return (PS5)                  /* PIC Mode */
-				} /* end _PRT */
-			} /* end PBR5 */
+			#include <southbridge/amd/cimx/sb800/acpi/usb.asl>
 
-			Device(PBR6) {
-				Name(_ADR, 0x00060000)
-				Name(_PRW, Package() {0x18, 4})
-				Method(_PRT,0) {
-					If(PICM){ Return(APS6) }   /* APIC mode */
-					Return (PS6)                  /* PIC Mode */
-				} /* end _PRT */
-			} /* end PBR6 */
+			Device(SBUS) {
+				Name(_ADR, 0x00140000)
+			} /* end SBUS */
 
-			/* The onboard EtherNet chip */
-			Device(PBR7) {
-				Name(_ADR, 0x00070000)
-				Name(_PRW, Package() {0x18, 4})
-				Method(_PRT,0) {
-					If(PICM){ Return(APS7) }   /* APIC mode */
-					Return (PS7)                  /* PIC Mode */
-				} /* end _PRT */
-			} /* end PBR7 */
+			#include <southbridge/amd/cimx/sb800/acpi/audio.asl>
 
-			/* GPP */
-			Device(PBR9) {
-				Name(_ADR, 0x00090000)
-				Name(_PRW, Package() {0x18, 4})
-				Method(_PRT,0) {
-					If(PICM){ Return(APS9) }   /* APIC mode */
-					Return (PS9)                  /* PIC Mode */
-				} /* end _PRT */
-			} /* end PBR9 */
+			#include <southbridge/amd/cimx/sb800/acpi/lpc.asl>
 
-			Device(PBRa) {
-				Name(_ADR, 0x000A0000)
-				Name(_PRW, Package() {0x18, 4})
-				Method(_PRT,0) {
-					If(PICM){ Return(APSA) }   /* APIC mode */
-					Return (PSA)                  /* PIC Mode */
-				} /* end _PRT */
-			} /* end PBRa */
-
-			Device(PE20) {
-				Name(_ADR, 0x00150000)
-				Name(_PRW, Package() {0x18, 4})
-				Method(_PRT,0) {
-					If(PICM){ Return(APE0) }   /* APIC mode */
-					Return (PE0)                  /* PIC Mode */
-				} /* end _PRT */
-			} /* end PE20 */
-			Device(PE21) {
-				Name(_ADR, 0x00150001)
-				Name(_PRW, Package() {0x18, 4})
-				Method(_PRT,0) {
-					If(PICM){ Return(APE1) }   /* APIC mode */
-					Return (PE1)                  /* PIC Mode */
-				} /* end _PRT */
-			} /* end PE21 */
-			Device(PE22) {
-				Name(_ADR, 0x00150002)
-				Name(_PRW, Package() {0x18, 4})
-				Method(_PRT,0) {
-					If(PICM){ Return(APE2) }   /* APIC mode */
-					Return (APE2)                  /* PIC Mode */
-				} /* end _PRT */
-			} /* end PE22 */
-			Device(PE23) {
-				Name(_ADR, 0x00150003)
-				Name(_PRW, Package() {0x18, 4})
-				Method(_PRT,0) {
-					If(PICM){ Return(APE3) }   /* APIC mode */
-					Return (PE3)                  /* PIC Mode */
-				} /* end _PRT */
-			} /* end PE23 */
-
-			/* PCI slot 1, 2, 3 */
+			/* PCI bridge */
 			Device(PIBR) {
 				Name(_ADR, 0x00140004)
 				Name(_PRW, Package() {0x18, 4})
@@ -385,141 +99,6 @@ DefinitionBlock (
 				Method(_PRT, 0) {
 					Return (PCIB)
 				}
-			}
-
-			/* Describe the Southbridge devices */
-			Device(STCR) {
-				Name(_ADR, 0x00110000)
-				#include "acpi/sata.asl"
-			} /* end STCR */
-
-			Device(UOH1) {
-				Name(_ADR, 0x00120000)
-				Name(_PRW, Package() {0x0B, 3})
-			} /* end UOH1 */
-
-			Device(UOH2) {
-				Name(_ADR, 0x00120002)
-				Name(_PRW, Package() {0x0B, 3})
-			} /* end UOH2 */
-
-			Device(UOH3) {
-				Name(_ADR, 0x00130000)
-				Name(_PRW, Package() {0x0B, 3})
-			} /* end UOH3 */
-
-			Device(UOH4) {
-				Name(_ADR, 0x00130002)
-				Name(_PRW, Package() {0x0B, 3})
-			} /* end UOH4 */
-
-			Device(UOH5) {
-				Name(_ADR, 0x00160000)
-				Name(_PRW, Package() {0x0B, 3})
-			} /* end UOH5 */
-
-			Device(UOH6) {
-				Name(_ADR, 0x00160002)
-				Name(_PRW, Package() {0x0B, 3})
-			} /* end UOH5 */
-
-			Device(UEH1) {
-				Name(_ADR, 0x00140005)
-				Name(_PRW, Package() {0x0B, 3})
-			} /* end UEH1 */
-
-			Device(SBUS) {
-				Name(_ADR, 0x00140000)
-			} /* end SBUS */
-
-			Device(AZHD) {
-				Name(_ADR, 0x00140002)
-				OperationRegion(AZPD, PCI_Config, 0x00, 0x100)
-					Field(AZPD, AnyAcc, NoLock, Preserve) {
-					offset (0x42),
-					NSDI, 1,
-					NSDO, 1,
-					NSEN, 1,
-					offset (0x44),
-					IPCR, 4,
-					offset (0x54),
-					PWST, 2,
-					, 6,
-					PMEB, 1,
-					, 6,
-					PMST, 1,
-					offset (0x62),
-					MMCR, 1,
-					offset (0x64),
-					MMLA, 32,
-					offset (0x68),
-					MMHA, 32,
-					offset (0x6C),
-					MMDT, 16,
-				}
-			} /* end AZHD */
-
-			Device(LIBR) {
-				Name(_ADR, 0x00140003)
-
-				/* Real Time Clock Device */
-				Device(RTC0) {
-					Name(_HID, EISAID("PNP0B00"))   /* AT Real Time Clock (not PIIX4 compatible) */
-					Name(_CRS, ResourceTemplate() {
-						IRQNoFlags(){8}
-						IO(Decode16,0x0070, 0x0070, 0, 2)
-					})
-				} /* End Device(_SB.PCI0.LpcIsaBr.RTC0) */
-
-				Device(TMR) {	/* Timer */
-					Name(_HID,EISAID("PNP0100"))	/* System Timer */
-					Name(_CRS, ResourceTemplate() {
-						IRQNoFlags(){0}
-						IO(Decode16, 0x0040, 0x0040, 0, 4)
-					})
-				} /* End Device(_SB.PCI0.LpcIsaBr.TMR) */
-
-				Device(SPKR) {	/* Speaker */
-					Name(_HID,EISAID("PNP0800"))	/* AT style speaker */
-					Name(_CRS, ResourceTemplate() {
-						IO(Decode16, 0x0061, 0x0061, 0, 1)
-					})
-				} /* End Device(_SB.PCI0.LpcIsaBr.SPKR) */
-
-				Device(PIC) {
-					Name(_HID,EISAID("PNP0000"))	/* AT Interrupt Controller */
-					Name(_CRS, ResourceTemplate() {
-						IRQNoFlags(){2}
-						IO(Decode16,0x0020, 0x0020, 0, 2)
-						IO(Decode16,0x00A0, 0x00A0, 0, 2)
-					})
-				} /* End Device(_SB.PCI0.LpcIsaBr.PIC) */
-
-				Device(MAD) { /* 8257 DMA */
-					Name(_HID,EISAID("PNP0200"))	/* Hardware Device ID */
-					Name(_CRS, ResourceTemplate() {
-						DMA(Compatibility,BusMaster,Transfer8){4}
-						IO(Decode16, 0x0000, 0x0000, 0x10, 0x10)
-						IO(Decode16, 0x0081, 0x0081, 0x01, 0x03)
-						IO(Decode16, 0x0087, 0x0087, 0x01, 0x01)
-						IO(Decode16, 0x0089, 0x0089, 0x01, 0x03)
-						IO(Decode16, 0x008F, 0x008F, 0x01, 0x01)
-						IO(Decode16, 0x00C0, 0x00C0, 0x10, 0x20)
-					}) /* End Name(_SB.PCI0.LpcIsaBr.MAD._CRS) */
-				} /* End Device(_SB.PCI0.LpcIsaBr.MAD) */
-
-				Device(COPR) {
-					Name(_HID,EISAID("PNP0C04"))	/* Math Coprocessor */
-					Name(_CRS, ResourceTemplate() {
-						IO(Decode16, 0x00F0, 0x00F0, 0, 0x10)
-						IRQNoFlags(){13}
-					})
-				} /* End Device(_SB.PCI0.LpcIsaBr.COPR) */
-				#include "acpi/superio.asl"
-			} /* end LIBR */
-
-			Device(HPBR) {
-				Name(_ADR, 0x00140004)
 			} /* end HostPciBr */
 
 			Device(ACAD) {

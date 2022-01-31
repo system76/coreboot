@@ -27,6 +27,139 @@ fw_config
 end
 
 chip soc/amd/cezanne
+
+	register "usb_phy_custom" = "1"
+	register "usb_phy" = "{
+		/* Left USB C0 Port */
+		.Usb2PhyPort[0] = {
+			.compdstune = 5,
+			.sqrxtune = 3,
+			.txfslstune = 3,
+			.txpreempamptune = 1,
+			.txpreemppulsetune = 0,
+			.txrisetune = 1,
+			.txvreftune = 9,
+			.txhsxvtune = 3,
+			.txrestune = 1,
+		},
+		/* Left USB A0 Port or WWAN */
+		.Usb2PhyPort[1] = {
+			.compdstune = 5,
+			.sqrxtune = 3,
+			.txfslstune = 3,
+			.txpreempamptune = 1,
+			.txpreemppulsetune = 0,
+			.txrisetune = 1,
+			.txvreftune = 9,
+			.txhsxvtune = 3,
+			.txrestune = 1,
+		},
+		/* User facing camera */
+		.Usb2PhyPort[2] = {
+			.compdstune = 1,
+			.sqrxtune = 3,
+			.txfslstune = 3,
+			.txpreempamptune = 2,
+			.txpreemppulsetune = 0,
+			.txrisetune = 2,
+			.txvreftune = 3,
+			.txhsxvtune = 3,
+			.txrestune = 2,
+		},
+		/* World facing camera */
+		.Usb2PhyPort[3] = {
+			.compdstune = 1,
+			.sqrxtune = 3,
+			.txfslstune = 3,
+			.txpreempamptune = 2,
+			.txpreemppulsetune = 0,
+			.txrisetune = 2,
+			.txvreftune = 3,
+			.txhsxvtune = 3,
+			.txrestune = 2,
+		},
+		/* Right USB C1 Port */
+		.Usb2PhyPort[4] = {
+			.compdstune = 6,
+			.sqrxtune = 3,
+			.txfslstune = 3,
+			.txpreempamptune = 1,
+			.txpreemppulsetune = 0,
+			.txrisetune = 1,
+			.txvreftune = 0xe,
+			.txhsxvtune = 3,
+			.txrestune = 1,
+		},
+		/* Right USB A1 Port */
+		.Usb2PhyPort[5] = {
+			.compdstune = 5,
+			.sqrxtune = 3,
+			.txfslstune = 3,
+			.txpreempamptune = 1,
+			.txpreemppulsetune = 0,
+			.txrisetune = 1,
+			.txvreftune = 9,
+			.txhsxvtune = 3,
+			.txrestune = 1,
+		},
+		/* WiFi / Bluetooth */
+		.Usb2PhyPort[6] = {
+			.compdstune = 1,
+			.sqrxtune = 3,
+			.txfslstune = 3,
+			.txpreempamptune = 2,
+			.txpreemppulsetune = 0,
+			.txrisetune = 2,
+			.txvreftune = 3,
+			.txhsxvtune = 3,
+			.txrestune = 2,
+		},
+		/* Smart Card */
+		.Usb2PhyPort[7] = {
+			.compdstune = 1,
+			.sqrxtune = 3,
+			.txfslstune = 3,
+			.txpreempamptune = 2,
+			.txpreemppulsetune = 0,
+			.txrisetune = 2,
+			.txvreftune = 3,
+			.txhsxvtune = 3,
+			.txrestune = 2,
+		},
+		/* Left USB C0 Port */
+		.Usb3PhyPort[0] = {
+			.tx_term_ctrl=2,
+			.rx_term_ctrl=2,
+			.tx_vboost_lvl_en=1,
+			.tx_vboost_lvl=5,
+		},
+		/* Left USB A0 Port or WWAN */
+		.Usb3PhyPort[1] = {
+			.tx_term_ctrl=2,
+			.rx_term_ctrl=2,
+			.tx_vboost_lvl_en=1,
+			.tx_vboost_lvl=5,
+		},
+		/* Right USB C1 Port */
+		.Usb3PhyPort[2] = {
+			.tx_term_ctrl=2,
+			.rx_term_ctrl=2,
+			.tx_vboost_lvl_en=1,
+			.tx_vboost_lvl=5,
+		},
+		/* Right USB A1 Port */
+		.Usb3PhyPort[3] = {
+			.tx_term_ctrl=2,
+			.rx_term_ctrl=2,
+			.tx_vboost_lvl_en=1,
+			.tx_vboost_lvl=5,
+		},
+		.ComboPhyStaticConfig[0] = 0,
+		.ComboPhyStaticConfig[1] = 0,
+		.BatteryChargerEnable = 0,
+		.PhyP3CpmP4Support = 0,
+	}"
+
 	device domain 0 on
 		device ref gpp_bridge_2 on
 			# Required so the NVMe gets placed into D3 when entering S0i3.
@@ -61,10 +194,10 @@ chip soc/amd/cezanne
 	register "sustained_power_limit_mW"  = "15000"
 	register "thermctl_limit_degreeC"    = "100"
 
-	register "telemetry_vddcrvddfull_scale_current_mA" = "73457" #mA
-	register "telemetry_vddcrvddoffset" =  "291"
-	register "telemetry_vddcrsocfull_scale_current_mA" = "30761" #mA
-	register "telemetry_vddcrsocoffset" =  "834"
+	register "telemetry_vddcrvddfull_scale_current_mA" = "73331" #mA
+	register "telemetry_vddcrvddoffset" =  "1893"
+	register "telemetry_vddcrsocfull_scale_current_mA" = "31955" #mA
+	register "telemetry_vddcrsocoffset" =  "852"
 
 	# I2C Config
 	#+-------------------+---------------------------+
@@ -90,6 +223,19 @@ chip soc/amd/cezanne
 	register "i2c[3]" = "{
 		.speed = I2C_SPEED_FAST,
 		.early_init = true,
+	}"
+
+	register "edp_phy_override" = "1"
+
+	# bit vector of phy, bit0=1: DP0, bit1=1: DP1, bit2=1: DP2, bit3=1: DP3
+	register "edp_physel" = "0x1"
+
+	register "edp_tuningset" = "{
+		.dp_vs_pemph_level = 0x00,
+		.tx_eq_main = 0x1f,
+		.tx_eq_pre = 0x0,
+		.tx_eq_post = 0x0,
+		.tx_vboost_lvl = 0x5,
 	}"
 
 	device ref i2c_0 on
@@ -166,11 +312,9 @@ chip soc/amd/cezanne
 
 	chip drivers/generic/max98357a
 			register "hid" = ""MX98360A""
-			register "sdmode_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPIO_31)"
+			register "sdmode_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPIO_70)"
 			register "sdmode_delay" = "5"
 			device generic 0.1 on end
 	end
-
-	register "common_config.espi_config.alert_pin" = "ESPI_ALERT_PIN_IN_BAND"
 
 end	# chip soc/amd/cezanne

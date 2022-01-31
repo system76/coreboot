@@ -8,7 +8,6 @@
 #include <amdblocks/psp.h>
 
 /* x86 to PSP commands */
-#define MBOX_BIOS_CMD_DRAM_INFO			0x01
 #define MBOX_BIOS_CMD_SMM_INFO			0x02
 #define MBOX_BIOS_CMD_SX_INFO			0x03
 #define   MBOX_BIOS_CMD_SX_INFO_SLEEP_TYPE_MAX	0x07
@@ -19,7 +18,8 @@
 #define MBOX_BIOS_CMD_S3_DATA_INFO		0x08
 #define MBOX_BIOS_CMD_NOP			0x09
 #define MBOX_BIOS_CMD_ABORT			0xfe
-/* x86 to PSP commands, v1 */
+/* x86 to PSP commands, v1-only */
+#define MBOX_BIOS_CMD_DRAM_INFO			0x01
 #define MBOX_BIOS_CMD_SMU_FW			0x19
 #define MBOX_BIOS_CMD_SMU_FW2			0x1a
 
@@ -29,10 +29,6 @@
 #define PSPV1_STATUS_TERMINATED		BIT(2)
 #define PSPV1_STATUS_HALT		BIT(3)
 #define PSPV1_STATUS_RECOVERY		BIT(4)
-
-/* generic PSP interface status, v2 */
-#define PSPV2_STATUS_ERROR		BIT(30)
-#define PSPV2_STATUS_RECOVERY		BIT(31)
 
 /* psp_mbox consists of hardware registers beginning at PSPx000070
  *   mbox_command: BIOS->PSP command, cleared by PSP when complete

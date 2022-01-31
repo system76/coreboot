@@ -1,6 +1,6 @@
 /** @file
 
-Copyright (c) 2021, Intel Corporation. All rights reserved.<BR>
+Copyright (c) 2022, Intel Corporation. All rights reserved.<BR>
 
 Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -2852,9 +2852,11 @@ typedef struct {
 **/
   UINT8                       CpuPcieRpLtrConfigLock[4];
 
-/** Offset 0x0C38 - RpPtmBytes
+/** Offset 0x0C38 - PTM for PCIE RP Mask
+  Enable/disable Precision Time Measurement for PCIE Root Ports. 0: disable, 1: enable.
+  One bit for each port, bit0 for port1, bit1 for port2, and so on.
 **/
-  UINT8                       RpPtmBytes[4];
+  UINT8                       CpuPcieRpPtmEnabled[4];
 
 /** Offset 0x0C3C - PCIE RP Detect Timeout Ms
   The number of milliseconds within 0~65535 in reference code will wait for link to
@@ -3380,8 +3382,7 @@ typedef struct {
   UINT8                       ProcHotLock;
 
 /** Offset 0x0CF3 - Configuration for boot TDP selection
-  Configuration for boot TDP selection; <b>0: TDP Nominal</b>; 1: TDP Down; 2: TDP
-  Up;0xFF : Deactivate
+  Deprecated. Move to premem.
 **/
   UINT8                       ConfigTdpLevel;
 
@@ -3766,9 +3767,12 @@ typedef struct {
 **/
   UINT8                       PchXhciOcLock;
 
-/** Offset 0x0F55 - LpmStateEnableMask
+/** Offset 0x0F55 - Low Power Mode Enable/Disable config mask
+  Configure if respective S0i2/3 sub-states are to be supported. Each bit corresponds
+  to one sub-state (LPMx - BITx): LPM0-s0i2.0, LPM1-s0i2.1, LPM2-s0i2.2, LPM3-s0i3.0,
+  LPM4-s0i3.1, LPM5-s0i3.2, LPM6-s0i3.3, LPM7-s0i3.4.
 **/
-  UINT8                       LpmStateEnableMask;
+  UINT8                       PmcLpmS0ixSubStateEnableMask;
 
 /** Offset 0x0F56 - PCIE RP Ltr Max Snoop Latency
   Latency Tolerance Reporting, Max Snoop Latency.
@@ -3869,7 +3873,7 @@ typedef struct {
 
 /** Offset 0x0FD5 - Reserved
 **/
-  UINT8                       Reserved56[19];
+  UINT8                       Reserved56[123];
 } FSP_S_CONFIG;
 
 /** Fsp S UPD Configuration
@@ -3888,11 +3892,11 @@ typedef struct {
 **/
   FSP_S_CONFIG                FspsConfig;
 
-/** Offset 0x0FE8
+/** Offset 0x1050
 **/
   UINT8                       UnusedUpdSpace42[6];
 
-/** Offset 0x0FEE
+/** Offset 0x1056
 **/
   UINT16                      UpdTerminator;
 } FSPS_UPD;

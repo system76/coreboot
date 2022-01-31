@@ -37,7 +37,7 @@ Device (MBRS)
 		CreateQWordField (MSBF, \_SB.MBRS._Y1C._LEN, LELM)
 
 		And (\_SB.PCI0.RLAR, 0x03FF, Local1)
-		Increment (Local1)
+		Local1++
 		If (LGreater (Local1, 0x40))
 		{
 			ShiftLeft (Local1, 0x1A, LELM)
@@ -49,10 +49,10 @@ Device (MBRS)
 		CreateDWordField (MSBF, \_SB.MBRS._Y1D._LEN, MEM2)
 		And (\_SB.PCI0.TOLM, 0xF800, Local1)
 		ShiftRight (Local1, 0x04, Local1)
-		Decrement (Local1)
+		Local1--
 		If (LGreater (Local1, 0x10))
 		{
-			Subtract (Local1, 0x0F, Local1)
+			Local1 -= 0x0F
 			Store (ShiftLeft (Local1, 0x14), MEM2)
 			Store (0x01000000, MS00)
 			Store (MS00, MS01)

@@ -54,6 +54,7 @@ amdfwtool \
 cbmem \
 ectool \
 futility \
+ifdtool \
 intelmetool \
 inteltool \
 intelvbttool \
@@ -85,6 +86,11 @@ ifneq ($(JENKINS_SKIP_LINT_TESTS),y)
 	util/lint/lint lint-stable --junit
 	util/lint/lint lint-extended --junit
 endif
+	if [ ! -f 3rdparty/intel-sec-tools/go.mod ]; then \
+		echo "Please download 3rdparty/intel-sec-tools/:"; \
+		echo "git submodule update --init 3rdparty/intel-sec-tools"; \
+		exit 1; \
+	fi
 	cd 3rdparty/intel-sec-tools/ ; go mod vendor
 	util/abuild/abuild -o $(COREBOOT_BUILD_DIR)/chromeos $(ABUILD_OPTIONS) -x -X $(top)/abuild-chromeos.xml
 	util/abuild/abuild -o $(COREBOOT_BUILD_DIR)/default $(ABUILD_OPTIONS)
@@ -99,6 +105,7 @@ endif
 	$(MAKE) unit-tests JUNIT_OUTPUT=y COV=1
 	(cd payloads/libpayload; unset COREBOOT_BUILD_DIR; $(MAKE) unit-tests coverage-report JUNIT_OUTPUT=y COV=1)
 	$(MAKE) coverage-report JUNIT_OUTPUT=y COV=1
+	find . -name 'tests.info' -exec cat {} + >$(COREBOOT_BUILD_DIR)/coverage.info
 
 test-basic: test-lint test-tools test-abuild test-payloads test-cleanup
 

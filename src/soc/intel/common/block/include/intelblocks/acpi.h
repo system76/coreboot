@@ -9,6 +9,21 @@
 #include <soc/pm.h>
 #include <stdint.h>
 
+/* CPU Types */
+enum core_type {
+	CPUID_RESERVED_1 = 0x10,
+	CPUID_CORE_TYPE_INTEL_ATOM = 0x20,
+	CPUID_RESERVED_2 = 0x30,
+	CPUID_CORE_TYPE_INTEL_CORE = 0x40,
+	CPUID_UNKNOWN = 0xff,
+};
+
+/* Gets the scaling factor for small and big core */
+void soc_get_scaling_factor(u16 *big_core_scal_factor, u16 *small_core_scal_factor);
+
+/* Generates ACPI code to define _CPC control method */
+void acpigen_write_CPPC_hybrid_method(int core_id);
+
 /* Forward declare the power state struct here */
 struct chipset_power_state;
 
@@ -108,4 +123,14 @@ void generate_acpi_power_engine_with_lpm(const struct soc_pmc_lpm *lpm);
 /* Fill SSDT for SGX status, EPC base and length */
 void sgx_fill_ssdt(void);
 
+/*
+ * This function returns the CPU type (big or small) of the CPU that it is executing
+ * on. It is designed to be called after MP initialization. If the SoC selects
+ * SOC_INTEL_COMMON_BLOCK_ACPI_CPU_HYBRID, then this function must be implemented,
+ * and will be called from set_cpu_type().
+ */
+enum core_type get_soc_cpu_type(void);
+
+/* Check if CPU supports Nominal frequency or not */
+bool soc_is_nominal_freq_supported(void);
 #endif				/* _SOC_INTEL_COMMON_BLOCK_ACPI_H_ */

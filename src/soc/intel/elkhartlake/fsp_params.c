@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 #include <assert.h>
+#include <cbfs.h>
 #include <console/console.h>
 #include <device/device.h>
 #include <fsp/api.h>
@@ -14,7 +15,6 @@
 #include <soc/pci_devs.h>
 #include <soc/ramstage.h>
 #include <soc/soc_chip.h>
-#include <string.h>
 #include <types.h>
 
 /* SATA DEVSLP idle timeout default values */
@@ -77,6 +77,134 @@ static void fill_fsps_fivr_params(FSP_S_CONFIG *s_cfg,
 	s_cfg->PchFivrExtVnnRailSxVoltage = (config->fivr.vnn_sx_mv * 10) / 25;
 	s_cfg->PchFivrExtV1p05RailIccMaximum = config->fivr.v1p05_icc_max_ma;
 	s_cfg->FivrSpreadSpectrum = config->fivr.spread_spectrum;
+}
+
+static void fill_fsps_tsn_params(FSP_S_CONFIG *params,
+		const struct soc_intel_elkhartlake_config *config)
+{
+	/*
+	 * Currently EHL TSN GBE only supports link speed with 2 type of
+	 * PCH XTAL frequency: 24 MHz and 38.4 MHz.
+	 * These are the config values for PchTsnGbeLinkSpeed in FSP-S UPD:
+	 * 0: 24MHz 2.5Gbps, 1: 24MHz 1Gbps, 2: 38.4MHz 2.5Gbps,
+	 * 3: 38.4MHz 1Gbps
+	 */
+	int xtal_freq_enum = pmc_get_xtal_freq();
+	if ((xtal_freq_enum != XTAL_24_MHZ) && (xtal_freq_enum != XTAL_38_4_MHZ)) {
+		printk(BIOS_ERR, "XTAL not supported. Disabling All TSN GBE ports.\n");
+		params->PchTsnEnable = 0;
+		params->PchPseGbeEnable[0] = 0;
+		params->PchPseGbeEnable[1] = 0;
+		devfn_disable(pci_root_bus(), PCH_DEVFN_GBE);
+		devfn_disable(pci_root_bus(), PCH_DEVFN_PSEGBE0);
+		devfn_disable(pci_root_bus(), PCH_DEVFN_PSEGBE1);
+	}
+	/*
+	 * PCH TSN settings:
+	 * Due to EHL GBE comes with time sensitive networking (TSN)
+	 * capability integrated, EHL FSP is using PchTsnEnable instead of
+	 * usual PchLanEnable flag for GBE control. Hence, force
+	 * PchLanEnable to disable to avoid it being used in the future.
+	 */
+	params->PchLanEnable = 0x0;
+	params->PchTsnEnable = is_devfn_enabled(PCH_DEVFN_GBE);
+	if (params->PchTsnEnable) {
+		params->PchTsnGbeSgmiiEnable = config->PchTsnGbeSgmiiEnable;
+		params->PchTsnGbeMultiVcEnable = config->PchTsnGbeMultiVcEnable;
+		params->PchTsnGbeLinkSpeed = (config->PchTsnGbeLinkSpeed) + xtal_freq_enum;
+	}
+
+	/* PSE TSN settings */
+	if (!CONFIG(PSE_ENABLE))
+		return;
+	for (unsigned int i = 0; i < MAX_PSE_TSN_PORTS; i++) {
+		switch (i) {
+		case 0:
+			params->PchPseGbeEnable[i] = is_devfn_enabled(PCH_DEVFN_PSEGBE0) ?
+				Host_Owned : config->PseGbeOwn[0];
+			break;
+		case 1:
+			params->PchPseGbeEnable[i] = is_devfn_enabled(PCH_DEVFN_PSEGBE1) ?
+				Host_Owned : config->PseGbeOwn[i];
+			break;
+		default:
+			break;
+		}
+		if (params->PchPseGbeEnable[i]) {
+			params->PseTsnGbeMultiVcEnable[i] = config->PseTsnGbeMultiVcEnable[i];
+			params->PseTsnGbeSgmiiEnable[i] = config->PseTsnGbeSgmiiEnable[i];
+			params->PseTsnGbePhyInterfaceType[i] =
+				!!config->PseTsnGbeSgmiiEnable[i] ?
+				RGMII : config->PseTsnGbePhyType[i];
+			params->PseTsnGbeLinkSpeed[i] =
+				(params->PseTsnGbePhyInterfaceType[i] < SGMII_plus) ?
+				xtal_freq_enum + 1 : xtal_freq_enum;
+		}
+	}
+}
+
+static void fill_fsps_pse_params(FSP_S_CONFIG *params,
+		const struct soc_intel_elkhartlake_config *config)
+{
+	static char psefwbuf[(CONFIG_PSE_FW_FILE_SIZE_KIB +
+		CONFIG_PSE_CONFIG_BUFFER_SIZE_KIB) * KiB];
+	uint32_t pse_fw_base;
+	size_t psefwsize = cbfs_load("pse.bin", psefwbuf, sizeof(psefwbuf));
+	if (psefwsize > 0) {
+		pse_fw_base = (uintptr_t)&psefwbuf;
+		params->SiipRegionBase = pse_fw_base;
+		params->SiipRegionSize = psefwsize;
+		printk(BIOS_DEBUG, "PSE base: %08x size: %08zx\n", pse_fw_base, psefwsize);
+
+		/* Configure PSE peripherals */
+		FSP_ARRAY_LOAD(params->PchPseDmaEnable, config->PseDmaOwn);
+		FSP_ARRAY_LOAD(params->PchPseDmaSbInterruptEnable, config->PseDmaSbIntEn);
+		FSP_ARRAY_LOAD(params->PchPseUartEnable, config->PseUartOwn);
+		FSP_ARRAY_LOAD(params->PchPseUartSbInterruptEnable, config->PseUartSbIntEn);
+		FSP_ARRAY_LOAD(params->PchPseHsuartEnable, config->PseHsuartOwn);
+		FSP_ARRAY_LOAD(params->PchPseQepEnable, config->PseQepOwn);
+		FSP_ARRAY_LOAD(params->PchPseQepSbInterruptEnable, config->PseQepSbIntEn);
+		FSP_ARRAY_LOAD(params->PchPseI2cEnable, config->PseI2cOwn);
+		FSP_ARRAY_LOAD(params->PchPseI2cSbInterruptEnable, config->PseI2cSbIntEn);
+		FSP_ARRAY_LOAD(params->PchPseI2sEnable, config->PseI2sOwn);
+		FSP_ARRAY_LOAD(params->PchPseI2sSbInterruptEnable, config->PseI2sSbIntEn);
+		FSP_ARRAY_LOAD(params->PchPseSpiEnable, config->PseSpiOwn);
+		FSP_ARRAY_LOAD(params->PchPseSpiSbInterruptEnable, config->PseSpiSbIntEn);
+		FSP_ARRAY_LOAD(params->PchPseSpiCs0Enable, config->PseSpiCs0Own);
+		FSP_ARRAY_LOAD(params->PchPseSpiCs1Enable, config->PseSpiCs1Own);
+		FSP_ARRAY_LOAD(params->PchPseCanEnable, config->PseCanOwn);
+		FSP_ARRAY_LOAD(params->PchPseCanSbInterruptEnable, config->PseCanSbIntEn);
+		params->PchPsePwmEnable = config->PsePwmOwn;
+		params->PchPsePwmSbInterruptEnable = config->PsePwmSbIntEn;
+		FSP_ARRAY_LOAD(params->PchPsePwmPinEnable, config->PsePwmPinEn);
+		params->PchPseAdcEnable = config->PseAdcOwn;
+		params->PchPseAdcSbInterruptEnable = config->PseAdcSbIntEn;
+		params->PchPseLh2PseSbInterruptEnable = config->PseLh2PseSbIntEn;
+		params->PchPseShellEnabled = config->PseShellEn;
+
+		/*
+		 * As a minimum requirement for PSE initialization, the configuration
+		 * of devices below are required as shown.
+		 * TODO: Help needed to find a better way to handle this part of code
+		 * as the settings from devicetree are overwritten here.
+		 *
+		 * Set the ownership of these devices to PSE. These are hardcoded for now,
+		 * if the PSE should be opened one day (hopefully), this can be handled
+		 * much better.
+		 */
+		params->PchPseDmaEnable[0] = PSE_Owned;
+		params->PchPseUartEnable[2] = PSE_Owned;
+		params->PchPseHsuartEnable[2] = PSE_Owned;
+		params->PchPseI2cEnable[2] = PSE_Owned;
+		params->PchPseTimedGpioEnable[0] = PSE_Owned;
+		params->PchPseTimedGpioEnable[1] = PSE_Owned;
+		/* Disable PSE DMA Sideband Interrupt for DMA 0 */
+		params->PchPseDmaSbInterruptEnable[0] = 0;
+		/* Set the log output to PSE UART 2 */
+		params->PchPseLogOutputChannel = 3;
+	} else {
+		die("PSE enabled but PSE FW not available!\n");
+	}
 }
 
 static void parse_devicetree(FSP_S_CONFIG *params)
@@ -333,39 +461,12 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 		params->PsfFusaConfigEnable = 0;
 	}
 
-	/* PCH GBE config */
-	/*
-	 * Due to EHL GBE comes with time sensitive networking (TSN)
-	 * capability integrated, EHL FSP is using PchTsnEnable instead of
-	 * usual PchLanEnable flag for GBE control. Hence, force
-	 * PchLanEnable to disable to avoid it being used in the future.
-	 */
-	params->PchLanEnable = 0x0;
-	params->PchTsnEnable = is_devfn_enabled(PCH_DEVFN_GBE);
-	if (params->PchTsnEnable) {
-		params->PchTsnGbeSgmiiEnable = config->PchTsnGbeSgmiiEnable;
-		params->PchTsnGbeMultiVcEnable = config->PchTsnGbeMultiVcEnable;
-		/*
-		 * Currently EHL TSN GBE only supports link speed with 2 type of
-		 * PCH XTAL frequency: 24 MHz and 38.4 MHz.
-		 * These are the configs setup for PchTsnGbeLinkSpeed FSP-S UPD:
-		 * 0: 24MHz 2.5Gbps, 1: 24MHz 1Gbps, 2: 38.4MHz 2.5Gbps,
-		 * 3: 38.4MHz 1Gbps
-		 */
-		switch (pmc_get_xtal_freq()) {
-		case XTAL_24_MHZ:
-			params->PchTsnGbeLinkSpeed = (!!config->PchTsnGbeLinkSpeed);
-			break;
-		case XTAL_38_4_MHZ:
-			params->PchTsnGbeLinkSpeed = (!!config->PchTsnGbeLinkSpeed) + 0x2;
-			break;
-		case XTAL_19_2_MHZ:
-		default:
-			printk(BIOS_ERR, "XTAL not supported. Disabling PCH TSN GBE.\n");
-			params->PchTsnEnable = 0;
-			devfn_disable(pci_root_bus(), PCH_DEVFN_GBE);
-		}
-	}
+	/* PSE (Intel Programmable Services Engine) config */
+	if (CONFIG(PSE_ENABLE) && cbfs_file_exists("pse.bin"))
+		fill_fsps_pse_params(params, config);
+
+	/* TSN GBE config */
+	fill_fsps_tsn_params(params, config);
 
 	/* Override/Fill FSP Silicon Param for mainboard */
 	mainboard_silicon_init_params(params);

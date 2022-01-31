@@ -1,7 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
 #include <assert.h>
-#include <cbfs.h>
 #include <console/console.h>
 #include <cpu/intel/microcode.h>
 #include <device/device.h>
@@ -38,11 +37,10 @@
 #define DEF_DITOVAL	625
 
 /* VccIn Aux Imon IccMax values in mA */
-#define MILLIAMPS_TO_AMPS         1000
-#define ICC_MAX_ID_ADL_P_3_MA     34250
-#define ICC_MAX_ID_ADL_P_5_MA     32000
-#define ICC_MAX_ID_ADL_P_6_MA     32000
-#define ICC_MAX_ID_ADL_P_7_MA     32000
+#define MILLIAMPS_TO_AMPS	1000
+#define ICC_MAX_TDP_45W		34250
+#define ICC_MAX_TDP_15W_28W	32000
+#define ICC_MAX_ID_ADL_M_MA	12000
 
 /*
  * ME End of Post configuration
@@ -295,6 +293,7 @@ static int get_l1_substate_control(enum L1_substates_control ctl)
 static uint16_t get_vccin_aux_imon_iccmax(void)
 {
 	uint16_t mch_id = 0;
+	uint8_t tdp;
 
 	if (!mch_id) {
 		struct device *dev = pcidev_path_on_root(SA_DEVFN_ROOT);
@@ -302,14 +301,18 @@ static uint16_t get_vccin_aux_imon_iccmax(void)
 	}
 
 	switch (mch_id) {
+	case PCI_DEVICE_ID_INTEL_ADL_P_ID_1:
 	case PCI_DEVICE_ID_INTEL_ADL_P_ID_3:
-		return ICC_MAX_ID_ADL_P_3_MA;
 	case PCI_DEVICE_ID_INTEL_ADL_P_ID_5:
-		return ICC_MAX_ID_ADL_P_5_MA;
 	case PCI_DEVICE_ID_INTEL_ADL_P_ID_6:
-		return ICC_MAX_ID_ADL_P_6_MA;
 	case PCI_DEVICE_ID_INTEL_ADL_P_ID_7:
-		return ICC_MAX_ID_ADL_P_7_MA;
+		tdp = get_cpu_tdp();
+		if (tdp == TDP_45W)
+			return ICC_MAX_TDP_45W;
+		return ICC_MAX_TDP_15W_28W;
+	case PCI_DEVICE_ID_INTEL_ADL_M_ID_1:
+	case PCI_DEVICE_ID_INTEL_ADL_M_ID_2:
+		return ICC_MAX_ID_ADL_M_MA;
 	default:
 		printk(BIOS_ERR, "Unknown MCH ID: 0x%4x, skipping VccInAuxImonIccMax config\n",
 			mch_id);
@@ -412,7 +415,7 @@ static void fill_fsps_chipset_lockdown_params(FSP_S_CONFIG *s_cfg,
 	const bool lockdown_by_fsp = get_lockdown_config() == CHIPSET_LOCKDOWN_FSP;
 	s_cfg->PchLockDownGlobalSmi = lockdown_by_fsp;
 	s_cfg->PchLockDownBiosInterface = lockdown_by_fsp;
-	s_cfg->PchUnlockGpioPads = !lockdown_by_fsp;
+	s_cfg->PchUnlockGpioPads = lockdown_by_fsp;
 	s_cfg->RtcMemoryLock = lockdown_by_fsp;
 	s_cfg->SkipPamLock = !lockdown_by_fsp;
 
@@ -611,6 +614,27 @@ static void fill_fsps_pcie_params(FSP_S_CONFIG *s_cfg,
 	}
 }
 
+static void fill_fsps_cpu_pcie_params(FSP_S_CONFIG *s_cfg,
+				      const struct soc_intel_alderlake_config *config)
+{
+	if (!CONFIG_MAX_CPU_ROOT_PORTS)
+		return;
+
+	const uint32_t enable_mask = pcie_rp_enable_mask(get_cpu_pcie_rp_table());
+	for (int i = 0; i < CONFIG_MAX_CPU_ROOT_PORTS; i++) {
+		if (!(enable_mask & BIT(i)))
+			continue;
+
+		const struct pcie_rp_config *rp_cfg = &config->cpu_pcie_rp[i];
+		s_cfg->CpuPcieRpL1Substates[i] =
+			get_l1_substate_control(rp_cfg->PcieRpL1Substates);
+		s_cfg->CpuPcieRpLtrEnable[i] = !!(rp_cfg->flags & PCIE_RP_LTR);
+		s_cfg->CpuPcieRpAdvancedErrorReporting[i] = !!(rp_cfg->flags & PCIE_RP_AER);
+		s_cfg->CpuPcieRpHotPlug[i] = !!(rp_cfg->flags & PCIE_RP_HOTPLUG);
+		s_cfg->PtmEnabled[i] = 0;
+	}
+}
+
 static void fill_fsps_misc_power_params(FSP_S_CONFIG *s_cfg,
 		const struct soc_intel_alderlake_config *config)
 {
@@ -638,7 +662,7 @@ static void fill_fsps_misc_power_params(FSP_S_CONFIG *s_cfg,
 	for (size_t i = 0; i < ARRAY_SIZE(config->domain_vr_config); i++)
 		fill_vr_domain_config(s_cfg, i, &config->domain_vr_config[i]);
 
-	s_cfg->LpmStateEnableMask = get_supported_lpm_mask();
+	s_cfg->PmcLpmS0ixSubStateEnableMask = get_supported_lpm_mask();
 
 	/* Apply minimum assertion width settings */
 	if (config->pch_slp_s3_min_assertion_width == SLP_S3_ASSERTION_DEFAULT)
@@ -739,6 +763,19 @@ static void fill_fsps_fivr_rfi_params(FSP_S_CONFIG *s_cfg,
 	s_cfg->FivrSpreadSpectrum = config->FivrSpreadSpectrum;
 }
 
+static void fill_fsps_acoustic_params(FSP_S_CONFIG *s_cfg,
+		const struct soc_intel_alderlake_config *config)
+{
+	s_cfg->AcousticNoiseMitigation = config->AcousticNoiseMitigation;
+
+	if (s_cfg->AcousticNoiseMitigation) {
+		for (int i = 0; i < NUM_VR_DOMAINS; i++) {
+			s_cfg->FastPkgCRampDisable[i] = config->FastPkgCRampDisable[i];
+			s_cfg->SlowSlewRate[i] = config->SlowSlewRate[i];
+		}
+	}
+}
+
 static void soc_silicon_init_params(FSP_S_CONFIG *s_cfg,
 		struct soc_intel_alderlake_config *config)
 {
@@ -766,10 +803,12 @@ static void soc_silicon_init_params(FSP_S_CONFIG *s_cfg,
 		fill_fsps_pm_timer_params,
 		fill_fsps_storage_params,
 		fill_fsps_pcie_params,
+		fill_fsps_cpu_pcie_params,
 		fill_fsps_misc_power_params,
 		fill_fsps_irq_params,
 		fill_fsps_fivr_params,
 		fill_fsps_fivr_rfi_params,
+		fill_fsps_acoustic_params,
 	};
 
 	for (size_t i = 0; i < ARRAY_SIZE(fill_fsps_params); i++)

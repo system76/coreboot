@@ -58,16 +58,22 @@ uint32_t antirollback_read_space_kernel(struct vb2_context *ctx)
 		}
 	}
 
-	uint8_t size = VB2_SECDATA_KERNEL_MIN_SIZE;
+	uint8_t size = VB2_SECDATA_KERNEL_SIZE;
+	uint32_t ret;
 
-	RETURN_ON_FAILURE(tlcl_read(KERNEL_NV_INDEX, ctx->secdata_kernel,
-				    size));
+	/* Start with the version 1.0 size used by all modern cr50-boards. */
+	ret = tlcl_read(KERNEL_NV_INDEX, ctx->secdata_kernel, size);
+	if (ret == TPM_E_RANGE) {
+		/* Fallback to version 0.2(minimum) size and re-read. */
+		VBDEBUG("Antirollback: NV read out of range, trying min size\n");
+		size = VB2_SECDATA_KERNEL_MIN_SIZE;
+		ret = tlcl_read(KERNEL_NV_INDEX, ctx->secdata_kernel, size);
+	}
+	RETURN_ON_FAILURE(ret);
 
-	if (vb2api_secdata_kernel_check(ctx, &size)
-	    == VB2_ERROR_SECDATA_KERNEL_INCOMPLETE)
+	if (vb2api_secdata_kernel_check(ctx, &size) == VB2_ERROR_SECDATA_KERNEL_INCOMPLETE)
 		/* Re-read. vboot will run the check and handle errors. */
-		RETURN_ON_FAILURE(tlcl_read(KERNEL_NV_INDEX,
-					    ctx->secdata_kernel, size));
+		RETURN_ON_FAILURE(tlcl_read(KERNEL_NV_INDEX, ctx->secdata_kernel, size));
 
 	return TPM_SUCCESS;
 }
@@ -139,6 +145,18 @@ static const TPMA_NV zte_rma_bytes_attr = {
 	.TPMA_NV_PPREAD = 1,
 	.TPMA_NV_NO_DA = 1,
 	.TPMA_NV_POLICY_DELETE = 1,
+};
+
+static const TPMA_NV rw_orderly_counter_attributes = {
+	.TPMA_NV_COUNTER = 1,
+	.TPMA_NV_ORDERLY = 1,
+	.TPMA_NV_AUTHREAD = 1,
+	.TPMA_NV_AUTHWRITE = 1,
+	.TPMA_NV_PLATFORMCREATE = 1,
+	.TPMA_NV_WRITE_STCLEAR = 1,
+	.TPMA_NV_PPREAD = 1,
+	.TPMA_NV_PPWRITE = 1,
+	.TPMA_NV_NO_DA = 1,
 };
 
 /*
@@ -324,6 +342,19 @@ static uint32_t setup_zte_spaces(void)
 	return rv;
 }
 
+static uint32_t setup_widevine_counter_spaces(void)
+{
+	uint32_t index, rv;
+
+	for (index = 0; index < NUM_WIDEVINE_COUNTERS; index++) {
+		rv = define_space(WIDEVINE_COUNTER_NAME, WIDEVINE_COUNTER_NV_INDEX(index),
+				WIDEVINE_COUNTER_SIZE, rw_orderly_counter_attributes, NULL, 0);
+		if (rv != TPM_SUCCESS)
+			return rv;
+	}
+	return TPM_SUCCESS;
+}
+
 static uint32_t _factory_initialize_tpm(struct vb2_context *ctx)
 {
 	RETURN_ON_FAILURE(tlcl_force_clear());
@@ -356,6 +387,11 @@ static uint32_t _factory_initialize_tpm(struct vb2_context *ctx)
 	if (CONFIG(CHROMEOS) && (!(CONFIG(MAINBOARD_HAS_SPI_TPM_CR50) ||
 				   CONFIG(MAINBOARD_HAS_I2C_TPM_CR50))))
 		RETURN_ON_FAILURE(setup_zte_spaces());
+
+	/* Define widevine counter space. No need to increment/write to the secure counters
+	   and are expected to be incremented during the first use. */
+	if (CONFIG(VBOOT_DEFINE_WIDEVINE_COUNTERS))
+		RETURN_ON_FAILURE(setup_widevine_counter_spaces());
 
 	RETURN_ON_FAILURE(setup_firmware_space(ctx));
 

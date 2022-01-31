@@ -11,6 +11,21 @@
  */
 void cpu_set_max_ratio(void);
 
+/* Get CPU bus frequency in MHz */
+u32 cpu_get_bus_frequency(void);
+
+/* Get CPU's max non-turbo ratio */
+u8 cpu_get_max_non_turbo_ratio(void);
+
+/* Check if CPU is hybrid CPU or not */
+bool cpu_is_hybrid_supported(void);
+
+/*
+ * Returns type of CPU that executing the function. It returns 0x20
+ * if CPU is atom, otherwise 0x40 if CPU is CORE. The API must be called
+ * if CPU is hybrid.
+ */
+uint8_t cpu_get_cpu_type(void);
 /*
  * Get the TDP Nominal Ratio from MSR 0x648 Bits 7:0.
  */
@@ -97,10 +112,13 @@ void cpu_burst_mode(bool burst_mode_status);
 void cpu_set_eist(bool eist_status);
 
 /*
- * Set Bit 6 (ENABLE_IA_UNTRUSTED_MODE) of MSR 0x120
- * UCODE_PCR_POWER_MISC MSR to enter IA Untrusted Mode.
+ * SoC specific implementation:
+ *
+ * Check CPU security level using ENABLE_IA_UNTRUSTED_MODE of CPU MSR.
+ * If bit is set, meaning CPU has dropped its security level by entering
+ * into `untrusted mode`. Otherwise, it's in `trusted mode`.
  */
-void cpu_enable_untrusted_mode(void *unused);
+bool cpu_soc_is_in_untrusted_mode(void);
 
 /*
  * This function fills in the number of Cores(physical) and Threads(virtual)

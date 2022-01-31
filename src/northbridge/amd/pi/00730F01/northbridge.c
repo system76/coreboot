@@ -13,7 +13,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <lib.h>
-#include <cpu/cpu.h>
+#include <cpu/x86/mp.h>
 #include <Porting.h>
 #include <AGESA.h>
 #include <Topology.h>
@@ -29,8 +29,6 @@
 #define PCIE_CAP_AER		BIT(5)
 #define PCIE_CAP_ACS		BIT(6)
 
-static unsigned int node_nums;
-static unsigned int sblink;
 static struct device *__f0_dev[MAX_NODE_NUMS];
 static struct device *__f1_dev[MAX_NODE_NUMS];
 static struct device *__f2_dev[MAX_NODE_NUMS];
@@ -40,6 +38,23 @@ static unsigned int fx_devs = 0;
 static struct device *get_node_pci(u32 nodeid, u32 fn)
 {
 	return pcidev_on_root(DEV_CDB + nodeid, fn);
+}
+
+static struct device *get_mc_dev(void)
+{
+	return pcidev_on_root(DEV_CDB, 0);
+}
+
+static unsigned int get_node_nums(void)
+{
+	static unsigned int node_nums;
+
+	if (node_nums)
+		return node_nums;
+
+	node_nums = ((pci_read_config32(get_mc_dev(), 0x60)>>4) & 7) + 1; //NodeCnt[2:0]
+
+	return node_nums;
 }
 
 static void get_fx_devs(void)
@@ -164,6 +179,9 @@ static void nb_read_resources(struct device *dev)
 static void create_vga_resource(struct device *dev, unsigned int nodeid)
 {
 	struct bus *link;
+	unsigned int sblink;
+
+	sblink = (pci_read_config32(get_mc_dev(), 0x64)>>8) & 7; // don't forget sublink1
 
 	/* find out which link the VGA card is connected,
 	 * we only deal with the 'first' vga card */
@@ -724,7 +742,7 @@ static struct hw_mem_hole_info get_hw_mem_hole_info(void)
 	int i;
 	mem_hole.hole_startk = CONFIG_HW_MEM_HOLE_SIZEK;
 	mem_hole.node_id = -1;
-	for (i = 0; i < node_nums; i++) {
+	for (i = 0; i < get_node_nums(); i++) {
 		resource_t basek, limitk;
 		u32 hole;
 		if (!get_dram_base_limit(i, &basek, &limitk))
@@ -742,7 +760,7 @@ static struct hw_mem_hole_info get_hw_mem_hole_info(void)
 	 */
 	if (mem_hole.node_id == -1) {
 		resource_t limitk_pri = 0;
-		for (i = 0; i < node_nums; i++) {
+		for (i = 0; i < get_node_nums(); i++) {
 			resource_t base_k, limit_k;
 			if (!get_dram_base_limit(i, &base_k, &limit_k))
 				continue; // no memory on this node
@@ -788,7 +806,7 @@ static void domain_read_resources(struct device *dev)
 #endif
 
 	idx = 0x10;
-	for (i = 0; i < node_nums; i++) {
+	for (i = 0; i < get_node_nums(); i++) {
 		resource_t basek, limitk, sizek; // 4 1T
 
 		if (!get_dram_base_limit(i, &basek, &limitk))
@@ -856,141 +874,38 @@ static struct device_operations pci_domain_ops = {
 	.acpi_name        = domain_acpi_name,
 };
 
-static void sysconf_init(struct device *dev) // first node
+static void pre_mp_init(void)
 {
-	sblink = (pci_read_config32(dev, 0x64)>>8) & 7; // don't forget sublink1
-	node_nums = ((pci_read_config32(dev, 0x60)>>4) & 7) + 1; //NodeCnt[2:0]
+	x86_setup_mtrrs_with_detect();
+	x86_mtrr_check();
 }
 
-static void cpu_bus_scan(struct device *dev)
+static int get_cpu_count(void)
 {
-	struct bus *cpu_bus;
-	struct device *dev_mc;
-	int i,j;
-	int coreid_bits;
-	int core_max = 0;
-	unsigned int ApicIdCoreIdSize;
-	unsigned int core_nums;
-	int siblings = 0;
-	unsigned int family;
-	u32 modules = 0;
-	int ioapic_count = 0;
+	uint8_t siblings = cpuid_ecx(0x80000008) & 0xff;
 
-	/* For binaryPI there is no multiprocessor configuration, the number of
-	 * modules will always be 1. */
-	modules = 1;
-	ioapic_count = CONFIG_NUM_OF_IOAPICS;
-
-	dev_mc = pcidev_on_root(DEV_CDB, 0);
-	if (!dev_mc) {
-		printk(BIOS_ERR, "0:%02x.0 not found", DEV_CDB);
-		die("");
-	}
-	sysconf_init(dev_mc);
-
-	/* Get Max Number of cores(MNC) */
-	coreid_bits = (cpuid_ecx(0x80000008) & 0x0000F000) >> 12;
-	core_max = 1 << (coreid_bits & 0x000F); //mnc
-
-	ApicIdCoreIdSize = ((cpuid_ecx(0x80000008)>>12) & 0xF);
-	if (ApicIdCoreIdSize) {
-		core_nums = (1 << ApicIdCoreIdSize) - 1;
-	} else {
-		core_nums = 3; //quad core
-	}
-
-	/* Find which cpus are present */
-	cpu_bus = dev->link_list;
-	for (i = 0; i < node_nums; i++) {
-		struct device *cdb_dev;
-		unsigned int devn;
-		struct bus *pbus;
-
-		devn = DEV_CDB + i;
-		pbus = dev_mc->bus;
-
-		/* Find the cpu's pci device */
-		cdb_dev = pcidev_on_root(devn, 0);
-		if (!cdb_dev) {
-			/* If I am probing things in a weird order
-			 * ensure all of the cpu's pci devices are found.
-			 */
-			int fn;
-			for (fn = 0; fn <= 5; fn++) { //FBDIMM?
-				cdb_dev = pci_probe_dev(NULL, pbus,
-							PCI_DEVFN(devn, fn));
-			}
-			cdb_dev = pcidev_on_root(devn, 0);
-		} else {
-			/* Ok, We need to set the links for that device.
-			 * otherwise the device under it will not be scanned
-			 */
-
-			add_more_links(cdb_dev, 4);
-		}
-
-		family = cpuid_eax(1);
-		family = (family >> 20) & 0xFF;
-		if (family == 1) { //f10
-			u32 dword;
-			cdb_dev = pcidev_on_root(devn, 3);
-			dword = pci_read_config32(cdb_dev, 0xe8);
-			siblings = ((dword & BIT15) >> 13) | ((dword & (BIT13 | BIT12)) >> 12);
-		} else if (family == 7) {//f16
-			cdb_dev = pcidev_on_root(devn, 5);
-			if (cdb_dev && cdb_dev->enabled) {
-				siblings = pci_read_config32(cdb_dev, 0x84);
-				siblings &= 0xFF;
-			}
-		} else {
-			siblings = 0; //default one core
-		}
-		int enable_node = cdb_dev && cdb_dev->enabled;
-		printk(BIOS_SPEW, "%s family%xh, core_max = 0x%x, core_nums = 0x%x, siblings = 0x%x\n",
-				dev_path(cdb_dev), 0x0f + family, core_max, core_nums, siblings);
-
-		for (j = 0; j <= siblings; j++) {
-			u32 lapicid_start = 0;
-
-			/*
-			 * APIC ID calculation is tightly coupled with AGESA v5 code.
-			 * This calculation MUST match the assignment calculation done
-			 * in LocalApicInitializationAtEarly() function.
-			 * And reference GetLocalApicIdForCore()
-			 *
-			 * Apply APIC enumeration rules
-			 * For systems with >= 16 APICs, put the IO-APICs at 0..n and
-			 * put the local-APICs at m..z
-			 *
-			 * This is needed because many IO-APIC devices only have 4 bits
-			 * for their APIC id and therefore must reside at 0..15
-			 */
-			if ((node_nums * core_max) + ioapic_count >= 0x10) {
-				lapicid_start = (ioapic_count - 1) / core_max;
-				lapicid_start = (lapicid_start + 1) * core_max;
-				printk(BIOS_SPEW, "lpaicid_start = 0x%x ", lapicid_start);
-			}
-			u32 apic_id = (lapicid_start * (i/modules + 1)) + ((i % modules) ? (j + (siblings + 1)) : j);
-			printk(BIOS_SPEW, "node 0x%x core 0x%x apicid = 0x%x\n",
-					i, j, apic_id);
-
-			struct device *cpu = add_cpu_device(cpu_bus, apic_id, enable_node);
-			if (cpu)
-				amd_cpu_topology(cpu, i, j);
-		} //j
-	}
+	return siblings + 1;
 }
 
-static void cpu_bus_init(struct device *dev)
+static const struct mp_ops mp_ops = {
+	.pre_mp_init = pre_mp_init,
+	.get_cpu_count = get_cpu_count,
+};
+
+void mp_init_cpus(struct bus *cpu_bus)
 {
-	initialize_cpus(dev->link_list);
+	/* TODO: Handle mp_init_with_smm failure? */
+	mp_init_with_smm(cpu_bus, &mp_ops);
+
+	/* The flash is now no longer cacheable. Reset to WP for performance. */
+	mtrr_use_temp_range(OPTIMAL_CACHE_ROM_BASE, OPTIMAL_CACHE_ROM_SIZE,
+			    MTRR_TYPE_WRPROT);
 }
 
 static struct device_operations cpu_bus_ops = {
 	.read_resources	  = noop_read_resources,
 	.set_resources	  = noop_set_resources,
-	.init		  = cpu_bus_init,
-	.scan_bus	  = cpu_bus_scan,
+	.init		  = mp_cpu_bus_init,
 };
 
 static void root_complex_enable_dev(struct device *dev)

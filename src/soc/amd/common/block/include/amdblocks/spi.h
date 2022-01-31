@@ -3,6 +3,7 @@
 #ifndef AMD_BLOCK_SPI_H
 #define AMD_BLOCK_SPI_H
 
+#include <thread.h>
 #include <types.h>
 
 #define SPI_CNTRL0			0x00
@@ -70,8 +71,8 @@ enum spi100_speed {
 #define   SPI_RD4DW_EN_HOST		BIT(15)
 
 #define SPI_FIFO			0x80
-#define SPI_FIFO_LAST_BYTE		0xc7
-#define SPI_FIFO_DEPTH			(SPI_FIFO_LAST_BYTE - SPI_FIFO)
+#define SPI_FIFO_LAST_BYTE		0xc6 /* 0xc7 for Cezanne */
+#define SPI_FIFO_DEPTH			(SPI_FIFO_LAST_BYTE - SPI_FIFO + 1)
 
 struct spi_config {
 	/*
@@ -93,7 +94,7 @@ struct spi_config {
  * Perform early SPI initialization:
  * 1. Sets SPI ROM base and enables SPI ROM
  * 2. Enables SPI ROM prefetching
- * 3. Disables 4dw burst
+ * 3. Disables 4 DWORD burst if !SOC_AMD_COMMON_BLOCK_SPI_4DW_BURST
  * 4. Configures SPI speed and read mode.
  *
  * This function expects SoC to include soc_amd_common_config in chip SoC config and uses
@@ -118,4 +119,8 @@ void spi_write32(uint8_t reg, uint32_t val);
 
 void fch_spi_config_modes(void);
 void mainboard_spi_fast_speed_override(uint8_t *fast_speed);
+
+/* Ensure you hold the mutex when performing SPI transactions */
+extern struct thread_mutex spi_hw_mutex;
+
 #endif /* AMD_BLOCK_SPI_H */

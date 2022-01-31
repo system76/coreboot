@@ -57,6 +57,8 @@ static const struct pad_config override_gpio_table[] = {
 	PAD_NC(GPP_E3, NONE),
 	/* E7  : PROC_GP1 ==> NC */
 	PAD_NC(GPP_E7, NONE),
+	/* E16 : RSVD_TP ==> WWAN_RST_L */
+	PAD_CFG_GPO(GPP_E16, 1, DEEP),
 	/* F19 : SRCCLKREQ6# ==> EMMC_CLKREQ_ODL */
 	PAD_CFG_NF(GPP_F19, NONE, DEEP, NF1),
 
@@ -90,17 +92,23 @@ static const struct pad_config override_gpio_table[] = {
 	PAD_NC(GPP_S6, NONE),
 	/* S7 : SNDW3_DATA ==> NC */
 	PAD_NC(GPP_S7, NONE),
-
+	/*
+	 * E0 : SATAXPCIE0 ==> WWAN_PERST_L
+	 * Drive high here, so that PERST_L is sequenced after RST_L
+	 */
+	PAD_CFG_GPO(GPP_E0, 1, DEEP),
 };
 
 /* Early pad configuration in bootblock */
 static const struct pad_config early_gpio_table[] = {
+	/* A12 : SATAXPCIE1 ==> EN_PPVAR_WWAN */
+	PAD_CFG_GPO(GPP_A12, 1, DEEP),
 	/* A13 : PMC_I2C_SCL ==> GSC_PCH_INT_ODL */
 	PAD_CFG_GPI_APIC(GPP_A13, NONE, PLTRST, LEVEL, INVERT),
-	/* B7  : ISH_12C1_SDA ==> PCH_I2C_TPM_SDA */
-	PAD_CFG_NF(GPP_B7, NONE, DEEP, NF2),
-	/* B8  : ISH_12C1_SCL ==> PCH_I2C_TPM_SCL */
-	PAD_CFG_NF(GPP_B8, NONE, DEEP, NF2),
+	/* H6  : ISH_12C1_SDA ==> PCH_I2C_TPM_SDA */
+	PAD_CFG_NF(GPP_H6, NONE, DEEP, NF1),
+	/* H7  : ISH_12C1_SCL ==> PCH_I2C_TPM_SCL */
+	PAD_CFG_NF(GPP_H7, NONE, DEEP, NF1),
 	/*
 	 * D1  : ISH_GP1 ==> FP_RST_ODL
 	 * FP_RST_ODL comes out of reset as hi-z and does not have an external pull-down.
@@ -124,14 +132,29 @@ static const struct pad_config early_gpio_table[] = {
 	PAD_CFG_GPO(GPP_E16, 0, DEEP),
 	/* F18 : THC1_SPI2_INT# ==> EC_IN_RW_OD */
 	PAD_CFG_GPI(GPP_F18, NONE, DEEP),
+	/* F21 : EXT_PWR_GATE2# ==> WWAN_FCPO_L (updated in romstage) */
+	PAD_CFG_GPO(GPP_F21, 0, DEEP),
 	/* H10 : UART0_RXD ==> UART_PCH_RX_DBG_TX */
 	PAD_CFG_NF(GPP_H10, NONE, DEEP, NF2),
 	/* H11 : UART0_TXD ==> UART_PCH_TX_DBG_RX */
 	PAD_CFG_NF(GPP_H11, NONE, DEEP, NF2),
+	/*
+	 * enable EN_PP3300_SSD in bootblock, then PERST# is asserted, and
+	 * then deassert PERST# in romstage
+	 */
 	/* H13 : I2C7_SCL ==> EN_PP3300_SD */
 	PAD_CFG_GPO(GPP_H13, 1, DEEP),
+	/* B4  : PROC_GP3 ==> SSD_PERST_L */
+	PAD_CFG_GPO(GPP_B4, 0, DEEP),
 	/* E20 : USB_C1_LSX_SOC_TX ==> EN_PP3300_MMC */
 	PAD_CFG_GPO(GPP_E20, 1, DEEP),
+};
+
+static const struct pad_config romstage_gpio_table[] = {
+	/* B4  : PROC_GP3 ==> SSD_PERST_L */
+	PAD_CFG_GPO(GPP_B4, 1, DEEP),
+	/* F21 : EXT_PWR_GATE2# ==> WWAN_FCPO_L (set here for correct power sequencing) */
+	PAD_CFG_GPO(GPP_F21, 1, DEEP),
 };
 
 const struct pad_config *variant_gpio_override_table(size_t *num)
@@ -144,4 +167,10 @@ const struct pad_config *variant_early_gpio_table(size_t *num)
 {
 	*num = ARRAY_SIZE(early_gpio_table);
 	return early_gpio_table;
+}
+
+const struct pad_config *variant_romstage_gpio_table(size_t *num)
+{
+	*num = ARRAY_SIZE(romstage_gpio_table);
+	return romstage_gpio_table;
 }

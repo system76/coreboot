@@ -16,9 +16,10 @@ config CPU_SPECIFIC_OPTIONS
 	select ARCH_X86
 	select RESET_VECTOR_IN_RAM
 	select X86_AMD_FIXED_MTRRS
-	select X86_AMD_INIT_SIPI
+	select X86_INIT_NEED_1_SIPI
 	select ACPI_SOC_NVS
 	select ADD_FSP_BINARIES if USE_AMD_BLOBS
+	select CONSOLE_CBMEM_PRINT_PRE_BOOTBLOCK_CONTENTS if VBOOT_STARTS_BEFORE_BOOTBLOCK
 	select DRIVERS_I2C_DESIGNWARE
 	select DRIVERS_USB_PCI_XHCI
 	select GENERIC_GPIO_LIB
@@ -136,6 +137,12 @@ config PSP_SHAREDMEM_SIZE
 	  into main memory by the PSP and will be available when the x86 is
 	  started.  The workbuf's base depends on the address of the reset
 	  vector.
+
+config PRE_X86_CBMEM_CONSOLE_SIZE
+	hex
+	default 0x1600
+	help
+	  Size of the CBMEM console used in PSP verstage.
 
 config PRERAM_CBMEM_CONSOLE_SIZE
 	hex

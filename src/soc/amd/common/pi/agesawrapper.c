@@ -1,6 +1,5 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#include <acpi/acpi.h>
 #include <console/console.h>
 #include <timestamp.h>
 #include <amdblocks/biosram.h>
@@ -11,6 +10,7 @@
 #include <soc/pci_devs.h>
 #include <soc/northbridge.h>
 #include <soc/cpu.h>
+#include <string.h>
 
 void __weak SetMemParams(AMD_POST_PARAMS *PostParams) {}
 void __weak OemPostParams(AMD_POST_PARAMS *PostParams) {}

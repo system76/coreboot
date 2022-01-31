@@ -30,5 +30,15 @@ void pciexp_hotplug_scan_bridge(struct device *dev);
 
 extern struct device_operations default_pciexp_hotplug_ops_bus;
 
-unsigned int pciexp_find_extended_cap(struct device *dev, unsigned int cap);
+unsigned int pciexp_find_extended_cap(const struct device *dev, unsigned int cap);
+
+static inline bool pciexp_is_downstream_port(int type)
+{
+	return type == PCI_EXP_TYPE_ROOT_PORT ||
+	       type == PCI_EXP_TYPE_DOWNSTREAM ||
+	       type == PCI_EXP_TYPE_PCIE_BRIDGE;
+}
+
+bool pciexp_get_ltr_max_latencies(struct device *dev, u16 *max_snoop, u16 *max_nosnoop);
+
 #endif /* DEVICE_PCIEXP_H */

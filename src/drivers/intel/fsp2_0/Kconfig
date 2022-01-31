@@ -29,6 +29,16 @@ config PLATFORM_USES_FSP2_2
 	  3. Added EnableMultiPhaseSiliconInit, bootloaders designed for FSP2.0/2.1 can disable
 	      the FspMultiPhaseSiInit() API and continue to use FspSiliconInit() without change.
 
+config PLATFORM_USES_FSP2_3
+	bool
+	default n
+	select PLATFORM_USES_FSP2_2
+	help
+	  Include FSP 2.3 wrappers and functionality.
+	  Features added into FSP 2.3 specification that impact coreboot are:
+	  1. Added ExtendedImageRevision field in FSP_INFO_HEADER
+	  2. Added FSP_NON_VOLATILE_STORAGE_HOB2
+
 if PLATFORM_USES_FSP2_0
 
 config PLATFORM_USES_FSP2_X86_32
@@ -299,5 +309,42 @@ config FSPS_USE_MULTI_PHASE_INIT
 	help
 	  SoC users to select this Kconfig to set EnableMultiPhaseSiliconInit to enable and
 	  execute FspMultiPhaseSiInit() API.
+
+config SKIP_FSP_NOTIFY_PHASE_AFTER_PCI_ENUM
+	bool
+	help
+	  The FSP API is used to notify the FSP about different phases in the boot process.
+	  The current FSP specification supports three notify phases:
+	  - Post PCI enumeration
+	  - Ready to Boot
+	  - End of Firmware
+	  Select this on a platform where you want to skip calling FSP Notify
+	  `Post PCI enumeration` API. Instead use coreboot native implementations
+	  to perform the required lock down and chipset register configuration prior
+	  boot to payload.
+
+config SKIP_FSP_NOTIFY_PHASE_READY_TO_BOOT
+	bool
+	help
+	  The FSP API is used to notify the FSP about different phases in the boot process.
+	  The current FSP specification supports three notify phases:
+	  - Post PCI enumeration
+	  - Ready to Boot
+	  - End of Firmware
+	  Select this on a platform where you want to skip calling FSP Notify `Ready to Boot`
+	  API. Instead use coreboot native implementations to perform the required lock down
+	  and chipset register configuration prior boot to payload.
+
+config SKIP_FSP_NOTIFY_PHASE_END_OF_FIRMWARE
+	bool
+	help
+	  The FSP API is used to notify the FSP about different phases in the boot process.
+	  The current FSP specification supports three notify phases:
+	  - Post PCI enumeration
+	  - Ready to Boot
+	  - End of Firmware
+	  Select this on a platform where you want to skip calling FSP Notify `End of Firmware`
+	  API. Instead use coreboot native implementations to perform the required lock down
+	  and chipset register configuration prior boot to payload.
 
 endif

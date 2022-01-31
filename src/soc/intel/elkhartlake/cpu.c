@@ -1,6 +1,5 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#include <console/console.h>
 #include <cpu/intel/smm_reloc.h>
 #include <cpu/intel/turbo.h>
 #include <cpu/intel/common/common.h>
@@ -17,6 +16,14 @@
 #include <soc/pci_devs.h>
 #include <soc/soc_chip.h>
 #include <types.h>
+
+bool cpu_soc_is_in_untrusted_mode(void)
+{
+	msr_t msr;
+
+	msr = rdmsr(MSR_BIOS_DONE);
+	return !!(msr.lo & ENABLE_IA_UNTRUSTED);
+}
 
 static void soc_fsp_load(void)
 {

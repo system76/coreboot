@@ -1,7 +1,5 @@
 chip soc/intel/alderlake
 
-	register "typec_aux_bias_pads[0]" = "{.pad_auxp_dc = GPP_E22, .pad_auxn_dc = GPP_E23}"
-
 	# GPE configuration
 	register "pmc_gpe0_dw0" = "GPP_A"
 	register "pmc_gpe0_dw1" = "GPP_E"
@@ -20,9 +18,6 @@ chip soc/intel/alderlake
 	register "dptf_enable" = "1"
 
 	register "tcc_offset" = "10"     # TCC of 90
-
-	# Enable heci communication
-	register "HeciEnabled" = "1"
 
 	# Enable CNVi BT
 	register "CnviBtCore" = "true"
@@ -76,6 +71,16 @@ chip soc/intel/alderlake
 
 	# FIVR RFI Spread Spectrum 1.5%
 	register "FivrSpreadSpectrum" = "FIVR_SS_1_5"
+
+	# This disables autonomous GPIO power management, otherwise old cr50 FW
+	# only supports short pulses and they can be missed by the PCH.
+	register "gpio_override_pm" = "1"
+	register "gpio_pm[COMM_0]" = "0"
+	register "gpio_pm[COMM_1]" = "0"
+	register "gpio_pm[COMM_2]" = "0"
+	register "gpio_pm[COMM_3]" = "0"
+	register "gpio_pm[COMM_4]" = "0"
+	register "gpio_pm[COMM_5]" = "0"
 
 	# Intel Common SoC Config
 	#+-------------------+---------------------------+
@@ -141,13 +146,7 @@ chip soc/intel/alderlake
 				device generic 0 on end
 			end
 		end
-		device ref i2c3 on
-			chip drivers/i2c/tpm
-				register "hid" = ""GOOG0005""
-				register "irq" = "ACPI_IRQ_EDGE_LOW(GPP_A13_IRQ)"
-				device i2c 50 on end
-			end
-		end
+		device ref i2c3 on end
 		device ref heci1 on end
 		device ref sata on end
 		device ref pcie_rp6 on

@@ -8,18 +8,26 @@
 #include <intelblocks/cse.h>
 #include <intelblocks/pmclib.h>
 #include <intelblocks/smbus.h>
+#include <intelblocks/thermal.h>
 #include <memory_info.h>
 #include <soc/intel/common/smbios.h>
 #include <soc/iomap.h>
 #include <soc/pm.h>
 #include <soc/romstage.h>
 #include <soc/soc_chip.h>
+#include <cpu/intel/cpu_ids.h>
+#include <timestamp.h>
 #include <string.h>
 
 #define FSP_SMBIOS_MEMORY_INFO_GUID	\
 {	\
 	0xd4, 0x71, 0x20, 0x9b, 0x54, 0xb0, 0x0c, 0x4e,	\
 	0x8d, 0x09, 0x11, 0xcf, 0x8b, 0x9f, 0x03, 0x23	\
+}
+
+bool skip_cse_sub_part_update(void)
+{
+	return cpu_get_cpuid() != CPUID_ALDERLAKE_A2;
 }
 
 /* Save the DIMM information for SMBIOS table 17 */
@@ -127,17 +135,24 @@ void mainboard_romstage_entry(void)
 	heci_init(HECI1_BASE_ADDRESS);
 
 	s3wake = pmc_fill_power_state(ps) == ACPI_S3;
+
+	if (CONFIG(SOC_INTEL_CSE_LITE_SKU) && !s3wake) {
+		timestamp_add_now(TS_START_CSE_FW_SYNC);
+		cse_fw_sync();
+		timestamp_add_now(TS_END_CSE_FW_SYNC);
+	}
+
+	/*
+	 * Set low maximum temp threshold value used for dynamic thermal sensor
+	 * shutdown consideration.
+	 *
+	 * If Dynamic Thermal Shutdown is enabled then PMC logic shuts down the
+	 * thermal sensor when CPU is in a C-state and LTT >= DTS Temp.
+	 */
+	pch_thermal_configuration();
+
 	fsp_memory_init(s3wake);
 	pmc_set_disb();
-	if (!s3wake) {
-		/*
-		 * cse_fw_sync() must be called after DRAM initialization as
-		 * HMRFPO_ENABLE HECI command (which is used by cse_fw_sync())
-		 * is expected to be executed after DRAM initialization.
-		 */
-		if (CONFIG(SOC_INTEL_CSE_LITE_SKU))
-			cse_fw_sync();
-
+	if (!s3wake)
 		save_dimm_info();
-	}
 }

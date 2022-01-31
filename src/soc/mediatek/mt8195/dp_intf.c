@@ -2,7 +2,6 @@
 
 #include <console/console.h>
 #include <device/mmio.h>
-#include <delay.h>
 #include <edid.h>
 #include <soc/addressmap.h>
 #include <soc/dp_intf.h>
@@ -10,8 +9,6 @@
 #include <soc/pll.h>
 #include <soc/pll_common.h>
 #include <soc/spm.h>
-#include <string.h>
-#include <timer.h>
 
 static void mtk_dpintf_mask(struct mtk_dpintf *dpintf, u32 offset, u32 val, u32 mask)
 {

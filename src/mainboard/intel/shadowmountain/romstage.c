@@ -1,13 +1,11 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
+
 #include <assert.h>
-#include <console/console.h>
 #include <fsp/api.h>
 #include <soc/romstage.h>
 #include <spd_bin.h>
-#include <string.h>
 #include <soc/meminit.h>
 #include <baseboard/variants.h>
-#include <cbfs.h>
 
 void mainboard_memory_init_params(FSP_M_CONFIG *m_cfg)
 {

@@ -9,20 +9,20 @@
 
 /*
  * This file is created based on Intel Alder Lake Processor PCH Datasheet
- * Document number: 630094
- * Chapter number: 27
+ * Document number: 630094, Chapter number: 27
+ * Document number: 630603, Chapter number: 16
  */
 
-static const struct reset_mapping rst_map[] = {
-	{ .logical = PAD_CFG0_LOGICAL_RESET_RSMRST, .chipset = 0U << 30 },
-	{ .logical = PAD_CFG0_LOGICAL_RESET_DEEP, .chipset = 1U << 30 },
-	{ .logical = PAD_CFG0_LOGICAL_RESET_PLTRST, .chipset = 2U << 30 },
+static const struct reset_mapping rst_map_gpp[] = {
+	{ .logical = PAD_RESET(PWROK), .chipset = 0U << 30 },
+	{ .logical = PAD_RESET(DEEP), .chipset = 1U << 30 },
+	{ .logical = PAD_RESET(PLTRST), .chipset = 2U << 30 },
 };
-static const struct reset_mapping rst_map_com2[] = {
-	{ .logical = PAD_CFG0_LOGICAL_RESET_PWROK, .chipset = 0U << 30 },
-	{ .logical = PAD_CFG0_LOGICAL_RESET_DEEP, .chipset = 1U << 30 },
-	{ .logical = PAD_CFG0_LOGICAL_RESET_PLTRST, .chipset = 2U << 30 },
-	{ .logical = PAD_CFG0_LOGICAL_RESET_RSMRST, .chipset = 3U << 30 },
+static const struct reset_mapping rst_map_gpd[] = {
+	{ .logical = PAD_RESET(PWROK), .chipset = 0U << 30 },
+	{ .logical = PAD_RESET(DEEP), .chipset = 1U << 30 },
+	{ .logical = PAD_RESET(PLTRST), .chipset = 2U << 30 },
+	{ .logical = PAD_RESET(RSMRST), .chipset = 3U << 30 },
 };
 
 /*
@@ -104,8 +104,8 @@ static const struct pad_community adl_communities[] = {
 		.max_pads_per_group = GPIO_MAX_NUM_PER_GROUP,
 		.name = "GPP_BTA",
 		.acpi_path = "\\_SB.PCI0.GPIO",
-		.reset_map = rst_map,
-		.num_reset_vals = ARRAY_SIZE(rst_map),
+		.reset_map = rst_map_gpp,
+		.num_reset_vals = ARRAY_SIZE(rst_map_gpp),
 		.groups = adl_community0_groups,
 		.num_groups = ARRAY_SIZE(adl_community0_groups),
 		.vw_base = DEFAULT_VW_BASE,
@@ -128,8 +128,8 @@ static const struct pad_community adl_communities[] = {
 		.max_pads_per_group = GPIO_MAX_NUM_PER_GROUP,
 		.name = "GPP_SDH",
 		.acpi_path = "\\_SB.PCI0.GPIO",
-		.reset_map = rst_map,
-		.num_reset_vals = ARRAY_SIZE(rst_map),
+		.reset_map = rst_map_gpp,
+		.num_reset_vals = ARRAY_SIZE(rst_map_gpp),
 		.groups = adl_community1_groups,
 		.num_groups = ARRAY_SIZE(adl_community1_groups),
 		.vw_base = DEFAULT_VW_BASE,
@@ -151,8 +151,8 @@ static const struct pad_community adl_communities[] = {
 		.max_pads_per_group = GPIO_MAX_NUM_PER_GROUP,
 		.name = "GPD",
 		.acpi_path = "\\_SB.PCI0.GPIO",
-		.reset_map = rst_map_com2,
-		.num_reset_vals = ARRAY_SIZE(rst_map_com2),
+		.reset_map = rst_map_gpd,
+		.num_reset_vals = ARRAY_SIZE(rst_map_gpd),
 		.groups = adl_community2_groups,
 		.num_groups = ARRAY_SIZE(adl_community2_groups),
 	},
@@ -171,8 +171,8 @@ static const struct pad_community adl_communities[] = {
 		.max_pads_per_group = GPIO_MAX_NUM_PER_GROUP,
 		.name = "GPP_VGPIO",
 		.acpi_path = "\\_SB.PCI0.GPIO",
-		.reset_map = rst_map,
-		.num_reset_vals = ARRAY_SIZE(rst_map),
+		.reset_map = rst_map_gpp,
+		.num_reset_vals = ARRAY_SIZE(rst_map_gpp),
 		.groups = adl_community3_groups,
 		.num_groups = ARRAY_SIZE(adl_community3_groups),
 	},
@@ -192,8 +192,8 @@ static const struct pad_community adl_communities[] = {
 		.max_pads_per_group = GPIO_MAX_NUM_PER_GROUP,
 		.name = "GPP_FCE",
 		.acpi_path = "\\_SB.PCI0.GPIO",
-		.reset_map = rst_map,
-		.num_reset_vals = ARRAY_SIZE(rst_map),
+		.reset_map = rst_map_gpp,
+		.num_reset_vals = ARRAY_SIZE(rst_map_gpp),
 		.groups = adl_community4_groups,
 		.num_groups = ARRAY_SIZE(adl_community4_groups),
 		.vw_base = DEFAULT_VW_BASE,
@@ -216,8 +216,8 @@ static const struct pad_community adl_communities[] = {
 		.max_pads_per_group = GPIO_MAX_NUM_PER_GROUP,
 		.name = "GPP_RSPI0",
 		.acpi_path = "\\_SB.PCI0.GPIO",
-		.reset_map = rst_map,
-		.num_reset_vals = ARRAY_SIZE(rst_map),
+		.reset_map = rst_map_gpp,
+		.num_reset_vals = ARRAY_SIZE(rst_map_gpp),
 		.groups = adl_community5_groups,
 		.num_groups = ARRAY_SIZE(adl_community5_groups),
 	}
@@ -247,3 +247,60 @@ const struct pmc_to_gpio_route *soc_pmc_gpio_routes(size_t *num)
 	*num = ARRAY_SIZE(routes);
 	return routes;
 };
+
+/* GPIOs controllable by non-host (x86) agent, eg. ISH, THC, etc */
+static const struct gpio_lock_config gpios_to_lock[] = {
+	{ GPP_A16,	GPIO_LOCK_CONFIG }, /* ISH_GP5 NF4 */
+	{ GPP_B3,	GPIO_LOCK_CONFIG }, /* ISH_GP4B NF4 (not avail in ADL PCH-M) */
+	{ GPP_B4,	GPIO_LOCK_CONFIG }, /* ISH_GP5B NF4 (not avail in ADL PCH-M) */
+	{ GPP_B5,	GPIO_LOCK_CONFIG }, /* ISH_I2C0_SDA NF1 */
+	{ GPP_B6,	GPIO_LOCK_CONFIG }, /* ISH_I2C0_SCL NF1 */
+	{ GPP_B7,	GPIO_LOCK_CONFIG }, /* ISH_I2C1_SDA NF1 */
+	{ GPP_B8,	GPIO_LOCK_CONFIG }, /* ISH_I2C1_SCL NF1 */
+	{ GPP_B14,	GPIO_LOCK_CONFIG }, /* ISH_GP6 NF5 */
+	{ GPP_B15,	GPIO_LOCK_CONFIG }, /* ISH_GP7 NF5 */
+	{ GPP_B16,	GPIO_LOCK_CONFIG }, /* ISH_I2C2_SDA NF4 */
+	{ GPP_B17,	GPIO_LOCK_CONFIG }, /* ISH_I2C2_SCL NF4 */
+	{ GPP_D0,	GPIO_LOCK_CONFIG }, /* ISH_GP0 NF1 */
+	{ GPP_D1,	GPIO_LOCK_CONFIG }, /* ISH_GP1 NF1 */
+	{ GPP_D2,	GPIO_LOCK_CONFIG }, /* ISH_GP2 NF1 */
+	{ GPP_D3,	GPIO_LOCK_CONFIG }, /* ISH_GP3 NF1 */
+	{ GPP_D9,	GPIO_LOCK_CONFIG }, /* ISH_SPI_CS# NF1 */
+	{ GPP_D10,	GPIO_LOCK_CONFIG }, /* ISH_SPI_CLK NF1 */
+	{ GPP_D11,	GPIO_LOCK_CONFIG }, /* ISH_SPI_MISO NF1 */
+	{ GPP_D12,	GPIO_LOCK_CONFIG }, /* ISH_SPI_MOSI NF1 */
+	{ GPP_D13,	GPIO_LOCK_CONFIG }, /* ISH_UART0_RXD NF1 */
+	{ GPP_D14,	GPIO_LOCK_CONFIG }, /* ISH_UART0_TXD NF1 */
+	{ GPP_D15,	GPIO_LOCK_CONFIG }, /* ISH_UART0_RTS# NF1 */
+	{ GPP_D16,	GPIO_LOCK_CONFIG }, /* ISH_UART0_CTS# NF1 */
+	{ GPP_D17,	GPIO_LOCK_CONFIG }, /* ISH_UART1_RXD NF2 */
+	{ GPP_D18,	GPIO_LOCK_CONFIG }, /* ISH_UART1_TXD NF2 */
+	{ GPP_E9,	GPIO_LOCK_CONFIG }, /* ISH_GP4 NF2 */
+	{ GPP_H12,	GPIO_LOCK_CONFIG }, /* ISH_GP6B NF4 */
+	{ GPP_H13,	GPIO_LOCK_CONFIG }, /* ISH_GP7B NF4 */
+
+	{ GPP_E1,	GPIO_LOCK_CONFIG }, /* THC0_SPI1_IO2 NF2 */
+	{ GPP_E2,	GPIO_LOCK_CONFIG }, /* THC0_SPI1_IO3 NF2 */
+	{ GPP_E6,	GPIO_LOCK_CONFIG }, /* THC0_SPI1_RST# NF2 */
+	{ GPP_E10,	GPIO_LOCK_CONFIG }, /* THC0_SPI1_CS# NF2 */
+	{ GPP_E11,	GPIO_LOCK_CONFIG }, /* THC0_SPI1_CLK NF2 */
+	{ GPP_E12,	GPIO_LOCK_CONFIG }, /* THC0_SPI1_IO1 NF2 */
+	{ GPP_E13,	GPIO_LOCK_CONFIG }, /* THC0_SPI1_IO0 NF2 */
+	{ GPP_E17,	GPIO_LOCK_CONFIG }, /* THC0_SPI1_INT# NF2 */
+	{ GPP_F11,	GPIO_LOCK_CONFIG }, /* THC1_SPI2_CLK NF3 */
+	{ GPP_F12,	GPIO_LOCK_CONFIG }, /* THC1_SPI2_IO0 NF3 */
+	{ GPP_F13,	GPIO_LOCK_CONFIG }, /* THC1_SPI2_IO1 NF3 */
+	{ GPP_F14,	GPIO_LOCK_CONFIG }, /* THC1_SPI2_IO2 NF3 */
+	{ GPP_F15,	GPIO_LOCK_CONFIG }, /* THC1_SPI2_IO3 NF3 */
+	{ GPP_F16,	GPIO_LOCK_CONFIG }, /* THC1_SPI2_CS# NF3 */
+	{ GPP_F17,	GPIO_LOCK_CONFIG }, /* THC1_SPI2_RST# NF3 */
+	{ GPP_F18,	GPIO_LOCK_CONFIG }, /* THC1_SPI2_INT# NF3 */
+
+	{ GPP_H3,	GPIO_LOCK_CONFIG }, /* SX_EXIT_HOLDOFF# NF1 */
+};
+
+const struct gpio_lock_config *soc_gpio_lock_config(size_t *num)
+{
+	*num = ARRAY_SIZE(gpios_to_lock);
+	return gpios_to_lock;
+}

@@ -78,6 +78,8 @@ static void fch_clk_output_48Mhz(void)
 	uint32_t ctrl = misc_read32(MISC_CLK_CNTL0);
 	/* Enable BP_X48M0 Clock Output */
 	ctrl |= BP_X48M0_OUTPUT_EN;
+	/* Disable clock output in S0i3 */
+	ctrl |= BP_X48M0_S0I3_DIS;
 	misc_write32(MISC_CLK_CNTL0, ctrl);
 }
 
@@ -199,7 +201,6 @@ void fch_init(void *chip_info)
 
 	acpi_pm_gpe_add_events_print_events();
 	gpio_add_events();
-	acpi_clear_pm_gpe_status();
 
 	gpp_clk_setup();
 	fch_clk_output_48Mhz();

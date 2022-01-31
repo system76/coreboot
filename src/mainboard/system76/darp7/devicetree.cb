@@ -105,9 +105,7 @@ chip soc/intel/tigerlake
 
 			register "gfx" = "GMA_DEFAULT_PANEL(0)"
 		end
-		device ref dptf on
-			register "Device4Enable" = "1"
-		end
+		device ref dptf on end
 		device ref peg on
 			# PCIe PEG0 x4, Clock 0 (SSD1)
 			register "PcieClkSrcUsage[0]" = "0x40"
@@ -115,8 +113,7 @@ chip soc/intel/tigerlake
 			chip soc/intel/common/block/pcie/rtd3
 				register "enable_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_B16)" # SSD1_PWR_EN
 				register "reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_D13)" # GPP_D13_SSD1_PLT_RST#
-				# TODO: Support disable/enable CPU RP clock
-				register "srcclk_pin" = "-1" # SSD1_CLKREQ#
+				register "srcclk_pin" = "0" # SSD1_CLKREQ#
 				device generic 0 on end
 			end
 		end
@@ -244,9 +241,7 @@ chip soc/intel/tigerlake
 			# TODO: USB-PD?
 			register "SerialIoI2cMode[PchSerialIoIndexI2C1]" = "PchSerialIoPci"
 		end
-		device ref heci1 on
-			register "HeciEnabled" = "1"
-		end
+		device ref heci1 on end
 		device ref uart2 on
 			# Debug console
 			register "SerialIoUartMode[PchSerialIoIndexUART2]" = "PchSerialIoSkipInit"
@@ -287,6 +282,7 @@ chip soc/intel/tigerlake
 			register "PcieRpLtrEnable[7]" = "1"
 			register "PcieClkSrcUsage[1]" = "7"
 			register "PcieClkSrcClkReq[1]" = "1"
+			register "PcieRpSlotImplemented[7]" = "1"
 		end
 		device ref pcie_rp9 on
 			# PCIe root port #9 x4, Clock 4 (SSD0)
@@ -294,6 +290,7 @@ chip soc/intel/tigerlake
 			register "PcieRpLtrEnable[8]" = "1"
 			register "PcieClkSrcUsage[4]" = "8"
 			register "PcieClkSrcClkReq[4]" = "4"
+			register "PcieRpSlotImplemented[8]" = "1"
 			chip soc/intel/common/block/pcie/rtd3
 				register "enable_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_D14)" # SSD_PWR_EN
 				register "reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_H0)" # GPP_H0_RTD3
@@ -318,8 +315,8 @@ chip soc/intel/tigerlake
 				device generic 0 on
 					chip drivers/intel/pmc_mux/conn
 						# J_TYPEC2
-						register "usb2_port_number" = "6"
-						register "usb3_port_number" = "1"
+						use usb2_port6 as usb2_port
+						use tcss_usb3_port1 as usb3_port
 						# SBU & HSL follow CC
 						device generic 0 alias conn0 on end
 					end
@@ -329,9 +326,7 @@ chip soc/intel/tigerlake
 		device ref hda on
 			register "PchHdaAudioLinkHdaEnable" = "1"
 		end
-		device ref smbus on
-			register "SmbusEnable" = "1"
-		end
+		device ref smbus on end
 		device ref fast_spi on end
 	end
 end

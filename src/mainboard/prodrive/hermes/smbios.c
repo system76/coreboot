@@ -1,10 +1,10 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
 #include <smbios.h>
-#include <types.h>
 #include <string.h>
+#include <types.h>
 
-#include "variants/baseboard/include/eeprom.h"
+#include "eeprom.h"
 
 const char *smbios_system_serial_number(void)
 {

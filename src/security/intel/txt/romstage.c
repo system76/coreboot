@@ -5,6 +5,7 @@
 #include <cf9_reset.h>
 #include <console/console.h>
 #include <cpu/intel/common/common.h>
+#include <cpu/x86/cr.h>
 #include <cpu/x86/msr.h>
 #include <southbridge/intel/common/pmbase.h>
 #include <timer.h>
@@ -83,14 +84,22 @@ static void print_memory_is_locked(void)
 void intel_txt_romstage_init(void)
 {
 	/* Bail early if the CPU doesn't support TXT */
-	if (!is_txt_cpu())
+	if (!is_txt_cpu()) {
+		printk(BIOS_ERR, "TEE-TXT: CPU not TXT capable.\n");
 		return;
+	}
 
-	/* We need to use GETSEC here, so enable it */
-	enable_getsec_or_reset();
+	/*
+	 * We need to use GETSEC here, so enable it.
+	 * CR4_SMXE is all we need to be able to call GETSEC[CAPABILITIES]
+	 * or GETSEC[ENTERACCS] for SCLEAN.
+	 */
+	write_cr4(read_cr4() | CR4_SMXE);
 
-	if (!is_txt_chipset())
+	if (!is_txt_chipset()) {
+		printk(BIOS_ERR, "TEE-TXT: Chipset not TXT capable.\n");
 		return;
+	}
 
 	const uint8_t txt_ests = read8((void *)TXT_ESTS);
 
@@ -108,8 +117,8 @@ void intel_txt_romstage_init(void)
 		printk(BIOS_ERR, "TEE-TXT: Secrets remain in memory. SCLEAN is required.\n");
 
 		if (txt_ests & TXT_ESTS_TXT_RESET_STS) {
-			printk(BIOS_ERR, "TEE-TXT: TXT_RESET bit set, doing full reset!\n");
-			full_reset();
+			printk(BIOS_ERR, "TEE-TXT: TXT_RESET bit set, doing global reset!\n");
+			txt_reset_platform();
 		}
 
 		/* FIXME: Clear SLP_TYP# */

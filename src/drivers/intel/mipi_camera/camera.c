@@ -5,7 +5,9 @@
 #include <acpi/acpi_device.h>
 #include <acpi/acpigen.h>
 #include <acpi/acpigen_pci.h>
+#include <arch/cpu.h>
 #include <console/console.h>
+#include <cpu/intel/cpu_ids.h>
 #include <device/i2c_simple.h>
 #include <device/device.h>
 #include <device/path.h>
@@ -134,6 +136,14 @@ static void camera_fill_cio2(const struct device *dev)
 
 		snprintf(name, sizeof(name), "port%u", i);
 		port_name[i] = strdup(name);
+		if (CONFIG(ACPI_ADL_IPU_ES_SUPPORT)) {
+			u32 cpu_id = cpu_get_cpuid();
+			if (cpu_id == CPUID_ALDERLAKE_A0 || cpu_id == CPUID_ALDERLAKE_A1)
+				acpi_dp_add_integer(dsd, "is_es", 1);
+			else
+				acpi_dp_add_integer(dsd, "is_es", 0);
+		}
+
 		acpi_dp_add_child(dsd, port_name[i], port_table);
 	}
 
@@ -847,6 +857,9 @@ static void write_i2c_camera_device(const struct device *dev, const char *scope)
 	acpigen_write_name_integer("_UID", config->acpi_uid);
 	acpigen_write_name_string("_DDN", config->chip_name);
 	acpigen_write_STA(acpi_device_status(dev));
+	acpigen_write_method("_DSC", 0);
+	acpigen_write_return_integer(config->max_dstate_for_probe);
+	acpigen_pop_len(); /* Method _DSC */
 
 	/* Resources */
 	acpigen_write_name("_CRS");

@@ -2,6 +2,7 @@
 
 #include <acpi/acpi.h>
 #include <acpi/acpi_device.h>
+#include <acpi/acpi_pld.h>
 #include <acpi/acpigen.h>
 #include <acpi/acpigen_ps2_keybd.h>
 #include <acpi/acpigen_usb.h>
@@ -59,7 +60,12 @@ static void get_usb_port_references(int port_number, struct device **usb2_port,
 		 * Check for a matching port number (the 'token' field in 'group').  Note that
 		 * 'port_number' is 0-based, whereas the 'token' field is 1-based.
 		 */
-		if (config->group.token != (port_number + 1))
+		int group_token;
+		if (config->use_custom_pld)
+			group_token = config->custom_pld.group.token;
+		else
+			group_token = config->group.token;
+		if (group_token != (port_number + 1))
 			continue;
 
 		switch (port->path.usb.port_type) {
@@ -117,17 +123,46 @@ static void add_port_location(struct acpi_dp *dsd, int port_number)
 	acpi_dp_add_string(dsd, "port-location", port_location_to_str(port_caps.port_location));
 }
 
+static void get_pld_from_usb_ports(struct acpi_pld *pld,
+	struct device *usb2_port, struct device *usb3_port,
+	struct device *usb4_port)
+{
+	struct drivers_usb_acpi_config *config = NULL;
+
+	if (usb4_port)
+		config = usb4_port->chip_info;
+	else if (usb3_port)
+		config = usb3_port->chip_info;
+	else if (usb2_port)
+		config = usb2_port->chip_info;
+
+	if (config) {
+		if (config->use_custom_pld)
+			*pld = config->custom_pld;
+		else
+			acpi_pld_fill_usb(pld, config->type, &config->group);
+	}
+}
+
 static void fill_ssdt_typec_device(const struct device *dev)
 {
 	struct ec_google_chromeec_config *config = dev->chip_info;
 	int rv;
 	int i;
-	unsigned int num_ports;
+	unsigned int num_ports = 0;
 	struct device *usb2_port;
 	struct device *usb3_port;
 	struct device *usb4_port;
+	struct acpi_pld pld = {0};
+	uint32_t pcap_mask = 0;
 
-	if (google_chromeec_get_num_pd_ports(&num_ports))
+	rv = google_chromeec_get_num_pd_ports(&num_ports);
+	if (rv || num_ports == 0)
+		return;
+
+	/* If we can't get port caps, we shouldn't bother creating a device. */
+	rv = google_chromeec_get_cmd_versions(EC_CMD_GET_PD_PORT_CAPS, &pcap_mask);
+	if (rv || pcap_mask == 0)
 		return;
 
 	acpigen_write_scope(acpi_device_path(dev));
@@ -146,6 +181,8 @@ static void fill_ssdt_typec_device(const struct device *dev)
 		usb4_port = NULL;
 		get_usb_port_references(i, &usb2_port, &usb3_port, &usb4_port);
 
+		get_pld_from_usb_ports(&pld, usb2_port, usb3_port, usb4_port);
+
 		struct typec_connector_class_config typec_config = {
 			.power_role = port_caps.power_role_cap,
 			.try_power_role = port_caps.try_power_role_cap,
@@ -156,6 +193,7 @@ static void fill_ssdt_typec_device(const struct device *dev)
 			.orientation_switch = config->mux_conn[i],
 			.usb_role_switch = config->mux_conn[i],
 			.mode_switch = config->mux_conn[i],
+			.pld = &pld,
 		};
 
 		acpigen_write_typec_connector(&typec_config, i, add_port_location);

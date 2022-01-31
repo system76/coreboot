@@ -20,6 +20,7 @@
 #define POSTCODE_EARLY_INIT			0x02
 #define POSTCODE_LATE_INIT			0x03
 #define POSTCODE_VERSTAGE_MAIN			0x04
+#define POSTCODE_VERSTAGE_S0I3_RESUME		0x05
 
 #define POSTCODE_SAVE_BUFFERS			0x0E
 #define POSTCODE_UPDATE_BOOT_REGION		0x0F
@@ -36,6 +37,8 @@
 #define POSTCODE_AMD_FW_MISSING			0xC9
 #define POSTCODE_CMOS_RECOVERY			0xCA
 #define POSTCODE_EARLY_INIT_ERROR		0xCB
+#define POSTCODE_INIT_TPM_FAILED		0xCC
+
 
 #define POSTCODE_UNMAP_SPI_ROM			0xF0
 #define POSTCODE_UNMAP_FCH_DEVICES		0xF1
@@ -49,7 +52,11 @@ void test_svc_calls(void);
 uint32_t unmap_fch_devices(void);
 uint32_t verstage_soc_early_init(void);
 void verstage_mainboard_espi_init(void);
-void verstage_soc_init(void);
+void verstage_mainboard_tpm_init(void);
+void verstage_soc_aoac_init(void);
+void verstage_soc_espi_init(void);
+void verstage_soc_i2c_init(void);
+void verstage_soc_spi_init(void);
 uintptr_t *map_spi_rom(void);
 
 uint32_t get_max_workbuf_size(uint32_t *size);

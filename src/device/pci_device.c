@@ -1204,6 +1204,33 @@ static void pci_scan_hidden_device(struct device *dev)
 }
 
 /**
+ * A PCIe Downstream Port normally leads to a Link with only Device 0 on it
+ * (PCIe spec r5.0, sec 7.3.1).  As an optimization, scan only for Device 0 in
+ * that situation.
+ *
+ * @param bus Pointer to the bus structure.
+ */
+static bool pci_bus_only_one_child(struct bus *bus)
+{
+	struct device *bridge = bus->dev;
+	u16 pcie_pos, pcie_flags_reg;
+	int pcie_type;
+
+	if (!bridge)
+		return false;
+
+	pcie_pos = pci_find_capability(bridge, PCI_CAP_ID_PCIE);
+	if (!pcie_pos)
+		return false;
+
+	pcie_flags_reg = pci_read_config16(bridge, pcie_pos + PCI_EXP_FLAGS);
+
+	pcie_type = (pcie_flags_reg & PCI_EXP_FLAGS_TYPE) >> 4;
+
+	return pciexp_is_downstream_port(pcie_type);
+}
+
+/**
  * Scan a PCI bus.
  *
  * Determine the existence of devices and bridges on a PCI bus. If there are
@@ -1231,6 +1258,9 @@ void pci_scan_bus(struct bus *bus, unsigned int min_devfn,
 	}
 
 	post_code(0x24);
+
+	if (pci_bus_only_one_child(bus))
+		max_devfn = MIN(max_devfn, 0x07);
 
 	/*
 	 * Probe all devices/functions on this bus with some optimization for
@@ -1445,6 +1475,11 @@ void pci_domain_scan_bus(struct device *dev)
 	pci_scan_bus(link, PCI_DEVFN(0, 0), 0xff);
 }
 
+void pci_dev_disable_bus_master(const struct device *dev)
+{
+	pci_update_config16(dev, PCI_COMMAND, ~PCI_COMMAND_MASTER, 0x0);
+}
+
 /**
  * Take an INT_PIN number (0, 1 - 4) and convert
  * it to a string ("NO PIN", "PIN A" - "PIN D")
@@ -1637,10 +1672,5 @@ void pci_assign_irqs(struct device *dev, const unsigned char pIntAtoD[4])
 		/* Change to level triggered. */
 		i8259_configure_irq_trigger(irq, IRQ_LEVEL_TRIGGERED);
 	}
-}
-
-void pci_dev_disable_bus_master(const struct device *dev)
-{
-	pci_update_config16(dev, PCI_COMMAND, ~PCI_COMMAND_MASTER, 0x0);
 }
 #endif

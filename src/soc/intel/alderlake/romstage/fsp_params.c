@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <console/console.h>
 #include <cpu/x86/msr.h>
+#include <cpu/intel/cpu_ids.h>
 #include <device/device.h>
 #include <fsp/util.h>
 #include <intelblocks/cpulib.h>
@@ -22,11 +23,6 @@
 
 #define CPU_PCIE_BASE			0x40
 
-enum pcie_rp_type {
-	PCH_PCIE_RP,
-	CPU_PCIE_RP,
-};
-
 enum vtd_base_index_type {
 	VTD_GFX,
 	VTD_IPU,
@@ -39,11 +35,11 @@ enum vtd_base_index_type {
 
 static uint8_t clk_src_to_fsp(enum pcie_rp_type type, int rp_number)
 {
-	assert(type == PCH_PCIE_RP || type == CPU_PCIE_RP);
+	assert(type == PCIE_RP_PCH || type == PCIE_RP_CPU);
 
-	if (type == PCH_PCIE_RP)
+	if (type == PCIE_RP_PCH)
 		return rp_number;
-	else // type == CPU_PCIE_RP
+	else // type == PCIE_RP_CPU
 		return CPU_PCIE_BASE + rp_number;
 }
 
@@ -51,14 +47,21 @@ static void pcie_rp_init(FSP_M_CONFIG *m_cfg, uint32_t en_mask, enum pcie_rp_typ
 			const struct pcie_rp_config *cfg, size_t cfg_count)
 {
 	size_t i;
+	/* bitmask to save the status of clkreq assignment */
+	static unsigned int clk_req_mapping = 0;
 
 	for (i = 0; i < cfg_count; i++) {
 		if (!(en_mask & BIT(i)))
 			continue;
 		if (cfg[i].flags & PCIE_RP_CLK_SRC_UNUSED)
 			continue;
-		if (!(cfg[i].flags & PCIE_RP_CLK_REQ_UNUSED))
+		if (clk_req_mapping & (1 << cfg[i].clk_req))
+			printk(BIOS_WARNING, "Found overlapped clkreq assignment on clk req %d\n"
+				, cfg[i].clk_req);
+		if (!(cfg[i].flags & PCIE_RP_CLK_REQ_UNUSED)) {
 			m_cfg->PcieClkSrcClkReq[cfg[i].clk_src] = cfg[i].clk_req;
+			clk_req_mapping |= 1 << cfg[i].clk_req;
+		}
 		m_cfg->PcieClkSrcUsage[cfg[i].clk_src] = clk_src_to_fsp(type, i);
 	}
 }
@@ -81,12 +84,12 @@ static void fill_fspm_pcie_rp_params(FSP_M_CONFIG *m_cfg,
 
 	/* Configure PCH PCIE ports */
 	m_cfg->PcieRpEnableMask = pcie_rp_enable_mask(get_pch_pcie_rp_table());
-	pcie_rp_init(m_cfg, m_cfg->PcieRpEnableMask, PCH_PCIE_RP, config->pch_pcie_rp,
+	pcie_rp_init(m_cfg, m_cfg->PcieRpEnableMask, PCIE_RP_PCH, config->pch_pcie_rp,
 			CONFIG_MAX_PCH_ROOT_PORTS);
 
 	/* Configure CPU PCIE ports */
 	m_cfg->CpuPcieRpEnableMask = pcie_rp_enable_mask(get_cpu_pcie_rp_table());
-	pcie_rp_init(m_cfg, m_cfg->CpuPcieRpEnableMask, CPU_PCIE_RP, config->cpu_pcie_rp,
+	pcie_rp_init(m_cfg, m_cfg->CpuPcieRpEnableMask, PCIE_RP_CPU, config->cpu_pcie_rp,
 			CONFIG_MAX_CPU_ROOT_PORTS);
 }
 
@@ -206,6 +209,9 @@ static void fill_fspm_misc_params(FSP_M_CONFIG *m_cfg,
 
 	/* Skip generation of MBP HOB from FSP. coreboot doesn't consume it */
 	m_cfg->SkipMbpHob = 1;
+
+	/* CNVi DDR RFI Mitigation */
+	m_cfg->CnviDdrRfim = config->CnviDdrRfim;
 }
 
 static void fill_fspm_audio_params(FSP_M_CONFIG *m_cfg,
@@ -259,6 +265,14 @@ static void fill_fspm_usb4_params(FSP_M_CONFIG *m_cfg,
 static void fill_fspm_vtd_params(FSP_M_CONFIG *m_cfg,
 		const struct soc_intel_alderlake_config *config)
 {
+	const uint32_t cpuid = cpu_get_cpuid();
+
+	/* Disable VT-d for early silicon steppings as it results in a CPU hard hang */
+	if (cpuid == CPUID_ALDERLAKE_A0 || cpuid == CPUID_ALDERLAKE_A1) {
+		m_cfg->VtdDisable = 1;
+		return;
+	}
+
 	m_cfg->VtdBaseAddress[VTD_GFX] = GFXVT_BASE_ADDRESS;
 	m_cfg->VtdBaseAddress[VTD_IPU] = IPUVT_BASE_ADDRESS;
 	m_cfg->VtdBaseAddress[VTD_VTVCO] = VTVC0_BASE_ADDRESS;
@@ -305,6 +319,9 @@ static void fill_fspm_vtd_params(FSP_M_CONFIG *m_cfg,
 static void fill_fspm_trace_params(FSP_M_CONFIG *m_cfg,
 		const struct soc_intel_alderlake_config *config)
 {
+	/* Set MRC debug level */
+	m_cfg->SerialDebugMrcLevel = fsp_map_console_log_level();
+
 	/* Set debug probe type */
 	m_cfg->PlatformDebugConsent = CONFIG_SOC_INTEL_ALDERLAKE_DEBUG_CONSENT;
 

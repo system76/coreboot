@@ -1,10 +1,9 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#include <console/console.h>
 #include <device/device.h>
-#include <acpi/acpi.h>
 #include <amdblocks/agesawrapper.h>
 #include <amdblocks/amd_pci_util.h>
+#include <soc/gpio.h>
 #include <soc/pci_devs.h>
 #include <soc/southbridge.h>
 

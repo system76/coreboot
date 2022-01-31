@@ -42,6 +42,8 @@ my $list_types = 0;
 my $fix = 0;
 my $fix_inplace = 0;
 my $root = $P; #coreboot
+my $gitroot = $ENV{'GIT_DIR'};
+$gitroot = ".git" if !defined($gitroot);
 my %debug;
 my %camelcase = ();
 my %use_type = ();
@@ -62,7 +64,7 @@ my $conststructsfile = "$D/const_structs.checkpatch";
 my $typedefsfile = "";
 my $color = "auto";
 my $allow_c99_comments = 1;
-
+my $tabsize = 8;
 # For coreboot jenkins
 # If taint mode is enabled, Untaint the path - files must be in /bin, /usr/bin or /usr/local/bin
 if ( ${^TAINT} ) {
@@ -250,11 +252,11 @@ $check_orig = $check;
 
 my $exit = 0;
 
+my $perl_version_ok = 1;
 if ($^V && $^V lt $minimum_perl_version) {
+	$perl_version_ok = 0;
 	printf "$P: requires at least perl version %vd\n", $minimum_perl_version;
-	if (!$ignore_perl_version) {
-		exit(1);
-	}
+	exit(1) if (!$ignore_perl_version);
 }
 
 #if no filenames are given, push '-' to read patch from stdin
@@ -867,7 +869,7 @@ sub seed_camelcase_includes {
 
 	$camelcase_seeded = 1;
 
-	if (-e ".git") {
+	if (-e "$gitroot") {
 		my $git_last_include_commit = `git log --no-merges --pretty=format:"%h%n" -1 -- include`;
 		chomp $git_last_include_commit;
 		$camelcase_cache = ".checkpatch-camelcase.git.$git_last_include_commit";
@@ -895,7 +897,7 @@ sub seed_camelcase_includes {
 		return;
 	}
 
-	if (-e ".git") {
+	if (-e "$gitroot") {
 		$files = `git ls-files "include/*.h"`;
 		@include_files = split('\n', $files);
 	}
@@ -918,7 +920,7 @@ sub seed_camelcase_includes {
 sub git_commit_info {
 	my ($commit, $id, $desc) = @_;
 
-	return ($id, $desc) if ((which("git") eq "") || !(-e ".git"));
+	return ($id, $desc) if ((which("git") eq "") || !(-e "$gitroot"));
 
 	my $output = `git log --no-color --format='%H %s' -1 $commit 2>&1`;
 	$output =~ s/^\s*//gm;
@@ -957,7 +959,7 @@ my $fixlinenr = -1;
 
 # If input is git commits, extract all commits from the commit expressions.
 # For example, HEAD-3 means we need check 'HEAD, HEAD~1, HEAD~2'.
-die "$P: No git repository found\n" if ($git && !-e ".git");
+die "$P: No git repository found\n" if ($git && !-e "$gitroot");
 
 if ($git) {
 	my @commits = ();
@@ -1040,11 +1042,11 @@ if (!$quiet) {
 	hash_show_words(\%use_type, "Used");
 	hash_show_words(\%ignore_type, "Ignored");
 
-	if ($^V lt 5.10.0) {
+	if (!$perl_version_ok) {
 		print << "EOM"
 
 NOTE: perl $^V is not modern enough to detect all possible issues.
-      An upgrade to at least perl v5.10.0 is suggested.
+      An upgrade to at least perl $minimum_perl_version is suggested.
 EOM
 	}
 	if ($exit) {
@@ -1178,7 +1180,7 @@ sub expand_tabs {
 		if ($c eq "\t") {
 			$res .= ' ';
 			$n++;
-			for (; ($n % 8) != 0; $n++) {
+			for (; ($n % $tabsize) != 0; $n++) {
 				$res .= ' ';
 			}
 			next;
@@ -2199,7 +2201,7 @@ sub string_find_replace {
 sub tabify {
 	my ($leading) = @_;
 
-	my $source_indent = 8;
+	my $source_indent = $tabsize;
 	my $max_spaces_before_tab = $source_indent - 1;
 	my $spaces_to_tab = " " x $source_indent;
 
@@ -2655,18 +2657,19 @@ sub process {
 			$commit_log_possible_stack_dump = 1;
 		}
 
-# Check for line lengths > 75 in commit log, warn once
+# coreboot: The line lengeth limit is 72
+# Check for line lengths > 72 in commit log, warn once
 		if ($in_commit_log && !$commit_log_long_line &&
-		    length($line) > 75 &&
+		    length($line) > 72 &&
 		    !($line =~ /^\s*[a-zA-Z0-9_\/\.]+\s+\|\s+\d+/ ||
 					# file delta changes
-		      $line =~ /^\s*(?:[\w\.\-]+\/)++[\w\.\-]+:/ ||
+		      $line =~ /^\s*(?:[\w\.\-\+]*\/)++[\w\.\-\+]+:/ ||
 					# filename then :
-		      $line =~ /^\s*(?:Fixes:|Link:)/i ||
-					# A Fixes: or Link: line
+		      $line =~ /^\s*(?:Fixes:|Link:|$signature_tags)/i ||
+					# A Fixes: or Link: line or signature tag line
 		      $commit_log_possible_stack_dump)) {
 			WARN("COMMIT_LOG_LONG_LINE",
-			     "Possible unwrapped commit description (prefer a maximum 75 chars per line)\n" . $herecurr);
+			     "Possible unwrapped commit description (prefer a maximum 72 chars per line)\n" . $herecurr);
 			$commit_log_long_line = 1;
 		}
 
@@ -3074,7 +3077,7 @@ sub process {
 		next if ($realfile !~ /\.(h|c|pl|dtsi|dts)$/);
 
 # at the beginning of a line any tabs must come first and anything
-# more than 8 must use tabs.
+# more than $tabsize must use tabs.
 		if ($rawline =~ /^\+\s* \t\s*\S/ ||
 		    $rawline =~ /^\+\s*        \s*/) {
 			my $herevet = "$here\n" . cat_vet($rawline) . "\n";
@@ -3093,7 +3096,7 @@ sub process {
 				"please, no space before tabs\n" . $herevet) &&
 			    $fix) {
 				while ($fixed[$fixlinenr] =~
-					   s/(^\+.*) {8,8}\t/$1\t\t/) {}
+					   s/(^\+.*) {$tabsize,$tabsize}\t/$1\t\t/) {}
 				while ($fixed[$fixlinenr] =~
 					   s/(^\+.*) +\t/$1\t/) {}
 			}
@@ -3112,20 +3115,20 @@ sub process {
 		}
 
 # check indentation starts on a tab stop
-		if ($^V && $^V ge 5.10.0 &&
+		if ($perl_version_ok &&
 		    $sline =~ /^\+\t+( +)(?:$c90_Keywords\b|\{\s*$|\}\s*(?:else\b|while\b|\s*$)|$Declare\s*$Ident\s*[;=])/) {
 			my $indent = length($1);
-			if ($indent % 8) {
+			if ($indent % $tabsize) {
 				if (WARN("TABSTOP",
 					 "Statements should start on a tabstop\n" . $herecurr) &&
 				    $fix) {
-					$fixed[$fixlinenr] =~ s@(^\+\t+) +@$1 . "\t" x ($indent/8)@e;
+					$fixed[$fixlinenr] =~ s@(^\+\t+) +@$1 . "\t" x ($indent/$tabsize)@e;
 				}
 			}
 		}
 
 # check multi-line statement indentation matches previous line
-		if ($^V && $^V ge 5.10.0 &&
+		if ($perl_version_ok &&
 		    $prevline =~ /^\+([ \t]*)((?:$c90_Keywords(?:\s+if)\s*)|(?:$Declare\s*)?(?:$Ident|\(\s*\*\s*$Ident\s*\))\s*|(?:\*\s*)*$Lval\s*=\s*$Ident\s*)\(.*(\&\&|\|\||,)\s*$/) {
 			$prevline =~ /^\+(\t*)(.*)$/;
 			my $oldindent = $1;
@@ -3137,8 +3140,8 @@ sub process {
 				my $newindent = $2;
 
 				my $goodtabindent = $oldindent .
-					"\t" x ($pos / 8) .
-					" "  x ($pos % 8);
+					"\t" x ($pos / $tabsize) .
+					" "  x ($pos % $tabsize);
 				my $goodspaceindent = $oldindent . " "  x $pos;
 
 				if ($newindent ne $goodtabindent &&
@@ -3258,43 +3261,48 @@ sub process {
 		}
 
 # check for missing blank lines after declarations
-		if ($sline =~ /^\+\s+\S/ &&			#Not at char 1
-			# actual declarations
-		    ($prevline =~ /^\+\s+$Declare\s*$Ident\s*[=,;:\[]/ ||
+# (declarations must have the same indentation and not be at the start of line)
+		if (($prevline =~ /\+(\s+)\S/) && $sline =~ /^\+$1\S/) {
+			# use temporaries
+			my $sl = $sline;
+			my $pl = $prevline;
+			# remove $Attribute/$Sparse uses to simplify comparisons
+			$sl =~ s/\b(?:$Attribute|$Sparse)\b//g;
+			$pl =~ s/\b(?:$Attribute|$Sparse)\b//g;
+			if (($pl =~ /^\+\s+$Declare\s*$Ident\s*[=,;:\[]/ ||
 			# function pointer declarations
-		     $prevline =~ /^\+\s+$Declare\s*\(\s*\*\s*$Ident\s*\)\s*[=,;:\[\(]/ ||
+			     $pl =~ /^\+\s+$Declare\s*\(\s*\*\s*$Ident\s*\)\s*[=,;:\[\(]/ ||
 			# foo bar; where foo is some local typedef or #define
-		     $prevline =~ /^\+\s+$Ident(?:\s+|\s*\*\s*)$Ident\s*[=,;\[]/ ||
+			     $pl =~ /^\+\s+$Ident(?:\s+|\s*\*\s*)$Ident\s*[=,;\[]/ ||
 			# known declaration macros
-		     $prevline =~ /^\+\s+$declaration_macros/) &&
+			     $pl =~ /^\+\s+$declaration_macros/) &&
 			# for "else if" which can look like "$Ident $Ident"
-		    !($prevline =~ /^\+\s+$c90_Keywords\b/ ||
+			    !($pl =~ /^\+\s+$c90_Keywords\b/ ||
 			# other possible extensions of declaration lines
-		      $prevline =~ /(?:$Compare|$Assignment|$Operators)\s*$/ ||
+			      $pl =~ /(?:$Compare|$Assignment|$Operators)\s*$/ ||
 			# not starting a section or a macro "\" extended line
-		      $prevline =~ /(?:\{\s*|\\)$/) &&
+			      $pl =~ /(?:\{\s*|\\)$/) &&
 			# looks like a declaration
-		    !($sline =~ /^\+\s+$Declare\s*$Ident\s*[=,;:\[]/ ||
+			    !($sl =~ /^\+\s+$Declare\s*$Ident\s*[=,;:\[]/ ||
 			# function pointer declarations
-		      $sline =~ /^\+\s+$Declare\s*\(\s*\*\s*$Ident\s*\)\s*[=,;:\[\(]/ ||
+			      $sl =~ /^\+\s+$Declare\s*\(\s*\*\s*$Ident\s*\)\s*[=,;:\[\(]/ ||
 			# foo bar; where foo is some local typedef or #define
-		      $sline =~ /^\+\s+$Ident(?:\s+|\s*\*\s*)$Ident\s*[=,;\[]/ ||
+			      $sl =~ /^\+\s+$Ident(?:\s+|\s*\*\s*)$Ident\s*[=,;\[]/ ||
 			# known declaration macros
-		      $sline =~ /^\+\s+$declaration_macros/ ||
+			      $sl =~ /^\+\s+$declaration_macros/ ||
 			# start of struct or union or enum
-		      $sline =~ /^\+\s+(?:union|struct|enum|typedef)\b/ ||
+			      $sl =~ /^\+\s+(?:static\s+)?(?:const\s+)?(?:union|struct|enum|typedef)\b/ ||
 			# start or end of block or continuation of declaration
-		      $sline =~ /^\+\s+(?:$|[\{\}\.\#\"\?\:\(\[])/ ||
+			      $sl =~ /^\+\s+(?:$|[\{\}\.\#\"\?\:\(\[])/ ||
 			# bitfield continuation
-		      $sline =~ /^\+\s+$Ident\s*:\s*\d+\s*[,;]/ ||
+			      $sl =~ /^\+\s+$Ident\s*:\s*\d+\s*[,;]/ ||
 			# other possible extensions of declaration lines
-		      $sline =~ /^\+\s+\(?\s*(?:$Compare|$Assignment|$Operators)/) &&
-			# indentation of previous and current line are the same
-		    (($prevline =~ /\+(\s+)\S/) && $sline =~ /^\+$1\S/)) {
-			if (WARN("LINE_SPACING",
-				 "Missing a blank line after declarations\n" . $hereprev) &&
-			    $fix) {
-				fix_insert_line($fixlinenr, "\+");
+			      $sl =~ /^\+\s+\(?\s*(?:$Compare|$Assignment|$Operators)/)) {
+				if (WARN("LINE_SPACING",
+					 "Missing a blank line after declarations\n" . $hereprev) &&
+				    $fix) {
+					fix_insert_line($fixlinenr, "\+");
+				}
 			}
 		}
 
@@ -3609,11 +3617,11 @@ sub process {
 			#print "line<$line> prevline<$prevline> indent<$indent> sindent<$sindent> check<$check> continuation<$continuation> s<$s> cond_lines<$cond_lines> stat_real<$stat_real> stat<$stat>\n";
 
 			if ($check && $s ne '' &&
-			    (($sindent % 8) != 0 ||
+			    (($sindent % $tabsize) != 0 ||
 			     ($sindent < $indent) ||
 			     ($sindent == $indent &&
 			      ($s !~ /^\s*(?:\}|\{|else\b)/)) ||
-			     ($sindent > $indent + 8))) {
+			     ($sindent > $indent + $tabsize))) {
 				WARN("SUSPECT_CODE_INDENT",
 				     "suspect code indent for conditional statements ($indent, $sindent)\n" . $herecurr . "$stat_real\n");
 			}
@@ -3870,7 +3878,7 @@ sub process {
 			WARN("STATIC_CONST_CHAR_ARRAY",
 			     "static char array declaration should probably be static const char\n" .
 				$herecurr);
-               }
+		}
 
 # check for const <foo> const where <foo> is not a pointer or array type
 		if ($sline =~ /\bconst\s+($BasicType)\s+const\b/) {
@@ -3889,7 +3897,7 @@ sub process {
 			WARN("STATIC_CONST_CHAR_ARRAY",
 			     "char * array declaration might be better as static const\n" .
 				$herecurr);
-               }
+		}
 
 # check for sizeof(foo)/sizeof(foo[0]) that could be ARRAY_SIZE(foo)
 		if ($line =~ m@\bsizeof\s*\(\s*($Lval)\s*\)@) {
@@ -4044,7 +4052,7 @@ sub process {
 
 # function brace can't be on same line, except for #defines of do while,
 # or if closed on same line
-		if ($^V && $^V ge 5.10.0 &&
+		if ($perl_version_ok &&
 		    $sline =~ /$Type\s*$Ident\s*$balanced_parens\s*\{/ &&
 		    $sline !~ /\#\s*define\b.*do\s*\{/ &&
 		    $sline !~ /}/) {
@@ -4483,7 +4491,7 @@ sub process {
 					    ($op eq '>' &&
 					     $ca =~ /<\S+\@\S+$/))
 					{
-					    	$ok = 1;
+						$ok = 1;
 					}
 
 					# for asm volatile statements
@@ -4549,7 +4557,7 @@ sub process {
 ## 		    $line !~ /^.\s*$Type\s+$Ident(?:\s*=[^,{]*)?\s*,\s*$Type\s*$Ident.*/) {
 ##
 ## 			# Remove any bracketed sections to ensure we do not
-## 			# falsly report the parameters of functions.
+## 			# falsely report the parameters of functions.
 ## 			my $ln = $line;
 ## 			while ($ln =~ s/\([^\(\)]*\)//g) {
 ## 			}
@@ -4657,7 +4665,7 @@ sub process {
 # check for unnecessary parentheses around comparisons in if uses
 # when !drivers/staging or command-line uses --strict
 		if (($realfile !~ m@^(?:drivers/staging/)@ || $check_orig) &&
-		    $^V && $^V ge 5.10.0 && defined($stat) &&
+		    $perl_version_ok && defined($stat) &&
 		    $stat =~ /(^.\s*if\s*($balanced_parens))/) {
 			my $if_stat = $1;
 			my $test = substr($2, 1, -1);
@@ -4694,7 +4702,7 @@ sub process {
 # return is not a function
 		if (defined($stat) && $stat =~ /^.\s*return(\s*)\(/s) {
 			my $spacing = $1;
-			if ($^V && $^V ge 5.10.0 &&
+			if ($perl_version_ok &&
 			    $stat =~ /^.\s*return\s*($balanced_parens)\s*;\s*$/) {
 				my $value = $1;
 				$value = deparenthesize($value);
@@ -4718,10 +4726,10 @@ sub process {
 		    $lines[$linenr - 3] !~ /^[ +]\s*$Ident\s*:/) {
 			WARN("RETURN_VOID",
 			     "void function return statements are not generally useful\n" . $hereprev);
-               }
+		}
 
 # if statements using unnecessary parentheses - ie: if ((foo == bar))
-		if ($^V && $^V ge 5.10.0 &&
+		if ($perl_version_ok &&
 		    $line =~ /\bif\s*((?:\(\s*){2,})/) {
 			my $openparens = $1;
 			my $count = $openparens =~ tr@\(@\(@;
@@ -4738,7 +4746,7 @@ sub process {
 #	avoid cases like "foo + BAR < baz"
 #	only fix matches surrounded by parentheses to avoid incorrect
 #	conversions like "FOO < baz() + 5" being "misfixed" to "baz() > FOO + 5"
-		if ($^V && $^V ge 5.10.0 &&
+		if ($perl_version_ok &&
 		    $line =~ /^\+(.*)\b($Constant|[A-Z_][A-Z0-9_]*)\s*($Compare)\s*($LvalOrFunc)/) {
 			my $lead = $1;
 			my $const = $2;
@@ -4819,7 +4827,7 @@ sub process {
 			# conditional.
 			substr($s, 0, length($c), '');
 			$s =~ s/\n.*//g;
-			$s =~ s/$;//g; 	# Remove any comments
+			$s =~ s/$;//g;	# Remove any comments
 			if (length($c) && $s !~ /^\s*{?\s*\\*\s*$/ &&
 			    $c !~ /}\s*while\s*/)
 			{
@@ -4858,7 +4866,7 @@ sub process {
 # if and else should not have general statements after it
 		if ($line =~ /^.\s*(?:}\s*)?else\b(.*)/) {
 			my $s = $1;
-			$s =~ s/$;//g; 	# Remove any comments
+			$s =~ s/$;//g;	# Remove any comments
 			if ($s !~ /^\s*(?:\sif|(?:{|)\s*\\?\s*$)/) {
 				ERROR("TRAILING_STATEMENTS",
 				      "trailing statements should be on next line\n" . $herecurr);
@@ -5043,7 +5051,7 @@ sub process {
 			{
 			}
 
-			# Flatten any obvious string concatentation.
+			# Flatten any obvious string concatenation.
 			while ($dstat =~ s/($String)\s*$Ident/$1/ ||
 			       $dstat =~ s/$Ident\s*($String)/$1/)
 			{
@@ -5163,7 +5171,7 @@ sub process {
 # do {} while (0) macro tests:
 # single-statement macros do not need to be enclosed in do while (0) loop,
 # macro should not end with a semicolon
-		if ($^V && $^V ge 5.10.0 &&
+		if ($perl_version_ok &&
 		    $realfile !~ m@/vmlinux.lds.h$@ &&
 		    $line =~ /^.\s*\#\s*define\s+$Ident(\()?/) {
 			my $ln = $linenr;
@@ -5526,7 +5534,7 @@ sub process {
 		}
 
 # check for mask then right shift without a parentheses
-		if ($^V && $^V ge 5.10.0 &&
+		if ($perl_version_ok &&
 		    $line =~ /$LvalOrFunc\s*\&\s*($LvalOrFunc)\s*>>/ &&
 		    $4 !~ /^\&/) { # $LvalOrFunc may be &foo, ignore if so
 			WARN("MASK_THEN_SHIFT",
@@ -5534,7 +5542,7 @@ sub process {
 		}
 
 # check for pointer comparisons to NULL
-		if ($^V && $^V ge 5.10.0) {
+		if ($perl_version_ok) {
 			while ($line =~ /\b$LvalOrFunc\s*(==|\!=)\s*NULL\b/g) {
 				my $val = $1;
 				my $equal = "!";
@@ -5806,7 +5814,7 @@ sub process {
 		}
 
 # Check for __attribute__ weak, or __weak declarations (may have link issues)
-		if ($^V && $^V ge 5.10.0 &&
+		if ($perl_version_ok &&
 		    $line =~ /(?:$Declare|$DeclareMisordered)\s*$Ident\s*$balanced_parens\s*(?:$Attribute)?\s*;/ &&
 		    ($line =~ /\b__attribute__\s*\(\s*\(.*\bweak\b/ ||
 		     $line =~ /\b__weak\b/)) {
@@ -5888,7 +5896,7 @@ sub process {
 		}
 
 # check for vsprintf extension %p<foo> misuses
-		if ($^V && $^V ge 5.10.0 &&
+		if ($perl_version_ok &&
 		    defined $stat &&
 		    $stat =~ /^\+(?![^\{]*\{\s*).*\b(\w+)\s*\(.*$String\s*,/s &&
 		    $1 !~ /^_*volatile_*$/) {
@@ -5935,7 +5943,7 @@ sub process {
 		}
 
 # Check for misused memsets
-		if ($^V && $^V ge 5.10.0 &&
+		if ($perl_version_ok &&
 		    defined $stat &&
 		    $stat =~ /^\+(?:.*?)\bmemset\s*\(\s*$FuncArg\s*,\s*$FuncArg\s*\,\s*$FuncArg\s*\)/) {
 
@@ -5953,7 +5961,7 @@ sub process {
 		}
 
 # Check for memcpy(foo, bar, ETH_ALEN) that could be ether_addr_copy(foo, bar)
-#		if ($^V && $^V ge 5.10.0 &&
+#		if ($perl_version_ok &&
 #		    defined $stat &&
 #		    $stat =~ /^\+(?:.*?)\bmemcpy\s*\(\s*$FuncArg\s*,\s*$FuncArg\s*\,\s*ETH_ALEN\s*\)/) {
 #			if (WARN("PREFER_ETHER_ADDR_COPY",
@@ -5964,7 +5972,7 @@ sub process {
 #		}
 
 # Check for memcmp(foo, bar, ETH_ALEN) that could be ether_addr_equal*(foo, bar)
-#		if ($^V && $^V ge 5.10.0 &&
+#		if ($perl_version_ok &&
 #		    defined $stat &&
 #		    $stat =~ /^\+(?:.*?)\bmemcmp\s*\(\s*$FuncArg\s*,\s*$FuncArg\s*\,\s*ETH_ALEN\s*\)/) {
 #			WARN("PREFER_ETHER_ADDR_EQUAL",
@@ -5973,7 +5981,7 @@ sub process {
 
 # check for memset(foo, 0x0, ETH_ALEN) that could be eth_zero_addr
 # check for memset(foo, 0xFF, ETH_ALEN) that could be eth_broadcast_addr
-#		if ($^V && $^V ge 5.10.0 &&
+#		if ($perl_version_ok &&
 #		    defined $stat &&
 #		    $stat =~ /^\+(?:.*?)\bmemset\s*\(\s*$FuncArg\s*,\s*$FuncArg\s*\,\s*ETH_ALEN\s*\)/) {
 #
@@ -5995,7 +6003,7 @@ sub process {
 #		}
 
 # typecasts on min/max could be min_t/max_t
-		if ($^V && $^V ge 5.10.0 &&
+		if ($perl_version_ok &&
 		    defined $stat &&
 		    $stat =~ /^\+(?:.*?)\b(min|max)\s*\(\s*$FuncArg\s*,\s*$FuncArg\s*\)/) {
 			if (defined $2 || defined $7) {
@@ -6019,7 +6027,7 @@ sub process {
 		}
 
 # check usleep_range arguments
-		if ($^V && $^V ge 5.10.0 &&
+		if ($perl_version_ok &&
 		    defined $stat &&
 		    $stat =~ /^\+(?:.*?)\busleep_range\s*\(\s*($FuncArg)\s*,\s*($FuncArg)\s*\)/) {
 			my $min = $1;
@@ -6035,7 +6043,7 @@ sub process {
 		}
 
 # check for naked sscanf
-		if ($^V && $^V ge 5.10.0 &&
+		if ($perl_version_ok &&
 		    defined $stat &&
 		    $line =~ /\bsscanf\b/ &&
 		    ($stat !~ /$Ident\s*=\s*sscanf\s*$balanced_parens/ &&
@@ -6049,7 +6057,7 @@ sub process {
 		}
 
 # check for simple sscanf that should be kstrto<foo>
-		if ($^V && $^V ge 5.10.0 &&
+		if ($perl_version_ok &&
 		    defined $stat &&
 		    $line =~ /\bsscanf\b/) {
 			my $lc = $stat =~ tr@\n@@;
@@ -6121,7 +6129,7 @@ sub process {
 		}
 
 # check for function definitions
-		if ($^V && $^V ge 5.10.0 &&
+		if ($perl_version_ok &&
 		    defined $stat &&
 		    $stat =~ /^.\s*(?:$Storage\s+)?$Type\s*($Ident)\s*$balanced_parens\s*{/s) {
 			$context_function = $1;
@@ -6161,14 +6169,14 @@ sub process {
 
 # alloc style
 # p = alloc(sizeof(struct foo), ...) should be p = alloc(sizeof(*p), ...)
-		if ($^V && $^V ge 5.10.0 &&
+		if ($perl_version_ok &&
 		    $line =~ /\b($Lval)\s*\=\s*(?:$balanced_parens)?\s*([kv][mz]alloc(?:_node)?)\s*\(\s*(sizeof\s*\(\s*struct\s+$Lval\s*\))/) {
 			CHK("ALLOC_SIZEOF_STRUCT",
 			    "Prefer $3(sizeof(*$1)...) over $3($4...)\n" . $herecurr);
 		}
 
 # check for k[mz]alloc with multiplies that could be kmalloc_array/kcalloc
-		if ($^V && $^V ge 5.10.0 &&
+		if ($perl_version_ok &&
 		    defined $stat &&
 		    $stat =~ /^\+\s*($Lval)\s*\=\s*(?:$balanced_parens)?\s*(k[mz]alloc)\s*\(\s*($FuncArg)\s*\*\s*($FuncArg)\s*,/) {
 			my $oldfunc = $3;
@@ -6197,7 +6205,7 @@ sub process {
 		}
 
 # check for krealloc arg reuse
-		if ($^V && $^V ge 5.10.0 &&
+		if ($perl_version_ok &&
 		    $line =~ /\b($Lval)\s*\=\s*(?:$balanced_parens)?\s*krealloc\s*\(\s*\1\s*,/) {
 			WARN("KREALLOC_ARG_REUSE",
 			     "Reusing the krealloc arg is almost always a bug\n" . $herecurr);
@@ -6256,7 +6264,7 @@ sub process {
 		}
 
 # check for switch/default statements without a break;
-		if ($^V && $^V ge 5.10.0 &&
+		if ($perl_version_ok &&
 		    defined $stat &&
 		    $stat =~ /^\+[$;\s]*(?:case[$;\s]+\w+[$;\s]*:[$;\s]*|)*[$;\s]*\bdefault[$;\s]*:[$;\s]*;/g) {
 			my $cnt = statement_rawlines($stat);
@@ -6366,7 +6374,7 @@ sub process {
 		}
 
 # likely/unlikely comparisons similar to "(likely(foo) > 0)"
-		if ($^V && $^V ge 5.10.0 &&
+		if ($perl_version_ok &&
 		    $line =~ /\b((?:un)?likely)\s*\(\s*$FuncArg\s*\)\s*$Compare/) {
 			WARN("LIKELY_MISUSE",
 			     "Using $1 should generally have parentheses around the comparison\n" . $herecurr);
@@ -6409,7 +6417,7 @@ sub process {
 # check for DEVICE_ATTR uses that could be DEVICE_ATTR_<FOO>
 # and whether or not function naming is typical and if
 # DEVICE_ATTR permissions uses are unusual too
-		if ($^V && $^V ge 5.10.0 &&
+		if ($perl_version_ok &&
 		    defined $stat &&
 		    $stat =~ /\bDEVICE_ATTR\s*\(\s*(\w+)\s*,\s*\(?\s*(\s*(?:${multi_mode_perms_string_search}|0[0-7]{3,3})\s*)\s*\)?\s*,\s*(\w+)\s*,\s*(\w+)\s*\)/) {
 			my $var = $1;
@@ -6469,7 +6477,7 @@ sub process {
 #   specific definition of not visible in sysfs.
 # o Ignore proc_create*(...) uses with a decimal 0 permission as that means
 #   use the default permissions
-		if ($^V && $^V ge 5.10.0 &&
+		if ($perl_version_ok &&
 		    defined $stat &&
 		    $line =~ /$mode_perms_search/) {
 			foreach my $entry (@mode_permission_funcs) {
@@ -6545,7 +6553,7 @@ sub process {
 		exit(0);
 	}
 
-	# This is not a patch, and we are are in 'no-patch' mode so
+	# This is not a patch, and we are in 'no-patch' mode so
 	# just keep quiet.
 	if (!$chk_patch && !$is_patch) {
 		exit(0);

@@ -6,11 +6,16 @@ This section contains documentation about coreboot on specific mainboards.
 
 - [X210](51nb/x210.md)
 
+## Acer
+
+- [G43T-AM3](acer/g43t-am3.md)
+
 ## AMD
 - [padmelon](amd/padmelon/padmelon.md)
 
 ## ASRock
 
+- [H77 Pro4-M](asrock/h77pro4-m.md)
 - [H81M-HDS](asrock/h81m-hds.md)
 - [H110M-DVS](asrock/h110m-dvs.md)
 
@@ -171,6 +176,10 @@ The boards in this section are not real mainboards, but emulators.
 ## SiFive
 
 - [SiFive HiFive Unleashed](sifive/hifive-unleashed.md)
+
+## Star Labs Systems
+
+- [StarBook Mk V](starlabs/starbook_tgl.md)
 
 ## Supermicro
 

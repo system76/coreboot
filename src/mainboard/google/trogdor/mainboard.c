@@ -18,9 +18,8 @@
 #include <soc/qup_se_handlers_common.h>
 #include <soc/qupv3_i2c_common.h>
 #include <soc/qcom_qup_se.h>
-#include <soc/usb.h>
-#include <types.h>
-
+#include <soc/usb/usb_common.h>
+#include <soc/usb/qusb_phy.h>
 #include "board.h"
 #include <soc/addressmap.h>
 
@@ -84,7 +83,8 @@ static bool is_ps8640_bridge(void)
 	return (CONFIG(BOARD_GOOGLE_HOMESTAR) && board_id() >= 4 &&
 		board_id() != 19 && board_id() != 23) ||
 	       (CONFIG(BOARD_GOOGLE_LAZOR) && board_id() >= 9) ||
-	       (CONFIG(BOARD_GOOGLE_KINGOFTOWN) && board_id() >= 1);
+	       (CONFIG(BOARD_GOOGLE_KINGOFTOWN) && board_id() >= 1) ||
+	       (CONFIG(BOARD_GOOGLE_PAZQUEL) && (sku_id() & 0x4));
 }
 
 static void power_on_sn65dsi86_bridge(void)
@@ -145,6 +145,12 @@ static void configure_mipi_panel(void)
 		mdelay(5);
 		gpio_output(GPIO_VDD_RESET_1V8, 1);
 	}
+	/*
+	 * In mipi panel, TP_EN(GPIO 85) need pull up before
+	 * GPIO_BACKLIGHT_ENABLE(GPIO12) up.
+	 */
+	if (CONFIG(TROGDOR_HAS_MIPI_PANEL))
+		gpio_output(GPIO_TP_EN, 1);
 }
 
 static struct panel_serializable_data *get_mipi_panel(enum lb_fb_orientation *orientation)

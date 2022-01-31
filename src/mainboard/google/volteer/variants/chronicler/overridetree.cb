@@ -231,6 +231,21 @@ chip soc/intel/tigerlake
 				register "has_power_resource" = "1"
 				device i2c 34 on end
 			end
+			chip drivers/i2c/generic
+				register "hid" = ""ELAN0001""
+				register "desc" = ""ELAN Touchscreen""
+				register "irq" = "ACPI_IRQ_LEVEL_LOW(GPP_E7_IRQ)"
+				register "probed" = "1"
+				register "reset_gpio" =
+							"ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_C10)"
+				register "reset_delay_ms" = "100"
+				register "reset_off_delay_ms" = "5"
+				register "has_power_resource" = "1"
+				register "enable_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_A8)"
+				register "enable_delay_ms" = "10"
+				register "enable_off_delay_ms" = "1"
+				device i2c 10 on end
+			end
 		end
 		device ref i2c5 on
 			chip drivers/i2c/generic
@@ -264,14 +279,14 @@ chip soc/intel/tigerlake
 			chip drivers/intel/pmc_mux
 				device generic 0 on
 					chip drivers/intel/pmc_mux/conn
-						register "usb2_port_number" = "9"
-						register "usb3_port_number" = "1"
+						use usb2_port9 as usb2_port
+						use tcss_usb3_port1 as usb3_port
 						# SBU & HSL follow CC
 						device generic 0 alias conn0 on end
 					end
 					chip drivers/intel/pmc_mux/conn
-						register "usb2_port_number" = "4"
-						register "usb3_port_number" = "2"
+						use usb2_port4 as usb2_port
+						use tcss_usb3_port2 as usb3_port
 						# SBU is fixed, HSL follows CC
 						register "sbu_orientation" = "TYPEC_ORIENTATION_NORMAL"
 						device generic 1 alias conn1 on end

@@ -88,7 +88,10 @@ typedef struct _embedded_firmware {
 	uint32_t gec_entry;
 	uint32_t xhci_entry;
 	uint32_t psp_directory;
-	uint32_t combo_psp_directory;
+	union {
+		uint32_t new_psp_directory;
+		uint32_t combo_psp_directory;
+	};
 	uint32_t bios0_entry; /* todo: add way to select correct entry */
 	uint32_t bios1_entry;
 	uint32_t bios2_entry;
@@ -118,7 +121,16 @@ typedef struct _psp_directory_header {
 	uint32_t cookie;
 	uint32_t checksum;
 	uint32_t num_entries;
-	uint32_t additional_info;
+	union {
+		uint32_t additional_info;
+		struct {
+			uint32_t dir_size:10;
+			uint32_t spi_block_size:4;
+			uint32_t base_addr:15;
+			uint32_t address_mode:2;
+			uint32_t not_used:1;
+		} __attribute__((packed)) additional_info_fields;
+	};
 } __attribute__((packed, aligned(16))) psp_directory_header;
 
 typedef struct _psp_directory_entry {
@@ -126,7 +138,8 @@ typedef struct _psp_directory_entry {
 	uint8_t subprog;
 	uint16_t rsvd;
 	uint32_t size;
-	uint64_t addr; /* or a value in some cases */
+	uint64_t addr:62; /* or a value in some cases */
+	uint64_t address_mode:2;
 } __attribute__((packed)) psp_directory_entry;
 
 typedef struct _psp_directory_table {
@@ -161,7 +174,16 @@ typedef struct _bios_directory_hdr {
 	uint32_t cookie;
 	uint32_t checksum;
 	uint32_t num_entries;
-	uint32_t additional_info;
+	union {
+		uint32_t additional_info;
+		struct {
+			uint32_t dir_size:10;
+			uint32_t spi_block_size:4;
+			uint32_t base_addr:15;
+			uint32_t address_mode:2;
+			uint32_t not_used:1;
+		} __attribute__((packed)) additional_info_fields;
+	};
 } __attribute__((packed, aligned(16))) bios_directory_hdr;
 
 typedef struct _bios_directory_entry {
@@ -174,7 +196,8 @@ typedef struct _bios_directory_entry {
 	int inst:4;
 	uint8_t subprog; /* b[7:3] reserved */
 	uint32_t size;
-	uint64_t source;
+	uint64_t source:62;
+	uint64_t address_mode:2;
 	uint64_t dest;
 } __attribute__((packed)) bios_directory_entry;
 

@@ -8,12 +8,8 @@ chip soc/intel/tigerlake
 	register "pmc_gpe0_dw1" = "GPP_C"
 	register "pmc_gpe0_dw2" = "GPP_D"
 
-	# Enable heci1 communication
-	register "HeciEnabled" = "1"
-
 	# FSP configuration
 	register "SaGv" = "SaGv_Enabled"
-	register "SmbusEnable" = "1"
 
 	# CNVi BT enable/disable
 	register "CnviBtCore" = "true"
@@ -45,6 +41,10 @@ chip soc/intel/tigerlake
 	register "PcieRpEnable[3]" = "1"
 	register "PcieRpEnable[8]" = "1"
 	register "PcieRpEnable[10]" = "1"
+	register "PcieRpSlotImplemented[2]" = "1"
+	register "PcieRpSlotImplemented[3]" = "1"
+	register "PcieRpSlotImplemented[8]" = "1"
+	register "PcieRpSlotImplemented[10]" = "1"
 
 	# Enable RP LTR
 	register "PcieRpLtrEnable[2]" = "1"
@@ -119,9 +119,6 @@ chip soc/intel/tigerlake
 
 	# Enable DPTF
 	register "dptf_enable" = "1"
-
-	# Enable Processor Thermal Control
-	register "Device4Enable" = "1"
 
 	# Add PL1 and PL2 values
 	register "power_limits_config[POWER_LIMITS_U_2_CORE]" = "{
@@ -323,15 +320,15 @@ chip soc/intel/tigerlake
 			chip drivers/intel/pmc_mux
 				device generic 0 on
 					chip drivers/intel/pmc_mux/conn
-						register "usb2_port_number" = "6"
-						register "usb3_port_number" = "3"
+						use usb2_port6 as usb2_port
+						use tcss_usb3_port3 as usb3_port
 						# SBU is fixed, HSL follows CC
 						register "sbu_orientation" = "TYPEC_ORIENTATION_NORMAL"
 						device generic 0 alias conn0 on end
 					end
 					chip drivers/intel/pmc_mux/conn
-						register "usb2_port_number" = "7"
-						register "usb3_port_number" = "4"
+						use usb2_port7 as usb2_port
+						use tcss_usb3_port4 as usb3_port
 						# SBU is fixed, HSL follows CC
 						register "sbu_orientation" = "TYPEC_ORIENTATION_NORMAL"
 						device generic 1 alias conn1 on end

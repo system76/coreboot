@@ -9,6 +9,8 @@
 #include <device/pci.h>
 #include <intelblocks/pmc.h>
 #include <intelblocks/pmc_ipc.h>
+#include <intelblocks/pcie_rp.h>
+#include <soc/iomap.h>
 #include "chip.h"
 
 /*
@@ -42,6 +44,14 @@
 #define ACPI_REG_PCI_L23_RDY_DETECT "L23R" /* L23_Rdy Detect Transition */
 #define ACPI_REG_PCI_L23_SAVE_STATE "NCB7" /* Scratch bit to save L23 state */
 
+/* ACPI path to the mutex that protects accesses to PMC ModPhy power gating registers */
+#define RTD3_MUTEX_PATH "\\_SB.PCI0.R3MX"
+
+enum modphy_pg_state {
+	PG_DISABLE = 0,
+	PG_ENABLE = 1,
+};
+
 /* Called from _ON to get PCIe link back to active state. */
 static void pcie_rtd3_acpi_l23_exit(void)
 {
@@ -74,13 +84,34 @@ static void pcie_rtd3_acpi_l23_entry(void)
 	acpigen_write_store_int_to_namestr(1, ACPI_REG_PCI_L23_SAVE_STATE);
 }
 
+/* Called from _ON/_OFF to disable/enable ModPHY power gating */
+static void pcie_rtd3_enable_modphy_pg(unsigned int pcie_rp, enum modphy_pg_state state)
+{
+	/* Enter the critical section */
+	acpigen_emit_ext_op(ACQUIRE_OP);
+	acpigen_emit_namestring(RTD3_MUTEX_PATH);
+	acpigen_emit_word(ACPI_MUTEX_NO_TIMEOUT);
+
+	acpigen_write_store_int_to_namestr(state, "EMPG");
+	acpigen_write_delay_until_namestr_int(100, "AMPG", state);
+
+	/* Exit the critical section */
+	acpigen_emit_ext_op(RELEASE_OP);
+	acpigen_emit_namestring(RTD3_MUTEX_PATH);
+}
+
 static void
 pcie_rtd3_acpi_method_on(unsigned int pcie_rp,
-			 const struct soc_intel_common_block_pcie_rtd3_config *config)
+			 const struct soc_intel_common_block_pcie_rtd3_config *config,
+			 enum pcie_rp_type rp_type)
 {
 	acpigen_write_method_serialized("_ON", 0);
 
 	acpigen_write_debug_string("PCIe RTD3 _ON");
+
+	/* Disable modPHY power gating for PCH RPs. */
+	if (rp_type == PCIE_RP_PCH)
+		pcie_rtd3_enable_modphy_pg(pcie_rp, PG_DISABLE);
 
 	/* Assert enable GPIO to turn on device power. */
 	if (config->enable_gpio.pin_count) {
@@ -100,7 +131,7 @@ pcie_rtd3_acpi_method_on(unsigned int pcie_rp,
 			acpigen_write_sleep(config->reset_delay_ms);
 	}
 
-	/* Trigger L23 ready exit flow unless disabld by config. */
+	/* Trigger L23 ready exit flow unless disabled by config. */
 	if (!config->disable_l23)
 		pcie_rtd3_acpi_l23_exit();
 
@@ -109,7 +140,8 @@ pcie_rtd3_acpi_method_on(unsigned int pcie_rp,
 
 static void
 pcie_rtd3_acpi_method_off(int pcie_rp,
-			  const struct soc_intel_common_block_pcie_rtd3_config *config)
+			  const struct soc_intel_common_block_pcie_rtd3_config *config,
+			  enum pcie_rp_type rp_type)
 {
 	acpigen_write_method_serialized("_OFF", 0);
 
@@ -126,6 +158,10 @@ pcie_rtd3_acpi_method_off(int pcie_rp,
 			acpigen_write_sleep(config->reset_off_delay_ms);
 	}
 
+	/* Enable modPHY power gating for PCH RPs */
+	if (rp_type == PCIE_RP_PCH)
+		pcie_rtd3_enable_modphy_pg(pcie_rp, PG_ENABLE);
+
 	/* Disable SRCCLK for this root port if pin is defined. */
 	if (config->srcclk_pin >= 0)
 		pmc_ipc_acpi_set_pci_clock(pcie_rp, config->srcclk_pin, false);
@@ -141,8 +177,7 @@ pcie_rtd3_acpi_method_off(int pcie_rp,
 }
 
 static void
-pcie_rtd3_acpi_method_status(int pcie_rp,
-			     const struct soc_intel_common_block_pcie_rtd3_config *config)
+pcie_rtd3_acpi_method_status(const struct soc_intel_common_block_pcie_rtd3_config *config)
 {
 	const struct acpi_gpio *gpio;
 
@@ -169,8 +204,54 @@ pcie_rtd3_acpi_method_status(int pcie_rp,
 	acpigen_pop_len(); /* Method */
 }
 
+static void write_modphy_opregion(unsigned int pcie_rp)
+{
+	/* The register containing the Power Gate enable sequence bits is at
+	   PCH_PWRM_BASE + 0x10D0, and the bits to check for sequence completion are at
+	   PCH_PWRM_BASE + 0x10D4. */
+	const struct opregion opregion = OPREGION("PMCP", SYSTEMMEMORY,
+						  PCH_PWRM_BASE_ADDRESS + 0x1000, 0xff);
+	const struct fieldlist fieldlist[] = {
+		FIELDLIST_OFFSET(0xD0),
+		FIELDLIST_RESERVED(pcie_rp),
+		FIELDLIST_NAMESTR("EMPG", 1),	/* Enable ModPHY Power Gate */
+		FIELDLIST_OFFSET(0xD4),
+		FIELDLIST_RESERVED(pcie_rp),
+		FIELDLIST_NAMESTR("AMPG", 1),	/* Is ModPHY Power Gate active? */
+	};
+
+	acpigen_write_opregion(&opregion);
+	acpigen_write_field("PMCP", fieldlist, ARRAY_SIZE(fieldlist),
+			    FIELD_DWORDACC | FIELD_NOLOCK | FIELD_PRESERVE);
+}
+
+static int get_pcie_rp_pmc_idx(enum pcie_rp_type rp_type, const struct device *dev)
+{
+	int idx = -1;
+
+	switch (rp_type) {
+	case PCIE_RP_PCH:
+		/* Read port number of root port that this device is attached to. */
+		idx = pci_read_config8(dev, PCH_PCIE_CFG_LCAP_PN);
+
+		/* Port number is 1-based, PMC IPC method expects 0-based. */
+		idx--;
+		break;
+	case PCIE_RP_CPU:
+		/* CPU RPs are indexed by their "virtual wire index" to the PCH */
+		idx = soc_get_cpu_rp_vw_idx(dev);
+		break;
+	default:
+		break;
+	}
+
+	return idx;
+}
+
 static void pcie_rtd3_acpi_fill_ssdt(const struct device *dev)
 {
+	static bool mutex_created = false;
+
 	const struct soc_intel_common_block_pcie_rtd3_config *config = config_of(dev);
 	static const char *const power_res_states[] = {"_PR0", "_PR3"};
 	const struct device *parent = dev->bus->dev;
@@ -188,7 +269,7 @@ static void pcie_rtd3_acpi_fill_ssdt(const struct device *dev)
 		FIELDLIST_NAMESTR(ACPI_REG_PCI_L23_RDY_ENTRY, 1),
 		FIELDLIST_NAMESTR(ACPI_REG_PCI_L23_RDY_DETECT, 1),
 	};
-	uint8_t pcie_rp;
+	int pcie_rp;
 	struct acpi_dp *dsd, *pkg;
 
 	if (!is_dev_enabled(parent)) {
@@ -210,17 +291,23 @@ static void pcie_rtd3_acpi_fill_ssdt(const struct device *dev)
 		return;
 	}
 
-	/* Read port number of root port that this device is attached to. */
-	pcie_rp = pci_read_config8(parent, PCH_PCIE_CFG_LCAP_PN);
-	if (pcie_rp == 0 || pcie_rp > CONFIG_MAX_ROOT_PORTS) {
-		printk(BIOS_ERR, "%s: Invalid root port number: %u\n", __func__, pcie_rp);
+	const enum pcie_rp_type rp_type = soc_get_pcie_rp_type(parent);
+	pcie_rp = get_pcie_rp_pmc_idx(rp_type, parent);
+	if (pcie_rp < 0) {
+		printk(BIOS_ERR, "%s: Unknown PCIe root port\n", __func__);
 		return;
 	}
-	/* Port number is 1-based, PMC IPC method expects 0-based. */
-	pcie_rp--;
 
 	printk(BIOS_INFO, "%s: Enable RTD3 for %s (%s) on RP #%d\n", scope, dev_path(parent),
 	       config->desc ?: dev->chip_ops->name, pcie_rp + 1);
+
+	/* Create a mutex for exclusive access to the PMC registers. */
+	if (rp_type == PCIE_RP_PCH && !mutex_created) {
+		acpigen_write_scope("\\_SB.PCI0");
+		acpigen_write_mutex("R3MX", 0);
+		acpigen_write_scope_end();
+		mutex_created = true;
+	}
 
 	/* The RTD3 power resource is added to the root port, not the device. */
 	acpigen_write_scope(scope);
@@ -228,15 +315,20 @@ static void pcie_rtd3_acpi_fill_ssdt(const struct device *dev)
 	if (config->desc)
 		acpigen_write_name_string("_DDN", config->desc);
 
+	/* Create OpRegions for MMIO accesses. */
 	acpigen_write_opregion(&opregion);
 	acpigen_write_field("PXCS", fieldlist, ARRAY_SIZE(fieldlist),
 			    FIELD_ANYACC | FIELD_NOLOCK | FIELD_PRESERVE);
 
+	/* Create the OpRegion to access the ModPHY PG registers (PCH RPs only) */
+	if (rp_type == PCIE_RP_PCH)
+		write_modphy_opregion(pcie_rp);
+
 	/* ACPI Power Resource for controlling the attached device power. */
 	acpigen_write_power_res("RTD3", 0, 0, power_res_states, ARRAY_SIZE(power_res_states));
-	pcie_rtd3_acpi_method_status(pcie_rp, config);
-	pcie_rtd3_acpi_method_on(pcie_rp, config);
-	pcie_rtd3_acpi_method_off(pcie_rp, config);
+	pcie_rtd3_acpi_method_status(config);
+	pcie_rtd3_acpi_method_on(pcie_rp, config, rp_type);
+	pcie_rtd3_acpi_method_off(pcie_rp, config, rp_type);
 	acpigen_pop_len(); /* PowerResource */
 
 	/* Indicate to the OS that device supports hotplug in D3. */

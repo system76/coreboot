@@ -251,8 +251,8 @@ config VBOOT_ENABLE_CBFS_FALLBACK
 	default n
 	depends on VBOOT_SLOTS_RW_A
 	help
-	  When this option is enabled cbfs_boot_locate will look for a file in the RO
-	  (COREBOOT) region if it isn't available in the active RW region.
+	  When this option is enabled, the CBFS code will look for a file in the
+	  RO (COREBOOT) region if it isn't available in the active RW region.
 
 config VBOOT_EARLY_EC_SYNC
 	bool
@@ -281,6 +281,14 @@ config VBOOT_X86_SHA256_ACCELERATION
 	help
 	  Use sha256msg1, sha256msg2, sha256rnds2 instruction to accelerate
 	  SHA hash calculation in vboot.
+
+config VBOOT_DEFINE_WIDEVINE_COUNTERS
+	bool
+	default n
+	help
+	  Set up Widevine Secure Counters in TPM NVRAM by defining space. Enabling this
+	  config will only define the counter space. Counters need to be incremented
+	  separately before any read operation is performed on them.
 
 menu "GBB configuration"
 

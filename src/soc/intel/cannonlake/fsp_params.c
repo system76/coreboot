@@ -44,6 +44,12 @@ static const struct slot_irq_constraints irq_constraints[] = {
 			FIXED_INT_PIRQ(SA_DEVFN_PEG0, PCI_INT_A, PIRQ_A),
 			FIXED_INT_PIRQ(SA_DEVFN_PEG1, PCI_INT_B, PIRQ_B),
 			FIXED_INT_PIRQ(SA_DEVFN_PEG2, PCI_INT_C, PIRQ_C),
+			/*
+			 * It looks like FSP does not apply this mapping properly to
+			 * the PEG functions. The PINx to PIRQx mapping needs to be there
+			 * in ACPI however in case PIN D is used.
+			 */
+			FIXED_INT_PIRQ(PCI_DEVFN(SA_DEV_SLOT_PEG, 3), PCI_INT_D, PIRQ_D),
 		},
 	},
 	{
@@ -53,9 +59,9 @@ static const struct slot_irq_constraints irq_constraints[] = {
 		},
 	},
 	{
-		.slot = SA_DEV_SLOT_DSP,
+		.slot = SA_DEV_SLOT_TS,
 		.fns = {
-			ANY_PIRQ(SA_DEVFN_DSP),
+			ANY_PIRQ(SA_DEVFN_TS),
 		},
 	},
 	{
@@ -581,7 +587,7 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 
 	params->Heci3Enabled = is_devfn_enabled(PCH_DEVFN_CSE_3);
 #if !CONFIG(HECI_DISABLE_USING_SMM)
-	params->Heci1Disabled = !is_devfn_enabled(PCH_DEVFN_CSE);
+	params->Heci1Disabled = CONFIG(DISABLE_HECI1_AT_PRE_BOOT);
 #endif
 	params->Device4Enable = config->Device4Enable;
 

@@ -88,12 +88,12 @@ enum {
 /* I2C Status Code */
 enum {
 	I2C_OK = 0x0000,
-	I2C_SET_SPEED_FAIL_OVER_SPEED = 0xA001,
-	I2C_TRANSFER_INVALID_LENGTH = 0xA002,
-	I2C_TRANSFER_FAIL_HS_NACKERR = 0xA003,
-	I2C_TRANSFER_FAIL_ACKERR = 0xA004,
-	I2C_TRANSFER_FAIL_TIMEOUT = 0xA005,
-	I2C_TRANSFER_INVALID_ARGUMENT = 0xA006
+	I2C_SET_SPEED_FAIL_OVER_SPEED = -0xA001,
+	I2C_TRANSFER_INVALID_LENGTH = -0xA002,
+	I2C_TRANSFER_FAIL_HS_NACKERR = -0xA003,
+	I2C_TRANSFER_FAIL_ACKERR = -0xA004,
+	I2C_TRANSFER_FAIL_TIMEOUT = -0xA005,
+	I2C_TRANSFER_INVALID_ARGUMENT = -0xA006,
 };
 
 struct mtk_i2c_ac_timing {
@@ -142,5 +142,16 @@ struct i2c_spec_values {
 extern struct mtk_i2c mtk_i2c_bus_controller[];
 const struct i2c_spec_values *mtk_i2c_get_spec(uint32_t speed);
 void mtk_i2c_dump_more_info(struct mt_i2c_regs *regs);
+
+int mtk_i2c_check_ac_timing(uint8_t bus, uint32_t clk_src,
+			    uint32_t check_speed,
+			    uint32_t step_cnt,
+			    uint32_t sample_cnt);
+int mtk_i2c_calculate_speed(uint8_t bus, uint32_t clk_src,
+			    uint32_t target_speed,
+			    uint32_t *timing_step_cnt,
+			    uint32_t *timing_sample_cnt);
+void mtk_i2c_speed_init(uint8_t bus, uint32_t speed);
+void mtk_i2c_config_timing(struct mt_i2c_regs *regs, struct mtk_i2c *bus_ctrl);
 
 #endif

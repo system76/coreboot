@@ -2,6 +2,15 @@ chip soc/intel/jasperlake
 	# MIPI display panel
 	register "DdiPortAConfig" = "2" # DdiPortMipiDsi
 
+	# Core Display Clock Frequency selection
+	register "cd_clock" = "CD_CLOCK_172_8_MHZ"
+
+	# Enable Acoustic noise mitigation and set slew rate to 1/8
+	# Rest of the parameters are 0 by default.
+	register "AcousticNoiseMitigation" = "1"
+	register "SlowSlewRate" = "SlewRateFastBy8"
+	register "FastPkgCRampDisable" = "1"
+
 	# Disable PCIe Root Port 8 (index 7)
 	register "PcieRpEnable[7]" = "0"
 	# Disable PCIe Clock Source 4 (index 3)
@@ -45,7 +54,7 @@ chip soc/intel/jasperlake
 	#|                   | for TPM communication     |
 	#|                   | before memory is up       |
 	#| I2C0              | Trackpad                  |
-	#| I2C1              | Digitizer                 |
+	#| I2C1              | Digitizer, P-sensor(LTE)  |
 	#| I2C2              | Touchscreen               |
 	#| I2C3              | Camera                    |
 	#| I2C4              | Audio                     |
@@ -200,6 +209,17 @@ chip soc/intel/jasperlake
 				register "hid_desc_reg_offset" = "0x1"
 				device i2c 0x09 on end
 			end
+			chip drivers/i2c/sx9360
+				register "desc" = ""SAR Proximity Sensor - LTE""
+				register "irq" = "ACPI_IRQ_LEVEL_LOW(GPP_E10_IRQ)"
+				register "uid" = "1"
+				register "proxraw_strength" = "1"
+				register "avg_pos_strength" = "256"
+				register "resolution" = "1024"
+				device i2c 28 on
+					probe DB_PORTS DB_PORTS_1C_1A_LTE
+				end
+			end
 		end # I2C #1
 		device pci 15.2 on
 			chip drivers/i2c/hid
@@ -208,7 +228,7 @@ chip soc/intel/jasperlake
 				register "generic.irq" = "ACPI_IRQ_LEVEL_LOW(GPP_D4_IRQ)"
 				register "generic.probed" = "1"
 				register "generic.reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_D5)"
-				register "generic.reset_delay_ms" = "120"
+				register "generic.reset_delay_ms" = "200"
 				register "generic.reset_off_delay_ms" = "2"
 				register "generic.has_power_resource" = "1"
 				register "hid_desc_reg_offset" = "0x1"

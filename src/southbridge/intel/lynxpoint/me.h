@@ -50,31 +50,37 @@
 #define  ME_HFS_ACK_GBL_RESET	6
 #define  ME_HFS_ACK_CONTINUE	7
 
-struct me_hfs {
-	u32 working_state: 4;
-	u32 mfg_mode: 1;
-	u32 fpt_bad: 1;
-	u32 operation_state: 3;
-	u32 fw_init_complete: 1;
-	u32 ft_bup_ld_flr: 1;
-	u32 update_in_progress: 1;
-	u32 error_code: 4;
-	u32 operation_mode: 4;
-	u32 reserved: 4;
-	u32 boot_options_present: 1;
-	u32 ack_data: 3;
-	u32 bios_msg_ack: 4;
-} __packed;
+union me_hfs {
+	struct __packed {
+		u32 working_state: 4;
+		u32 mfg_mode: 1;
+		u32 fpt_bad: 1;
+		u32 operation_state: 3;
+		u32 fw_init_complete: 1;
+		u32 ft_bup_ld_flr: 1;
+		u32 update_in_progress: 1;
+		u32 error_code: 4;
+		u32 operation_mode: 4;
+		u32 reserved: 4;
+		u32 boot_options_present: 1;
+		u32 ack_data: 3;
+		u32 bios_msg_ack: 4;
+	};
+	u32 raw;
+};
 
 #define PCI_ME_UMA		0x44
 
-struct me_uma {
-	u32 size: 6;
-	u32 reserved_1: 10;
-	u32 valid: 1;
-	u32 reserved_0: 14;
-	u32 set_to_one: 1;
-} __packed;
+union me_uma {
+	struct __packed {
+		u32 size: 6;
+		u32 reserved_1: 10;
+		u32 valid: 1;
+		u32 reserved_0: 14;
+		u32 set_to_one: 1;
+	};
+	u32 raw;
+};
 
 #define PCI_ME_H_GS		0x4c
 #define  ME_INIT_DONE		1
@@ -83,13 +89,16 @@ struct me_uma {
 #define  ME_INIT_STATUS_ERROR	2
 #define  ME_INIT_STATUS_SUCCESS_OTHER 3 /* SEE ME9 BWG */
 
-struct me_did {
-	u32 uma_base: 16;
-	u32 reserved: 7;
-	u32 rapid_start: 1;
-	u32 status: 4;
-	u32 init_done: 4;
-} __packed;
+union me_did {
+	struct __packed {
+		u32 uma_base: 16;
+		u32 reserved: 7;
+		u32 rapid_start: 1;
+		u32 status: 4;
+		u32 init_done: 4;
+	};
+	u32 raw;
+};
 
 /*
  * Apparently the GMES register is renamed to HFS2 (or HFSTS2 according
@@ -165,22 +174,25 @@ struct me_did {
 #define  ME_HFS2_PMEVENT_PWR_CYCLE_RESET_MOFF 0xb
 #define  ME_HFS2_PMEVENT_SXMX_SXMOFF 0xc
 
-struct me_hfs2 {
-	u32 bist_in_progress: 1;
-	u32 reserved1: 2;
-	u32 invoke_mebx: 1;
-	u32 cpu_replaced_sts: 1;
-	u32 mbp_rdy: 1;
-	u32 mfs_failure: 1;
-	u32 warm_reset_request: 1;
-	u32 cpu_replaced_valid: 1;
-	u32 reserved2: 4;
-	u32 mbp_cleared: 1;
-	u32 reserved3: 2;
-	u32 current_state: 8;
-	u32 current_pmevent: 4;
-	u32 progress_code: 4;
-} __packed;
+union me_hfs2 {
+	struct __packed {
+		u32 bist_in_progress: 1;
+		u32 reserved1: 2;
+		u32 invoke_mebx: 1;
+		u32 cpu_replaced_sts: 1;
+		u32 mbp_rdy: 1;
+		u32 mfs_failure: 1;
+		u32 warm_reset_request: 1;
+		u32 cpu_replaced_valid: 1;
+		u32 reserved2: 4;
+		u32 mbp_cleared: 1;
+		u32 reserved3: 2;
+		u32 current_state: 8;
+		u32 current_pmevent: 4;
+		u32 progress_code: 4;
+	};
+	u32 raw;
+};
 
 #define PCI_ME_H_GS2		0x70
 #define   PCI_ME_MBP_GIVE_UP	0x01
@@ -190,12 +202,15 @@ struct me_hfs2 {
 #define  PCI_ME_EXT_SHA256	0x02
 #define PCI_ME_HER(x)		(0xc0+(4*(x)))
 
-struct me_heres {
-	u32 extend_reg_algorithm: 4;
-	u32 reserved: 26;
-	u32 extend_feature_present: 1;
-	u32 extend_reg_valid: 1;
-} __packed;
+union me_heres {
+	struct __packed {
+		u32 extend_reg_algorithm: 4;
+		u32 reserved: 26;
+		u32 extend_feature_present: 1;
+		u32 extend_reg_valid: 1;
+	};
+	u32 raw;
+};
 
 /*
  * Management Engine MEI registers
@@ -206,17 +221,20 @@ struct me_heres {
 #define MEI_ME_CB_RW		0x08
 #define MEI_ME_CSR_HA		0x0c
 
-struct mei_csr {
-	u32 interrupt_enable: 1;
-	u32 interrupt_status: 1;
-	u32 interrupt_generate: 1;
-	u32 ready: 1;
-	u32 reset: 1;
-	u32 reserved: 3;
-	u32 buffer_read_ptr: 8;
-	u32 buffer_write_ptr: 8;
-	u32 buffer_depth: 8;
-} __packed;
+union mei_csr {
+	struct __packed {
+		u32 interrupt_enable: 1;
+		u32 interrupt_status: 1;
+		u32 interrupt_generate: 1;
+		u32 ready: 1;
+		u32 reset: 1;
+		u32 reserved: 3;
+		u32 buffer_read_ptr: 8;
+		u32 buffer_write_ptr: 8;
+		u32 buffer_depth: 8;
+	};
+	u32 raw;
+};
 
 #define MEI_ADDRESS_CORE	0x01
 #define MEI_ADDRESS_AMT		0x02
@@ -228,13 +246,16 @@ struct mei_csr {
 
 #define MEI_HOST_ADDRESS	0
 
-struct mei_header {
-	u32 client_address: 8;
-	u32 host_address: 8;
-	u32 length: 9;
-	u32 reserved: 6;
-	u32 is_complete: 1;
-} __packed;
+union mei_header {
+	struct __packed {
+		u32 client_address: 8;
+		u32 host_address: 8;
+		u32 length: 9;
+		u32 reserved: 6;
+		u32 is_complete: 1;
+	};
+	u32 raw;
+};
 
 #define MKHI_GROUP_ID_CBM	0x00
 #define MKHI_GROUP_ID_FWCAPS	0x03
@@ -303,17 +324,17 @@ struct me_global_reset {
 	u8 reset_type;
 } __packed;
 
-typedef enum {
+enum me_bios_path {
 	ME_NORMAL_BIOS_PATH,
 	ME_S3WAKE_BIOS_PATH,
 	ME_ERROR_BIOS_PATH,
 	ME_RECOVERY_BIOS_PATH,
 	ME_DISABLE_BIOS_PATH,
 	ME_FIRMWARE_UPDATE_BIOS_PATH,
-} me_bios_path;
+};
 
 /* Defined in me_status.c for both romstage and ramstage */
-void intel_me_status(struct me_hfs *hfs, struct me_hfs2 *hfs2);
+void intel_me_status(union me_hfs hfs, union me_hfs2 hfs2);
 
 void intel_early_me_status(void);
 int intel_early_me_init(void);
@@ -353,27 +374,30 @@ void intel_me_finalize(struct device *dev);
 #define MBP_IDENT(appid, item) \
 	MBP_MAKE_IDENT(MBP_APPID_##appid, MBP_##appid##_##item##_ITEM)
 
-typedef  struct {
-	u32  mbp_size	 : 8;
-	u32  num_entries : 8;
-	u32  rsvd	 : 16;
-} __packed mbp_header;
+union mbp_header {
+	struct __packed {
+		u32 mbp_size    : 8;
+		u32 num_entries : 8;
+		u32 rsvd        : 16;
+	};
+	u32 raw;
+};
 
-typedef struct {
+struct mbp_item_header {
 	u32  app_id  : 8;
 	u32  item_id : 8;
 	u32  length  : 8;
 	u32  rsvd    : 8;
-}  __packed mbp_item_header;
+} __packed;
 
-typedef struct {
+struct mbp_fw_version_name {
 	u32       major_version  : 16;
 	u32       minor_version  : 16;
 	u32       hotfix_version : 16;
 	u32       build_version  : 16;
-} __packed mbp_fw_version_name;
+} __packed;
 
-typedef struct {
+struct mbp_mefwcaps {
 	u32  full_net		: 1;
 	u32  std_net		: 1;
 	u32  manageability	: 1;
@@ -393,19 +417,19 @@ typedef struct {
 	u32  reserved_4		: 1;
 	u32  wlan		: 1;
 	u32  reserved_5		: 8;
-} __packed mbp_mefwcaps;
+} __packed;
 
-typedef struct {
+struct mbp_rom_bist_data {
 	u16        device_id;
 	u16        fuse_test_flags;
 	u32        umchid[4];
-}  __packed mbp_rom_bist_data;
+}  __packed;
 
-typedef struct {
+struct mbp_platform_key {
 	u32        key[8];
-} mbp_platform_key;
+};
 
-typedef struct {
+struct mbp_me_firmware_type {
 	u32 mobile:		1;
 	u32 desktop:		1;
 	u32 server:		1;
@@ -417,70 +441,70 @@ typedef struct {
 	u32 image_type:		4;
 	u32 brand:		4;
 	u32 rsvd1:		16;
-}  __packed mbp_me_firmware_type;
+} __packed;
 
-typedef struct {
-	mbp_me_firmware_type rule_data;
-	u8                   available;
-} mbp_plat_type;
+struct mbp_plat_type {
+	struct mbp_me_firmware_type rule_data;
+	u8 available;
+};
 
-typedef struct {
+struct icc_address_mask {
 	u16 icc_start_address;
 	u16 mask;
-} __packed icc_address_mask;
+} __packed;
 
-typedef struct {
-	u8        num_icc_profiles;
-	u8        icc_profile_soft_strap;
-	u8        icc_profile_index;
-	u8        reserved;
-	u32       icc_reg_bundles;
-	icc_address_mask icc_address_mask[0];
-} __packed mbp_icc_profile;
+struct mbp_icc_profile {
+	u8  num_icc_profiles;
+	u8  icc_profile_soft_strap;
+	u8  icc_profile_index;
+	u8  reserved;
+	u32 icc_reg_bundles;
+	struct icc_address_mask icc_address_mask[0];
+} __packed;
 
-typedef struct {
+struct tdt_state_flag {
 	u16  lock_state		     : 1;
 	u16  authenticate_module     : 1;
 	u16  s3authentication	     : 1;
 	u16  flash_wear_out          : 1;
 	u16  flash_variable_security : 1;
 	u16  reserved		     : 11;
-} __packed tdt_state_flag;
+} __packed;
 
-typedef struct {
-	u8           state;
-	u8           last_theft_trigger;
-	tdt_state_flag  flags;
-}  __packed mbp_at_state;
+struct mbp_at_state {
+	u8 state;
+	u8 last_theft_trigger;
+	struct tdt_state_flag flags;
+} __packed;
 
-typedef struct {
+struct mbp_plat_time {
 	u32 wake_event_mrst_time_ms;
 	u32 mrst_pltrst_time_ms;
 	u32 pltrst_cpurst_time_ms;
-} __packed mbp_plat_time;
+} __packed;
 
-typedef struct {
+struct mbp_nfc_data {
 	u32 device_type : 2;
 	u32 reserved    : 30;
-} __packed mbp_nfc_data;
+} __packed;
 
-typedef struct {
-	mbp_fw_version_name  *fw_version_name;
-	mbp_mefwcaps         *fw_capabilities;
-	mbp_rom_bist_data    *rom_bist_data;
-	mbp_platform_key     *platform_key;
-	mbp_plat_type        *fw_plat_type;
-	mbp_icc_profile	     *icc_profile;
-	mbp_at_state         *at_state;
-	u32		     *mfsintegrity;
-	mbp_plat_time        *plat_time;
-	mbp_nfc_data         *nfc_data;
-} me_bios_payload;
+struct me_bios_payload {
+	struct mbp_fw_version_name *fw_version_name;
+	struct mbp_mefwcaps        *fw_capabilities;
+	struct mbp_rom_bist_data   *rom_bist_data;
+	struct mbp_platform_key    *platform_key;
+	struct mbp_plat_type       *fw_plat_type;
+	struct mbp_icc_profile     *icc_profile;
+	struct mbp_at_state        *at_state;
+	u32                        *mfsintegrity;
+	struct mbp_plat_time       *plat_time;
+	struct mbp_nfc_data        *nfc_data;
+};
 
 struct me_fwcaps {
 	u32 id;
 	u8 length;
-	mbp_mefwcaps caps_sku;
+	struct mbp_mefwcaps caps_sku;
 	u8 reserved[3];
 } __packed;
 

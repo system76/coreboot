@@ -67,7 +67,7 @@ Device (BATX)
 		{
 			// EC Is not ready
 			Sleep (5)
-			Decrement (Local0)
+			Local0--
 			If (LEqual (Local0, Zero))
 			{
 				Break
@@ -106,7 +106,7 @@ Device (BATX)
 		//   ACPI spec     : 0 - mWh   : 1 - mAh
 		//
 		Store(SBCM, Local7)
-		XOr (Local7, One, Index (PBIF, 0))
+		XOr (Local7, One, PBIF[0])
 
 		//
 		// Information ID 0 -
@@ -119,11 +119,11 @@ Device (BATX)
 		//
 		If (Local7)
 		{
-			Multiply (SBFC, 10, Index (PBIF, 2))
+			Multiply (SBFC, 10, PBIF[2])
 		}
 		Else
 		{
-			Store (SBFC, Index (PBIF, 2))
+			Store (SBFC, PBIF[2])
 		}
 
 		//
@@ -143,24 +143,24 @@ Device (BATX)
 		{
 			Store (SBDC, Local0)
 		}
-		Store (Local0, Index(PBIF, One))
+		Store (Local0, PBIF[1])
 
 		//
 		//  Design capacity of High (5%)
 		//  Design capacity of Low (1%)
 		//
-		Divide (Local0,  20, , Index (PBIF, 5))
-		Divide (Local0, 100, , Index (PBIF, 6))
+		Divide (Local0,  20, , PBIF[5])
+		Divide (Local0, 100, , PBIF[6])
 
 		//
 		//  Design voltage
 		//
-		Store (SBDV, Index (PBIF, 4))
+		Store (SBDV, PBIF[4])
 
 		//
 		// Serial Number
 		//
-		Store (ToHexString (SBSN), Index (PBIF, 10))
+		Store (ToHexString (SBSN), PBIF[10])
 
 		//
 		// Information ID 4 -
@@ -171,7 +171,7 @@ Device (BATX)
 		//
 		//  Battery Type - Device Chemistry
 		//
-		Store (ToString (Concatenate(SBCH, 0x00)), Index (PBIF, 11))
+		Store (ToString (Concatenate(SBCH, 0x00)), PBIF[11])
 
 		//
 		// Information ID 5 -
@@ -182,7 +182,7 @@ Device (BATX)
 		//
 		// OEM Information - Manufacturer Name
 		//
-		Store (ToString (Concatenate(SBMN, 0x00)), Index (PBIF, 12))
+		Store (ToString (Concatenate(SBMN, 0x00)), PBIF[12])
 
 		//
 		// Information ID 6 -
@@ -193,7 +193,7 @@ Device (BATX)
 		//
 		// Model Number - Device Name
 		//
-		Store (ToString (Concatenate(SBDN, 0x00)), Index (PBIF, 9))
+		Store (ToString (Concatenate(SBDN, 0x00)), PBIF[9])
 
 		Return (PBIF)
 	}
@@ -255,7 +255,7 @@ Device (BATX)
 		// Flag if the battery level is critical
 		And (Local0, 0x04, Local4)
 		Or (Local1, Local4, Local1)
-		Store (Local1, Index (PBST, 0))
+		Store (Local1, PBST[0])
 
 		//
 		// 1: BATTERY PRESENT RATE/CURRENT
@@ -265,7 +265,7 @@ Device (BATX)
 		{
 			If (And (Local0, 1))
 			{
-				Subtract (0x10000, Local1, Local1)
+				Local1 = 0x10000 - Local1
 			}
 			Else
 			{
@@ -275,21 +275,21 @@ Device (BATX)
 		}
 		Else
 		{
-			If (LNot (AND (Local0, 2)))
+			If (!(AND (Local0, 2)))
 			{
 				// Battery is not charging
 				Store (Zero, Local1)
 			}
 		}
 
-		XOr (DerefOf (Index (PBIF, Zero)), One, Local6)
+		XOr (DerefOf (PBIF[0]), One, Local6)
 
 		If (Local6)
 		{
 			Multiply (ECVO, Local1, Local1)
 			Divide (Local1, 1000, , Local1)
 		}
-		Store (Local1, Index (PBST, One))
+		Store (Local1, PBST[1])
 
 		//
 		// 2: BATTERY REMAINING CAPACITY
@@ -306,7 +306,7 @@ Device (BATX)
 			Store (ECRC, Local1)
 		}
 
-		If (LAnd (BFWK, LAnd (ACPW, LNot (Local0))))
+		If (BFWK && ACPW && !Local0)
 		{
 			// On AC power and battery is neither charging
 			// nor discharging.  Linux expects a full battery
@@ -317,18 +317,17 @@ Device (BATX)
 
 			// See if within ~3% of full
 			ShiftRight (Local2, 5, Local3)
-			If (LAnd (LGreater (Local1, Subtract (Local2, Local3)),
-			          LLess (Local1, Add (Local2, Local3))))
+			If (LGreater (Local1, Local2 - Local3) && LLess (Local1, Local2 + Local3))
 			{
 				Store (Local2, Local1)
 			}
 		}
-		Store (Local1, Index (PBST, 2))
+		Store (Local1, PBST[2])
 
 		//
 		// 3: BATTERY PRESENT VOLTAGE
 		//
-		Store (ECVO, Index (PBST, 3))
+		Store (ECVO, PBST[3])
 
 		Return (PBST)
 	}

@@ -2,7 +2,6 @@
 
 #include <baseboard/gpio.h>
 #include <baseboard/variants.h>
-#include <commonlib/helpers.h>
 
 /* Early pad configuration in bootblock */
 static const struct pad_config early_gpio_table[] = {
@@ -13,6 +12,8 @@ static const struct pad_config early_gpio_table[] = {
 	PAD_CFG_NF(GPP_H11, NONE, DEEP, NF2),
 	/* A7 : MEM_STRAP_0 */
 	PAD_CFG_GPI(GPP_A7, NONE, DEEP),
+	/* A8 : EC_IN_RW_OD */
+	PAD_CFG_GPI(GPP_A8, NONE, DEEP),
 	/* A17 : MEM_CH_SEL */
 	PAD_CFG_GPI(GPP_A17, NONE, DEEP),
 	/* A19 : MEM_STRAP_2 */

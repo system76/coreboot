@@ -27,6 +27,9 @@ BOOTBLOCK_ADDR = BOOTBLOCK_END - CONFIG_C_ENV_BOOTBLOCK_SIZE;
  *                     |                                |
  *                     |      cbfs_cache (if reqd)      |
  *                     |        (CBFS_CACHE_SIZE)       |
+ *                     +--------------------------------+ VERSTAGE_ADDR + VERSTAGE_SIZE + PRERAM_CBMEM_CONSOLE_SIZE
+ *                     |      Preram CBMEM console      |
+ *                     |   (PRERAM_CBMEM_CONSOLE_SIZE)  |
  *                     +--------------------------------+ VERSTAGE_ADDR + VERSTAGE_SIZE
  *                     |                                |
  *                     |       verstage (if reqd)       |
@@ -48,11 +51,11 @@ BOOTBLOCK_ADDR = BOOTBLOCK_END - CONFIG_C_ENV_BOOTBLOCK_SIZE;
  *                     |     FMAP cache (FMAP_SIZE)     |
  *                     +--------------------------------+
  *                     | CBFS mcache (CBFS_MCACHE_SIZE) |
- *                     +--------------------------------+ PSP_SHAREDMEM_BASE + 0x40 + VB2_FIRMWARE_WORKBUF_RECOMMENDED_SIZE + PRERAM_CBMEM_CONSOLE_SIZE + 0x200
+ *                     +--------------------------------+ PSP_SHAREDMEM_BASE + 0x40 + VB2_FIRMWARE_WORKBUF_RECOMMENDED_SIZE + PRE_X86_CBMEM_CONSOLE_SIZE + 0x200
  *                     |  Early Timestamp region (512B) |
- *                     +--------------------------------+ PSP_SHAREDMEM_BASE + 0x40 + VB2_FIRMWARE_WORKBUF_RECOMMENDED_SIZE + PRERAM_CBMEM_CONSOLE_SIZE
- *                     |      Preram CBMEM console      |
- *                     |   (PRERAM_CBMEM_CONSOLE_SIZE)  |
+ *                     +--------------------------------+ PSP_SHAREDMEM_BASE + 0x40 + VB2_FIRMWARE_WORKBUF_RECOMMENDED_SIZE + PRE_X86_CBMEM_CONSOLE_SIZE
+ *                     |   PSP Verstage CBMEM console   |
+ *                     |  (PRE_X86_CBMEM_CONSOLE_SIZE)  |
  *                     +--------------------------------+ PSP_SHAREDMEM_BASE + 0x40 + VB2_FIRMWARE_WORKBUF_RECOMMENDED_SIZE
  *                     |   PSP shared (vboot workbuf)   |
  *                     |(VB2_FIRMWARE_WORKBUF_RECOMMENDED_SIZE)      |
@@ -95,9 +98,11 @@ SECTIONS
 	BOOTBLOCK(BOOTBLOCK_ADDR, CONFIG_C_ENV_BOOTBLOCK_SIZE)
 	ROMSTAGE(CONFIG_ROMSTAGE_ADDR, CONFIG_ROMSTAGE_SIZE)
 	REGION(fspm, CONFIG_FSP_M_ADDR, CONFIG_FSP_M_SIZE, 1)
-#if CONFIG(VBOOT_SEPARATE_VERSTAGE)
+#if CONFIG(VBOOT_SEPARATE_VERSTAGE) && !CONFIG(VBOOT_STARTS_BEFORE_BOOTBLOCK)
 	VERSTAGE(CONFIG_VERSTAGE_ADDR, CONFIG_VERSTAGE_SIZE)
 #endif
+
+        PRERAM_CBMEM_CONSOLE(., CONFIG_PRERAM_CBMEM_CONSOLE_SIZE)
 
 #if CONFIG_CBFS_CACHE_SIZE > 0
         . = ALIGN(ARCH_CACHELINE_ALIGN_SIZE);
@@ -105,16 +110,6 @@ SECTIONS
 #endif
 
 	EARLY_RESERVED_DRAM_END(.)
-
-#if CONFIG(PAYLOAD_PRELOAD)
-        /*
-         * This section is outside the early_reserved_dram section. We only read
-         * the payload on non-S3 boots, so we don't need to reserve it from the
-         * OS. The 64 byte alignment is required by the SPI DMA controller.
-         */
-        . = ALIGN(ARCH_CACHELINE_ALIGN_SIZE);
-        REGION(payload_preload_cache, ., CONFIG_PAYLOAD_PRELOAD_CACHE_SIZE, ARCH_CACHELINE_ALIGN_SIZE)
-#endif
 
 	RAMSTAGE(CONFIG_RAMBASE, 8M)
 }

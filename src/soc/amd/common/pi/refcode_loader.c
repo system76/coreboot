@@ -1,9 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#include <acpi/acpi.h>
 #include <cbfs.h>
 #include <cbmem.h>
-#include <console/console.h>
 #include <rmodule.h>
 #include <stage_cache.h>
 #include <amdblocks/agesawrapper.h>

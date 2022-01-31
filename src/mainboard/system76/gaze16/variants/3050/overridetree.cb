@@ -13,8 +13,7 @@ chip soc/intel/tigerlake
 				register "enable_off_delay_ms" = "4"
 				register "reset_delay_ms" = "10"
 				register "reset_off_delay_ms" = "4"
-				# TODO: Support disable/enable CPU RP clock
-				register "srcclk_pin" = "-1" # GFX_CLKREQ0#
+				register "srcclk_pin" = "0" # GFX_CLKREQ0#
 				device generic 0 on end
 			end
 
@@ -69,6 +68,7 @@ chip soc/intel/tigerlake
 			register "PcieRpLtrEnable[7]" = "1"
 			register "PcieClkSrcUsage[8]" = "7"
 			register "PcieClkSrcClkReq[8]" = "8"
+			register "PcieRpSlotImplemented[7]" = "1"
 		end
 		device ref pcie_rp9 on
 			# PCIe root port #9 x4, Clock 9 (SSD1)
@@ -76,6 +76,7 @@ chip soc/intel/tigerlake
 			register "PcieRpLtrEnable[8]" = "1"
 			register "PcieClkSrcUsage[9]" = "8"
 			register "PcieClkSrcClkReq[9]" = "9"
+			register "PcieRpSlotImplemented[8]" = "1"
 		end
 	end
 end

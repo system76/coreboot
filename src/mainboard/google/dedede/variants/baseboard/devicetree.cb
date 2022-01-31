@@ -10,6 +10,10 @@ fw_config
 		option DB_PORTS_1C 7
 		option DB_PORTS_1A_HDMI_LTE 8
 	end
+	field STYLUS 4
+		option STYLUS_ABSENT 0
+		option STYLUS_PRESENT 1
+	end
         field TABLETMODE 10
                 option TABLETMODE_DISABLED 0
                 option TABLETMODE_ENABLED 1
@@ -198,9 +202,6 @@ chip soc/intel/jasperlake
 	#       - PM_CFG.SLP_A_MIN_ASST_WDTH (PchPmSlpAMinAssert)
 	#       - PM_CFG.SLP_LAN_MIN_ASST_WDTH
 	register "PchPmPwrCycDur" = "1"       # 1s
-
-	# Enable HECI
-	register "HeciEnabled" = "1"
 
 	# Set xHCI LFPS period sampling off time, the default is 9ms.
 	register "xhci_lfps_sampling_offtime_ms" = "9"

@@ -12,7 +12,7 @@ Scope(\_TZ)
 	Method(C2K, 1, NotSerialized)
 	{
 		Multiply(Arg0, 10, Local0)
-		Add (Local0, 2732, Local0)
+		Local0 += 2732
 		if (LLessEqual(Local0, 2732)) {
 			Return (3000)
 		}
@@ -73,7 +73,7 @@ External (\PPKG, MethodObj)
 		Method(_TMP) {
 #if defined(EC_LENOVO_H8_ME_WORKAROUND)
 			/* Avoid tripping alarm if ME isn't booted at all yet */
-			If (LAnd (LNot (MEB1), LEqual (\_SB.PCI0.LPCB.EC.TMP0, 128))) {
+			If (!MEB1 && LEqual (\_SB.PCI0.LPCB.EC.TMP0, 128)) {
 				Return (C2K(40))
 			}
 			Store (1, MEB1)
@@ -85,11 +85,11 @@ External (\PPKG, MethodObj)
 			Store (GPSV (), Local0)
 
 			/* Active fan 10 degree below passive threshold */
-			Subtract (Local0, 10, Local0)
+			Local0 -= 10
 
 			If (\FLVL) {
 				/* Turn of 5 degree below trip point */
-				Subtract (Local0, 5, Local0)
+				Local0 -= 5
 			}
 
 			Return (C2K (Local0))
@@ -160,7 +160,7 @@ External (\PPKG, MethodObj)
 		Method(_TMP) {
 #if defined(EC_LENOVO_H8_ME_WORKAROUND)
 			/* Avoid tripping alarm if ME isn't booted at all yet */
-			If (LAnd (LNot (MEB2), LEqual (\_SB.PCI0.LPCB.EC.TMP1, 128))) {
+			If (!MEB2 && LEqual (\_SB.PCI0.LPCB.EC.TMP1, 128)) {
 				Return (C2K(40))
 			}
 			Store (1, MEB2)

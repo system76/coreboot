@@ -16,7 +16,7 @@ config SOC_SPECIFIC_OPTIONS
 	select ARCH_RAMSTAGE_X86_32
 	select ARCH_X86
 	select BOOT_DEVICE_SUPPORTS_WRITES if BOOT_DEVICE_SPI_FLASH
-	select CPU_INFO_V2
+	select CONSOLE_CBMEM_PRINT_PRE_BOOTBLOCK_CONTENTS if VBOOT_STARTS_BEFORE_BOOTBLOCK
 	select DRIVERS_USB_ACPI
 	select DRIVERS_I2C_DESIGNWARE
 	select DRIVERS_USB_PCI_XHCI
@@ -72,8 +72,9 @@ config SOC_SPECIFIC_OPTIONS
 	select SOC_AMD_COMMON_FSP_PCI
 	select SSE2
 	select UDK_2017_BINDING
+	select VBOOT_DEFINE_WIDEVINE_COUNTERS if VBOOT_STARTS_BEFORE_BOOTBLOCK
 	select X86_AMD_FIXED_MTRRS
-	select X86_AMD_INIT_SIPI
+	select X86_INIT_NEED_1_SIPI
 
 config ARCH_ALL_STAGES_X86
 	default n
@@ -127,9 +128,15 @@ config PSP_SHAREDMEM_SIZE
 	  started.  The workbuf's base depends on the address of the reset
 	  vector.
 
-config PRERAM_CBMEM_CONSOLE_SIZE
+config PRE_X86_CBMEM_CONSOLE_SIZE
 	hex
 	default 0x1600
+	help
+	  Size of the CBMEM console used in PSP verstage.
+
+config PRERAM_CBMEM_CONSOLE_SIZE
+	hex
+	default 0x2000
 	help
 	  Increase this value if preram cbmem console is getting truncated
 
@@ -197,7 +204,6 @@ config ASYNC_FILE_LOADING
 	select COOP_MULTITASKING
 	select SOC_AMD_COMMON_BLOCK_LPC_SPI_DMA
 	select CBFS_PRELOAD
-	select PAYLOAD_PRELOAD
 	help
 	  When enabled, the platform will use the LPC SPI DMA controller to
 	  asynchronously load contents from the SPI ROM. This will improve

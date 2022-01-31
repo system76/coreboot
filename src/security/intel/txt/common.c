@@ -16,6 +16,9 @@
 #if CONFIG(SOC_INTEL_COMMON_BLOCK_SA)
 #include <soc/intel/common/reset.h>
 #else
+#if CONFIG(SOUTHBRIDGE_INTEL_COMMON_ME)
+#include <southbridge/intel/common/me.h>
+#endif
 #include <cf9_reset.h>
 #endif
 
@@ -24,11 +27,14 @@
 #include "txt_getsec.h"
 
 /* Usual security practice: if an unexpected error happens, reboot */
-static void __noreturn txt_reset_platform(void)
+void __noreturn txt_reset_platform(void)
 {
 #if CONFIG(SOC_INTEL_COMMON_BLOCK_SA)
 	global_reset();
 #else
+#if CONFIG(SOUTHBRIDGE_INTEL_COMMON_ME)
+	set_global_reset(1);
+#endif
 	full_reset();
 #endif
 }
@@ -141,6 +147,22 @@ bool intel_txt_memory_has_secrets(void)
 	return ret;
 }
 
+bool intel_txt_chipset_is_production_fused(void)
+{
+	/*
+	 * Certain chipsets report production fused information in either
+	 * TXT.VER.FSBIF or TXT.VER.EMIF/TXT.VER.QPIIF.
+	 * Chapter B.1.7 and B.1.9
+	 * Intel TXT Software Development Guide (Document: 315168-015)
+	 */
+	uint32_t reg = read32((void *)TXT_VER_FSBIF);
+
+	if (reg == 0 || reg == UINT32_MAX)
+		reg = read32((void *)TXT_VER_QPIIF);
+
+	return (reg & TXT_VER_PRODUCTION_FUSED) ? true : false;
+}
+
 static struct acm_info_table *find_info_table(const void *ptr)
 {
 	const struct acm_header_v0 *acm_header = (struct acm_header_v0 *)ptr;
@@ -203,8 +225,8 @@ static int validate_acm(const void *ptr)
 	if (memcmp(acm_uuid, info->uuid, sizeof(acm_uuid)) != 0)
 		return ACM_E_UUID_NOT_MATCH;
 
-	if ((acm_header->flags & ACM_FORMAT_FLAGS_DEBUG) ==
-	    (read64((void *)TXT_VER_FSBIF) & TXT_VER_PRODUCTION_FUSED))
+	const bool production_acm = !(acm_header->flags & ACM_FORMAT_FLAGS_DEBUG);
+	if (production_acm != intel_txt_chipset_is_production_fused())
 		return ACM_E_PLATFORM_IS_NOT_PROD;
 
 	return 0;
@@ -214,11 +236,11 @@ static int validate_acm(const void *ptr)
  * Prepare to run the BIOS ACM: mmap it from the CBFS and verify that it
  * can be launched. Returns pointer to ACM on success, NULL on failure.
  */
-static void *intel_txt_prepare_bios_acm(struct region_device *acm, size_t *acm_len)
+static void *intel_txt_prepare_bios_acm(size_t *acm_len)
 {
 	void *acm_data = NULL;
 
-	if (!acm || !acm_len)
+	if (!acm_len)
 		return NULL;
 
 	acm_data = cbfs_map(CONFIG_INTEL_TXT_CBFS_BIOS_ACM, acm_len);
@@ -291,10 +313,9 @@ static void *intel_txt_prepare_bios_acm(struct region_device *acm, size_t *acm_l
 /* Returns on failure, resets the computer on success */
 void intel_txt_run_sclean(void)
 {
-	struct region_device acm;
 	size_t acm_len;
 
-	void *acm_data = intel_txt_prepare_bios_acm(&acm, &acm_len);
+	void *acm_data = intel_txt_prepare_bios_acm(&acm_len);
 
 	if (!acm_data)
 		return;
@@ -322,7 +343,7 @@ void intel_txt_run_sclean(void)
 	 */
 	printk(BIOS_CRIT, "TEE-TXT: getsec_sclean could not launch the BIOS ACM.\n");
 
-	rdev_munmap(&acm, acm_data);
+	cbfs_unmap(acm_data);
 }
 
 /*
@@ -332,10 +353,9 @@ void intel_txt_run_sclean(void)
  */
 int intel_txt_run_bios_acm(const u8 input_params)
 {
-	struct region_device acm;
 	size_t acm_len;
 
-	void *acm_data = intel_txt_prepare_bios_acm(&acm, &acm_len);
+	void *acm_data = intel_txt_prepare_bios_acm(&acm_len);
 
 	if (!acm_data)
 		return -1;
@@ -343,7 +363,7 @@ int intel_txt_run_bios_acm(const u8 input_params)
 	/* Call into assembly which invokes the referenced ACM */
 	getsec_enteraccs(input_params, (uintptr_t)acm_data, acm_len);
 
-	rdev_munmap(&acm, acm_data);
+	cbfs_unmap(acm_data);
 
 	const uint64_t acm_status = read64((void *)TXT_SPAD);
 	if (acm_status & ACMERROR_TXT_VALID) {
@@ -427,6 +447,10 @@ bool intel_txt_prepare_txt_env(void)
 	printk(BIOS_DEBUG, " SENTER available:     %s\n", (eax & BIT(4)) ? "true" : "false");
 	printk(BIOS_DEBUG, " SEXIT available:      %s\n", (eax & BIT(5)) ? "true" : "false");
 	printk(BIOS_DEBUG, " PARAMETERS available: %s\n", (eax & BIT(6)) ? "true" : "false");
+	printk(BIOS_DEBUG, " SMCTRL available:     %s\n", (eax & BIT(7)) ? "true" : "false");
+	printk(BIOS_DEBUG, " WAKEUP available:     %s\n", (eax & BIT(8)) ? "true" : "false");
+
+	txt_dump_getsec_parameters();
 
 	/*
 	 * Causes #GP if function is not supported by getsec.

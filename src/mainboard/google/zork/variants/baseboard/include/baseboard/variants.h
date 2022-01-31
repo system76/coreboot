@@ -7,8 +7,8 @@
 #include <boardid.h>
 #include <ec/google/chromeec/ec.h>
 #include <FspmUpd.h>
+#include <soc/amd/picasso/chip.h>
 #include <soc/platform_descriptors.h>
-#include "chip.h"
 
 const struct soc_amd_gpio *variant_early_gpio_table(size_t *size);
 /*
@@ -32,6 +32,12 @@ const struct soc_amd_gpio *variant_bootblock_gpio_table(size_t *size, int slp_ty
  * sleep.
  */
 const struct soc_amd_gpio *variant_sleep_gpio_table(size_t *size, int slp_typ);
+
+/* This function provides GPIO settings for eSPI bus. */
+const struct soc_amd_gpio *variant_espi_gpio_table(size_t *size);
+
+/* This function provides GPIO settings for TPM i2c bus. */
+const struct soc_amd_gpio *variant_tpm_gpio_table(size_t *size);
 
 void variant_updm_update(FSP_M_CONFIG *mcfg);
 

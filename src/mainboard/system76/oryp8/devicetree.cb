@@ -99,8 +99,7 @@ chip soc/intel/tigerlake
 				register "enable_off_delay_ms" = "4"
 				register "reset_delay_ms" = "10"
 				register "reset_off_delay_ms" = "4"
-				# TODO: Support disable/enable CPU RP clock
-				register "srcclk_pin" = "-1" # PEG_CLKREQ#
+				register "srcclk_pin" = "9" # PEG_CLKREQ#
 				device generic 0 on end
 			end
 
@@ -117,9 +116,7 @@ chip soc/intel/tigerlake
 			register "DdiPortAHpd" = "1"
 			register "DdiPortADdc" = "0"
 		end
-		device ref dptf on
-			register "Device4Enable" = "1"
-		end
+		device ref dptf on end
 		device ref peg0 on
 			# PCIe PEG0 x4, Clock 7 (SSD1)
 			register "PcieClkSrcUsage[7]" = "0x40"
@@ -197,6 +194,7 @@ chip soc/intel/tigerlake
 			register "PcieRpLtrEnable[7]" = "1"
 			register "PcieClkSrcUsage[2]" = "7"
 			register "PcieClkSrcClkReq[2]" = "2"
+			register "PcieRpSlotImplemented[7]" = "1"
 		end
 		device ref pcie_rp9 on
 			# PCIe root port #9 x4, Clock 6 (SSD2)
@@ -204,6 +202,7 @@ chip soc/intel/tigerlake
 			register "PcieRpLtrEnable[8]" = "1"
 			register "PcieClkSrcUsage[6]" = "8"
 			register "PcieClkSrcClkReq[6]" = "6"
+			register "PcieRpSlotImplemented[8]" = "1"
 		end
 		device ref pch_espi on
 			register "gen1_dec" = "0x00040069" # EC PM channel
@@ -219,7 +218,6 @@ chip soc/intel/tigerlake
 			register "PchHdaAudioLinkHdaEnable" = "1"
 		end
 		device ref smbus on
-			register "SmbusEnable" = "1"
 			chip drivers/i2c/tas5825m
 				register "id" = "0"
 				device i2c 4e on end # (8bit address: 0x9c)

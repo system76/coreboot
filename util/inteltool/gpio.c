@@ -173,7 +173,7 @@ static const io_register_t ich10_gpio_registers[] = {
 	{ 0x3C, 4, "RESERVED" },
 	{ 0x40, 4, "GPIO_USE_SEL3" },
 	{ 0x44, 4, "GP_IO_SEL3" },
-	{ 0x48, 4, "GPIO_LVL3" },
+	{ 0x48, 4, "GP_LVL3" },
 	{ 0x4c, 4, "RESERVED" },
 	{ 0x50, 4, "RESERVED" },
 	{ 0x54, 4, "RESERVED" },
@@ -227,7 +227,7 @@ static const io_register_t pch_gpio_registers[] = {
 	{ 0x3c, 4, "RESERVED" },
 	{ 0x40, 4, "GPIO_USE_SEL3" },
 	{ 0x44, 4, "GP_IO_SEL3" },
-	{ 0x48, 4, "GPIO_LVL3" },
+	{ 0x48, 4, "GP_LVL3" },
 	{ 0x4c, 4, "RESERVED" },
 	{ 0x50, 4, "RESERVED" },
 	{ 0x54, 4, "RESERVED" },
@@ -943,6 +943,7 @@ int print_gpios(struct pci_dev *sb, int show_all, int show_diffs)
 		defaults_size = ARRAY_SIZE(pp_pch_mobile_defaults);
 		break;
 	case PCI_DEVICE_ID_INTEL_ICH10:
+	case PCI_DEVICE_ID_INTEL_ICH10D:
 	case PCI_DEVICE_ID_INTEL_ICH10DO:
 	case PCI_DEVICE_ID_INTEL_ICH10R:
 		gpiobase = pci_read_word(sb, 0x48) & 0xfffc;

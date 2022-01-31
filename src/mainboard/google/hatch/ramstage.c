@@ -1,12 +1,10 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#include <acpi/acpi.h>
 #include <baseboard/variants.h>
 #include <ec/ec.h>
 #include <soc/gpio.h>
 #include <soc/ramstage.h>
 #include <variant/gpio.h>
-#include <vendorcode/google/chromeos/chromeos.h>
 
 void mainboard_silicon_init_params(FSPS_UPD *supd)
 {
@@ -36,7 +34,6 @@ static void mainboard_init(struct device *dev)
 static void mainboard_enable(struct device *dev)
 {
 	dev->ops->init = mainboard_init;
-	dev->ops->acpi_inject_dsdt = chromeos_dsdt_generator;
 	variant_mainboard_enable(dev);
 }
 

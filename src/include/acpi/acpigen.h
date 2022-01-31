@@ -235,6 +235,8 @@ struct dsm_uuid {
 #define CPPC_VERSION_2	2
 #define CPPC_VERSION_3	3
 
+#define CPPC_PACKAGE_NAME "GCPC"
+
 /*version 1 has 15 fields, version 2 has 19, and version 3 has 21 */
 enum cppc_fields {
 	CPPC_HIGHEST_PERF, /* can be DWORD */
@@ -297,6 +299,8 @@ struct cppc_config {
 	 */
 	cppc_entry_t entries[CPPC_MAX_FIELDS_VER_3];
 };
+
+#define ACPI_MUTEX_NO_TIMEOUT		0xffff
 
 void acpigen_write_return_integer(uint64_t arg);
 void acpigen_write_return_namestr(const char *arg);

@@ -32,10 +32,14 @@ fw_config
 end
 chip soc/intel/alderlake
 	register "SaGv" = "SaGv_Enabled"
-
 	register "CnviBtAudioOffload" = "true"
 	# FIVR RFI Spread Spectrum 6%
 	register "FivrSpreadSpectrum" = "FIVR_SS_6"
+
+	# Acoustic settings
+	register "AcousticNoiseMitigation" = "1"
+	register "SlowSlewRate[VR_DOMAIN_IA]" = "SLEW_FAST_8"
+	register "FastPkgCRampDisable[VR_DOMAIN_IA]" = "1"
 
 	# Intel Common SoC Config
 	#+-------------------+---------------------------+
@@ -43,36 +47,53 @@ chip soc/intel/alderlake
 	#+-------------------+---------------------------+
 	#| GSPI1             | Fingerprint MCU           |
 	#| I2C0              | Audio                     |
-	#| I2C1              | Touchscreen               |
-	#| I2C2              |                           |
-	#| I2C3              | cr50 TPM. Early init is   |
+	#| I2C1              | cr50 TPM. Early init is   |
 	#|                   | required to set up a BAR  |
 	#|                   | for TPM communication     |
+	#| I2C3              | TouchScreen               |
 	#| I2C5              | Trackpad                  |
 	#+-------------------+---------------------------+
 	register "common_soc_config" = "{
 		.i2c[0] = {
 			.speed = I2C_SPEED_FAST,
+			.rise_time_ns = 650,
+			.fall_time_ns = 400,
+			.data_hold_time_ns = 50,
 		},
 		.i2c[1] = {
+			.early_init = 1,
 			.speed = I2C_SPEED_FAST,
+			.rise_time_ns = 600,
+			.fall_time_ns = 400,
+			.data_hold_time_ns = 50,
 		},
 		.i2c[2] = {
 			.speed = I2C_SPEED_FAST,
+			.rise_time_ns = 650,
+			.fall_time_ns = 400,
+			.data_hold_time_ns = 50,
 		},
 		.i2c[3] = {
-			.early_init = 1,
 			.speed = I2C_SPEED_FAST,
+			.rise_time_ns = 650,
+			.fall_time_ns = 400,
+			.data_hold_time_ns = 50,
 		},
 		.i2c[5] = {
 			.speed = I2C_SPEED_FAST,
+			.rise_time_ns = 650,
+			.fall_time_ns = 400,
+			.data_hold_time_ns = 50,
 		},
 	}"
+	register "tcc_offset" = "3"  # TCC of 97C
 	device domain 0 on
 		device ref igpu on
 			chip drivers/gfx/generic
 				register "device_count" = "1"
 				register "device[0].name" = ""LCD""
+				# Use Chrome OS privacy screen _HID
+				register "device[0].hid" = ""GOOG0010""
 				# Internal panel on the first port of the graphics chip
 				register "device[0].addr" = "0x80010400"
 				register "device[0].privacy.enabled" = "1"
@@ -86,13 +107,18 @@ chip soc/intel/alderlake
 			chip drivers/intel/dptf
 				## sensor information
 				register "options.tsr[0].desc" = ""DRAM""
-				register "options.tsr[1].desc" = ""Charger""
+				register "options.tsr[1].desc" = ""SOC""
+				register "options.tsr[2].desc" = ""Charger""
+				register "options.tsr[3].desc" = ""5V regulator""
+
 				# TODO: below values are initial reference values only
 				## Passive Policy
 				register "policies.passive" = "{
 					[0] = DPTF_PASSIVE(CPU,         CPU,           55, 5000),
 					[1] = DPTF_PASSIVE(CPU,         TEMP_SENSOR_0, 45, 5000),
-					[2] = DPTF_PASSIVE(CHARGER,     TEMP_SENSOR_1, 51, 5000),
+					[2] = DPTF_PASSIVE(CPU,         TEMP_SENSOR_1, 51, 5000),
+					[3] = DPTF_PASSIVE(CHARGER,     TEMP_SENSOR_2, 51, 5000),
+					[4] = DPTF_PASSIVE(CPU,         TEMP_SENSOR_3, 51, 5000),
 				}"
 				register "controls.power_limits" = "{
 					.pl1 = {
@@ -185,7 +211,7 @@ chip soc/intel/alderlake
 				register "name" = ""MXW0""
 				register "r0_calib_key" = ""dsm_calib_r0_0""
 				register "temperature_calib_key" = ""dsm_calib_temp_0""
-				register "dsm_param_file_name" = ""dsm_param""
+				register "dsm_param_file_name" = ""dsm_param_R""
 				register "vmon_slot_no" = "0"
 				register "imon_slot_no" = "1"
 				device i2c 0x3a on
@@ -198,7 +224,7 @@ chip soc/intel/alderlake
 				register "name" = ""MXW1""
 				register "r0_calib_key" = ""dsm_calib_r0_1""
 				register "temperature_calib_key" = ""dsm_calib_temp_1""
-				register "dsm_param_file_name" = ""dsm_param""
+				register "dsm_param_file_name" = ""dsm_param_L""
 				register "vmon_slot_no" = "1"
 				register "imon_slot_no" = "0"
 				device i2c 0x3b on
@@ -211,7 +237,7 @@ chip soc/intel/alderlake
 				register "name" = ""MXW2""
 				register "r0_calib_key" = ""dsm_calib_r0_2""
 				register "temperature_calib_key" = ""dsm_calib_temp_2""
-				register "dsm_param_file_name" = ""dsm_param_tt""
+				register "dsm_param_file_name" = ""dsm_param_tt_R""
 				register "vmon_slot_no" = "2"
 				register "imon_slot_no" = "3"
 				device i2c 0x38 on
@@ -224,7 +250,7 @@ chip soc/intel/alderlake
 				register "name" = ""MXW3""
 				register "r0_calib_key" = ""dsm_calib_r0_3""
 				register "temperature_calib_key" = ""dsm_calib_temp_3""
-				register "dsm_param_file_name" = ""dsm_param_tt""
+				register "dsm_param_file_name" = ""dsm_param_tt_L""
 				register "vmon_slot_no" = "3"
 				register "imon_slot_no" = "2"
 				device i2c 0x39 on
@@ -233,24 +259,10 @@ chip soc/intel/alderlake
 			end
 		end #I2C0
 		device ref i2c1 on
-			chip drivers/i2c/hid
-				register "generic.hid" = ""ELAN2513""
-				register "generic.desc" = ""ELAN Touchscreen""
-				register "generic.irq" = "ACPI_IRQ_LEVEL_LOW(GPP_C7_IRQ)"
-				register "generic.probed" = "1"
-				register "generic.reset_gpio" =
-							"ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_C1)"
-				register "generic.reset_delay_ms" = "300"
-				register "generic.reset_off_delay_ms" = "1"
-				register "generic.enable_gpio" =
-							"ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_C0)"
-				register "generic.enable_delay_ms" = "6"
-				register "generic.stop_gpio" =
-							"ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_C6)"
-				register "generic.stop_off_delay_ms" = "1"
-				register "generic.has_power_resource" = "1"
-				register "hid_desc_reg_offset" = "0x01"
-				device i2c 0x15 on end
+			chip drivers/i2c/tpm
+				register "hid" = ""GOOG0005""
+				register "irq" = "ACPI_IRQ_EDGE_LOW(GPP_A13_IRQ)"
+				device i2c 50 on end
 			end
 		end
 		device ref i2c2 on
@@ -266,6 +278,7 @@ chip soc/intel/alderlake
 				register "num_freq_entries" = "1"
 				register "link_freq[0]" = "DEFAULT_LINK_FREQ"
 				register "remote_name" = ""IPU0""
+				register "max_dstate_for_probe" = "ACPI_DEVICE_SLEEP_D3_COLD"
 
 				register "has_power_resource" = "1"
 				#Controls
@@ -301,6 +314,7 @@ chip soc/intel/alderlake
 				register "acpi_name" = ""CAM0""
 				register "chip_name" = ""Hi-556 Camera""
 				register "device_type" = "INTEL_ACPI_CAMERA_SENSOR"
+				register "max_dstate_for_probe" = "ACPI_DEVICE_SLEEP_D3_COLD"
 
 				register "ssdb.lanes_used" = "2"
 				register "ssdb.link_used" = "1"
@@ -341,8 +355,19 @@ chip soc/intel/alderlake
 				register "acpi_name" = ""NVM0""
 				register "chip_name" = ""M24C64X""
 				register "device_type" = "INTEL_ACPI_CAMERA_NVM"
+				register "max_dstate_for_probe" = "ACPI_DEVICE_SLEEP_D0"
 
-				register "pr0" = ""\\_SB.PCI0.I2C2.CAM0.PRIC""
+				register "has_power_resource" = "1"
+				#Controls
+				register "gpio_panel.gpio[0].gpio_num" = "GPP_D16" #EN_UCAM_PWR
+
+				#_ON
+				register "on_seq.ops_cnt" = "1"
+				register "on_seq.ops[0]" = "SEQ_OPS_GPIO_ENABLE(0, 0)"
+
+				#_OFF
+				register "off_seq.ops_cnt" = "1"
+				register "off_seq.ops[0]" = "SEQ_OPS_GPIO_DISABLE(0, 0)"
 
 				register "nvm_size" = "0x2000"
 				register "nvm_pagesize" = "1"
@@ -352,6 +377,28 @@ chip soc/intel/alderlake
 				device i2c 50 on end
 			end
 
+		end
+		device ref i2c3 on
+			chip drivers/i2c/hid
+				register "generic.hid" = ""ELAN2513""
+				register "generic.desc" = ""ELAN Touchscreen""
+				register "generic.irq" = "ACPI_IRQ_LEVEL_LOW(GPP_C7_IRQ)"
+				register "generic.probed" = "1"
+				register "generic.reset_gpio" =
+							"ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_C1)"
+				register "generic.reset_delay_ms" = "300"
+				register "generic.reset_off_delay_ms" = "1"
+				register "generic.enable_gpio" =
+							"ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_C0)"
+				register "generic.enable_delay_ms" = "6"
+				register "generic.stop_gpio" =
+							"ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_C6)"
+				register "generic.stop_off_delay_ms" = "1"
+				register "generic.has_power_resource" = "1"
+				register "generic.disable_gpio_export_in_crs" = "1"
+				register "hid_desc_reg_offset" = "0x01"
+				device i2c 0x15 on end
+			end
 		end
 		device ref i2c5 on
 			chip drivers/i2c/generic
@@ -398,13 +445,13 @@ chip soc/intel/alderlake
 			chip drivers/intel/pmc_mux
 				device generic 0 on
 					chip drivers/intel/pmc_mux/conn
-						register "usb2_port_number" = "1"
-						register "usb3_port_number" = "1"
+						use usb2_port1 as usb2_port
+						use tcss_usb3_port1 as usb3_port
 						device generic 0 alias conn0 on end
 					end
 					chip drivers/intel/pmc_mux/conn
-						register "usb2_port_number" = "3"
-						register "usb3_port_number" = "3"
+						use usb2_port3 as usb2_port
+						use tcss_usb3_port3 as usb3_port
 						device generic 1 alias conn1 on end
 					end
 				end

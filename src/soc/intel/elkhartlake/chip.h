@@ -23,6 +23,7 @@
 #define MAX_HD_AUDIO_DMIC_LINKS	2
 #define MAX_HD_AUDIO_SNDW_LINKS	4
 #define MAX_HD_AUDIO_SSP_LINKS	6
+#define MAX_PSE_TSN_PORTS	2
 
 /* Define config parameters for In-Band ECC (IBECC). */
 #define MAX_IBECC_REGIONS	8
@@ -46,6 +47,25 @@ struct ehl_ibecc_config {
 enum tsn_gbe_link_speed {
 	Tsn_2_5_Gbps,
 	Tsn_1_Gbps,
+};
+
+/* TSN Phy Interface Type: 1: RGMII, 2: SGMII, 3:SGMII+ */
+enum tsn_phy_type {
+	RGMII		= 1,
+	SGMII		= 2,
+	SGMII_plus	= 3,
+};
+
+/*
+ * PSE native pins and ownership assignment:-
+ * 0: Disable/pins are not owned by PSE/host
+ * 1: Pins are muxed to PSE IP, the IO is owned by PSE
+ * 2: Pins are muxed to PSE IP, the IO is owned by host
+ */
+enum pse_device_ownership {
+	Device_Disabled,
+	PSE_Owned,
+	Host_Owned,
 };
 
 /*
@@ -225,10 +245,6 @@ struct soc_intel_elkhartlake_config {
 	uint8_t SkipExtGfxScan;
 
 	uint8_t Device4Enable;
-
-	/* HeciEnabled decides the state of Heci1 at end of boot
-	 * Setting to 0 (default) disables Heci1 and hides the device from OS */
-	uint8_t HeciEnabled;
 
 	/* Enable/Disable EIST. 1b:Enabled, 0b:Disabled */
 	uint8_t eist_enable;
@@ -450,13 +466,59 @@ struct soc_intel_elkhartlake_config {
 	 */
 	u8 PchPmPwrBtnOverridePeriod;
 
-	/* GBE related */
-	/* PCH TSN GBE Link Speed: 0: 2.5Gbps, 1: 1Gbps */
+	/* GBE related (PCH & PSE) */
+	/* TSN GBE Link Speed: 0: 2.5Gbps, 1: 1Gbps */
 	enum tsn_gbe_link_speed PchTsnGbeLinkSpeed;
-	/* PCH TSN GBE SGMII Support: Disable (0) / Enable (1) */
+	enum tsn_gbe_link_speed PseTsnGbeLinkSpeed[MAX_PSE_TSN_PORTS];
+	/* TSN GBE SGMII Support: Disable (0) / Enable (1) */
 	bool PchTsnGbeSgmiiEnable;
-	/* PCH TSN GBE Multiple Virtual Channel: Disable (0) / Enable (1) */
+	bool PseTsnGbeSgmiiEnable[MAX_PSE_TSN_PORTS];
+	/* TSN GBE Multiple Virtual Channel: Disable (0) / Enable (1) */
 	bool PchTsnGbeMultiVcEnable;
+	bool PseTsnGbeMultiVcEnable[MAX_PSE_TSN_PORTS];
+	/* PSE TSN Phy Interface Type */
+	enum tsn_phy_type PseTsnGbePhyType[MAX_PSE_TSN_PORTS];
+
+	/* PSE related */
+	/*
+	 * PSE (Intel Programmable Services Engine) native pins and ownership
+	 * assignment. If the device is configured as 'PSE owned', PSE will have
+	 * full control of specific device and it will be hidden from coreboot
+	 * and OS. If the device is configured as 'Host owned', the device will
+	 * be visible to coreboot and OS as a PCI device, while PSE will still
+	 * do some IP initialization and pin assignment works.
+	 *
+	 * PSE is still required during runtime to ensure any of PSE devices
+	 * works properly.
+	 */
+	enum pse_device_ownership PseDmaOwn[3];
+	enum pse_device_ownership PseUartOwn[6];
+	enum pse_device_ownership PseHsuartOwn[4];
+	enum pse_device_ownership PseQepOwn[4];
+	enum pse_device_ownership PseI2cOwn[8];
+	enum pse_device_ownership PseI2sOwn[2];
+	enum pse_device_ownership PseSpiOwn[4];
+	enum pse_device_ownership PseSpiCs0Own[4];
+	enum pse_device_ownership PseSpiCs1Own[4];
+	enum pse_device_ownership PseCanOwn[2];
+	enum pse_device_ownership PsePwmOwn;
+	enum pse_device_ownership PseAdcOwn;
+	enum pse_device_ownership PseGbeOwn[MAX_PSE_TSN_PORTS];
+	/* PSE devices sideband interrupt: Disable (0) / Enable (1) */
+	bool PseDmaSbIntEn[3];
+	bool PseUartSbIntEn[6];
+	bool PseQepSbIntEn[4];
+	bool PseI2cSbIntEn[8];
+	bool PseI2sSbIntEn[2];
+	bool PseSpiSbIntEn[4];
+	bool PseCanSbIntEn[2];
+	bool PseLh2PseSbIntEn;
+	bool PsePwmSbIntEn;
+	bool PseAdcSbIntEn;
+	/* PSE PWM native function: Disable (0) / Enable (1) */
+	bool PsePwmPinEn[16];
+	/* PSE Console Shell */
+	bool PseShellEn;
 };
 
 typedef struct soc_intel_elkhartlake_config config_t;
