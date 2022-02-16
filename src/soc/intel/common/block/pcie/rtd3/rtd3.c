@@ -80,7 +80,7 @@ pcie_rtd3_acpi_method_on(unsigned int pcie_rp,
 {
 	acpigen_write_method_serialized("_ON", 0);
 
-	acpigen_write_debug_string("PCIe RTD3 _ON");
+	acpigen_write_debug_string("PCIe RTD3 _ON START");
 
 	/* Assert enable GPIO to turn on device power. */
 	if (config->enable_gpio.pin_count) {
@@ -104,6 +104,8 @@ pcie_rtd3_acpi_method_on(unsigned int pcie_rp,
 	if (!config->disable_l23)
 		pcie_rtd3_acpi_l23_exit();
 
+	acpigen_write_debug_string("PCIe RTD3 _ON FINISH");
+
 	acpigen_pop_len(); /* Method */
 }
 
@@ -113,7 +115,7 @@ pcie_rtd3_acpi_method_off(int pcie_rp,
 {
 	acpigen_write_method_serialized("_OFF", 0);
 
-	acpigen_write_debug_string("PCIe RTD3 _OFF");
+	acpigen_write_debug_string("PCIe RTD3 _OFF START");
 
 	/* Trigger L23 ready entry flow unless disabled by config. */
 	if (!config->disable_l23)
@@ -136,6 +138,8 @@ pcie_rtd3_acpi_method_off(int pcie_rp,
 		if (config->enable_off_delay_ms)
 			acpigen_write_sleep(config->enable_off_delay_ms);
 	}
+
+	acpigen_write_debug_string("PCIe RTD3 _OFF FINISH");
 
 	acpigen_pop_len(); /* Method */
 }
