@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-Scope (\_SB.PCI0.RP05)
+Scope (\_SB.PCI0.RP01) // Remapped from RP05
 {
 	Device (DEV0)
 	{
