@@ -1,9 +1,9 @@
 //TODO: evaluate sleeps
 
-OperationRegion (PWRC, PCI_Config, 0x00, 0xFF)
-Field (PWRC, DwordAcc, NoLock, Preserve) {
+OperationRegion (PCIC, PCI_Config, 0x00, 0xFF)
+Field (PCIC, DwordAcc, NoLock, Preserve) {
 	Offset (0x40),
-	SSID, 32,
+	SSID, 32, // Subsystem vendor and product ID
 }
 
 // Enter GC6
@@ -92,7 +92,7 @@ PowerResource (PWRR, 0, 0) {
 			^^_ON()
 		}
 		// Restore SSID
-		^^SSID = 0x4018
+		^^SSID = 0x40181558
 		Printf("  Restore SSID: %o", SFST(^^SSID))
 		_STA = 1
 		Printf("GPU PWRR._ON FINISH")
