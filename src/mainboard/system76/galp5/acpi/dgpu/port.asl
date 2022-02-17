@@ -72,15 +72,13 @@ PowerResource (PWRR, 0, 0) {
 	Name (_STA, 1)
 
 	Method (_ON, 0, Serialized) {
-		Printf("GPU PORT PWRR._ON START")
+		Printf("GPU PORT PWRR._ON")
 		_STA = 1
-		Printf("GPU PORT PWRR._ON FINISH")
 	}
 
 	Method (_OFF, 0, Serialized) {
-		Printf("GPU PORT PWRR._OFF START")
+		Printf("GPU PORT PWRR._OFF")
 		_STA = 0
-		Printf("GPU PORT PWRR._OFF FINISH")
 	}
 }
 
@@ -95,14 +93,12 @@ Name (_PSC, 0)
 
 // Place device in D0
 Method (_PS0, 0, Serialized) {
-	Printf("GPU PORT _PS0 START")
+	Printf("GPU PORT _PS0")
 	_PSC = 0
-	Printf("GPU PORT _PS0 FINISH")
 }
 
 // Place device in D3
 Method (_PS3, 0, Serialized) {
-	Printf("GPU PORT _PS3 START")
+	Printf("GPU PORT _PS3")
 	_PSC = 3
-	Printf("GPU PORT _PS3 FINISH")
 }

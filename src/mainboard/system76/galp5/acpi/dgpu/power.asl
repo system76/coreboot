@@ -134,14 +134,12 @@ Name (_PSC, 0)
 
 // Place device in D0
 Method (_PS0, 0, Serialized) {
-	Printf("GPU _PS0 START")
+	Printf("GPU _PS0")
 	_PSC = 0
-	Printf("GPU _PS0 FINISH")
 }
 
 // Place device in D3
 Method (_PS3, 0, Serialized) {
-	Printf("GPU _PS3 START")
+	Printf("GPU _PS3")
 	_PSC = 3
-	Printf("GPU _PS3 FINISH")
 }
