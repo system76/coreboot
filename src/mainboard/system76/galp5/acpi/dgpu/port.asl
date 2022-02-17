@@ -1,24 +1,32 @@
-OperationRegion (L23C, PCI_Config, 0x00, 0xFF)
-Field (L23C, DwordAcc, NoLock, Preserve) {
-	Offset (0x52),
+OperationRegion (PCIC, PCI_Config, 0x00, 0xFF)
+Field (PCIC, AnyAcc, NoLock, Preserve) {
+	Offset(0x52),  /* LSTS - Link Status Register */
 	, 13,
-	LASX, 1,
+	LASX, 1,       /* 0, Link Active Status */
+	Offset(0x60),  /* RSTS - Root Status Register */
+	, 16,
+	PSPX, 1,       /* 16,  PME Status */
+	Offset(0xD8),  /* 0xD8, MPC - Miscellaneous Port Configuration Register */
+	, 30,
+	HPEX, 1,       /* 30,  Hot Plug SCI Enable */
+	PMEX, 1,       /* 31,  Power Management SCI Enable */
 	Offset (0xE0),
 	, 7,
-	NCB7, 1,
-	Offset (0xE2),
+	NCB7, 1,       /* Scratch bit */
+	Offset(0xE2),  /* 0xE2, RPPGEN - Root Port Power Gating Enable */
 	, 2,
-	L23E, 1,
-	L23R, 1,
-	/*TODO
-	Offset (0x420),
+	L23E, 1,       /* 2,   L23_Rdy Entry Request (L23ER) */
+	L23R, 1,       /* 3,   L23_Rdy to Detect Transition (L23R2DT) */
+}
+Field (PCIC, AnyAcc, NoLock, WriteAsZeros) {
+	Offset(0xDC),  /* 0xDC, SMSCS - SMI/SCI Status Register */
 	, 30,
-	DPGE, 1
-	*/
+	HPSX, 1,       /* 30,  Hot Plug SCI Status */
+	PMSX, 1        /* 31,  Power Management SCI Status */
 }
 
 // Enter L23
-Method(DL23, 0, Serialized) {
+Method (DL23, 0, Serialized) {
 	Printf("      GPU PORT DL23 START")
 	L23E = 1
 	Local0 = 8
@@ -34,10 +42,9 @@ Method(DL23, 0, Serialized) {
 }
 
 // Exit L23
-Method(L23D, 0, Serialized) {
+Method (L23D, 0, Serialized) {
 	Printf("      GPU PORT L23D START")
 	If ((NCB7 == 1)) {
-		//TODO: DPGE = 0
 		L23R = 1
 		Local0 = 20
 		While ((Local0 > 0)) {
@@ -49,7 +56,6 @@ Method(L23D, 0, Serialized) {
 		}
 
 		NCB7 = 0
-		//TODO: DPGE = 1
 		Local0 = 8
 		While ((Local0 > 0)) {
 			If ((LASX == 1)) {
@@ -60,6 +66,21 @@ Method(L23D, 0, Serialized) {
 		}
 	}
 	Printf("      GPU PORT L23D FINISH")
+}
+
+Method (HPME, 0, Serialized) {
+	Printf("  GPU PORT HPME START")
+
+	If (PMSX == 1) {
+		Printf("    Notify GPU driver of PME SCI")
+		Notify(DEV0, 0x2)
+		Printf("    Clear PME SCI")
+		PMSX = 1
+		Printf("    Consume PME notification")
+		PSPX = 1
+	}
+
+	Printf("  GPU PORT HPME FINISH")
 }
 
 Method (_STA, 0, Serialized) {
@@ -93,12 +114,29 @@ Name (_PSC, 0)
 
 // Place device in D0
 Method (_PS0, 0, Serialized) {
-	Printf("GPU PORT _PS0")
+	Printf("GPU PORT _PS0 START")
+
+	// Check power management SCI status
+	HPME();
+	If (PMEX == 1) {
+		Printf("  Disable power management SCI")
+		PMEX = 0
+	}
+
 	_PSC = 0
+	Printf("GPU PORT _PS0 FINISH")
 }
 
 // Place device in D3
 Method (_PS3, 0, Serialized) {
-	Printf("GPU PORT _PS3")
+	Printf("GPU PORT _PS3 START")
+
+	If (PMEX == 0) {
+		Printf("  Enable power management SCI")
+		PMEX = 1
+		HPME()
+	}
+
 	_PSC = 3
+	Printf("GPU PORT _PS3 FINISH")
 }
