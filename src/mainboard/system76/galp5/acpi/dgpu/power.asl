@@ -128,18 +128,3 @@ Name (_PR0, Package () { PWRR })
 
 // Power resources for entering D3
 Name (_PR3, Package () { PWRR })
-
-// Current power state
-Name (_PSC, 0)
-
-// Place device in D0
-Method (_PS0, 0, Serialized) {
-	Printf("GPU _PS0")
-	_PSC = 0
-}
-
-// Place device in D3
-Method (_PS3, 0, Serialized) {
-	Printf("GPU _PS3")
-	_PSC = 3
-}
