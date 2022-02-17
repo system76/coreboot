@@ -93,13 +93,30 @@ PowerResource (PWRR, 0, 0) {
 	Name (_STA, 1)
 
 	Method (_ON, 0, Serialized) {
-		Printf("GPU PORT PWRR._ON")
+		Printf("GPU PORT PWRR._ON START")
+
+		// Check power management SCI status
+		HPME();
+		If (PMEX == 1) {
+			Printf("  Disable power management SCI")
+			PMEX = 0
+		}
+
 		_STA = 1
+		Printf("GPU PORT PWRR._ON FINISH")
 	}
 
 	Method (_OFF, 0, Serialized) {
-		Printf("GPU PORT PWRR._OFF")
+		Printf("GPU PORT PWRR._OFF START")
+
+		If (PMEX == 0) {
+			Printf("  Enable power management SCI")
+			PMEX = 1
+			HPME()
+		}
+
 		_STA = 0
+		Printf("GPU PORT PWRR._OFF FINISH")
 	}
 }
 
@@ -108,35 +125,3 @@ Name (_PR0, Package () { PWRR })
 
 // Power resources for entering D3
 Name (_PR3, Package () { PWRR })
-
-// Current power state
-Name (_PSC, 0)
-
-// Place device in D0
-Method (_PS0, 0, Serialized) {
-	Printf("GPU PORT _PS0 START")
-
-	// Check power management SCI status
-	HPME();
-	If (PMEX == 1) {
-		Printf("  Disable power management SCI")
-		PMEX = 0
-	}
-
-	_PSC = 0
-	Printf("GPU PORT _PS0 FINISH")
-}
-
-// Place device in D3
-Method (_PS3, 0, Serialized) {
-	Printf("GPU PORT _PS3 START")
-
-	If (PMEX == 0) {
-		Printf("  Enable power management SCI")
-		PMEX = 1
-		HPME()
-	}
-
-	_PSC = 3
-	Printf("GPU PORT _PS3 FINISH")
-}
