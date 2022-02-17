@@ -39,7 +39,7 @@ Method(GC6O, 0, Serialized) {
 }
 
 Method (_ON, 0, Serialized) {
-	Printf("GPU _ON START")
+	Printf("  GPU _ON START")
 
 	// Power on GPU
 	Printf("    Power on GPU")
@@ -49,11 +49,11 @@ Method (_ON, 0, Serialized) {
 	// Exit GC6
 	GC6O()
 
-	Printf("GPU _ON FINISH")
+	Printf("  GPU _ON FINISH")
 }
 
 Method (_OFF, 0, Serialized) {
-	Printf("GPU _OFF START")
+	Printf("  GPU _OFF START")
 
 	// Enter GC6
 	GC6I()
@@ -63,7 +63,7 @@ Method (_OFF, 0, Serialized) {
 	CTXS(DGPU_PWR_EN)
 	Sleep(5)
 
-	Printf("GPU _OFF FINISH")
+	Printf("  GPU _OFF FINISH")
 }
 
 Method (_STA, 0, Serialized) {
