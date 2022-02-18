@@ -43,13 +43,23 @@ Method(GC6O, 0, Serialized) {
 Method (_ON, 0, Serialized) {
 	Printf("  GPU _ON START")
 
-	// Power on GPU
-	Printf("    Power on GPU")
-	STXS(DGPU_PWR_EN)
-	Sleep(5)
-
-	// Exit GC6
-	GC6O()
+	If (DFEN == JT_DFGC_DEFER) {
+		Switch (ToInteger(DFCO)) {
+			Case (JT_GPC_XGXS) {
+				Printf("    Exit GC6 and stop self-refresh")
+				GC6O()
+			}
+			Default {
+				Printf("    Unsupported DFCO: %o", SFST(DFCO))
+			}
+		}
+		DFEN = JT_DFGC_NONE
+	} Else {
+		Printf("    Standard RTD3 power on")
+		STXS(DGPU_PWR_EN)
+		Sleep(5)
+		GC6O()
+	}
 
 	Printf("  GPU _ON FINISH")
 }
@@ -57,20 +67,29 @@ Method (_ON, 0, Serialized) {
 Method (_OFF, 0, Serialized) {
 	Printf("  GPU _OFF START")
 
-	// Enter GC6
-	GC6I()
-
-	// Power off GPU
-	Printf("    Power off GPU")
-	CTXS(DGPU_PWR_EN)
-	Sleep(5)
+	If (DFEN == JT_DFGC_DEFER) {
+		Switch (ToInteger(DFCI)) {
+			Case (JT_GPC_EGNS) {
+				Printf("    Enter GC6 without self-refresh")
+				GC6I()
+			}
+			Case (JT_GPC_EGIS) {
+				Printf("    Enter GC6 with self-refresh")
+				GC6I()
+			}
+			Default {
+				Printf("    Unsupported DFCI: %o", SFST(DFCI))
+			}
+		}
+		DFEN = JT_DFGC_NONE
+	} Else {
+		Printf("    Standard RTD3 power off")
+		GC6I()
+		CTXS(DGPU_PWR_EN)
+		Sleep(5)
+	}
 
 	Printf("  GPU _OFF FINISH")
-}
-
-Method (_STA, 0, Serialized) {
-	//TODO
-	Return (0xF)
 }
 
 // Main power resource
@@ -78,50 +97,19 @@ PowerResource (PWRR, 0, 0) {
 	Name (_STA, 1)
 
 	Method (_ON, 0, Serialized) {
-		Printf("GPU PWRR._ON START")
-		If (DFEN == JT_DFGC_DEFER) {
-			Switch (ToInteger(DFCO)) {
-				Case (JT_GPC_XGXS) {
-					Printf("    Exit GC6 and stop self-refresh")
-					GC6O()
-				}
-				Default {
-					Printf("    Unsupported DFCO: %o", SFST(DFCO))
-				}
-			}
-			DFEN = JT_DFGC_NONE
-		} Else {
-			^^_ON()
-		}
+		Printf("GPU PWRR._ON")
+
 		// Restore SSID
 		^^SSID = 0x40181558
 		Printf("  Restore SSID: %o", SFST(^^SSID))
+
 		_STA = 1
-		Printf("GPU PWRR._ON FINISH")
 	}
 
 	Method (_OFF, 0, Serialized) {
-		Printf("GPU PWRR._OFF START")
-		If (DFEN == JT_DFGC_DEFER) {
-			Switch (ToInteger(DFCI)) {
-				Case (JT_GPC_EGNS) {
-					Printf("    Enter GC6 without self-refresh")
-					GC6I()
-				}
-				Case (JT_GPC_EGIS) {
-					Printf("    Enter GC6 with self-refresh")
-					GC6I()
-				}
-				Default {
-					Printf("    Unsupported DFCI: %o", SFST(DFCI))
-				}
-			}
-			DFEN = JT_DFGC_NONE
-		} Else {
-			^^_OFF()
-		}
+		Printf("GPU PWRR._OFF")
+
 		_STA = 0
-		Printf("GPU PWRR._OFF FINISH")
 	}
 }
 

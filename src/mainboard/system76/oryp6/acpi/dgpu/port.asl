@@ -137,7 +137,7 @@ PowerResource (PWRR, 0, 0) {
 	Method (_ON, 0, Serialized) {
 		Printf("GPU PORT PWRR._ON")
 
-        ^^DEV0._ON()
+		^^DEV0._ON()
 
 		_STA = 1
 	}
@@ -145,7 +145,7 @@ PowerResource (PWRR, 0, 0) {
 	Method (_OFF, 0, Serialized) {
 		Printf("GPU PORT PWRR._OFF")
 
-        ^^DEV0._OFF()
+		^^DEV0._OFF()
 
 		_STA = 0
 	}

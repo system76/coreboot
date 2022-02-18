@@ -85,31 +85,28 @@ Method (HPME, 0, Serialized) {
 	Printf("  GPU PORT HPME FINISH")
 }
 
-Method (_STA, 0, Serialized) {
-	//TODO
-	Return (0xF)
-}
-
 // Main power resource
 PowerResource (PWRR, 0, 0) {
 	Name (_STA, 1)
 
 	Method (_ON, 0, Serialized) {
-		Printf("GPU PORT PWRR._ON START")
+		Printf("GPU PORT PWRR._ON")
 
-		// Check power management SCI status
 		HPME();
 		If (PMEX == 1) {
 			Printf("  Disable power management SCI")
 			PMEX = 0
 		}
 
+		^^DEV0._ON()
+
 		_STA = 1
-		Printf("GPU PORT PWRR._ON FINISH")
 	}
 
 	Method (_OFF, 0, Serialized) {
-		Printf("GPU PORT PWRR._OFF START")
+		Printf("GPU PORT PWRR._OFF")
+
+		^^DEV0._OFF()
 
 		If (PMEX == 0) {
 			Printf("  Enable power management SCI")
@@ -118,7 +115,6 @@ PowerResource (PWRR, 0, 0) {
 		}
 
 		_STA = 0
-		Printf("GPU PORT PWRR._OFF FINISH")
 	}
 }
 
