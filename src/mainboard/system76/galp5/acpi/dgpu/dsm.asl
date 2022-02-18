@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: GPL-2.0-only */
+
 #define NV_ERROR_SUCCESS 0x0
 #define NV_ERROR_UNSPECIFIED 0x80000001
 #define NV_ERROR_UNSUPPORTED 0x80000002

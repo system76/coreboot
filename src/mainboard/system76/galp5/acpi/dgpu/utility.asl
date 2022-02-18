@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: GPL-2.0-only */
+
 // Convert a byte to a hex string, trimming extra parts
 Method (BHEX, 1) {
 	Local0 = ToHexString(Arg0)

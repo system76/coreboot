@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: GPL-2.0-only */
+
 //TODO: evaluate sleeps
 
 OperationRegion (PCIC, PCI_Config, 0x00, 0xFF)

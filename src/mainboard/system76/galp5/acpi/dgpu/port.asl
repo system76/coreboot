@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: GPL-2.0-only */
+
 OperationRegion (PCIC, PCI_Config, 0x00, 0xFF)
 Field (PCIC, AnyAcc, NoLock, Preserve) {
 	Offset(0x52),  /* LSTS - Link Status Register */
