@@ -129,16 +129,24 @@ Method (L23D, 0, Serialized) {
 	Printf("      GPU PORT L23D FINISH")
 }
 
+
+// Main power resource
 PowerResource (PWRR, 0, 0) {
 	Name (_STA, 1)
 
-	Method (_ON) {
+	Method (_ON, 0, Serialized) {
 		Printf("GPU PORT PWRR._ON")
+
+        ^^DEV0._ON()
+
 		_STA = 1
 	}
 
-	Method (_OFF) {
+	Method (_OFF, 0, Serialized) {
 		Printf("GPU PORT PWRR._OFF")
+
+        ^^DEV0._OFF()
+
 		_STA = 0
 	}
 }
