@@ -56,8 +56,6 @@ chip soc/intel/alderlake
 	end
 
 	device domain 0 on
-		subsystemid 0x1558 0x866d inherit
-
 		#From CPU EDS(TODO)
 		device ref system_agent on end
 		device ref pcie5 on

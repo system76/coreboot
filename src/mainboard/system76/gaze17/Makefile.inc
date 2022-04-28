@@ -8,5 +8,5 @@ bootblock-y += gpio_early.c
 romstage-y += romstage.c
 
 ramstage-y += gpio.c
-ramstage-y += hda_verb.c
 ramstage-y += ramstage.c
+ramstage-y += variants/$(VARIANT_DIR)/hda_verb.c
