@@ -9,7 +9,7 @@
 static const struct mb_cfg board_cfg = {
 	.type = MEM_TYPE_DDR4,
 	.ddr_config = {
-		.dq_pins_interleaved = true,
+		.dq_pins_interleaved = false,
 	},
 };
 
