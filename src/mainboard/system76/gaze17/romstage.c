@@ -1,10 +1,10 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
 #include <drivers/gfx/nvidia/gpu.h>
-#include <mainboard/gpio.h>
 #include <fsp/util.h>
 #include <soc/meminit.h>
 #include <soc/romstage.h>
+#include <variant/gpio.h>
 
 static const struct mb_cfg board_cfg = {
 	.type = MEM_TYPE_DDR4,

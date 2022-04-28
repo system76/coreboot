@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#ifndef MAINBOARD_GPIO_H
-#define MAINBOARD_GPIO_H
+#ifndef VARIANT_GPIO_H
+#define VARIANT_GPIO_H
 
 #include <soc/gpio.h>
 
@@ -10,8 +10,8 @@
 #define DGPU_GC6	GPP_F13
 
 #ifndef __ACPI__
-void mainboard_configure_early_gpios(void);
-void mainboard_configure_gpios(void);
+void variant_configure_early_gpios(void);
+void variant_configure_gpios(void);
 #endif
 
 #endif
