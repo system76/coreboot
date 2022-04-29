@@ -47,7 +47,7 @@ static const struct pad_config gpio_table[] = {
 	/* ------- GPIO Group GPP_B ------- */
 	PAD_CFG_NF(GPP_B0, NONE, DEEP, NF1), // VCCIN_AUX_VID0
 	PAD_CFG_NF(GPP_B1, NONE, DEEP, NF1), // VCCIN_AUX_VID1
-	PAD_CFG_GPO(GPP_B2, 0, DEEP), // DGPU_RST#_PCH
+	//PAD_CFG_GPO(GPP_B2, 0, DEEP), // DGPU_RST#_PCH
 	PAD_CFG_GPI(GPP_B3, NONE, DEEP), // SCI#
 	PAD_CFG_GPI(GPP_B4, NONE, DEEP), // SWI#
 	PAD_NC(GPP_B5, NONE),
