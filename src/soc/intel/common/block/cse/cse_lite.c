@@ -1,15 +1,16 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+#include <arch/cpu.h>
 #include <console/console.h>
 #include <cbfs.h>
 #include <commonlib/region.h>
 #include <fmap.h>
 #include <intelblocks/cse.h>
 #include <intelblocks/cse_layout.h>
+#include <intelbasecode/debug_feature.h>
 #include <security/vboot/vboot_common.h>
 #include <security/vboot/misc.h>
 #include <soc/intel/common/reset.h>
-#include <arch/cpu.h>
 
 #define BPDT_HEADER_SZ		sizeof(struct bpdt_header)
 #define BPDT_ENTRY_SZ		sizeof(struct bpdt_entry)
@@ -127,6 +128,7 @@ struct get_bp_info_rsp {
 	struct cse_bp_info bp_info;
 } __packed;
 
+static const char * const cse_regions[] = {"RO", "RW"};
 
 bool cse_get_boot_performance_data(struct cse_boot_perf_rsp *boot_perf_rsp)
 {
@@ -143,7 +145,7 @@ bool cse_get_boot_performance_data(struct cse_boot_perf_rsp *boot_perf_rsp)
 
 	size_t resp_size = sizeof(struct cse_boot_perf_rsp);
 
-	if (!heci_send_receive(&req, sizeof(req), boot_perf_rsp, &resp_size,
+	if (heci_send_receive(&req, sizeof(req), boot_perf_rsp, &resp_size,
 									HECI_MKHI_ADDR)) {
 		printk(BIOS_ERR, "cse_lite: Could not get boot performance data\n");
 		return false;
@@ -241,7 +243,7 @@ static bool cse_get_bp_info(struct get_bp_info_rsp *bp_info_rsp)
 
 	size_t resp_size = sizeof(struct get_bp_info_rsp);
 
-	if (!heci_send_receive(&info_req, sizeof(info_req), bp_info_rsp, &resp_size,
+	if (heci_send_receive(&info_req, sizeof(info_req), bp_info_rsp, &resp_size,
 									HECI_MKHI_ADDR)) {
 		printk(BIOS_ERR, "cse_lite: Could not get partition info\n");
 		return false;
@@ -294,7 +296,7 @@ static bool cse_set_next_boot_partition(enum boot_partition_id bp)
 	struct mkhi_hdr switch_resp;
 	size_t sw_resp_sz = sizeof(struct mkhi_hdr);
 
-	if (!heci_send_receive(&switch_req, sizeof(switch_req), &switch_resp, &sw_resp_sz,
+	if (heci_send_receive(&switch_req, sizeof(switch_req), &switch_resp, &sw_resp_sz,
 									HECI_MKHI_ADDR))
 		return false;
 
@@ -331,7 +333,7 @@ static bool cse_data_clear_request(const struct cse_bp_info *cse_bp_info)
 	struct mkhi_hdr data_clr_rsp;
 	size_t data_clr_rsp_sz = sizeof(data_clr_rsp);
 
-	if (!heci_send_receive(&data_clr_rq, sizeof(data_clr_rq), &data_clr_rsp,
+	if (heci_send_receive(&data_clr_rq, sizeof(data_clr_rq), &data_clr_rsp,
 				&data_clr_rsp_sz, HECI_MKHI_ADDR)) {
 		return false;
 	}
@@ -662,6 +664,17 @@ static bool cse_write_rw_region(const struct region_device *target_rdev,
 	return true;
 }
 
+static bool is_cse_fw_update_enabled(void)
+{
+	if (!CONFIG(SOC_INTEL_CSE_RW_UPDATE))
+		return false;
+
+	if (CONFIG(SOC_INTEL_COMMON_BASECODE_DEBUG_FEATURE))
+		return !is_debug_cse_fw_update_disable();
+
+	return true;
+}
+
 static enum csme_failure_reason cse_update_rw(const struct cse_bp_info *cse_bp_info,
 		const void *cse_cbfs_rw, const size_t cse_blob_sz,
 		struct region_device *target_rdev)
@@ -779,16 +792,43 @@ static const char *cse_sub_part_str(enum bpdt_entry_type type)
 	}
 }
 
-static bool cse_sub_part_get_target_rdev(struct region_device *target_rdev,
-				const char *region_name, enum bpdt_entry_type type)
+static bool cse_locate_area_as_rdev_rw(const struct cse_bp_info *cse_bp_info,
+		size_t bp, struct region_device  *cse_rdev)
+{
+	struct region_device cse_region_rdev;
+	uint32_t size;
+	uint32_t start_offset;
+	uint32_t end_offset;
+
+	if (!cse_get_rw_rdev(&cse_region_rdev))
+		return false;
+
+	if (!strcmp(cse_regions[bp], "RO"))
+		cse_get_bp_entry_range(cse_bp_info, RO, &start_offset, &end_offset);
+	else
+		cse_get_bp_entry_range(cse_bp_info, RW, &start_offset, &end_offset);
+
+	size = end_offset + 1 - start_offset;
+
+	if (rdev_chain(cse_rdev, &cse_region_rdev, start_offset, size))
+		return false;
+
+	printk(BIOS_DEBUG, "cse_lite: CSE %s  partition: offset = 0x%x, size = 0x%x\n",
+			cse_regions[bp], start_offset, size);
+	return true;
+}
+
+static bool cse_sub_part_get_target_rdev(const struct cse_bp_info *cse_bp_info,
+	struct region_device *target_rdev, size_t bp, enum bpdt_entry_type type)
 {
 	struct bpdt_header bpdt_hdr;
 	struct region_device cse_rdev;
 	struct bpdt_entry bpdt_entries[MAX_SUBPARTS];
 	uint8_t i;
 
-	if (fmap_locate_area_as_rdev_rw(region_name, &cse_rdev) < 0) {
-		printk(BIOS_ERR, "cse_lite: Failed to locate %s in the FMAP\n", region_name);
+	if (!cse_locate_area_as_rdev_rw(cse_bp_info, bp, &cse_rdev)) {
+		printk(BIOS_ERR, "cse_lite: Failed to locate %s in the CSE Region\n",
+				cse_regions[bp]);
 		return false;
 	}
 
@@ -925,7 +965,6 @@ static enum csme_failure_reason cse_sub_part_fw_component_update(enum bpdt_entry
 	struct fw_version target_fw_ver, source_fw_ver;
 	enum csme_failure_reason rv;
 	size_t size;
-	static const char * const cse_regions[] = {"CSE_RO", "CSE_RW"};
 
 	void *subpart_cbfs_rw = cbfs_map(name, &size);
 	if (!subpart_cbfs_rw) {
@@ -941,7 +980,7 @@ static enum csme_failure_reason cse_sub_part_fw_component_update(enum bpdt_entry
 
 	/* Trigger sub-partition update in CSE RO and CSE RW */
 	for (size_t bp = 0; bp < ARRAY_SIZE(cse_regions); bp++) {
-		if (!cse_sub_part_get_target_rdev(&target_rdev, cse_regions[bp], type)) {
+		if (!cse_sub_part_get_target_rdev(cse_bp_info, &target_rdev, bp, type)) {
 			rv = CSE_LITE_SKU_SUB_PART_ACCESS_ERR;
 			goto error_exit;
 		}
@@ -1052,10 +1091,11 @@ void cse_fw_sync(void)
 		cse_trigger_vboot_recovery(CSE_LITE_SKU_DATA_WIPE_ERROR);
 
 	/*
-	 * If SOC_INTEL_CSE_RW_UPDATE is defined , then trigger CSE firmware update. The driver
-	 * triggers recovery if CSE CBFS RW metadata or CSE CBFS RW blob is not available.
+	 * cse firmware update is skipped if SOC_INTEL_CSE_RW_UPDATE is not defined and
+	 * runtime debug control flag is not enabled. The driver triggers recovery if CSE CBFS
+	 * RW metadata or CSE CBFS RW blob is not available.
 	 */
-	if (CONFIG(SOC_INTEL_CSE_RW_UPDATE)) {
+	if (is_cse_fw_update_enabled()) {
 		uint8_t rv;
 		rv = cse_fw_update(&cse_bp_info.bp_info);
 		if (rv)

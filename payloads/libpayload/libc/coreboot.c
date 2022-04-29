@@ -61,12 +61,8 @@ static void cb_parse_memory(void *ptr, struct sysinfo_t *info)
 			continue;
 #endif
 
-		info->memrange[info->n_memranges].base =
-		    cb_unpack64(range->start);
-
-		info->memrange[info->n_memranges].size =
-		    cb_unpack64(range->size);
-
+		info->memrange[info->n_memranges].base = range->start;
+		info->memrange[info->n_memranges].size = range->size;
 		info->memrange[info->n_memranges].type = range->type;
 
 		info->n_memranges++;
@@ -121,7 +117,7 @@ static void cb_parse_mac_addresses(unsigned char *ptr,
 static void cb_parse_board_config(unsigned char *ptr, struct sysinfo_t *info)
 {
 	struct cb_board_config *const config = (struct cb_board_config *)ptr;
-	info->fw_config = cb_unpack64(config->fw_config);
+	info->fw_config = config->fw_config;
 	info->board_id = config->board_id;
 	info->ram_code = config->ram_code;
 	info->sku_id = config->sku_id;
@@ -260,9 +256,18 @@ static void cb_parse_cbmem_entry(void *ptr, struct sysinfo_t *info)
 	case CBMEM_ID_TYPE_C_INFO:
 		info->type_c_info = cbmem_entry->address;
 		break;
+	case CBMEM_ID_MEM_CHIP_INFO:
+		info->mem_chip_base = cbmem_entry->address;
+		break;
 	default:
 		break;
 	}
+}
+
+static void cb_parse_rsdp(void *ptr, struct sysinfo_t *info)
+{
+	const struct cb_acpi_rsdp *cb_acpi_rsdp = ptr;
+	info->acpi_rsdp = cb_acpi_rsdp->rsdp_pointer;
 }
 
 int cb_parse_header(void *addr, int len, struct sysinfo_t *info)
@@ -405,6 +410,9 @@ int cb_parse_header(void *addr, int len, struct sysinfo_t *info)
 			cb_parse_tsc_info(ptr, info);
 			break;
 #endif
+		case CB_TAG_ACPI_RSDP:
+			cb_parse_rsdp(ptr, info);
+			break;
 		default:
 			cb_parse_arch_specific(rec, info);
 			break;

@@ -352,4 +352,33 @@ config USE_FSP_NOTIFY_PHASE_END_OF_FIRMWARE
 	  to perform the required lock down and chipset register configuration prior
 	  boot to payload.
 
+config FSP_USES_CB_DEBUG_EVENT_HANDLER
+	bool
+	default n
+	help
+	  This option allows to create `Debug Event Handler` to print FSP debug messages
+	  to output device using coreboot native implementation.
+
+config DISPLAY_FSP_TIMESTAMPS
+	bool "Display FSP Timestamps"
+	default n
+	help
+	  Select this config to retrieve FSP timestamps from Firmware Performance Data Table
+	  (FPDT) and display from ramstage after FSP-S is executed.
+
+	  To be able to use this, FSP has to be compiled with `PcdFspPerformanceEnable` set to
+	  `TRUE`.
+
+config FSP_ENABLE_SERIAL_DEBUG
+	bool "Output FSP debug messages on serial console"
+	default y
+	depends on FSP_USES_CB_DEBUG_EVENT_HANDLER
+	help
+	  Output FSP debug messages on serial console.
+
+	  The config option is selected based on your FSP configuration i.e., debug or
+	  release. Enable this option from site-local to print FSP serial messages using
+	  coreboot native debug driver when coreboot has integrated the debug FSP
+	  binaries. coreboot disables serial messages when this config is not enabled.
+
 endif

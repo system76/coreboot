@@ -57,17 +57,21 @@ static void set_mmio_addr_reg(u32 nodeid, u32 linkn, u32 reg, u32 index,
 
 static void read_resources(struct device *dev)
 {
+	unsigned int idx = 0;
 	struct resource *res;
+
+	/* The northbridge has no PCI BARs implemented, so there's no need to call
+	   pci_dev_read_resources for it */
 
 	/*
 	 * This MMCONF resource must be reserved in the PCI domain.
 	 * It is not honored by the coreboot resource allocator if it is in
 	 * the CPU_CLUSTER.
 	 */
-	mmconf_resource(dev, MMIO_CONF_BASE);
+	mmconf_resource(dev, idx++);
 
 	/* NB IOAPIC2 resource */
-	res = new_resource(dev, IO_APIC2_ADDR); /* IOAPIC2 */
+	res = new_resource(dev, idx++); /* IOAPIC2 */
 	res->base = IO_APIC2_ADDR;
 	res->size = 0x00001000;
 	res->flags = IORESOURCE_MEM | IORESOURCE_ASSIGNED | IORESOURCE_FIXED;
@@ -316,13 +320,13 @@ static struct device_operations northbridge_operations = {
 };
 
 static const unsigned short pci_device_ids[] = {
-	PCI_DEVICE_ID_AMD_15H_MODEL_606F_NB_HT,
-	PCI_DEVICE_ID_AMD_15H_MODEL_707F_NB_HT,
+	PCI_DID_AMD_15H_MODEL_606F_NB_HT,
+	PCI_DID_AMD_15H_MODEL_707F_NB_HT,
 	0 };
 
 static const struct pci_driver family15_northbridge __pci_driver = {
 	.ops	= &northbridge_operations,
-	.vendor = PCI_VENDOR_ID_AMD,
+	.vendor = PCI_VID_AMD,
 	.devices = pci_device_ids,
 };
 

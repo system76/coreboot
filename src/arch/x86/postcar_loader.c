@@ -60,7 +60,7 @@ static void postcar_var_mtrr_set(const struct var_mtrr_context *ctx,
 	struct postcar_frame *pcf = ctx->arg;
 
 	printk(BIOS_DEBUG, "MTRR Range: Start=%lx End=%lx (Size %zx)\n",
-			addr, addr + size, size);
+			addr, addr + size - 1, size);
 
 	stack_push(pcf, mask.hi);
 	stack_push(pcf, mask.lo);
@@ -192,7 +192,7 @@ void run_postcar_phase(struct postcar_frame *pcf)
 		load_postcar_cbfs(&prog, pcf);
 
 	/* As postcar exist, it's end of romstage here */
-	timestamp_add_now(TS_END_ROMSTAGE);
+	timestamp_add_now(TS_ROMSTAGE_END);
 
 	console_time_report();
 

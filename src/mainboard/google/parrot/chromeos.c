@@ -46,23 +46,11 @@ int get_recovery_mode_switch(void)
 	return !get_gpio(GPIO_REC_MODE);
 }
 
-static int parrot_ec_running_ro(void)
-{
-	return get_recovery_mode_switch();
-}
-
 static const struct cros_gpio cros_gpios[] = {
 	CROS_GPIO_REC_AH(CROS_GPIO_VIRTUAL, CROS_GPIO_DEVICE_NAME),
 	CROS_GPIO_WP_AL(GPIO_SPI_WP, CROS_GPIO_DEVICE_NAME),
 };
-
-void mainboard_chromeos_acpi_generate(void)
-{
-	if (CONFIG(CHROMEOS_NVS) && !parrot_ec_running_ro())
-		chromeos_set_ecfw_rw();
-
-	chromeos_acpi_gpio_generate(cros_gpios, ARRAY_SIZE(cros_gpios));
-}
+DECLARE_CROS_GPIOS(cros_gpios);
 
 int get_ec_is_trusted(void)
 {

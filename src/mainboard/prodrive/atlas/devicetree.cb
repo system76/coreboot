@@ -8,6 +8,12 @@ chip soc/intel/alderlake
 	register "pmc_gpe0_dw1" = "GPP_D"
 	register "pmc_gpe0_dw2" = "GPP_E"
 
+	# EC host command ranges are in 0x800-0x8ff & 0x200-0x20f
+	register "gen1_dec" = "0x00fc0801"
+	register "gen2_dec" = "0x000c0201"
+	# EC memory map range is 0x900-0x9ff
+	register "gen3_dec" = "0x00fc0901"
+
 	# USB configuration
 	register "usb2_ports[0]" = "USB2_PORT_MID(OC0)"
 	register "usb2_ports[1]" = "USB2_PORT_MID(OC0)"
@@ -23,19 +29,19 @@ chip soc/intel/alderlake
 	register "usb3_ports[2]" = "USB3_PORT_DEFAULT(OC1)"
 	register "usb3_ports[3]" = "USB3_PORT_DEFAULT(OC1)"
 
-	register "SataSalpSupport" = "1"
+	register "sata_salp_support" = "1"
 
-	register "SataPortsEnable" = "{
+	register "sata_ports_enable" = "{
 		[0] = 1,
 		[1] = 1,
 	}"
 
-	register "SataPortsDevSlp" = "{
+	register "sata_ports_dev_slp" = "{
 		[0] = 1,
 		[1] = 1,
 	}"
 
-	register "SerialIoUartMode" = "{
+	register "serial_io_uart_mode" = "{
 		[PchSerialIoIndexUART0] = PchSerialIoSkipInit,
 		[PchSerialIoIndexUART1] = PchSerialIoPci,
 		[PchSerialIoIndexUART2] = PchSerialIoDisabled,
@@ -60,6 +66,7 @@ chip soc/intel/alderlake
 	}"
 	register "pch_pcie_rp[PCH_RP(10)]" = "{
 		.flags = PCIE_RP_CLK_SRC_UNUSED,
+		.pcie_rp_aspm = ASPM_DISABLE,
 	}"
 	register "pcie_clk_config_flag[0]" = "PCIE_CLK_FREE_RUNNING"
 	register "pcie_clk_config_flag[1]" = "PCIE_CLK_FREE_RUNNING"
@@ -83,16 +90,24 @@ chip soc/intel/alderlake
 		device ref pcie4_0 on end
 		device ref pcie4_1 on end
 		device ref crashlog off end
+		device ref ish on end
+		device ref ufs on end
 		device ref xhci on end
 		device ref heci1 on end
 		device ref sata on end
 		device ref pcie_rp5 on end
 		device ref pcie_rp6 on end
+		device ref pcie_rp7 on end
 		device ref pcie_rp8 on end
 		device ref pcie_rp9 on end
 		device ref pcie_rp10 on end
 		device ref uart0 on end
 		device ref uart1 on end
+		device ref pch_espi on
+			chip drivers/pc80/tpm
+				device pnp 0c31.0 on end
+			end
+		end
 		device ref p2sb on end
 		device ref hda on end
 		device ref smbus on end

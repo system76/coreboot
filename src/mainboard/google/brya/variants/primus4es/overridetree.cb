@@ -23,14 +23,15 @@ fw_config
 end
 
 chip soc/intel/alderlake
-	register "SaGv" = "SaGv_Enabled"
-	register "MaxDramSpeed" = "3733"
+	register "sagv" = "SaGv_Enabled"
+	register "max_dram_speed_mts" = "3733"
+
 	# Acoustic settings
-  	register "AcousticNoiseMitigation" = "1"
-  	register "SlowSlewRate[VR_DOMAIN_IA]" = "SLEW_FAST_8"
-  	register "SlowSlewRate[VR_DOMAIN_GT]" = "SLEW_FAST_8"
-  	register "FastPkgCRampDisable[VR_DOMAIN_IA]" = "1"
-  	register "FastPkgCRampDisable[VR_DOMAIN_GT]" = "1"
+	register "acoustic_noise_mitigation" = "1"
+	register "slow_slew_rate[VR_DOMAIN_IA]" = "SLEW_FAST_8"
+	register "slow_slew_rate[VR_DOMAIN_GT]" = "SLEW_FAST_8"
+	register "fast_pkg_c_ramp_disable[VR_DOMAIN_IA]" = "1"
+	register "fast_pkg_c_ramp_disable[VR_DOMAIN_GT]" = "1"
 
 	# Intel Common SoC Config
 	#+-------------------+---------------------------+
@@ -138,7 +139,10 @@ chip soc/intel/alderlake
 		device ref pcie_rp3 on
 			chip soc/intel/common/block/pcie/rtd3
 				register "reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_B3)"
+				register "enable_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_E20)"
 				register "srcclk_pin" = "6"
+				register "reset_delay_ms" = "50"
+				register "enable_delay_ms" = "20"
 				device generic 0 alias emmc_rtd3 on end
 			end
 			# Enable PCIe-to-eMMC bridge PCIE 3 using clk 6
@@ -204,7 +208,7 @@ chip soc/intel/alderlake
 				register "generic.probed" = "1"
 				register "generic.reset_gpio" =
 							"ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_C1)"
-				register "generic.reset_delay_ms" = "300"
+				register "generic.reset_delay_ms" = "200"
 				register "generic.reset_off_delay_ms" = "1"
 				register "generic.enable_gpio" =
 							"ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_C0)"

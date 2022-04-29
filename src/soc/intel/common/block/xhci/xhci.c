@@ -13,9 +13,33 @@
 #define XHCI_USB2	2
 #define XHCI_USB3	3
 
+#define XHCI_USBCMD	0x80
+#define  USBCMD_HCRST	(1 << 1)
+
 /* Current Connect Status */
 #define XHCI_STATUS_CCS		(1 << 0)
 
+static uint8_t *xhci_mem_base(void)
+{
+	uint32_t mem_base = pci_read_config32(PCH_DEV_XHCI, PCI_BASE_ADDRESS_0);
+
+	/* Check if the controller is disabled or not present */
+	if (mem_base == 0 || mem_base == 0xffffffff)
+		return 0;
+
+	return (uint8_t *)(mem_base & ~PCI_BASE_ADDRESS_MEM_ATTR_MASK);
+}
+
+void xhci_host_reset(void)
+{
+	uint8_t *xhci_base = xhci_mem_base();
+	if (!xhci_base)
+		return;
+
+	setbits8(xhci_base + XHCI_USBCMD, USBCMD_HCRST);
+}
+
+#if ENV_RAMSTAGE
 static bool is_usb_port_connected(const struct xhci_usb_info *info,
 			unsigned int port_type, unsigned int port_id)
 {
@@ -106,30 +130,32 @@ static struct device_operations usb_xhci_ops = {
 };
 
 static const unsigned short pci_device_ids[] = {
-	PCI_DEVICE_ID_INTEL_APL_XHCI,
-	PCI_DEVICE_ID_INTEL_CNL_LP_XHCI,
-	PCI_DEVICE_ID_INTEL_GLK_XHCI,
-	PCI_DEVICE_ID_INTEL_SPT_LP_XHCI,
-	PCI_DEVICE_ID_INTEL_SPT_H_XHCI,
-	PCI_DEVICE_ID_INTEL_LWB_XHCI,
-	PCI_DEVICE_ID_INTEL_LWB_XHCI_SUPER,
-	PCI_DEVICE_ID_INTEL_UPT_H_XHCI,
-	PCI_DEVICE_ID_INTEL_CNP_H_XHCI,
-	PCI_DEVICE_ID_INTEL_ICP_LP_XHCI,
-	PCI_DEVICE_ID_INTEL_CMP_LP_XHCI,
-	PCI_DEVICE_ID_INTEL_CMP_H_XHCI,
-	PCI_DEVICE_ID_INTEL_TGP_LP_XHCI,
-	PCI_DEVICE_ID_INTEL_TGP_H_XHCI,
-	PCI_DEVICE_ID_INTEL_MCC_XHCI,
-	PCI_DEVICE_ID_INTEL_JSP_XHCI,
-	PCI_DEVICE_ID_INTEL_ADP_P_XHCI,
-	PCI_DEVICE_ID_INTEL_ADP_S_XHCI,
-	PCI_DEVICE_ID_INTEL_ADP_M_XHCI,
+	PCI_DID_INTEL_MTL_XHCI,
+	PCI_DID_INTEL_APL_XHCI,
+	PCI_DID_INTEL_CNL_LP_XHCI,
+	PCI_DID_INTEL_GLK_XHCI,
+	PCI_DID_INTEL_SPT_LP_XHCI,
+	PCI_DID_INTEL_SPT_H_XHCI,
+	PCI_DID_INTEL_LWB_XHCI,
+	PCI_DID_INTEL_LWB_XHCI_SUPER,
+	PCI_DID_INTEL_UPT_H_XHCI,
+	PCI_DID_INTEL_CNP_H_XHCI,
+	PCI_DID_INTEL_ICP_LP_XHCI,
+	PCI_DID_INTEL_CMP_LP_XHCI,
+	PCI_DID_INTEL_CMP_H_XHCI,
+	PCI_DID_INTEL_TGP_LP_XHCI,
+	PCI_DID_INTEL_TGP_H_XHCI,
+	PCI_DID_INTEL_MCC_XHCI,
+	PCI_DID_INTEL_JSP_XHCI,
+	PCI_DID_INTEL_ADP_P_XHCI,
+	PCI_DID_INTEL_ADP_S_XHCI,
+	PCI_DID_INTEL_ADP_M_XHCI,
 	0
 };
 
 static const struct pci_driver pch_usb_xhci __pci_driver = {
 	.ops	 = &usb_xhci_ops,
-	.vendor	 = PCI_VENDOR_ID_INTEL,
+	.vendor	 = PCI_VID_INTEL,
 	.devices	 = pci_device_ids,
 };
+#endif

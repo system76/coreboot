@@ -1,7 +1,5 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-
-#include <stdlib.h>
 #include <cbfs.h>
 #include <cbmem.h>
 #include <console/console.h>
@@ -24,17 +22,17 @@ void run_romstage(void)
 
 	vboot_run_logic();
 
-	timestamp_add_now(TS_START_COPYROM);
+	timestamp_add_now(TS_COPYROM_START);
 
 	if (ENV_X86 && CONFIG(BOOTBLOCK_NORMAL)) {
-		if (legacy_romstage_select_and_load(&romstage))
+		if (legacy_romstage_select_and_load(&romstage) != CB_SUCCESS)
 			goto fail;
 	} else {
 		if (cbfs_prog_stage_load(&romstage))
 			goto fail;
 	}
 
-	timestamp_add_now(TS_END_COPYROM);
+	timestamp_add_now(TS_COPYROM_END);
 
 	console_time_report();
 
@@ -89,12 +87,11 @@ void run_ramstage(void)
 	struct prog ramstage =
 		PROG_INIT(PROG_RAMSTAGE, CONFIG_CBFS_PREFIX "/ramstage");
 
-	if (ENV_POSTCAR)
-		timestamp_add_now(TS_END_POSTCAR);
-
 	/* Call "end of romstage" here if postcar stage doesn't exist */
-	if (ENV_ROMSTAGE)
-		timestamp_add_now(TS_END_ROMSTAGE);
+	if (ENV_POSTCAR)
+		timestamp_add_now(TS_POSTCAR_END);
+	else
+		timestamp_add_now(TS_ROMSTAGE_END);
 
 	/*
 	 * Only x86 systems using ramstage stage cache currently take the same
@@ -105,7 +102,7 @@ void run_ramstage(void)
 
 	vboot_run_logic();
 
-	timestamp_add_now(TS_START_COPYRAM);
+	timestamp_add_now(TS_COPYRAM_START);
 
 	if (ENV_X86) {
 		if (load_relocatable_ramstage(&ramstage))
@@ -117,7 +114,7 @@ void run_ramstage(void)
 
 	stage_cache_add(STAGE_RAMSTAGE, &ramstage);
 
-	timestamp_add_now(TS_END_COPYRAM);
+	timestamp_add_now(TS_COPYRAM_END);
 
 	console_time_report();
 

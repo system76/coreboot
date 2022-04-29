@@ -20,7 +20,7 @@ chip soc/intel/alderlake
 	register "tcc_offset" = "10"     # TCC of 90
 
 	# Enable CNVi BT
-	register "CnviBtCore" = "true"
+	register "cnvi_bt_core" = "true"
 
 	register "usb2_ports[0]" = "USB2_PORT_TYPE_C(OC0)"	# USB2_C0
 	register "usb2_ports[1]" = "USB2_PORT_TYPE_C(OC1)"	# USB2_C1
@@ -37,7 +37,7 @@ chip soc/intel/alderlake
 	register "tcss_ports[1]" = "TCSS_PORT_DEFAULT(OC1)"
 	register "tcss_ports[2]" = "TCSS_PORT_DEFAULT(OC2)"
 
-	register "SerialIoI2cMode" = "{
+	register "serial_io_i2c_mode" = "{
 		[PchSerialIoIndexI2C0] = PchSerialIoPci,
 		[PchSerialIoIndexI2C1] = PchSerialIoPci,
 		[PchSerialIoIndexI2C2] = PchSerialIoPci,
@@ -46,12 +46,12 @@ chip soc/intel/alderlake
 		[PchSerialIoIndexI2C5] = PchSerialIoPci,
 	}"
 
-	register "SerialIoGSpiMode" = "{
+	register "serial_io_gspi_mode" = "{
 		[PchSerialIoIndexGSPI0] = PchSerialIoDisabled,
 		[PchSerialIoIndexGSPI1] = PchSerialIoPci,
 	}"
 
-	register "SerialIoUartMode" = "{
+	register "serial_io_uart_mode" = "{
 		[PchSerialIoIndexUART0] = PchSerialIoPci,
 		[PchSerialIoIndexUART1] = PchSerialIoDisabled,
 		[PchSerialIoIndexUART2] = PchSerialIoDisabled,
@@ -64,23 +64,16 @@ chip soc/intel/alderlake
 	register "pch_reset_power_cycle_duration" = "POWER_CYCLE_DURATION_1S"
 
 	# HD Audio
-	register "PchHdaDspEnable" = "1"
-	register "PchHdaIDispLinkTmode" = "HDA_TMODE_8T"
-	register "PchHdaIDispLinkFrequency" = "HDA_LINKFREQ_96MHZ"
-	register "PchHdaIDispCodecEnable" = "1"
+	register "pch_hda_dsp_enable" = "1"
+	register "pch_hda_idisp_link_tmode" = "HDA_TMODE_8T"
+	register "pch_hda_idisp_link_frequency" = "HDA_LINKFREQ_96MHZ"
+	register "pch_hda_idisp_codec_enable" = "1"
 
 	# FIVR RFI Spread Spectrum 1.5%
-	register "FivrSpreadSpectrum" = "FIVR_SS_1_5"
+	register "fivr_spread_spectrum" = "FIVR_SS_1_5"
 
-	# This disables autonomous GPIO power management, otherwise old cr50 FW
-	# only supports short pulses and they can be missed by the PCH.
-	register "gpio_override_pm" = "1"
-	register "gpio_pm[COMM_0]" = "0"
-	register "gpio_pm[COMM_1]" = "0"
-	register "gpio_pm[COMM_2]" = "0"
-	register "gpio_pm[COMM_3]" = "0"
-	register "gpio_pm[COMM_4]" = "0"
-	register "gpio_pm[COMM_5]" = "0"
+	# Disable C state auto-demotion for all brya baseboards
+	register "disable_c1_state_auto_demotion" = "1"
 
 	# Intel Common SoC Config
 	#+-------------------+---------------------------+
@@ -129,6 +122,10 @@ chip soc/intel/alderlake
 		},
 	}"
 
+	# set EPP to 45%: 45 * 256/100 = 115 = 0x73
+	register "enable_energy_perf_pref" = "true"
+	register "energy_perf_pref_value" = "0x73"
+
 	device domain 0 on
 		device ref igpu on end
 		device ref dtt on end
@@ -150,26 +147,6 @@ chip soc/intel/alderlake
 		device ref i2c3 on end
 		device ref heci1 on end
 		device ref sata on end
-		device ref pcie_rp6 on
-			# Enable WWAN PCIE 6 using clk 5
-			chip soc/intel/common/block/pcie/rtd3
-				register "reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_E0)"
-				register "reset_off_delay_ms" = "20"
-				register "srcclk_pin" = "5"
-				register "ext_pm_support" = "ACPI_PCIE_RP_EMIT_ALL"
-				register "skip_on_off_support" = "true"
-				device generic 0 alias rp6_rtd3 on end
-			end
-			register "pch_pcie_rp[PCH_RP(6)]" = "{
-				.clk_src = 5,
-				.clk_req = 5,
-				.flags = PCIE_RP_LTR | PCIE_RP_AER,
-			}"
-			chip drivers/pcie/generic
-				register "is_untrusted" = "1"
-				device pci 0 on end
-			end
-		end	#PCIE6 WWAN
 		device ref pcie_rp8 on
 			# Enable SD Card PCIE 8 using clk 3
 			register "pch_pcie_rp[PCH_RP(8)]" = "{

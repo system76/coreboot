@@ -10,6 +10,7 @@
 #include <delay.h>
 #include <soc/mt6366.h>
 #include <soc/pmic_wrap.h>
+#include <soc/pmif.h>
 #include <soc/regulator.h>
 #include <timer.h>
 
@@ -821,7 +822,7 @@ static void mt6366_lp_setting(void)
 
 static void pmic_check_hwcid(void)
 {
-	printk(BIOS_WARNING, "%s: ID = %#x\n", __func__,
+	printk(BIOS_INFO, "%s: ID = %#x\n", __func__,
 	       pwrap_read_field(0x8, 0xFFFF, 0));
 }
 
@@ -953,6 +954,7 @@ void mt6366_init(void)
 	wk_sleep_voltage_by_ddr();
 	wk_power_down_seq();
 	mt6366_lp_setting();
+	pmif_spmi_set_lp_mode();
 
 	while (!stopwatch_expired(&voltage_settled))
 		/* wait for voltages to settle */;

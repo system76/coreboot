@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+#include <acpi/acpi.h>
 #include <arch/cbconfig.h>
 #include <console/console.h>
 #include <console/uart.h>
@@ -14,7 +15,6 @@
 #include <drivers/tpm/tpm_ppi.h>
 #include <fmap.h>
 #include <fw_config.h>
-#include <stdlib.h>
 #include <cbfs.h>
 #include <cbmem.h>
 #include <bootmem.h>
@@ -22,6 +22,7 @@
 #include <inttypes.h>
 #include <spi_flash.h>
 #include <smmstore.h>
+#include <types.h>
 
 #if CONFIG(USE_OPTION_TABLE)
 #include <option_table.h>
@@ -36,9 +37,7 @@ static struct lb_header *lb_table_init(unsigned long addr)
 {
 	struct lb_header *header;
 
-	/* 16 byte align the address */
-	addr += 15;
-	addr &= ~15;
+	addr = ALIGN_UP(addr, 16);
 
 	header = (void *)addr;
 	header->signature[0] = 'L';
@@ -312,7 +311,7 @@ static struct lb_board_config *lb_board_config(struct lb_header *header)
 	config->board_id = board_id();
 	config->ram_code = ram_code();
 	config->sku_id = sku_id();
-	config->fw_config = pack_lb64(fw_config);
+	config->fw_config = fw_config;
 
 	if (config->board_id != UNDEFINED_STRAPPING_ID)
 		printk(BIOS_INFO, "Board ID: %d\n", config->board_id);
@@ -420,6 +419,16 @@ static unsigned long lb_table_fini(struct lb_header *head)
 	return (unsigned long)rec + rec->size;
 }
 
+static void lb_add_acpi_rsdp(struct lb_header *head)
+{
+	struct lb_acpi_rsdp *acpi_rsdp;
+	struct lb_record *rec = lb_new_record(head);
+	acpi_rsdp = (struct lb_acpi_rsdp *)rec;
+	acpi_rsdp->tag = LB_TAG_ACPI_RSDP;
+	acpi_rsdp->size = sizeof(*acpi_rsdp);
+	acpi_rsdp->rsdp_pointer = get_coreboot_rsdp();
+}
+
 size_t write_coreboot_forwarding_table(uintptr_t entry, uintptr_t target)
 {
 	struct lb_header *head;
@@ -522,6 +531,9 @@ static uintptr_t write_coreboot_table(uintptr_t rom_table_end)
 
 	/* Add all cbmem entries into the coreboot tables. */
 	cbmem_add_records_to_cbtable(head);
+
+	if (CONFIG(HAVE_ACPI_TABLES))
+		lb_add_acpi_rsdp(head);
 
 	/* Remember where my valid memory ranges are */
 	return lb_table_fini(head);

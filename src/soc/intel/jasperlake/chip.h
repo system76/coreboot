@@ -417,10 +417,21 @@ struct soc_intel_jasperlake_config {
 		CD_CLOCK_312_MHZ   = 5,
 		CD_CLOCK_552_MHZ   = 6,
 		CD_CLOCK_556_8_MHZ = 7,
-		CD_CLOCK_648_MHZ   = 8,
-		CD_CLOCK_652_8_MHZ = 9,
 	} cd_clock;
 
+	/*
+	 * This is a workaround to mitigate higher SoC power consumption in S0ix
+	 * when the CNVI has background activity.
+	 *
+	 * Setting this on a system that supports S0i3 (set xtalsdqdis [Bit 22] in
+	 * cppmvric1 register to 0) will break CNVI timing.
+	 * Affected Intel wireless chipsets: AC9560 (JfP2), AC9461/AC9462 (JfP1) and
+	 * AX201 (HrP2)
+	 *
+	 * true: Enabled (fewer wakes, lower power)
+	 * false: Disabled (more wakes, higher power)
+	 */
+	bool cnvi_reduce_s0ix_pwr_usage;
 };
 
 typedef struct soc_intel_jasperlake_config config_t;

@@ -23,6 +23,12 @@ config SOC_INTEL_ALDERLAKE_PCH_P
 	help
 	  Choose this option if your mainboard has a PCH-P chipset.
 
+config SOC_INTEL_ALDERLAKE_PCH_S
+	bool
+	select SOC_INTEL_ALDERLAKE
+	help
+	  Choose this option if your mainboard has a PCH-S chipset.
+
 if SOC_INTEL_ALDERLAKE
 
 config CPU_SPECIFIC_OPTIONS
@@ -42,6 +48,7 @@ config CPU_SPECIFIC_OPTIONS
 	select FAST_SPI_SUPPORTS_EXT_BIOS_WINDOW
 	select FSP_M_XIP
 	select FSP_STATUS_GLOBAL_RESET_REQUIRED_3
+	select FSP_USES_CB_DEBUG_EVENT_HANDLER
 	select FSPS_HAS_ARCH_UPD
 	select GENERIC_GPIO_LIB
 	select HAVE_DEBUG_RAM_SETUP
@@ -57,7 +64,8 @@ config CPU_SPECIFIC_OPTIONS
 	select MRC_SETTINGS_PROTECT
 	select PARALLEL_MP_AP_WORK
 	select MICROCODE_BLOB_UNDISCLOSED
-	select PLATFORM_USES_FSP2_2
+	select PLATFORM_USES_FSP2_2 if !SOC_INTEL_ALDERLAKE_PCH_S
+	select PLATFORM_USES_FSP2_3 if SOC_INTEL_ALDERLAKE_PCH_S
 	select PMC_GLOBAL_RESET_ENABLE_LOCK
 	select SOC_INTEL_COMMON
 	select SOC_INTEL_COMMON_ACPI_WAKE_SOURCE
@@ -80,7 +88,7 @@ config CPU_SPECIFIC_OPTIONS
 	select SOC_INTEL_COMMON_BLOCK_GSPI_VERSION_2
 	select SOC_INTEL_COMMON_BLOCK_SCS if SOC_INTEL_ALDERLAKE_PCH_N
 	select SOC_INTEL_COMMON_BLOCK_HDA
-	select SOC_INTEL_COMMON_BLOCK_HECI1_DISABLE_USING_PMC_IPC if DISABLE_HECI1_AT_PRE_BOOT
+	select SOC_INTEL_COMMON_BLOCK_HECI1_DISABLE_USING_PMC_IPC
 	select SOC_INTEL_COMMON_BLOCK_IPU
 	select SOC_INTEL_COMMON_BLOCK_IRQ
 	select SOC_INTEL_COMMON_BLOCK_MEMINIT
@@ -91,32 +99,32 @@ config CPU_SPECIFIC_OPTIONS
 	select SOC_INTEL_COMMON_BLOCK_SMM
 	select SOC_INTEL_COMMON_BLOCK_SMM_IO_TRAP
 	select SOC_INTEL_COMMON_BLOCK_TCSS
-	select SOC_INTEL_COMMON_BLOCK_TCSS_REG_ACCESS_REGBAR
 	select SOC_INTEL_COMMON_BLOCK_THERMAL_BEHIND_PMC
 	select SOC_INTEL_COMMON_BLOCK_USB4
 	select SOC_INTEL_COMMON_BLOCK_USB4_PCIE
 	select SOC_INTEL_COMMON_BLOCK_USB4_XHCI
 	select SOC_INTEL_COMMON_BLOCK_XHCI
 	select SOC_INTEL_COMMON_BLOCK_XHCI_ELOG
+	select SOC_INTEL_COMMON_BASECODE
 	select SOC_INTEL_COMMON_FSP_RESET
 	select SOC_INTEL_COMMON_PCH_BASE
 	select SOC_INTEL_COMMON_RESET
+	select SOC_INTEL_CSE_SEND_EOP_EARLY
 	select SOC_INTEL_CSE_SET_EOP
+	select SOC_INTEL_CSE_PRE_CPU_RESET_TELEMETRY if SOC_INTEL_CSE_LITE_SKU
+	select SOC_INTEL_MEM_MAPPED_PM_CONFIGURATION
 	select SSE2
 	select SUPPORT_CPU_UCODE_IN_CBFS
 	select TSC_MONOTONIC_TIMER
 	select UDELAY_TSC
 	select UDK_202005_BINDING
-	select USE_FSP_NOTIFY_PHASE_POST_PCI_ENUM
 
-config ALDERLAKE_A0_CONFIGURE_PMC_DESCRIPTOR
+config ALDERLAKE_CONFIGURE_DESCRIPTOR
 	bool
 	help
-	  Alder Lake stepping A0 needs a different value for a PMC setting in
-	  the IFD. When this option is selected, coreboot will update the IFD
-	  value at runtime, which allows using an IFD with the new value with
-	  any CPU stepping. To apply this workaround, the IFD region needs to
-	  be writable by the host.
+	  Select this if the descriptor needs to be updated at runtime. This
+	  can only be done if the descriptor region is writable, and should only
+	  be used as a temporary workaround.
 
 config ALDERLAKE_CAR_ENHANCED_NEM
 	bool
@@ -243,6 +251,7 @@ config SMM_RESERVED_SIZE
 
 config PCR_BASE_ADDRESS
 	hex
+	default 0xe0000000 if SOC_INTEL_ALDERLAKE_PCH_S
 	default 0xfd000000
 	help
 	  This option allows you to select MMIO Base Address of sideband bus.
@@ -367,5 +376,17 @@ config CSE_BPDT_VERSION
 	default "1.7"
 
 endif
+
+config SI_DESC_REGION
+	string "Descriptor Region name"
+	default "SI_DESC"
+	help
+	  Name of Descriptor Region in the FMAP
+
+config SI_DESC_REGION_SZ
+	int
+	default 4096
+	help
+	  Size of Descriptor Region in the FMAP
 
 endif

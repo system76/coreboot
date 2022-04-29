@@ -25,13 +25,6 @@
 #define LPC_IOE_COMA_EN			(1 << 0)
 #define LPC_NUM_GENERIC_IO_RANGES	4
 
-#define PCR_DMI_LPCLGIR1		0x2730
-
-#define PCR_DMI_LPCGMR			0x2740
-
-#define PCR_DMI_LPCIOD			0x2770
-#define PCR_DMI_LPCIOE			0x2774
-
 /* LPC PCR configuration */
 #define PCR_LPC_PRC			0x341c
 #define PCR_LPC_CCE_EN			0xf
@@ -106,4 +99,8 @@ unsigned long southbridge_write_acpi_tables(const struct device *device,
 					    unsigned long current,
 					    struct acpi_rsdp *rsdp);
 const uint8_t *lpc_get_pic_pirq_routing(size_t *num);
+/* Enable LPC Write Protect. */
+void lpc_enable_wp(void);
+/* Disable LPC Write Protect. */
+void lpc_disable_wp(void);
 #endif /* _SOC_COMMON_BLOCK_LPC_LIB_H_ */

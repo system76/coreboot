@@ -8,13 +8,8 @@
 
 static void pci_init(struct device *dev)
 {
-	/* Enable pci error detecting */
-	uint32_t dword;
 	/* System error enable */
-	dword = pci_read_config32(dev, 0x04);
-	dword |= (1 << 8);	/* SERR# Enable */
-	dword |= (1 << 6);	/* Parity Error Response */
-	pci_write_config32(dev, 0x04, dword);
+	pci_or_config16(dev, PCI_COMMAND, PCI_COMMAND_SERR | PCI_COMMAND_PARITY);
 }
 
 static struct device_operations pci_ops = {
@@ -28,13 +23,13 @@ static struct device_operations pci_ops = {
 /* 82801DB */
 static const struct pci_driver pci_driver_db __pci_driver = {
 	.ops = &pci_ops,
-	.vendor = PCI_VENDOR_ID_INTEL,
-	.device = PCI_DEVICE_ID_INTEL_82801DB_PCI,
+	.vendor = PCI_VID_INTEL,
+	.device = PCI_DID_INTEL_82801DB_PCI,
 };
 
 /* 82801DBM/DBL */
 static const struct pci_driver pci_driver_dbm __pci_driver = {
 	.ops = &pci_ops,
-	.vendor = PCI_VENDOR_ID_INTEL,
-	.device = PCI_DEVICE_ID_INTEL_82801DBM_PCI,
+	.vendor = PCI_VID_INTEL,
+	.device = PCI_DID_INTEL_82801DBM_PCI,
 };

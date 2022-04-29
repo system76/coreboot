@@ -38,16 +38,16 @@ static void romstage_main(void)
 	struct sysinfo *cb = &romstage_state;
 	int cbmem_initted = 0;
 
-	fill_sysinfo(cb);
-
-	timestamp_add_now(TS_START_ROMSTAGE);
-
-	board_BeforeAgesa(cb);
+	timestamp_add_now(TS_ROMSTAGE_START);
 
 	console_init();
 
 	printk(BIOS_DEBUG, "APIC %02u: CPU Family_Model = %08x\n",
 	       initial_lapicid(), cpuid_eax(1));
+
+	fill_sysinfo(cb);
+
+	board_BeforeAgesa(cb);
 
 	set_ap_entry_ptr(ap_romstage_main);
 
@@ -55,14 +55,14 @@ static void romstage_main(void)
 
 	agesa_execute_state(cb, AMD_INIT_EARLY);
 
-	timestamp_add_now(TS_BEFORE_INITRAM);
+	timestamp_add_now(TS_INITRAM_START);
 
 	if (!cb->s3resume)
 		agesa_execute_state(cb, AMD_INIT_POST);
 	else
 		agesa_execute_state(cb, AMD_INIT_RESUME);
 
-	timestamp_add_now(TS_AFTER_INITRAM);
+	timestamp_add_now(TS_INITRAM_END);
 
 	/* Work around AGESA setting all memory as WB on normal
 	 * boot path.

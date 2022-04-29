@@ -34,7 +34,7 @@ static void after_verstage(void)
 	if (!cbd)	/* Can't initialize RW CBFS in recovery mode. */
 		return;
 
-	cb_err_t err = cbfs_init_boot_device(cbd, NULL); /* TODO: RW hash */
+	enum cb_err err = cbfs_init_boot_device(cbd, NULL); /* TODO: RW hash */
 	if (err && err != CB_CBFS_CACHE_FULL)	/* TODO: -> recovery? */
 		die("RW CBFS initialization failure: %d", err);
 }
@@ -52,10 +52,10 @@ void vboot_run_logic(void)
 
 		printk(BIOS_DEBUG, "VBOOT: Loading verstage.\n");
 
-		timestamp_add_now(TS_START_COPYVER);
+		timestamp_add_now(TS_COPYVER_START);
 		if (cbfs_prog_stage_load(&verstage))
 			die("failed to load verstage");
-		timestamp_add_now(TS_END_COPYVER);
+		timestamp_add_now(TS_COPYVER_END);
 
 		/* verify and select a slot */
 		prog_run(&verstage);

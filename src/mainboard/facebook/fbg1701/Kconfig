@@ -2,9 +2,6 @@
 
 if BOARD_FACEBOOK_FBG1701
 
-config IGNORE_IASL_MISSING_DEPENDENCY
-	def_bool y
-
 config BOARD_SPECIFIC_OPTIONS
 	def_bool y
 	select BOARD_ROMSIZE_KB_8192
@@ -13,7 +10,7 @@ config BOARD_SPECIFIC_OPTIONS
 	select HAVE_IFD_BIN
 	select HAVE_ME_BIN
 	select HAVE_OPTION_TABLE
-	select MAINBOARD_HAS_LPC_TPM
+	select MEMORY_MAPPED_TPM
 	select MAINBOARD_HAS_TPM2
 	select SOC_INTEL_BRASWELL
 	select SOC_INTEL_COMMON_BLOCK_HDA_VERB
@@ -49,12 +46,6 @@ config RO_REGION_ONLY
 	default "spd.bin fsp.bin cpu_microcode_blob.bin"
 
 endif # VBOOT
-
-config ONBOARD_SAMSUNG_MEM
-	bool "Onboard memory manufacturer Samsung"
-	default n
-	help
-	  Samsung K4B8G1646D memory
 
 config MAINBOARD_DIR
 	default "facebook/fbg1701"

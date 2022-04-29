@@ -85,6 +85,7 @@ enum {
 	LB_TAG_BOARD_CONFIG		= 0x0040,
 	LB_TAG_ACPI_CNVS		= 0x0041,
 	LB_TAG_TYPE_C_INFO		= 0x0042,
+	LB_TAG_ACPI_RSDP                = 0x0043,
 	/* The following options are CMOS-related */
 	LB_TAG_CMOS_OPTION_TABLE	= 0x00c8,
 	LB_TAG_OPTION			= 0x00c9,
@@ -98,33 +99,11 @@ enum {
  * 64bit system, a uint64_t would be aligned to 64bit boundaries,
  * breaking the table format.
  *
- * lb_uint64 will keep 64bit coreboot table values aligned to 32bit
- * to ensure compatibility. They can be accessed with the two functions
- * below: unpack_lb64() and pack_lb64()
- *
- * See also: util/lbtdump/lbtdump.c
+ * lb_uint64_t will keep 64bit coreboot table values aligned to 32bit
+ * to ensure compatibility.
  */
 
-struct lb_uint64 {
-	uint32_t lo;
-	uint32_t hi;
-};
-
-static inline uint64_t unpack_lb64(struct lb_uint64 value)
-{
-	uint64_t result;
-	result = value.hi;
-	result = (result << 32) + value.lo;
-	return result;
-}
-
-static inline struct lb_uint64 pack_lb64(uint64_t value)
-{
-	struct lb_uint64 result;
-	result.lo = (value >> 0) & 0xffffffff;
-	result.hi = (value >> 32) & 0xffffffff;
-	return result;
-}
+typedef __aligned(4) uint64_t lb_uint64_t;
 
 struct lb_header {
 	uint8_t  signature[4]; /* LBIO */
@@ -147,8 +126,8 @@ struct lb_record {
 };
 
 struct lb_memory_range {
-	struct lb_uint64 start;
-	struct lb_uint64 size;
+	lb_uint64_t start;
+	lb_uint64_t size;
 	uint32_t type;
 #define LB_MEM_RAM		 1	/* Memory anyone can use */
 #define LB_MEM_RESERVED		 2	/* Don't use this memory region */
@@ -168,7 +147,7 @@ struct lb_memory {
 struct lb_hwrpb {
 	uint32_t tag;
 	uint32_t size;
-	uint64_t hwrpb;
+	lb_uint64_t hwrpb;
 };
 
 struct lb_mainboard {
@@ -236,7 +215,7 @@ struct lb_console {
 struct lb_forward {
 	uint32_t tag;
 	uint32_t size;
-	uint64_t forward;
+	lb_uint64_t forward;
 };
 
 /**
@@ -294,7 +273,7 @@ struct lb_framebuffer {
 	uint32_t tag;
 	uint32_t size;
 
-	uint64_t physical_address;
+	lb_uint64_t physical_address;
 	uint32_t x_resolution;
 	uint32_t y_resolution;
 	uint32_t bytes_per_line;
@@ -332,7 +311,7 @@ struct lb_range {
 	uint32_t tag;
 	uint32_t size;
 
-	uint64_t range_start;
+	lb_uint64_t range_start;
 	uint32_t range_size;
 };
 
@@ -342,7 +321,7 @@ struct lb_cbmem_ref {
 	uint32_t tag;
 	uint32_t size;
 
-	uint64_t cbmem_addr;
+	lb_uint64_t cbmem_addr;
 };
 
 struct lb_x86_rom_mtrr {
@@ -378,10 +357,10 @@ struct lb_boot_media_params {
 	uint32_t tag;
 	uint32_t size;
 	/* offsets are relative to start of boot media */
-	uint64_t fmap_offset;
-	uint64_t cbfs_offset;
-	uint64_t cbfs_size;
-	uint64_t boot_media_size;
+	lb_uint64_t fmap_offset;
+	lb_uint64_t cbfs_offset;
+	lb_uint64_t cbfs_size;
+	lb_uint64_t boot_media_size;
 };
 
 /*
@@ -391,7 +370,7 @@ struct lb_cbmem_entry {
 	uint32_t tag;
 	uint32_t size;
 
-	uint64_t address;
+	lb_uint64_t address;
 	uint32_t entry_size;
 	uint32_t id;
 };
@@ -460,7 +439,7 @@ struct lb_board_config {
 	uint32_t tag;
 	uint32_t size;
 
-	struct lb_uint64 fw_config;
+	lb_uint64_t fw_config;
 	uint32_t board_id;
 	uint32_t ram_code;
 	uint32_t sku_id;
@@ -573,5 +552,16 @@ struct lb_tpm_physical_presence {
 	uint32_t ppi_address;	/* Address of ACPI PPI communication buffer */
 	uint8_t tpm_version;	/* 1: TPM1.2, 2: TPM2.0 */
 	uint8_t ppi_version;	/* BCD encoded */
-} __packed;
+};
+
+
+/*
+ * Handoff the ACPI RSDP
+ */
+struct lb_acpi_rsdp {
+	uint32_t tag;
+	uint32_t size;
+	lb_uint64_t rsdp_pointer; /* Address of the ACPI RSDP */
+};
+
 #endif

@@ -5,10 +5,11 @@
 #include <device/pci_ids.h>
 
 static const unsigned short pci_device_ids[] = {
-	PCI_DEVICE_ID_INTEL_CML_DTT,
-	PCI_DEVICE_ID_INTEL_TGL_DTT,
-	PCI_DEVICE_ID_INTEL_JSL_DTT,
-	PCI_DEVICE_ID_INTEL_ADL_DTT,
+	PCI_DID_INTEL_MTL_DTT,
+	PCI_DID_INTEL_CML_DTT,
+	PCI_DID_INTEL_TGL_DTT,
+	PCI_DID_INTEL_JSL_DTT,
+	PCI_DID_INTEL_ADL_DTT,
 	0
 };
 
@@ -22,6 +23,6 @@ static struct device_operations dptf_dev_ops = {
 
 static const struct pci_driver pch_dptf __pci_driver = {
 	.ops				= &dptf_dev_ops,
-	.vendor				= PCI_VENDOR_ID_INTEL,
+	.vendor				= PCI_VID_INTEL,
 	.devices			= pci_device_ids,
 };

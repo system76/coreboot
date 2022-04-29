@@ -239,7 +239,7 @@ static int mtk_i2c_transfer(uint8_t bus, struct i2c_msg *seg,
 	/* start transfer transaction */
 	write32(&regs->start, 0x1);
 
-	stopwatch_init_msecs_expire(&sw, 100);
+	stopwatch_init_usecs_expire(&sw, CONFIG_I2C_TRANSFER_TIMEOUT_US);
 
 	/* polling mode : see if transaction complete */
 	while (1) {
@@ -496,7 +496,6 @@ void mtk_i2c_speed_init(uint8_t bus, uint32_t speed)
 	uint32_t max_clk_div = MAX_CLOCK_DIV;
 	uint32_t clk_src, clk_div, step_cnt, sample_cnt;
 	uint32_t l_step_cnt, l_sample_cnt;
-	uint32_t timing_reg_value, ltiming_reg_value;
 	struct mtk_i2c *bus_ctrl;
 
 	if (bus >= I2C_BUS_NUMBER) {
@@ -516,27 +515,19 @@ void mtk_i2c_speed_init(uint8_t bus, uint32_t speed)
 						    &l_step_cnt, &l_sample_cnt))
 				continue;
 
-			timing_reg_value = (l_sample_cnt << 8) | l_step_cnt;
-
 			/* Set the high speed mode register */
 			if (mtk_i2c_calculate_speed(bus, clk_src, speed,
 						    &step_cnt, &sample_cnt))
 				continue;
 
-			ltiming_reg_value = (l_sample_cnt << 6) | l_step_cnt |
-					    (sample_cnt << 12) | (step_cnt << 9);
 			bus_ctrl->ac_timing.inter_clk_div = (clk_div - 1) << 8 | (clk_div - 1);
 		} else {
 			if (mtk_i2c_calculate_speed(bus, clk_src, speed,
 						    &l_step_cnt, &l_sample_cnt))
 				continue;
 
-			timing_reg_value = (l_sample_cnt << 8) | l_step_cnt;
-
 			/* Disable the high speed transaction */
 			bus_ctrl->ac_timing.hs = I2C_TIME_CLR_VALUE;
-
-			ltiming_reg_value = (l_sample_cnt << 6) | l_step_cnt;
 		}
 
 		break;

@@ -9,7 +9,6 @@
 #include <device/mmio.h>
 #include <device/device.h>
 #include <device/pci_ops.h>
-#include <intelblocks/dmi.h>
 #include <intelblocks/fast_spi.h>
 #include <intelblocks/gspi.h>
 #include <intelblocks/lpc_lib.h>
@@ -38,11 +37,6 @@
 #define PCR_PSFX_TO_SHDW_BAR4               0x10
 #define PCR_PSFX_TO_SHDW_PCIEN_IOEN         0x01
 #define PCR_PSFX_T0_SHDW_PCIEN              0x1C
-
-#define PCR_DMI_ACPIBA                      0x27B4
-#define PCR_DMI_ACPIBDID                    0x27B8
-#define PCR_DMI_PMBASEA                     0x27AC
-#define PCR_DMI_PMBASEC                     0x27B0
 
 static void soc_config_pwrmbase(void)
 {
@@ -103,8 +97,8 @@ static void soc_config_acpibase(void)
 
 void pch_early_iorange_init(void)
 {
-	uint16_t io_enables = LPC_IOE_SUPERIO_2E_2F | LPC_IOE_KBC_60_64 |
-		LPC_IOE_EC_62_66 | LPC_IOE_LGE_200;
+	uint16_t io_enables = LPC_IOE_SUPERIO_2E_2F | LPC_IOE_EC_4E_4F |
+			      LPC_IOE_KBC_60_64 | LPC_IOE_EC_62_66 | LPC_IOE_LGE_200;
 
 	/* IO Decode Range */
 	if (CONFIG(DRIVERS_UART_8250IO))

@@ -83,6 +83,7 @@ struct sysinfo_t {
 	uintptr_t compiler;
 	uintptr_t linker;
 	uintptr_t assembler;
+	uintptr_t mem_chip_base;
 
 	uintptr_t cb_version;
 
@@ -110,6 +111,7 @@ struct sysinfo_t {
 	uintptr_t mrc_cache;
 	uintptr_t acpi_gnvs;
 	uintptr_t acpi_cnvs;
+	uintptr_t acpi_rsdp;
 
 #define UNDEFINED_STRAPPING_ID	(~0)
 #define UNDEFINED_FW_CONFIG	~((uint64_t)0)

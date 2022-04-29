@@ -75,7 +75,7 @@
 #define SPIBAR_HSFSTS_AEL		(1 << 2)
 #define SPIBAR_HSFSTS_FCERR		(1 << 1)
 #define SPIBAR_HSFSTS_FDONE		(1 << 0)
-#define SPIBAR_HSFSTS_W1C_BITS		0xff
+#define SPIBAR_HSFSTS_W1C_BITS		0x1ff
 
 /* Bit definitions for FADDR (0x08) register */
 #define SPIBAR_FADDR_MASK		0x7ffffff
@@ -131,6 +131,13 @@
 		    (SPI_OPTYPE_1 << 2) | (SPI_OPTYPE_0))
 #define SPI_OPPREFIX ((0x50 << 8) | 0x06) /* EWSR and WREN */
 
+/*
+ * Register Offset of BIOS Vendor Specific Component Capabilities (VSCC)
+ * for Component 0 Register
+ */
+#define SPIBAR_SFDP0_VSCC0		0xc4
+#define SPIBAR_VSCC0_VCL		(1 << 30)
+
 /* Bit definitions for PTINX (0xcc) register */
 #define SPIBAR_PTINX_COMP_0		(0 << 14)
 #define SPIBAR_PTINX_COMP_1		(1 << 14)
@@ -140,9 +147,9 @@
 #define SPIBAR_PTINX_IDX_MASK		0xffc
 
 /* Register Offsets of BIOS Flash Program Registers */
-#define SPIBAR_RESET_LOCK               0xf0
-#define SPIBAR_RESET_CTRL               0xf4
-#define SPIBAR_RESET_DATA               0xf8
+#define SPIBAR_RESET_LOCK		0xf0
+#define SPIBAR_RESET_CTRL		0xf4
+#define SPIBAR_RESET_DATA		0xf8
 
 /* Programmable values of Bit0 (SSL) of Set STRAP MSG LOCK (0xF0) Register */
 #define SPIBAR_RESET_LOCK_DISABLE	0 /* Set_Strap Lock(SSL) Bit 0 = 0 */

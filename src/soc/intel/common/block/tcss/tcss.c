@@ -355,7 +355,7 @@ static uint32_t calc_bias_ctrl_reg_value(gpio_t pad)
 		cpu_pid;
 }
 
-static void tcss_configure_aux_bias_pads_regbar(
+void tcss_configure_aux_bias_pads_regbar(
 	const struct typec_aux_bias_pads *pads)
 {
 	for (size_t i = 0; i < MAX_TYPE_C_PORTS; i++) {
@@ -368,14 +368,17 @@ static void tcss_configure_aux_bias_pads_regbar(
 	}
 }
 
-static void tcss_configure_aux_bias_pads(
+void ioe_tcss_configure_aux_bias_pads_sbi(
 	const struct typec_aux_bias_pads *pads)
 {
-	if (CONFIG(SOC_INTEL_COMMON_BLOCK_TCSS_REG_ACCESS_REGBAR))
-		tcss_configure_aux_bias_pads_regbar(pads);
-	else
-		printk(BIOS_ERR, "%s: Error: No TCSS configuration method is selected!\n",
-					__func__);
+	for (size_t i = 0; i < MAX_TYPE_C_PORTS; i++) {
+		if (pads[i].pad_auxn_dc && pads[i].pad_auxp_dc) {
+			ioe_p2sb_sbi_write(PID_IOM, IOM_AUX_BIAS_CTRL_PULLUP_OFFSET(i),
+				calc_bias_ctrl_reg_value(pads[i].pad_auxp_dc));
+			ioe_p2sb_sbi_write(PID_IOM, IOM_AUX_BIAS_CTRL_PULLDOWN_OFFSET(i),
+				calc_bias_ctrl_reg_value(pads[i].pad_auxn_dc));
+		}
+	}
 }
 
 const struct tcss_port_map *tcss_get_port_info(size_t *num_ports)
@@ -394,7 +397,7 @@ const struct tcss_port_map *tcss_get_port_info(size_t *num_ports)
 								ARRAY_SIZE(conn_path));
 		unsigned int usb2_port, usb3_port;
 
-		if (!conn)
+		if (!is_dev_enabled(conn))
 			continue;
 
 		if (CONFIG(DRIVERS_INTEL_PMC) &&
@@ -423,19 +426,19 @@ void tcss_configure(const struct typec_aux_bias_pads aux_bias_pads[MAX_TYPE_C_PO
 		tcss_init_mux(i, &port_map[i]);
 
 	/* This should be performed before alternate modes are entered */
-	tcss_configure_aux_bias_pads(aux_bias_pads);
+	if (tcss_ops.configure_aux_bias_pads)
+		tcss_ops.configure_aux_bias_pads(aux_bias_pads);
 
 	if (CONFIG(ENABLE_TCSS_DISPLAY_DETECTION))
 		tcss_configure_dp_mode(port_map, num_ports);
 }
 
-uint32_t tcss_valid_tbt_auth(void)
+bool tcss_valid_tbt_auth(void)
 {
-	if (CONFIG(SOC_INTEL_COMMON_BLOCK_TCSS_REG_ACCESS_REGBAR)) {
-		return REGBAR32(PID_IOM, IOM_CSME_IMR_TBT_STATUS) & TBT_VALID_AUTHENTICATION;
-	} else {
-		printk(BIOS_ERR, "%s: Error: No validation for Thunderbolt authentication!\n",
-					__func__);
-		return 0;
-	}
+	return REGBAR32(PID_IOM, IOM_CSME_IMR_TBT_STATUS) & TBT_VALID_AUTHENTICATION;
+}
+
+bool ioe_tcss_valid_tbt_auth(void)
+{
+	return ioe_p2sb_sbi_read(PID_IOM, IOM_CSME_IMR_TBT_STATUS) & TBT_VALID_AUTHENTICATION;
 }

@@ -6,6 +6,7 @@ config BOARD_SPECIFIC_OPTIONS
 	def_bool y
 	select BOARD_ROMSIZE_KB_16384
 	select HAVE_ACPI_RESUME
+	select EC_ACPI
 	select SOC_AMD_SABRINA
 	select SOC_AMD_COMMON_BLOCK_USE_ESPI
 	select AMD_SOC_CONSOLE_UART
@@ -66,9 +67,18 @@ config VBOOT_VBNV_OFFSET
 	hex
 	default 0x2A
 
+config RO_REGION_ONLY
+	string
+	depends on VBOOT_SLOTS_RW_AB || VBOOT_SLOTS_RW_A
+	# Add the EFS and EC to the RO region only
+	# This is a chausie-specific override of soc/amd/sabrina/Kconfig
+	default "apu/amdfw apu/ecfw"
+
 config CHROMEOS
 	# Use default libpayload config
 	select LP_DEFCONFIG_OVERRIDE if PAYLOAD_DEPTHCHARGE
+	# We don't have recovery buttons, so we can't manually enable devmode.
+	select GBB_FLAG_FORCE_DEV_SWITCH_ON
 
 if !EM100	# EM100 defaults in soc/amd/common/blocks/spi/Kconfig
 config EFS_SPI_READ_MODE

@@ -3,7 +3,6 @@
 #include <acpi/acpi.h>
 #include <bootsplash.h>
 #include <bootstate.h>
-#include <cbmem.h>
 #include <console/console.h>
 #include <cpu/x86/mp.h>
 #include <device/mmio.h>
@@ -23,6 +22,7 @@
 #include <intelblocks/gpio.h>
 #include <intelblocks/itss.h>
 #include <intelblocks/pmclib.h>
+#include <option.h>
 #include <soc/cpu.h>
 #include <soc/heci.h>
 #include <soc/intel/common/vbt.h>
@@ -447,6 +447,10 @@ static void disable_dev(struct device *dev, FSP_S_CONFIG *silconfig)
 	case SA_DEVFN_IPU:
 		silconfig->IpuEn = 0;
 		break;
+#else
+	case PCH_DEVFN_CNVI:
+		silconfig->CnviMode = 0;
+		break;
 #endif
 	case PCH_DEVFN_HDA:
 		silconfig->HdaEnable = 0;
@@ -705,7 +709,7 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *silupd)
 	silconfig->VmxEnable = CONFIG(ENABLE_VMX);
 
 	/* Set VTD feature according to devicetree */
-	silconfig->VtdEnable = cfg->enable_vtd;
+	silconfig->VtdEnable = get_uint_option("vtd", cfg->enable_vtd);
 
 	silconfig->PeiGraphicsPeimInit = CONFIG(RUN_FSP_GOP) && is_devfn_enabled(SA_DEVFN_IGD);
 

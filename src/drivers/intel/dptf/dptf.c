@@ -14,10 +14,14 @@ enum dptf_generic_participant_type {
 	DPTF_GENERIC_PARTICIPANT_TYPE_TSR	= 0x3,
 	DPTF_GENERIC_PARTICIPANT_TYPE_TPCH	= 0x5,
 	DPTF_GENERIC_PARTICIPANT_TYPE_CHARGER	= 0xB,
+	DPTF_GENERIC_PARTICIPANT_TYPE_BATTERY	= 0xC,
+	DPTF_GENERIC_PARTICIPANT_TYPE_POWER	= 0x11,
 };
 
 #define DEFAULT_CHARGER_STR		"Battery Charger"
 #define DEFAULT_TPCH_STR		"Intel PCH FIVR Participant"
+#define DEFAULT_POWER_STR		"Power Participant"
+#define DEFAULT_BATTERY_STR		"Battery Participant"
 
 #define PMC_IPC_COMMAND_FIVR_SIZE	0x8
 
@@ -368,6 +372,54 @@ static void write_tpch_methods(const struct dptf_platform_info *platform_info)
 	acpigen_write_device_end(); /* TPCH Device */
 }
 
+static void write_create_tpwr(const struct drivers_intel_dptf_config *config,
+			      const struct dptf_platform_info *platform_info)
+{
+	acpigen_write_device("TPWR");
+	acpigen_write_name("_HID");
+	if (platform_info->tpwr_device_hid != NULL)
+		dptf_write_hid(platform_info->use_eisa_hids, platform_info->tpwr_device_hid);
+	acpigen_write_name_string("_UID", "TPWR");
+	acpigen_write_name_string("_STR", DEFAULT_POWER_STR);
+	acpigen_write_name_integer("PTYP", DPTF_GENERIC_PARTICIPANT_TYPE_POWER);
+	acpigen_write_STA(ACPI_STATUS_DEVICE_ALL_ON);
+
+	/* PROP method */
+	if(config->prop != 0) {
+		acpigen_write_method_serialized("PROP", 0);
+		acpigen_emit_byte(RETURN_OP);
+		acpigen_write_integer(config->prop);
+		acpigen_pop_len(); /* Method PROP */
+	}
+	acpigen_write_device_end(); /* TPWR Power Participant Device */
+}
+
+static void write_tpwr_methods(const struct drivers_intel_dptf_config *config,
+			       const struct dptf_platform_info *platform_info)
+{
+	write_create_tpwr(config, platform_info);
+}
+
+static void write_create_tbat(const struct dptf_platform_info *platform_info)
+{
+	acpigen_write_device("TBAT");
+	acpigen_write_name("_HID");
+	if (platform_info->tbat_device_hid != NULL)
+		dptf_write_hid(platform_info->use_eisa_hids, platform_info->tbat_device_hid);
+	acpigen_write_name_string("_UID", "TBAT");
+	acpigen_write_name_string("_STR", DEFAULT_BATTERY_STR);
+	acpigen_write_name_integer("PTYP", DPTF_GENERIC_PARTICIPANT_TYPE_BATTERY);
+	acpigen_write_STA(ACPI_STATUS_DEVICE_ALL_ON);
+	acpigen_write_device_end(); /* TBAT Battery Participant Device */
+}
+
+
+static void write_tbat_methods(const struct dptf_platform_info *platform_info)
+{
+	write_create_tbat(platform_info);
+}
+
+
 /* \_SB.DPTF - note: leaves the Scope open for child devices */
 static void write_open_dptf_device(const struct device *dev,
 				   const struct dptf_platform_info *platform_info)
@@ -405,6 +457,12 @@ static void write_device_definitions(const struct device *dev)
 
 	if (CONFIG(DRIVERS_INTEL_DPTF_SUPPORTS_TPCH))
 		write_tpch_methods(platform_info);
+
+	if (CONFIG(DRIVERS_INTEL_DPTF_SUPPORTS_TPWR))
+		write_tpwr_methods(config, platform_info);
+
+	if (CONFIG(DRIVERS_INTEL_DPTF_SUPPORTS_TBAT))
+		write_tbat_methods(platform_info);
 
 	acpigen_pop_len(); /* DPTF Device (write_open_dptf_device) */
 	acpigen_pop_len(); /* Scope */

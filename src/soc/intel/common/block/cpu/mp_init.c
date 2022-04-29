@@ -28,6 +28,8 @@ static struct device_operations cpu_dev_ops = {
 };
 
 static const struct cpu_device_id cpu_table[] = {
+	{ X86_VENDOR_INTEL, CPUID_METEORLAKE_A0_1},
+	{ X86_VENDOR_INTEL, CPUID_METEORLAKE_A0_2},
 	{ X86_VENDOR_INTEL, CPUID_SKYLAKE_C0 },
 	{ X86_VENDOR_INTEL, CPUID_SKYLAKE_D0 },
 	{ X86_VENDOR_INTEL, CPUID_SKYLAKE_HQ0 },
@@ -69,10 +71,11 @@ static const struct cpu_device_id cpu_table[] = {
 	{ X86_VENDOR_INTEL, CPUID_ELKHARTLAKE_B0 },
 	{ X86_VENDOR_INTEL, CPUID_JASPERLAKE_A0 },
 	{ X86_VENDOR_INTEL, CPUID_ALDERLAKE_S_A0 },
-	{ X86_VENDOR_INTEL, CPUID_ALDERLAKE_A0 },
-	{ X86_VENDOR_INTEL, CPUID_ALDERLAKE_A1 },
-	{ X86_VENDOR_INTEL, CPUID_ALDERLAKE_A2 },
-	{ X86_VENDOR_INTEL, CPUID_ALDERLAKE_A3 },
+	{ X86_VENDOR_INTEL, CPUID_ALDERLAKE_J0 },
+	{ X86_VENDOR_INTEL, CPUID_ALDERLAKE_K0 },
+	{ X86_VENDOR_INTEL, CPUID_ALDERLAKE_L0 },
+	{ X86_VENDOR_INTEL, CPUID_ALDERLAKE_Q0 },
+	{ X86_VENDOR_INTEL, CPUID_ALDERLAKE_R0 },
 	{ X86_VENDOR_INTEL, CPUID_ALDERLAKE_N_A0 },
 	{ 0, 0 },
 };
@@ -151,6 +154,14 @@ static void coreboot_init_cpus(void *unused)
 	init_cpus();
 }
 
+static void post_cpus_add_romcache(void)
+{
+	if (!CONFIG(BOOT_DEVICE_MEMORY_MAPPED))
+		return;
+
+	fast_spi_cache_bios_region();
+}
+
 static void wrapper_x86_setup_mtrrs(void *unused)
 {
 	x86_setup_mtrrs_with_detect();
@@ -162,6 +173,7 @@ static void post_cpus_init(void *unused)
 	if (mp_run_on_all_cpus(&wrapper_x86_setup_mtrrs, NULL) != CB_SUCCESS)
 		printk(BIOS_ERR, "MTRR programming failure\n");
 
+	post_cpus_add_romcache();
 	x86_mtrr_check();
 }
 

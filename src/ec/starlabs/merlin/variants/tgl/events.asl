@@ -36,17 +36,16 @@ Method (_Q06, 0, NotSerialized)			// Event: Backlight Brightness Up
 
 Method (_Q87, 0, NotSerialized)			// Event: Function Lock
 {
-	FLKC = FLKE
+	Printf ("EC: Function Lock")
 }
 
 Method (_Q88, 0, NotSerialized)			// Event: Trackpad Lock
 {
-	TPLC = TPLE
+	Printf ("EC: Trackpad Lock")
 }
-Method (_Q4A)					// Event: Keyboard Backlight Brightness
+Method (_Q4A, 0, NotSerialized)			// Event: Keyboard Backlight Brightness
 {
-	KLSC = KLSE
-	KLBC = KLBE
+	Printf ("EC: Keyboard Brightness")
 }
 
 Method (_Q99, 0, NotSerialized)			// Event: Airplane Mode
@@ -239,7 +238,7 @@ Method (_Q37, 0, NotSerialized)			// Event: THROT_LV7
 	Printf ("EC: THROT_LV7")
 }
 
-Method (_Q38, 0, NotSerialized)			// Event: CPU_DN_SPEED
+Method (_Q3B, 0, NotSerialized)			// Event: CPU_DN_SPEED
 {
 	Printf ("EC: CPU_DN_SPEED")
 }

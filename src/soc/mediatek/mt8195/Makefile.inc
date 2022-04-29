@@ -2,12 +2,14 @@ ifeq ($(CONFIG_SOC_MEDIATEK_MT8195),y)
 
 bootblock-y += ../common/auxadc.c
 bootblock-y += bootblock.c
+bootblock-y += ../common/early_init.c
 bootblock-y += ../common/eint_event.c
 bootblock-y += ../common/flash_controller.c
 bootblock-y += ../common/gpio.c gpio.c
 bootblock-y += ../common/i2c.c i2c.c
 bootblock-y += ../common/mmu_operations.c
 bootblock-y += ../common/tracker.c ../common/tracker_v2.c
+bootblock-$(CONFIG_PCI) += pcie.c
 bootblock-y += ../common/pll.c pll.c
 bootblock-$(CONFIG_SPI_FLASH) += ../common/spi.c spi.c
 bootblock-y += ../common/timer.c timer.c
@@ -53,6 +55,7 @@ romstage-y += mt6360.c
 romstage-y += ../common/rtc.c ../common/rtc_osc_init.c ../common/rtc_mt6359p.c
 
 ramstage-y += ../common/auxadc.c
+ramstage-y += ../common/early_init.c
 ramstage-y += ../common/ddp.c ddp.c
 ramstage-y += devapc.c
 ramstage-y += ../common/dfd.c
@@ -70,6 +73,7 @@ ramstage-y += ../common/mmu_operations.c ../common/mmu_cmops.c
 ramstage-y += mt6360.c
 ramstage-y += ../common/mtcmos.c mtcmos.c
 ramstage-$(CONFIG_COMMONLIB_STORAGE_MMC) += ../common/msdc.c msdc.c
+ramstage-$(CONFIG_PCI) += ../common/pcie.c pcie.c
 ramstage-y += ../common/pll.c pll.c
 ramstage-y += ../common/pmif.c
 ramstage-y += ../common/rtc.c ../common/rtc_mt6359p.c

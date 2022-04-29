@@ -22,6 +22,20 @@ chip soc/intel/alderlake
 		},
 	}"
 
+	register "ext_fivr_settings" = "{
+		.configure_ext_fivr = 1,
+		.v1p05_enable_bitmap = FIVR_ENABLE_ALL_SX,
+		.vnn_enable_bitmap = FIVR_ENABLE_ALL_SX,
+		.v1p05_supported_voltage_bitmap = FIVR_VOLTAGE_NORMAL |
+						FIVR_VOLTAGE_MIN_ACTIVE |
+						FIVR_VOLTAGE_MIN_RETENTION,
+		.vnn_supported_voltage_bitmap = FIVR_VOLTAGE_NORMAL |
+						FIVR_VOLTAGE_MIN_ACTIVE |
+						FIVR_VOLTAGE_MIN_RETENTION,
+		.v1p05_icc_max_ma = 500,
+		.vnn_sx_voltage_mv = 1250,
+	}"
+
 	register "usb2_ports[3]" = "USB2_PORT_EMPTY"    # Disable Port 3
 	register "usb2_ports[4]" = "USB2_PORT_EMPTY"    # Disable Port 4
 	register "usb2_ports[6]" = "USB2_PORT_EMPTY"    # Disable Port 6
@@ -36,7 +50,7 @@ chip soc/intel/alderlake
 	register "tcss_ports[3]" = "TCSS_PORT_DEFAULT(OC3)"
 
 	# I2C Port Config
-	register "SerialIoI2cMode" = "{
+	register "serial_io_i2c_mode" = "{
 		[PchSerialIoIndexI2C0] = PchSerialIoPci,
 		[PchSerialIoIndexI2C1] = PchSerialIoPci,
 		[PchSerialIoIndexI2C2] = PchSerialIoDisabled,
@@ -45,10 +59,12 @@ chip soc/intel/alderlake
 		[PchSerialIoIndexI2C5] = PchSerialIoPci,
 	}"
 
-	register "SerialIoGSpiMode" = "{
+	register "serial_io_gspi_mode" = "{
 		[PchSerialIoIndexGSPI0] = PchSerialIoDisabled,
 		[PchSerialIoIndexGSPI1] = PchSerialIoDisabled,
 	}"
+
+	register "tcc_offset" = "10"     # TCC of 90
 
 	device domain 0 on
 		device ref dtt on
@@ -64,21 +80,21 @@ chip soc/intel/alderlake
 					[0] = {
 						.target = DPTF_CPU,
 						.thresholds = {
-								TEMP_PCT(85, 90),
-								TEMP_PCT(80, 80),
-								TEMP_PCT(75, 70),
-								TEMP_PCT(70, 50),
-								TEMP_PCT(65, 30),
+								TEMP_PCT(57, 78),
+								TEMP_PCT(54, 70),
+								TEMP_PCT(51, 60),
+								TEMP_PCT(48, 50),
+								TEMP_PCT(44, 37),
 						}
 					},
 					[1] = {
 						.target = DPTF_TEMP_SENSOR_1,
 						.thresholds = {
-								TEMP_PCT(50, 90),
-								TEMP_PCT(48, 70),
-								TEMP_PCT(46, 60),
-								TEMP_PCT(43, 40),
-								TEMP_PCT(40, 30),
+								TEMP_PCT(55, 78),
+								TEMP_PCT(52, 70),
+								TEMP_PCT(49, 60),
+								TEMP_PCT(46, 50),
+								TEMP_PCT(43, 37),
 						}
 					}
 				}"
@@ -86,33 +102,33 @@ chip soc/intel/alderlake
 				## Passive Policy
 				register "policies.passive" = "{
 					[0] = DPTF_PASSIVE(CPU,        CPU,           95, 5000),
-					[1] = DPTF_PASSIVE(CPU,        TEMP_SENSOR_0, 75, 5000),
-					[2] = DPTF_PASSIVE(CPU,        TEMP_SENSOR_1, 75, 5000),
-					[3] = DPTF_PASSIVE(CHARGER,    TEMP_SENSOR_2, 75, 5000),
+					[1] = DPTF_PASSIVE(CPU,        TEMP_SENSOR_0, 85, 5000),
+					[2] = DPTF_PASSIVE(CPU,        TEMP_SENSOR_1, 85, 5000),
+					[3] = DPTF_PASSIVE(CHARGER,    TEMP_SENSOR_2, 85, 5000),
 				}"
 
 				## Critical Policy
 				register "policies.critical" = "{
-					[0] = DPTF_CRITICAL(CPU,               105, SHUTDOWN),
-					[1] = DPTF_CRITICAL(TEMP_SENSOR_0,      85, SHUTDOWN),
-					[2] = DPTF_CRITICAL(TEMP_SENSOR_1,      85, SHUTDOWN),
-					[3] = DPTF_CRITICAL(TEMP_SENSOR_2,      85, SHUTDOWN),
+					[0] = DPTF_CRITICAL(CPU,               127, SHUTDOWN),
+					[1] = DPTF_CRITICAL(TEMP_SENSOR_0,      90, SHUTDOWN),
+					[2] = DPTF_CRITICAL(TEMP_SENSOR_1,      90, SHUTDOWN),
+					[3] = DPTF_CRITICAL(TEMP_SENSOR_2,      90, SHUTDOWN),
 				}"
 
 				register "controls.power_limits" = "{
 					.pl1 = {
-							.min_power = 3000,
-							.max_power = 15000,
-							.time_window_min = 28 * MSECS_PER_SEC,
-							.time_window_max = 32 * MSECS_PER_SEC,
-							.granularity = 200,
+							.min_power = 5000,
+							.max_power = 30000,
+							.time_window_min = 30 * MSECS_PER_SEC,
+							.time_window_max = 30 * MSECS_PER_SEC,
+							.granularity = 100,
 						},
 					.pl2 = {
-							.min_power = 55000,
-							.max_power = 55000,
-							.time_window_min = 28 * MSECS_PER_SEC,
+							.min_power = 60000,
+							.max_power = 60000,
+							.time_window_min = 32 * MSECS_PER_SEC,
 							.time_window_max = 32 * MSECS_PER_SEC,
-							.granularity = 1000,
+							.granularity = 500,
 						}
 				}"
 
@@ -194,6 +210,17 @@ chip soc/intel/alderlake
 				register "property_list[0].integer" = "1"
 				device i2c 1a on end
 			end
+			chip drivers/generic/gpio_keys
+				register "name" = ""MUTE""
+				register "label" = ""mic_mute_switch""
+				register "gpio" = "ACPI_GPIO_INPUT_ACTIVE_HIGH(GPP_F22)"
+				register "key.wakeup_route" = "WAKEUP_ROUTE_DISABLED"
+				register "key.dev_name" = ""MMSW""
+				register "key.linux_code" = "SW_MUTE_DEVICE"
+				register "key.linux_input_type" = "EV_SW"
+				register "key.label" = ""mic_mute_switch_key""
+				device generic 0 on end
+			end
 		end #I2C0
 		device ref i2c1 on
 			chip drivers/i2c/tpm
@@ -215,7 +242,7 @@ chip soc/intel/alderlake
 		end
 		device ref hda on
 			chip drivers/generic/max98357a
-				register "hid" = ""MX98357A""
+				register "hid" = ""MX98360A""
 				register "sdmode_gpio" =
 					"ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_A11)"
 				register "sdmode_delay" = "5"
@@ -312,6 +339,7 @@ chip soc/intel/alderlake
 					chip drivers/usb/acpi
 						register "desc" = ""USB2 Camera""
 						register "type" = "UPC_TYPE_INTERNAL"
+						register "privacy_gpio"  = "ACPI_GPIO_INPUT_ACTIVE_LOW(GPP_F19)"
 						device ref usb2_port6 on end
 					end
 					chip drivers/usb/acpi

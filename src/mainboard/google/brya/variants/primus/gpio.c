@@ -23,7 +23,7 @@ static const struct pad_config override_gpio_table[] = {
 	/* B2  : VRALERT# ==> NC */
 	PAD_NC(GPP_B2, NONE),
 	/* B3  : PROC_GP2 ==> eMMC_PERST_L */
-	PAD_CFG_GPO_LOCK(GPP_B3, 1, LOCK_CONFIG),
+	PAD_CFG_GPO(GPP_B3, 1, DEEP),
 	/* B15 : TIME_SYNC0 ==> NC */
 	PAD_NC_LOCK(GPP_B15, NONE, LOCK_CONFIG),
 
@@ -49,6 +49,8 @@ static const struct pad_config override_gpio_table[] = {
 	PAD_NC(GPP_E3, NONE),
 	/* E7  : PROC_GP1 ==> NC */
 	PAD_NC(GPP_E7, NONE),
+	/* E20 : USB_C1_LSX_SOC_TX ==> EN_PP3300_eMMC */
+	PAD_CFG_GPO(GPP_E20, 1, DEEP),
 	/* E21 : DDP2_CTRLDATA ==> NC */
 	PAD_NC(GPP_E21, NONE),
 
@@ -88,6 +90,8 @@ static const struct pad_config early_gpio_table[] = {
 	PAD_CFG_GPO(GPP_A12, 1, DEEP),
 	/* A13 : PMC_I2C_SCL ==> GSC_PCH_INT_ODL */
 	PAD_CFG_GPI_APIC(GPP_A13, NONE, PLTRST, LEVEL, INVERT),
+	/* B3  : PROC_GP2 ==> eMMC_PERST_L */
+	PAD_CFG_GPO(GPP_B3, 0, DEEP),
 	/* B4  : PROC_GP3 ==> SSD_PERST_L */
 	PAD_CFG_GPO(GPP_B4, 0, DEEP),
 	/* H6  : I2C1_SDA ==> PCH_I2C_TPM_SDA */

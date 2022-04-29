@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <rmodule.h>
+#include <cbmem.h>
 #include <cpu/x86/smm.h>
 #include <commonlib/helpers.h>
 #include <console/console.h>
@@ -125,38 +126,26 @@ static int smm_create_map(uintptr_t smbase, unsigned int num_cpus,
 	}
 
 	for (i = 0; i < num_cpus; i++) {
+		printk(BIOS_DEBUG, "CPU 0x%x\n", i);
 		cpus[i].smbase = base;
 		cpus[i].entry = base + smm_entry_offset;
+		printk(BIOS_DEBUG, "    smbase %lx  entry %lx\n", cpus[i].smbase,
+		       cpus[i].entry);
 		cpus[i].ss_start = cpus[i].entry + (smm_entry_offset - ss_size);
 		cpus[i].code_start = cpus[i].entry;
 		cpus[i].code_end = cpus[i].entry + stub_size;
+		printk(BIOS_DEBUG, "           ss_start %lx  code_end %lx\n", cpus[i].ss_start,
+		       cpus[i].code_end);
 		cpus[i].active = 1;
 		base -= ss_size;
 		seg_count++;
 		if (seg_count >= cpus_in_segment) {
 			base -= smm_entry_offset;
 			seg_count = 0;
+			printk(BIOS_DEBUG, "-------------NEW CODE SEGMENT --------------\n");
 		}
 	}
 
-	if (CONFIG_DEFAULT_CONSOLE_LOGLEVEL >= BIOS_DEBUG) {
-		seg_count = 0;
-		for (i = 0; i < num_cpus; i++) {
-			printk(BIOS_DEBUG, "CPU 0x%x\n", i);
-			printk(BIOS_DEBUG,
-				"    smbase %lx  entry %lx\n",
-				cpus[i].smbase, cpus[i].entry);
-			printk(BIOS_DEBUG,
-				"           ss_start %lx  code_end %lx\n",
-				cpus[i].ss_start, cpus[i].code_end);
-			seg_count++;
-			if (seg_count >= cpus_in_segment) {
-				printk(BIOS_DEBUG,
-					"-------------NEW CODE SEGMENT --------------\n");
-				seg_count = 0;
-			}
-		}
-	}
 	return 1;
 }
 
@@ -437,6 +426,9 @@ int smm_setup_relocation_handler(struct smm_loader_params *params)
 				     params, fxsave_area_relocation);
 }
 
+static int smm_load_module_aseg(const uintptr_t smram_base, const size_t smram_size,
+				struct smm_loader_params *params);
+
 /*
  *The SMM module is placed within the provided region in the following
  * manner:
@@ -476,6 +468,10 @@ int smm_load_module(const uintptr_t smram_base, const size_t smram_size,
 	void *fxsave_area;
 	size_t total_size = 0;
 	uintptr_t base; /* The base for the permanent handler */
+	const struct cbmem_entry *cbmemc;
+
+	if (CONFIG(SMM_ASEG))
+		return smm_load_module_aseg(smram_base, smram_size, params);
 
 	if (smram_size <= SMM_DEFAULT_SIZE)
 		return -1;
@@ -551,6 +547,14 @@ int smm_load_module(const uintptr_t smram_base, const size_t smram_size,
 	handler_mod_params->num_cpus = params->num_cpus;
 	handler_mod_params->gnvs_ptr = (uintptr_t)acpi_get_gnvs();
 
+	if (CONFIG(CONSOLE_CBMEM) && (cbmemc = cbmem_entry_find(CBMEM_ID_CONSOLE))) {
+		handler_mod_params->cbmemc = cbmem_entry_start(cbmemc);
+		handler_mod_params->cbmemc_size = cbmem_entry_size(cbmemc);
+	} else {
+		handler_mod_params->cbmemc = 0;
+		handler_mod_params->cbmemc_size = 0;
+	}
+
 	printk(BIOS_DEBUG, "%s: smram_start: 0x%lx\n",  __func__, smram_base);
 	printk(BIOS_DEBUG, "%s: smram_end: %lx\n", __func__, smram_base + smram_size);
 	printk(BIOS_DEBUG, "%s: handler start %p\n",
@@ -571,6 +575,8 @@ int smm_load_module(const uintptr_t smram_base, const size_t smram_size,
 	printk(BIOS_DEBUG, "%s: per_cpu_save_state_size = 0x%x\n", __func__,
 	       handler_mod_params->save_state_size);
 	printk(BIOS_DEBUG, "%s: num_cpus = 0x%x\n", __func__, handler_mod_params->num_cpus);
+	printk(BIOS_DEBUG, "%s: cbmemc = %p, cbmemc_size = %#x\n", __func__,
+	       handler_mod_params->cbmemc, handler_mod_params->cbmemc_size);
 	printk(BIOS_DEBUG, "%s: total_save_state_size = 0x%x\n", __func__,
 	       (handler_mod_params->save_state_size * handler_mod_params->num_cpus));
 
@@ -591,4 +597,98 @@ int smm_load_module(const uintptr_t smram_base, const size_t smram_size,
 	}
 
 	return smm_module_setup_stub(base, smram_size, params, fxsave_area);
+}
+
+/*
+ *The SMM module is placed within the provided region in the following
+ * manner:
+ * +-----------------+ <- smram + size == 0x10000
+ * |  save states    |
+ * +-----------------+
+ * |  fxsave area    |
+ * +-----------------+
+ * |  smi handler    |
+ * |      ...        |
+ * +-----------------+ <- cpu0
+ * |    stub code    | <- cpu1
+ * |    stub code    | <- cpu2
+ * |    stub code    | <- cpu3, etc
+ * |                 |
+ * |                 |
+ * |                 |
+ * |    stacks       |
+ * +-----------------+ <- smram start = 0xA0000
+ */
+static int smm_load_module_aseg(const uintptr_t smram_base, const size_t smram_size,
+				struct smm_loader_params *params)
+{
+	struct rmodule smm_mod;
+	struct smm_runtime *handler_mod_params;
+
+	if (smram_size != SMM_DEFAULT_SIZE)
+		return -1;
+
+	if (smram_base != SMM_BASE)
+		return -1;
+
+	/* Fail if can't parse the smm rmodule. */
+	if (rmodule_parse(&_binary_smm_start, &smm_mod))
+		return -1;
+
+	if (!smm_create_map(smram_base, params->num_concurrent_save_states, params)) {
+		printk(BIOS_ERR, "%s: Error creating CPU map\n", __func__);
+		return -1;
+	}
+
+	const uintptr_t entry0_end = cpus[0].code_end;
+	const uintptr_t save_state_base = cpus[params->num_cpus - 1].ss_start;
+	const size_t fxsave_size = FXSAVE_SIZE * params->num_cpus;
+	const uintptr_t fxsave_base = ALIGN_DOWN(save_state_base - fxsave_size, 16);
+
+	if (fxsave_base <= entry0_end) {
+		printk(BIOS_ERR, "%s, fxsave %lx won't fit smram\n", __func__, fxsave_base);
+		return -1;
+	}
+
+	const size_t handler_size = rmodule_memory_size(&smm_mod);
+	const size_t module_alignment = rmodule_load_alignment(&smm_mod);
+	const uintptr_t module_base = ALIGN_DOWN(fxsave_base - handler_size, module_alignment);
+
+	if (module_base <= entry0_end) {
+		printk(BIOS_ERR, "%s, module won't fit smram\n", __func__);
+		return -1;
+	}
+
+	if (rmodule_load((void *)module_base, &smm_mod))
+		return -1;
+
+	params->handler = rmodule_entry(&smm_mod);
+	handler_mod_params = rmodule_parameters(&smm_mod);
+	handler_mod_params->smbase = smram_base;
+	handler_mod_params->smm_size = smram_size;
+	handler_mod_params->save_state_size = params->real_cpu_save_state_size;
+	handler_mod_params->num_cpus = params->num_cpus;
+	handler_mod_params->gnvs_ptr = (uintptr_t)acpi_get_gnvs();
+
+	for (int i = 0; i < params->num_cpus; i++) {
+		handler_mod_params->save_state_top[i] =
+			cpus[i].ss_start + params->per_cpu_save_state_size;
+	}
+
+	printk(BIOS_DEBUG, "%s: smram_start: 0x%lx\n",  __func__, smram_base);
+	printk(BIOS_DEBUG, "%s: smram_end: %lx\n", __func__, smram_base + smram_size);
+	printk(BIOS_DEBUG, "%s: handler start %p\n", __func__, params->handler);
+	printk(BIOS_DEBUG, "%s: handler_size %zx\n", __func__, handler_size);
+	printk(BIOS_DEBUG, "%s: fxsave_area %lx\n", __func__, fxsave_base);
+	printk(BIOS_DEBUG, "%s: fxsave_size %zx\n", __func__, fxsave_size);
+
+	printk(BIOS_DEBUG, "%s: handler_mod_params.smbase = 0x%x\n", __func__,
+	       handler_mod_params->smbase);
+	printk(BIOS_DEBUG, "%s: per_cpu_save_state_size = 0x%x\n", __func__,
+	       handler_mod_params->save_state_size);
+	printk(BIOS_DEBUG, "%s: num_cpus = 0x%x\n", __func__, handler_mod_params->num_cpus);
+	printk(BIOS_DEBUG, "%s: total_save_state_size = 0x%x\n", __func__,
+	       (handler_mod_params->save_state_size * handler_mod_params->num_cpus));
+
+	return smm_module_setup_stub(smram_base, smram_size, params, (void *)fxsave_base);
 }

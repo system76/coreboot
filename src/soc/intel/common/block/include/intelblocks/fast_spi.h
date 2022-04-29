@@ -5,6 +5,10 @@
 
 #include <types.h>
 
+/* Clear any SPI outstanding status bits, i.e., FCERR, FDONE etc. */
+void fast_spi_clear_outstanding_status(void);
+/* Check if SPI transaction is pending */
+int fast_spi_cycle_in_progress(void);
 /*
  * Disable the BIOS write protect and Enable Prefetching and Caching.
  */
@@ -38,6 +42,10 @@ void fast_spi_lock_bar(void);
  * FAST_SPI Protected Range (PR) registers.
  */
 void fast_spi_pr_dlock(void);
+/*
+ * Set FAST_SPIBAR + VSCC0 (0xC4) register VCL (bit 30).
+ */
+void fast_spi_vscc0_lock(void);
 /*
  * Set FAST_SPIBAR Soft Reset Data Register value.
  */

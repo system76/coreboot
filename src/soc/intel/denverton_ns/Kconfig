@@ -44,7 +44,7 @@ config CPU_SPECIFIC_OPTIONS
 	select TSC_MONOTONIC_TIMER
 	select TSC_SYNC_MFENCE
 	select UDELAY_TSC
-	select UDK_2015_BINDING
+	select UDK_2017_BINDING
 	select USE_FSP_NOTIFY_PHASE_POST_PCI_ENUM
 	select USE_FSP_NOTIFY_PHASE_READY_TO_BOOT
 	select USE_FSP_NOTIFY_PHASE_END_OF_FIRMWARE
@@ -173,5 +173,9 @@ config USE_DENVERTON_NS_FSP_CAR
 	  Use FSP APIs to initialize and tear down the Cache-As-Ram.
 
 endchoice
+
+config IFD_CHIPSET
+	string
+	default "dnv"
 
 endif ## SOC_INTEL_DENVERTON_NS

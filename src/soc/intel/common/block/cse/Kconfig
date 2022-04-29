@@ -45,6 +45,15 @@ config SOC_INTEL_COMMON_BLOCK_HECI1_DISABLE_USING_PCR
 	  Use this config for SoC platform prior to CNL PCH (with postboot_sai implemented)
 	  to make `HECI1` device disable using private configuration register (PCR) write.
 
+config SOC_INTEL_CSE_SEND_EOP_EARLY
+	bool
+	depends on SOC_INTEL_COMMON_BLOCK_CSE
+	help
+	  Use this config to send End Of Post (EOP) earlier through SoC code in order to
+	  reduce time required to send EOP and getting CSE response.
+	  In later stages, CSE might be busy and might require more time to process EOP command.
+	  SoC can use this Kconfig to send EOP earlier by itself.
+
 config SOC_INTEL_CSE_LITE_SKU
 	bool
 	default n
@@ -149,6 +158,20 @@ config SOC_INTEL_CSE_NPHY_CBFS_FILE
 	default ""
 	help
 	 CBFS path and file name for Intel CSE sub-partition NPHY binary
+
+config SOC_INTEL_CSE_LITE_COMPRESS_ME_RW
+	bool
+	default n
+	depends on SOC_INTEL_CSE_LITE_SKU
+	help
+	 Enable compression on Intel CSE CBFS RW blob
+
+config SOC_INTEL_CSE_PRE_CPU_RESET_TELEMETRY
+	def_bool n
+	depends on SOC_INTEL_CSE_LITE_SKU
+	help
+	  Mainboard user to select this Kconfig in order to capture pre-cpu
+	  reset boot performance telemetry data.
 
 if STITCH_ME_BIN
 

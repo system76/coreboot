@@ -9,6 +9,7 @@
 #include <intelblocks/pmclib.h>
 #include <intelblocks/smbus.h>
 #include <intelblocks/thermal.h>
+#include <intelbasecode/debug_feature.h>
 #include <memory_info.h>
 #include <soc/intel/common/smbios.h>
 #include <soc/iomap.h>
@@ -27,7 +28,7 @@
 
 bool skip_cse_sub_part_update(void)
 {
-	return cpu_get_cpuid() != CPUID_ALDERLAKE_A2;
+	return cpu_get_cpuid() != CPUID_ALDERLAKE_K0;
 }
 
 /* Save the DIMM information for SMBIOS table 17 */
@@ -134,13 +135,20 @@ void mainboard_romstage_entry(void)
 	/* Initialize HECI interface */
 	heci_init(HECI1_BASE_ADDRESS);
 
+	if (CONFIG(SOC_INTEL_COMMON_BASECODE_DEBUG_FEATURE))
+		pre_mem_debug_init();
+
 	s3wake = pmc_fill_power_state(ps) == ACPI_S3;
 
 	if (CONFIG(SOC_INTEL_CSE_LITE_SKU) && !s3wake) {
-		timestamp_add_now(TS_START_CSE_FW_SYNC);
+		timestamp_add_now(TS_CSE_FW_SYNC_START);
 		cse_fw_sync();
-		timestamp_add_now(TS_END_CSE_FW_SYNC);
+		timestamp_add_now(TS_CSE_FW_SYNC_END);
 	}
+
+	/* Update coreboot timestamp table with CSE timestamps */
+	if (CONFIG(SOC_INTEL_CSE_PRE_CPU_RESET_TELEMETRY))
+		cse_get_telemetry_data();
 
 	/*
 	 * Set low maximum temp threshold value used for dynamic thermal sensor

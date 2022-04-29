@@ -1,12 +1,12 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#include <acpi/acpi.h>
 #include <device/pci_ops.h>
 #include <console/console.h>
 #include <device/pci.h>
 #include <device/pci_ids.h>
 #include <intelblocks/acpi.h>
 #include <intelblocks/pmc.h>
+#include <intelblocks/pmclib.h>
 #include <soc/pci_devs.h>
 #include <soc/pm.h>
 
@@ -111,30 +111,33 @@ static struct device_operations device_ops = {
 };
 
 static const unsigned short pci_device_ids[] = {
-	PCI_DEVICE_ID_INTEL_DNV_PMC,
-	PCI_DEVICE_ID_INTEL_SPT_LP_PMC,
-	PCI_DEVICE_ID_INTEL_SPT_H_PMC,
-	PCI_DEVICE_ID_INTEL_LWB_PMC,
-	PCI_DEVICE_ID_INTEL_LWB_PMC_SUPER,
-	PCI_DEVICE_ID_INTEL_UPT_H_PMC,
-	PCI_DEVICE_ID_INTEL_APL_PMC,
-	PCI_DEVICE_ID_INTEL_GLK_PMC,
-	PCI_DEVICE_ID_INTEL_CNP_H_PMC,
-	PCI_DEVICE_ID_INTEL_ICP_PMC,
-	PCI_DEVICE_ID_INTEL_CMP_PMC,
-	PCI_DEVICE_ID_INTEL_CMP_H_PMC,
-	PCI_DEVICE_ID_INTEL_TGP_PMC,
-	PCI_DEVICE_ID_INTEL_TGP_H_PMC,
-	PCI_DEVICE_ID_INTEL_MCC_PMC,
-	PCI_DEVICE_ID_INTEL_JSP_PMC,
-	PCI_DEVICE_ID_INTEL_ADP_P_PMC,
-	PCI_DEVICE_ID_INTEL_ADP_S_PMC,
-	PCI_DEVICE_ID_INTEL_ADP_M_N_PMC,
+	PCI_DID_INTEL_MTL_SOC_PMC,
+	PCI_DID_INTEL_MTL_IOE_M_PMC,
+	PCI_DID_INTEL_MTL_IOE_P_PMC,
+	PCI_DID_INTEL_DNV_PMC,
+	PCI_DID_INTEL_SPT_LP_PMC,
+	PCI_DID_INTEL_SPT_H_PMC,
+	PCI_DID_INTEL_LWB_PMC,
+	PCI_DID_INTEL_LWB_PMC_SUPER,
+	PCI_DID_INTEL_UPT_H_PMC,
+	PCI_DID_INTEL_APL_PMC,
+	PCI_DID_INTEL_GLK_PMC,
+	PCI_DID_INTEL_CNP_H_PMC,
+	PCI_DID_INTEL_ICP_PMC,
+	PCI_DID_INTEL_CMP_PMC,
+	PCI_DID_INTEL_CMP_H_PMC,
+	PCI_DID_INTEL_TGP_PMC,
+	PCI_DID_INTEL_TGP_H_PMC,
+	PCI_DID_INTEL_MCC_PMC,
+	PCI_DID_INTEL_JSP_PMC,
+	PCI_DID_INTEL_ADP_P_PMC,
+	PCI_DID_INTEL_ADP_S_PMC,
+	PCI_DID_INTEL_ADP_M_N_PMC,
 	0
 };
 
 static const struct pci_driver pch_pmc __pci_driver = {
 	.ops	 = &device_ops,
-	.vendor	 = PCI_VENDOR_ID_INTEL,
+	.vendor	 = PCI_VID_INTEL,
 	.devices = pci_device_ids,
 };

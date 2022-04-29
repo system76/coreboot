@@ -58,7 +58,7 @@ The main SPI flash can be accessed using [flashrom]. By default, only
 the BIOS region of the flash is writable. If you wish to change any
 other region, such as the Management Engine or firmware descriptor, then
 an external programmer is required (unless you find a clever way around
-the flash protection). More information about this [here](../../flash_tutorial/index.md).
+the flash protection). More information about this [here](../../tutorial/flashing_firmware/index.md).
 
 ### External programming
 
@@ -131,4 +131,4 @@ facing towards the bottom of the board.
 [ASRock H110M-DVS]: https://www.asrock.com/mb/Intel/H110M-DVS%20R2.0/
 [MX25L6473E]: http://www.macronix.com/Lists/Datasheet/Attachments/7380/MX25L6473E,%203V,%2064Mb,%20v1.4.pdf
 [flashrom]: https://flashrom.org/Flashrom
-[H110M-DVS manual]: http://asrock.pc.cdn.bitgravity.com/Manual/H110M-DVS%20R2.0.pdf
+[H110M-DVS manual]: https://web.archive.org/web/20191023230631/http://asrock.pc.cdn.bitgravity.com/Manual/H110M-DVS%20R2.0.pdf

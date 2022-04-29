@@ -11,6 +11,7 @@
 /* functions implemented in watchdog.c */
 void mark_watchdog_tombstone(void);
 void reboot_from_watchdog(void);
+bool reset_watchdog_tombstone(void);
 #else
 static inline void mark_watchdog_tombstone(void) { return; }
 static inline void reboot_from_watchdog(void) { return; }
@@ -25,8 +26,6 @@ void mainboard_prepare_cr50_reset(void);
 void cbmem_add_vpd_calibration_data(void);
 void chromeos_set_me_hash(u32*, int);
 void chromeos_set_ramoops(void *ram_oops, size_t size);
-void chromeos_set_ecfw_rw(void);
-void chromeos_init_chromeos_acpi(void);
 
 /**
  * get_dsm_calibration_from_key - Gets value related to DSM calibration from VPD
@@ -39,16 +38,9 @@ void chromeos_init_chromeos_acpi(void);
 enum cb_err get_dsm_calibration_from_key(const char *key, uint64_t *value);
 
 /*
- * Create the OIPG package containing the Chrome OS gpios described by
- * the chromeos_gpio array.
- */
-struct cros_gpio;
-void chromeos_acpi_gpio_generate(const struct cros_gpio *gpios, size_t num);
-
-/*
  * Declaration for mainboards to use to generate ACPI-specific Chrome OS needs.
  */
-void mainboard_chromeos_acpi_generate(void);
+void chromeos_acpi_gpio_generate(void);
 
 enum {
 	CROS_GPIO_REC = 1, /* Recovery */
@@ -104,5 +96,24 @@ struct cros_gpio {
 
 #define CROS_GPIO_PE_AH(num, dev) \
 	CROS_GPIO_PE_INITIALIZER(CROS_GPIO_ACTIVE_HIGH, num, dev)
+
+struct cros_gpio_pack {
+	int count;
+	const struct cros_gpio *gpios;
+};
+
+extern const struct cros_gpio_pack variant_cros_gpio;
+
+#define DECLARE_NO_CROS_GPIOS() \
+	const struct cros_gpio_pack variant_cros_gpio = \
+		{ .count = 0, .gpios = NULL }
+
+#define DECLARE_CROS_GPIOS(x) \
+	const struct cros_gpio_pack variant_cros_gpio = \
+		{ .count = ARRAY_SIZE(x), .gpios = x }
+
+#define DECLARE_WEAK_CROS_GPIOS(x) \
+	const struct cros_gpio_pack __weak variant_cros_gpio = \
+		{ .count = ARRAY_SIZE(x), .gpios = x }
 
 #endif /* __CHROMEOS_H__ */

@@ -7,12 +7,17 @@ fw_config
 end
 
 chip soc/intel/alderlake
-	register "SaGv" = "SaGv_Enabled"
+	register "sagv" = "SaGv_Enabled"
+
+	# Bit 0 - C0 has no redriver, so enable SBU muxing in the SoC.
+	# Bit 2 - C1 has a redriver which does SBU muxing.
+	# Bit 1,3 - AUX lines are not swapped on the motherboard for either C0 or C1.
+	register "tcss_aux_ori" = "1"
 
 	register "typec_aux_bias_pads[0]" = "{.pad_auxp_dc = GPP_E22, .pad_auxn_dc = GPP_E23}"
-	register "typec_aux_bias_pads[1]" = "{.pad_auxp_dc = GPP_A21, .pad_auxn_dc = GPP_A22}"
 
 	register "usb2_ports[6]" = "USB2_PORT_MID(OC_SKIP)"	# WFC
+	register "usb2_ports[7]" = "USB2_PORT_MID(OC_SKIP)"	# Bluetooth port for PCIe WLAN
 
 	device domain 0 on
 		device ref i2c1 on
@@ -31,6 +36,18 @@ chip soc/intel/alderlake
 				register "generic.has_power_resource" = "1"
 				register "hid_desc_reg_offset" = "0x01"
 				device i2c 5d on end
+			end
+			chip drivers/generic/gpio_keys
+				register "name" = ""PENH""
+				register "gpio" = "ACPI_GPIO_INPUT_ACTIVE_LOW(GPP_F13)"
+				register "key.wake_gpe" = "GPE0_DW2_15"
+				register "key.wakeup_route" = "WAKEUP_ROUTE_SCI"
+				register "key.wakeup_event_action" = "EV_ACT_DEASSERTED"
+				register "key.dev_name" = ""EJCT""
+				register "key.linux_code" = "SW_PEN_INSERTED"
+				register "key.linux_input_type" = "EV_SW"
+				register "key.label" = ""pen_eject""
+				device generic 0 on end
 			end
 		end
 		device ref i2c3 on
@@ -98,7 +115,9 @@ chip soc/intel/alderlake
 					chip drivers/intel/pmc_mux/conn
 						use usb2_port2 as usb2_port
 						use tcss_usb3_port2 as usb3_port
-						device generic 1 alias conn1 on end
+						device generic 1 alias conn1 on
+							probe DB_USB DB_1C_1A
+						end
 					end
 				end
 			end

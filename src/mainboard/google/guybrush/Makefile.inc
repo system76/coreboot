@@ -8,11 +8,12 @@ romstage-y += romstage.c
 
 ramstage-y += mainboard.c
 ramstage-y += ec.c
+ramstage-y += port_descriptors.c
 ramstage-$(CONFIG_CHROMEOS) += chromeos.c
 
 all-y += spi_speeds.c
 
-verstage-y += verstage.c
+verstage-$(CONFIG_VBOOT_STARTS_BEFORE_BOOTBLOCK) += verstage.c
 verstage-$(CONFIG_CHROMEOS) += chromeos.c
 
 subdirs-y += variants/baseboard

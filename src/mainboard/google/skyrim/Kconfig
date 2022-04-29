@@ -5,9 +5,6 @@ config BOARD_GOOGLE_BASEBOARD_SKYRIM
 
 if BOARD_GOOGLE_BASEBOARD_SKYRIM
 
-config IGNORE_IASL_MISSING_DEPENDENCY
-	def_bool y
-
 config AMD_FWM_POSITION_INDEX
 	int
 	default 3
@@ -18,17 +15,36 @@ config BOARD_SPECIFIC_OPTIONS
 	def_bool y
 	select AMD_SOC_CONSOLE_UART
 	select BOARD_ROMSIZE_KB_16384
+	select DRIVERS_GENERIC_GPIO_KEYS
+	select DRIVERS_I2C_GENERIC
+	select DRIVERS_I2C_HID
+	select DRIVERS_WIFI_GENERIC
 	select EC_GOOGLE_CHROMEEC
 	select EC_GOOGLE_CHROMEEC_ESPI
+	select ELOG
+	select ELOG_GSMI
 	select FW_CONFIG
+	select I2C_TPM
 	select MAINBOARD_HAS_CHROMEOS
+	select MAINBOARD_HAS_TPM2
+	select PSP_DISABLE_POSTCODES   # TODO re-enable PSP postcodes later (b/227199049)
 	select SOC_AMD_SABRINA
+	select SOC_AMD_COMMON_BLOCK_USE_ESPI
+	select TPM_GOOGLE_CR50
 
 config CHROMEOS
 	select EC_GOOGLE_CHROMEEC_SWITCHES
 
 config DEVICETREE
 	default "variants/baseboard/devicetree.cb"
+
+config DRIVER_TPM_I2C_BUS
+	hex
+	default 0x03
+
+config DRIVER_TPM_I2C_ADDR
+	hex
+	default 0x50
 
 config FMDFILE
 	default "src/mainboard/\$(CONFIG_MAINBOARD_DIR)/chromeos.fmd"
@@ -55,5 +71,23 @@ config VBOOT
 	select VBOOT_LID_SWITCH
 	select VBOOT_SEPARATE_VERSTAGE
 	select VBOOT_STARTS_IN_BOOTBLOCK
+
+if !EM100	# EM100 defaults in soc/amd/common/blocks/spi/Kconfig
+config EFS_SPI_READ_MODE
+	default 2          # Dual IO (1-1-2)
+
+config EFS_SPI_SPEED
+	default 0	# 66MHz
+
+config EFS_SPI_MICRON_FLAG
+	default 0
+
+config NORMAL_READ_SPI_SPEED
+	default 1	# 33MHz
+
+config ALT_SPI_SPEED
+	default 0	# 66MHz
+
+endif # !EM100
 
 endif # BOARD_GOOGLE_BASEBOARD_SKYRIM

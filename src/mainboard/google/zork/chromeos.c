@@ -28,11 +28,7 @@ static const struct cros_gpio cros_gpios[] = {
 	CROS_GPIO_REC_AL(CROS_GPIO_VIRTUAL, GPIO_DEVICE_NAME),
 	CROS_GPIO_WP_AL(CROS_WP_GPIO, GPIO_DEVICE_NAME),
 };
-
-void mainboard_chromeos_acpi_generate(void)
-{
-	chromeos_acpi_gpio_generate(cros_gpios, ARRAY_SIZE(cros_gpios));
-}
+DECLARE_CROS_GPIOS(cros_gpios);
 
 int get_ec_is_trusted(void)
 {

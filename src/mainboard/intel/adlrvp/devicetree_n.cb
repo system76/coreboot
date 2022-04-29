@@ -11,10 +11,13 @@ chip soc/intel/alderlake
 	# FSP configuration
 
 	# Enable CNVi BT
-	register "CnviBtCore" = "true"
+	register "cnvi_bt_core" = "true"
 
 	# Sagv Configuration
-	register "SaGv" = "SaGv_Enabled"
+	register "sagv" = "SaGv_Enabled"
+
+	# eMMC HS400
+	register "emmc_enable_hs400_mode" = "1"
 
 	register "usb2_ports[0]" = "USB2_PORT_MID(OC3)"		# Type-C Port1
 	register "usb2_ports[1]" = "USB2_PORT_MID(OC3)"		# Type-C Port2
@@ -51,36 +54,22 @@ chip soc/intel/alderlake
 		.flags = PCIE_RP_CLK_REQ_DETECT,
 	}"
 
-	register "SataSalpSupport" = "1"
-
-	register "SataPortsEnable" = "{
-		[0] = 1,
-		[1] = 1,
-		[2] = 1,
-		[3] = 1,
-	}"
-
-	register "SataPortsDevSlp" = "{
-		[0] = 1,
-		[1] = 1,
-		[2] = 1,
-		[3] = 1,
-	}"
+	register "sata_salp_support" = "0"
 
 	# Enable EDP in PortA
-	register "DdiPortAConfig" = "1"
+	register "ddi_portA_config" = "1"
 	# Enable HDMI in Port B
 	register "ddi_ports_config" = "{
 		[DDI_PORT_B] = DDI_ENABLE_HPD | DDI_ENABLE_DDC,
 	}"
 
 	# TCSS USB3
-	register "TcssAuxOri" = "4"
+	register "tcss_aux_ori" = "4"
 	register "typec_aux_bias_pads[1]" = "{.pad_auxp_dc = GPP_E20, .pad_auxn_dc = GPP_E21}"
 
 	register "s0ix_enable" = "1"
 
-	register "SerialIoI2cMode" = "{
+	register "serial_io_i2c_mode" = "{
 		[PchSerialIoIndexI2C0] = PchSerialIoPci,
 		[PchSerialIoIndexI2C1] = PchSerialIoPci,
 		[PchSerialIoIndexI2C2] = PchSerialIoPci,
@@ -89,40 +78,44 @@ chip soc/intel/alderlake
 		[PchSerialIoIndexI2C5] = PchSerialIoPci,
 	}"
 
-	register "SerialIoGSpiMode" = "{
+	register "serial_io_gspi_mode" = "{
 		[PchSerialIoIndexGSPI0] = PchSerialIoPci,
 		[PchSerialIoIndexGSPI1] = PchSerialIoDisabled,
 		[PchSerialIoIndexGSPI2] = PchSerialIoDisabled,
 		[PchSerialIoIndexGSPI3] = PchSerialIoDisabled,
 	}"
 
-	register "SerialIoGSpiCsMode" = "{
+	register "serial_io_gspi_cs_mode" = "{
 		[PchSerialIoIndexGSPI0] = 0,
 		[PchSerialIoIndexGSPI1] = 0,
 		[PchSerialIoIndexGSPI2] = 0,
 		[PchSerialIoIndexGSPI3] = 0,
 	}"
 
-	register "SerialIoGSpiCsState" = "{
+	register "serial_io_gspi_cs_state" = "{
 		[PchSerialIoIndexGSPI0] = 0,
 		[PchSerialIoIndexGSPI1] = 0,
 		[PchSerialIoIndexGSPI2] = 0,
 		[PchSerialIoIndexGSPI3] = 0,
 	}"
 
-	register "SerialIoUartMode" = "{
+	register "serial_io_uart_mode" = "{
 		[PchSerialIoIndexUART0] = PchSerialIoSkipInit,
 		[PchSerialIoIndexUART1] = PchSerialIoDisabled,
 		[PchSerialIoIndexUART2] = PchSerialIoDisabled,
 	}"
 
 	# HD Audio
-	register "PchHdaDspEnable" = "1"
-	register "PchHdaIDispLinkTmode" = "HDA_TMODE_8T"
-	register "PchHdaIDispLinkFrequency" = "HDA_LINKFREQ_96MHZ"
-	register "PchHdaIDispCodecEnable" = "1"
+	register "pch_hda_dsp_enable" = "1"
+	register "pch_hda_idisp_link_tmode" = "HDA_TMODE_8T"
+	register "pch_hda_idisp_link_frequency" = "HDA_LINKFREQ_96MHZ"
+	register "pch_hda_idisp_codec_enable" = "1"
 
-	register "CnviBtAudioOffload" = "true"
+	register "cnvi_bt_audio_offload" = "true"
+
+	# set EPP to 45%: 45 * 256/100 = 115 = 0x73
+	register "enable_energy_perf_pref" = "true"
+	register "energy_perf_pref_value" = "0x73"
 
 	# Intel Common SoC Config
 	register "common_soc_config" = "{
@@ -234,7 +227,7 @@ chip soc/intel/alderlake
 		device ref i2c2 on end
 		device ref i2c3 on end
 		device ref heci1 on end
-		device ref sata on end
+		device ref sata off end
 		device ref i2c5 on
 			chip drivers/intel/mipi_camera
 				register "acpi_hid" = ""OVTI5675""
@@ -276,6 +269,9 @@ chip soc/intel/alderlake
 		device ref uart0 on end
 		device ref gspi0 on end
 		device ref p2sb on end
+		device ref emmc on end
+		device ref ish on end
+		device ref ufs on end
 		device ref hda on
 			chip drivers/intel/soundwire
 				device generic 0 on

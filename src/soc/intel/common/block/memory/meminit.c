@@ -5,6 +5,7 @@
 #include <intelblocks/meminit.h>
 #include <commonlib/region.h>
 #include <spd_bin.h>
+#include <spd_cache.h>
 #include <string.h>
 #include <types.h>
 
@@ -94,8 +95,9 @@ static void read_spd_md(const struct soc_mem_cfg *soc_mem_cfg, const struct mem_
 
 #define CH_DIMM_OFFSET(ch, dimm)	((ch) * CONFIG_DIMMS_PER_CHANNEL + (dimm))
 
-static bool read_spd_dimm(const struct soc_mem_cfg *soc_mem_cfg, const struct mem_spd *info,
-			bool half_populated, struct mem_channel_data *channel_data,
+static bool read_spd_dimm(FSPM_UPD *memupd, const struct soc_mem_cfg *soc_mem_cfg,
+			const struct mem_spd *info, bool half_populated,
+			struct mem_channel_data *channel_data,
 			size_t *spd_len)
 {
 	size_t ch, dimm;
@@ -119,7 +121,47 @@ static bool read_spd_dimm(const struct soc_mem_cfg *soc_mem_cfg, const struct me
 		}
 	}
 
-	get_spd_smbus(&blk);
+	if (CONFIG(SPD_CACHE_ENABLE)) {
+		uint8_t *spd_cache;
+		size_t spd_cache_sz;
+		bool need_update_cache = false;
+		bool dimm_changed = true;
+
+		/* load spd cache from RW_SPD_CACHE */
+		if (load_spd_cache(&spd_cache, &spd_cache_sz) == CB_SUCCESS) {
+			if (!spd_cache_is_valid(spd_cache, spd_cache_sz)) {
+				printk(BIOS_WARNING, "Invalid SPD cache\n");
+			} else {
+				dimm_changed = check_if_dimm_changed(spd_cache, &blk);
+				if (dimm_changed && memupd->FspmArchUpd.NvsBufferPtr != 0) {
+					/*
+					 * Set FSP-M Arch UPD to indicate that the
+					 * mrc_cache need to be invalidated
+					 */
+					printk(BIOS_INFO, "DIMM change, invalidate cache.\n");
+					memupd->FspmArchUpd.NvsBufferPtr = 0;
+					memupd->FspmArchUpd.BootMode =
+						 FSP_BOOT_WITH_FULL_CONFIGURATION;
+				}
+			}
+			need_update_cache = true;
+		}
+
+		if (!dimm_changed) {
+			printk(BIOS_INFO, "Use the SPD cache data\n");
+			spd_fill_from_cache(spd_cache, &blk);
+		} else {
+			/* Access memory info through SMBUS. */
+			get_spd_smbus(&blk);
+
+			if (need_update_cache &&
+				update_spd_cache(&blk) == CB_ERR)
+				printk(BIOS_ERR, "update SPD cache failed\n");
+		}
+	} else {
+		get_spd_smbus(&blk);
+	}
+
 	*spd_len = blk.len;
 
 	for (ch = 0; ch < num_phys_ch; ch++) {
@@ -142,7 +184,7 @@ static bool read_spd_dimm(const struct soc_mem_cfg *soc_mem_cfg, const struct me
 	return pop_mask != 0;
 }
 
-void mem_populate_channel_data(const struct soc_mem_cfg *soc_mem_cfg,
+void mem_populate_channel_data(FSPM_UPD *memupd, const struct soc_mem_cfg *soc_mem_cfg,
 				const struct mem_spd *spd_info,
 				bool half_populated,
 				struct mem_channel_data *data)
@@ -153,7 +195,8 @@ void mem_populate_channel_data(const struct soc_mem_cfg *soc_mem_cfg,
 	memset(data, 0, sizeof(*data));
 
 	read_spd_md(soc_mem_cfg, spd_info, half_populated, data, &spd_md_len);
-	have_dimms = read_spd_dimm(soc_mem_cfg, spd_info, half_populated, data, &spd_dimm_len);
+	have_dimms = read_spd_dimm(memupd, soc_mem_cfg, spd_info, half_populated, data,
+				&spd_dimm_len);
 
 	if (data->ch_population_flags == NO_CHANNEL_POPULATED)
 		die("No channels are populated. Incorrect memory configuration!\n");

@@ -47,7 +47,4 @@ static const struct cros_gpio cros_gpios[] = {
 	CROS_GPIO_WP_AL(GPIO_SPI_WP, CROS_GPIO_DEVICE_NAME),
 };
 
-void mainboard_chromeos_acpi_generate(void)
-{
-	chromeos_acpi_gpio_generate(cros_gpios, ARRAY_SIZE(cros_gpios));
-}
+DECLARE_CROS_GPIOS(cros_gpios);

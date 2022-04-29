@@ -22,7 +22,14 @@ fw_config
 	end
 end
 chip soc/intel/alderlake
-	register "SaGv" = "SaGv_Enabled"
+	register "sagv" = "SaGv_Enabled"
+	# Acoustic settings
+	register "acoustic_noise_mitigation" = "1"
+	register "slow_slew_rate[VR_DOMAIN_IA]" = "SLEW_FAST_8"
+	register "slow_slew_rate[VR_DOMAIN_GT]" = "SLEW_FAST_8"
+	register "fast_pkg_c_ramp_disable[VR_DOMAIN_IA]" = "1"
+	register "fast_pkg_c_ramp_disable[VR_DOMAIN_GT]" = "1"
+
 	# Intel Common SoC Config
 	#+-------------------+---------------------------+
 	#| Field             |  Value                    |
@@ -58,6 +65,7 @@ chip soc/intel/alderlake
 	register "usb2_ports[1]" = "USB2_PORT_MID(OC_SKIP)"     # Type-A MLB Port
 	register "usb2_ports[6]" = "USB2_PORT_MID(OC_SKIP)"     # Smart Card
 	register "usb3_ports[2]" = "USB3_PORT_DEFAULT(OC_SKIP)" # USB3/2 Type A MLB port
+	register "tcss_ports[1]" = "TCSS_PORT_EMPTY"
 	device domain 0 on
 		device ref igpu on
 			chip drivers/gfx/generic
@@ -124,6 +132,7 @@ chip soc/intel/alderlake
 				device generic 0 on end
 			end
 		end
+		device ref tbt_pcie_rp1 off end
 		device ref cnvi_wifi on
 			chip drivers/wifi/generic
 				register "wake" = "GPE0_PME_B0"

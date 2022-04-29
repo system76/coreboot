@@ -268,6 +268,7 @@ endif
 config CONSOLE_SPI_FLASH
 	bool "SPI Flash console output"
 	default n
+	depends on BOOT_DEVICE_SPI_FLASH
 	select BOOT_DEVICE_SPI_FLASH_RW_NOMMAP_EARLY if !COMMON_CBFS_SPI_WRAPPER
 	help
 	  Send coreboot debug output to the SPI Flash in the FMAP CONSOLE area
@@ -394,6 +395,15 @@ config DEFAULT_CONSOLE_LOGLEVEL
 	  Map the log level config names to an integer.
 
 endif
+
+config CONSOLE_USE_LOGLEVEL_PREFIX
+	bool "Use loglevel prefix to indicate line loglevel"
+	default y
+	help
+	  When enabled, if the code contains a:
+	  `printk(BIOS_DEBUG, "This is a debug message!\n")`,
+	  it will show up as:
+	  `[DEBUG]  This is a debug message!`
 
 config CONSOLE_USE_ANSI_ESCAPES
 	bool "Use ANSI escape sequences for console highlighting"

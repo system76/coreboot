@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+#include <acpi/acpi.h>
 #include <bootstate.h>
 #include <console/console.h>
 #include <intelblocks/cse.h>
@@ -10,14 +11,30 @@
 #include <timestamp.h>
 #include <types.h>
 
-enum cse_eop_result {
-	CSE_EOP_RESULT_GLOBAL_RESET_REQUESTED,
-	CSE_EOP_RESULT_SUCCESS,
-	CSE_EOP_RESULT_ERROR,
-	CSE_EOP_RESULT_DISABLED,
+#define CSE_MAX_RETRY_CMD	3
+
+enum cse_cmd_result {
+	CSE_CMD_RESULT_GLOBAL_RESET_REQUESTED,
+	CSE_CMD_RESULT_SUCCESS,
+	CSE_CMD_RESULT_ERROR,
+	CSE_CMD_RESULT_DISABLED,
+	CSE_CMD_RESULT_RETRY,
 };
 
-static bool cse_disable_mei_bus(void)
+static enum cse_cmd_result decode_heci_send_receive_error(enum cse_tx_rx_status ret)
+{
+	switch (ret) {
+	case CSE_TX_ERR_CSE_NOT_READY:
+	case CSE_RX_ERR_CSE_NOT_READY:
+	case CSE_RX_ERR_RESP_LEN_MISMATCH:
+	case CSE_RX_ERR_TIMEOUT:
+		return CSE_CMD_RESULT_RETRY;
+	default:
+		return CSE_CMD_RESULT_ERROR;
+	}
+}
+
+static enum cse_cmd_result cse_disable_mei_bus(void)
 {
 	struct bus_disable_message {
 		uint8_t command;
@@ -32,22 +49,27 @@ static bool cse_disable_mei_bus(void)
 	} __packed reply = {};
 
 	size_t reply_sz = sizeof(reply);
+	enum cse_tx_rx_status ret;
 
-	if (!heci_send_receive(&msg, sizeof(msg), &reply, &reply_sz, HECI_MEI_ADDR)) {
+	printk(BIOS_DEBUG, "HECI, Sending MEI BIOS DISABLE command\n");
+	ret = heci_send_receive(&msg, sizeof(msg), &reply, &reply_sz, HECI_MEI_ADDR);
+
+	if (ret) {
 		printk(BIOS_ERR, "HECI: Failed to Disable MEI bus\n");
-		return false;
+		return decode_heci_send_receive_error(ret);
 	}
 
 	if (reply.status) {
 		printk(BIOS_ERR, "HECI: MEI_Bus_Disable Failed (status: %d)\n", reply.status);
-		return false;
+		return CSE_CMD_RESULT_ERROR;
 	}
 
-	return true;
+	return CSE_CMD_RESULT_SUCCESS;
 }
 
-static enum cse_eop_result cse_send_eop(void)
+static enum cse_cmd_result cse_send_eop(void)
 {
+	enum cse_tx_rx_status ret;
 	enum {
 		EOP_REQUESTED_ACTION_CONTINUE = 0,
 		EOP_REQUESTED_ACTION_GLOBAL_RESET = 1,
@@ -73,7 +95,7 @@ static enum cse_eop_result cse_send_eop(void)
 	    cse_is_hfs1_com_soft_temp_disable()) {
 		printk(BIOS_INFO, "HECI: coreboot in recovery mode; found CSE in expected SOFT "
 		       "TEMP DISABLE state, skipping EOP\n");
-		return CSE_EOP_RESULT_SUCCESS;
+		return CSE_CMD_RESULT_SUCCESS;
 	}
 
 	/*
@@ -86,25 +108,24 @@ static enum cse_eop_result cse_send_eop(void)
 	if (cse_is_hfs1_com_soft_temp_disable()) {
 		printk(BIOS_ERR, "HECI: Prerequisites not met for sending EOP\n");
 		if (CONFIG(SOC_INTEL_CSE_LITE_SKU))
-			return CSE_EOP_RESULT_ERROR;
-		return CSE_EOP_RESULT_DISABLED;
+			return CSE_CMD_RESULT_ERROR;
+		return CSE_CMD_RESULT_DISABLED;
 	}
 
 	if (!cse_is_hfs1_cws_normal() || !cse_is_hfs1_com_normal()) {
 		printk(BIOS_ERR, "HECI: Prerequisites not met for sending EOP\n");
-		return CSE_EOP_RESULT_ERROR;
+		return CSE_CMD_RESULT_ERROR;
 	}
 
 	printk(BIOS_INFO, "HECI: Sending End-of-Post\n");
 
-	if (!heci_send_receive(&msg, sizeof(msg), &resp, &resp_size, HECI_MKHI_ADDR)) {
-		printk(BIOS_ERR, "HECI: EOP send/receive fail\n");
-		return CSE_EOP_RESULT_ERROR;
-	}
+	ret = heci_send_receive(&msg, sizeof(msg), &resp, &resp_size, HECI_MKHI_ADDR);
+	if (ret)
+		return decode_heci_send_receive_error(ret);
 
 	if (resp.hdr.result) {
 		printk(BIOS_ERR, "HECI: EOP Resp Failed: %u\n", resp.hdr.result);
-		return CSE_EOP_RESULT_ERROR;
+		return CSE_CMD_RESULT_ERROR;
 	}
 
 	printk(BIOS_INFO, "CSE: EOP requested action: ");
@@ -112,14 +133,26 @@ static enum cse_eop_result cse_send_eop(void)
 	switch (resp.requested_actions) {
 	case EOP_REQUESTED_ACTION_GLOBAL_RESET:
 		printk(BIOS_INFO, "global reset\n");
-		return CSE_EOP_RESULT_GLOBAL_RESET_REQUESTED;
+		return CSE_CMD_RESULT_GLOBAL_RESET_REQUESTED;
 	case EOP_REQUESTED_ACTION_CONTINUE:
 		printk(BIOS_INFO, "continue boot\n");
-		return CSE_EOP_RESULT_SUCCESS;
+		return CSE_CMD_RESULT_SUCCESS;
 	default:
 		printk(BIOS_INFO, "unknown %u\n", resp.requested_actions);
-		return CSE_EOP_RESULT_ERROR;
+		return CSE_CMD_RESULT_ERROR;
 	}
+}
+
+static enum cse_cmd_result cse_send_cmd_retries(enum cse_cmd_result (*cse_send_command)(void))
+{
+	size_t retry;
+	enum cse_cmd_result ret;
+	for (retry = 0; retry < CSE_MAX_RETRY_CMD; retry++) {
+		ret = cse_send_command();
+		if (ret != CSE_CMD_RESULT_RETRY)
+			break;
+	}
+	return ret;
 }
 
 /*
@@ -129,7 +162,7 @@ static enum cse_eop_result cse_send_eop(void)
  */
 static void cse_handle_eop_error(void)
 {
-	if (!cse_disable_mei_bus())
+	if (cse_send_cmd_retries(cse_disable_mei_bus))
 		die("Failed to disable MEI bus while recovering from EOP error\n"
 		    "Preventing system from booting into an insecure state.\n");
 
@@ -138,20 +171,20 @@ static void cse_handle_eop_error(void)
 		    "Preventing system from booting into an insecure state.\n");
 }
 
-static void handle_cse_eop_result(enum cse_eop_result result)
+static void handle_cse_eop_result(enum cse_cmd_result result)
 {
 	switch (result) {
-	case CSE_EOP_RESULT_GLOBAL_RESET_REQUESTED:
+	case CSE_CMD_RESULT_GLOBAL_RESET_REQUESTED:
 		printk(BIOS_INFO, "CSE requested global reset in EOP response, resetting...\n");
 		do_global_reset();
 		break;
-	case CSE_EOP_RESULT_SUCCESS:
+	case CSE_CMD_RESULT_SUCCESS:
 		printk(BIOS_INFO, "CSE EOP successful, continuing boot\n");
 		break;
-	case CSE_EOP_RESULT_DISABLED:
+	case CSE_CMD_RESULT_DISABLED:
 		printk(BIOS_INFO, "CSE is disabled, continuing boot\n");
 		break;
-	case CSE_EOP_RESULT_ERROR: /* fallthrough */
+	case CSE_CMD_RESULT_ERROR: /* fallthrough */
 	default:
 		printk(BIOS_ERR, "Failed to send EOP to CSE, %d\n", result);
 		/* For vboot, trigger recovery mode if applicable, as there is
@@ -171,7 +204,12 @@ static void do_send_end_of_post(void)
 	static bool eop_sent = false;
 
 	if (eop_sent) {
-		printk(BIOS_ERR, "EOP already sent\n");
+		printk(BIOS_WARNING, "EOP already sent\n");
+		return;
+	}
+
+	if (acpi_get_sleep_type() == ACPI_S3) {
+		printk(BIOS_INFO, "Skip sending EOP during S3 resume\n");
 		return;
 	}
 
@@ -186,9 +224,9 @@ static void do_send_end_of_post(void)
 
 	set_cse_device_state(PCH_DEVFN_CSE, DEV_ACTIVE);
 
-	timestamp_add_now(TS_ME_BEFORE_END_OF_POST);
-	handle_cse_eop_result(cse_send_eop());
-	timestamp_add_now(TS_ME_AFTER_END_OF_POST);
+	timestamp_add_now(TS_ME_END_OF_POST_START);
+	handle_cse_eop_result(cse_send_cmd_retries(cse_send_eop));
+	timestamp_add_now(TS_ME_END_OF_POST_END);
 
 	set_cse_device_state(PCH_DEVFN_CSE, DEV_IDLE);
 

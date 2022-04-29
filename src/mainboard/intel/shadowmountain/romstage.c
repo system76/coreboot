@@ -9,7 +9,6 @@
 
 void mainboard_memory_init_params(FSPM_UPD *memupd)
 {
-	FSP_M_CONFIG *m_cfg = &memupd->FspmConfig;
 	const struct mb_cfg *mem_config = variant_memory_params();
 	const bool half_populated = false;
 
@@ -18,5 +17,5 @@ void mainboard_memory_init_params(FSPM_UPD *memupd)
 		.cbfs_index = variant_memory_sku(),
 	};
 
-	memcfg_init(m_cfg, mem_config, &lp5_spd_info, half_populated);
+	memcfg_init(memupd, mem_config, &lp5_spd_info, half_populated);
 }

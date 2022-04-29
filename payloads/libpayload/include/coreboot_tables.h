@@ -83,6 +83,7 @@ enum {
 	CB_TAG_BOARD_CONFIG		= 0x0040,
 	CB_TAG_ACPI_CNVS		= 0x0041,
 	CB_TAG_TYPE_C_INFO		= 0x0042,
+	CB_TAG_ACPI_RSDP                = 0x0043,
 	CB_TAG_CMOS_OPTION_TABLE	= 0x00c8,
 	CB_TAG_OPTION			= 0x00c9,
 	CB_TAG_OPTION_ENUM		= 0x00ca,
@@ -90,10 +91,7 @@ enum {
 	CB_TAG_OPTION_CHECKSUM		= 0x00cc,
 };
 
-struct cbuint64 {
-	u32 lo;
-	u32 hi;
-};
+typedef __aligned(4) uint64_t cb_uint64_t;
 
 struct cb_header {
 	u8 signature[4];
@@ -110,8 +108,8 @@ struct cb_record {
 };
 
 struct cb_memory_range {
-	struct cbuint64 start;
-	struct cbuint64 size;
+	cb_uint64_t start;
+	cb_uint64_t size;
 	u32 type;
 };
 
@@ -270,14 +268,14 @@ struct cb_gpios {
 struct lb_range {
 	uint32_t tag;
 	uint32_t size;
-	uint64_t range_start;
+	cb_uint64_t range_start;
 	uint32_t range_size;
 };
 
 struct cb_cbmem_tab {
 	uint32_t tag;
 	uint32_t size;
-	uint64_t cbmem_tab;
+	cb_uint64_t cbmem_tab;
 };
 
 struct cb_x86_rom_mtrr {
@@ -315,10 +313,10 @@ struct cb_boot_media_params {
 	uint32_t tag;
 	uint32_t size;
 	/* offsets are relative to start of boot media */
-	uint64_t fmap_offset;
-	uint64_t cbfs_offset;
-	uint64_t cbfs_size;
-	uint64_t boot_media_size;
+	cb_uint64_t fmap_offset;
+	cb_uint64_t cbfs_offset;
+	cb_uint64_t cbfs_size;
+	cb_uint64_t boot_media_size;
 };
 
 
@@ -326,7 +324,7 @@ struct cb_cbmem_entry {
 	uint32_t tag;
 	uint32_t size;
 
-	uint64_t address;
+	cb_uint64_t address;
 	uint32_t entry_size;
 	uint32_t id;
 };
@@ -368,7 +366,7 @@ struct cb_board_config {
 	uint32_t tag;
 	uint32_t size;
 
-	struct cbuint64 fw_config;
+	cb_uint64_t fw_config;
 	uint32_t board_id;
 	uint32_t ram_code;
 	uint32_t sku_id;
@@ -422,12 +420,17 @@ struct	cb_cmos_checksum {
 	u32 type;
 };
 
-/* Helpful inlines */
+/*
+ * Handoff the ACPI RSDP
+ */
+struct cb_acpi_rsdp {
+	uint32_t tag;
+	uint32_t size;
+	cb_uint64_t rsdp_pointer; /* Address of the ACPI RSDP */
+};
 
-static inline u64 cb_unpack64(struct cbuint64 val)
-{
-	return (((u64) val.hi) << 32) | val.lo;
-}
+
+/* Helpful inlines */
 
 static inline u16 cb_checksum(const void *ptr, unsigned len)
 {

@@ -56,8 +56,6 @@ static void read_pmc_lpm_requirements(const struct soc_pmc_lpm *lpm,
 			if (result != CB_SUCCESS) {
 				printk(BIOS_ERR, "Failed to retrieve LPM substate registers"
 				       "from LPM, substate %zu, reg %zu\n", i, j);
-				free(reg);
-				return;
 			}
 
 			uint32_t *ptr = reg + i * lpm->num_req_regs + j;
@@ -70,15 +68,19 @@ static void read_pmc_lpm_requirements(const struct soc_pmc_lpm *lpm,
 }
 
 /*
- * For now there is only one disabled non-existent device, because Windows
- * expects at least one device and crashes without it with a bluescreen
- * (`INTERNAL_POWER_ERROR`). Returning an empty package does not work.
+ * Windows expects a non-empty package for this subfunction, otherwise it
+ * results in a bluescreen (`INTERNAL_POWER_ERROR`); returning an empty package
+ * does not work. To workaround this, return a package describing a single
+ * device, one that is known to exist, i.e.  ACPI_CPU_STRING.  expects at least
+ * one device and crashes without it with a bluescreen.
  */
 static void lpi_get_constraints(void *unused)
 {
+	char path[16];
+
 	/*
 	 * Return (Package() {
-	 *     Package() { "\NULL", 0,
+	 *     Package() { "\_SB.CP00", 0,
 	 *         Package() { 0,
 	 *             Package() { 0xff, 0 }}}})
 	 */
@@ -87,7 +89,8 @@ static void lpi_get_constraints(void *unused)
 	{
 		acpigen_write_package(3);
 		{
-			acpigen_emit_namestring("\\NULL");
+			snprintf(path, sizeof(path), CONFIG_ACPI_CPU_STRING, 0);
+			acpigen_emit_namestring(path);
 			acpigen_write_integer(0); /* device disabled */
 			acpigen_write_package(2);
 			{

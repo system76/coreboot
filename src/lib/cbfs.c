@@ -34,15 +34,15 @@ static void switch_to_postram_cache(int unused)
 }
 ROMSTAGE_CBMEM_INIT_HOOK(switch_to_postram_cache);
 
-cb_err_t _cbfs_boot_lookup(const char *name, bool force_ro,
-			   union cbfs_mdata *mdata, struct region_device *rdev)
+enum cb_err _cbfs_boot_lookup(const char *name, bool force_ro,
+			      union cbfs_mdata *mdata, struct region_device *rdev)
 {
 	const struct cbfs_boot_device *cbd = cbfs_get_boot_device(force_ro);
 	if (!cbd)
 		return CB_ERR;
 
 	size_t data_offset;
-	cb_err_t err = CB_CBFS_CACHE_FULL;
+	enum cb_err err = CB_CBFS_CACHE_FULL;
 	if (!CONFIG(NO_CBFS_MCACHE) && !ENV_SMM && cbd->mcache_size)
 		err = cbfs_mcache_lookup(cbd->mcache, cbd->mcache_size,
 					 name, mdata, &data_offset);
@@ -215,9 +215,9 @@ static size_t cbfs_load_and_decompress(const struct region_device *rdev, void *b
 			return 0;
 
 		if (!cbfs_file_hash_mismatch(map, in_size, mdata, skip_verification)) {
-			timestamp_add_now(TS_START_ULZ4F);
+			timestamp_add_now(TS_ULZ4F_START);
 			out_size = ulz4fn(map, in_size, buffer, buffer_size);
-			timestamp_add_now(TS_END_ULZ4F);
+			timestamp_add_now(TS_ULZ4F_END);
 		}
 
 		rdev_munmap(rdev, map);
@@ -233,9 +233,9 @@ static size_t cbfs_load_and_decompress(const struct region_device *rdev, void *b
 
 		if (!cbfs_file_hash_mismatch(map, in_size, mdata, skip_verification)) {
 			/* Note: timestamp not useful for memory-mapped media (x86) */
-			timestamp_add_now(TS_START_ULZMA);
+			timestamp_add_now(TS_ULZMA_START);
 			out_size = ulzman(map, in_size, buffer, buffer_size);
-			timestamp_add_now(TS_END_ULZMA);
+			timestamp_add_now(TS_ULZMA_END);
 		}
 
 		rdev_munmap(rdev, map);
@@ -520,11 +520,11 @@ void *_cbfs_cbmem_allocator(void *arg, size_t size, const union cbfs_mdata *unus
 	return cbmem_add((uintptr_t)arg, size);
 }
 
-cb_err_t cbfs_prog_stage_load(struct prog *pstage)
+enum cb_err cbfs_prog_stage_load(struct prog *pstage)
 {
 	union cbfs_mdata mdata;
 	struct region_device rdev;
-	cb_err_t err;
+	enum cb_err err;
 
 	prog_locate_hook(pstage);
 
@@ -612,8 +612,8 @@ void cbfs_boot_device_find_mcache(struct cbfs_boot_device *cbd, uint32_t id)
 	}
 }
 
-cb_err_t cbfs_init_boot_device(const struct cbfs_boot_device *cbd,
-			       struct vb2_hash *mdata_hash)
+enum cb_err cbfs_init_boot_device(const struct cbfs_boot_device *cbd,
+				  struct vb2_hash *mdata_hash)
 {
 	/* If we have an mcache, mcache_build() will also check mdata hash. */
 	if (!CONFIG(NO_CBFS_MCACHE) && !ENV_SMM && cbd->mcache_size > 0)
@@ -625,7 +625,7 @@ cb_err_t cbfs_init_boot_device(const struct cbfs_boot_device *cbd,
 
 	/* Verification only: use cbfs_walk() without a walker() function to just run through
 	   the CBFS once, will return NOT_FOUND by default. */
-	cb_err_t err = cbfs_walk(&cbd->rdev, NULL, NULL, mdata_hash, 0);
+	enum cb_err err = cbfs_walk(&cbd->rdev, NULL, NULL, mdata_hash, 0);
 	if (err == CB_CBFS_NOT_FOUND)
 		err = CB_SUCCESS;
 	return err;
@@ -660,7 +660,7 @@ const struct cbfs_boot_device *cbfs_get_boot_device(bool force_ro)
 		die("Cannot locate primary CBFS");
 
 	if (ENV_INITIAL_STAGE) {
-		cb_err_t err = cbfs_init_boot_device(&ro, metadata_hash_get());
+		enum cb_err err = cbfs_init_boot_device(&ro, metadata_hash_get());
 		if (err == CB_CBFS_HASH_MISMATCH)
 			die("RO CBFS metadata hash verification failure");
 		else if (CONFIG(TOCTOU_SAFETY) && err == CB_CBFS_CACHE_FULL)

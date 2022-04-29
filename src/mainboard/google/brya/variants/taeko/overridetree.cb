@@ -34,6 +34,10 @@ fw_config
 		option BOOT_EMMC_DISABLED		0
 		option BOOT_EMMC_ENABLED		1
 	end
+	field THERMAL 16
+		option THERMAL_FAN_TABLE_0		0
+		option THERMAL_FAN_TABLE_1		1
+	end
 	field HPS 17
 		option HPS_ABSENT			0
 		option HPS_PRESENT			1
@@ -41,11 +45,11 @@ fw_config
 end
 chip soc/intel/alderlake
 	# Acoustic settings
-	register "AcousticNoiseMitigation" = "1"
-	register "SlowSlewRate[VR_DOMAIN_IA]" = "SLEW_FAST_8"
-	register "SlowSlewRate[VR_DOMAIN_GT]" = "SLEW_FAST_8"
-	register "FastPkgCRampDisable[VR_DOMAIN_IA]" = "1"
-	register "FastPkgCRampDisable[VR_DOMAIN_GT]" = "1"
+	register "acoustic_noise_mitigation" = "1"
+	register "slow_slew_rate[VR_DOMAIN_IA]" = "SLEW_FAST_8"
+	register "slow_slew_rate[VR_DOMAIN_GT]" = "SLEW_FAST_8"
+	register "fast_pkg_c_ramp_disable[VR_DOMAIN_IA]" = "1"
+	register "fast_pkg_c_ramp_disable[VR_DOMAIN_GT]" = "1"
 	register "ext_fivr_settings" = "{
 		.configure_ext_fivr = 1,
 		.v1p05_enable_bitmap = FIVR_ENABLE_ALL_SX,
@@ -59,9 +63,9 @@ chip soc/intel/alderlake
 		.v1p05_icc_max_ma = 500,
 		.vnn_sx_voltage_mv = 1250,
 	}"
-	register "TcssAuxOri" = "1"
+	register "tcss_aux_ori" = "1"
 	register "typec_aux_bias_pads[0]" = "{.pad_auxp_dc = GPP_E22, .pad_auxn_dc = GPP_E23}"
-	register "SaGv" = "SaGv_Enabled"
+	register "sagv" = "SaGv_Enabled"
 
 	register "usb2_ports[1]" = "USB2_PORT_EMPTY"	# Disable Port 1
 	register "usb2_ports[2]" = "USB2_PORT_TYPE_C(OC2)"	# DB USB2_C1
@@ -115,7 +119,7 @@ chip soc/intel/alderlake
 		},
 	}"
 	# I2C Port Config
-	register "SerialIoI2cMode" = "{
+	register "serial_io_i2c_mode" = "{
 		[PchSerialIoIndexI2C0]  = PchSerialIoPci,
 		[PchSerialIoIndexI2C1]  = PchSerialIoPci,
 		[PchSerialIoIndexI2C2]  = PchSerialIoPci,
@@ -238,7 +242,125 @@ chip soc/intel/alderlake
 				register "options.fan.fine_grained_control" = "1"
 				register "options.fan.step_size" = "2"
 
-				device generic 0 alias dptf_policy on end
+				device generic 0 on
+					probe THERMAL THERMAL_FAN_TABLE_0
+				end
+			end
+			chip drivers/intel/dptf
+				## sensor information
+				register "options.tsr[0].desc" = ""DRAM_SOC""
+				register "options.tsr[1].desc" = ""Ambient""
+				register "options.tsr[2].desc" = ""Charger""
+				register "options.tsr[3].desc" = ""WWAN""
+
+				## Active Policy
+				register "policies.active" = "{
+					[0] = {
+						.target = DPTF_CPU,
+						.thresholds = {
+								TEMP_PCT(85, 90),
+								TEMP_PCT(80, 74),
+								TEMP_PCT(75, 74),
+								TEMP_PCT(70, 74),
+								TEMP_PCT(65, 74),
+						}
+					},
+					[1] = {
+						.target = DPTF_TEMP_SENSOR_1,
+						.thresholds = {
+								TEMP_PCT(57, 70),
+								TEMP_PCT(54, 60),
+								TEMP_PCT(48, 60),
+								TEMP_PCT(45, 45),
+								TEMP_PCT(42, 39),
+						}
+					},
+					[2] = {
+						.target = DPTF_TEMP_SENSOR_2,
+						.thresholds = {
+								TEMP_PCT(57, 70),
+								TEMP_PCT(54, 50),
+								TEMP_PCT(48, 60),
+								TEMP_PCT(45, 45),
+								TEMP_PCT(42, 39),
+						}
+					},
+					[3] = {
+						.target = DPTF_TEMP_SENSOR_3,
+						.thresholds = {
+								TEMP_PCT(57, 70),
+								TEMP_PCT(54, 60),
+								TEMP_PCT(48, 60),
+								TEMP_PCT(45, 45),
+								TEMP_PCT(42, 39),
+						}
+					}
+				}"
+
+				## Passive Policy
+				register "policies.passive" = "{
+					[0] = DPTF_PASSIVE(CPU,         CPU,           95, 5000),
+					[1] = DPTF_PASSIVE(CPU,         TEMP_SENSOR_0, 90, 6000),
+					[2] = DPTF_PASSIVE(CPU,		TEMP_SENSOR_1, 90, 6000),
+					[3] = DPTF_PASSIVE(CHARGER,	TEMP_SENSOR_2, 90, 6000),
+					[4] = DPTF_PASSIVE(CPU,         TEMP_SENSOR_3, 90, 6000),
+				}"
+
+				## Critical Policy
+				register "policies.critical" = "{
+					[0] = DPTF_CRITICAL(CPU,               105, SHUTDOWN),
+					[1] = DPTF_CRITICAL(TEMP_SENSOR_0,     100, SHUTDOWN),
+					[2] = DPTF_CRITICAL(TEMP_SENSOR_1,     100, SHUTDOWN),
+					[3] = DPTF_CRITICAL(TEMP_SENSOR_2,     100, SHUTDOWN),
+					[4] = DPTF_CRITICAL(TEMP_SENSOR_3,     100, SHUTDOWN),
+				}"
+
+				register "controls.power_limits" = "{
+					.pl1 = {
+							.min_power = 3000,
+							.max_power = 15000,
+							.time_window_min = 28 * MSECS_PER_SEC,
+							.time_window_max = 32 * MSECS_PER_SEC,
+							.granularity = 200,
+						},
+					.pl2 = {
+							.min_power = 55000,
+							.max_power = 55000,
+							.time_window_min = 28 * MSECS_PER_SEC,
+							.time_window_max = 32 * MSECS_PER_SEC,
+							.granularity = 1000,
+						}
+				}"
+
+				## Charger Performance Control (Control, mA)
+				register "controls.charger_perf" = "{
+					[0] = { 255, 1700 },
+					[1] = {  24, 1500 },
+					[2] = {  16, 1000 },
+					[3] = {   8,  500 }
+				}"
+
+				## Fan Performance Control (Percent, Speed, Noise, Power)
+				register "controls.fan_perf" = "{
+					[0] = { 100, 6000, 220, 2200, },
+					[1] = {  92, 5500, 180, 1800, },
+					[2] = {  85, 5000, 145, 1450, },
+					[3] = {  70, 4400, 115, 1150, },
+					[4] = {  56, 3900,  90,  900, },
+					[5] = {  45, 3300,  55,  550, },
+					[6] = {  38, 3000,  30,  300, },
+					[7] = {  33, 2900,  15,  150, },
+					[8] = {  10,  800,  10,  100, },
+					[9] = {   0,    0,   0,   50, }
+				}"
+
+				## Fan options
+				register "options.fan.fine_grained_control" = "1"
+				register "options.fan.step_size" = "2"
+
+				device generic 1 on
+					probe THERMAL THERMAL_FAN_TABLE_1
+				end
 			end
 		end
 		device ref pcie4_0 on
@@ -407,6 +529,7 @@ chip soc/intel/alderlake
 				.clk_src = 0,
 				.clk_req = 0,
 				.flags = PCIE_RP_LTR | PCIE_RP_AER,
+				.pcie_rp_aspm = ASPM_L1,
 			}"
 			chip soc/intel/common/block/pcie/rtd3
 				register "enable_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_D11)"
@@ -466,7 +589,7 @@ chip soc/intel/alderlake
 						register "desc" = ""USB3 Type-C Port C1 (DB)""
 						register "type" = "UPC_TYPE_C_USB2_SS_SWITCH"
 						register "use_custom_pld" = "true"
-						register "custom_pld" = "ACPI_PLD_TYPE_C(RIGHT, LEFT, ACPI_PLD_GROUP(2, 1))"
+						register "custom_pld" = "ACPI_PLD_TYPE_C(RIGHT, LEFT, ACPI_PLD_GROUP(3, 1))"
 						device ref tcss_usb3_port3 on
 							probe DB_USB DB_USB3_NO_A
 							probe DB_USB DB_USB3_1C_1A
@@ -489,7 +612,7 @@ chip soc/intel/alderlake
 						register "desc" = ""USB2 Type-C Port C1 (DB)""
 						register "type" = "UPC_TYPE_C_USB2_SS_SWITCH"
 						register "use_custom_pld" = "true"
-						register "custom_pld" = "ACPI_PLD_TYPE_C(RIGHT, LEFT, ACPI_PLD_GROUP(2, 1))"
+						register "custom_pld" = "ACPI_PLD_TYPE_C(RIGHT, LEFT, ACPI_PLD_GROUP(3, 1))"
 						device ref usb2_port3 on
 							probe DB_USB DB_USB3_NO_A
 							probe DB_USB DB_USB3_1C_1A

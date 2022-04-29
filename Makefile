@@ -193,6 +193,7 @@ strip_quotes = $(strip $(subst ",,$(subst \",,$(1))))
 real-all: real-target
 
 # must come rather early
+.SECONDARY:
 .SECONDEXPANSION:
 .DELETE_ON_ERROR:
 
@@ -469,10 +470,10 @@ doxyclean: doxygen-clean
 doxygen-clean:
 	rm -rf $(DOXYGEN_OUTPUT_DIR)
 
-clean-for-update: doxygen-clean clean-for-update-target
+clean-for-update: doxygen-clean
 	rm -rf $(obj) .xcompile
 
-clean: clean-for-update clean-target clean-utils
+clean: clean-for-update clean-utils clean-payloads
 	rm -f .ccwrap
 
 clean-cscope:

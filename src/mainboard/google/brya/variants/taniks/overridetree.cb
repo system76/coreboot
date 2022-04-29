@@ -36,6 +36,12 @@ fw_config
 	end
 end
 chip soc/intel/alderlake
+	# Acoustic settings
+	register "acoustic_noise_mitigation" = "1"
+	register "slow_slew_rate[VR_DOMAIN_IA]" = "SLEW_FAST_8"
+	register "slow_slew_rate[VR_DOMAIN_GT]" = "SLEW_FAST_8"
+	register "fast_pkg_c_ramp_disable[VR_DOMAIN_IA]" = "1"
+	register "fast_pkg_c_ramp_disable[VR_DOMAIN_GT]" = "1"
 	register "ext_fivr_settings" = "{
 		.configure_ext_fivr = 1,
 		.v1p05_enable_bitmap = FIVR_ENABLE_ALL_SX,
@@ -49,11 +55,11 @@ chip soc/intel/alderlake
 		.v1p05_icc_max_ma = 500,
 		.vnn_sx_voltage_mv = 1250,
 	}"
-	register "TcssAuxOri" = "1"
+	register "tcss_aux_ori" = "1"
 	register "typec_aux_bias_pads[0]" = "{.pad_auxp_dc = GPP_E22, .pad_auxn_dc = GPP_E23}"
-	register "SaGv" = "SaGv_Enabled"
+	register "sagv" = "SaGv_Enabled"
 
-	register "PsysPmax" = "145"
+	register "platform_pmax" = "145"
 
 	register "usb2_ports[1]" = "USB2_PORT_EMPTY"	# Disable Port 1
 	register "usb2_ports[2]" = "USB2_PORT_TYPE_C(OC2)"	# DB USB2_C1
@@ -94,7 +100,7 @@ chip soc/intel/alderlake
 		},
 	}"
 	# I2C Port Config
-	register "SerialIoI2cMode" = "{
+	register "serial_io_i2c_mode" = "{
 		[PchSerialIoIndexI2C0]  = PchSerialIoPci,
 		[PchSerialIoIndexI2C1]  = PchSerialIoPci,
 		[PchSerialIoIndexI2C2]  = PchSerialIoDisabled,
@@ -137,7 +143,7 @@ chip soc/intel/alderlake
 					[2] = {
 						.target = DPTF_TEMP_SENSOR_2,
 						.thresholds = {
-								TEMP_PCT(57, 40),
+								TEMP_PCT(57, 70),
 								TEMP_PCT(54, 60),
 								TEMP_PCT(48, 60),
 								TEMP_PCT(45, 45),

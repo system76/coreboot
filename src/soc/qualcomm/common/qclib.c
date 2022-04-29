@@ -2,7 +2,6 @@
 
 #include <console/cbmem_console.h>
 #include <cbmem.h>
-#include <bootmode.h>
 #include <string.h>
 #include <fmap.h>
 #include <assert.h>
@@ -16,8 +15,43 @@
 #include <soc/symbols_common.h>
 #include <security/vboot/misc.h>
 #include <vb2_api.h>
+#include <commonlib/bsd/mem_chip_info.h>
 
 #define QCLIB_VERSION 0
+
+/* store QcLib return data until ROMSTAGE_CBMEM_INIT_HOOK runs */
+static void *mem_chip_addr;
+
+static void write_mem_chip_information(struct qclib_cb_if_table_entry *te)
+{
+	if (te->size > sizeof(struct mem_chip_info) &&
+	    te->size == mem_chip_info_size((void *)te->blob_address)) {
+		/* Save mem_chip_addr in global variable ahead of hook running */
+		mem_chip_addr = (void *)te->blob_address;
+	}
+}
+
+static void add_mem_chip_info(int unused)
+{
+	void *mem_region_base = NULL;
+	size_t size;
+
+	if (!mem_chip_addr) {
+		printk(BIOS_ERR, "Did not receive valid mem_chip_info from QcLib!");
+		return;
+	}
+
+	size = mem_chip_info_size(mem_chip_addr);
+
+	/* Add cbmem table */
+	mem_region_base = cbmem_add(CBMEM_ID_MEM_CHIP_INFO, size);
+	ASSERT(mem_region_base != NULL);
+
+	/* Migrate the data into CBMEM */
+	memcpy(mem_region_base, mem_chip_addr, size);
+}
+
+ROMSTAGE_CBMEM_INIT_HOOK(add_mem_chip_info);
 
 struct qclib_cb_if_table qclib_cb_if_table = {
 	.magic = QCLIB_MAGIC_NUMBER,
@@ -87,6 +121,10 @@ static void write_table_entry(struct qclib_cb_if_table_entry *te)
 
 		write_qclib_log_to_cbmemc(te);
 
+	} else if (!strncmp(QCLIB_TE_MEM_CHIP_INFO, te->name,
+			sizeof(te->name))) {
+		write_mem_chip_information(te);
+
 	} else {
 
 		printk(BIOS_WARNING, "%s write not implemented\n", te->name);
@@ -138,6 +176,9 @@ void qclib_load_and_run(void)
 	}
 	qclib_add_if_table_entry(QCLIB_TE_DDR_TRAINING_DATA,
 				 _ddr_training, REGION_SIZE(ddr_training), 0);
+
+	/* Address and size of this entry will be filled in by QcLib. */
+	qclib_add_if_table_entry(QCLIB_TE_MEM_CHIP_INFO, NULL, 0, 0);
 
 	/* Attempt to load PMICCFG Blob */
 	data_size = cbfs_load(CONFIG_CBFS_PREFIX "/pmiccfg",

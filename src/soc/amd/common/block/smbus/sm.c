@@ -1,20 +1,11 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
 #include <amdblocks/acpimmio.h>
-#include <amdblocks/ioapic.h>
 #include <device/device.h>
 #include <device/pci.h>
 #include <device/pci_ids.h>
 #include <device/smbus.h>
 #include <device/smbus_host.h>
-#include <arch/ioapic.h>
-
-static void sm_init(struct device *dev)
-{
-	fch_enable_ioapic_decode();
-	setup_ioapic(VIO_APIC_VADDR, FCH_IOAPIC_ID);
-	fch_configure_hpet();
-}
 
 static u32 get_sm_mmio(struct device *dev)
 {
@@ -77,7 +68,6 @@ static struct device_operations smbus_ops = {
 	.read_resources		= noop_read_resources,
 	.set_resources		= noop_set_resources,
 	.enable_resources	= pci_dev_enable_resources,
-	.init			= sm_init,
 	.scan_bus		= scan_smbus,
 	.ops_pci		= &pci_dev_ops_pci,
 	.ops_smbus_bus		= &lops_smbus_bus,
@@ -88,7 +78,7 @@ static struct device_operations smbus_ops = {
 
 static const struct pci_driver smbus_driver __pci_driver = {
 	.ops = &smbus_ops,
-	.vendor = PCI_VENDOR_ID_AMD,
+	.vendor = PCI_VID_AMD,
 	/* PCI device ID is used on all integrated FCHs except Family 16h Models 00h-3Fh */
-	.device = PCI_DEVICE_ID_AMD_CZ_SMBUS,
+	.device = PCI_DID_AMD_CZ_SMBUS,
 };

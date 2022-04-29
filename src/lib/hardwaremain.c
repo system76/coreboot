@@ -19,12 +19,10 @@
 #include <device/device.h>
 #include <device/pci.h>
 #include <program_loading.h>
-#include <stdlib.h>
 #include <thread.h>
 #include <timer.h>
 #include <timestamp.h>
 #include <types.h>
-#include <vendorcode/google/chromeos/chromeos.h>
 #include <version.h>
 
 static boot_state_t bs_pre_device(void *arg);
@@ -457,18 +455,11 @@ void main(void)
 	 */
 	cbmem_initialize();
 
-	timestamp_add_now(TS_START_RAMSTAGE);
+	timestamp_add_now(TS_RAMSTAGE_START);
 	post_code(POST_ENTRY_HARDWAREMAIN);
 
 	/* Handoff sleep type from romstage. */
 	acpi_is_wakeup_s3();
-
-	/* Initialise GNVS early. */
-	if (CONFIG(ACPI_SOC_NVS))
-		acpi_create_gnvs();
-
-	if (CONFIG(CHROMEOS_NVS))
-		chromeos_init_chromeos_acpi();
 
 	/* Schedule the static boot state entries. */
 	boot_state_schedule_static_entries();

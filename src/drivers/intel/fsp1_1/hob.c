@@ -24,7 +24,7 @@ void *get_hob_list(void)
 }
 
 /* Returns the next instance of a HOB type from the starting HOB. */
-void *get_next_hob(uint16_t type, const void *hob_start)
+static void *get_next_hob(uint16_t type, const void *hob_start)
 {
 	EFI_PEI_HOB_POINTERS hob;
 
@@ -44,14 +44,8 @@ void *get_next_hob(uint16_t type, const void *hob_start)
 	return NULL;
 }
 
-/* Returns the first instance of a HOB type among the whole HOB list. */
-void *get_first_hob(uint16_t type)
-{
-	return get_next_hob(type, get_hob_list());
-}
-
 /* Returns the next instance of the matched GUID HOB from the starting HOB. */
-void *get_next_guid_hob(const EFI_GUID *guid, const void *hob_start)
+void *get_guid_hob(const EFI_GUID *guid, const void *hob_start)
 {
 	EFI_PEI_HOB_POINTERS hob;
 
@@ -66,17 +60,9 @@ void *get_next_guid_hob(const EFI_GUID *guid, const void *hob_start)
 }
 
 /*
- * Returns the first instance of the matched GUID HOB among the whole HOB list.
- */
-void *get_first_guid_hob(const EFI_GUID *guid)
-{
-	return get_next_guid_hob(guid, get_hob_list());
-}
-
-/*
  * Returns the next instance of the matching resource HOB from the starting HOB.
  */
-void *get_next_resource_hob(const EFI_GUID *guid, const void *hob_start)
+void *get_resource_hob(const EFI_GUID *guid, const void *hob_start)
 {
 	EFI_PEI_HOB_POINTERS hob;
 
@@ -88,15 +74,6 @@ void *get_next_resource_hob(const EFI_GUID *guid, const void *hob_start)
 		hob.Raw = GET_NEXT_HOB(hob.Raw);
 	}
 	return hob.Raw;
-}
-
-/*
- * Returns the first instance of the matching resource HOB among the whole HOB
- * list.
- */
-void *get_first_resource_hob(const EFI_GUID *guid)
-{
-	return get_next_resource_hob(guid, get_hob_list());
 }
 
 static void print_hob_mem_attributes(void *hob_ptr)
@@ -257,13 +234,9 @@ static const char *get_hob_type_string(void *hob_ptr)
  */
 void print_hob_type_structure(u16 hob_type, void *hob_list_ptr)
 {
-	u32 *current_hob;
-	u32 *next_hob = 0;
-	u8  last_hob = 0;
+	void *current_hob;
 	u32 current_type;
 	const char *current_type_str;
-
-	current_hob = hob_list_ptr;
 
 	/*
 	 * Print out HOBs of our desired type until
@@ -271,7 +244,9 @@ void print_hob_type_structure(u16 hob_type, void *hob_list_ptr)
 	 */
 	printk(BIOS_DEBUG, "\n=== FSP HOB Data Structure ===\n");
 	printk(BIOS_DEBUG, "%p: hob_list_ptr\n", hob_list_ptr);
-	do {
+	for (current_hob = hob_list_ptr; !END_OF_HOB_LIST(current_hob);
+	    current_hob = GET_NEXT_HOB(current_hob)) {
+
 		EFI_HOB_GENERIC_HEADER *current_header_ptr =
 			(EFI_HOB_GENERIC_HEADER *)current_hob;
 
@@ -292,16 +267,6 @@ void print_hob_type_structure(u16 hob_type, void *hob_list_ptr)
 				break;
 			}
 		}
-
-		/* Check for end of HOB list */
-		last_hob = END_OF_HOB_LIST(current_hob);
-		if (!last_hob) {
-			/* Get next HOB pointer */
-			next_hob = GET_NEXT_HOB(current_hob);
-
-			/* Start on next HOB */
-			current_hob = next_hob;
-		}
-	} while (!last_hob);
+	}
 	printk(BIOS_DEBUG, "=== End of FSP HOB Data Structure ===\n\n");
 }

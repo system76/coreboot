@@ -41,11 +41,7 @@ static int total_mtrrs;
 
 static void detect_var_mtrrs(void)
 {
-	msr_t msr;
-
-	msr = rdmsr(MTRR_CAP_MSR);
-
-	total_mtrrs = msr.lo & 0xff;
+	total_mtrrs = get_var_mtrr_count();
 
 	if (total_mtrrs > NUM_MTRR_STATIC_STORAGE) {
 		printk(BIOS_WARNING,
@@ -158,7 +154,7 @@ static void print_physical_address_space(const struct memranges *addr_space,
 	memranges_each_entry(r, addr_space)
 		printk(BIOS_DEBUG,
 		       "0x%016llx - 0x%016llx size 0x%08llx type %ld\n",
-		       range_entry_base(r), range_entry_end(r),
+		       range_entry_base(r), range_entry_end(r) - 1,
 		       range_entry_size(r), range_entry_tag(r));
 }
 
@@ -276,7 +272,7 @@ static void calc_fixed_mtrrs(void)
 			type = range_entry_tag(r);
 			printk(MTRR_VERBOSE_LEVEL,
 			       "MTRR addr 0x%x-0x%x set to %d type @ %d\n",
-			       begin, begin + desc->step, type, type_index);
+			       begin, begin + desc->step - 1, type, type_index);
 			if (type == MTRR_TYPE_WRBACK)
 				type |= MTRR_FIXED_WRBACK_BITS;
 			fixed_mtrr_types[type_index] = type;
@@ -864,6 +860,11 @@ void x86_mtrr_check(void)
 
 static bool put_back_original_solution;
 
+void need_restore_mtrr(void)
+{
+	put_back_original_solution = true;
+}
+
 void mtrr_use_temp_range(uintptr_t begin, size_t size, int type)
 {
 	const struct range_entry *r;
@@ -904,10 +905,10 @@ void mtrr_use_temp_range(uintptr_t begin, size_t size, int type)
 
 	if (commit_var_mtrrs(&sol) < 0)
 		printk(BIOS_WARNING, "Unable to insert temporary MTRR range: 0x%016llx - 0x%016llx size 0x%08llx type %d\n",
-			(long long)begin, (long long)begin + size,
+			(long long)begin, (long long)begin + size - 1,
 			(long long)size, type);
 	else
-		put_back_original_solution = true;
+		need_restore_mtrr();
 
 	memranges_teardown(&addr_space);
 }
@@ -919,4 +920,4 @@ static void remove_temp_solution(void *unused)
 }
 
 BOOT_STATE_INIT_ENTRY(BS_OS_RESUME, BS_ON_ENTRY, remove_temp_solution, NULL);
-BOOT_STATE_INIT_ENTRY(BS_PAYLOAD_LOAD, BS_ON_EXIT, remove_temp_solution, NULL);
+BOOT_STATE_INIT_ENTRY(BS_PAYLOAD_BOOT, BS_ON_ENTRY, remove_temp_solution, NULL);

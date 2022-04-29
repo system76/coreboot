@@ -49,7 +49,7 @@ ifeq ($(CONFIG_TIANOCORE_PS2_SUPPORT),y)
 BUILD_STR += -D PS2_KEYBOARD_ENABLE=TRUE
 endif
 # PLATFORM_BOOT_TIMEOUT		= 3
-ifneq ($(TIANOCORE_BOOT_TIMEOUT),)
+ifneq ($(CONFIG_TIANOCORE_BOOT_TIMEOUT),)
 BUILD_STR += -D PLATFORM_BOOT_TIMEOUT=$(CONFIG_TIANOCORE_BOOT_TIMEOUT)
 endif
 # SIO_BUS_ENABLE		= FALSE
@@ -81,8 +81,6 @@ BUILD_STR += -D USE_HPET_TIMER=TRUE
 endif
 
 bootloader = $(word 8,$(subst /, ,$(BUILD_STR)))
-
-export EDK_TOOLS_PATH=$(project_dir)/BaseTools
 
 all: clean build
 

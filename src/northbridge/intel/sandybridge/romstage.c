@@ -16,7 +16,7 @@
 #include <southbridge/intel/common/pmclib.h>
 #include <elog.h>
 
-__weak void mainboard_early_init(int s3_resume)
+__weak void mainboard_early_init(int s3resume)
 {
 }
 

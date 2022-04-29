@@ -17,7 +17,6 @@
 #include <Porting.h>
 #include <AGESA.h>
 #include <Topology.h>
-#include <cpu/x86/lapic.h>
 #include <cpu/amd/msr.h>
 #include <cpu/amd/mtrr.h>
 #include <acpi/acpigen.h>
@@ -669,14 +668,14 @@ static struct device_operations northbridge_operations = {
 
 static const struct pci_driver family16_northbridge __pci_driver = {
 	.ops	= &northbridge_operations,
-	.vendor = PCI_VENDOR_ID_AMD,
-	.device = PCI_DEVICE_ID_AMD_16H_MODEL_303F_NB_HT,
+	.vendor = PCI_VID_AMD,
+	.device = PCI_DID_AMD_16H_MODEL_303F_NB_HT,
 };
 
 static const struct pci_driver family10_northbridge __pci_driver = {
 	.ops	= &northbridge_operations,
-	.vendor = PCI_VENDOR_ID_AMD,
-	.device = PCI_DEVICE_ID_AMD_10H_NB_HT,
+	.vendor = PCI_VID_AMD,
+	.device = PCI_DID_AMD_10H_NB_HT,
 };
 
 static void fam16_finalize(void *chip_info)
@@ -811,11 +810,11 @@ static void domain_read_resources(struct device *dev)
 		printk(BIOS_DEBUG, "node %d: basek=%08llx, limitk=%08llx, sizek=%08llx,\n",
 				   i, basek, limitk, sizek);
 
-		/* see if we need a hole from 0xa0000 to 0xfffff */
-		if ((basek < (0xa0000 >> 10) && (sizek > (0x100000 >> 10)))) {
-			ram_resource(dev, (idx | i), basek, (0xa0000 >> 10) - basek);
+		/* See if we need a hole from 0xa0000 (640K) to 0xfffff (1024K) */
+		if (basek < 640 && sizek > 1024) {
+			ram_resource(dev, (idx | i), basek, 640 - basek);
 			idx += 0x10;
-			basek = 0x100000 >> 10;
+			basek = 1024;
 			sizek = limitk - basek;
 		}
 

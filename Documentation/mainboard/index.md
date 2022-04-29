@@ -48,10 +48,11 @@ This section contains documentation about coreboot on specific mainboards.
 The boards in this section are not real mainboards, but emulators.
 
 - [Spike RISC-V emulator](emulation/spike-riscv.md)
-- [Qemu RISC-V emulator](emulation/qemu-riscv.md)
-- [Qemu AArch64 emulator](emulation/qemu-aarch64.md)
-- [Qemu x86 Q35](emulation/qemu-q35.md)
-- [Qemu x86 PC](emulation/qemu-i440fx.md)
+- [QEMU RISC-V emulator](emulation/qemu-riscv.md)
+- [QEMU AArch64 emulator](emulation/qemu-aarch64.md)
+- [QEMU x86 Q35](emulation/qemu-q35.md)
+- [QEMU x86 PC](emulation/qemu-i440fx.md)
+- [QEMU POWER9](emulation/qemu-power9.md)
 
 ## Facebook
 
@@ -179,10 +180,14 @@ The boards in this section are not real mainboards, but emulators.
 
 ## Star Labs Systems
 
+- [LabTop Mk IV](starlabs/labtop_cml.md)
+- [StarLite Mk III](starlabs/lite_glk.md)
+- [StarLite Mk IV](starlabs/lite_glkr.md)
 - [StarBook Mk V](starlabs/starbook_tgl.md)
 
 ## Supermicro
 
+- [X9SAE](supermicro/x9sae.md)
 - [X10SLM+-F](supermicro/x10slm-f.md)
 - [X11 LGA1151 series](supermicro/x11-lga1151-series/x11-lga1151-series.md)
 - [Flashing using the BMC](supermicro/flashing_on_vendorbmc.md)

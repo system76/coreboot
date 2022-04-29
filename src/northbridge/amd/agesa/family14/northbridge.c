@@ -510,7 +510,6 @@ static void domain_set_resources(struct device *dev)
 	struct bus *link;
 #if CONFIG_HW_MEM_HOLE_SIZEK != 0
 	struct hw_mem_hole_info mem_hole;
-	u32 reset_memhole = 1;
 #endif
 
 	pci_tolm = 0xffffffffUL;
@@ -539,10 +538,8 @@ static void domain_set_resources(struct device *dev)
 	mem_hole = get_hw_mem_hole_info();
 
 	// Use hole_basek as mmio_basek, and we don't need to reset hole anymore
-	if ((mem_hole.node_id != -1) && (mmio_basek > mem_hole.hole_startk)) {
+	if ((mem_hole.node_id != -1) && (mmio_basek > mem_hole.hole_startk))
 		mmio_basek = mem_hole.hole_startk;
-		reset_memhole = 0;
-	}
 #endif
 
 	idx = 0x10;
@@ -554,13 +551,13 @@ static void domain_set_resources(struct device *dev)
 		printk(BIOS_DEBUG, "adsr: basek = %llx, limitk = %llx, sizek = %llx.\n",
 				   basek, limitk, sizek);
 
-		/* see if we need a hole from 0xa0000 to 0xbffff */
-		if ((basek < 640) && (sizek > 768)) {
+		/* See if we need a hole from 0xa0000 (640K) to 0xbffff (768K) */
+		if (basek < 640 && sizek > 768) {
 			printk(BIOS_DEBUG,"adsr - 0xa0000 to 0xbffff resource.\n");
 			ram_resource(dev, (idx | 0), basek, 640 - basek);
 			idx += 0x10;
 			basek = 768;
-			sizek = limitk - 768;
+			sizek = limitk - basek;
 		}
 
 		printk(BIOS_DEBUG,
@@ -714,9 +711,9 @@ static unsigned long agesa_write_acpi_tables(const struct device *device,
 	/* HEST */
 	current = ALIGN(current, 8);
 	hest = (acpi_hest_t *)current;
-	acpi_write_hest((void *)current, acpi_fill_hest);
-	acpi_add_table(rsdp, (void *)current);
-	current += ((acpi_header_t *)current)->length;
+	acpi_write_hest(hest, acpi_fill_hest);
+	acpi_add_table(rsdp, hest);
+	current += hest->header.length;
 
 	/* SRAT */
 	current = ALIGN(current, 8);
@@ -791,7 +788,7 @@ static struct device_operations northbridge_operations = {
 
 static const struct pci_driver northbridge_driver __pci_driver = {
 	.ops = &northbridge_operations,
-	.vendor = PCI_VENDOR_ID_AMD,
+	.vendor = PCI_VID_AMD,
 	.device = 0x1510,
 };
 

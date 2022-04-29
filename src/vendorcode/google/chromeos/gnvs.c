@@ -2,6 +2,7 @@
 
 #include <acpi/acpi.h>
 #include <acpi/acpigen.h>
+#include <bootstate.h>
 #include <types.h>
 #include <string.h>
 #include <stdlib.h>
@@ -31,13 +32,17 @@ static size_t chromeos_vpd_region(const char *region, uintptr_t *base)
 	return region_device_sz(&vpd);
 }
 
-void chromeos_init_chromeos_acpi(void)
+static void chromeos_init_chromeos_acpi(void *unused)
 {
 	size_t vpd_size;
 	uintptr_t vpd_base = 0;
 
 	chromeos_acpi = cbmem_add(CBMEM_ID_ACPI_CNVS, sizeof(struct chromeos_acpi));
 	if (!chromeos_acpi)
+		return;
+
+	/* Retain CNVS contents on S3 resume path. */
+	if (acpi_is_wakeup_s3())
 		return;
 
 	vpd_size = chromeos_vpd_region("RO_VPD", &vpd_base);
@@ -51,13 +56,9 @@ void chromeos_init_chromeos_acpi(void)
 		chromeos_acpi->vpd_rw_base = vpd_base;
 		chromeos_acpi->vpd_rw_size = vpd_size;
 	}
-
-	/* EC can override to ECFW_RW. */
-	chromeos_acpi->vbt2 = ACTIVE_ECFW_RO;
-
-	if (CONFIG(EC_GOOGLE_CHROMEEC) && !google_ec_running_ro())
-		chromeos_acpi->vbt2 = ACTIVE_ECFW_RW;
 }
+
+BOOT_STATE_INIT_ENTRY(BS_PRE_DEVICE, BS_ON_EXIT, chromeos_init_chromeos_acpi, NULL);
 
 void chromeos_set_me_hash(u32 *hash, int len)
 {
@@ -77,13 +78,6 @@ void chromeos_set_ramoops(void *ram_oops, size_t size)
 	printk(BIOS_DEBUG, "Ramoops buffer: 0x%zx@%p.\n", size, ram_oops);
 	chromeos_acpi->ramoops_base = (uintptr_t)ram_oops;
 	chromeos_acpi->ramoops_len = size;
-}
-
-void chromeos_set_ecfw_rw(void)
-{
-	if (!chromeos_acpi)
-		return;
-	chromeos_acpi->vbt2 = ACTIVE_ECFW_RW;
 }
 
 void smbios_type0_bios_version(uintptr_t address)
@@ -106,6 +100,5 @@ void acpi_fill_cnvs(void)
 	acpigen_write_opregion(&cnvs_op);
 	acpigen_pop_len();
 
-	/* Usually this creates OIPG package for GPIOs. */
-	mainboard_chromeos_acpi_generate();
+	chromeos_acpi_gpio_generate();
 }

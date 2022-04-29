@@ -7,6 +7,7 @@
 #include <device/pci_ids.h>
 #include <soc/smbus.h>
 #include <device/smbus_host.h>
+#include <intelblocks/tco.h>
 #include "smbuslib.h"
 
 static int lsmbus_read_byte(struct device *dev, u8 address)
@@ -63,6 +64,19 @@ static void smbus_read_resources(struct device *dev)
 		     IORESOURCE_STORED | IORESOURCE_ASSIGNED;
 }
 
+/*
+ * `finalize_smbus` function is native implementation of equivalent events
+ * performed by each FSP NotifyPhase() API invocations.
+ *
+ * Operations are:
+ * 1. TCO Lock.
+ */
+static void finalize_smbus(struct device *dev)
+{
+	if (!CONFIG(USE_FSP_NOTIFY_PHASE_POST_PCI_ENUM))
+		tco_lockdown();
+}
+
 static struct device_operations smbus_ops = {
 	.read_resources		= smbus_read_resources,
 	.set_resources		= pci_dev_set_resources,
@@ -71,32 +85,34 @@ static struct device_operations smbus_ops = {
 	.init			= pch_smbus_init,
 	.ops_pci		= &pci_dev_ops_pci,
 	.ops_smbus_bus		= &lops_smbus_bus,
+	.final			= finalize_smbus,
 };
 
 static const unsigned short pci_device_ids[] = {
-	PCI_DEVICE_ID_INTEL_APL_SMBUS,
-	PCI_DEVICE_ID_INTEL_CNL_SMBUS,
-	PCI_DEVICE_ID_INTEL_CNP_H_SMBUS,
-	PCI_DEVICE_ID_INTEL_SPT_LP_SMBUS,
-	PCI_DEVICE_ID_INTEL_SPT_H_SMBUS,
-	PCI_DEVICE_ID_INTEL_LWB_SMBUS_SUPER,
-	PCI_DEVICE_ID_INTEL_LWB_SMBUS,
-	PCI_DEVICE_ID_INTEL_ICP_LP_SMBUS,
-	PCI_DEVICE_ID_INTEL_CMP_SMBUS,
-	PCI_DEVICE_ID_INTEL_CMP_H_SMBUS,
-	PCI_DEVICE_ID_INTEL_TGP_LP_SMBUS,
-	PCI_DEVICE_ID_INTEL_TGP_H_SMBUS,
-	PCI_DEVICE_ID_INTEL_MCC_SMBUS,
-	PCI_DEVICE_ID_INTEL_JSP_SMBUS,
-	PCI_DEVICE_ID_INTEL_ADP_P_SMBUS,
-	PCI_DEVICE_ID_INTEL_ADP_S_SMBUS,
-	PCI_DEVICE_ID_INTEL_ADP_M_N_SMBUS,
-	PCI_DEVICE_ID_INTEL_DNV_SMBUS_LEGACY,
+	PCI_DID_INTEL_MTL_SMBUS,
+	PCI_DID_INTEL_APL_SMBUS,
+	PCI_DID_INTEL_CNL_SMBUS,
+	PCI_DID_INTEL_CNP_H_SMBUS,
+	PCI_DID_INTEL_SPT_LP_SMBUS,
+	PCI_DID_INTEL_SPT_H_SMBUS,
+	PCI_DID_INTEL_LWB_SMBUS_SUPER,
+	PCI_DID_INTEL_LWB_SMBUS,
+	PCI_DID_INTEL_ICP_LP_SMBUS,
+	PCI_DID_INTEL_CMP_SMBUS,
+	PCI_DID_INTEL_CMP_H_SMBUS,
+	PCI_DID_INTEL_TGP_LP_SMBUS,
+	PCI_DID_INTEL_TGP_H_SMBUS,
+	PCI_DID_INTEL_MCC_SMBUS,
+	PCI_DID_INTEL_JSP_SMBUS,
+	PCI_DID_INTEL_ADP_P_SMBUS,
+	PCI_DID_INTEL_ADP_S_SMBUS,
+	PCI_DID_INTEL_ADP_M_N_SMBUS,
+	PCI_DID_INTEL_DNV_SMBUS_LEGACY,
 	0
 };
 
 static const struct pci_driver pch_smbus __pci_driver = {
 	.ops	 = &smbus_ops,
-	.vendor	 = PCI_VENDOR_ID_INTEL,
+	.vendor	 = PCI_VID_INTEL,
 	.devices	 = pci_device_ids,
 };

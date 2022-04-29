@@ -26,7 +26,7 @@ static void raminit_common(struct romstage_params *params)
 
 	post_code(0x32);
 
-	timestamp_add_now(TS_BEFORE_INITRAM);
+	timestamp_add_now(TS_INITRAM_START);
 
 	s3wake = params->power_state->prev_sleep_state == ACPI_S3;
 
@@ -66,7 +66,7 @@ static void raminit_common(struct romstage_params *params)
 
 	/* Initialize RAM */
 	raminit(params);
-	timestamp_add_now(TS_AFTER_INITRAM);
+	timestamp_add_now(TS_INITRAM_END);
 
 	/* Save MRC output */
 	if (CONFIG(CACHE_MRC_SETTINGS)) {
@@ -100,7 +100,7 @@ void cache_as_ram_stage_main(FSP_INFO_HEADER *fih)
 
 	post_code(0x30);
 
-	timestamp_add_now(TS_START_ROMSTAGE);
+	timestamp_add_now(TS_ROMSTAGE_START);
 
 	/* Display parameters */
 	if (!CONFIG(NO_ECAM_MMCONF_SUPPORT))
@@ -152,7 +152,7 @@ __weak void mainboard_save_dimm_info(
 
 	/* Locate the memory info HOB, presence validated by raminit */
 	hob_list_ptr = fsp_get_hob_list();
-	hob_ptr = get_next_guid_hob(&memory_info_hob_guid, hob_list_ptr);
+	hob_ptr = get_guid_hob(&memory_info_hob_guid, hob_list_ptr);
 	memory_info_hob = (FSP_SMBIOS_MEMORY_INFO *)(hob_ptr + 1);
 
 	/* Display the data in the FSP_SMBIOS_MEMORY_INFO HOB */

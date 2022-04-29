@@ -10,13 +10,23 @@
 #include <intelblocks/pcr.h>
 #include <soc/pci_devs.h>
 
+void p2sb_dev_enable_bar(pci_devfn_t dev, uint64_t bar)
+{
+	/* Enable PCR Base addresses */
+	pci_write_config32(dev, PCI_BASE_ADDRESS_0, (uint32_t)bar);
+	pci_write_config32(dev, PCI_BASE_ADDRESS_1, (uint32_t)(bar >> 32));
+
+	/* Enable P2SB MSE */
+	pci_write_config16(dev, PCI_COMMAND, PCI_COMMAND_MASTER | PCI_COMMAND_MEMORY);
+}
+
 bool p2sb_dev_is_hidden(pci_devfn_t dev)
 {
 	const uint16_t pci_vid = pci_read_config16(dev, PCI_VENDOR_ID);
 
 	if (pci_vid == 0xffff)
 		return true;
-	if (pci_vid == PCI_VENDOR_ID_INTEL)
+	if (pci_vid == PCI_VID_INTEL)
 		return false;
 	printk(BIOS_ERR, "P2SB PCI_VENDOR_ID is invalid, unknown if hidden\n");
 	return true;

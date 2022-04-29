@@ -3,7 +3,6 @@
 #include <console/console.h>
 #include <string.h>
 #include <rmodule.h>
-#include <arch/cpu.h>
 #include <commonlib/helpers.h>
 #include <cpu/cpu.h>
 #include <cpu/intel/microcode.h>
@@ -247,11 +246,9 @@ static int save_bsp_msrs(char *start, int size)
 	int num_var_mtrrs;
 	struct saved_msr *msr_entry;
 	int i;
-	msr_t msr;
 
 	/* Determine number of MTRRs need to be saved. */
-	msr = rdmsr(MTRR_CAP_MSR);
-	num_var_mtrrs = msr.lo & 0xff;
+	num_var_mtrrs = get_var_mtrr_count();
 
 	/* 2 * num_var_mtrrs for base and mask. +1 for IA32_MTRR_DEF_TYPE. */
 	msr_count = 2 * num_var_mtrrs + NUM_FIXED_MTRRS + 1;

@@ -1,5 +1,6 @@
 config SOC_MEDIATEK_COMMON
 	bool
+	select NO_ECAM_MMCONF_SUPPORT if PCI
 	help
 	  common code blocks for Mediatek SOCs
 
@@ -48,5 +49,11 @@ config MTK_DFD
 	  DFD (Design for Debug) is a debugging tool, which scans flip-flops
 	  and dumps to internal RAM on the WDT reset. We reserve 1MB on DRAM
 	  to store logs of DFD.
+
+config USE_CBMEM_DRAM_INFO
+	bool "Support filling dram information to cbmem"
+	help
+	  The DRAM initialization will keep and return DRAM information (size,
+	  geometry and other DDR info) so we can fill that into the CBMEM.
 
 endif

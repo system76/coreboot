@@ -35,5 +35,5 @@ void mainboard_memory_init_params(FSPM_UPD *mupd)
 	// Allow memory clocks higher than 2933 MHz
 	mupd->FspmConfig.SaOcSupport = 1;
 
-	memcfg_init(&mupd->FspmConfig, &board_cfg, &spd_info, half_populated);
+	memcfg_init(mupd, &board_cfg, &spd_info, half_populated);
 }

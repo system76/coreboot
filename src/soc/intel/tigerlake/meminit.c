@@ -147,15 +147,17 @@ static void mem_init_dqs_upds(FSP_M_CONFIG *mem_cfg, const struct mem_channel_da
 	mem_init_dq_dqs_upds(dqs_upds, mb_cfg->dqs_map, upd_size, data);
 }
 
-void memcfg_init(FSP_M_CONFIG *mem_cfg, const struct mb_cfg *mb_cfg,
+void memcfg_init(FSPM_UPD *memupd, const struct mb_cfg *mb_cfg,
 		 const struct mem_spd *spd_info, bool half_populated)
 {
 	struct mem_channel_data data;
+	FSP_M_CONFIG *mem_cfg = &memupd->FspmConfig;
 
 	if (mb_cfg->type >= ARRAY_SIZE(soc_mem_cfg))
 		die("Invalid memory type(%x)!\n", mb_cfg->type);
 
-	mem_populate_channel_data(&soc_mem_cfg[mb_cfg->type], spd_info, half_populated, &data);
+	mem_populate_channel_data(memupd, &soc_mem_cfg[mb_cfg->type], spd_info, half_populated,
+			&data);
 	mem_init_spd_upds(mem_cfg, &data);
 	mem_init_dq_upds(mem_cfg, &data, mb_cfg);
 	mem_init_dqs_upds(mem_cfg, &data, mb_cfg);

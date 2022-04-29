@@ -3,6 +3,7 @@
 #include <baseboard/gpio.h>
 #include <baseboard/variants.h>
 #include <commonlib/helpers.h>
+#include <vendorcode/google/chromeos/chromeos.h>
 
 /* Pad configuration in ramstage*/
 static const struct pad_config gpio_table[] = {
@@ -41,6 +42,33 @@ static const struct pad_config gpio_table[] = {
 	PAD_CFG_GPO(GPP_H0, 1, PLTRST),
 	/* M2_SSD_DEVSLP */
 	PAD_CFG_NF(GPP_H13, NONE, DEEP, NF5),
+
+	/* I5  : NC */
+	PAD_NC(GPP_I5, NONE),
+	/* I7  : EMMC_CMD ==> EMMC_CMD */
+	PAD_CFG_NF(GPP_I7, NONE, DEEP, NF1),
+	/* I8  : EMMC_DATA0 ==> EMMC_D0 */
+	PAD_CFG_NF(GPP_I8, NONE, DEEP, NF1),
+	/* I9  : EMMC_DATA1 ==> EMMC_D1 */
+	PAD_CFG_NF(GPP_I9, NONE, DEEP, NF1),
+	/* I10 : EMMC_DATA2 ==> EMMC_D2 */
+	PAD_CFG_NF(GPP_I10, NONE, DEEP, NF1),
+	/* I11 : EMMC_DATA3 ==> EMMC_D3 */
+	PAD_CFG_NF(GPP_I11, NONE, DEEP, NF1),
+	/* I12 : EMMC_DATA4 ==> EMMC_D4 */
+	PAD_CFG_NF(GPP_I12, NONE, DEEP, NF1),
+	/* I13 : EMMC_DATA5 ==> EMMC_D5 */
+	PAD_CFG_NF(GPP_I13, NONE, DEEP, NF1),
+	/* I14 : EMMC_DATA6 ==> EMMC_D6 */
+	PAD_CFG_NF(GPP_I14, NONE, DEEP, NF1),
+	/* I15 : EMMC_DATA7 ==> EMMC_D7 */
+	PAD_CFG_NF(GPP_I15, NONE, DEEP, NF1),
+	/* I16 : EMMC_RCLK ==> EMMC_RCLK */
+	PAD_CFG_NF(GPP_I16, NONE, DEEP, NF1),
+	/* I17 : EMMC_CLK ==> EMMC_CLK */
+	PAD_CFG_NF(GPP_I17, NONE, DEEP, NF1),
+	/* I18 : EMMC_RESET# ==> EMMC_RST_L */
+	PAD_CFG_NF(GPP_I18, NONE, DEEP, NF1),
 
 	/* TYPEA_CONN23_USB2_P8_OC1_N */
 	PAD_CFG_NF(GPP_A14, NONE, DEEP, NF1),
@@ -208,9 +236,4 @@ void variant_configure_gpio_pads(void)
 static const struct cros_gpio cros_gpios[] = {
 	CROS_GPIO_REC_AL(CROS_GPIO_VIRTUAL, CROS_GPIO_DEVICE_NAME),
 };
-
-const struct cros_gpio *variant_cros_gpios(size_t *num)
-{
-	*num = ARRAY_SIZE(cros_gpios);
-	return cros_gpios;
-}
+DECLARE_CROS_GPIOS(cros_gpios);

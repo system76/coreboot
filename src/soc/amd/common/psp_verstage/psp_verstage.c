@@ -110,9 +110,9 @@ static uint32_t update_boot_region(struct vb2_context *ctx)
 		printk(BIOS_ERR, "PSP Directory address is not correct.\n");
 		return POSTCODE_PSP_COOKIE_MISMATCH_ERROR;
 	}
-	if (*bios_dir_in_spi != BDT1_COOKIE) {
+	if (*bios_dir_in_spi != BHD_COOKIE) {
 		printk(BIOS_ERR, "BIOS Directory address is not correct.\n");
-		return POSTCODE_BDT1_COOKIE_MISMATCH_ERROR;
+		return POSTCODE_BHD_COOKIE_MISMATCH_ERROR;
 	}
 
 	/* EFS2 uses relative address and PSP isn't happy with that */
@@ -206,16 +206,21 @@ void Main(void)
 	/*
 	 * Do not use printk() before console_init()
 	 * Do not use post_code() before verstage_mainboard_init()
+	 * Do not use svc_write_postcode before verstage_soc_espi_init() if PSP uses ESPI
+	 * to write postcodes.
 	 */
 	timestamp_init(timestamp_get());
-	svc_write_postcode(POSTCODE_ENTERED_PSP_VERSTAGE);
+	if (!CONFIG(PSP_POSTCODES_ON_ESPI))
+		svc_write_postcode(POSTCODE_ENTERED_PSP_VERSTAGE);
 	svc_debug_print("Entering verstage on PSP\n");
 	memset(&_bss_start, '\0', &_bss_end - &_bss_start);
 
-	svc_write_postcode(POSTCODE_CONSOLE_INIT);
+	if (!CONFIG(PSP_POSTCODES_ON_ESPI))
+		svc_write_postcode(POSTCODE_CONSOLE_INIT);
 	console_init();
 
-	svc_write_postcode(POSTCODE_EARLY_INIT);
+	if (!CONFIG(PSP_POSTCODES_ON_ESPI))
+		svc_write_postcode(POSTCODE_EARLY_INIT);
 	retval = verstage_soc_early_init();
 	if (retval) {
 		/*
@@ -251,6 +256,11 @@ void Main(void)
 	svc_get_boot_mode(&bootmode);
 	if (bootmode == PSP_BOOT_MODE_S0i3_RESUME) {
 		psp_verstage_s0i3_resume();
+
+		post_code(POSTCODE_SAVE_BUFFERS);
+		retval = save_buffers();
+		if (retval)
+			post_code(retval);
 
 		post_code(POSTCODE_UNMAP_FCH_DEVICES);
 		unmap_fch_devices();

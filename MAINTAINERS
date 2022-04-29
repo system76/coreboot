@@ -298,6 +298,14 @@ M:	Damien Zammit <damien@zamaudio.com>
 S:	Odd Fixes
 F:	src/mainboard/intel/d510mo/
 
+INTEL HARCUVAR_CRB MAINBOARD
+M:	Jeff Daly <jeffd@silicom-usa.com>
+M:	Vanessa Eusebio <vanessa.f.eusebio@intel.com>
+M:	Suresh Bellampalli <suresh.bellampalli@intel.com>
+M:	Mariusz Szafranski <mariuszx.szafranski@intel.com>
+S:	Maintained
+F:	src/mainboard/intel/harcuvar/
+
 INTEL STRAGO MAINBOARD
 M:	Hannah Williams <hannah.williams@intel.com>
 S:	Supported
@@ -322,7 +330,6 @@ F:	src/mainboard/kontron/mal10/
 
 LENOVO MAINBOARDS
 M:	Alexander Couzens <lynxis@fe80.eu>
-M:	Patrick Rudolph <siro@das-labor.org>
 S:	Maintained
 F:	src/mainboard/lenovo/
 
@@ -443,6 +450,7 @@ SIEMENS MC_xxxx MAINBOARDS
 M:	Werner Zeh <werner.zeh@siemens.com>
 S:	Maintained
 F:	src/mainboard/siemens/mc_apl1/
+F:	src/mainboard/siemens/mc_ehl/
 
 
 
@@ -574,7 +582,6 @@ F:	src/southbridge/amd/
 F:	src/include/cpu/amd/
 
 INTEL SUPPORT
-M:	Patrick Rudolph <siro@das-labor.org>
 S:	Maintained
 F:	src/vendorcode/intel/
 F:	src/cpu/intel/
@@ -583,15 +590,6 @@ F:	src/southbridge/intel/
 F:	src/soc/intel/
 F:	src/drivers/intel/
 F:	src/include/cpu/intel/
-
-INTEL FSP DENVERTON-NS SOC & HARCUVAR CRB
-M:	Suresh Bellampalli <suresh.bellampalli@intel.com>
-M:	Vanessa Eusebio <vanessa.f.eusebio@intel.com>
-M:	Michal Motyl <michalx.motyl@intel.com>
-M:	Mariusz Szafranski <mariuszx.szafranski@intel.com>
-S:	Maintained
-F:	src/mainboard/intel/harcuvar/
-F:	src/soc/intel/denverton_ns/
 
 INTEL FSP 1.1
 M:	Lee Leahy <leroy.p.leahy@intel.com>
@@ -671,6 +669,14 @@ M:	Frans Hendriks <fhendriks@eltan.com>
 S:	Maintained
 F:	/src/soc/intel/braswell/
 F:	/src/vendorcode/intel/fsp/fsp1_1/braswell/
+
+INTEL DENVERTON-NS SOC
+M:	Jeff Daly <jeffd@silicom-usa.com>
+M:	Vanessa Eusebio <vanessa.f.eusebio@intel.com>
+M:	Suresh Bellampalli <suresh.bellampalli@intel.com>
+M:	Mariusz Szafranski <mariuszx.szafranski@intel.com>
+S:	Maintained
+F:	src/soc/intel/denverton_ns/
 
 INTEL TIGERLAKE SOC
 M:	Tim Wawrzynczak <twawrzynczak@chromium.org>
@@ -875,7 +881,7 @@ F:	src/security/tpm/
 
 SUPERIOS & SUPERIOTOOL
 M:	Felix Held <felix-coreboot@felixheld.de>
-S:	Maintained
+S:	Odd Fixes
 F:	src/superio/
 F:	util/superiotool/
 

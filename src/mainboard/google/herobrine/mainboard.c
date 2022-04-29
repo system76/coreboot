@@ -1,7 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
 #include "board.h"
-#include <boardid.h>
 #include <bootblock_common.h>
 #include <device/device.h>
 #include <device/mmio.h>
@@ -50,9 +49,9 @@ static void qi2s_configure_gpios(void)
 static void mainboard_init(struct device *dev)
 {
 	/* Configure clock for eMMC */
-	clock_configure_sdcc(1, 384 * MHz);
+	clock_configure_sdcc1(384 * MHz);
 	/* Configure clock for SD card */
-	clock_configure_sdcc(2, 50 * MHz);
+	clock_configure_sdcc2(50 * MHz);
 	configure_sdhci();
 
 	gpi_firmware_load(QUP_0_GSI_BASE);
@@ -77,12 +76,13 @@ static void mainboard_init(struct device *dev)
 		qupv3_se_fw_load_and_init(QUPV3_0_SE2, SE_PROTOCOL_I2C, MIXED);
 		/* Fingerprint SPI */
 		qupv3_se_fw_load_and_init(QUPV3_1_SE3, SE_PROTOCOL_SPI, MIXED);
-	} else if (CONFIG(BOARD_GOOGLE_SENOR) || CONFIG(BOARD_GOOGLE_PIGLIN) ||
-			CONFIG(BOARD_GOOGLE_HOGLIN)) {
+	} else if (CONFIG(BOARD_GOOGLE_SENOR) || CONFIG(BOARD_GOOGLE_PIGLIN)) {
 		/* APPS I2C */
 		qupv3_se_fw_load_and_init(QUPV3_0_SE1, SE_PROTOCOL_I2C, GSI);
 		/* ESIM SPI */
 		qupv3_se_fw_load_and_init(QUPV3_1_SE4, SE_PROTOCOL_SPI, MIXED);
+		/* Trackpad I2C */
+		qupv3_se_fw_load_and_init(QUPV3_0_SE0, SE_PROTOCOL_I2C, MIXED);
 	} else {
 		/* Trackpad I2C */
 		qupv3_se_fw_load_and_init(QUPV3_0_SE0, SE_PROTOCOL_I2C, MIXED);
@@ -91,7 +91,8 @@ static void mainboard_init(struct device *dev)
 		/* Audio I2C */
 		qupv3_se_fw_load_and_init(QUPV3_0_SE2, SE_PROTOCOL_I2C, MIXED);
 		/* Fingerprint SPI */
-		qupv3_se_fw_load_and_init(QUPV3_1_SE1, SE_PROTOCOL_SPI, MIXED);
+		if (CONFIG(HEROBRINE_HAS_FINGERPRINT))
+			qupv3_se_fw_load_and_init(QUPV3_1_SE1, SE_PROTOCOL_SPI, MIXED);
 	}
 
 	/* Take FPMCU out of reset. Power was already applied

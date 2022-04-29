@@ -13,22 +13,22 @@
  * in coreboot.
  */
 
-#include <console/console.h>
-#include <string.h>
 #include <acpi/acpi.h>
 #include <acpi/acpi_ivrs.h>
 #include <acpi/acpigen.h>
 #include <arch/hpet.h>
-#include <arch/mmio.h>
-#include <device/pci.h>
+#include <cbfs.h>
 #include <cbmem.h>
 #include <commonlib/helpers.h>
+#include <commonlib/sort.h>
+#include <console/console.h>
 #include <cpu/cpu.h>
-#include <cbfs.h>
+#include <device/mmio.h>
+#include <device/pci.h>
+#include <pc80/mc146818rtc.h>
+#include <string.h>
 #include <types.h>
 #include <version.h>
-#include <commonlib/sort.h>
-#include <pc80/mc146818rtc.h>
 
 static acpi_rsdp_t *valid_rsdp(acpi_rsdp_t *rsdp);
 
@@ -222,15 +222,6 @@ int acpi_create_madt_lx2apic_nmi(acpi_madt_lx2apic_nmi_t *lapic_nmi, u32 cpu,
 	lapic_nmi->reserved[2] = 0;
 
 	return lapic_nmi->length;
-}
-
-__weak uintptr_t cpu_get_lapic_addr(void)
-{
-	/*
-	 * If an architecture does not support LAPIC, this weak implementation returns LAPIC
-	 * addr as 0.
-	 */
-	return 0;
 }
 
 void acpi_create_madt(acpi_madt_t *madt)
@@ -1591,6 +1582,13 @@ void preload_acpi_dsdt(void)
 	cbfs_preload(file);
 }
 
+static uintptr_t coreboot_rsdp;
+
+uintptr_t get_coreboot_rsdp(void)
+{
+	return coreboot_rsdp;
+}
+
 unsigned long write_acpi_tables(unsigned long start)
 {
 	unsigned long current;
@@ -1698,6 +1696,7 @@ unsigned long write_acpi_tables(unsigned long start)
 
 	/* We need at least an RSDP and an RSDT Table */
 	rsdp = (acpi_rsdp_t *) current;
+	coreboot_rsdp = (uintptr_t)rsdp;
 	current += sizeof(acpi_rsdp_t);
 	current = acpi_align_current(current);
 	rsdt = (acpi_rsdt_t *) current;

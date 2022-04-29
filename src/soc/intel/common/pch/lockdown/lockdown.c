@@ -2,10 +2,12 @@
 
 #include <bootstate.h>
 #include <intelblocks/cfg.h>
-#include <intelblocks/dmi.h>
 #include <intelblocks/fast_spi.h>
+#include <intelblocks/lpc_lib.h>
 #include <intelblocks/pcr.h>
+#include <intelblocks/systemagent.h>
 #include <intelpch/lockdown.h>
+#include <intelblocks/gpmr.h>
 #include <soc/pci_devs.h>
 #include <soc/pcr_ids.h>
 #include <soc/soc_chip.h>
@@ -25,7 +27,7 @@ int get_lockdown_config(void)
 	return common_config->chipset_lockdown;
 }
 
-static void dmi_lockdown_cfg(void)
+static void gpmr_lockdown_cfg(void)
 {
 	/*
 	 * GCS reg of DMI
@@ -37,13 +39,13 @@ static void dmi_lockdown_cfg(void)
 	 *	"0b": SPI
 	 *	"1b": LPC/eSPI
 	 */
-	pcr_or8(PID_DMI, PCR_DMI_GCS, PCR_DMI_GCS_BILD);
+	gpmr_or32(GPMR_GCS, GPMR_GCS_BILD);
 
 	/*
 	 * Set Secure Register Lock (SRL) bit in DMI control register to lock
 	 * DMI configuration.
 	 */
-	pcr_or32(PID_DMI, PCR_DMI_DMICTL, PCR_DMI_DMICTL_SRLOCK);
+	gpmr_or32(GPMR_DMICTL, GPMR_DMICTL_SRLOCK);
 }
 
 static void fast_spi_lockdown_cfg(int chipset_lockdown)
@@ -57,8 +59,17 @@ static void fast_spi_lockdown_cfg(int chipset_lockdown)
 	/* Discrete Lock Flash PR registers */
 	fast_spi_pr_dlock();
 
+	/* Check if SPI transaction is pending */
+	fast_spi_cycle_in_progress();
+
+	/* Clear any outstanding status bits like AEL, FCERR, FDONE, SAF etc. */
+	fast_spi_clear_outstanding_status();
+
 	/* Lock FAST_SPIBAR */
 	fast_spi_lock_bar();
+
+	/* Set Vendor Component Lock (VCL) */
+	fast_spi_vscc0_lock();
 
 	/* Set BIOS Interface Lock, BIOS Lock */
 	if (chipset_lockdown == CHIPSET_LOCKDOWN_COREBOOT) {
@@ -79,6 +90,33 @@ static void fast_spi_lockdown_cfg(int chipset_lockdown)
 	}
 }
 
+static void lpc_lockdown_config(int chipset_lockdown)
+{
+	/* Set BIOS Interface Lock, BIOS Lock */
+	if (chipset_lockdown == CHIPSET_LOCKDOWN_COREBOOT) {
+		/* BIOS Interface Lock */
+		lpc_set_bios_interface_lock_down();
+
+		/* Only allow writes in SMM */
+		if (CONFIG(BOOTMEDIA_SMM_BWP)) {
+			lpc_set_eiss();
+			lpc_enable_wp();
+		}
+
+		/* BIOS Lock */
+		lpc_set_lock_enable();
+	}
+}
+
+static void sa_lockdown_config(int chipset_lockdown)
+{
+	if (!CONFIG(SOC_INTEL_COMMON_BLOCK_SA))
+		return;
+
+	if (chipset_lockdown == CHIPSET_LOCKDOWN_COREBOOT)
+		sa_lock_pam();
+}
+
 /*
  * platform_lockdown_config has 2 major part.
  * 1. Common SoC lockdown configuration.
@@ -93,8 +131,14 @@ static void platform_lockdown_config(void *unused)
 	/* SPI lock down configuration */
 	fast_spi_lockdown_cfg(chipset_lockdown);
 
-	/* DMI lock down configuration */
-	dmi_lockdown_cfg();
+	/* LPC/eSPI lock down configuration */
+	lpc_lockdown_config(chipset_lockdown);
+
+	/* GPMR lock down configuration */
+	gpmr_lockdown_cfg();
+
+	/* SA lock down configuration */
+	sa_lockdown_config(chipset_lockdown);
 
 	/* SoC lock down configuration */
 	soc_lockdown_config(chipset_lockdown);

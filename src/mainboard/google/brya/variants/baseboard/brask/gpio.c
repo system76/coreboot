@@ -80,7 +80,7 @@ static const struct pad_config gpio_table[] = {
 	/* B13 : PLTRST# ==> PLT_RST_L */
 	PAD_CFG_NF(GPP_B13, NONE, DEEP, NF1),
 	/* B14 : SPKR ==> PWM_PP3300_BUZZER */
-	PAD_CFG_NF_LOCK(GPP_B14, NONE, NF1, LOCK_CONFIG),
+	PAD_CFG_GPO_LOCK(GPP_B14, 0, LOCK_CONFIG),
 	/* B15 : TIME_SYNC0 ==> TP159 */
 	PAD_NC_LOCK(GPP_B15, NONE, LOCK_CONFIG),
 	/* B16 : I2C5_SDA ==> NC */
@@ -118,7 +118,7 @@ static const struct pad_config gpio_table[] = {
 	PAD_NC(GPP_C7, NONE),
 
 	/* D0  : ISH_GP0 ==> PCH_FP_BOOT0 */
-	PAD_NC_LOCK(GPP_D0, NONE, LOCK_CONFIG),
+	PAD_CFG_GPO_LOCK(GPP_D0, 0, LOCK_CONFIG),
 	/* D1  : ISH_GP1 ==> FP_RST_ODL */
 	PAD_CFG_GPO_LOCK(GPP_D1, 1, LOCK_CONFIG),
 	/* D2  : ISH_GP2 ==> EN_FP_PWR */
@@ -426,11 +426,7 @@ static const struct cros_gpio cros_gpios[] = {
 	CROS_GPIO_WP_AH(GPIO_PCH_WP, CROS_GPIO_DEVICE_NAME),
 };
 
-const struct cros_gpio *__weak variant_cros_gpios(size_t *num)
-{
-	*num = ARRAY_SIZE(cros_gpios);
-	return cros_gpios;
-}
+DECLARE_WEAK_CROS_GPIOS(cros_gpios);
 
 const struct pad_config *__weak variant_romstage_gpio_table(size_t *num)
 {

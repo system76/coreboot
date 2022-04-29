@@ -31,19 +31,20 @@ fw_config
 	end
 end
 chip soc/intel/alderlake
-	register "SaGv" = "SaGv_Enabled"
-	register "CnviBtAudioOffload" = "true"
+	register "sagv" = "SaGv_Enabled"
+	register "cnvi_bt_audio_offload" = "true"
 	# FIVR RFI Spread Spectrum 6%
-	register "FivrSpreadSpectrum" = "FIVR_SS_6"
+	register "fivr_spread_spectrum" = "FIVR_SS_6"
 
 	# Acoustic settings
-	register "AcousticNoiseMitigation" = "1"
-	register "SlowSlewRate[VR_DOMAIN_IA]" = "SLEW_FAST_8"
-	register "FastPkgCRampDisable[VR_DOMAIN_IA]" = "1"
+	register "acoustic_noise_mitigation" = "1"
+	register "slow_slew_rate[VR_DOMAIN_IA]" = "SLEW_FAST_8"
+	register "slow_slew_rate[VR_DOMAIN_GT]" = "SLEW_FAST_8"
+	register "fast_pkg_c_ramp_disable[VR_DOMAIN_IA]" = "1"
+	register "fast_pkg_c_ramp_disable[VR_DOMAIN_GT]" = "1"
 
 	register "usb2_ports[1]" = "USB2_PORT_EMPTY"
 	register "usb2_ports[5]" = "USB2_PORT_EMPTY"
-	register "usb2_ports[9]" = "USB2_PORT_EMPTY"
 	register "tcss_ports[1]" = "TCSS_PORT_EMPTY"
 
 	# Intel Common SoC Config
@@ -78,6 +79,7 @@ chip soc/intel/alderlake
 		},
 	}"
 	register "tcc_offset" = "3"  # TCC of 97C
+
 	device domain 0 on
 		device ref igpu on
 			chip drivers/gfx/generic
@@ -137,6 +139,7 @@ chip soc/intel/alderlake
 				device generic 0 alias dptf_policy on end
 			end
 		end
+		device ref tbt_pcie_rp1 off end
 		device ref ipu on
 			chip drivers/intel/mipi_camera
 				register "acpi_uid" = "0x50000"
@@ -157,17 +160,35 @@ chip soc/intel/alderlake
 			end
 		end
 		device ref pcie_rp6 on
-			probe DB_LTE LTE_PCIE
+			# Enable WWAN PCIE 6 using clk 5
+			register "pch_pcie_rp[PCH_RP(6)]" = "{
+				.clk_src = 5,
+				.clk_req = 5,
+				.flags = PCIE_RP_LTR | PCIE_RP_AER,
+			}"
+			chip soc/intel/common/block/pcie/rtd3
+				register "reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_E0)"
+				register "reset_off_delay_ms" = "20"
+				# register "reset_delay_ms" = "1000"
+				register "srcclk_pin" = "5"
+				register "ext_pm_support" = "ACPI_PCIE_RP_EMIT_ALL"
+				register "skip_on_off_support" = "true"
+				device generic 0 alias rp6_rtd3 on
+					probe DB_LTE LTE_PCIE
+				end
+			end
 			chip drivers/wwan/fm
 				register "fcpo_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_F21)"
 				register "reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_E16)"
 				register "perst_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_E0)"
 				register "wake_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_A7)"
+				register "add_acpi_dma_property" = "true"
 				use rp6_rtd3 as rtd3dev
 				device generic 0 on
 					probe DB_LTE LTE_PCIE
 				end
 			end
+			probe DB_LTE LTE_PCIE
 		end
 		device ref tcss_dma0 on
 			chip drivers/intel/usb4/retimer

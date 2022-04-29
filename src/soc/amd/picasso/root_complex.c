@@ -114,6 +114,9 @@ static void read_resources(struct device *dev)
 	early_reserved_dram_start = e->base;
 	early_reserved_dram_end = e->base + e->size;
 
+	/* The root complex has no PCI BARs implemented, so there's no need to call
+	   pci_dev_read_resources for it */
+
 	/* 0x0 - 0x9ffff */
 	ram_resource(dev, idx++, 0, 0xa0000 / KiB);
 
@@ -136,7 +139,7 @@ static void read_resources(struct device *dev)
 	ram_resource(dev, idx++, early_reserved_dram_end / KiB,
 		     (mem_usable - early_reserved_dram_end) / KiB);
 
-	mmconf_resource(dev, MMIO_CONF_BASE);
+	mmconf_resource(dev, idx++);
 
 	if (!hob) {
 		printk(BIOS_ERR, "%s incomplete because no HOB list was found\n",
@@ -166,7 +169,7 @@ static void read_resources(struct device *dev)
 	}
 
 	/* GNB IOAPIC resource */
-	gnb_apic = new_resource(dev, GNB_IO_APIC_ADDR);
+	gnb_apic = new_resource(dev, idx++);
 	gnb_apic->base = GNB_IO_APIC_ADDR;
 	gnb_apic->size = 0x00001000;
 	gnb_apic->flags = IORESOURCE_MEM | IORESOURCE_ASSIGNED | IORESOURCE_FIXED;
@@ -220,6 +223,6 @@ static struct device_operations root_complex_operations = {
 
 static const struct pci_driver family17_root_complex __pci_driver = {
 	.ops	= &root_complex_operations,
-	.vendor	= PCI_VENDOR_ID_AMD,
-	.device	= PCI_DEVICE_ID_AMD_17H_MODEL_101F_NB,
+	.vendor	= PCI_VID_AMD,
+	.device	= PCI_DID_AMD_17H_MODEL_101F_NB,
 };

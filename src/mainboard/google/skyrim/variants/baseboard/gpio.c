@@ -39,14 +39,14 @@ static const struct soc_amd_gpio base_gpio_table[] = {
 	/* SOC_SAR_INT_L */
 	PAD_SCI(GPIO_17, PULL_NONE, EDGE_LOW),
 	/* GSC_SOC_INT_L */
-	PAD_GPI(GPIO_18, PULL_NONE),
+	PAD_INT(GPIO_18, PULL_NONE, EDGE_LOW, STATUS_DELIVERY),
 	/* I2C3_SCL */
 	PAD_NF(GPIO_19, I2C3_SCL, PULL_NONE),
 	/* I2C3_SDA */
 	PAD_NF(GPIO_20, I2C3_SDA, PULL_NONE),
 	/* WLAN_DISABLE */
 	PAD_GPO(GPIO_21, LOW),
-	/* ESPI_ALERT_D1 */
+	/* ESPI_ALERT_L */
 	PAD_NF(GPIO_22, ESPI_ALERT_D1, PULL_NONE),
 	/* AC_PRES */
 	PAD_NF(GPIO_23, AC_PRES, PULL_UP),
@@ -56,16 +56,16 @@ static const struct soc_amd_gpio base_gpio_table[] = {
 	/* PCIE_RST0_L */
 	PAD_NFO(GPIO_26, PCIE_RST0_L, HIGH),
 	/* SD_AUX_RESET_L  */
-	PAD_GPO(GPIO_27, HIGH),
+	PAD_NFO(GPIO_27, PCIE_RST1_L, HIGH),
 	/* GPIO_28: Not available */
-	/* EN_PP3300_TCHSCR */
-	PAD_GPO(GPIO_29, HIGH),
-	/* SOC_DISABLE_DISP_BL */
-	PAD_GPO(GPIO_30, HIGH),
+	/* TCHSCR_INT_ODL */
+	PAD_GPI(GPIO_29, PULL_NONE),
+	/* ESPI_CS_L */
+	PAD_NF(GPIO_30, ESPI_CS_L, PULL_NONE),
 	/* Unused */
 	PAD_NC(GPIO_31),
 	/* LPC_RST_L */
-	PAD_GPO(GPIO_32, LOW),
+	PAD_NF(GPIO_32, LPC_RST_L, PULL_NONE),
 	/* GPIO_33 - GPIO_39: Not available */
 	/* SOC_TCHPAD_INT_ODL */
 	PAD_SCI(GPIO_40, PULL_NONE, EDGE_LOW),
@@ -75,21 +75,21 @@ static const struct soc_amd_gpio base_gpio_table[] = {
 	/* GPIO_43 - GPIO_66: Not available */
 	/* GPIO_67 */
 	PAD_GPI(GPIO_67, PULL_NONE),
-	/* SPI1_DATA2 */
+	/* ESPI1_DATA2 */
 	PAD_NF(GPIO_68, SPI1_DAT2, PULL_NONE),
-	/* SPI1_DATA3 */
+	/* ESPI1_DATA3 */
 	PAD_NF(GPIO_69, SPI1_DAT3, PULL_NONE),
-	/* ESPI_CS_L */
-	PAD_NF(GPIO_74, SPI1_CS1_L, PULL_NONE),
+	/* SOC_DISABLE_DISP_BL */
+	PAD_GPO(GPIO_74, LOW),
 	/* TCHSCR_REPORT_EN */
 	PAD_GPO(GPIO_76, LOW),
-	/* SPI1_CLK */
+	/* ESPI_CLK */
 	PAD_NF(GPIO_77, SPI1_CLK, PULL_NONE),
 	/* EN_PP3300_CAM */
 	PAD_GPO(GPIO_78, HIGH),
-	/* SPI1_DATA1 */
+	/* ESPI1_DATA1 */
 	PAD_NF(GPIO_80, SPI1_DAT1, PULL_NONE),
-	/* SPI1_DATA0 */
+	/* ESPI1_DATA0 */
 	PAD_NF(GPIO_81, SPI1_DAT0, PULL_NONE),
 	/* EC_SOC_INT_ODL */
 	PAD_GPI(GPIO_84, PULL_NONE),
@@ -113,8 +113,8 @@ static const struct soc_amd_gpio base_gpio_table[] = {
 	PAD_NF(GPIO_116, CLK_REQ2_L, PULL_NONE),
 	/* SOC_FPMCU_BOOT0 */
 	PAD_GPO(GPIO_130, LOW),
-	/* TCHSCR_INT_ODL */
-	PAD_GPI(GPIO_131, PULL_NONE),
+	/* EN_PP3300_TCHSCR */
+	PAD_GPO(GPIO_131, LOW),
 	/* TCHSCR_RESET_L */
 	PAD_GPO(GPIO_136, LOW),
 	/* SOC_BIOS_WP_L */
@@ -141,15 +141,67 @@ static const struct soc_amd_gpio base_gpio_table[] = {
 	PAD_NF(GPIO_148, I2C1_SDA, PULL_NONE),
 };
 
+static const struct soc_amd_gpio espi_gpio_table[] = {
+	/* ESPI_CS_L */
+	PAD_NF(GPIO_30, ESPI_CS_L, PULL_NONE),
+	/* ESPI_CLK */
+	PAD_NF(GPIO_77, SPI1_CLK, PULL_NONE),
+	/* ESPI1_DATA0 */
+	PAD_NF(GPIO_81, SPI1_DAT0, PULL_NONE),
+	/* ESPI1_DATA1 */
+	PAD_NF(GPIO_80, SPI1_DAT1, PULL_NONE),
+	/* ESPI1_DATA2 */
+	PAD_NF(GPIO_68, SPI1_DAT2, PULL_NONE),
+	/* ESPI1_DATA3 */
+	PAD_NF(GPIO_69, SPI1_DAT3, PULL_NONE),
+	/* ESPI_ALERT_L */
+	PAD_NF(GPIO_22, ESPI_ALERT_D1, PULL_NONE),
+};
+
+static const struct soc_amd_gpio tpm_gpio_table[] = {
+	/* I2C3_SCL */
+	PAD_NF(GPIO_19, I2C3_SCL, PULL_NONE),
+	/* I2C3_SDA */
+	PAD_NF(GPIO_20, I2C3_SDA, PULL_NONE),
+	/* GSC_SOC_INT_L */
+	PAD_INT(GPIO_18, PULL_NONE, EDGE_LOW, STATUS_DELIVERY),
+};
+
 /* GPIO configuration for sleep */
 static const struct soc_amd_gpio sleep_gpio_table[] = {
 	/* TODO: Fill sleep gpio configuration */
 };
 
-/* Early GPIO configuration in bootblock */
+/* GPIO configuration in bootblock */
 static const struct soc_amd_gpio bootblock_gpio_table[] = {
-	/* TODO: Fill bootblock gpio configuration */
+	/* Enable WLAN */
+	/* WLAN_DISABLE */
+	PAD_GPO(GPIO_21, LOW),
 };
+
+/* Early GPIO configuration */
+static const struct soc_amd_gpio early_gpio_table[] = {
+	/* WLAN_AUX_RESET_L (ACTIVE LOW) */
+	PAD_GPO(GPIO_7, LOW),
+	/* Power on WLAN */
+	/* EN_PP3300_WLAN */
+	PAD_GPO(GPIO_9, HIGH),
+};
+
+/* PCIE_RST needs to be brought high before FSP-M runs */
+static const struct soc_amd_gpio pcie_gpio_table[] = {
+	/* Deassert all AUX_RESET lines & PCIE_RST */
+	/* WLAN_AUX_RESET_L (ACTIVE LOW) */
+	PAD_GPO(GPIO_7, HIGH),
+	/* PCIE_RST0_L */
+	PAD_NFO(GPIO_26, PCIE_RST0_L, HIGH),
+};
+
+__weak void variant_pcie_gpio_table(const struct soc_amd_gpio **gpio, size_t *size)
+{
+	*size = ARRAY_SIZE(pcie_gpio_table);
+	*gpio = pcie_gpio_table;
+}
 
 __weak void variant_base_gpio_table(const struct soc_amd_gpio **gpio, size_t *size)
 {
@@ -169,8 +221,32 @@ __weak void variant_bootblock_gpio_table(const struct soc_amd_gpio **gpio, size_
 	*gpio = bootblock_gpio_table;
 }
 
+__weak void variant_early_gpio_table(const struct soc_amd_gpio **gpio, size_t *size)
+{
+	*size = ARRAY_SIZE(early_gpio_table);
+	*gpio = early_gpio_table;
+}
+
+__weak void variant_early_override_gpio_table(const struct soc_amd_gpio **gpio, size_t *size)
+{
+	*size = 0;
+	*gpio = NULL;
+}
+
 __weak void variant_sleep_gpio_table(const struct soc_amd_gpio **gpio, size_t *size)
 {
 	*size = ARRAY_SIZE(sleep_gpio_table);
 	*gpio = sleep_gpio_table;
+}
+
+__weak void variant_espi_gpio_table(const struct soc_amd_gpio **gpio, size_t *size)
+{
+	*size = ARRAY_SIZE(espi_gpio_table);
+	*gpio = espi_gpio_table;
+}
+
+__weak void variant_tpm_gpio_table(const struct soc_amd_gpio **gpio, size_t *size)
+{
+	*size = ARRAY_SIZE(tpm_gpio_table);
+	*gpio = tpm_gpio_table;
 }

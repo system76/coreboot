@@ -51,6 +51,9 @@ int  mainboard_smi_apmc(u8 data);
 void mainboard_smi_sleep(u8 slp_typ);
 void mainboard_smi_finalize(void);
 
+void smm_soc_early_init(void);
+void smm_soc_exit(void);
+
 /* This is the SMM handler. */
 extern unsigned char _binary_smm_start[];
 extern unsigned char _binary_smm_end[];
@@ -61,6 +64,8 @@ struct smm_runtime {
 	u32 save_state_size;
 	u32 num_cpus;
 	u32 gnvs_ptr;
+	u32 cbmemc_size;
+	void *cbmemc;
 	uintptr_t save_state_top[CONFIG_MAX_CPUS];
 } __packed;
 

@@ -16,7 +16,7 @@ config BOARD_GOOGLE_BASEBOARD_GLADOS
 	select INTEL_LPSS_UART_FOR_CONSOLE
 	select MAINBOARD_HAS_CHROMEOS
 	select MAINBOARD_HAS_LIBGFXINIT
-	select MAINBOARD_HAS_LPC_TPM
+	select MEMORY_MAPPED_TPM
 	select MAINBOARD_HAS_TPM1
 	select SOC_INTEL_SKYLAKE
 	select SYSTEM_TYPE_LAPTOP
@@ -78,9 +78,6 @@ if BOARD_GOOGLE_BASEBOARD_GLADOS
 config DISABLE_HECI1_AT_PRE_BOOT
 	default y
 
-config IGNORE_IASL_MISSING_DEPENDENCY
-	def_bool y
-
 config VBOOT
 	select EC_GOOGLE_CHROMEEC_SWITCHES
 	select VBOOT_LID_SWITCH
@@ -112,10 +109,6 @@ config VARIANT_DIR
 
 config OVERRIDE_DEVICETREE
 	default "variants/\$(CONFIG_VARIANT_DIR)/overridetree.cb"
-
-config TPM_PIRQ
-	hex
-	default 0x18  # GPP_E0_IRQ
 
 config INCLUDE_NHLT_BLOBS
 	bool "Include blobs for audio."

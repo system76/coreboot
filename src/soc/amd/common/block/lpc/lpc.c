@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+#include <arch/ioapic.h>
 #include <console/console.h>
 #include <device/device.h>
 #include <device/pci.h>
@@ -15,6 +16,7 @@
 #include <amdblocks/acpi.h>
 #include <amdblocks/acpimmio.h>
 #include <amdblocks/espi.h>
+#include <amdblocks/ioapic.h>
 #include <amdblocks/lpc.h>
 #include <soc/iomap.h>
 #include <soc/lpc.h>
@@ -32,6 +34,12 @@ static void setup_serirq(void)
 		byte |= PM_SERIRQ_MODE;
 
 	pm_write8(PM_SERIRQ_CONF, byte);
+}
+
+static void fch_ioapic_init(void)
+{
+	fch_enable_ioapic_decode();
+	setup_ioapic(VIO_APIC_VADDR, FCH_IOAPIC_ID);
 }
 
 static void lpc_init(struct device *dev)
@@ -83,6 +91,9 @@ static void lpc_init(struct device *dev)
 	setup_i8254();
 
 	setup_serirq();
+
+	fch_ioapic_init();
+	fch_configure_hpet();
 }
 
 static void lpc_read_resources(struct device *dev)
@@ -124,9 +135,9 @@ static void lpc_set_resources(struct device *dev)
 
 	/* Special case. The SpiRomEnable and other enables should STAY set. */
 	res = find_resource(dev, 2);
-	spi_enable_bits = pci_read_config32(dev, SPIROM_BASE_ADDRESS_REGISTER);
+	spi_enable_bits = pci_read_config32(dev, SPI_BASE_ADDRESS_REGISTER);
 	spi_enable_bits &= SPI_BASE_ALIGNMENT - 1;
-	pci_write_config32(dev, SPIROM_BASE_ADDRESS_REGISTER,
+	pci_write_config32(dev, SPI_BASE_ADDRESS_REGISTER,
 			res->base | spi_enable_bits);
 
 	pci_dev_set_resources(dev);
@@ -323,13 +334,13 @@ static struct device_operations lpc_ops = {
 
 static const unsigned short pci_device_ids[] = {
 	/* PCI device ID is used on all discrete FCHs and Family 16h Models 00h-3Fh */
-	PCI_DEVICE_ID_AMD_SB900_LPC,
+	PCI_DID_AMD_SB900_LPC,
 	/* PCI device ID is used on all integrated FCHs except Family 16h Models 00h-3Fh */
-	PCI_DEVICE_ID_AMD_CZ_LPC,
+	PCI_DID_AMD_CZ_LPC,
 	0
 };
 static const struct pci_driver lpc_driver __pci_driver = {
 	.ops = &lpc_ops,
-	.vendor = PCI_VENDOR_ID_AMD,
+	.vendor = PCI_VID_AMD,
 	.devices = pci_device_ids,
 };

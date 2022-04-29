@@ -2,14 +2,16 @@
 
 Method (MPTS, 1, NotSerialized)
 {
-	If (Arg0)
-	{
-		RPTS (Arg0)
+#if CONFIG(BOARD_STARLABS_STARBOOK_TGL)
+	If (Arg0 == 0x03) {
+		\_SB.PCI0.CTXS (GPP_D16)
 	}
+#endif
+
+	RPTS (Arg0)
 }
 
 Method (MWAK, 1, NotSerialized)
 {
 	RWAK (Arg0)
-	Return (0x00)
 }

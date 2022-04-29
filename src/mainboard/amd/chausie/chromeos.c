@@ -18,11 +18,4 @@ int get_write_protect_state(void)
 	return 0;
 }
 
-static const struct cros_gpio cros_gpios[] = {
-	/* No ChromeOS GPIOs */
-};
-
-void mainboard_chromeos_acpi_generate(void)
-{
-	chromeos_acpi_gpio_generate(cros_gpios, ARRAY_SIZE(cros_gpios));
-}
+DECLARE_NO_CROS_GPIOS();

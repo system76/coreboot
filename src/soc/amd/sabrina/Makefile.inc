@@ -12,6 +12,7 @@ all-y		+= aoac.c
 
 bootblock-y	+= bootblock.c
 bootblock-y	+= early_fch.c
+bootblock-y	+= espi_util.c
 bootblock-y	+= gpio.c
 bootblock-y	+= i2c.c
 bootblock-y	+= reset.c
@@ -97,10 +98,6 @@ ifeq ($(CONFIG_PSP_DISABLE_POSTCODES),y)
 PSP_SOFTFUSE_BITS += 7
 endif
 
-ifeq ($(CONFIG_PSP_POSTCODES_ON_ESPI),y)
-PSP_SOFTFUSE_BITS += 15
-endif
-
 ifeq ($(CONFIG_PSP_UNLOCK_SECURE_DEBUG),y)
 # Enable secure debug unlock
 PSP_SOFTFUSE_BITS += 0
@@ -114,16 +111,17 @@ else
 PSP_SOFTFUSE_BITS += 29
 endif
 
-ifeq ($(CONFIG_PSP_S0I3_RESUME_VERSTAGE),y)
-PSP_SOFTFUSE_BITS += 58
-endif
-
 # Use additional Soft Fuse bits specified in Kconfig
 PSP_SOFTFUSE_BITS += $(call strip_quotes, $(CONFIG_PSP_SOFTFUSE_BITS))
 
 # type = 0x3a
 ifeq ($(CONFIG_HAVE_PSP_WHITELIST_FILE),y)
 PSP_WHITELIST_FILE=$(CONFIG_PSP_WHITELIST_FILE)
+endif
+
+# type = 0x55
+ifeq ($(CONFIG_HAVE_SPL_FILE),y)
+SPL_TABLE_FILE=$(CONFIG_SPL_TABLE_FILE)
 endif
 
 #
@@ -195,6 +193,10 @@ OPT_EFS_SPI_MICRON_FLAG=$(call add_opt_prefix, $(CONFIG_EFS_SPI_MICRON_FLAG), --
 OPT_PSP_SOFTFUSE=$(call add_opt_prefix, $(PSP_SOFTFUSE), --soft-fuse)
 
 OPT_WHITELIST_FILE=$(call add_opt_prefix, $(PSP_WHITELIST_FILE), --whitelist)
+OPT_SPL_TABLE_FILE=$(call add_opt_prefix, $(SPL_TABLE_FILE), --spl-table)
+
+# If vboot uses 2 RW slots, then 2 copies of PSP binaries are redundant
+OPT_RECOVERY_AB_SINGLE_COPY=$(if $(CONFIG_VBOOT_SLOTS_RW_AB), --recovery-ab-single-copy)
 
 # Add all the files listed in the config file
 POUND_SIGN=$(call strip_quotes, "\#")
@@ -212,14 +214,16 @@ AMDFW_COMMON_ARGS=$(OPT_PSP_APCB_FILES) \
 		--combo-capable \
 		$(OPT_TOKEN_UNLOCK) \
 		$(OPT_WHITELIST_FILE) \
+		$(OPT_SPL_TABLE_FILE) \
 		$(OPT_PSP_SHAREDMEM_BASE) \
 		$(OPT_PSP_SHAREDMEM_SIZE) \
 		$(OPT_EFS_SPI_READ_MODE) \
 		$(OPT_EFS_SPI_SPEED) \
 		$(OPT_EFS_SPI_MICRON_FLAG) \
 		--config $(CONFIG_AMDFW_CONFIG_FILE) \
-		--soc-name "Cezanne" \
-		--flashsize $(CONFIG_ROM_SIZE)
+		--soc-name "Sabrina" \
+		--flashsize $(CONFIG_ROM_SIZE) \
+		$(OPT_RECOVERY_AB_SINGLE_COPY)
 
 $(obj)/amdfw.rom:	$(call strip_quotes, $(PSP_BIOSBIN_FILE)) \
 			$(PSP_VERSTAGE_FILE) \
@@ -239,7 +243,6 @@ $(obj)/amdfw.rom:	$(call strip_quotes, $(PSP_BIOSBIN_FILE)) \
 		$(OPT_VERSTAGE_FILE) \
 		$(OPT_VERSTAGE_SIG_FILE) \
 		--location $(shell printf "%#x" $(SABRINA_FWM_POSITION)) \
-		--multilevel \
 		--output $@
 
 $(PSP_BIOSBIN_FILE): $(PSP_ELF_FILE) $(AMDCOMPRESS)
@@ -257,7 +260,6 @@ $(obj)/amdfw_a.rom: $(obj)/amdfw.rom
 		$(OPT_APOB_NV_BASE) \
 		--location $(shell printf "%#x" $(SABRINA_FW_A_POSITION)) \
 		--anywhere \
-		--multilevel \
 		--output $@
 
 $(obj)/amdfw_b.rom: $(obj)/amdfw.rom
@@ -269,7 +271,6 @@ $(obj)/amdfw_b.rom: $(obj)/amdfw.rom
 		$(OPT_APOB_NV_BASE) \
 		--location $(shell printf "%#x" $(SABRINA_FW_B_POSITION)) \
 		--anywhere \
-		--multilevel \
 		--output $@
 
 

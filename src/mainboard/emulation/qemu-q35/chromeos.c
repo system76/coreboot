@@ -19,11 +19,8 @@ void fill_lb_gpios(struct lb_gpios *gpios)
 static const struct cros_gpio cros_gpios[] = {
 	CROS_GPIO_REC_AL(CROS_GPIO_VIRTUAL, "QEMU"),
 };
+DECLARE_CROS_GPIOS(cros_gpios);
 
-void mainboard_chromeos_acpi_generate(void)
-{
-	chromeos_acpi_gpio_generate(cros_gpios, ARRAY_SIZE(cros_gpios));
-}
 
 int get_ec_is_trusted(void)
 {

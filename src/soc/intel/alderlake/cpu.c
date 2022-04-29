@@ -122,6 +122,11 @@ void soc_core_init(struct device *cpu)
 	/* Set energy policy */
 	set_energy_perf_bias(ENERGY_POLICY_NORMAL);
 
+	const config_t *conf = config_of_soc();
+	/* Set energy-performance preference */
+	if (conf->enable_energy_perf_pref)
+		if (check_energy_perf_cap())
+			set_energy_perf_pref(conf->energy_perf_pref_value);
 	/* Enable Turbo */
 	enable_turbo();
 }
@@ -130,6 +135,19 @@ static void per_cpu_smm_trigger(void)
 {
 	/* Relocate the SMM handler. */
 	smm_relocate();
+}
+
+static void pre_mp_init(void)
+{
+	soc_fsp_load();
+
+	const config_t *conf = config_of_soc();
+	if (conf->enable_energy_perf_pref) {
+		if (check_energy_perf_cap())
+			enable_energy_perf_pref();
+		else
+			printk(BIOS_WARNING, "Energy Performance Preference not supported!\n");
+	}
 }
 
 static void post_mp_init(void)
@@ -152,7 +170,7 @@ static const struct mp_ops mp_ops = {
 	 * that are set prior to ramstage.
 	 * Real MTRRs programming are being done after resource allocation.
 	 */
-	.pre_mp_init = soc_fsp_load,
+	.pre_mp_init = pre_mp_init,
 	.get_cpu_count = get_cpu_count,
 	.get_smm_info = smm_info,
 	.get_microcode_info = get_microcode_info,
@@ -174,43 +192,43 @@ void soc_init_cpus(struct bus *cpu_bus)
 enum adl_cpu_type get_adl_cpu_type(void)
 {
 	const uint16_t adl_m_mch_ids[] = {
-		PCI_DEVICE_ID_INTEL_ADL_M_ID_1,
-		PCI_DEVICE_ID_INTEL_ADL_M_ID_2,
+		PCI_DID_INTEL_ADL_M_ID_1,
+		PCI_DID_INTEL_ADL_M_ID_2,
 	};
 	const uint16_t adl_p_mch_ids[] = {
-		PCI_DEVICE_ID_INTEL_ADL_P_ID_1,
-		PCI_DEVICE_ID_INTEL_ADL_P_ID_3,
-		PCI_DEVICE_ID_INTEL_ADL_P_ID_4,
-		PCI_DEVICE_ID_INTEL_ADL_P_ID_5,
-		PCI_DEVICE_ID_INTEL_ADL_P_ID_6,
-		PCI_DEVICE_ID_INTEL_ADL_P_ID_7,
-		PCI_DEVICE_ID_INTEL_ADL_P_ID_8,
-		PCI_DEVICE_ID_INTEL_ADL_P_ID_9,
-		PCI_DEVICE_ID_INTEL_ADL_P_ID_10
+		PCI_DID_INTEL_ADL_P_ID_1,
+		PCI_DID_INTEL_ADL_P_ID_3,
+		PCI_DID_INTEL_ADL_P_ID_4,
+		PCI_DID_INTEL_ADL_P_ID_5,
+		PCI_DID_INTEL_ADL_P_ID_6,
+		PCI_DID_INTEL_ADL_P_ID_7,
+		PCI_DID_INTEL_ADL_P_ID_8,
+		PCI_DID_INTEL_ADL_P_ID_9,
+		PCI_DID_INTEL_ADL_P_ID_10
 	};
 	const uint16_t adl_s_mch_ids[] = {
-		PCI_DEVICE_ID_INTEL_ADL_S_ID_1,
-		PCI_DEVICE_ID_INTEL_ADL_S_ID_2,
-		PCI_DEVICE_ID_INTEL_ADL_S_ID_3,
-		PCI_DEVICE_ID_INTEL_ADL_S_ID_4,
-		PCI_DEVICE_ID_INTEL_ADL_S_ID_5,
-		PCI_DEVICE_ID_INTEL_ADL_S_ID_6,
-		PCI_DEVICE_ID_INTEL_ADL_S_ID_7,
-		PCI_DEVICE_ID_INTEL_ADL_S_ID_8,
-		PCI_DEVICE_ID_INTEL_ADL_S_ID_9,
-		PCI_DEVICE_ID_INTEL_ADL_S_ID_10,
-		PCI_DEVICE_ID_INTEL_ADL_S_ID_11,
-		PCI_DEVICE_ID_INTEL_ADL_S_ID_12,
-		PCI_DEVICE_ID_INTEL_ADL_S_ID_13,
-		PCI_DEVICE_ID_INTEL_ADL_S_ID_14,
-		PCI_DEVICE_ID_INTEL_ADL_S_ID_15,
+		PCI_DID_INTEL_ADL_S_ID_1,
+		PCI_DID_INTEL_ADL_S_ID_2,
+		PCI_DID_INTEL_ADL_S_ID_3,
+		PCI_DID_INTEL_ADL_S_ID_4,
+		PCI_DID_INTEL_ADL_S_ID_5,
+		PCI_DID_INTEL_ADL_S_ID_6,
+		PCI_DID_INTEL_ADL_S_ID_7,
+		PCI_DID_INTEL_ADL_S_ID_8,
+		PCI_DID_INTEL_ADL_S_ID_9,
+		PCI_DID_INTEL_ADL_S_ID_10,
+		PCI_DID_INTEL_ADL_S_ID_11,
+		PCI_DID_INTEL_ADL_S_ID_12,
+		PCI_DID_INTEL_ADL_S_ID_13,
+		PCI_DID_INTEL_ADL_S_ID_14,
+		PCI_DID_INTEL_ADL_S_ID_15,
 	};
 
 	const uint16_t adl_n_mch_ids[] = {
-		PCI_DEVICE_ID_INTEL_ADL_N_ID_1,
-		PCI_DEVICE_ID_INTEL_ADL_N_ID_2,
-		PCI_DEVICE_ID_INTEL_ADL_N_ID_3,
-		PCI_DEVICE_ID_INTEL_ADL_N_ID_4,
+		PCI_DID_INTEL_ADL_N_ID_1,
+		PCI_DID_INTEL_ADL_N_ID_2,
+		PCI_DID_INTEL_ADL_N_ID_3,
+		PCI_DID_INTEL_ADL_N_ID_4,
 	};
 
 	const uint16_t mchid = pci_s_read_config16(PCI_DEV(0, PCI_SLOT(SA_DEVFN_ROOT),

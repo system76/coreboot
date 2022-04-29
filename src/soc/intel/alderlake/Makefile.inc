@@ -16,7 +16,7 @@ bootblock-y += bootblock/report_platform.c
 bootblock-y += espi.c
 bootblock-y += gpio.c
 bootblock-y += p2sb.c
-bootblock-$(CONFIG_ALDERLAKE_A0_CONFIGURE_PMC_DESCRIPTOR) += bootblock/pmc_descriptor.c
+bootblock-$(CONFIG_ALDERLAKE_CONFIGURE_DESCRIPTOR) += bootblock/update_descriptor.c
 
 romstage-y += espi.c
 romstage-y += gpio.c
@@ -43,6 +43,7 @@ ramstage-y += reset.c
 ramstage-y += retimer.c
 ramstage-y += soundwire.c
 ramstage-y += systemagent.c
+ramstage-y += tcss.c
 ramstage-y += vr_config.c
 ramstage-y += xhci.c
 ramstage-$(CONFIG_SOC_INTEL_CRASHLOG) += crashlog.c

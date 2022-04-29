@@ -54,6 +54,9 @@ typedef enum _amd_fw_type {
 	AMD_FW_SPL = 0x55,
 	AMD_FW_DMCU_ERAM = 0x58,
 	AMD_FW_DMCU_ISR = 0x59,
+	AMD_FW_MSMU = 0x5a,
+	AMD_FW_SPIROM_CFG = 0x5c,
+	AMD_FW_DMCUB = 0x71,
 	AMD_FW_PSP_BOOTLOADER_AB = 0x73,
 	AMD_FW_IMC = 0x200,	/* Large enough to be larger than the top BHD entry type. */
 	AMD_FW_GEC,
@@ -85,6 +88,7 @@ struct second_gen_efs { /* todo: expand for Server products */
 } __attribute__((packed));
 
 #define EFS_SECOND_GEN 0
+#define EFS_BEFORE_SECOND_GEN 1
 
 typedef struct _embedded_firmware {
 	uint32_t signature; /* 0x55aa55aa */
@@ -232,12 +236,24 @@ typedef struct _amd_bios_entry {
 	int level;
 } amd_bios_entry;
 
+typedef struct _ish_directory_table {
+	uint32_t checksum;
+	uint32_t boot_priority;
+	uint32_t update_retry_count;
+	uint8_t  glitch_retry_count;
+	uint8_t  glitch_higherbits_reserved[3];
+	uint32_t pl2_location;
+	uint32_t psp_id;
+	uint32_t slot_max_size;
+	uint32_t reserved;
+} __attribute__((packed)) ish_directory_table;
+
 #define EMBEDDED_FW_SIGNATURE 0x55aa55aa
 #define PSP_COOKIE 0x50535024		/* 'PSP$' */
 #define PSPL2_COOKIE 0x324c5024		/* '2LP$' */
 #define PSP2_COOKIE 0x50535032		/* 'PSP2' */
-#define BDT1_COOKIE 0x44484224		/* 'DHB$ */
-#define BDT2_COOKIE 0x324c4224		/* '2LB$ */
+#define BHD_COOKIE 0x44484224		/* 'DHB$ */
+#define BHDL2_COOKIE 0x324c4224		/* '2LB$ */
 
 #define PSP_LVL1 (1 << 0)
 #define PSP_LVL2 (1 << 1)
@@ -260,8 +276,12 @@ typedef struct _amd_cb_config {
 	bool load_mp2_fw;
 	bool multi_level;
 	bool s0i3;
+	bool second_gen;
 	bool have_mb_spl;
 	bool recovery_ab;
+	bool recovery_ab_single_copy;
+	bool need_ish;
+	bool use_combo;
 } amd_cb_config;
 
 void register_fw_fuse(char *str);
