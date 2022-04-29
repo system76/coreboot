@@ -42,7 +42,7 @@ chip soc/intel/alderlake
 	register "tcc_offset" = "10"
 
 	# Enable CNVi BT
-	register "CnviBtCore" = "true"
+	register "cnvi_bt_core" = "true"
 
 # PM Util (soc/intel/alderlake/pmutil.c)
 	# GPE configuration
@@ -86,7 +86,7 @@ chip soc/intel/alderlake
 		end
 		device ref igpu on
 			# DDIA is eDP
-			register "DdiPortAConfig" = "1"
+			register "ddi_portA_config" = "1"
 			register "ddi_ports_config[DDI_PORT_A]" = "DDI_ENABLE_HPD"
 		end
 		device ref dtt on end
@@ -127,7 +127,7 @@ chip soc/intel/alderlake
 		end
 		device ref i2c0 on
 			# Touchpad I2C bus
-			register "SerialIoI2cMode[PchSerialIoIndexI2C0]" = "PchSerialIoPci"
+			register "serial_io_i2c_mode[PchSerialIoIndexI2C0]" = "PchSerialIoPci"
 			chip drivers/i2c/hid
 				register "generic.hid" = ""SYNA1202""
 				register "generic.desc" = ""Synaptics Touchpad""
@@ -139,8 +139,7 @@ chip soc/intel/alderlake
 		end
 		device ref heci1 on end
 		device ref sata on
-			register "SataEnable" = "1"
-			register "SataPortsEnable[1]" = "1" # SSD2 (SATA1A)
+			register "sata_ports_enable[1]" = "1" # SSD2 (SATA1A)
 		end
 		device ref pcie_rp5 on
 			# PCIe root port #5 x4, Clock 1 (SSD1)
