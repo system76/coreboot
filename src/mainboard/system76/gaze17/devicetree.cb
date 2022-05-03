@@ -99,8 +99,10 @@ chip soc/intel/alderlake
 				.PcieRpL1Substates = L1_SS_FSP_DEFAULT,
 			}"
 		end
+		device ref tbt_pcie_rp0 on end
 		device ref gna on end
 		device ref tcss_xhci on end
+		device ref tcss_dma0 on end
 
 		# From PCH EDS(TODO)
 		device ref xhci on
@@ -128,12 +130,12 @@ chip soc/intel/alderlake
 			# Touchpad I2C bus
 			register "serial_io_i2c_mode[PchSerialIoIndexI2C0]" = "PchSerialIoPci"
 			chip drivers/i2c/hid
-				register "generic.hid" = ""SYNA1202""
-				register "generic.desc" = ""Synaptics Touchpad""
+				register "generic.hid" = ""PNP0C50""
+				register "generic.desc" = ""FocalTech Touchpad""
 				register "generic.irq_gpio" = "ACPI_GPIO_IRQ_LEVEL_LOW(GPP_A17)"
 				register "generic.probed" = "1"
-				register "hid_desc_reg_offset" = "0x20"
-				device i2c 2c on end
+				register "hid_desc_reg_offset" = "0x01"
+				device i2c 38 on end
 			end
 		end
 		device ref heci1 on end
