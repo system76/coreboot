@@ -164,12 +164,14 @@ chip soc/intel/alderlake
 		end
 		device ref pcie_rp7 on
 			# PCIe root port #7 x1, Clock 6 (GLAN)
+			# Clock source is shared with LAN and hence marked as free running.
 			register "pch_pcie_rp[PCH_RP(7)]" = "{
 				.clk_src = 6,
 				.clk_req = 6,
-				.flags = PCIE_RP_LTR,
+				.flags = PCIE_RP_LTR | PCIE_RP_CLK_SRC_UNUSED,
 				.PcieRpL1Substates = L1_SS_FSP_DEFAULT,
 			}"
+			register "pcie_clk_config_flag[6]" = "PCIE_CLK_FREE_RUNNING"
 		end
 		device ref pcie_rp9 on
 			# PCIe root port #9 x4, Clock 1 (SSD1)
