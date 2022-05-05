@@ -34,6 +34,7 @@ ramstage-y += espi.c
 ramstage-y += finalize.c
 ramstage-y += fsp_params.c
 ramstage-y += gpio.c
+ramstage-y += hsphy.c
 ramstage-y += lockdown.c
 ramstage-y += me.c
 ramstage-y += p2sb.c
