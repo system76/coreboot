@@ -12,6 +12,7 @@
 #include <intelblocks/itss.h>
 #include <intelblocks/pcie_rp.h>
 #include <intelblocks/xdci.h>
+#include <soc/hsphy.h>
 #include <soc/intel/common/vbt.h>
 #include <soc/itss.h>
 #include <soc/pci_devs.h>
@@ -156,6 +157,15 @@ static void soc_fill_gpio_pm_configuration(void)
 
 void soc_init_pre_device(void *chip_info)
 {
+	if (CONFIG(SOC_INTEL_ALDERLAKE_PCH_S) || CONFIG(SOC_INTEL_ALDERLAKE_PCH_P)) {
+		load_and_init_hsphy();
+		if (is_devfn_enabled(SA_DEVFN_CPU_PCIE1_0))
+			print_hsphy_version(SA_DEVFN_CPU_PCIE1_0);
+		if (is_devfn_enabled(SA_DEVFN_CPU_PCIE1_1) &&
+		    CONFIG(SOC_INTEL_ALDERLAKE_PCH_S))
+			print_hsphy_version(SA_DEVFN_CPU_PCIE1_1);
+	}
+
 	/* Perform silicon specific init. */
 	fsp_silicon_init();
 
