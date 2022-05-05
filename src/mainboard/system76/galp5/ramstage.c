@@ -3,11 +3,9 @@
 #include <soc/ramstage.h>
 #include "gpio.h"
 
-static void mainboard_init(void *chip_info)
+void mainboard_silicon_init_params(FSP_S_CONFIG *params)
 {
+	params->CpuPcieRpAdvancedErrorReporting[0] = 0;
+
 	gpio_configure_pads(gpio_table, ARRAY_SIZE(gpio_table));
 }
-
-struct chip_operations mainboard_ops = {
-	.init = mainboard_init,
-};
