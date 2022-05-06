@@ -60,7 +60,7 @@ chip soc/intel/alderlake
 		device ref system_agent on end
 		device ref pcie5 on
 			# PCIe PEG2 x8, Clock 3 (DGPU)
-			register "cpu_pcie_rp[CPU_RP(3)]" = "{
+			register "cpu_pcie_rp[CPU_RP(2)]" = "{
 				.clk_src = 3,
 				.clk_req = 3,
 				.flags = PCIE_RP_LTR,
