@@ -144,7 +144,10 @@ void soc_init_pre_device(void *chip_info)
 
 	soc_fill_gpio_pm_configuration();
 
-	/* Swap enabled PCI ports in device tree if needed. */
+	/* Swap enabled CPU PCI ports in device tree if needed. */
+	pcie_rp_update_devicetree(get_cpu_pcie_rp_table());
+
+	/* Swap enabled PCH PCI ports in device tree if needed. */
 	pcie_rp_update_devicetree(get_pch_pcie_rp_table());
 
 	/* Swap enabled TBT root ports in device tree if needed. */
