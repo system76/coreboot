@@ -37,5 +37,8 @@ void mainboard_memory_init_params(FSPM_UPD *mupd)
 	// Set primary display to internal graphics
 	mupd->FspmConfig.PrimaryDisplay = 0;
 
+	// Enable audio link
+	mupd->FspmConfig.PchHdaAudioLinkHdaEnable = 1;
+
 	memcfg_init(mupd, &board_cfg, &spd_info, half_populated);
 }
