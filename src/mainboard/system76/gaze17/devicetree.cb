@@ -89,7 +89,6 @@ chip soc/intel/alderlake
 			register "ddi_portA_config" = "1"
 			register "ddi_ports_config[DDI_PORT_A]" = "DDI_ENABLE_HPD"
 		end
-		device ref dtt on end
 		device ref pcie4_0 on
 			# PCIe PEG0 x4, Clock 0 (SSD2)
 			register "cpu_pcie_rp[CPU_RP(1)]" = "{
