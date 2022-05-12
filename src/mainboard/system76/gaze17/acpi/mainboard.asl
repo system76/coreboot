@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#include "dgpu.asl"
+#include <variant/gpio.h>
+#include "dgpu/gpu.asl"
 
 #define EC_GPE_SCI 0x6E
 #define EC_GPE_SWI 0x6B
