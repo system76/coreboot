@@ -20,8 +20,8 @@ static const struct cnl_mb_cfg memcfg = {
 
 void mainboard_memory_init_params(FSPM_UPD *memupd)
 {
-	// Allow higher memory speeds
-	memupd->FspmConfig.SaOcSupport = 1;
+	// Disable higher memory speeds
+	memupd->FspmConfig.SaOcSupport = 0;
 
 	cannonlake_memcfg_init(&memupd->FspmConfig, &memcfg);
 }
