@@ -100,7 +100,7 @@ PowerResource (PWRR, 0, 0) {
 		Printf("GPU PWRR._ON")
 
 		// Restore SSID
-		^^SSID = 0x40181558
+		^^SSID = DGPU_SSID
 		Printf("  Restore SSID: %o", SFST(^^SSID))
 
 		_STA = 1
