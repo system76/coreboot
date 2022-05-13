@@ -34,8 +34,8 @@ void mainboard_memory_init_params(FSPM_UPD *memupd)
 	// Set primary display to internal graphics
 	memupd->FspmConfig.PrimaryDisplay = 0;
 
-	// Allow higher memory speeds
-	memupd->FspmConfig.SaOcSupport = 1;
+	// Disable higher memory speeds
+	memupd->FspmConfig.SaOcSupport = 0;
 
 	cannonlake_memcfg_init(&memupd->FspmConfig, &memcfg);
 }
