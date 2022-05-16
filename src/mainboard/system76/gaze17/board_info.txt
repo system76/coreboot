@@ -1,0 +1,8 @@
+Vendor name: System76
+Board name: gaze17
+Category: laptop
+Release year: 2022
+ROM package: WSON-8
+ROM protocol: SPI
+ROM socketed: n
+Flashrom support: y
