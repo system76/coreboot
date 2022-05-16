@@ -1,7 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
 #include <mainboard/gpio.h>
-#include <drivers/gfx/nvidia/acpi/gpu.asl>
 
 #define EC_GPE_SCI 0x17 /* GPP_B23 */
 #define EC_GPE_SWI 0x26 /* GPP_G6 */
@@ -12,6 +11,10 @@ Scope (\_SB)
 	#include "sleep.asl"
 	Scope (PCI0) {
 		#include "backlight.asl"
+		Device (PEGP) {
+			Name (_ADR, CONFIG_DRIVERS_GFX_NVIDIA_BRIDGE << 16)
+			#include <drivers/gfx/nvidia/acpi/coffeelake.asl>
+		}
 	}
 }
 
