@@ -8,6 +8,7 @@
 #define DGPU_RST_N	GPP_F8
 #define DGPU_PWR_EN	GPP_F9
 #define DGPU_GC6	GPP_K11
+#define DGPU_SSID	0x50e11558
 
 #ifndef __ACPI__
 

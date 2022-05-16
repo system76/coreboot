@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#include "dgpu.asl"
+#include "../gpio.h"
 
 #define EC_GPE_SCI 0x6E
 #define EC_GPE_SWI 0x6B
@@ -10,5 +10,8 @@ Scope (\_SB) {
 	#include "sleep.asl"
 	Scope (PCI0) {
 		#include "backlight.asl"
+		Scope (RP01) { // Remapped from RP05
+			#include <drivers/gfx/nvidia/acpi/tigerlake.asl>
+		}
 	}
 }
