@@ -120,7 +120,7 @@ static const struct pad_config gpio_table[] = {
 
 	/* ------- GPIO Group GPP_E ------- */
 	PAD_CFG_GPI(GPP_E0, NONE, DEEP), // CNVI_WAKE#
-	_PAD_CFG_STRUCT(GPP_E1, 0x40100100, 0x3000), // TPM_PIRQ#
+	//_PAD_CFG_STRUCT(GPP_E1, 0x40100100, 0x3000), // TPM_PIRQ#
 	PAD_CFG_GPI(GPP_E2, NONE, DEEP), // BOARD_ID2
 	PAD_CFG_GPO(GPP_E3, 1, PLTRST), // PCH_WLAN_EN
 	PAD_CFG_GPO(GPP_E4, 0, PLTRST), // TBT_FORCE_PWR
