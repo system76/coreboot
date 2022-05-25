@@ -43,5 +43,10 @@ void mainboard_memory_init_params(FSPM_UPD *mupd)
 	mupd->FspmConfig.DmiMaxLinkSpeed = 4;
 	mupd->FspmConfig.GpioOverride = 0;
 
+	/* Set Serial debug message level */
+	mupd->FspmConfig.PcdSerialDebugLevel = FSP_LOG_LEVEL_ERR_WARN;
+	/* Set MRC debug level */
+	mupd->FspmConfig.SerialDebugMrcLevel = FSP_LOG_LEVEL_ERR_WARN;
+
 	memcfg_init(mupd, &board_cfg, &spd_info, half_populated);
 }
