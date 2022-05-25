@@ -892,6 +892,9 @@ static enum cb_err run_ap_work(struct mp_callback *val, long expire_us)
 		return CB_ERR;
 	}
 
+	//HACK
+	expire_us = 0;
+
 	cur_cpu = cpu_index();
 
 	if (cur_cpu < 0) {
