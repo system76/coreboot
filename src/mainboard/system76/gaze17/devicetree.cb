@@ -142,6 +142,7 @@ chip soc/intel/alderlake
 		device ref heci1 on end
 		device ref sata on
 			register "sata_ports_enable[1]" = "1" # SSD2 (SATA1A)
+			register "sata_ports_dev_slp[1]" = "1" # GPP_H13 (DEVSLP1B)
 		end
 		device ref pcie_rp5 on
 			# PCIe root port #5 x1, Clock 2 (WLAN)
