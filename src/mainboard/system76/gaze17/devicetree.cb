@@ -96,7 +96,6 @@ chip soc/intel/alderlake
 			end
 		end
 		device ref tbt_pcie_rp0 on end
-		device ref gna on end
 		device ref tcss_xhci on
 			register "tcss_ports[0]" = "TCSS_PORT_DEFAULT(OC_SKIP)"
 			device ref tcss_root_hub on
