@@ -11,5 +11,7 @@ void mainboard_silicon_init_params(FSP_S_CONFIG *params)
 	params->PchSerialIoI2cSclPinMux[0] = 0x1947a405; // GPP_H5
 	params->PchSerialIoI2cSdaPinMux[0] = 0x1947c404; // GPP_H4
 
+	params->SataPortDevSlpPinMux[1] = 0x5967400d; // GPP_H13 (DEVSLP1B)
+
 	variant_configure_gpios();
 }
