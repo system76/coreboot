@@ -54,8 +54,8 @@ static const struct soc_mem_cfg soc_mem_cfg[] = {
 			 * configuration.
 			 */
 			.half_channel = BIT(0),
-			/* In mixed topologies, channel 1 is always memory-down. */
-			.mixed_topo = BIT(1),
+			/* In mixed topologies, channel 0 is always memory-down. */
+			.mixed_topo = BIT(0),
 		},
 	},
 	[MEM_TYPE_DDR5] = {
