@@ -6,7 +6,7 @@
 #include <soc/gpio.h>
 
 #define DGPU_RST_N	GPP_B2
-#define DGPU_PWR_EN	GPP_E4
+#define DGPU_PWR_EN	GPP_A14
 #define DGPU_GC6	GPP_F13
 #define DGPU_SSID	0x866d1558
 

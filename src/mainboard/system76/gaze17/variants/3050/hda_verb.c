@@ -20,6 +20,10 @@ const u32 cim_verb_data[] = {
 	AZALIA_PIN_CFG(0, 0x21, 0x02211020),
 };
 
-const u32 pc_beep_verbs[] = {};
+const u32 pc_beep_verbs[] = {
+	// Adjust mic coefficient
+	0x02050007,
+	0x02040202,
+};
 
 AZALIA_ARRAY_SIZES;
