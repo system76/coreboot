@@ -1,8 +1,9 @@
 chip soc/intel/alderlake
+	# FIXME: Limit PL4 to PL2 to prevent power off on battery power
 	register "power_limits_config[ADL_P_282_482_28W_CORE]" = "{
 		.tdp_pl1_override = 20,
 		.tdp_pl2_override = 56,
-		.tdp_pl4 = 65,
+		.tdp_pl4 = 56,
 	}"
 
 	# GPE configuration
