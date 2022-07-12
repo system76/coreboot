@@ -6,6 +6,13 @@
 void mainboard_silicon_init_params(FSP_S_CONFIG *params)
 {
 	params->CpuPcieRpAdvancedErrorReporting[0] = 0;
+}
 
+static void mainboard_init(void *chip_info)
+{
 	mainboard_configure_gpios();
 }
+
+struct chip_operations mainboard_ops = {
+	.init = mainboard_init,
+};
