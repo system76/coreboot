@@ -1,23 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#ifndef MAINBOARD_GPIO_H
-#define MAINBOARD_GPIO_H
-
+#include <mainboard/gpio.h>
 #include <soc/gpio.h>
-
-#define DGPU_RST_N	GPP_U4
-#define DGPU_PWR_EN	GPP_U5
-#define DGPU_GC6	GPP_D2
-#define DGPU_SSID	0x40181558
-
-#ifndef __ACPI__
-
-static const struct pad_config early_gpio_table[] = {
-	PAD_CFG_NF(GPP_C20, UP_20K, DEEP, NF1), // UART2_RXD
-	PAD_CFG_NF(GPP_C21, UP_20K, DEEP, NF1), // UART2_TXD
-	PAD_CFG_GPO(GPP_U4, 0, DEEP), // DGPU_RST#_PCH
-	PAD_CFG_GPO(GPP_U5, 0, DEEP), // DGPU_PWR_EN
-};
 
 static const struct pad_config gpio_table[] = {
 	PAD_CFG_NF(GPD0, UP_20K, PWROK, NF1), // PM_BATLOW#
@@ -229,6 +213,7 @@ static const struct pad_config gpio_table[] = {
 	//PAD_CFG_GPO(GPP_U5, 0, DEEP), // DGPU_PWR_EN
 };
 
-#endif /* __ACPI__ */
-
-#endif /* MAINBOARD_GPIO_H */
+void mainboard_configure_gpios(void)
+{
+	gpio_configure_pads(gpio_table, ARRAY_SIZE(gpio_table));
+}
