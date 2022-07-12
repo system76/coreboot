@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#include "gpio.h"
+#include <variant/gpio.h>
 #include <drivers/gfx/nvidia/gpu.h>
 #include <fsp/util.h>
 #include <soc/meminit.h>
