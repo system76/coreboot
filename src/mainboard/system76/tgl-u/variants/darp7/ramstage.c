@@ -5,7 +5,14 @@
 
 void mainboard_silicon_init_params(FSP_S_CONFIG *params)
 {
+	// CPU RP Config
 	params->CpuPcieRpAdvancedErrorReporting[0] = 0;
+	params->CpuPcieRpLtrEnable[0] = 1;
+	params->CpuPcieRpPtmEnabled[0] = 0;
+
+	// IOM config
+	params->PchUsbOverCurrentEnable = 0;
+	params->PortResetMessageEnable[5] = 1; // J_TYPEC2
 }
 
 static void mainboard_init(void *chip_info)
