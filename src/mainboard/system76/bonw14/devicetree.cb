@@ -179,6 +179,15 @@ chip soc/intel/cannonlake
 		device ref hda		on
 			register "PchHdaAudioLinkHda" = "1"
 		end
-		device ref smbus	on	end
+		device ref smbus	on
+			chip drivers/i2c/tas5825m
+				register "id" = "0"
+				device i2c 4e on end # (8bit address: 0x9c)
+			end
+			chip drivers/i2c/tas5825m
+				register "id" = "1"
+				device i2c 4f on end # (8bit address: 0x9e)
+			end
+		end
 	end
 end
