@@ -3,9 +3,9 @@ chip soc/intel/alderlake
 	# EC will set PL4 on AC adapter plug/unplug
 	register "power_limits_config[ADL_P_642_682_45W_CORE]" = "{
 		.tdp_pl1_override = 45,
-		.tdp_pl2_override = 90,
-		.tdp_psyspl2 = 115,
-		.tdp_pl4 = 115,
+		.tdp_pl2_override = 115,
+		.tdp_psyspl2 = 135,
+		.tdp_pl4 = 72,
 	}"
 
 	# Thermal
