@@ -1,7 +1,9 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+#include <drivers/gfx/nvidia/gpu.h>
 #include <soc/cnl_memcfg_init.h>
 #include <soc/romstage.h>
+#include <variant/gpio.h>
 
 static const struct cnl_mb_cfg memcfg = {
 	.spd[0] = {
@@ -20,6 +22,18 @@ static const struct cnl_mb_cfg memcfg = {
 
 void mainboard_memory_init_params(FSPM_UPD *memupd)
 {
+	const struct nvidia_gpu_config config = {
+		.power_gpio = DGPU_PWR_EN,
+		.reset_gpio = DGPU_RST_N,
+		.enable = true,
+	};
+
+	// Enable dGPU power
+	nvidia_set_power(&config);
+
+	// Set primary display to internal graphics
+	memupd->FspmConfig.PrimaryDisplay = 0;
+
 	// Disable higher memory speeds
 	memupd->FspmConfig.SaOcSupport = 0;
 
