@@ -1,0 +1,92 @@
+chip soc/intel/alderlake
+	device domain 0 on
+		subsystemid 0x1558 0x867c inherit
+
+		device ref igpu on
+			# DDIA is eDP
+			register "ddi_portA_config" = "1"
+			register "ddi_ports_config[DDI_PORT_A]" = "DDI_ENABLE_HPD"
+
+			register "gfx" = "GMA_DEFAULT_PANEL(0)"
+		end
+		device ref pcie4_0 on
+			# PCIe PEG0 x4, Clock 0 (SSD2)
+			register "cpu_pcie_rp[CPU_RP(1)]" = "{
+				.clk_src = 0,
+				.clk_req = 0,
+				.flags = PCIE_RP_LTR,
+			}"
+		end
+		device ref tbt_pcie_rp0 on end
+		device ref tcss_dma0 on end
+		device ref xhci on
+			# USB2
+			register "usb2_ports[0]" = "USB2_PORT_MID(OC_SKIP)" # USB 3.2 Type-A audio board
+			register "usb2_ports[2]" = "USB2_PORT_TYPE_C(OC_SKIP)" # USB 3.2 Type-C
+			register "usb2_ports[5]" = "USB2_PORT_MID(OC_SKIP)" # USB 2.0 Type-A audio board
+			register "usb2_ports[6]" = "USB2_PORT_MID(OC_SKIP)" # Fingerprint
+			register "usb2_ports[7]" = "USB2_PORT_MID(OC_SKIP)" # Camera
+			register "usb2_ports[8]" = "USB2_PORT_TYPE_C(OC_SKIP)" # Thunderbolt Type-C
+			register "usb2_ports[9]" = "USB2_PORT_MID(OC_SKIP)" # Bluetooth
+			# USB3
+			register "usb3_ports[0]" = "USB3_PORT_DEFAULT(OC_SKIP)" # USB 3.2 Type-A audio board
+			register "usb3_ports[2]" = "USB3_PORT_DEFAULT(OC_SKIP)" # USB 3.2 Type-C side A
+			register "usb3_ports[3]" = "USB3_PORT_DEFAULT(OC_SKIP)" # USB 3.2 Type-C side B
+		end
+		device ref pcie_rp5 on
+			# PCIe root port #5 x1, Clock 2 (WLAN)
+			register "pch_pcie_rp[PCH_RP(5)]" = "{
+				.clk_src = 2,
+				.clk_req = 2,
+				.flags = PCIE_RP_LTR,
+			}"
+			chip soc/intel/common/block/pcie/rtd3
+				register "enable_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_E3)" # PCH_WLAN_EN
+				register "reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_B13)" # BUF_PLT_RST#
+				register "srcclk_pin" = "2" # WLAN_CLKREQ#
+				device generic 0 on end
+			end
+		end
+		device ref pcie_rp6 on
+			# PCIe root port #6 x1, Clock 5 (CARD)
+			register "pch_pcie_rp[PCH_RP(6)]" = "{
+				.clk_src = 5,
+				.clk_req = 5,
+				.flags = PCIE_RP_LTR,
+			}"
+			chip soc/intel/common/block/pcie/rtd3
+				# XXX: No enable_gpio = no D3cold?
+				register "reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_B13)" # BUF_PLT_RST#
+				register "srcclk_pin" = "5" # CARD_CLKREQ#
+				device generic 0 on end
+			end
+		end
+		device ref pcie_rp7 on
+			# PCIe root port #7 x1, Clock 6 (GLAN)
+			# Clock source is shared with LAN and hence marked as free running.
+			register "pch_pcie_rp[PCH_RP(7)]" = "{
+				.clk_src = 6,
+				.clk_req = 6,
+				.flags = PCIE_RP_LTR | PCIE_RP_CLK_SRC_UNUSED,
+			}"
+			register "pcie_clk_config_flag[6]" = "PCIE_CLK_FREE_RUNNING"
+		end
+		device ref pcie_rp9 on
+			# PCIe root port #9 x4, Clock 1 (SSD1)
+			register "pch_pcie_rp[PCH_RP(9)]" = "{
+				.clk_src = 1,
+				.clk_req = 1,
+				.flags = PCIE_RP_LTR,
+			}"
+			chip soc/intel/common/block/pcie/rtd3
+				# XXX: Enable tied to 3.3VS?
+				#register "enable_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_C2)" # SATA_M2_PWR_EN1
+				register "reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_B13)" # BUF_PLT_RST#
+				register "disable_l23" = "true" # Fixes suspend on WD drives
+				register "srcclk_pin" = "1" # SSD_CLKREQ#
+				device generic 0 on end
+			end
+		end
+		device ref gbe on end
+	end
+end
