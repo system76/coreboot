@@ -1,5 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+#include <variant/gpio.h>
+#include <drivers/gfx/nvidia/gpu.h>
 #include <fsp/util.h>
 #include <soc/meminit.h>
 #include <soc/romstage.h>
@@ -17,6 +19,21 @@ void mainboard_memory_init_params(FSPM_UPD *mupd)
 		},
 	};
 	const bool half_populated = false;
+
+	const struct nvidia_gpu_config config = {
+		.power_gpio = DGPU_PWR_EN,
+		.reset_gpio = DGPU_RST_N,
+		.enable = true,
+	};
+
+	// Enable dGPU power
+	nvidia_set_power(&config);
+
+	// Set primary display to internal graphics
+	mupd->FspmConfig.PrimaryDisplay = 0;
+
+	// Allow memory clocks higher than 2933 MHz
+	mupd->FspmConfig.SaOcSupport = 1;
 
 	memcfg_init(mupd, &board_cfg, &spd_info, half_populated);
 }

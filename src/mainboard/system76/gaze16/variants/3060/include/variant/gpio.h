@@ -5,6 +5,13 @@
 
 #include <soc/gpio.h>
 
+#define DGPU_RST_N	GPP_F8
+#define DGPU_PWR_EN	GPP_F9
+#define DGPU_GC6	GPP_K11
+#define DGPU_SSID	0x50e11558
+
+#ifndef __ACPI__
+
 static const struct pad_config early_gpio_table[] = {
 	PAD_CFG_NF(GPP_C20, NONE, DEEP, NF1), // UART2_RXD
 	PAD_CFG_NF(GPP_C21, NONE, DEEP, NF1), // UART2_TXD
@@ -284,5 +291,7 @@ static const struct pad_config gpio_table[] = {
 	PAD_CFG_GPI(GPP_S6, NONE, DEEP), // MIC_CLK_PCH
 	PAD_CFG_GPI(GPP_S7, NONE, DEEP), // MIC_DATA_PCH
 };
+
+#endif /* __ACPI__ */
 
 #endif /* VARIANT_GPIO_H */
