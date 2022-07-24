@@ -1,0 +1,10 @@
+config DRIVERS_GFX_NVIDIA
+	bool
+	default n
+	help
+	  Support for NVIDIA Optimus graphics
+
+config DRIVERS_GFX_NVIDIA_BRIDGE
+	hex "PCI bridge for the GPU device"
+	default 0x01
+	depends on DRIVERS_GFX_NVIDIA
