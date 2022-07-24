@@ -6,15 +6,11 @@ chip soc/intel/tigerlake
 			# PCIe PEG1 x16, Clock 9 (DGPU)
 			register "PcieClkSrcUsage[9]" = "0x41"
 			register "PcieClkSrcClkReq[9]" = "9"
-			chip soc/intel/common/block/pcie/rtd3
-				register "enable_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_F9)" # DGPU_PWR_EN
-				register "reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_F8)" # DGPU_RST#_PCH
-				register "enable_delay_ms" = "16"
-				register "enable_off_delay_ms" = "4"
-				register "reset_delay_ms" = "10"
-				register "reset_off_delay_ms" = "4"
-				register "srcclk_pin" = "9" # PEG_CLKREQ#
-				device generic 0 on end
+			chip drivers/gfx/nvidia
+				device pci 00.0 on end # VGA controller
+				device pci 00.1 on end # Audio device
+				device pci 00.2 on end # USB xHCI Host controller
+				device pci 00.3 on end # USB Type-C UCSI controller
 			end
 		end
 		device ref igpu on
