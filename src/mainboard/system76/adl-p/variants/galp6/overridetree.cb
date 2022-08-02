@@ -151,7 +151,7 @@ chip soc/intel/alderlake
 		end
 		device ref pcie_rp9 on
 			# PCIe RP#9 x1, Clock 5 (CARD)
-			register "pch_pcie_rp[PCH_RP(6)]" = "{
+			register "pch_pcie_rp[PCH_RP(9)]" = "{
 				.clk_src = 5,
 				.clk_req = 5,
 				.flags = PCIE_RP_HOTPLUG | PCIE_RP_LTR | PCIE_RP_AER,
@@ -159,7 +159,7 @@ chip soc/intel/alderlake
 		end
 		device ref pcie_rp10 on
 			# PCIe RP#10 x1, Clock 6 (GLAN)
-			register "pch_pcie_rp[PCH_RP(8)]" = "{
+			register "pch_pcie_rp[PCH_RP(10)]" = "{
 				.clk_src = 6,
 				.clk_req = 6,
 				.flags = PCIE_RP_LTR | PCIE_RP_AER,
