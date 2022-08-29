@@ -10,6 +10,8 @@ void mainboard_memory_init_params(FSPM_UPD *mupd)
 	const struct mb_cfg board_cfg = {
 		.type = MEM_TYPE_DDR5,
 		.rcomp = { .resistor = 100, },
+		.ect = true,
+		.LpDdrDqDqsReTraining = 1,
 	};
 	const struct mem_spd spd_info = {
 		.topo = MEM_TOPO_DIMM_MODULE,
