@@ -178,7 +178,7 @@ chip soc/intel/alderlake
 			register "pch_pcie_rp[PCH_RP(6)]" = "{
 				.clk_src = 6,
 				.clk_req = 6,
-				.flags = PCIE_RP_HOTPLUG | PCIE_RP_LTR | PCIE_RP_AER,
+				.flags = PCIE_RP_HOTPLUG | PCIE_RP_AER,
 			}"
 			chip soc/intel/common/block/pcie/rtd3
 				# XXX: Enable connected directly to 3.3VS?
