@@ -13,6 +13,12 @@ chip soc/intel/tigerlake
 				device pci 00.3 on end # USB Type-C UCSI controller
 			end
 		end
+		device ref igpu on
+			# DDIB is HDMI
+			register "DdiPortBConfig" = "DDI_PORT_CFG_NO_LFP"
+			register "DdiPortBHpd" = "1"
+			register "DdiPortBDdc" = "1"
+		end
 		device ref peg0 on
 			# PCIe PEG0 x4, Clock 7 (SSD1)
 			register "PcieClkSrcUsage[7]" = "0x40"
