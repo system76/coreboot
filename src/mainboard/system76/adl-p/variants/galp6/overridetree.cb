@@ -6,9 +6,9 @@ chip soc/intel/alderlake
 	}"
 
 	# GPE configuration
-	register "pmc_gpe0_dw0" = "PMC_GPP_A"
-	register "pmc_gpe0_dw1" = "PMC_GPP_R"
-	register "pmc_gpe0_dw2" = "PMC_GPD"
+	register "pmc_gpe0_dw0" = "PMC_GPP_R"
+	register "pmc_gpe0_dw1" = "PMC_GPP_B"
+	register "pmc_gpe0_dw2" = "PMC_GPP_D"
 
 	device domain 0 on
 		subsystemid 0x1558 0x4041 inherit
