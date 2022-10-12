@@ -37,6 +37,10 @@ Method (MWAK, 1, Serialized)
 Method (MS0X, 1, Serialized)
 {
 	If (Arg0 == 1) {
+#if CONFIG_BOARD_SYSTEM76_LEMP11
+		/* HACK: Inform EC to apply PMC hack for S0ix issue */
+		\_SB.PCI0.LPCB.EC0.PTS (0)
+#endif
 		/* S0ix Entry */
 		PGPM (MISCCFG_GPIO_PM_CONFIG_BITS)
 	} Else {
