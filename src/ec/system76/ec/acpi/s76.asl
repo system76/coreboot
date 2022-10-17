@@ -153,6 +153,24 @@ Device (S76D) {
 		Return ((Local1 << 8) | Local0)
 	}
 
+	// Set Fan speed
+	Method (SFD0, 1, Serialized) {
+		If (^^PCI0.LPCB.EC0.ECOK) {
+			^^PCI0.LPCB.EC0.FDAT = Zero
+			^^PCI0.LPCB.EC0.FBUF = Arg0
+			^^PCI0.LPCB.EC0.FCMD = 0xCE
+		}
+	}
+#if CONFIG(EC_SYSTEM76_EC_DGPU)
+	Method (SFD1, 1, Serialized) {
+		If (^^PCI0.LPCB.EC0.ECOK) {
+			^^PCI0.LPCB.EC0.FDAT = Zero
+			^^PCI0.LPCB.EC0.FBUF = Arg0
+			^^PCI0.LPCB.EC0.FCMD = 0xCF
+		}
+	}
+#endif // CONFIG(EC_SYSTEM76_EC_DGPU)
+
 	// Temperature names
 	Method (NTMP, 0, Serialized) {
 		Return (Package() {
