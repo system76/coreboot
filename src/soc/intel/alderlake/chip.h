@@ -4,6 +4,7 @@
 #define _SOC_CHIP_H_
 
 #include <drivers/i2c/designware/dw_i2c.h>
+#include <drivers/intel/gma/gma.h>
 #include <device/pci_ids.h>
 #include <intelblocks/cfg.h>
 #include <intelblocks/gpio.h>
@@ -637,6 +638,9 @@ struct soc_intel_alderlake_config {
 	 * Set this to 1 in order to disable Package C-state demotion.
 	 */
 	bool disable_package_c_state_demotion;
+
+	/* i915 struct for GMA backlight control */
+	struct i915_gpu_controller_info gfx;
 };
 
 typedef struct soc_intel_alderlake_config config_t;
