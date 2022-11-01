@@ -9,6 +9,8 @@ chip soc/intel/alderlake
 				[DDI_PORT_A] = DDI_ENABLE_HPD,
 				[DDI_PORT_B] = DDI_ENABLE_HPD | DDI_ENABLE_DDC,
 			}"
+
+			register "gfx" = "GMA_DEFAULT_PANEL(0)"
 		end
 		device ref pcie4_0 on
 			# PCIe PEG0 x4, Clock 0 (SSD2)
