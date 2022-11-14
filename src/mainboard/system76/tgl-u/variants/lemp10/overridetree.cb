@@ -104,7 +104,8 @@ chip soc/intel/tigerlake
 		device ref sata on
 			# SATA1 (SSD2)
 			register "SataPortsEnable[1]" = "1"
-			register "SataPortsDevSlp[1]" = "1"
+			# FIXME: DevSlp breaks S0ix
+			#register "SataPortsDevSlp[1]" = "1"
 			register "SataPortsEnableDitoConfig[1]" = "1"
 			register "SataSalpSupport" = "1"
 		end
