@@ -21,6 +21,12 @@ chip soc/intel/tigerlake
 			# PCIe PEG0 x4, Clock 0 (SSD1)
 			register "PcieClkSrcUsage[0]" = "0x40"
 			register "PcieClkSrcClkReq[0]" = "0"
+			chip soc/intel/common/block/pcie/rtd3
+				register "enable_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_D14)" # SSD1_PWR_DN#
+				register "reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_H0)" # GPP_H0_RTD3
+				register "srcclk_pin" = "0" # SSD1_CLKREQ#
+				device generic 0 on end
+			end
 		end
 		device ref north_xhci on # J_TYPEC2
 			register "UsbTcPortEn" = "1"
