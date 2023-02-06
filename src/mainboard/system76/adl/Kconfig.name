@@ -15,3 +15,6 @@ config BOARD_SYSTEM76_ORYP9
 
 config BOARD_SYSTEM76_ORYP10
 	bool "oryp10"
+
+config BOARD_SYSTEM76_ORYP11
+	bool "oryp11"
