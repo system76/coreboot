@@ -1,0 +1,11 @@
+chip soc/intel/alderlake
+	device domain 0 on
+		subsystemid 0x1558 0x5630 inherit
+
+		device ref pcie5_0 off
+		end
+
+		device ref pcie4_0 off
+		end
+	end
+end
