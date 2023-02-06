@@ -18,7 +18,7 @@ chip soc/intel/alderlake
 	device domain 0 on
 		subsystemid 0x1558 0x65f5 inherit
 
-		device ref pcie5_0 off
+		device ref pcie5_0 on
 			# CPU PCIe RP#2 x8, Clock 3 (DGPU)
 			register "cpu_pcie_rp[CPU_RP(2)]" = "{
 				.clk_src = 3,
