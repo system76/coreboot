@@ -7,6 +7,9 @@ config BOARD_SYSTEM76_GALP6
 config BOARD_SYSTEM76_GAZE18_3050
 	bool "gaze18-3050"
 
+config BOARD_SYSTEM76_GAZE18_40X0
+	bool "gaze18-40x0"
+
 config BOARD_SYSTEM76_LEMP11
 	bool "lemp11"
 
