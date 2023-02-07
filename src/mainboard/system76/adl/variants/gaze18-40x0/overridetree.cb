@@ -1,0 +1,5 @@
+chip soc/intel/alderlake
+	device domain 0 on
+		subsystemid 0x1558 0xa671 inherit
+	end
+end
