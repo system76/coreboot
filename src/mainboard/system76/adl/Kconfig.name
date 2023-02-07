@@ -4,12 +4,6 @@ config BOARD_SYSTEM76_DARP8
 config BOARD_SYSTEM76_GALP6
 	bool "galp6"
 
-config BOARD_SYSTEM76_GAZE18_3050
-	bool "gaze18-3050"
-
-config BOARD_SYSTEM76_GAZE18_40X0
-	bool "gaze18-40x0"
-
 config BOARD_SYSTEM76_LEMP11
 	bool "lemp11"
 
@@ -18,6 +12,3 @@ config BOARD_SYSTEM76_ORYP9
 
 config BOARD_SYSTEM76_ORYP10
 	bool "oryp10"
-
-config BOARD_SYSTEM76_ORYP11
-	bool "oryp11"
