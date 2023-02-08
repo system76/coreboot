@@ -79,10 +79,6 @@ config CBFS_SIZE
 config CONSOLE_POST
 	default y
 
-config MAX_CPUS
-	int
-	default 32
-
 config DIMM_SPD_SIZE
 	default 512
 
