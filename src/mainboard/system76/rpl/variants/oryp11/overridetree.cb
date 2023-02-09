@@ -74,7 +74,7 @@ chip soc/intel/alderlake
 
 		device ref pcie_rp25 on
 			# PCH RP#25 x4, Clock 15 (TBT)
-			register "pch_pcie_rp[PCH_RP(21)]" = "{
+			register "pch_pcie_rp[PCH_RP(25)]" = "{
 				.clk_src = 15,
 				.clk_req = 15,
 				.flags = PCIE_RP_LTR | PCIE_RP_AER,
