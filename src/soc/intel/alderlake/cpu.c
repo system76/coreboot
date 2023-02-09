@@ -239,6 +239,16 @@ enum adl_cpu_type get_adl_cpu_type(void)
 		PCI_DID_INTEL_ADL_N_ID_4,
 	};
 
+	const uint16_t rpl_hx_mch_ids[] = {
+		PCI_DID_INTEL_RPL_HX_ID_1,
+		PCI_DID_INTEL_RPL_HX_ID_2,
+		PCI_DID_INTEL_RPL_HX_ID_3,
+		PCI_DID_INTEL_RPL_HX_ID_4,
+		PCI_DID_INTEL_RPL_HX_ID_5,
+		PCI_DID_INTEL_RPL_HX_ID_6,
+		PCI_DID_INTEL_RPL_HX_ID_7,
+		PCI_DID_INTEL_RPL_HX_ID_8,
+	};
 	const uint16_t rpl_p_mch_ids[] = {
 		PCI_DID_INTEL_RPL_P_ID_1,
 		PCI_DID_INTEL_RPL_P_ID_2,
@@ -269,6 +279,11 @@ enum adl_cpu_type get_adl_cpu_type(void)
 	for (size_t i = 0; i < ARRAY_SIZE(adl_n_mch_ids); i++) {
 		if (adl_n_mch_ids[i] == mchid)
 			return ADL_N;
+	}
+
+	for (size_t i = 0; i < ARRAY_SIZE(rpl_hx_mch_ids); i++) {
+		if (rpl_hx_mch_ids[i] == mchid)
+			return RPL_HX;
 	}
 
 	for (size_t i = 0; i < ARRAY_SIZE(rpl_p_mch_ids); i++) {
