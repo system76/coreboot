@@ -301,6 +301,7 @@ uint8_t get_supported_lpm_mask(void)
 	case ADL_M: /* fallthrough */
 	case ADL_N:
 	case ADL_P:
+	case RPL_HX:
 	case RPL_P:
 		return LPM_S0i2_0 | LPM_S0i3_0;
 	case ADL_S:

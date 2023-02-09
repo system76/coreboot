@@ -90,6 +90,36 @@ chip soc/intel/alderlake
 		.tdp_pl4 = 114,
 	}"
 
+	register "power_limits_config[RPL_HX_8_16_55W_CORE]" = "{
+		.tdp_p1_override = 55,
+		.tdp_pl2_override = 130,
+		.tdp_pl4 = 200,
+	}"
+
+	register "power_limits_config[RPL_HX_8_12_55W_CORE]" = "{
+		.tdp_p1_override = 55,
+		.tdp_pl2_override = 130,
+		.tdp_pl4 = 200,
+	}"
+
+	register "power_limits_config[RPL_HX_8_8_55W_CORE]" = "{
+		.tdp_p1_override = 55,
+		.tdp_pl2_override = 130,
+		.tdp_pl4 = 200,
+	}"
+
+	register "power_limits_config[RPL_HX_6_8_55W_CORE]" = "{
+		.tdp_p1_override = 55,
+		.tdp_pl2_override = 130,
+		.tdp_pl4 = 200,
+	}"
+
+	register "power_limits_config[RPL_HX_6_4_55W_CORE]" = "{
+		.tdp_p1_override = 55,
+		.tdp_pl2_override = 130,
+		.tdp_pl4 = 200,
+	}"
+
 	# NOTE: if any variant wants to override this value, use the same format
 	# as register "common_soc_config.pch_thermal_trip" = "value", instead of
 	# putting it under register "common_soc_config" in overridetree.cb file.
