@@ -11,6 +11,9 @@ void mainboard_memory_init_params(FSPM_UPD *mupd)
 		.type = MEM_TYPE_DDR5,
 		.ect = true,
 		.LpDdrDqDqsReTraining = 1,
+		.ddr_config = {
+			.dq_pins_interleaved = true,
+		},
 	};
 	const struct mem_spd spd_info = {
 		.topo = MEM_TOPO_DIMM_MODULE,
