@@ -14,7 +14,7 @@ Scope (\_SB) {
 		#include "backlight.asl"
 
 #if CONFIG(DRIVERS_GFX_NVIDIA)
-		Scope (PEG2) {
+		Scope (PEG1) {
 			#include <drivers/gfx/nvidia/acpi/tigerlake.asl>
 		}
 #endif
