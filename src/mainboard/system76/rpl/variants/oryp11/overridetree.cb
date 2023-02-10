@@ -18,7 +18,7 @@ chip soc/intel/alderlake
 			register "usb3_ports[2]" = "USB3_PORT_DEFAULT(OC_SKIP)" # AJ_USB2 (USB 3.2 Gen2 + charger)
 		end
 
-		device ref pcie5_1 off
+		device ref pcie5_0 on
 			# CPU PCIe RP#2 x8, Clock 14 (DGPU)
 			register "cpu_pcie_rp[CPU_RP(2)]" = "{
 				.clk_src = 14,
