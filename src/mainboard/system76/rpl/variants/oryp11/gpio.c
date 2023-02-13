@@ -101,7 +101,7 @@ static const struct pad_config gpio_table[] = {
 	PAD_NC(GPP_D9, NONE),
 	PAD_NC(GPP_D10, NONE),
 	PAD_NC(GPP_D11, NONE),
-	PAD_CFG_NF(GPP_D12, NATIVE, DEEP, NF1), // SSD_CLKREQ#
+	// GPP_D12 (SSD_CLKREQ#) configured by FSP
 	PAD_NC(GPP_D13, NONE),
 	PAD_NC(GPP_D14, NONE),
 	PAD_NC(GPP_D15, NONE),
@@ -178,13 +178,13 @@ static const struct pad_config gpio_table[] = {
 	PAD_CFG_GPI(GPP_H0, NONE, DEEP), // VAL_SV_ADVANCE_STRAP
 	PAD_NC(GPP_H1, NONE),
 	PAD_CFG_GPI(GPP_H2, NONE, DEEP), // WLAN_GPIO_WAKE_N
-	PAD_NC(GPP_H3, NONE),
-	PAD_CFG_NF(GPP_H4, NONE, DEEP, NF1), // SSD_SATA_CLKREQ#
-	PAD_CFG_NF(GPP_H5, NONE, DEEP, NF1), // WLAN_CLKREQ#
-	PAD_CFG_NF(GPP_H6, NONE, DEEP, NF1), // CARD_CLKREQ#
-	PAD_CFG_NF(GPP_H7, NONE, DEEP, NF1), // GLAN_CLKREQ#
-	PAD_CFG_NF(GPP_H8, NONE, DEEP, NF1), // PEG_CLKREQ#
-	PAD_CFG_NF(GPP_H9, NONE, DEEP, NF1), // TBT_CLKREQ#
+	// GPP_H3 (NC) configured by FSP
+	// GPP_H4 (SSD_SATA_CLKREQ#) configured by FSP
+	// GPP_H5 (WLAN_CLKREQ#) configured by FSP
+	// GPP_H6 (CARD_CLKREQ#) configured by FSP
+	// GPP_H7 (GLAN_CLKREQ#) configured by FSP
+	// GPP_H8 (PEG_CLKREQ#) configured by FSP
+	// GPP_H9 (TBT_CLKREQ#) configured by FSP
 	PAD_NC(GPP_H10, NONE),
 	PAD_NC(GPP_H11, NONE),
 	PAD_NC(GPP_H12, NONE), // eSPI flash sharing mode strap
