@@ -94,7 +94,7 @@ static const struct pad_config gpio_table[] = {
 	PAD_NC(GPP_D2, NONE),
 	PAD_CFG_GPO(GPP_D3, 0, DEEP), // GFX_DETECT_STRAP
 	PAD_NC(GPP_D4, NONE),
-	// GPP_D5 (M.2_BT_PCMFRM_CRF_RST_N) configured by FSP
+	PAD_CFG_GPO(GPP_D5, 1, DEEP), // M.2_BT_PCMFRM_CRF_RST_N
 	// GPP_D6 (M.2_BT_PCMOUT_CLKREQ0) configured by FSP
 	PAD_NC(GPP_D7, NONE), // M.2_BT_PCMIN
 	PAD_NC(GPP_D8, NONE), // M.2_BT_PCMCLK
