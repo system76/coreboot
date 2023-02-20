@@ -5,9 +5,9 @@
 
 #include <soc/gpio.h>
 
-#define DGPU_RST_N
-#define DGPU_PWR_EN
-#define DGPU_GC6
-#define DGPU_SSID
+#define DGPU_RST_N	GPP_B2
+#define DGPU_PWR_EN	GPP_A14
+#define DGPU_GC6	GPP_F12
+#define DGPU_SSID	0x56301558
 
 #endif
