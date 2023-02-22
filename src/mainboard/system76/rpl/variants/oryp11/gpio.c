@@ -30,7 +30,7 @@ static const struct pad_config gpio_table[] = {
 	PAD_CFG_GPO(GPP_A11, 1, DEEP),
 	PAD_CFG_GPO(GPP_A12, 1, DEEP),
 	PAD_CFG_GPO(GPP_A13, 1, PLTRST),
-	PAD_CFG_GPO(GPP_A14, 1, DEEP),
+	// GPP_A14 (DGPU_PWR_EN) configured in bootblock
 	_PAD_CFG_STRUCT(GPP_A15, 0x86880100, 0x0000),
 	PAD_CFG_NF(GPP_A16, NONE, DEEP, NF1),
 	_PAD_CFG_STRUCT(GPP_A17, 0x80100100, 0x0000),
@@ -42,7 +42,7 @@ static const struct pad_config gpio_table[] = {
 	PAD_CFG_GPO(GPP_A23, 1, DEEP),
 	PAD_CFG_NF(GPP_B0, NONE, DEEP, NF1),
 	PAD_CFG_NF(GPP_B1, NONE, DEEP, NF1),
-	PAD_CFG_GPO(GPP_B2, 1, DEEP),
+	// GPP_B2 (DGPU_RST#_PCH) configured in bootblock
 	PAD_CFG_GPI(GPP_B3, NONE, DEEP),
 	PAD_CFG_GPI(GPP_B4, NONE, DEEP),
 	_PAD_CFG_STRUCT(GPP_B5, 0x44000a01, 0x0000),
