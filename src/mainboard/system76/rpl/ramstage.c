@@ -12,6 +12,9 @@ smbios_wakeup_type smbios_system_wakeup_type(void)
 void mainboard_silicon_init_params(FSP_S_CONFIG *params)
 {
 	// TODO: Pin Mux settings
+
+	// Enable reporting CPU C10 state over ESPI
+	params->PchEspiHostC10ReportEnable = 1;
 }
 
 static void mainboard_init(void *chip_info)
