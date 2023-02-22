@@ -1,2 +1,2 @@
-Board name: addp3
+Board name: oryp11
 Release year: 2023
