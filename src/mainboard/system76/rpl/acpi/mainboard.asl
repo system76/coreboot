@@ -22,6 +22,7 @@ Scope (\_SB) {
 		Scope (PEG2) {
 			#include <drivers/gfx/nvidia/acpi/tigerlake.asl>
 		}
-#endif
+#endif // CONFIG(SOC_INTEL_ALDERLAKE_PCH_S)
+#endif // CONFIG(DRIVERS_GFX_NVIDIA)
 	}
 }
