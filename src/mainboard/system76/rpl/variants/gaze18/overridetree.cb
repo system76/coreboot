@@ -20,15 +20,15 @@ chip soc/intel/alderlake
 
 		device ref pcie5_0 on
 			# CPU PCIe RP#2 x8, Clock 3 (GPU)
-			register "pch_pcie_rp[CPU_RP(2)]" = "{
+			register "cpu_pcie_rp[CPU_RP(2)]" = "{
 				.clk_src = 3,
 				.clk_req = 3,
 				.flags = PCIE_RP_LTR | PCIE_RP_AER,
 			}"
 		end
 		device ref pcie4_0 on
-			# PCIE PEG0 x4, Clock 0 (SSD0)
-			register "pch_pcie_rp[CPU_RP(1)]" = "{
+			# CPU RP#1 x4, Clock 0 (SSD0)
+			register "cpu_pcie_rp[CPU_RP(1)]" = "{
 				.clk_src = 0,
 				.clk_req = 0,
 				.flags = PCIE_RP_LTR | PCIE_RP_AER,
