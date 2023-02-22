@@ -4,6 +4,7 @@
 #include <soc/gpio.h>
 
 static const struct pad_config gpio_table[] = {
+	/* ------- GPIO Group GPD ------- */
 	PAD_CFG_NF(GPD0, UP_20K, PWROK, NF1),
 	PAD_CFG_NF(GPD1, NATIVE, PWROK, NF1),
 	PAD_CFG_NF(GPD2, NATIVE, PWROK, NF1),
@@ -16,6 +17,8 @@ static const struct pad_config gpio_table[] = {
 	PAD_CFG_GPO(GPD9, 0, PWROK),
 	PAD_CFG_NF(GPD10, NONE, PWROK, NF1),
 	PAD_CFG_GPO(GPD11, 1, DEEP),
+
+	/* ------- GPIO Group GPP_A ------- */
 	PAD_CFG_NF(GPP_A0, UP_20K, DEEP, NF1),
 	PAD_CFG_NF(GPP_A1, UP_20K, DEEP, NF1),
 	PAD_CFG_NF(GPP_A2, UP_20K, DEEP, NF1),
@@ -40,6 +43,8 @@ static const struct pad_config gpio_table[] = {
 	PAD_CFG_GPO(GPP_A21, 1, DEEP),
 	PAD_CFG_GPO(GPP_A22, 1, DEEP),
 	PAD_CFG_GPO(GPP_A23, 1, DEEP),
+
+	/* ------- GPIO Group GPP_B ------- */
 	PAD_CFG_NF(GPP_B0, NONE, DEEP, NF1),
 	PAD_CFG_NF(GPP_B1, NONE, DEEP, NF1),
 	// GPP_B2 (DGPU_RST#_PCH) configured in bootblock
@@ -64,6 +69,8 @@ static const struct pad_config gpio_table[] = {
 	PAD_CFG_GPO(GPP_B21, 1, DEEP),
 	PAD_CFG_GPO(GPP_B22, 1, DEEP),
 	PAD_CFG_GPO(GPP_B23, 0, DEEP),
+
+	/* ------- GPIO Group GPP_C ------- */
 	PAD_CFG_NF(GPP_C0, NONE, DEEP, NF1),
 	PAD_CFG_NF(GPP_C1, NONE, DEEP, NF1),
 	PAD_CFG_GPO(GPP_C2, 1, PLTRST),
@@ -88,6 +95,8 @@ static const struct pad_config gpio_table[] = {
 	PAD_NC(GPP_C21, NONE),
 	PAD_NC(GPP_C22, NONE),
 	PAD_NC(GPP_C23, NONE),
+
+	/* ------- GPIO Group GPP_D ------- */
 	PAD_CFG_GPO(GPP_D0, 1, DEEP),
 	PAD_CFG_GPO(GPP_D1, 1, DEEP),
 	PAD_CFG_GPO(GPP_D2, 0, DEEP),
@@ -108,6 +117,8 @@ static const struct pad_config gpio_table[] = {
 	PAD_CFG_GPO(GPP_D17, 1, DEEP),
 	PAD_CFG_GPO(GPP_D18, 1, DEEP),
 	PAD_CFG_GPO(GPP_D19, 1, DEEP),
+
+	/* ------- GPIO Group GPP_E ------- */
 	PAD_CFG_GPI(GPP_E0, NONE, DEEP),
 	_PAD_CFG_STRUCT(GPP_E1, 0x40100100, 0x3000),
 	PAD_CFG_GPI(GPP_E2, NONE, DEEP),
@@ -132,6 +143,8 @@ static const struct pad_config gpio_table[] = {
 	PAD_CFG_GPO(GPP_E21, 0, DEEP),
 	PAD_CFG_GPO(GPP_E22, 1, DEEP),
 	PAD_CFG_GPO(GPP_E23, 1, DEEP),
+
+	/* ------- GPIO Group GPP_F ------- */
 	PAD_CFG_NF(GPP_F0, NONE, DEEP, NF1),
 	PAD_CFG_NF(GPP_F1, UP_20K, DEEP, NF1),
 	PAD_CFG_NF(GPP_F2, NONE, DEEP, NF1),
@@ -156,6 +169,8 @@ static const struct pad_config gpio_table[] = {
 	PAD_CFG_GPO(GPP_F21, 1, DEEP),
 	PAD_CFG_GPO(GPP_F22, 1, DEEP),
 	PAD_CFG_GPO(GPP_F23, 1, DEEP),
+
+	/* ------- GPIO Group GPP_H ------- */
 	PAD_CFG_GPO(GPP_H0, 0, DEEP),
 	PAD_CFG_GPO(GPP_H1, 1, PLTRST),
 	PAD_CFG_GPO(GPP_H2, 1, PLTRST),
@@ -180,6 +195,8 @@ static const struct pad_config gpio_table[] = {
 	PAD_CFG_GPI(GPP_H21, NONE, DEEP),
 	PAD_CFG_GPO(GPP_H22, 0, DEEP),
 	PAD_CFG_NF(GPP_H23, NONE, DEEP, NF2),
+
+	/* ------- GPIO Group GPP_R ------- */
 	PAD_CFG_NF(GPP_R0, NONE, DEEP, NF1),
 	PAD_CFG_NF(GPP_R1, NATIVE, DEEP, NF1),
 	PAD_CFG_NF(GPP_R2, NATIVE, DEEP, NF1),
@@ -188,6 +205,8 @@ static const struct pad_config gpio_table[] = {
 	PAD_CFG_GPO(GPP_R5, 1, DEEP),
 	PAD_CFG_GPO(GPP_R6, 1, DEEP),
 	PAD_CFG_GPO(GPP_R7, 1, DEEP),
+
+	/* ------- GPIO Group GPP_S ------- */
 	PAD_CFG_GPO(GPP_S0, 1, DEEP),
 	PAD_CFG_GPO(GPP_S1, 1, DEEP),
 	PAD_CFG_GPO(GPP_S2, 1, DEEP),
@@ -196,6 +215,8 @@ static const struct pad_config gpio_table[] = {
 	PAD_CFG_GPO(GPP_S5, 1, DEEP),
 	PAD_CFG_GPO(GPP_S6, 1, DEEP),
 	PAD_CFG_GPO(GPP_S7, 1, DEEP),
+
+	/* ------- GPIO Group GPP_T ------- */
 	PAD_CFG_GPO(GPP_T2, 1, DEEP),
 	PAD_CFG_GPO(GPP_T3, 1, DEEP),
 };
