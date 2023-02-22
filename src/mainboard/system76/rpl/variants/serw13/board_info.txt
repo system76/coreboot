@@ -1,2 +1,2 @@
-Board name: oryp11
+Board name: serw13
 Release year: 2023
