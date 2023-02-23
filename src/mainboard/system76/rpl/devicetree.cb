@@ -45,26 +45,6 @@ chip soc/intel/alderlake
 				device generic 0 on end
 			end
 		end
-		device ref i2c0 on
-			# Touchpad I2C bus
-			register "serial_io_i2c_mode[PchSerialIoIndexI2C0]" = "PchSerialIoPci"
-			chip drivers/i2c/hid
-				register "generic.hid" = ""ELAN0412""
-				register "generic.desc" = ""ELAN Touchpad""
-				register "generic.irq_gpio" = "ACPI_GPIO_IRQ_LEVEL_LOW(GPP_E7)"
-				register "generic.detect" = "1"
-				register "hid_desc_reg_offset" = "0x01"
-				device i2c 15 on end
-			end
-			chip drivers/i2c/hid
-				register "generic.hid" = ""FTCS1000""
-				register "generic.desc" = ""FocalTech Touchpad""
-				register "generic.irq_gpio" = "ACPI_GPIO_IRQ_LEVEL_LOW(GPP_E7)"
-				register "generic.detect" = "1"
-				register "hid_desc_reg_offset" = "0x01"
-				device i2c 38 on end
-			end
-		end
 		device ref i2c1 on
 			register "serial_io_i2c_mode[PchSerialIoIndexI2C1]" = "PchSerialIoPci"
 		end
