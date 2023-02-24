@@ -17,7 +17,7 @@ chip soc/intel/alderlake
 			register "usb3_ports[1]" = "USB3_PORT_DEFAULT(OC_SKIP)" # AJ_USB1 (USB 3.2 Gen2)
 			register "usb3_ports[2]" = "USB3_PORT_DEFAULT(OC_SKIP)" # AJ_USB2 (USB 3.2 Gen2 + charger)
 		end
-		
+
 		device ref i2c0 on
 			# Touchpad I2C bus
 			register "serial_io_i2c_mode[PchSerialIoIndexI2C0]" = "PchSerialIoPci"
@@ -84,7 +84,7 @@ chip soc/intel/alderlake
 			register "pch_pcie_rp[PCH_RP(13)]" = "{
 				.clk_src = 10,
 				.clk_req = 10,
-				.flags = PCIE_RP_LTR | PCIE_RP_AER,
+				.flags = PCIE_RP_LTR, // XXX: AER spews warnings
 			}"
 		end
 
