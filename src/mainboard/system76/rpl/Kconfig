@@ -110,7 +110,7 @@ config POST_DEVICE
 	default n
 
 config TPM_MEASURED_BOOT
-	default n
+	default y
 
 config UART_FOR_CONSOLE
 	default 0
