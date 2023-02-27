@@ -5,8 +5,8 @@ config BOARD_SYSTEM76_RPL_COMMON
 	select DRIVERS_INTEL_PMC
 	select DRIVERS_INTEL_USB4_RETIMER
 	select EC_SYSTEM76_EC
-	select HAVE_ACPI_TABLES
 	select HAVE_ACPI_RESUME
+	select HAVE_ACPI_TABLES
 	select HAVE_CMOS_DEFAULT
 	select HAVE_OPTION_TABLE
 	select INTEL_GMA_HAVE_VBT
@@ -110,7 +110,7 @@ config POST_DEVICE
 	default n
 
 config TPM_MEASURED_BOOT
-	default y
+	default n
 
 config UART_FOR_CONSOLE
 	default 0
