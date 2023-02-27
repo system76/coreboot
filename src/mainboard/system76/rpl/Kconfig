@@ -111,7 +111,8 @@ config TPM_MEASURED_BOOT
 	default y
 
 config UART_FOR_CONSOLE
-	default 0
+	default 0 if BOARD_SYSTEM76_GAZE18 || BOARD_SYSTEM76_ORYP11
+	default 2 if BOARD_SYSTEM76_ADDW3 || BOARD_SYSTEM76_SERW13
 
 # PM Timer Disabled, saves power
 config USE_PM_ACPI_TIMER
