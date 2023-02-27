@@ -144,6 +144,11 @@ void tpm_log_copy_entries(const void *from, void *to)
 	int i;
 
 	for (i = 0; i < from_log->num_entries; i++) {
+		if (to_log->num_entries >= to_log->max_entries) {
+			printk(BIOS_WARNING, "TPM LOG: log table is full\n");
+			return;
+		}
+
 		struct tpm_cb_log_entry *tce = &to_log->entries[to_log->num_entries++];
 
 		strncpy(tce->name, from_log->entries[i].name, TPM_CB_LOG_PCR_HASH_NAME - 1);
