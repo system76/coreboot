@@ -39,7 +39,6 @@ chip soc/intel/alderlake
 			end
 		end
 
-		#TODO: Reversed
 		device ref pcie5_0 on
 			# CPU PCIe RP#2 x8, Clock 14 (DGPU)
 			register "cpu_pcie_rp[CPU_RP(2)]" = "{
