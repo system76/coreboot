@@ -19,15 +19,15 @@ void nvidia_set_power(const struct nvidia_gpu_config *config)
 	printk(BIOS_DEBUG, "%s: GPU_RST# = %d\n", __func__, config->reset_gpio);
 
 	gpio_set(config->reset_gpio, 0);
-	mdelay(4);
+	mdelay(10);
 
 	if (config->enable) {
 		gpio_set(config->power_gpio, 1);
-		mdelay(4);
+		mdelay(25);
 		gpio_set(config->reset_gpio, 1);
 	} else {
 		gpio_set(config->power_gpio, 0);
 	}
 
-	mdelay(4);
+	mdelay(10);
 }
