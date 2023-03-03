@@ -2,6 +2,11 @@ chip soc/intel/alderlake
 	device domain 0 on
 		subsystemid 0x1558 0x66a2 inherit
 
+		device ref tbt_pcie_rp0 on end
+		device ref tcss_xhci on
+			register "tcss_ports[0]" = "TCSS_PORT_DEFAULT(OC_SKIP)"
+		end
+		device ref tcss_dma0 on end
 		device ref xhci on
 			# USB2
 			register "usb2_ports[0]" = "USB2_PORT_MID(OC_SKIP)" # AJ_USB1: USB-A 3.2 Gen 1 (Left)
