@@ -33,7 +33,11 @@ chip soc/intel/alderlake
 
 			register "gfx" = "GMA_DEFAULT_PANEL(0)"
 		end
-		#TODO device ref tbt_pcie_rp0 on end
+		device ref tbt_pcie_rp0 on end
+		device ref tcss_xhci on
+			register "tcss_ports[0]" = "TCSS_PORT_DEFAULT(OC_SKIP)"
+		end
+		device ref tcss_dma0 on end
 		device ref shared_sram on end
 		device ref cnvi_wifi on
 			register "cnvi_bt_core" = "true"
