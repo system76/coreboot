@@ -244,7 +244,7 @@ static const struct pad_config gpio_table[] = {
 	PAD_NC(GPP_K1, NONE),
 	PAD_NC(GPP_K2, NONE),
 	PAD_CFG_GPO(GPP_K3, 1, PLTRST), // TBT_RTD3_PWR_EN_R
-	PAD_CFG_GPO(GPP_K4, 0, PWROK), // TBT_FORCE_PWR_R
+	PAD_CFG_GPO(GPP_K4, 1, PWROK), // TBT_FORCE_PWR_R
 	PAD_NC(GPP_K5, NONE),
 	PAD_CFG_NF(GPP_K6, UP_20K, DEEP, NF2), // Not in schematic
 	PAD_CFG_NF(GPP_K7, DN_20K, DEEP, NF2), // Not in schematic
