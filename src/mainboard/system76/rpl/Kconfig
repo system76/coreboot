@@ -5,6 +5,7 @@ config BOARD_SYSTEM76_RPL_COMMON
 	select DRIVERS_INTEL_PMC
 	select DRIVERS_INTEL_USB4_RETIMER
 	select EC_SYSTEM76_EC
+	select EC_SYSTEM76_EC_LOCKDOWN
 	select HAVE_ACPI_RESUME
 	select HAVE_ACPI_TABLES
 	select HAVE_CMOS_DEFAULT
@@ -90,14 +91,14 @@ config MAINBOARD_VERSION
 	default "oryp11" if BOARD_SYSTEM76_ORYP11
 	default "serw13" if BOARD_SYSTEM76_SERW13
 
-config CBFS_SIZE
-	default 0x1000000
-
 config CONSOLE_POST
 	default y
 
 config DIMM_SPD_SIZE
 	default 512
+
+config FMDFILE
+	default "src/mainboard/\$(CONFIG_MAINBOARD_DIR)/variants/\$(CONFIG_VARIANT_DIR)/board.fmd"
 
 config ONBOARD_VGA_IS_PRIMARY
 	default y
