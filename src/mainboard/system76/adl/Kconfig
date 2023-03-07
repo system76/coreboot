@@ -5,6 +5,7 @@ config BOARD_SYSTEM76_ADL_COMMON
 	select DRIVERS_INTEL_PMC
 	select DRIVERS_INTEL_USB4_RETIMER
 	select EC_SYSTEM76_EC
+	select EC_SYSTEM76_EC_LOCKDOWN
 	select HAVE_ACPI_RESUME
 	select HAVE_ACPI_TABLES
 	select HAVE_CMOS_DEFAULT
@@ -86,14 +87,14 @@ config MAINBOARD_VERSION
 	default "oryp9" if BOARD_SYSTEM76_ORYP9
 	default "oryp10" if BOARD_SYSTEM76_ORYP10
 
-config CBFS_SIZE
-	default 0xA00000
-
 config CONSOLE_POST
 	default y
 
 config DIMM_SPD_SIZE
 	default 512
+
+config FMDFILE
+	default "src/mainboard/\$(CONFIG_MAINBOARD_DIR)/board.fmd"
 
 config ONBOARD_VGA_IS_PRIMARY
 	default y
