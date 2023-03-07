@@ -27,11 +27,17 @@ config BOARD_SPECIFIC_OPTIONS
 	select SOC_INTEL_CRASHLOG
 	select SPD_READ_BY_WORD
 	select SYSTEM_TYPE_LAPTOP
-	select TPM_MEASURED_BOOT
 	select TPM_RDRESP_NEED_DELAY
 
 config MAINBOARD_DIR
 	default "system76/gaze17"
+
+config VARIANT_DIR
+	default "3050" if BOARD_SYSTEM76_GAZE17_3050
+	default "3060" if BOARD_SYSTEM76_GAZE17_3060_B
+
+config OVERRIDE_DEVICETREE
+	default "variants/\$(CONFIG_VARIANT_DIR)/overridetree.cb"
 
 config MAINBOARD_PART_NUMBER
 	default "gaze17-3050" if BOARD_SYSTEM76_GAZE17_3050
@@ -43,13 +49,6 @@ config MAINBOARD_SMBIOS_PRODUCT_NAME
 config MAINBOARD_VERSION
 	default "gaze17-3050" if BOARD_SYSTEM76_GAZE17_3050
 	default "gaze17-3060-b" if BOARD_SYSTEM76_GAZE17_3060_B
-
-config VARIANT_DIR
-	default "3050" if BOARD_SYSTEM76_GAZE17_3050
-	default "3060" if BOARD_SYSTEM76_GAZE17_3060_B
-
-config OVERRIDE_DEVICETREE
-	default "variants/\$(CONFIG_VARIANT_DIR)/overridetree.cb"
 
 config CONSOLE_POST
 	default y
@@ -65,6 +64,9 @@ config ONBOARD_VGA_IS_PRIMARY
 
 config POST_DEVICE
 	default n
+
+config TPM_MEASURED_BOOT
+	default y
 
 config UART_FOR_CONSOLE
 	default 0
