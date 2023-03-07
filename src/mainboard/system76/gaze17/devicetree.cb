@@ -12,8 +12,6 @@ chip soc/intel/alderlake
 	# Enable Enhanced Intel SpeedStep
 	register "eist_enable" = "1"
 
-	register "s0ix_enable" = "1"
-
 # FSP Memory (soc/intel/alderlake/romstage/fsp_params.c)
 	# Enable C6 DRAM
 	register "enable_c6dram" = "1"
