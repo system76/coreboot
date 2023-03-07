@@ -10,9 +10,4 @@
 #define DGPU_GC6	GPP_F13
 #define DGPU_SSID	0x866d1558
 
-#ifndef __ACPI__
-void variant_configure_early_gpios(void);
-void variant_configure_gpios(void);
-#endif
-
 #endif
