@@ -1,8 +1,8 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#include <smbios.h>
+#include <mainboard/gpio.h>
 #include <soc/ramstage.h>
-#include <variant/gpio.h>
+#include <smbios.h>
 
 smbios_wakeup_type smbios_system_wakeup_type(void)
 {
@@ -22,5 +22,14 @@ void mainboard_silicon_init_params(FSP_S_CONFIG *params)
 	params->SataPortDevSlpPinMux[0] = 0x59673e0c; // GPP_H12
 	params->SataPortDevSlpPinMux[1] = 0x5967400d; // GPP_H13
 
-	variant_configure_gpios();
+	params->SataPortsSolidStateDrive[1] = 1;
 }
+
+static void mainboard_init(void *chip_info)
+{
+	mainboard_configure_gpios();
+}
+
+struct chip_operations mainboard_ops = {
+	.init = mainboard_init,
+};
