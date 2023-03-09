@@ -91,6 +91,7 @@ chip soc/intel/alderlake
 				.clk_req = 6,
 				.flags = PCIE_RP_LTR | PCIE_RP_AER,
 			}"
+			device pci 00.0 on end
 		end
 	end
 end
