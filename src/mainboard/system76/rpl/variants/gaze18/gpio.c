@@ -52,8 +52,8 @@ static const struct pad_config gpio_table[] = {
 	PAD_CFG_GPI(GPP_B4, NONE, DEEP), // SWI#
 	PAD_NC(GPP_B5, NONE),
 	PAD_NC(GPP_B6, NONE),
-	PAD_CFG_GPO(GPP_B7, 0, DEEP), // CARD_PWR_EN
-	PAD_CFG_GPO(GPP_B8, 0, DEEP), // CARD_RTD3_RST#
+	PAD_NC(GPP_B7, NONE),
+	PAD_NC(GPP_B8, NONE),
 	// GPP_B9 missing
 	// GPP_B10 missing
 	PAD_NC(GPP_B11, NONE),
