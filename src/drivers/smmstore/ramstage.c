@@ -9,6 +9,7 @@
 #include <smmstore.h>
 #include <types.h>
 #include <cbmem.h>
+#include <delay.h>
 
 static struct smmstore_params_info info;
 
@@ -39,6 +40,7 @@ static void init_store(void *unused)
 {
 	struct smmstore_params_init args;
 	uint32_t ret = ~0;
+	uint8_t retry = 5;
 
 	if (smmstore_get_info(&info) < 0) {
 		printk(BIOS_INFO, "SMMSTORE: Failed to get meta data\n");
@@ -56,8 +58,17 @@ static void init_store(void *unused)
 
 	printk(BIOS_INFO, "SMMSTORE: Setting up SMI handler\n");
 
-	/* Issue SMI using APM to update the com buffer and to lock the SMMSTORE */
-	ret = call_smm(APM_CNT_SMMSTORE, SMMSTORE_CMD_INIT, &args);
+	/*
+	 * Issue SMI using APM to update the com buffer and to lock the SMMSTORE.
+	 * Retry 5 times in case the SMI isn't triggered immediately.
+	 */
+	do {
+		ret = call_smm(APM_CNT_SMMSTORE, SMMSTORE_CMD_INIT, &args);
+		if (ret == SMMSTORE_RET_SUCCESS)
+			break;
+
+		mdelay(1);
+	} while (retry--);
 
 	if (ret != SMMSTORE_RET_SUCCESS) {
 		printk(BIOS_ERR, "SMMSTORE: Failed to install com buffer\n");
