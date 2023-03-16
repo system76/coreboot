@@ -8,6 +8,7 @@
 #include <smmstore.h>
 #include <types.h>
 #include <cbmem.h>
+#include <delay.h>
 
 static struct smmstore_params_info info;
 
@@ -39,6 +40,7 @@ static void init_store(void *unused)
 	struct smmstore_params_init args;
 	uint32_t eax = ~0;
 	uint32_t ebx;
+	uint8_t retry = 5;
 
 	if (smmstore_get_info(&info) < 0) {
 		printk(BIOS_INFO, "SMMSTORE: Failed to get meta data\n");
@@ -57,14 +59,24 @@ static void init_store(void *unused)
 
 	printk(BIOS_INFO, "SMMSTORE: Setting up SMI handler\n");
 
-	/* Issue SMI using APM to update the com buffer and to lock the SMMSTORE */
-	__asm__ __volatile__ (
-		"outb %%al, %%dx"
-		: "=a" (eax)
-		: "a" ((SMMSTORE_CMD_INIT << 8) | APM_CNT_SMMSTORE),
-		  "b" (ebx),
-		  "d" (APM_CNT)
-		: "memory");
+	/*
+	 * Issue SMI using APM to update the com buffer and to lock the SMMSTORE.
+	 * Retry 5 times in case the SMI isn't triggered immediately.
+	 */
+	do {
+		__asm__ __volatile__ (
+			"outb %%al, %%dx"
+			: "=a" (eax)
+			: "a" ((SMMSTORE_CMD_INIT << 8) | APM_CNT_SMMSTORE),
+			  "b" (ebx),
+			  "d" (APM_CNT)
+			: "memory");
+
+		if (eax == SMMSTORE_RET_SUCCESS)
+			break;
+
+		mdelay(1);
+	} while (retry--);
 
 	if (eax != SMMSTORE_RET_SUCCESS) {
 		printk(BIOS_ERR, "SMMSTORE: Failed to install com buffer\n");
