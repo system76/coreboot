@@ -21,21 +21,25 @@ chip soc/intel/alderlake
 				device ref xhci_root_hub on
 					chip drivers/usb/acpi
 						register "desc" = ""USB2 Type-A 3.2 Gen 1 (Left)""
+						register "group" = "ACPI_PLD_GROUP(1, 1)"
 						register "type" = "UPC_TYPE_A"
 						device ref usb2_port1 on end
 					end
 					chip drivers/usb/acpi
 						register "desc" = ""USB2 Type-A 2.0 (Left)""
+						register "group" = "ACPI_PLD_GROUP(1, 2)"
 						register "type" = "UPC_TYPE_A"
 						device ref usb2_port2 on end
 					end
 					chip drivers/usb/acpi
 						register "desc" = ""USB2 Type-C 3.2 Gen 2 (Rear)""
+						register "group" = "ACPI_PLD_GROUP(2, 1)"
 						register "type" = "UPC_TYPE_C_USB2_SS_SWITCH"
 						device ref usb2_port3 on end
 					end
 					chip drivers/usb/acpi
 						register "desc" = ""USB2 Type-C Thunderbolt (Right)""
+						register "group" = "ACPI_PLD_GROUP(3, 1)"
 						register "type" = "UPC_TYPE_C_USB2_SS_SWITCH"
 						device ref usb2_port9 on end
 					end
@@ -56,11 +60,13 @@ chip soc/intel/alderlake
 					end
 					chip drivers/usb/acpi
 						register "desc" = ""USB3 Type-A 3.2 Gen 1 (Left)""
+						register "group" = "ACPI_PLD_GROUP(1, 1)"
 						register "type" = "UPC_TYPE_A"
 						device ref usb3_port1 on end
 					end
 					chip drivers/usb/acpi
 						register "desc" = ""Type-C 3.2 Gen 2 (Rear)""
+						register "group" = "ACPI_PLD_GROUP(2, 1)"
 						register "type" = "UPC_TYPE_C_USB2_SS_SWITCH"
 						device ref usb3_port3 on end
 					end
@@ -144,6 +150,17 @@ chip soc/intel/alderlake
 				.clk_req = 15,
 				.flags = PCIE_RP_HOTPLUG | PCIE_RP_LTR | PCIE_RP_AER,
 			}"
+			chip drivers/usb/acpi
+				register "type" = "UPC_TYPE_HUB"
+				device usb 0.0 on
+					chip drivers/usb/acpi
+						register "desc" = ""USB2 Type-C Thunderbolt (Right)""
+						register "group" = "ACPI_PLD_GROUP(3, 1)"
+						register "type" = "UPC_TYPE_C_USB2_SS_SWITCH"
+						device usb 3.0 on end
+					end
+				end
+			end
 		end
 
 		device ref pcie_rp25 on
@@ -153,19 +170,6 @@ chip soc/intel/alderlake
 				.clk_req = 8,
 				.flags = PCIE_RP_LTR | PCIE_RP_AER,
 			}"
-		end
-
-		device ref pmc hidden
-			chip drivers/intel/pmc_mux
-				device generic 0 on
-					chip drivers/intel/pmc_mux/conn
-						# Type-C 3.2 Gen 2 (Rear)
-						use usb2_port3 as usb2_port
-						use usb3_port3 as usb3_port
-						device generic 0 alias conn0 on end
-					end
-				end
-			end
 		end
 
 		device ref gbe on end
