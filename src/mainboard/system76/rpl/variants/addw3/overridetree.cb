@@ -152,12 +152,12 @@ chip soc/intel/alderlake
 			}"
 			chip drivers/usb/acpi
 				register "type" = "UPC_TYPE_HUB"
-				device usb 0.0 on
+				device usb 0.0 alias tbt_root_hub on
 					chip drivers/usb/acpi
 						register "desc" = ""USB2 Type-C Thunderbolt (Right)""
 						register "group" = "ACPI_PLD_GROUP(3, 1)"
 						register "type" = "UPC_TYPE_C_USB2_SS_SWITCH"
-						device usb 3.0 on end
+						device usb 3.0 tbt_port1 on end
 					end
 				end
 			end
@@ -170,6 +170,27 @@ chip soc/intel/alderlake
 				.clk_req = 8,
 				.flags = PCIE_RP_LTR | PCIE_RP_AER,
 			}"
+		end
+
+		device ref pmc hidden
+			chip drivers/intel/pmc_mux
+				device generic 0 on
+					chip drivers/intel/pmc_mux/conn
+						# Type-C 3.2 Gen 2 (Rear)
+						use usb2_port3 as usb2_port
+						use usb3_port3 as usb3_port
+						device generic 0 alias conn0 on end
+					end
+				end
+				device generic 1 on
+					chip drivers/intel/pmc_mux/conn
+						# Type-C Thunderbolt (Right)
+						use usb2_port9 as usb2_port
+						use tbt_port1 as usb3_port
+						device generic 0 alias conn0 on end
+					end
+				end
+			end
 		end
 
 		device ref gbe on end
