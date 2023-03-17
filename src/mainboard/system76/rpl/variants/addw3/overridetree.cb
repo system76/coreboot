@@ -6,16 +6,66 @@ chip soc/intel/alderlake
 
 		device ref xhci on
 			# USB2
-			register "usb2_ports[0]" = "USB2_PORT_MID(OC_SKIP)" # USB-A 3.2 Gen 1 (Left)
-			register "usb2_ports[1]" = "USB2_PORT_MID(OC_SKIP)" # USB-A 2.0 (Left)
-			register "usb2_ports[2]" = "USB2_PORT_TYPE_C(OC_SKIP)" # USB-C 3.2 Gen 2 (Rear)
-			register "usb2_ports[8]" = "USB2_PORT_TYPE_C(OC_SKIP)" # USB-C Thunderbolt (Right)
+			register "usb2_ports[0]" = "USB2_PORT_MID(OC_SKIP)" # Type-A 3.2 Gen 1 (Left)
+			register "usb2_ports[1]" = "USB2_PORT_MID(OC_SKIP)" # Type-A 2.0 (Left)
+			register "usb2_ports[2]" = "USB2_PORT_TYPE_C(OC_SKIP)" # Type-C 3.2 Gen 2 (Rear)
+			register "usb2_ports[8]" = "USB2_PORT_TYPE_C(OC_SKIP)" # Type-C Thunderbolt (Right)
 			register "usb2_ports[10]" = "USB2_PORT_MID(OC_SKIP)" # Camera
 			register "usb2_ports[11]" = "USB2_PORT_MID(OC_SKIP)" # Secure Pad
 			register "usb2_ports[13]" = "USB2_PORT_MID(OC_SKIP)" # Bluetooth
 			# USB3
-			register "usb3_ports[0]" = "USB3_PORT_DEFAULT(OC_SKIP)" # USB-A 3.2 Gen 1 (Left)
-			register "usb3_ports[2]" = "USB3_PORT_DEFAULT(OC_SKIP)" # USB-C 3.2 Gen 2 (Rear)
+			register "usb3_ports[0]" = "USB3_PORT_DEFAULT(OC_SKIP)" # Type-A 3.2 Gen 1 (Left)
+			register "usb3_ports[2]" = "USB3_PORT_DEFAULT(OC_SKIP)" # Type-C 3.2 Gen 2 (Rear)
+			# ACPI
+			chip drivers/usb/acpi
+				device ref xhci_root_hub on
+					chip drivers/usb/acpi
+						register "desc" = ""USB2 Type-A 3.2 Gen 1 (Left)""
+						register "type" = "UPC_TYPE_A"
+						device ref usb2_port1 on end
+					end
+					chip drivers/usb/acpi
+						register "desc" = ""USB2 Type-A 2.0 (Left)""
+						register "type" = "UPC_TYPE_A"
+						device ref usb2_port2 on end
+					end
+					chip drivers/usb/acpi
+						register "desc" = ""USB2 Type-C 3.2 Gen 2 (Rear)""
+						register "type" = "UPC_TYPE_C_USB2_SS_SWITCH"
+						device ref usb2_port3 on end
+					end
+					chip drivers/usb/acpi
+						register "desc" = ""USB2 Type-C Thunderbolt (Right)""
+						register "type" = "UPC_TYPE_C_USB2_SS_SWITCH"
+						device ref usb2_port9 on end
+					end
+					chip drivers/usb/acpi
+						register "desc" = ""Camera""
+						register "type" = "UPC_TYPE_INTERNAL"
+						device ref usb2_port11 on end
+					end
+					chip drivers/usb/acpi
+						register "desc" = ""Secure Pad""
+						register "type" = "UPC_TYPE_INTERNAL"
+						device ref usb2_port12 on end
+					end
+					chip drivers/usb/acpi
+						register "desc" = ""Bluetooth""
+						register "type" = "UPC_TYPE_INTERNAL"
+						device ref usb2_port14 on end
+					end
+					chip drivers/usb/acpi
+						register "desc" = ""USB3 Type-A 3.2 Gen 1 (Left)""
+						register "type" = "UPC_TYPE_A"
+						device ref usb3_port1 on end
+					end
+					chip drivers/usb/acpi
+						register "desc" = ""Type-C 3.2 Gen 2 (Rear)""
+						register "type" = "UPC_TYPE_C_USB2_SS_SWITCH"
+						device ref usb3_port3 on end
+					end
+				end
+			end
 		end
 
 		device ref i2c0 on
@@ -103,6 +153,19 @@ chip soc/intel/alderlake
 				.clk_req = 8,
 				.flags = PCIE_RP_LTR | PCIE_RP_AER,
 			}"
+		end
+
+		device ref pmc hidden
+			chip drivers/intel/pmc_mux
+				device generic 0 on
+					chip drivers/intel/pmc_mux/conn
+						# Type-C 3.2 Gen 2 (Rear)
+						use usb2_port3 as usb2_port
+						use usb3_port3 as usb3_port
+						device generic 0 alias conn0 on end
+					end
+				end
+			end
 		end
 
 		device ref gbe on end
