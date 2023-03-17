@@ -50,11 +50,13 @@ chip soc/intel/alderlake
 
 		device ref pcie_rp3 on
 			# PCH RP#3 x1, Clock 13 (GLAN)
+			# Clock source is shared with LAN and hence marked as free running.
 			register "pch_pcie_rp[PCH_RP(3)]" = "{
 				.clk_src = 13,
 				.clk_req = 13,
-				.flags = PCIE_RP_LTR | PCIE_RP_CLK_REQ_DETECT,
+				.flags = PCIE_RP_LTR | PCIE_RP_CLK_SRC_UNUSED,
 			}"
+			register "pcie_clk_config_flag[13]" = "PCIE_CLK_FREE_RUNNING"
 			device pci 00.0 on end
 		end
 
