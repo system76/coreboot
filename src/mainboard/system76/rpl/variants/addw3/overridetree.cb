@@ -157,7 +157,7 @@ chip soc/intel/alderlake
 						register "desc" = ""USB2 Type-C Thunderbolt (Right)""
 						register "group" = "ACPI_PLD_GROUP(3, 1)"
 						register "type" = "UPC_TYPE_C_USB2_SS_SWITCH"
-						device usb 3.0 tbt_port1 on end
+						device usb 3.0 alias tbt_port1 on end
 					end
 				end
 			end
@@ -181,13 +181,11 @@ chip soc/intel/alderlake
 						use usb3_port3 as usb3_port
 						device generic 0 alias conn0 on end
 					end
-				end
-				device generic 1 on
 					chip drivers/intel/pmc_mux/conn
 						# Type-C Thunderbolt (Right)
 						use usb2_port9 as usb2_port
 						use tbt_port1 as usb3_port
-						device generic 0 alias conn0 on end
+						device generic 1 alias conn1 on end
 					end
 				end
 			end
