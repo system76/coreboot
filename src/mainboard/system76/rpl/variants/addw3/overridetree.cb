@@ -172,25 +172,6 @@ chip soc/intel/alderlake
 			}"
 		end
 
-		device ref pmc hidden
-			chip drivers/intel/pmc_mux
-				device generic 0 on
-					chip drivers/intel/pmc_mux/conn
-						# Type-C 3.2 Gen 2 (Rear)
-						use usb2_port3 as usb2_port
-						use usb3_port3 as usb3_port
-						device generic 0 alias conn0 on end
-					end
-					chip drivers/intel/pmc_mux/conn
-						# Type-C Thunderbolt (Right)
-						use usb2_port9 as usb2_port
-						use tbt_port1 as usb3_port
-						device generic 1 alias conn1 on end
-					end
-				end
-			end
-		end
-
 		device ref gbe on end
 	end
 end
