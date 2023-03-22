@@ -4,13 +4,13 @@ chip soc/intel/alderlake
 
 		device ref xhci on
 			# USB2
-			register "usb2_ports[0]" = "USB2_PORT_TYPE_C(OC_SKIP)" # TYPEC2 (USB 3.1 Gen2 + DP 1.4 HBR3)
+			register "usb2_ports[0]" = "USB2_PORT_MID(OC_SKIP)" # TYPEC2 (USB 3.1 Gen2 + DP 1.4 HBR3)
 			register "usb2_ports[1]" = "USB2_PORT_MID(OC_SKIP)" # AJ_USB1 (USB 3.2 Gen2)
 			register "usb2_ports[2]" = "USB2_PORT_MID(OC_SKIP)" # AJ_USB2 (USB 3.2 Gen2 + charger)
 			register "usb2_ports[5]" = "USB2_PORT_MID(OC_SKIP)" # Per-KB
 			register "usb2_ports[6]" = "USB2_PORT_MID(OC_SKIP)" # Fingerprint
 			register "usb2_ports[7]" = "USB2_PORT_MID(OC_SKIP)" # Camera
-			register "usb2_ports[8]" = "USB2_PORT_TYPE_C(OC_SKIP)" # TBT USB2.0
+			register "usb2_ports[8]" = "USB2_PORT_MID(OC_SKIP)" # TBT USB2.0
 			register "usb2_ports[13]" = "USB2_PORT_MID(OC_SKIP)" # Bluetooth
 			# USB3
 			register "usb3_ports[0]" = "USB3_PORT_DEFAULT(OC_SKIP)" # TYPEC2 (USB 3.1 Gen2 + DP 1.4 HBR3)
