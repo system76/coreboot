@@ -4,9 +4,9 @@ chip soc/intel/alderlake
 
 		device ref xhci on
 			# USB2
-			register "usb2_ports[2]" = "USB2_PORT_TYPE_C(OC_SKIP)" # J_TYPEC1 (USB 3.1 Gen2)
+			register "usb2_ports[2]" = "USB2_PORT_MID(OC_SKIP)" # J_TYPEC1 (USB 3.1 Gen2)
 			register "usb2_ports[4]" = "USB2_PORT_MID(OC_SKIP)" # Type-A (USB 3.1 Gen2)
-			register "usb2_ports[5]" = "USB2_PORT_TYPE_C(OC_SKIP)" # J_TYPEC2 (USB 3.1 Gen2)
+			register "usb2_ports[5]" = "USB2_PORT_MID(OC_SKIP)" # J_TYPEC2 (USB 3.1 Gen2)
 			register "usb2_ports[6]" = "USB2_PORT_MID(OC_SKIP)" # Finger
 			register "usb2_ports[7]" = "USB2_PORT_MID(OC_SKIP)" # Camera
 			register "usb2_ports[8]" = "USB2_PORT_MID(OC_SKIP)" # Type-A
