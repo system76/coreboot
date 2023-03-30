@@ -133,3 +133,10 @@ config USE_PM_ACPI_TIMER
 	default n
 
 endif
+
+if BOARD_SYSTEM76_BONW15
+
+config DRIVERS_GFX_NVIDIA_BRIDGE
+	default 0x02
+
+endif
