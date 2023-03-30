@@ -63,7 +63,7 @@ chip soc/intel/alderlake
 			register "pch_pcie_rp[PCH_RP(5)]" = "{
 				.clk_src = 12,
 				.clk_req = 12,
-				.flags = PCIE_RP_LTR | PCIE_RP_AER,
+				.flags = PCIE_RP_HOTPLUG | PCIE_RP_LTR | PCIE_RP_AER,
 			}"
 		end
 
@@ -99,7 +99,7 @@ chip soc/intel/alderlake
 			register "pch_pcie_rp[PCH_RP(25)]" = "{
 				.clk_src = 15,
 				.clk_req = 15,
-				.flags = PCIE_RP_LTR | PCIE_RP_AER,
+				.flags = PCIE_RP_HOTPLUG | PCIE_RP_LTR | PCIE_RP_AER,
 			}"
 		end
 	end
