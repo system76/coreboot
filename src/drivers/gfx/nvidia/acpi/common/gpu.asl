@@ -7,3 +7,12 @@ Device (DEV0) {
 	#include "dsm.asl"
 	#include "power.asl"
 }
+
+#if CONFIG(DRIVERS_GFX_NVIDIA_DYNAMIC_BOOST)
+Scope (\_SB) {
+	Device(NPCF) {
+		#include "utility.asl"
+		#include "nvpcf.asl"
+	}
+}
+#endif
