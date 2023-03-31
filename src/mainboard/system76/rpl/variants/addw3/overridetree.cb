@@ -149,7 +149,7 @@ chip soc/intel/alderlake
 			register "pch_pcie_rp[PCH_RP(21)]" = "{
 				.clk_src = 15,
 				.clk_req = 15,
-				.flags = PCIE_RP_HOTPLUG | PCIE_RP_LTR | PCIE_RP_AER,
+				.flags = PCIE_RP_HOTPLUG | PCIE_RP_LTR,
 			}"
 			chip drivers/usb/acpi
 				register "type" = "UPC_TYPE_HUB"
