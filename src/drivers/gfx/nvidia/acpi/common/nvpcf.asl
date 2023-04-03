@@ -73,10 +73,7 @@ Method(NPCF, 2, Serialized) {
 				// Other fields filled in later
 			})
 			CreateByteField(PCFP, 0x04, CCNT) // Controller count
-			CreateWordField(PCFP, 0x05, ATGP) // AC TGP offset
-			CreateWordField(PCFP, 0x07, DTGP) // DC TGP offset (unused)
 			CreateWordField(PCFP, 0x19, ATPP) // AC TPP offset
-			CreateWordField(PCFP, 0x1B, DTPP) // DC TPP offset (unused)
 			CreateWordField(PCFP, 0x1D, AMXP) // AC maximum TGP offset
 			CreateWordField(PCFP, 0x21, AMNP) // AC minimum TGP offset
 
@@ -85,13 +82,11 @@ Method(NPCF, 2, Serialized) {
 					Printf("      Get Controller Params")
 					// Number of controllers
 					CCNT = 1
-					// AC configurable TGP baseline offset in 1/8 watt units
-					ATGP = (CONFIG_DRIVERS_GFX_NVIDIA_DYNAMIC_BOOST_BASELINE << 3)
-					// AC total processor power offset from baseline in 1/8 watt units
+					// AC total processor power offset from default TGP in 1/8 watt units
 					ATPP = (CONFIG_DRIVERS_GFX_NVIDIA_DYNAMIC_BOOST_TPP << 3)
-					// AC maximum TGP offset from baseline in 1/8 watt units
+					// AC maximum TGP offset from default TGP in 1/8 watt units
 					AMXP = (CONFIG_DRIVERS_GFX_NVIDIA_DYNAMIC_BOOST_MAX << 3)
-					// AC minimum TGP offset from baseline in 1/8 watt units
+					// AC minimum TGP offset from default TGP in 1/8 watt units
 					AMNP = (CONFIG_DRIVERS_GFX_NVIDIA_DYNAMIC_BOOST_MIN << 3)
 					Printf("PCFP: %o", SFST(PCFP))
 					Return(PCFP)
