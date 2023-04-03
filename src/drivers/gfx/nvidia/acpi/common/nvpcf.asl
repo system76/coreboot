@@ -7,26 +7,9 @@
 #define NVPCF_FUNC_GET_STATIC_CONFIG_TABLES 0x00000001
 #define NVPCF_FUNC_UPDATE_DYNAMIC_PARAMS 0x00000002
 
-Name(CDIS, 0)
-
-Method(_HID) {
-	CDIS = 0
-	Return("NVDA0820")
-}
+Name(_HID, "NVDA0820")
 
 Name(_UID, "NPCF")
-
-Method(_DIS) {
-	CDIS = 1
-}
-
-Method(_STA) {
-	If (CDIS == 1) {
-		Return(0x0D)
-	} Else {
-		Return(0x0F)
-	}
-}
 
 Method(_DSM, 4, Serialized) {
 	Printf("NVPCF _DSM")
@@ -39,6 +22,7 @@ Method(_DSM, 4, Serialized) {
 		}
 	} Else {
 		Printf("  Unsupported GUID: %o", IDST(Arg0))
+		Return(NVPCF_ERROR_GENERIC)
 	}
 }
 
