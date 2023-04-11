@@ -17,62 +17,6 @@ chip soc/intel/alderlake
 			# USB3
 			register "usb3_ports[0]" = "USB3_PORT_DEFAULT(OC_SKIP)" # Type-A 3.2 Gen 1 (Left)
 			register "usb3_ports[2]" = "USB3_PORT_DEFAULT(OC_SKIP)" # Type-C 3.2 Gen 2 (Rear)
-			# ACPI
-			chip drivers/usb/acpi
-				device ref xhci_root_hub on
-					chip drivers/usb/acpi
-						register "desc" = ""USB2 Type-A 3.2 Gen 1 (Left)""
-						register "group" = "ACPI_PLD_GROUP(1, 1)"
-						register "type" = "UPC_TYPE_A"
-						device ref usb2_port1 on end
-					end
-					chip drivers/usb/acpi
-						register "desc" = ""USB2 Type-A 2.0 (Left)""
-						register "group" = "ACPI_PLD_GROUP(1, 2)"
-						register "type" = "UPC_TYPE_A"
-						device ref usb2_port2 on end
-					end
-					chip drivers/usb/acpi
-						register "desc" = ""USB2 Type-C 3.2 Gen 2 (Rear)""
-						register "group" = "ACPI_PLD_GROUP(2, 1)"
-						register "type" = "UPC_TYPE_C_USB2_SS_SWITCH"
-						device ref usb2_port3 on end
-					end
-					chip drivers/usb/acpi
-						register "desc" = ""USB2 Type-C Thunderbolt (Right)""
-						register "group" = "ACPI_PLD_GROUP(3, 1)"
-						register "type" = "UPC_TYPE_C_USB2_SS_SWITCH"
-						device ref usb2_port9 on end
-					end
-					chip drivers/usb/acpi
-						register "desc" = ""Camera""
-						register "type" = "UPC_TYPE_INTERNAL"
-						device ref usb2_port11 on end
-					end
-					chip drivers/usb/acpi
-						register "desc" = ""Secure Pad""
-						register "type" = "UPC_TYPE_INTERNAL"
-						device ref usb2_port12 on end
-					end
-					chip drivers/usb/acpi
-						register "desc" = ""Bluetooth""
-						register "type" = "UPC_TYPE_INTERNAL"
-						device ref usb2_port14 on end
-					end
-					chip drivers/usb/acpi
-						register "desc" = ""USB3 Type-A 3.2 Gen 1 (Left)""
-						register "group" = "ACPI_PLD_GROUP(1, 1)"
-						register "type" = "UPC_TYPE_A"
-						device ref usb3_port1 on end
-					end
-					chip drivers/usb/acpi
-						register "desc" = ""Type-C 3.2 Gen 2 (Rear)""
-						register "group" = "ACPI_PLD_GROUP(2, 1)"
-						register "type" = "UPC_TYPE_C_USB2_SS_SWITCH"
-						device ref usb3_port3 on end
-					end
-				end
-			end
 		end
 
 		device ref i2c0 on
@@ -151,16 +95,8 @@ chip soc/intel/alderlake
 				.clk_req = 15,
 				.flags = PCIE_RP_HOTPLUG | PCIE_RP_LTR,
 			}"
-			chip drivers/usb/acpi
-				register "type" = "UPC_TYPE_HUB"
-				device usb 0.0 alias tbt_root_hub on
-					chip drivers/usb/acpi
-						register "desc" = ""USB2 Type-C Thunderbolt (Right)""
-						register "group" = "ACPI_PLD_GROUP(3, 1)"
-						register "type" = "UPC_TYPE_C_USB2_SS_SWITCH"
-						device usb 3.0 alias tbt_port1 on end
-					end
-				end
+			chip drivers/intel/dtbt
+				device pci 00.0 on end
 			end
 		end
 
