@@ -1,10 +1,12 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
 #include "chip.h"
+#include <acpi/acpigen.h>
 #include <console/console.h>
 #include <delay.h>
 #include <device/device.h>
 #include <device/pci.h>
+#include <device/pciexp.h>
 #include <device/pci_ids.h>
 
 #define PCIE2TBT 0x54C
@@ -50,6 +52,61 @@ static void dtbt_cmd(struct device *dev, u32 command) {
 	}
 }
 
+static void dtbt_fill_ssdt(const struct device *dev) {
+	printk(BIOS_INFO, "DTBT fill SSDT\n");
+
+	const char *dev_scope = acpi_device_path(dev->bus->dev);
+	if (!dev_scope) {
+		return;
+	}
+
+	{ /* Scope */
+		printk(BIOS_INFO, "  Scope %s\n", dev_scope);
+		acpigen_write_scope(dev_scope);
+
+		struct acpi_dp *dsd = acpi_dp_new_table("_DSD");
+
+		/* Indicate that device supports hotplug in D3. */
+		acpi_device_add_hotplug_support_in_d3(dsd);
+
+		/* Indicate that port is external. */
+		acpi_device_add_external_facing_port(dsd);
+
+		acpi_dp_write(dsd);
+
+		{ /* Device */
+			const char *dev_name = acpi_device_name(dev);
+			printk(BIOS_INFO, "    Device %s\n", dev_name);
+			acpigen_write_device(dev_name);
+
+			acpigen_write_name_integer("_ADR", 0);
+
+			acpigen_write_device_end();
+		}
+
+		acpigen_write_scope_end();
+	}
+}
+
+static const char *dtbt_acpi_name(const struct device *dev) {
+	return "DTBT";
+}
+
+static struct pci_operations dtbt_device_ops_pci = {
+	.set_subsystem = 0,
+};
+
+static struct device_operations dtbt_device_ops = {
+	.read_resources   = pci_bus_read_resources,
+	.set_resources    = pci_dev_set_resources,
+	.enable_resources = pci_bus_enable_resources,
+	.acpi_fill_ssdt   = dtbt_fill_ssdt,
+	.acpi_name 		  = dtbt_acpi_name,
+	.scan_bus         = pciexp_scan_bridge,
+	.reset_bus        = pci_bus_reset,
+	.ops_pci          = &dtbt_device_ops_pci,
+};
+
 static void dtbt_enable(struct device *dev)
 {
 	if (!is_dev_enabled(dev) || dev->path.type != DEVICE_PATH_PCI)
@@ -59,6 +116,8 @@ static void dtbt_enable(struct device *dev)
 		return;
 
 	//TODO: check device ID
+
+	dev->ops = &dtbt_device_ops;
 
 	printk(BIOS_INFO, "DTBT controller found at %s\n", dev_path(dev));
 
