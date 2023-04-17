@@ -90,7 +90,7 @@ chip soc/intel/alderlake
 			register "pch_pcie_rp[PCH_RP(21)]" = "{
 				.clk_src = 5,
 				.clk_req = 5,
-				.flags = PCIE_RP_LTR | PCIE_RP_AER,
+				.flags = PCIE_RP_LTR, // XXX: AER spews warnings
 			}"
 		end
 
