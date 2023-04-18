@@ -10,11 +10,13 @@
 #include <device/pci_ids.h>
 
 #define PCIE2TBT 0x54C
+#define PCIE2TBT_GO2SX ((0x02 << 1) | 1)
+#define PCIE2TBT_GO2SX_NO_WAKE ((0x03 << 1) | 1)
+#define PCIE2TBT_SX_EXIT_TBT_CONNECTED ((0x04 << 1) | 1)
+#define PCIE2TBT_SX_EXIT_NO_TBT_CONNECTED ((0x05 << 1) | 1)
 #define PCIE2TBT_SET_SECURITY_LEVEL ((0x08 << 1) | 1)
 #define PCIE2TBT_GET_SECURITY_LEVEL ((0x09 << 1) | 1)
 #define PCIE2TBT_BOOT_ON ((0x18 << 1) | 1)
-#define PCIE2TBT_CONNECT_TOPOLOGY ((0x1F << 1) | 1)
-#define PCIE2TBT_FIRMWARE_CM_MODE ((0x22 << 1) | 1)
 #define TBT2PCIE 0x548
 
 static void dtbt_cmd(struct device *dev, u32 command) {
@@ -35,7 +37,7 @@ static void dtbt_cmd(struct device *dev, u32 command) {
 		printk(BIOS_ERR, "DTBT command %08x timeout on status %08x\n", command, status);
 	}
 
-	printk(BIOS_ERR, "DTBT command %08x status %08x\n", command, status);
+	printk(BIOS_INFO, "DTBT command %08x status %08x\n", command, status);
 
 	pci_write_config32(dev, PCIE2TBT, 0);
 
@@ -55,14 +57,33 @@ static void dtbt_cmd(struct device *dev, u32 command) {
 static void dtbt_fill_ssdt(const struct device *dev) {
 	printk(BIOS_INFO, "DTBT fill SSDT\n");
 
-	const char *dev_scope = acpi_device_path(dev->bus->dev);
-	if (!dev_scope) {
+	if (!dev) {
+		printk(BIOS_ERR, "DTBT device invalid\n");
+	}
+	printk(BIOS_INFO, "  Dev %s\n", dev_path(dev));
+
+	struct bus *bus = dev->bus;
+	if (!bus) {
+		printk(BIOS_ERR, "DTBT bus invalid\n");
+	}
+	printk(BIOS_INFO, "  Bus %s\n", bus_path(bus));
+
+	struct device *parent = bus->dev;
+	if (!parent || parent->path.type != DEVICE_PATH_PCI) {
+		printk(BIOS_ERR, "DTBT parent invalid\n");
+		return;
+	}
+	printk(BIOS_INFO, "  Parent %s\n", dev_path(parent));
+
+	const char *parent_scope = acpi_device_path(parent);
+	if (!parent_scope) {
+		printk(BIOS_ERR, "DTBT parent scope not valid\n");
 		return;
 	}
 
 	{ /* Scope */
-		printk(BIOS_INFO, "  Scope %s\n", dev_scope);
-		acpigen_write_scope(dev_scope);
+		printk(BIOS_INFO, "  Scope %s\n", parent_scope);
+		acpigen_write_scope(parent_scope);
 
 		struct acpi_dp *dsd = acpi_dp_new_table("_DSD");
 
@@ -81,7 +102,53 @@ static void dtbt_fill_ssdt(const struct device *dev) {
 
 			acpigen_write_name_integer("_ADR", 0);
 
+			uintptr_t mmconf_base = (uintptr_t)CONFIG_ECAM_MMCONF_BASE_ADDRESS
+			                      + (((uintptr_t)(bus->secondary)) << 20);
+			printk(BIOS_INFO, "      MMCONF base %08lx\n", mmconf_base);
+			const struct opregion opregion = OPREGION("PXCS", SYSTEMMEMORY, mmconf_base, 0x1000);
+			const struct fieldlist fieldlist[] = {
+				FIELDLIST_OFFSET(TBT2PCIE),
+				FIELDLIST_NAMESTR("TB2P", 32),
+				FIELDLIST_OFFSET(PCIE2TBT),
+				FIELDLIST_NAMESTR("P2TB", 32),
+			};
+			acpigen_write_opregion(&opregion);
+			acpigen_write_field("PXCS", fieldlist, ARRAY_SIZE(fieldlist),
+					    FIELD_DWORDACC | FIELD_NOLOCK | FIELD_PRESERVE);
+
+			{ /* Method */
+				acpigen_write_method_serialized("PTS", 0);
+
+				acpigen_write_debug_string("DTBT prepare to sleep");
+
+				acpigen_write_store_int_to_namestr(PCIE2TBT_GO2SX_NO_WAKE, "P2TB");
+				acpigen_write_delay_until_namestr_int(600, "TB2P", PCIE2TBT_GO2SX_NO_WAKE);
+
+				acpigen_write_debug_namestr("TB2P");
+
+				acpigen_write_store_int_to_namestr(0, "P2TB");
+				acpigen_write_delay_until_namestr_int(600, "TB2P", 0);
+
+				acpigen_write_debug_namestr("TB2P");
+
+				acpigen_write_method_end();
+			}
+
 			acpigen_write_device_end();
+		}
+
+		acpigen_write_scope_end();
+	}
+
+	{ /* Scope */
+		acpigen_write_scope("\\");
+
+		{ /* Method */
+			acpigen_write_method("TBTS", 0);
+
+			acpigen_emit_namestring(acpi_device_path_join(dev, "PTS"));
+
+			acpigen_write_method_end();
 		}
 
 		acpigen_write_scope_end();
@@ -130,8 +197,13 @@ static void dtbt_enable(struct device *dev)
 	printk(BIOS_INFO, "DTBT get security level\n");
 	dtbt_cmd(dev, PCIE2TBT_GET_SECURITY_LEVEL);
 
-	printk(BIOS_INFO, "DTBT boot on\n");
-	dtbt_cmd(dev, PCIE2TBT_BOOT_ON);
+	if (acpi_is_wakeup_s3()) {
+		printk(BIOS_INFO, "DTBT SX exit\n");
+		dtbt_cmd(dev, PCIE2TBT_SX_EXIT_TBT_CONNECTED);
+	} else {
+		printk(BIOS_INFO, "DTBT boot on\n");
+		dtbt_cmd(dev, PCIE2TBT_BOOT_ON);
+	}
 }
 
 struct chip_operations drivers_intel_dtbt_ops = {
