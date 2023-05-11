@@ -3,8 +3,8 @@ chip soc/intel/alderlake
 	# battery power. This seems to only happen with the i7 units.
 	register "power_limits_config[ADL_P_282_482_28W_CORE]" = "{
 		.tdp_pl1_override = 20,
-		.tdp_pl2_override = 56,
-		.tdp_pl4 = 56, // FIXME: Set to 65
+		.tdp_pl2_override = 42,
+		.tdp_pl4 = 42, // FIXME: Set to 56
 	}"
 
 	# GPE configuration
