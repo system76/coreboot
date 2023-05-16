@@ -1,0 +1,5 @@
+config DRIVERS_INTEL_DTBT
+	bool
+	default n
+	help
+	  Support for discrete Thunderbolt controllers
