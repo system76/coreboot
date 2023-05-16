@@ -25,7 +25,7 @@ static void update_spd_len(struct spd_block *blk)
 			j |= blk->spd_array[i][SPD_DRAM_TYPE];
 
 	/* If spd used is DDR4, then its length is 512 byte. */
-	if (j == SPD_DRAM_DDR4)
+	if (j == SPD_DRAM_DDR4 || j == SPD_DRAM_DDR5)
 		blk->len = SPD_PAGE_LEN_DDR4;
 	else
 		blk->len = SPD_PAGE_LEN;
