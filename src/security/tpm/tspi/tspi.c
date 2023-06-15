@@ -71,6 +71,10 @@ static uint32_t tpm_setup_s3_helper(void)
 
 	default:
 		printk(BIOS_ERR, "TPM: Resume failed (%#x).\n", result);
+		if (CONFIG(TPM2)) {
+			printk(BIOS_WARNING, "TPM: Clearing state\n");
+			result = tlcl_startup();
+		}
 		break;
 	}
 
