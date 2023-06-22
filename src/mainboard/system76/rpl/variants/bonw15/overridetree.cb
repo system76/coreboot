@@ -42,19 +42,19 @@ chip soc/intel/alderlake
 		end
 
 		device ref pcie5_0 on
-			# CPU PCIe RP#2 x8, Clock 14 (DGPU)
+			# CPU PCIe RP#3 x4, CLKOUT 2, CLKREQ 11 (SSD2)
 			register "cpu_pcie_rp[CPU_RP(2)]" = "{
-				.clk_src = 14,
-				.clk_req = 14,
+				.clk_src = 2,
+				.clk_req = 11,
 				.flags = PCIE_RP_LTR | PCIE_RP_AER,
 			}"
 		end
 
 		device ref pcie5_1 on
-			# CPU PCIe RP#3 x4, Clock 2 (SSD2)
+			# CPU PCIe RP#2 x8, Clock 14 (DGPU)
 			register "cpu_pcie_rp[CPU_RP(3)]" = "{
-				.clk_src = 2,
-				.clk_req = 2,
+				.clk_src = 14,
+				.clk_req = 14,
 				.flags = PCIE_RP_LTR | PCIE_RP_AER,
 			}"
 		end
