@@ -1,0 +1,38 @@
+config DRIVERS_GFX_NVIDIA
+	bool
+	default n
+	help
+	  Support for NVIDIA Optimus graphics
+
+config DRIVERS_GFX_NVIDIA_BRIDGE
+	hex "PCI bridge for the GPU device"
+	default 0x01
+	depends on DRIVERS_GFX_NVIDIA
+
+config DRIVERS_GFX_NVIDIA_DYNAMIC_BOOST
+	depends on DRIVERS_GFX_NVIDIA
+	bool
+	default n
+	help
+	  Support for NVIDIA Dynamic Boost
+
+config DRIVERS_GFX_NVIDIA_DYNAMIC_BOOST_TPP
+	int "Total processor power offset from default TGP in watts"
+	default 45
+	depends on DRIVERS_GFX_NVIDIA_DYNAMIC_BOOST
+	help
+	  This identifies the available power for the CPU or GPU boost
+
+config DRIVERS_GFX_NVIDIA_DYNAMIC_BOOST_MIN
+	int "Minimum TGP offset from default TGP in watts"
+	default 0
+	depends on DRIVERS_GFX_NVIDIA_DYNAMIC_BOOST
+	help
+	  This is used to transfer power from the GPU to the CPU
+
+config DRIVERS_GFX_NVIDIA_DYNAMIC_BOOST_MAX
+	int "Maximum TGP offset from default TGP in watts"
+	default 0
+	depends on DRIVERS_GFX_NVIDIA_DYNAMIC_BOOST
+	help
+	  This is used to transfer power from the CPU to the GPU
