@@ -106,6 +106,9 @@ chip soc/intel/alderlake
 				.clk_req = 15,
 				.flags = PCIE_RP_LTR | PCIE_RP_HOTPLUG, // XXX: AER causes UnsupReq warnings
 			}"
+			chip drivers/intel/dtbt
+				device pci 00.0 on end
+			end
 		end
 	end
 end
