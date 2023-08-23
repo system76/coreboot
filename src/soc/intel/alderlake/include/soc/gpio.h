@@ -5,8 +5,13 @@
 
 #if CONFIG(SOC_INTEL_ALDERLAKE_PCH_S)
 #include <soc/gpio_defs_pch_s.h>
+#if CONFIG(SOC_INTEL_RAPTORLAKE)
+#define CROS_GPIO_NAME		"INTC1085"
+#define CROS_GPIO_DEVICE_NAME	"INTC1085:00"
+#else
 #define CROS_GPIO_NAME		"INTC1056"
 #define CROS_GPIO_DEVICE_NAME	"INTC1056:00"
+#endif
 #elif CONFIG(SOC_INTEL_ALDERLAKE_PCH_N)
 #include <soc/gpio_defs.h>
 #define CROS_GPIO_NAME		"INTC1057"
