@@ -57,18 +57,22 @@ static void init_store(void *unused)
 
 	printk(BIOS_INFO, "SMMSTORE: Setting up SMI handler\n");
 
-	/* Issue SMI using APM to update the com buffer and to lock the SMMSTORE */
-	__asm__ __volatile__ (
-		"outb %%al, %%dx"
-		: "=a" (eax)
-		: "a" ((SMMSTORE_CMD_INIT << 8) | APM_CNT_SMMSTORE),
-		  "b" (ebx),
-		  "d" (APM_CNT)
-		: "memory");
+	for (int retries = 0; retries < 3; retries++) {
+		/* Issue SMI using APM to update the com buffer and to lock the SMMSTORE */
+		__asm__ __volatile__ (
+			"outb %%al, %%dx"
+			: "=a" (eax)
+			: "a" ((SMMSTORE_CMD_INIT << 8) | APM_CNT_SMMSTORE),
+			  "b" (ebx),
+			  "d" (APM_CNT)
+			: "memory");
 
-	if (eax != SMMSTORE_RET_SUCCESS) {
-		printk(BIOS_ERR, "SMMSTORE: Failed to install com buffer\n");
-		return;
+		if (eax == SMMSTORE_RET_SUCCESS) {
+			printk(BIOS_INFO, "SMMSTORE: Installed com buffer\n");
+			break;
+		}
+
+		printk(BIOS_ERR, "SMMSTORE: Failed to install com buffer: 0x%x\n", eax);
 	}
 }
 
