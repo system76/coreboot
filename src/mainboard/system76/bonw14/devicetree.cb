@@ -59,11 +59,12 @@ chip soc/intel/cannonlake
 			# PCI Express Graphics #0 x16, Clock 7 (NVIDIA GPU)
 			register "PcieClkSrcUsage[7]" = "0x40"
 			register "PcieClkSrcClkReq[7]" = "7"
-
-			device pci 00.0 on end # VGA controller
-			device pci 00.1 on end # Audio device
-			device pci 00.2 on end # USB xHCI Host controller
-			device pci 00.3 on end # USB Type-C UCSI controller
+			chip drivers/gfx/nvidia
+				device pci 00.0 on end # VGA controller
+				device pci 00.1 on end # Audio device
+				device pci 00.2 on end # USB xHCI Host controller
+				device pci 00.3 on end # USB Type-C UCSI controller
+			end
 		end
 		# TODO: is this enough to disable iGPU?
 		device pci 02.0 off end # Integrated Graphics Device
