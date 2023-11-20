@@ -15,6 +15,11 @@ config EC_SYSTEM76_EC_DGPU
 	bool
 	default n
 
+config EC_SYSTEM76_EC_LOCKDOWN
+	depends on EC_SYSTEM76_EC
+	bool
+	default n
+
 config EC_SYSTEM76_EC_OLED
 	depends on EC_SYSTEM76_EC
 	bool
