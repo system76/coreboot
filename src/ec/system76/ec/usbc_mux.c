@@ -4,6 +4,7 @@
 #include <console/console.h>
 #include <delay.h>
 #include <device/usbc_mux.h>
+#include <timer.h>
 #include <types.h>
 
 #define CMD_USBC_MUX_INFO 23
@@ -60,25 +61,57 @@ static int system76_ec_get_mux_info(int port, struct usbc_mux_info *info)
 static int system76_ec_wait_for_connection(long timeout_ms)
 {
 	// TODO
-	return 0;
+	return 1;
 }
 
 static int system76_ec_enter_dp_mode(int port)
 {
 	// TODO
-	return -1;
+	return 0;
 }
 
 static int system76_ec_wait_for_dp_mode_entry(int port, long timeout_ms)
 {
-	// TODO
-	return -1;
+	struct usbc_mux_info info;
+
+	if (system76_ec_get_mux_info(port, &info) < 0) {
+		printk(BIOS_WARNING, "%s: could not get usbc mux info\n", __func__);
+		return -1;
+	}
+
+	if (!info.dp) {
+		printk(BIOS_WARNING, "DP mode not ready\n");
+		return -1;
+	}
+
+	return 0;
 }
 
 static int system76_ec_wait_for_hpd(int port, long timeout_ms)
 {
-	// TODO
-	return -1;
+	struct usbc_mux_info info;
+	struct stopwatch sw;
+
+	stopwatch_init_msecs_expire(&sw, timeout_ms);
+	while (1) {
+		if (system76_ec_get_mux_info(port, &info) < 0) {
+			printk(BIOS_WARNING, "%s: could not get usbc mux info\n", __func__);
+			return -1;
+		}
+
+		if (info.hpd_lvl)
+			break;
+
+		if (stopwatch_expired(&sw)) {
+			printk(BIOS_WARNING, "HPD not ready after %ldms\n", timeout_ms);
+			return -1;
+		}
+
+		mdelay(100);
+	}
+
+	printk(BIOS_INFO, "HPD ready after %lldms\n", stopwatch_duration_msecs(&sw));
+	return 0;
 }
 
 static const struct usbc_ops system76_ec_usbc_ops = {
