@@ -1,6 +1,8 @@
 # SPDX-License-Identifier: GPL-2.0-only
 
 chip soc/intel/alderlake
+	register "s0ix_enable" = "1"
+
 	register "power_limits_config[ADL_P_282_442_482_28W_CORE]" = "{
 		.tdp_pl1_override = 20,
 		.tdp_pl2_override = 56,
