@@ -102,6 +102,10 @@ config MAINBOARD_VERSION
 	default "oryp9" if BOARD_SYSTEM76_ORYP9
 	default "oryp10" if BOARD_SYSTEM76_ORYP10
 
+config CMOS_DEFAULT_FILE
+	default "src/mainboard/\$(MAINBOARDDIR)/cmos-csme.default" if BOARD_SYSTEM76_DARP8
+	default "src/mainboard/\$(MAINBOARDDIR)/cmos.default"
+
 config CONSOLE_POST
 	default y
 
