@@ -7,8 +7,10 @@ chip soc/intel/alderlake
 
 		device ref xhci on
 			register "usb2_ports" = "{
-				[0] = USB2_PORT_TYPE_C(OC_SKIP), /* J_TYPEC1 */
-				[1] = USB2_PORT_TYPE_C(OC_SKIP), /* J_TYPEC2 */
+				/* Port reset messaging cannot be used,
+				 * so do not use USB2_PORT_TYPE_C for these */
+				[0] = USB2_PORT_MID(OC_SKIP), /* J_TYPEC1 */
+				[1] = USB2_PORT_MID(OC_SKIP), /* J_TYPEC2 */
 				[2] = USB2_PORT_MID(OC_SKIP), /* J_USB2 */
 				[3] = USB2_PORT_MID(OC_SKIP), /* J_USB1 (Audio board) */
 				[6] = USB2_PORT_MID(OC_SKIP), /* Fingerprint */
