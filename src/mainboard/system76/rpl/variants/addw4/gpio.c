@@ -148,7 +148,7 @@ static const struct pad_config gpio_table[] = {
 	PAD_NC(GPP_F6, NONE),
 	_PAD_CFG_STRUCT(GPP_F7, 0x80100100, 0x0000), // 7411_INTP_OUT
 	PAD_NC(GPP_F8, NONE),
-	PAD_NC(GPP_F9, NONE),
+	// GPP_F9 (DGPU_PWR_EN) configured in bootblock
 	PAD_CFG_GPI(GPP_F10, NONE, DEEP), // Recovery strap
 	PAD_NC(GPP_F11, NONE),
 	PAD_NC(GPP_F12, NONE),
