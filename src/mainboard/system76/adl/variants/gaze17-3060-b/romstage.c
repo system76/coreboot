@@ -27,8 +27,8 @@ void mainboard_memory_init_params(FSPM_UPD *mupd)
 	// Enable dGPU power
 	nvidia_set_power(&config);
 
-	// Set primary display to internal graphics
-	mupd->FspmConfig.PrimaryDisplay = 0;
+	// Set primary display to hybrid graphics
+	mupd->FspmConfig.PrimaryDisplay = 4;
 
 	mupd->FspmConfig.DmiMaxLinkSpeed = 4;
 	mupd->FspmConfig.GpioOverride = 0;
