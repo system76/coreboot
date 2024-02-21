@@ -64,11 +64,10 @@ static void dtbt_fill_ssdt(const struct device *dev)
 	}
 	printk(BIOS_DEBUG, "  Dev %s\n", dev_path(dev));
 
-	struct bus *bus = dev->bus;
+	struct bus *bus = dev->upstream;
 	if (!bus) {
 		printk(BIOS_ERR, "DTBT bus invalid\n");
 	}
-	printk(BIOS_DEBUG, "  Bus %s\n", bus_path(bus));
 
 	struct device *parent = bus->dev;
 	if (!parent || parent->path.type != DEVICE_PATH_PCI) {
@@ -210,6 +209,6 @@ static void dtbt_enable(struct device *dev)
 }
 
 struct chip_operations drivers_intel_dtbt_ops = {
-	CHIP_NAME("Intel Discrete Thunderbolt Device")
+	.name = "Intel Discrete Thunderbolt Device",
 	.enable_dev = dtbt_enable
 };
