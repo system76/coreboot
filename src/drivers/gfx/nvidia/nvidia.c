@@ -66,6 +66,6 @@ static void nvidia_enable(struct device *dev)
 }
 
 struct chip_operations drivers_gfx_nvidia_ops = {
-	CHIP_NAME("NVIDIA Optimus Graphics Device")
+	.name = "NVIDIA Optimus Graphics Device",
 	.enable_dev = nvidia_enable
 };
