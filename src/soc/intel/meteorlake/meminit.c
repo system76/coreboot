@@ -8,7 +8,7 @@
 #define LPX_PHYSICAL_CH_WIDTH		16
 #define LPX_CHANNELS			CHANNEL_COUNT(LPX_PHYSICAL_CH_WIDTH)
 
-#define DDR5_PHYSICAL_CH_WIDTH		32
+#define DDR5_PHYSICAL_CH_WIDTH		64 /* 32*2 */
 #define DDR5_CHANNELS			CHANNEL_COUNT(DDR5_PHYSICAL_CH_WIDTH)
 
 static void set_rcomp_config(FSP_M_CONFIG *mem_cfg, const struct mb_cfg *mb_cfg)
@@ -38,18 +38,16 @@ static const struct soc_mem_cfg soc_mem_cfg[] = {
 		.num_phys_channels = DDR5_CHANNELS,
 		.phys_to_mrc_map = {
 			[0] = 0,
-			[1] = 1,
-			[2] = 4,
-			[3] = 5,
+			[1] = 4,
 		},
 		.md_phy_masks = {
 			/*
-			 * Physical channels 0 and 1 are populated in case of
-			 * half-populated configurations.
+			 * Only channel 0 is populated in case of half-populated
+			 * configuration.
 			 */
-			.half_channel = BIT(0) | BIT(1),
-			/* In mixed topologies, channels 2 and 3 are always memory-down. */
-			.mixed_topo = BIT(2) | BIT(3),
+			.half_channel = BIT(0),
+			/* In mixed topologies, either channel 0 or 1 can be memory-down. */
+			.mixed_topo = BIT(0) | BIT(1),
 		},
 	},
 	[MEM_TYPE_LP5X] = {
@@ -75,7 +73,8 @@ static const struct soc_mem_cfg soc_mem_cfg[] = {
 	},
 };
 
-static void mem_init_spd_upds(FSP_M_CONFIG *mem_cfg, const struct mem_channel_data *data)
+static void mem_init_spd_upds(FSP_M_CONFIG *mem_cfg, const struct mem_channel_data *data,
+				bool expand_channels)
 {
 	efi_uintn_t *spd_upds[MRC_CHANNELS][CONFIG_DIMMS_PER_CHANNEL] = {
 		[0] = { &mem_cfg->MemorySpdPtr000, &mem_cfg->MemorySpdPtr001, },
@@ -108,7 +107,16 @@ static void mem_init_spd_upds(FSP_M_CONFIG *mem_cfg, const struct mem_channel_da
 		for (dimm = 0; dimm < CONFIG_DIMMS_PER_CHANNEL; dimm++) {
 			efi_uintn_t *spd_ptr = spd_upds[ch][dimm];
 
-			*spd_ptr = data->spd[ch][dimm];
+			// In DDR5 systems, we need to copy the SPD data such that:
+			// Channel 0 data is used by channel 0 and 1
+			// Channel 2 data is used by channel 2 and 3
+			// Channel 4 data is used by channel 4 and 5
+			// Channel 6 data is used by channel 6 and 7
+			if (expand_channels)
+				*spd_ptr = data->spd[ch & 6][dimm];
+			else
+				*spd_ptr = data->spd[ch][dimm];
+
 			if (*spd_ptr)
 				enable_channel = 1;
 		}
@@ -174,27 +182,12 @@ static void mem_init_dqs_upds(FSP_M_CONFIG *mem_cfg, const struct mem_channel_da
 	mem_init_dq_dqs_upds(dqs_upds, mb_cfg->dqs_map, upd_size, data, auto_detect);
 }
 
-#define DDR5_CH_DIMM_OFFSET(ch, dimm)        ((ch) * CONFIG_DIMMS_PER_CHANNEL + (dimm))
-
-static void ddr5_fill_dimm_module_info(FSP_M_CONFIG *mem_cfg, const struct mb_cfg *mb_cfg,
-					const struct mem_spd *spd_info)
-{
-	for (size_t ch = 0; ch < soc_mem_cfg[MEM_TYPE_DDR5].num_phys_channels; ch++) {
-		for (size_t dimm = 0; dimm < CONFIG_DIMMS_PER_CHANNEL; dimm++) {
-			size_t mrc_ch = soc_mem_cfg[MEM_TYPE_DDR5].phys_to_mrc_map[ch];
-			mem_cfg->SpdAddressTable[DDR5_CH_DIMM_OFFSET(mrc_ch, dimm)] =
-				spd_info->smbus[ch].addr_dimm[dimm] << 1;
-		}
-	}
-	mem_init_dq_upds(mem_cfg, NULL, mb_cfg, true);
-	mem_init_dqs_upds(mem_cfg, NULL, mb_cfg, true);
-}
-
 void memcfg_init(FSPM_UPD *memupd, const struct mb_cfg *mb_cfg,
 		 const struct mem_spd *spd_info, bool half_populated)
 {
 	struct mem_channel_data data;
 	bool dq_dqs_auto_detect = false;
+	bool expand_channels = false;
 	FSP_M_CONFIG *mem_cfg = &memupd->FspmConfig;
 
 	mem_cfg->ECT = mb_cfg->ect;
@@ -205,14 +198,7 @@ void memcfg_init(FSPM_UPD *memupd, const struct mb_cfg *mb_cfg,
 	case MEM_TYPE_DDR5:
 		meminit_ddr(mem_cfg, &mb_cfg->ddr_config);
 		dq_dqs_auto_detect = true;
-		/*
-		* TODO: Drop this workaround once SMBus driver in coreboot is updated to
-		* support DDR5 EEPROM reading.
-		*/
-		if (spd_info->topo == MEM_TOPO_DIMM_MODULE) {
-			ddr5_fill_dimm_module_info(mem_cfg, mb_cfg, spd_info);
-			return;
-		}
+		expand_channels = true;
 		break;
 	case MEM_TYPE_LP5X:
 		meminit_lp5x(mem_cfg, &mb_cfg->lp5x_config);
@@ -221,9 +207,9 @@ void memcfg_init(FSPM_UPD *memupd, const struct mb_cfg *mb_cfg,
 		die("Unsupported memory type(%d)\n", mb_cfg->type);
 	}
 
-	mem_populate_channel_data(memupd, &soc_mem_cfg[mb_cfg->type], spd_info,
-					 half_populated, &data);
-	mem_init_spd_upds(mem_cfg, &data);
+	mem_populate_channel_data(memupd, &soc_mem_cfg[mb_cfg->type], spd_info, half_populated,
+			&data);
+	mem_init_spd_upds(mem_cfg, &data, expand_channels);
 	mem_init_dq_upds(mem_cfg, &data, mb_cfg, dq_dqs_auto_detect);
 	mem_init_dqs_upds(mem_cfg, &data, mb_cfg, dq_dqs_auto_detect);
 }
