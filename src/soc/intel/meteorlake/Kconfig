@@ -333,11 +333,11 @@ config VBOOT_HASH_BLOCK_SIZE
 
 config CBFS_SIZE
 	hex
-	default 0x200000
+	default 0x400000
 
 config PRERAM_CBMEM_CONSOLE_SIZE
 	hex
-	default 0x2000
+	default 0x4000
 
 config CONSOLE_CBMEM_BUFFER_SIZE
 	hex
