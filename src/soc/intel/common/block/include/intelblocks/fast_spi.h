@@ -111,5 +111,7 @@ void fast_spi_set_bde(void);
  * Set FAST_SPIBAR Vendor Component Lock bit.
  */
 void fast_spi_set_vcl(void);
+/* Check if flash descriptor override is asserted */
+bool fast_spi_flash_descriptor_override(void);
 
 #endif	/* SOC_INTEL_COMMON_BLOCK_FAST_SPI_H */
