@@ -11,6 +11,7 @@
 #include <device/pci_ids.h>
 #include <device/pci_ops.h>
 #include <intelblocks/cse.h>
+#include <intelblocks/fast_spi.h>
 #include <intelblocks/me.h>
 #include <intelblocks/pmclib.h>
 #include <intelblocks/post_codes.h>
@@ -1310,10 +1311,17 @@ static void cse_set_state(struct device *dev)
 
 	size_t enable_reply_size;
 
-	/* Function Start */
-
 	int send;
 	int result;
+
+	/* Function Start */
+
+	if (fast_spi_flash_descriptor_override()) {
+		printk(BIOS_WARNING, "HECI: not setting ME state because "
+			"flash descriptor override is enabled\n");
+		return;
+	}
+
 	/*
 	 * Check if the CMOS value "me_state" exists, if it doesn't, then
 	 * don't do anything.
