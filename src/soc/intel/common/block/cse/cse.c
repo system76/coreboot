@@ -11,6 +11,7 @@
 #include <device/pci_ids.h>
 #include <device/pci_ops.h>
 #include <intelblocks/cse.h>
+#include <intelblocks/fast_spi.h>
 #include <intelblocks/me.h>
 #include <intelblocks/pmclib.h>
 #include <intelblocks/post_codes.h>
@@ -1268,6 +1269,10 @@ static void me_reset_with_count(void)
 
 static void cse_set_state(struct device *dev)
 {
+	if (fast_spi_flash_descriptor_override()) {
+		printk(BIOS_WARNING, "ME: not setting state because flash descriptor override is enabled\n");
+		return;
+	}
 
 	/* (CS)ME Disable Command */
 	struct me_disable_command {
