@@ -6,17 +6,6 @@
 #include <device/smbus_host.h>
 #include "smbuslib.h"
 
-static const struct spd_offset_table spd_ddr5_table[] = {
-{   0,               1 }, /* General Configuration section */
-{   2,               2 }, /* General Configuration section */
-{   3,              47 }, /* General Configuration section */
-{ 126,             127 }, /* General Configuration section */
-{ 192,             213 }, /* Module-Specific section */
-{ 230,             235 }, /* Module-Specific section */
-{ 512,             520 }, /* Module Supplier's data */
-{ 521,             550 }, /* Module Supplier's data */
-};
-
 static void update_spd_len(struct spd_block *blk)
 {
 	u8 i, j = 0;
@@ -24,8 +13,11 @@ static void update_spd_len(struct spd_block *blk)
 		if (blk->spd_array[i] != NULL)
 			j |= blk->spd_array[i][SPD_DRAM_TYPE];
 
-	/* If spd used is DDR4/5, then its length is 512 byte. */
-	if (j == SPD_DRAM_DDR4 || j == SPD_DRAM_DDR5)
+	/* If spd used is DDR5, then its length is 1024 byte. */
+	if (j == SPD_DRAM_DDR5)
+		blk->len = CONFIG_DIMM_SPD_SIZE;
+	/* If spd used is DDR4, then its length is 512 byte. */
+	else if (j == SPD_DRAM_DDR4)
 		blk->len = SPD_PAGE_LEN_DDR4;
 	else
 		blk->len = SPD_PAGE_LEN;
@@ -64,24 +56,23 @@ static void switch_page(u8 spd_addr, u8 new_page)
  * Read the SPD data over the SMBus, at the specified SPD address,
  * starting at the specified starting offset and read the given amount of data.
  */
-static void smbus_read_spd5(u8 *spd, u8 spd_addr, const u16 start, u8 size, u8 *const page)
+static void smbus_read_spd5(u8 *spd, u8 spd_addr, u16 size)
 {
-	u16 index;
+	u8 page = (u8) (~0);
 	u32 max_page_size = MAX_SPD_PAGE_SIZE_SPD5;
 
-	if ((start + size) >= MAX_SPD_SIZE) {
+	if (size > MAX_SPD_SIZE) {
 		printk(BIOS_ERR, "Maximum SPD size reached\n");
 		return;
 	}
 	for (int i = 0; i < size; i++) {
-		index = start + i;
-		u8 next_page = index / max_page_size;
-		if (next_page != *page) {
+		u8 next_page = (u8) (i / max_page_size);
+		if (next_page != page) {
 			switch_page(spd_addr, next_page);
-			*page = next_page;
+			page = next_page;
 		}
-		unsigned int byte_addr = SPD_HUB_MEMREG(index % max_page_size);
-		spd[index] = smbus_read_byte(spd_addr, byte_addr);
+		unsigned int byte_addr = SPD_HUB_MEMREG(i % max_page_size);
+		spd[i] = smbus_read_byte(spd_addr, byte_addr);
 	}
 }
 
@@ -120,18 +111,7 @@ static int get_spd(u8 *spd, u8 addr)
 	}
 
 	if (is_spd5_hub(addr)) {
-		const struct spd_offset_table *tbl;
-		u32 byte;
-		u32 stop;
-		u8 page;
-		page = (u8) (~0);
-		stop = ARRAY_SIZE(spd_ddr5_table);
-
-		for (byte = 0; byte < stop; byte++) {
-			tbl = &spd_ddr5_table[byte];
-			smbus_read_spd5(spd, addr,  tbl->start,
-					tbl->end - tbl->start + 1, &page);
-		}
+		smbus_read_spd5(spd, addr, CONFIG_DIMM_SPD_SIZE);
 
 		/* Reset the page for the next loop iteration */
 		reset_page_spd5(addr);
