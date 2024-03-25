@@ -14,6 +14,6 @@ void mainboard_silicon_init_params(FSP_S_CONFIG *params)
 	params->EnableTcssCovTypeA[1] = 0x81;
 	params->EnableTcssCovTypeA[3] = 0x85;
 
-	// Enable reporting CPU C10 state over eSPI.
-	params->PchEspiHostC10ReportEnable = 1;
+	// Disable reporting CPU C10 state over eSPI (causes LED flicker).
+	params->PchEspiHostC10ReportEnable = 0;
 }
