@@ -652,13 +652,6 @@ WEAK_DEV_PTR(tcss_usb3_port4);
 static void fill_fsps_tcss_params(FSP_S_CONFIG *s_cfg,
 		const struct soc_intel_alderlake_config *config)
 {
-	const struct device *tcss_port_arr[] = {
-		DEV_PTR(tcss_usb3_port1),
-		DEV_PTR(tcss_usb3_port2),
-		DEV_PTR(tcss_usb3_port3),
-		DEV_PTR(tcss_usb3_port4),
-	};
-
 	s_cfg->TcssAuxOri = config->tcss_aux_ori;
 
 	/* Explicitly clear this field to avoid using defaults */
@@ -676,8 +669,8 @@ static void fill_fsps_tcss_params(FSP_S_CONFIG *s_cfg,
 	s_cfg->D3ColdEnable = CONFIG(D3COLD_SUPPORT);
 
 	s_cfg->UsbTcPortEn = 0;
-	for (int i = 0; i < MAX_TYPE_C_PORTS; i++) {
-		if (is_dev_enabled(tcss_port_arr[i]))
+	for (int i = 0; i < ARRAY_SIZE(config->tcss_ports); i++) {
+		if (config->tcss_ports[i].enable)
 			s_cfg->UsbTcPortEn |= BIT(i);
 	}
 
