@@ -409,6 +409,20 @@ static void fill_fsps_acoustic_params(FSP_M_CONFIG *m_cfg,
 	}
 }
 
+static void fill_fspm_pci_ssid_params(FSP_M_CONFIG *m_cfg,
+		const struct soc_intel_meteorlake_config *config)
+{
+	const struct device *dev;
+
+	/* FSP moved setting HDA subsystem ID from FSP-S to FSP-M. */
+	dev = pcidev_path_on_root(PCI_DEVFN_HDA);
+	if (dev) {
+		uint32_t ssid = (dev->subsystem_device << 16) |
+			dev->subsystem_vendor;
+		m_cfg->PchHdaSubSystemIds = ssid;
+	}
+}
+
 static void soc_memory_init_params(FSP_M_CONFIG *m_cfg,
 		const struct soc_intel_meteorlake_config *config)
 {
@@ -433,6 +447,7 @@ static void soc_memory_init_params(FSP_M_CONFIG *m_cfg,
 		fill_fspm_vr_config_params,
 		fill_fspm_ibecc_params,
 		fill_fsps_acoustic_params,
+		fill_fspm_pci_ssid_params,
 	};
 
 	for (size_t i = 0; i < ARRAY_SIZE(fill_fspm_params); i++)
