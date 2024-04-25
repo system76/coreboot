@@ -282,6 +282,8 @@ static void fill_fspm_misc_params(FSP_M_CONFIG *m_cfg,
 static void fill_fspm_audio_params(FSP_M_CONFIG *m_cfg,
 		const struct soc_intel_meteorlake_config *config)
 {
+	const struct device *dev;
+
 	/* Audio: HDAUDIO_LINK_MODE I2S/SNDW */
 	m_cfg->PchHdaEnable = is_devfn_enabled(PCI_DEVFN_HDA);
 	m_cfg->PchHdaDspEnable = config->pch_hda_dsp_enable;
@@ -296,6 +298,12 @@ static void fill_fspm_audio_params(FSP_M_CONFIG *m_cfg,
 	memset(m_cfg->PchHdaAudioLinkDmicEnable, 0, sizeof(m_cfg->PchHdaAudioLinkDmicEnable));
 	memset(m_cfg->PchHdaAudioLinkSspEnable, 0, sizeof(m_cfg->PchHdaAudioLinkSspEnable));
 	memset(m_cfg->PchHdaAudioLinkSndwEnable, 0, sizeof(m_cfg->PchHdaAudioLinkSndwEnable));
+
+	dev = pcidev_path_on_root(PCI_DEVFN_HDA);
+	if (dev) {
+		uint32_t ssid = (dev->subsystem_device << 16) | dev->subsystem_vendor;
+		m_cfg->PchHdaSubSystemIds = ssid;
+	}
 }
 
 static void fill_fspm_cnvi_params(FSP_M_CONFIG *m_cfg,
