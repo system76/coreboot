@@ -3,5 +3,8 @@
 config BOARD_SYSTEM76_DARP10
 	bool "darp10"
 
+config BOARD_SYSTEM76_DARP10_B
+	bool "darp10-b"
+
 config BOARD_SYSTEM76_LEMP13
 	bool "lemp13"
