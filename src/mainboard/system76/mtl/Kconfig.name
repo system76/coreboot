@@ -8,3 +8,6 @@ config BOARD_SYSTEM76_DARP10_B
 
 config BOARD_SYSTEM76_LEMP13
 	bool "lemp13"
+
+config BOARD_SYSTEM76_LEMP13_B
+	bool "lemp13-b"
