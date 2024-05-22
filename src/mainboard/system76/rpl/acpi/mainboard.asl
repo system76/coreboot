@@ -11,8 +11,6 @@
 Scope (\_SB) {
 	#include "sleep.asl"
 	Scope (PCI0) {
-		#include "backlight.asl"
-
 #if CONFIG(DRIVERS_GFX_NVIDIA)
 #if CONFIG(SOC_INTEL_ALDERLAKE_PCH_P) || CONFIG(BOARD_SYSTEM76_BONW15)
 		Scope (PEG2) {
