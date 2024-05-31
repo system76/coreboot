@@ -73,6 +73,14 @@ static tpm_result_t tpm_setup_s3_helper(void)
 
 	default:
 		printk(BIOS_ERR, "TPM: Resume failed (%#x).\n", rc);
+		if (CONFIG(TPM2)) {
+			/*
+			 * TODO: Record EV_SEPARATOR event to indicate to host
+			 * that an error has occurred.
+			 */
+			printk(BIOS_WARNING, "TPM: Performing restart\n");
+			rc = tlcl_startup();
+		}
 		break;
 	}
 
