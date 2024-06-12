@@ -29,6 +29,7 @@ void mainboard_memory_init_params(FSPM_UPD *mupd)
 	nvidia_set_power(&config);
 
 	// Set primary display to internal graphics
+	// NOTE: Use iGFX as some units don't have a dGPU for hybrid graphics
 	mupd->FspmConfig.PrimaryDisplay = 0;
 
 	memcfg_init(mupd, &board_cfg, &spd_info, half_populated);
