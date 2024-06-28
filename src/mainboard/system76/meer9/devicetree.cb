@@ -1,0 +1,49 @@
+chip soc/intel/meteorlake
+	# Enable Enhanced Intel SpeedStep
+	register "eist_enable" = "1"
+
+	# Thermal
+	register "tcc_offset" = "8"
+
+	device cpu_cluster 0 on end
+
+	device domain 0 on
+		device ref system_agent on end
+		device ref igpu on
+			# DDIA is HDMI1, DDIB is HDMI2
+			register "ddi_ports_config" = "{
+				[DDI_PORT_A] = DDI_ENABLE_HPD | DDI_ENABLE_DDC,
+				[DDI_PORT_B] = DDI_ENABLE_HPD | DDI_ENABLE_DDC,
+			}"
+		end
+		device ref ioe_shared_sram on end
+		device ref pmc_shared_sram on end
+		device ref cnvi_wifi on
+			register "cnvi_bt_core" = "true"
+			register "cnvi_bt_audio_offload" = "true"
+			chip drivers/wifi/generic
+				register "wake" = "GPE0_PME_B0"
+				device generic 0 on end
+			end
+		end
+
+		device ref heci1 on end
+		device ref soc_espi on
+			register "gen1_dec" = "0x007c0281" # Port 0x280 to 0x2FF (unknown)
+			register "gen2_dec" = "0x000c0081" # Port 0x80 to 0x8F (debug)
+			chip drivers/pc80/tpm
+				device pnp 0c31.0 on end
+			end
+		end
+		device ref p2sb on end
+		device ref hda on
+			register "pch_hda_sdi_enable[0]" = "1"
+			register "pch_hda_audio_link_hda_enable" = "1"
+			register "pch_hda_idisp_codec_enable" = "1"
+			register "pch_hda_idisp_link_frequency" = "HDA_LINKFREQ_96MHZ"
+			register "pch_hda_idisp_link_tmode" = "HDA_TMODE_8T"
+		end
+		device ref smbus on end
+		device ref fast_spi on end
+	end
+end
