@@ -74,8 +74,8 @@ chip soc/intel/alderlake
 		device ref pcie_rp7 on
 			# PCH RP#7 x1, Clock 13 (GLAN)
 			register "pch_pcie_rp[PCH_RP(7)]" = "{
-				.clk_src = 13,
-				.clk_req = 13,
+				.clk_src = 15,
+				.clk_req = 15,
 				.flags = PCIE_RP_LTR | PCIE_RP_AER,
 			}"
 			device pci 00.0 on end
@@ -93,8 +93,8 @@ chip soc/intel/alderlake
 		device ref pcie_rp9 on
 			# PCH RP#9 x4, Clock 15 (TBT)
 			register "pch_pcie_rp[PCH_RP(9)]" = "{
-				.clk_src = 15,
-				.clk_req = 15,
+				.clk_src = 13,
+				.clk_req = 13,
 				.flags = PCIE_RP_HOTPLUG | PCIE_RP_LTR,
 			}"
 			chip drivers/intel/dtbt
