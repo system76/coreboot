@@ -14,7 +14,7 @@ Scope (\_SB) {
 		#include "backlight.asl"
 
 #if CONFIG(DRIVERS_GFX_NVIDIA)
-#if CONFIG(SOC_INTEL_ALDERLAKE_PCH_P) || CONFIG(BOARD_SYSTEM76_BONW15)
+#if CONFIG(SOC_INTEL_ALDERLAKE_PCH_P) || CONFIG(BOARD_SYSTEM76_BONW15) || CONFIG(BOARD_SYSTEM76_BONW15_B)
 		Scope (PEG2) {
 			#include <drivers/gfx/nvidia/acpi/tigerlake.asl>
 		}
