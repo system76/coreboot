@@ -126,9 +126,14 @@ Device (S76D) {
 	// Fan names
 	Method (NFAN, 0, Serialized) {
 		Return (Package() {
-			"CPU fan",
 #if CONFIG(EC_SYSTEM76_EC_DGPU)
+			"CPU fan",
 			"GPU fan",
+#elif CONFIG(EC_SYSTEM76_EC_FAN2)
+			"fan1",
+			"fan2",
+#else
+			"CPU fan",
 #endif
 		})
 	}
@@ -145,10 +150,6 @@ Device (S76D) {
 				Local0 = ^^PCI0.LPCB.EC0.DUT2
 				Local1 = ^^PCI0.LPCB.EC0.RPM2
 			}
-		}
-		If (Local1 != 0) {
-			// 60 * (EC frequency / 120) / 2
-			Local1 = 2156250 / Local1
 		}
 		Return ((Local1 << 8) | Local0)
 	}
