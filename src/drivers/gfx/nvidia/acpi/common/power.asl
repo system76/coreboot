@@ -19,7 +19,7 @@ Method(GC6I, 0, Serialized) {
 	// Put GPU into reset
 	Printf("      Put GPU into reset")
 	CTXS(DGPU_RST_N)
-	Sleep(5)
+	Sleep(10)
 
 	Printf("    GPU GC6I FINISH")
 }
@@ -31,7 +31,7 @@ Method(GC6O, 0, Serialized) {
 	// Bring GPU out of reset
 	Printf("      Bring GPU out of reset")
 	STXS(DGPU_RST_N)
-	Sleep(5)
+	Sleep(10)
 
 	// Exit L23
 	^^L23D()
@@ -57,7 +57,7 @@ Method (_ON, 0, Serialized) {
 	} Else {
 		Printf("    Standard RTD3 power on")
 		STXS(DGPU_PWR_EN)
-		Sleep(5)
+		Sleep(25)
 		GC6O()
 	}
 
@@ -86,7 +86,7 @@ Method (_OFF, 0, Serialized) {
 		Printf("    Standard RTD3 power off")
 		GC6I()
 		CTXS(DGPU_PWR_EN)
-		Sleep(5)
+		Sleep(25)
 	}
 
 	Printf("  GPU _OFF FINISH")
