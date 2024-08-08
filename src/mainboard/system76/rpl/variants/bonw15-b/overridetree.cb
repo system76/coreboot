@@ -50,6 +50,7 @@ chip soc/intel/alderlake
 				.clk_src = 2,
 				.clk_req = 11,
 				.flags = PCIE_RP_LTR | PCIE_RP_AER,
+				.pcie_rp_detect_timeout_ms = 50,
 			}"
 		end
 
@@ -68,6 +69,7 @@ chip soc/intel/alderlake
 				.clk_src = 12,
 				.clk_req = 12,
 				.flags = PCIE_RP_LTR | PCIE_RP_AER,
+				.pcie_rp_detect_timeout_ms = 50,
 			}"
 		end
 
@@ -108,6 +110,7 @@ chip soc/intel/alderlake
 				.clk_src = 10,
 				.clk_req = 10,
 				.flags = PCIE_RP_LTR | PCIE_RP_AER,
+				.pcie_rp_detect_timeout_ms = 50,
 			}"
 		end
 	end
