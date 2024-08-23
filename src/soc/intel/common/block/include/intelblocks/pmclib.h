@@ -227,6 +227,51 @@ const char *const *soc_smi_sts_array(size_t *a);
  */
 const char *const *soc_std_gpe_sts_array(size_t *a);
 
+#if CONFIG(SOC_INTEL_COMMON_BLOCK_ACPI_USE_GPE1)
+/*
+ * This function returns array of string which represents
+ * names for the STD GPE1 status register bits.
+ * Size of the array is returned as an output parameter.
+ */
+const char *const *soc_std_gpe1_sts_array(int idx, size_t *a);
+
+/*
+ * This function disables the corresponding STD GPE1 EN register bits
+ * based on standard GPE0 EN bits masks.
+ */
+void soc_pmc_disable_std_gpe1(uint32_t gpe0_mask);
+
+/*
+ * This function enables the corresponding STD GPE1 EN register bits
+ * based on standard GPE0 EN bits masks.
+ */
+void soc_pmc_enable_std_gpe1(uint32_t gpe0_mask);
+
+#else
+
+static inline const char *const *soc_std_gpe1_sts_array(int idx, size_t *a)
+{
+	return NULL;
+}
+
+static inline void soc_pmc_disable_std_gpe1(uint32_t gpe0_mask)
+{
+	/* nop */
+}
+
+static inline void soc_pmc_enable_std_gpe1(uint32_t gpe0_mask)
+{
+	/* nop */
+}
+
+#endif
+
+/* This function disables GPE1 bits based on its block mask */
+void pmc_disable_gpe1(int gpe, uint32_t mask);
+
+/* This function enables GPE1 bits based on its block mask */
+void pmc_enable_gpe1(int gpe, uint32_t mask);
+
 /*
  * This function gets the gpe0 dwX values from devicetree
  * for pmc_gpe_init which will use those to set the GPE_CFG
