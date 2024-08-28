@@ -5,25 +5,27 @@ chip soc/intel/meteorlake
 
 		device ref tbt_pcie_rp0 on end
 		device ref tcss_xhci on
-			#TODO
+			register "tcss_ports[0]" = "TCSS_PORT_DEFAULT(OC_SKIP)" # TBT
+			register "tcss_ports[1]" = "TCSS_PORT_DEFAULT(OC_SKIP)" # Type-C
+			register "tcss_ports[2]" = "TCSS_PORT_DEFAULT(OC_SKIP)" # USB3 Front
 		end
 		device ref tcss_dma0 on end
 		device ref xhci on
 			register "usb2_ports" = "{
-				[0] = USB2_PORT_MID(OC_SKIP),	/* TODO */
-				[1] = USB2_PORT_MID(OC_SKIP),	/* TODO */
-				[2] = USB2_PORT_MID(OC_SKIP),	/* TODO */
-				[3] = USB2_PORT_MID(OC_SKIP),	/* TODO */
-				[4] = USB2_PORT_MID(OC_SKIP),	/* TODO */
-				[5] = USB2_PORT_MID(OC_SKIP),	/* TODO */
-				[6] = USB2_PORT_MID(OC_SKIP),	/* TODO */
-				[7] = USB2_PORT_MID(OC_SKIP),	/* TODO */
-				[8] = USB2_PORT_MID(OC_SKIP),	/* TODO */
-				[9] = USB2_PORT_MID(OC_SKIP),	/* TODO */
+				[0] = USB2_PORT_MID(OC_SKIP),	/* USB3 Rear */
+				[1] = USB2_PORT_MID(OC_SKIP),	/* USB3 Rear */
+				[2] = USB2_PORT_MID(OC_SKIP),	/* USB2 Header */
+				[3] = USB2_PORT_MID(OC_SKIP),	/* USB2 Header */
+				[4] = USB2_PORT_TYPE_C(OC_SKIP),	/* TBT */
+				[5] = USB2_PORT_TYPE_C(OC_SKIP),	/* Type-C */
+				[6] = USB2_PORT_MID(OC_SKIP),	/* USB3 Front */
+				[7] = USB2_PORT_MID(OC_SKIP),	/* USB3 Front */
+				[8] = USB2_PORT_MID(OC_SKIP),	/* M.2 Key M */
+				[9] = USB2_PORT_MID(OC_SKIP),	/* M.2 Key E */
 			}"
 			register "usb3_ports" = "{
-				[0] = USB3_PORT_DEFAULT(OC_SKIP),	/* TODO */
-				[1] = USB3_PORT_DEFAULT(OC_SKIP),	/* TODO */
+				[0] = USB3_PORT_DEFAULT(OC_SKIP),	/* USB3 Rear */
+				[1] = USB3_PORT_DEFAULT(OC_SKIP),	/* USB3 Rear */
 			}"
 		end
 		device ref pcie_rp5 on
@@ -31,9 +33,8 @@ chip soc/intel/meteorlake
 			register "pcie_rp[PCH_RP(5)]" = "{
 				.clk_src = 2,
 				.clk_req = 2,
-				.flags = PCIE_RP_LTR | PCIE_RP_AER | PCIE_RP_CLK_SRC_UNUSED,
+				.flags = PCIE_RP_LTR | PCIE_RP_AER,
 			}"
-			register "pcie_clk_config_flag[2]" = "PCIE_CLK_FREE_RUNNING"
 			device pci 00.0 on end
 		end
 		device ref pcie_rp6 on
@@ -78,6 +79,5 @@ chip soc/intel/meteorlake
 		device ref hda on
 			subsystemid 0x1849 0x0256
 		end
-		device ref gbe on end
 	end
 end

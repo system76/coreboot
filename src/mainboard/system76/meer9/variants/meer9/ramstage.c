@@ -4,6 +4,13 @@
 
 void mainboard_silicon_init_params(FSP_S_CONFIG *params)
 {
+	// Enable TCP2 USB-A conversion
+	// BIT 0:3 is mapping to PCH XHCI USB2 port
+	// BIT 4:5 is reserved
+	// BIT 6 is orientational
+	// BIT 7 is enable
+	params->EnableTcssCovTypeA[2] = 0x87;
+
 	// XXX: Enabling C10 reporting causes system to constantly enter and
 	// exit opportunistic suspend when idle.
 	params->PchEspiHostC10ReportEnable = 0;
