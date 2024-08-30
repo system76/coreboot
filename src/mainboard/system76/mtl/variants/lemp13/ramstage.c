@@ -11,8 +11,8 @@ void mainboard_silicon_init_params(FSP_S_CONFIG *params)
 	// BIT 4:5 is reserved
 	// BIT 6 is orientational
 	// BIT 7 is enable
-	//params->EnableTcssCovTypeA[1] = 0x81;
-	//params->EnableTcssCovTypeA[3] = 0x85;
+	params->EnableTcssCovTypeA[1] = 0x81;
+	params->EnableTcssCovTypeA[3] = 0x85;
 
 	// Disable reporting CPU C10 state over eSPI (causes LED flicker).
 	params->PchEspiHostC10ReportEnable = 0;
