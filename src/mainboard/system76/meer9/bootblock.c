@@ -36,6 +36,8 @@ static void superio_init(void)
 
 	printk(BIOS_DEBUG, "configure GPIO (logical device 8)\n");
 	pnp_write_config(dev, 0x07, 0x08);
+	// Disable WDT1
+	pnp_write_config(dev, 0x30, 0x00); // Default is 0x01
 	// GPIO0 multi-function select, set GPIO0 as SUSLED
 	pnp_write_config(dev, 0xE0, 0x01); // Default is 0x00
 	pnp_write_config(dev, 0xE9, 0x00); // Default is 0xFF TODO?
@@ -68,6 +70,11 @@ static void superio_init(void)
 	pnp_write_config(dev, 0xE6, 0xE7); // Default is 0xFF
 	// Set GPIO 80-86 as open drain, and 87 as push-pull
 	pnp_write_config(dev, 0xE8, 0x7F); // Default is 0xFF
+
+	printk(BIOS_DEBUG, "configure deep sleep (logical device 16)\n");
+	pnp_write_config(dev, 0x07, 0x16);
+	// Set deep sleep delay time to 0s
+	pnp_write_config(dev, 0xE2, 0x00);
 
 	printk(BIOS_DEBUG, "exiting PNP config mode\n");
 	outb(0xAA, 0x2E);
