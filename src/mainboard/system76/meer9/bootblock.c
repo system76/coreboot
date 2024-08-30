@@ -4,11 +4,9 @@
 #include <device/pnp_ops.h>
 #include <mainboard/gpio.h>
 
-void bootblock_mainboard_early_init(void)
+static void superio_init(void)
 {
-	mainboard_configure_early_gpios();
-
-	//TODO: use superio driver
+	//TODO: use superio driver?
 	const pnp_devfn_t dev = PNP_DEV(0x2E, 0x00);
 
 	printk(BIOS_DEBUG, "entering PNP config mode\n");
@@ -56,7 +54,7 @@ void bootblock_mainboard_early_init(void)
 	pnp_write_config(dev, 0x07, 0x0B);
 	// Enable hardware monitor
 	pnp_write_config(dev, 0x30, 0x01); // Default is 0x00
-	// Set address (TODO: what is the IO port range?)
+	// Set address base to 0x290
 	pnp_write_config(dev, 0x60, 0x02);
 	pnp_write_config(dev, 0x61, 0x90);
 
@@ -73,4 +71,77 @@ void bootblock_mainboard_early_init(void)
 
 	printk(BIOS_DEBUG, "exiting PNP config mode\n");
 	outb(0xAA, 0x2E);
+}
+
+static void hm_write(uint8_t reg, uint8_t value)
+{
+	outb(reg, 0x295);
+	outb(value, 0x296);
+}
+
+static void hm_init(void)
+{
+    // Bank 2
+    hm_write(0x4E, 0x82);
+
+    // Enable PECI 3.0 with routine function
+    hm_write(0x00, 0x85);
+
+    // Enable PECI agent 30
+    hm_write(0x02, 0x10);
+
+    // PECI Tbase0 = 110C
+    hm_write(0x04, 110);
+
+    // Bank 3
+    hm_write(0x4E, 0x83);
+
+    // Enable PECI agent 0 mode
+    hm_write(0x90, 0x01);
+
+    // Bank 1
+    hm_write(0x4E, 0x81);
+
+    // CPUFAN T1 = 55C
+    hm_write(0x70, 55);
+    // CPUFAN FD1 = 25% = 0x3F
+    hm_write(0x74, 0x3F);
+
+    // CPUFAN T2 = 75C
+    hm_write(0x71, 75);
+    // CPUFAN FD2 = 50% = 0x7F
+    hm_write(0x75, 0x7F);
+
+    // CPUFAN T3 = 85C
+    hm_write(0x72, 85);
+    // CPUFAN FD3 = 65% = 0xA5
+    hm_write(0x76, 0xA5);
+
+    // CPUFAN T4 = 95C
+    hm_write(0x73, 95);
+    // CPUFAN FD4 = 85% = 0xD8
+    hm_write(0x77, 0xD8);
+
+    // CPUFAN critical temperature = 100C
+    hm_write(0x2A, 100);
+    // By default critical duty is 0xFF
+
+    // CPUFAN step up time = 1s
+    hm_write(0x24, 10);
+
+    // CPUFAN step down time = 0.5s
+    hm_write(0x25, 5);
+
+    // Use PECI agent 0 as CPUFAN monitoring source
+    hm_write(0x20, 0b01100);
+
+    // CPUFAN Smart Fan IV mode
+    hm_write(0x23, 0x40);
+}
+
+void bootblock_mainboard_early_init(void)
+{
+	mainboard_configure_early_gpios();
+	superio_init();
+	hm_init();
 }
