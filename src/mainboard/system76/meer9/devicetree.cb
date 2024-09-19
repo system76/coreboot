@@ -31,9 +31,6 @@ chip soc/intel/meteorlake
 		device ref soc_espi on
 			register "gen1_dec" = "0x007c0281" # Port 0x280 to 0x2FF (unknown)
 			register "gen2_dec" = "0x000c0081" # Port 0x80 to 0x8F (debug)
-			chip drivers/pc80/tpm
-				device pnp 0c31.0 on end
-			end
 		end
 		device ref p2sb on end
 		device ref hda on
@@ -45,5 +42,8 @@ chip soc/intel/meteorlake
 		end
 		device ref smbus on end
 		device ref fast_spi on end
+	end
+	chip drivers/crb
+		device mmio 0xfed40000 on end
 	end
 end
