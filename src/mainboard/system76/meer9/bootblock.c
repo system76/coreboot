@@ -3,26 +3,33 @@
 #include <bootblock_common.h>
 #include <device/pnp_ops.h>
 #include <mainboard/gpio.h>
+#include <superio/nuvoton/common/nuvoton.h>
+
+#define GLOBAL_DEV	PNP_DEV(0x2E, 0x00)
+#define SERIAL_DEV	PNP_DEV(0x2E, 0x02)
+#define ACPI_DEV	PNP_DEV(0x2E, 0x0A)
 
 static void superio_init(void)
 {
-	//TODO: use superio driver?
-	const pnp_devfn_t dev = PNP_DEV(0x2E, 0x00);
+	pnp_devfn_t dev = PNP_DEV(0x2E, 0x00);
+
+	// Enable UART
+	nuvoton_enable_serial(SERIAL_DEV, CONFIG_TTYS0_BASE);
 
 	printk(BIOS_DEBUG, "entering PNP config mode\n");
-	outb(0x87, 0x2E);
-	outb(0x87, 0x2E);
+	nuvoton_pnp_enter_conf_state(GLOBAL_DEV);
 
 	printk(BIOS_DEBUG, "configure global PNP\n");
 	//TODO: document these
-	pnp_write_config(dev, 0x1A, 0x88); // Default is 0x03
-	pnp_write_config(dev, 0x1B, 0x00); // Default is 0x03
-	pnp_write_config(dev, 0x1D, 0x08); // Default is 0x00
-	pnp_write_config(dev, 0x2C, 0x03); // Default is 0x0F
-	pnp_write_config(dev, 0x2F, 0xE4); // Default is 0x74
+	pnp_write_config(GLOBAL_DEV, 0x1A, 0x88); // Default is 0x03
+	pnp_write_config(GLOBAL_DEV, 0x1B, 0x00); // Default is 0x03
+	pnp_write_config(GLOBAL_DEV, 0x1D, 0x08); // Default is 0x00
+	pnp_write_config(GLOBAL_DEV, 0x2C, 0x03); // Default is 0x0F
+	pnp_write_config(GLOBAL_DEV, 0x2F, 0xE4); // Default is 0x74
 
 	printk(BIOS_DEBUG, "configure GPIO (logical device 7)\n");
-	pnp_write_config(dev, 0x07, 0x07);
+	dev = PNP_DEV(0x2E, 0x07);
+	pnp_set_logical_device(dev);
 	// Enable GPIO 0, 5, and 6
 	pnp_write_config(dev, 0x30, 0x61); // Default is 0x00
 	// Set GPIO 00-06 as output, 07 as input
@@ -35,8 +42,10 @@ static void superio_init(void)
 	pnp_write_config(dev, 0xF9, 0x18); // Default is 0x00
 
 	printk(BIOS_DEBUG, "configure GPIO (logical device 8)\n");
-	pnp_write_config(dev, 0x07, 0x08);
+	dev = PNP_DEV(0x2E, 0x08);
+	pnp_set_logical_device(dev);
 	// Disable WDT1
+	pnp_write_config(dev, 0xF1, 0x00);
 	pnp_write_config(dev, 0x30, 0x00); // Default is 0x01
 	// GPIO0 multi-function select, set GPIO0 as SUSLED
 	pnp_write_config(dev, 0xE0, 0x01); // Default is 0x00
@@ -44,7 +53,8 @@ static void superio_init(void)
 	pnp_write_config(dev, 0xEA, 0x00); // Default is 0xFF TODO?
 
 	printk(BIOS_DEBUG, "configure GPIO (logical device 9)\n");
-	pnp_write_config(dev, 0x07, 0x09);
+	dev = PNP_DEV(0x2E, 0x09);
+	pnp_set_logical_device(dev);
 	// Enable GPIO 8 and 9
 	pnp_write_config(dev, 0x30, 0x03); // Default is 0x00
 	// GPIO 80-86 set as input, 87 as output
@@ -52,8 +62,13 @@ static void superio_init(void)
 	// GPIO 87 set high
 	pnp_write_config(dev, 0xF1, 0x80); // Default is 0xFF
 
+	// Power RAM in S3 and let the PCH handle power failure actions.
+	pnp_set_logical_device(ACPI_DEV);
+	pnp_write_config(ACPI_DEV, 0xE4, 0x70);
+
 	printk(BIOS_DEBUG, "configure hardware monitor (logical device B)\n");
-	pnp_write_config(dev, 0x07, 0x0B);
+	dev = PNP_DEV(0x2E, 0x0B);
+	pnp_set_logical_device(dev);
 	// Enable hardware monitor
 	pnp_write_config(dev, 0x30, 0x01); // Default is 0x00
 	// Set address base to 0x290
@@ -61,7 +76,8 @@ static void superio_init(void)
 	pnp_write_config(dev, 0x61, 0x90);
 
 	printk(BIOS_DEBUG, "configure GPIO (logical device F)\n");
-	pnp_write_config(dev, 0x07, 0x0F);
+	dev = PNP_DEV(0x2E, 0x0F);
+	pnp_set_logical_device(dev);
 	// Set GPIO 00, 01, and 07 as open drain, and 2-6 as push-pull
 	pnp_write_config(dev, 0xE0, 0x83); // Default is 0xFF
 	// Set GPIO 52-57 as open drain, and 50-51 as push-pull
@@ -72,12 +88,13 @@ static void superio_init(void)
 	pnp_write_config(dev, 0xE8, 0x7F); // Default is 0xFF
 
 	printk(BIOS_DEBUG, "configure deep sleep (logical device 16)\n");
-	pnp_write_config(dev, 0x07, 0x16);
+	dev = PNP_DEV(0x2E, 0x16);
+	pnp_set_logical_device(dev);
 	// Set deep sleep delay time to 0s
 	pnp_write_config(dev, 0xE2, 0x00);
 
 	printk(BIOS_DEBUG, "exiting PNP config mode\n");
-	outb(0xAA, 0x2E);
+	nuvoton_pnp_exit_conf_state(GLOBAL_DEV);
 }
 
 static void hm_write(uint8_t reg, uint8_t value)

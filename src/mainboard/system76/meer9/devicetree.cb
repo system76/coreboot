@@ -31,6 +31,27 @@ chip soc/intel/meteorlake
 		device ref soc_espi on
 			register "gen1_dec" = "0x007c0281" # Port 0x280 to 0x2FF (unknown)
 			register "gen2_dec" = "0x000c0081" # Port 0x80 to 0x8F (debug)
+
+			chip superio/nuvoton/nct5525d
+				device pnp 2e.2 on	# UARTA
+					io 0x60 = 0x3f8
+					irq 0x70 = 4
+				end
+				device pnp 2e.5 off end # KBC
+				device pnp 2e.6 off end # CIR
+				device pnp 2e.7 off end # GPIO
+				device pnp 2e.8 off end # GPIO, WDT1
+				device pnp 2e.9 off end # GPIO
+				device pnp 2e.a off end # ACPI
+				device pnp 2e.b off end # HM, LED
+				device pnp 2e.d off end # WDT2
+				device pnp 2e.e off end # CIR WAKE-UP
+				device pnp 2e.f off end # GPIO
+				device pnp 2e.10 off end # UARTC
+				device pnp 2e.14 off end # PORT80, IR
+				device pnp 2e.15 off end # FADING LED
+				device pnp 2e.16 off end # DEEP SLEEP
+			end
 		end
 		device ref p2sb on end
 		device ref hda on
