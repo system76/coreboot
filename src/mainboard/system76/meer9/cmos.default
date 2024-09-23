@@ -2,4 +2,4 @@
 
 boot_option=Fallback
 debug_level=Debug
-me_state=Disable
+me_state=Enable
