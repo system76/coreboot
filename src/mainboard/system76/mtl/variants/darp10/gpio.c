@@ -196,7 +196,7 @@ static const struct pad_config gpio_table[] = {
 	PAD_CFG_NF(GPP_V09, NONE, DEEP, NF1), // SLP_WLAN#
 	PAD_NC(GPP_V10, NONE),
 	PAD_CFG_NF(GPP_V11, NONE, DEEP, NF1), // LANPHYPC
-	PAD_CFG_GPO(GPP_V12, 0, DEEP), // SLP_LAN#
+	PAD_CFG_NF(GPP_V12, NONE, DEEP, NF1), // SLP_LAN#
 	// GPP_V13 missing
 	PAD_CFG_NF(GPP_V14, NONE, DEEP, NF1), // PCIE_WAKE#
 	// GPP_V15 missing
