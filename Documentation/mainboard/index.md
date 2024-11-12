@@ -57,6 +57,7 @@ P8Z77-M Pro <asus/p8z77-m_pro.md>
 P8Z77-V <asus/p8z77-v.md>
 P8Z77-V LE PLUS <asus/p8z77-v_le_plus.md>
 wifigo_v1 <asus/wifigo_v1.md>
+PRIME H610M-K D4 <asus/h610m-k.md>
 ```
 
 ## Cavium

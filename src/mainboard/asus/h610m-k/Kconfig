@@ -1,0 +1,35 @@
+## SPDX-License-Identifier: GPL-2.0-only
+
+config BOARD_ASUS_H610M_K
+	select BOARD_ROMSIZE_KB_16384
+	select HAVE_ACPI_RESUME
+	select HAVE_ACPI_TABLES
+	select INTEL_GMA_HAVE_VBT
+	select SOC_INTEL_ALDERLAKE_PCH_S
+	select SOC_INTEL_COMMON_BLOCK_HDA_VERB
+	select SUPERIO_NUVOTON_COMMON_COM_A
+	select SUPERIO_NUVOTON_COMMON_HWM
+	select SUPERIO_NUVOTON_NCT6791D
+	select USE_LEGACY_8254_TIMER
+
+if BOARD_ASUS_H610M_K
+
+config MAINBOARD_DIR
+	default "asus/h610m-k"
+
+config MAINBOARD_PART_NUMBER
+	default "ASUS PRIME H610M-K D4"
+
+config UART_FOR_CONSOLE
+	int
+	default 0
+
+config USE_PM_ACPI_TIMER
+	bool
+	default n
+
+config CBFS_SIZE
+	hex
+	default 0xb00000
+
+endif

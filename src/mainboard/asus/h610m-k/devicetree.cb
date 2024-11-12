@@ -1,0 +1,116 @@
+chip soc/intel/alderlake
+	register "eist_enable" = "true"
+
+	device domain 0 on
+		# PCIe x16 slot
+		device ref pcie5_0 on
+			register "cpu_pcie_rp[CPU_RP(2)]" = "{
+				.clk_src = 0,
+				.clk_req = 0,
+				.flags = PCIE_RP_LTR | PCIE_RP_AER,
+			}"
+		end
+
+		device ref igpu on end
+
+		device ref xhci on
+			register "usb2_ports" = "{
+				[0] = USB2_PORT_MID(OC0), // USB3 front header
+				[1] = USB2_PORT_MID(OC0), // USB3 front header
+				[2] = USB2_PORT_MID(OC1), // USB3 back
+				[3] = USB2_PORT_MID(OC1), // USB3 back
+				[4] = USB2_PORT_MID(OC2), // USB2 back
+				[5] = USB2_PORT_MID(OC2), // USB2 back
+				[6] = USB2_PORT_MID(OC3), // USB2 back
+				[7] = USB2_PORT_MID(OC3), // USB2 back
+				[8] = USB2_PORT_MID(OC4), // USB2 front header
+				[13] = USB2_PORT_MID(OC4), // USB2 front header
+			}"
+
+			register "usb3_ports" = "{
+				[0] = USB3_PORT_DEFAULT(OC0), // USB3 front header
+				[1] = USB3_PORT_DEFAULT(OC0), // USB3 front header
+				[2] = USB3_PORT_DEFAULT(OC1), // USB3 back
+				[3] = USB3_PORT_DEFAULT(OC1), // USB3 back
+			}"
+		end
+
+		device ref sata on
+			register "sata_ports_enable" = "{
+				[4] = 1,
+				[5] = 1,
+				[6] = 1,
+				[7] = 1,
+			}"
+		end
+
+		# PCIe x1 slot
+		device ref pcie_rp1 on
+			register "pch_pcie_rp[PCH_RP(1)]" = "{
+				.clk_src = 5,
+				.clk_req = 5,
+				.flags = PCIE_RP_LTR | PCIE_RP_AER,
+			}"
+		end
+
+		# LAN controller
+		device ref pcie_rp4 on
+			register "pch_pcie_rp[PCH_RP(4)]" = "{
+				.clk_src = 4,
+				.clk_req = 4,
+				.flags = PCIE_RP_LTR | PCIE_RP_AER | PCIE_RP_BUILT_IN,
+			}"
+
+			device pci 00.0 on end
+		end
+
+		# M.2 slot
+		device ref pcie_rp5 on
+			register "pch_pcie_rp[PCH_RP(5)]" = "{
+				.clk_src = 11,
+				.clk_req = 11,
+				.flags = PCIE_RP_LTR | PCIE_RP_AER,
+			}"
+		end
+
+		device ref pch_espi on
+			# HWM I/O decode range
+			register "gen1_dec" = "0x007c0281"
+
+			chip superio/nuvoton/nct6791d
+				device pnp 2e.1   off end # Parallel port (this line needed for super i/o init to work)
+				device pnp 2e.2   on      # UART A
+					io  0x60 = 0x03f8
+					irq 0x70 = 4
+
+					# Pin 121 is PECI
+					irq 0x2c = 0
+				end
+				device pnp 2e.5   on      # PS/2 KBC
+					io  0x60 = 0x0060
+					io  0x62 = 0x0064
+					irq 0x70 = 1
+					irq 0x72 = 12
+					irq 0xf0 = 0x82
+				end
+				device pnp 2e.b   on      # HWM
+					io  0x60 = 0x0290
+					io  0x62 = 0x0b00
+					io  0x64 = 0x0a00
+					irq 0xf0 = 0xfe
+				end
+			end
+		end
+
+		device ref hda on
+			register "pch_hda_audio_link_hda_enable" = "1"
+			register "pch_hda_sdi_enable[0]" = "1"
+			register "pch_hda_dsp_enable" = "0"
+			register "pch_hda_idisp_link_tmode" = "HDA_TMODE_8T"
+			register "pch_hda_idisp_link_frequency" = "HDA_LINKFREQ_96MHZ"
+			register "pch_hda_idisp_codec_enable" = "1"
+		end
+
+		device ref smbus on end
+	end
+end

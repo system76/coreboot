@@ -1,0 +1,4 @@
+## SPDX-License-Identifier: GPL-2.0-only
+
+config BOARD_ASUS_H610M_K
+	bool "PRIME H610M-K D4"

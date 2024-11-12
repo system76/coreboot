@@ -1,0 +1,7 @@
+Category: desktop
+Board URL: https://www.asus.com/motherboards-components/motherboards/prime/prime-h610m-k-d4/
+ROM IC: W25Q128JSQ
+ROM package: SOIC-8
+ROM socketed: no
+Flashrom support: yes
+Release year: 2021
