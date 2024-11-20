@@ -83,6 +83,7 @@ config MAINBOARD_VERSION
 	default "lemp13-b" if BOARD_SYSTEM76_LEMP13_B
 
 config CMOS_DEFAULT_FILE
+	default "src/mainboard/\$(MAINBOARDDIR)/cmos-csme.default" if BOARD_SYSTEM76_DARP10 || BOARD_SYSTEM76_DARP10_B
 	default "src/mainboard/\$(MAINBOARDDIR)/cmos.default"
 
 config CONSOLE_POST

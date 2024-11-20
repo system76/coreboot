@@ -14,4 +14,7 @@ void mainboard_silicon_init_params(FSP_S_CONFIG *params)
 	// XXX: Enabling C10 reporting causes system to constantly enter and
 	// exit opportunistic suspend when idle.
 	params->PchEspiHostC10ReportEnable = 0;
+
+	// Ensure WoL is not enabled when on battery.
+	params->PchPmSlpLanLowDc = 1;
 }
