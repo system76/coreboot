@@ -20,6 +20,14 @@ config SOC_AMD_COMMON_BLOCK_PSP_GEN2
 	help
 	  Used by the PSP in AMD family 17h, 19h and possibly newer CPUs.
 
+config SOC_AMD_COMMON_BLOCK_PSP_GEN2_EARLY_ACCESS
+	bool
+	depends on SOC_AMD_COMMON_BLOCK_PSP_GEN2
+	select SOC_AMD_COMMON_BLOCK_SMN
+	help
+	  Allow PSP mailbox access in bootblock and romstage using the SMN
+	  access method to the mailbox registers.
+
 config SOC_AMD_PSP_SELECTABLE_SMU_FW
 	bool
 	help

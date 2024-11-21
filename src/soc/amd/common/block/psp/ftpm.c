@@ -8,12 +8,12 @@
 
 uintptr_t psp_ftpm_base_address(void)
 {
-	const uintptr_t psp_base = get_psp_mmio_base();
-	if (!psp_base)
+	const uint64_t base = psp_get_base();
+	if (!base)
 		return 0;
 
 	/* TPM MMIO space starts 0xA0 bytes before MBOX */
-	return psp_base + CONFIG_PSPV2_MBOX_CMD_OFFSET - 0xA0;
+	return base + CONFIG_PSPV2_MBOX_CMD_OFFSET - 0xA0;
 }
 
 /*

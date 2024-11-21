@@ -84,13 +84,13 @@ static const char *fuse_status_to_string(uint32_t status)
 
 static enum cb_err get_psb_status(uint32_t *psb_status_value)
 {
-	const uintptr_t psp_mmio = get_psp_mmio_base();
+	const uint64_t base = psp_get_base();
 
-	if (!psp_mmio) {
+	if (!base) {
 		printk(BIOS_WARNING, "PSP: PSP_ADDR_MSR uninitialized\n");
 		return CB_ERR;
 	}
-	*psb_status_value = read32p(psp_mmio | PSB_STATUS_OFFSET);
+	*psb_status_value = psp_read32(base, PSB_STATUS_OFFSET);
 	return CB_SUCCESS;
 }
 

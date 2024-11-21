@@ -175,7 +175,17 @@ enum mbox_p2c_status {
 	 MBOX_PSP_SPI_BUSY		= 0x0b,
 };
 
-uintptr_t get_psp_mmio_base(void);
+/*
+ * PSP register base retrieval and register access functions used by the PSP v2
+ * code. Those are used to do the register access depending on the stage either
+ * via SMN or via MMIO, sinc ethe MMIO access method is only available later in
+ * boot while the SMN access will already work before that, but has a bit more
+ * overhead compared to MMIO.
+ */
+uint64_t psp_get_base(void);
+uint32_t psp_read32(uint64_t base, uint32_t offset);
+void psp_write32(uint64_t base, uint32_t offset, uint32_t data);
+void psp_write64(uint64_t base, uint32_t offset, uint64_t data);
 
 void psp_print_cmd_status(int cmd_status, struct mbox_buffer_header *header);
 
