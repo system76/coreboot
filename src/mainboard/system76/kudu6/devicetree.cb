@@ -1,0 +1,59 @@
+# SPDX-License-Identifier: GPL-2.0-only
+
+chip soc/amd/cezanne
+
+	register "common_config.acp_config" = "{
+		.acp_pin_cfg = I2S_PINS_I2S_TDM,
+		.acp_i2s_wake_enable = 0,
+		.acp_pme_enable = 0,
+		.dmic_present = 1,
+	}"
+
+	register "i2c_scl_reset" = "GPIO_I2C0_SCL | GPIO_I2C1_SCL |
+					GPIO_I2C2_SCL | GPIO_I2C3_SCL"
+	# I2C Pad Control RX Select Configuration
+	register "i2c_pad[0].rx_level" = "I2C_PAD_RX_3_3V" # Trackpad
+	register "i2c_pad[1].rx_level" = "I2C_PAD_RX_3_3V" # NC
+	register "i2c_pad[2].rx_level" = "I2C_PAD_RX_3_3V" # DDR4
+	register "i2c_pad[3].rx_level" = "I2C_PAD_RX_3_3V" # USB-PD
+
+
+	register "s0ix_enable" = "true"
+
+	register "pspp_policy" = "DXIO_PSPP_BALANCED"
+
+	register "gpp_clk_config[0]" = "GPP_CLK_REQ"
+	register "gpp_clk_config[1]" = "GPP_CLK_REQ"
+	register "gpp_clk_config[2]" = "GPP_CLK_OFF"
+	register "gpp_clk_config[3]" = "GPP_CLK_OFF"
+	register "gpp_clk_config[4]" = "GPP_CLK_REQ"
+	register "gpp_clk_config[5]" = "GPP_CLK_REQ"
+	register "gpp_clk_config[6]" = "GPP_CLK_REQ"
+
+	#TODO: USB?
+
+	device domain 0 on
+		device ref iommu on end
+		device ref gpp_gfx_bridge_0 on end # DGPU
+		device ref gpp_bridge_0 on end # LAN
+		device ref gpp_bridge_1 on end # WLAN
+		device ref gpp_bridge_2 on end # SSD2
+		device ref gpp_bridge_3 on end # SSD1
+		device ref gpp_bridge_a on  # Internal GPP Bridge 0 to Bus A
+			device ref gfx on end # Internal GPU (GFX)
+			device ref gfx_hda on end # GFX HD Audio Controller
+			device ref crypto on end # Crypto Coprocessor
+			device ref xhci_0 on end # USB 3.1 (USB0)
+			device ref xhci_1 on end # USB 3.1 (USB1)
+			device ref acp on end # Audio Processor
+			device ref hda on end # HD Audio Controller
+		end
+		device ref gpp_bridge_b on  # Internal GPP Bridge 1 to Bus B
+			device ref sata_0 on end # SATA
+			device ref sata_1 on end # SATA
+		end
+	end
+
+	device ref uart_0 on end # UART0
+
+end
