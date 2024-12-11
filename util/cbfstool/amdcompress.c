@@ -17,6 +17,7 @@
 #define DIR_UNDEF 0
 #define DIR_COMP 1
 #define DIR_UNCOMP 2
+#define DIR_COPY 3
 
 typedef struct _header {
 	uint32_t rsvd1[5];
@@ -32,6 +33,7 @@ static struct option long_options[] = {
 	{"compress",         no_argument,       0, 'c' },
 	{"maxsize",          required_argument, 0, 'm' },
 	{"uncompress",       no_argument,       0, 'u' },
+	{"elfcopy",          no_argument,       0, 'p' },
 	{"help",             no_argument,       0, 'h' },
 };
 
@@ -44,6 +46,7 @@ static void usage(void)
 	printf("-i | --infile <FILE>         Input file\n");
 	printf("-o | --outfile <FILE>        Output file\n");
 	printf("-c | --compress              Compress\n");
+	printf("-p | --elfcopy               Copy\n");
 	printf("-m | --maxsize <HEX_VAL>     Maximum uncompressed size (optional)\n");
 	printf("                              * On compress: verify uncompressed size\n");
 	printf("                                will be less than or equal maxsize\n");
@@ -133,7 +136,9 @@ static int iself(const void *input)
  * Those two functions can operate on streams and process chunks of data.
  */
 
-/* Build the required header and follow it with the compressed image.  Detect
+/*
+ * zlib compressed case:
+ * Build the required header and follow it with the compressed image. Detect
  * whether the input is an elf image, and if so, compress only the progbits.
  *
  *     header
@@ -151,7 +156,7 @@ static int iself(const void *input)
  *     |   ...                        |
  *   n +------------------------------+
  */
-static void do_compress(char *outf, char *inf, size_t max_size)
+static void do_process(char *outf, char *inf, size_t max_size, bool do_compress)
 {
 	int out_fd, in_fd;
 	struct buffer inbf, outbf;
@@ -195,6 +200,19 @@ static void do_compress(char *outf, char *inf, size_t max_size)
 		printf("\tError - size (%zx) exceeds specified max_size (%zx)\n",
 				inbf.size, max_size);
 		err = 1;
+		goto out_free_in;
+	}
+
+	if (!do_compress) {
+		/*
+		 * When no zlib compression is being used there's also no 256 byte header.
+		 * Simply copy the input to the output.
+		 */
+		err = 0;
+		if (write(out_fd, inbf.data, inbf.size) != (ssize_t)(inbf.size)) {
+			printf("\tError writing to %s\n", outf);
+			err = 1;
+		}
 		goto out_free_in;
 	}
 
@@ -344,6 +362,11 @@ int main(int argc, char *argv[])
 				usage();
 			direction = DIR_COMP;
 			break;
+		case 'p':
+			if (direction != DIR_UNDEF)
+				usage();
+			direction = DIR_COPY;
+			break;
 		case 'u':
 			if (direction != DIR_UNDEF)
 				usage();
@@ -360,7 +383,9 @@ int main(int argc, char *argv[])
 		usage();
 
 	if (direction == DIR_COMP)
-		do_compress(outf, inf, max_size);
+		do_process(outf, inf, max_size, true);
+	else if (direction == DIR_COPY)
+		do_process(outf, inf, max_size, false);
 	else
 		do_uncompress(outf, inf, max_size);
 
