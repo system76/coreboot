@@ -989,6 +989,10 @@ else
 CBFS_REGIONS := COREBOOT,COREBOOT_B
 endif
 endif
+ifeq ($(CONFIG_PSP_AB_RECOVERY),y)
+CBFS_REGIONS := COREBOOT,COREBOOT_B
+endif
+
 
 CBFS_REGION_COUNT := $(words $(subst $(comma),$(spc),$(CBFS_REGIONS)))
 

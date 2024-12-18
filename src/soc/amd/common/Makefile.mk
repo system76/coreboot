@@ -51,11 +51,16 @@ amdfw_offset=$(call int-subtract, \
 	$(CONFIG_AMD_FWM_POSITION) \
 	$(call get_fmap_value,$(amdfw_region_start)))
 
+ifeq ($(CONFIG_PSP_AB_RECOVERY),y)
+add_bootblock = \
+	$(CBFSTOOL) $(1) write -r EFS -f $(obj)/amdfw.rom --fill-upward
+
+else
 add_bootblock = \
 	$(CBFSTOOL) $(1) add -f $(2) -n apu/amdfw -t amdfw \
 	-b $(amdfw_offset) -r $(call regions-for-file,apu/amdfw) \
 	$(CBFSTOOL_ADD_CMD_OPTIONS)
-
+endif
 endif # ifeq ($(CONFIG_RESET_VECTOR_IN_RAM),y)
 
 ifeq ($(CONFIG_VBOOT_GSCVD),y)

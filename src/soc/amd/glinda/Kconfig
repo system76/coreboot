@@ -380,6 +380,15 @@ config PSPV2_MBOX_CMD_OFFSET
 	hex
 	default 0x10970
 
+config PSP_AB_RECOVERY
+	bool "Use A/B Recovery scheme"
+	depends on !VBOOT && !CHROMEOS
+	select CBFS_VERIFICATION
+	select SOC_AMD_COMMON_BLOCK_PSP_GEN2_EARLY_ACCESS
+	default n
+	help
+	  Enable the PSP A/B Recovery mechanism
+
 endmenu
 
 menu "RAS Config Options"

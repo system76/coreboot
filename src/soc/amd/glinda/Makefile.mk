@@ -42,6 +42,18 @@ CPPFLAGS_common += -I$(src)/soc/amd/glinda/acpi
 CPPFLAGS_common += -I$(src)/vendorcode/amd/fsp/glinda
 CPPFLAGS_common += -I$(src)/vendorcode/amd/fsp/common
 
+# Target an offset into the CBFS. AMDFWTOOL will align it again and
+# pad the space between the CBFS file header and the directory table.
+# 0x80 accounts for the cbfs_file struct + filename + metadata structs
+AMD_FW_AB_POSITION := 0x80
+
+ifeq ($(CONFIG_PSP_AB_RECOVERY), y)
+GLINDA_FW_A_RECOVERY=$(call int-add, \
+	$(call get_fmap_value,FMAP_SECTION_RECOVERY_A_START) $(AMD_FW_AB_POSITION))
+GLINDA_FW_B_RECOVERY=$(call int-add, \
+	$(call get_fmap_value,FMAP_SECTION_RECOVERY_B_START) $(AMD_FW_AB_POSITION))
+endif
+
 #
 # PSP Directory Table items
 #
@@ -162,6 +174,10 @@ OPT_BIOS_FWCOMPRESS=$(if $(CONFIG_CBFS_VERIFICATION), --bios-bin-uncomp)
 OPT_BIOS_NV_ST_BASE=$(call add_opt_prefix, $(PSP_BIOS_NV_ST_BASE), --variable-nvram-base)
 OPT_BIOS_NV_ST_SIZE=$(call add_opt_prefix, $(PSP_BIOS_NV_ST_SIZE), --variable-nvram-size)
 
+OPT_RECOVERY_AB=$(if $(CONFIG_PSP_AB_RECOVERY), --recovery-ab)
+OPT_RECOVERY_AB+=$(if $(CONFIG_PSP_AB_RECOVERY), --recovery-a-location $(call _tohex, $(GLINDA_FW_A_RECOVERY)))
+OPT_RECOVERY_AB+=$(if $(CONFIG_PSP_AB_RECOVERY), --recovery-b-location $(call _tohex, $(GLINDA_FW_B_RECOVERY)))
+
 AMDFW_COMMON_ARGS=$(OPT_PSP_APCB_FILES) \
 		$(OPT_PSP_NVRAM_BASE) \
 		$(OPT_PSP_NVRAM_SIZE) \
@@ -181,6 +197,7 @@ AMDFW_COMMON_ARGS=$(OPT_PSP_APCB_FILES) \
 		$(OPT_EFS_SPI_READ_MODE) \
 		$(OPT_EFS_SPI_SPEED) \
 		$(OPT_EFS_SPI_MICRON_FLAG) \
+		$(OPT_RECOVERY_AB) \
 		--config $(CONFIG_AMDFW_CONFIG_FILE) \
 		--flashsize $(CONFIG_ROM_SIZE) \
 		$(OPT_BIOS_NV_ST_BASE) \
@@ -203,6 +220,22 @@ $(obj)/amdfw.rom:	$(call strip_quotes, $(PSP_BIOSBIN_FILE)) \
 		--location $(CONFIG_AMD_FWM_POSITION) \
 		--output $@
 
+ifeq ($(CONFIG_PSP_AB_RECOVERY),y)
+
+regions-for-file-apu/amdfw_ra = BOOTBLOCK
+regions-for-file-apu/amdfw_rb = BOOTBLOCK_B
+
+cbfs-files-y += apu/amdfw_ra
+apu/amdfw_ra-file := $(obj)/amdfw.rom.ra
+apu/amdfw_ra-position := $(AMD_FW_AB_POSITION)
+apu/amdfw_ra-type := amdfw
+
+cbfs-files-y += apu/amdfw_rb
+apu/amdfw_rb-file := $(obj)/amdfw.rom.rb
+apu/amdfw_rb-position := $(AMD_FW_AB_POSITION)
+apu/amdfw_rb-type := amdfw
+
+endif
 #
 # Extracts everything from the ELF's first PT_LOAD area and compresses it.
 # This discards everything before PT_LOAD, every symbol, debug information
