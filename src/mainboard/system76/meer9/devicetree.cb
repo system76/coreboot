@@ -22,6 +22,7 @@ chip soc/intel/meteorlake
 				[DDI_PORT_B] = DDI_ENABLE_HPD | DDI_ENABLE_DDC,
 			}"
 		end
+		device ref vpu on end
 		device ref ioe_shared_sram on end
 		device ref pmc_shared_sram on end
 		device ref cnvi_wifi on
