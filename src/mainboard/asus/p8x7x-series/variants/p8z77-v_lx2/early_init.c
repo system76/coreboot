@@ -3,11 +3,11 @@
 #include <bootblock_common.h>
 #include <device/pnp_ops.h>
 #include <superio/nuvoton/common/nuvoton.h>
-#include <superio/nuvoton/nct6779d/nct6779d.h>
+#include <superio/nuvoton/nct5535d/nct5535d.h>
 
 #define GLOBAL_DEV PNP_DEV(CONFIG_SUPERIO_NUVOTON_PNP_BASE, 0)
-#define SERIAL_DEV PNP_DEV(CONFIG_SUPERIO_NUVOTON_PNP_BASE, NCT6779D_SP1)
-#define ACPI_DEV   PNP_DEV(CONFIG_SUPERIO_NUVOTON_PNP_BASE, NCT6779D_ACPI)
+#define SERIAL_DEV PNP_DEV(CONFIG_SUPERIO_NUVOTON_PNP_BASE, NCT5535D_SP1)
+#define ACPI_DEV   PNP_DEV(CONFIG_SUPERIO_NUVOTON_PNP_BASE, NCT5535D_ACPI)
 
 void bootblock_mainboard_early_init(void)
 {
