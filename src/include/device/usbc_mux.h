@@ -3,6 +3,9 @@
 #ifndef __USBC_MUX_H__
 #define __USBC_MUX_H__
 
+#include <stdbool.h>
+#include <stdint.h>
+
 /* struct to hold all USB-C mux related variables */
 struct usbc_mux_info {
 	bool dp; /* DP connected */
