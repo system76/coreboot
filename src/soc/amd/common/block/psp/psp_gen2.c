@@ -223,3 +223,51 @@ enum cb_err soc_read_c2p38(uint32_t *msg_38_value)
 	*msg_38_value = read32p(psp_mmio | CORE_2_PSP_MSG_38_OFFSET);
 	return CB_SUCCESS;
 }
+
+int psp_ab_recovery_set_bootpartition(const uint32_t partition)
+{
+	struct mbox_cmd_boot_partition_buffer  boot_partition_cmd = {
+		.header = {
+			.size = sizeof(boot_partition_cmd)
+		},
+		.boot_partition = partition,
+	};
+	int cmd_status;
+
+	cmd_status = send_psp_command(MBOX_BIOS_CMD_SET_BOOTPARTITION, &boot_partition_cmd);
+
+	/* buffer's status shouldn't change but report it if it does */
+	psp_print_cmd_status(cmd_status, &boot_partition_cmd.header);
+
+	return cmd_status;
+}
+
+int psp_ab_recovery_get_bootpartition(void)
+{
+	struct mbox_cmd_boot_partition_buffer  boot_partition_cmd = {
+		.header = {
+			.size = sizeof(boot_partition_cmd)
+		},
+		.boot_partition = 0xFFFFFFFF,
+	};
+	int cmd_status;
+
+	cmd_status = send_psp_command(MBOX_BIOS_CMD_GET_BOOTPARTITION, &boot_partition_cmd);
+
+	/* buffer's status shouldn't change but report it if it does */
+	psp_print_cmd_status(cmd_status, &boot_partition_cmd.header);
+
+	if (cmd_status < 0)
+		return cmd_status;
+
+	return boot_partition_cmd.boot_partition;
+}
+
+int psp_ab_recovery_toggle_bootpartition(void)
+{
+	int cmd_status = psp_ab_recovery_get_bootpartition();
+	if (cmd_status < 0)
+		return cmd_status;
+
+	return psp_ab_recovery_set_bootpartition(cmd_status ? 0 : 1);
+}

@@ -29,6 +29,8 @@
 #define MBOX_BIOS_CMD_HSTI_QUERY		0x14
 #define  HSTI_STATE_ROM_ARMOR_ENFORCED		BIT(11)
 #define MBOX_BIOS_CMD_PSB_AUTO_FUSING		0x21
+#define MBOX_BIOS_CMD_SET_BOOTPARTITION		0x26
+#define MBOX_BIOS_CMD_GET_BOOTPARTITION		0x36
 #define MBOX_BIOS_CMD_PSP_CAPS_QUERY		0x27
 #define MBOX_BIOS_CMD_SET_SPL_FUSE		0x2d
 #define MBOX_BIOS_CMD_SET_RPMC_ADDRESS		0x39
@@ -115,6 +117,17 @@ struct mbox_cmd_late_spl_buffer {
 	uint32_t	spl_value;
 } __packed __aligned(32);
 
+/*
+ * MBOX_BIOS_CMD_SET_BOOTPARTITION,
+ * MBOX_BIOS_CMD_GET_BOOTPARTITION
+ *
+ * boot_partition is typically 0 or 1.
+ */
+struct mbox_cmd_boot_partition_buffer {
+	struct mbox_buffer_header header;
+	uint32_t	boot_partition;
+} __packed __aligned(32);
+
 struct dtpm_config {
 	uint32_t gpio;
 } __packed;
@@ -178,5 +191,22 @@ void enable_psp_smi(void);
 
 void psp_set_smm_flag(void);
 void psp_clear_smm_flag(void);
+
+/* psp_ab_recovery_set_bootpartition - Set active partition on next boot.
+ * @param partition: Active partition on next boot. 0: A, 1: B.
+ * @return 0 on success
+ */
+int psp_ab_recovery_set_bootpartition(const uint32_t partition);
+
+/* psp_ab_recovery_get_bootpartition - Get active partition on next boot.
+ * @return negative on failure. 0 if A is active boot partition, 1 if B is active
+ *         boot partition.
+ */
+int psp_ab_recovery_get_bootpartition(void);
+
+/* psp_ab_recovery_toggle_bootpartition - Toggle active partition on next boot.
+ * @return 0 on success
+ */
+int psp_ab_recovery_toggle_bootpartition(void);
 
 #endif /* __AMD_PSP_DEF_H__ */
