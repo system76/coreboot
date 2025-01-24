@@ -69,6 +69,12 @@ static void superio_init(void)
 	// GPIO 87 set high
 	pnp_write_config(dev, 0xF1, 0x80); // Default is 0xFF
 
+	printk(BIOS_DEBUG, "configure ACPI (logical device A)\n");
+	dev = PNP_DEV(0x2E, 0x0A);
+	pnp_set_logical_device(dev);
+	// User-defined resume state after power loss
+	pnp_write_config(dev, 0xE4, 0x60); // Default is 0x00
+
 	printk(BIOS_DEBUG, "configure hardware monitor (logical device B)\n");
 	dev = PNP_DEV(0x2E, 0x0B);
 	pnp_set_logical_device(dev);
