@@ -42,6 +42,7 @@ Field (ERAM, ByteAcc, Lock, Preserve)
 	DUT2, 8,	// Fan 2 duty
 	RPM1, 16,	// Fan 1 RPM
 	RPM2, 16,	// Fan 2 RPM
+	FCTL, 8,	// Fan control mode
 	Offset (0xD9),
 	AIRP, 8,	// Airplane mode LED
 	WINF, 8,	// Enable ACPI brightness controls
