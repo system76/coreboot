@@ -35,7 +35,8 @@ static struct {
 	{ PCI_DID_INTEL_MTL_P_ID_3, "MeteorLake P" },
 	{ PCI_DID_INTEL_MTL_P_ID_4, "MeteorLake P" },
 	{ PCI_DID_INTEL_MTL_P_ID_5, "MeteorLake P" },
-	{ PCI_DID_INTEL_ARL_H_ID, "ArrowLake-H" },
+	{ PCI_DID_INTEL_ARL_H_ID_1, "ArrowLake-H" },
+	{ PCI_DID_INTEL_ARL_H_ID_2, "ArrowLake-H" },
 };
 
 static struct {
