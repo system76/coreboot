@@ -46,13 +46,17 @@ struct ibecc_config {
 enum soc_intel_meteorlake_power_limits {
 	MTL_P_282_242_CORE,
 	MTL_P_682_482_CORE,
+	ARL_HX_8_16_55W_CORE,
+	ARL_HX_8_12_55W_CORE,
+	ARL_HX_6_8_55W_CORE,
 	MTL_POWER_LIMITS_COUNT
 };
 
 /* TDP values for different SKUs */
 enum soc_intel_meteorlake_cpu_tdps {
 	TDP_15W = 15,
-	TDP_28W = 28
+	TDP_28W = 28,
+	TDP_55W = 55
 };
 
 /* Mapping of different SKUs based on CPU ID and TDP values */
@@ -67,6 +71,9 @@ static const struct {
 	{ PCI_DID_INTEL_MTL_P_ID_1, MTL_P_682_482_CORE, TDP_28W },
 	{ PCI_DID_INTEL_ARL_H_ID_1, MTL_P_682_482_CORE, TDP_28W },
 	{ PCI_DID_INTEL_ARL_H_ID_2, MTL_P_682_482_CORE, TDP_28W },
+	{ PCI_DID_INTEL_ARL_HX_ID_1, ARL_HX_8_16_55W_CORE, TDP_55W },
+	{ PCI_DID_INTEL_ARL_HX_ID_2, ARL_HX_8_12_55W_CORE, TDP_55W },
+	{ PCI_DID_INTEL_ARL_HX_ID_3, ARL_HX_6_8_55W_CORE, TDP_55W },
 };
 
 /* Types of display ports */

@@ -2,19 +2,23 @@ chip soc/intel/meteorlake
 
 	device cpu_cluster 0 on end
 
-	register "power_limits_config[MTL_P_282_242_CORE]" = "{
-		.tdp_pl1_override = 15,
-		.tdp_pl2_override = 57,
-		.tdp_pl4 = 114,
+	register "power_limits_config[ARL_HX_8_16_55W_CORE]" = "{
+		.tdp_pl1_override = 55,
+		.tdp_pl2_override = 160,
+		.tdp_pl4 = 266,
 	}"
 
-	register "power_limits_config[MTL_P_682_482_CORE]" = "{
-		.tdp_pl1_override = 28,
-		.tdp_pl2_override = 64,
-		.tdp_pl4 = 120,
+	register "power_limits_config[ARL_HX_8_12_55W_CORE]" = "{
+		.tdp_pl1_override = 55,
+		.tdp_pl2_override = 144,
+		.tdp_pl4 = 257,
 	}"
-
-	#TODO: ARL-HX limits
+	
+	register "power_limits_config[ARL_HX_6_8_55W_CORE]" = "{
+		.tdp_pl1_override = 55,
+		.tdp_pl2_override = 108,
+		.tdp_pl4 = 204,
+	}"
 
 	# Reduce the size of BasicMemoryTests to speed up the boot time.
 	register "lower_basic_mem_test_size" = "true"
@@ -122,10 +126,46 @@ chip soc/intel/meteorlake
 						device usb 2.9 alias usb2_port10 off end
 					end
 					chip drivers/usb/acpi
+						device usb 2.a alias usb2_port11 off end
+					end
+					chip drivers/usb/acpi
+						device usb 2.b alias usb2_port12 off end
+					end
+					chip drivers/usb/acpi
+						device usb 2.c alias usb2_port13 off end
+					end
+					chip drivers/usb/acpi
+						device usb 2.d alias usb2_port14 off end
+					end
+					chip drivers/usb/acpi
 						device usb 3.0 alias usb3_port1 off end
 					end
 					chip drivers/usb/acpi
 						device usb 3.1 alias usb3_port2 off end
+					end
+					chip drivers/usb/acpi
+						device usb 3.2 alias usb3_port3 off end
+					end
+					chip drivers/usb/acpi
+						device usb 3.3 alias usb3_port4 off end
+					end
+					chip drivers/usb/acpi
+						device usb 3.4 alias usb3_port5 off end
+					end
+					chip drivers/usb/acpi
+						device usb 3.5 alias usb3_port6 off end
+					end
+					chip drivers/usb/acpi
+						device usb 3.6 alias usb3_port7 off end
+					end
+					chip drivers/usb/acpi
+						device usb 3.7 alias usb3_port8 off end
+					end
+					chip drivers/usb/acpi
+						device usb 3.8 alias usb3_port9 off end
+					end
+					chip drivers/usb/acpi
+						device usb 3.9 alias usb3_port10 off end
 					end
 				end
 			end
