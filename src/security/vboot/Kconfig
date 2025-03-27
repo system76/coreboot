@@ -463,6 +463,10 @@ config GBB_FLAG_FORCE_CSE_SYNC
 	bool "Running tests; enforce CSE sync"
 	default n
 
+config GBB_FLAG_ENABLE_ADB
+	bool "Enable ADB"
+	default n
+
 endmenu # GBB
 
 menu "Vboot Keys"
