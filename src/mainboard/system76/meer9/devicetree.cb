@@ -3,7 +3,7 @@ chip soc/intel/meteorlake
 	register "eist_enable" = "1"
 
 	# Thermal
-	register "tcc_offset" = "1" # 110C - 1C = 109C
+	register "tcc_offset" = "11" # 110C - 11C = 99C
 
 	device cpu_cluster 0 on end
 
