@@ -146,23 +146,23 @@ static void hm_init(void)
 	// CPUFAN FD1 = 25% = 0x3F
 	hm_write(0x74, 0x3F);
 
-	// CPUFAN T2 = 70C
-	hm_write(0x71, 70);
+	// CPUFAN T2 = 75C
+	hm_write(0x71, 75);
 	// CPUFAN FD2 = 50% = 0x7F
 	hm_write(0x75, 0x7F);
 
-	// CPUFAN T3 = 80C
-	hm_write(0x72, 80);
-	// CPUFAN FD3 = 65% = 0xA5
-	hm_write(0x76, 0xA5);
+	// CPUFAN T3 = 90C
+	hm_write(0x72, 90);
+	// CPUFAN FD3 = 75% = 0xBF
+	hm_write(0x76, 0xBF);
 
-	// CPUFAN T4 = 90C
-	hm_write(0x73, 90);
-	// CPUFAN FD4 = 85% = 0xD8
-	hm_write(0x77, 0xD8);
+	    // CPUFAN T4 = 99C
+	hm_write(0x73, 99);
+	// CPUFAN FD4 = 100% = 0xFF
+	hm_write(0x77, 0xFF);
 
-	// CPUFAN critical temperature = 95C
-	hm_write(0x2A, 95);
+	// CPUFAN critical temperature = 105C
+	hm_write(0x2A, 105);
 	// By default critical duty is 0xFF
 
 	// CPUFAN step up time = 1s
