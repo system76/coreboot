@@ -57,6 +57,15 @@ smm-y += smihandler.c
 smm-y += soc_info.c
 smm-y += uart.c
 smm-y += xhci.c
+
+ifeq ($(CONFIG_SOC_INTEL_ARROWLAKE_PCH_S),y)
+all-y += gpio_pch_s.c
+smm-y += gpio_pch_s.c
+else
+all-y += gpio.c
+smm-y += gpio.c
+endif
+
 CPPFLAGS_common += -I$(src)/soc/intel/meteorlake
 CPPFLAGS_common += -I$(src)/soc/intel/meteorlake/include
 
