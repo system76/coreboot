@@ -20,6 +20,11 @@ config EC_SYSTEM76_EC_DGPU
 	default n
 	select EC_SYSTEM76_EC_FAN2
 
+config EC_SYSTEM76_EC_LOCKDOWN
+	bool
+	default n
+	depends on EC_SYSTEM76_EC
+
 config EC_SYSTEM76_EC_OLED
 	bool
 	default n
