@@ -26,6 +26,9 @@
 #define CMD_PRINT_REG_LEN 3
 #define CMD_PRINT_REG_DATA 4
 
+// Get security state command
+#define CMD_SECURITY_GET 20
+
 static inline uint8_t system76_ec_read(uint8_t addr)
 {
 	return inb(SYSTEM76_EC_BASE + (uint16_t)addr);
@@ -109,4 +112,10 @@ bool system76_ec_cmd(uint8_t cmd, const uint8_t *request_data,
 	system76_ec_write(CMD_PRINT_REG_LEN, 0);
 
 	return ret;
+}
+
+bool system76_ec_security_get(uint8_t *state)
+{
+	*state = SYSTEM76_EC_SECURITY_STATE_LOCK;
+	return system76_ec_cmd(CMD_SECURITY_GET, NULL, 0, state, sizeof(*state));
 }
