@@ -42,16 +42,13 @@ static struct pci_operations nvidia_device_ops_pci = {
 };
 
 static struct device_operations nvidia_device_ops = {
-	.read_resources   = nvidia_read_resources,
-	.set_resources    = pci_dev_set_resources,
-	.enable_resources = pci_dev_enable_resources,
-#if CONFIG(HAVE_ACPI_TABLES)
+	.read_resources    = nvidia_read_resources,
+	.set_resources     = pci_dev_set_resources,
+	.enable_resources  = pci_dev_enable_resources,
 	.write_acpi_tables = pci_rom_write_acpi_tables,
 	.acpi_fill_ssdt    = pci_rom_ssdt,
-#endif
-	.init             = pci_dev_init,
-	.ops_pci          = &nvidia_device_ops_pci,
-
+	.init              = pci_dev_init,
+	.ops_pci           = &nvidia_device_ops_pci,
 };
 
 static void nvidia_enable(struct device *dev)
