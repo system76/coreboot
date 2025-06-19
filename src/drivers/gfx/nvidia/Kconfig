@@ -1,6 +1,7 @@
 config DRIVERS_GFX_NVIDIA
 	bool
 	default n
+	depends on HAVE_ACPI_TABLES
 	help
 	  Support for NVIDIA Optimus graphics
 
