@@ -76,7 +76,7 @@ static const struct pad_config gpio_table[] = {
 	PAD_CFG_GPO(GPP_C2, 1, PLTRST), // M2_SSD2_PWR_EN
 	PAD_NC(GPP_C3, NONE),
 	PAD_NC(GPP_C4, NONE),
-	PAD_NC(GPP_C5, NONE), // TLS CONFIDENTIALITY strap
+	PAD_CFG_GPO(GPP_C5, 1, PLTRST), // LAN_RTD3#, TLS CONFIDENTIALITY strap
 	PAD_NC(GPP_C6, NONE),
 	PAD_NC(GPP_C7, NONE),
 	// GPP_C8 missing
