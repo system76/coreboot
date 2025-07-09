@@ -6,7 +6,7 @@ chip soc/intel/alderlake
 
 		device ref xhci on
 			register "usb2_ports" = "{
-				[0] = USB2_PORT_TYPE_C(OC_SKIP),	/* USB Type-C */
+				[0] = USB2_PORT_MID(OC_SKIP),		/* USB Type-C */
 				[1] = USB2_PORT_MID(OC_SKIP),		/* USB 2.0 Type-A audio board */
 				[2] = USB2_PORT_MID(OC_SKIP),		/* USB 3.0 Type-A motherboard */
 				[3] = USB2_PORT_MID(OC_SKIP),		/* USB 3.0 Type-A audio board */
