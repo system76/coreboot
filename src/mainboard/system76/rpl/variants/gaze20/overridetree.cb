@@ -4,6 +4,18 @@ chip soc/intel/alderlake
 	device domain 0 on
 		subsystemid 0x1558 0x2560 inherit
 
+		device ref igpu on
+			# DDIA is eDP, DDIB is mDP, DDI3 is USB-C
+			register "ddi_portA_config" = "1"
+			register "ddi_ports_config" = "{
+				[DDI_PORT_A] = DDI_ENABLE_HPD,
+				[DDI_PORT_B] = DDI_ENABLE_HPD | DDI_ENABLE_DDC,
+				[DDI_PORT_3] = DDI_ENABLE_HPD | DDI_ENABLE_DDC,
+			}"
+
+			register "gfx" = "GMA_DEFAULT_PANEL(0)"
+		end
+
 		device ref xhci on
 			register "usb2_ports" = "{
 				[0] = USB2_PORT_MID(OC_SKIP),		/* USB Type-C */
