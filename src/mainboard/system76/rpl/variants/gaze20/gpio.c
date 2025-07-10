@@ -34,7 +34,7 @@ static const struct pad_config gpio_table[] = {
 	PAD_NC(GPP_A12, NONE),
 	PAD_CFG_GPO(GPP_A13, 1, PLTRST), // BT_EN
 	// GPP_A14 (DGPU_PWR_EN) configured in bootblock
-	PAD_CFG_NF(GPP_A15, NONE, DEEP, NF2), // DP_HPD
+	PAD_CFG_NF_IOSSTATE(GPP_A15, NONE, DEEP, NF2, TxDRxE), // DP_HPD
 	PAD_NC(GPP_A16, NONE),
 	PAD_CFG_GPI_INT(GPP_A17, NONE, PLTRST, LEVEL), // TP_ATTN#
 	PAD_CFG_NF(GPP_A18, NONE, DEEP, NF1), // MDP_B_HPD
