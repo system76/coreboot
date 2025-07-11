@@ -1,9 +1,13 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+#include <device/pci_ids.h>
+
 //TODO: evaluate sleeps
 
 OperationRegion (PCIC, PCI_Config, 0x00, 0xFF)
 Field (PCIC, DwordAcc, NoLock, Preserve) {
+	NVID, 16,
+	NDID, 16,
 	Offset (0x40),
 	SSID, 32, // Subsystem vendor and product ID
 }
@@ -14,12 +18,11 @@ Method(GC6I, 0, Serialized) {
 
 	// Enter L23
 	^^DL23()
-	Sleep(5)
+	Sleep(10)
 
 	// Put GPU into reset
 	Printf("      Put GPU into reset")
 	CTXS(DGPU_RST_N)
-	Sleep(5)
 
 	Printf("    GPU GC6I FINISH")
 }
@@ -31,11 +34,21 @@ Method(GC6O, 0, Serialized) {
 	// Bring GPU out of reset
 	Printf("      Bring GPU out of reset")
 	STXS(DGPU_RST_N)
-	Sleep(5)
+	Sleep(10)
 
 	// Exit L23
 	^^L23D()
-	Sleep(5)
+
+	// Wait for GPU to appear on the bus
+	Local0 = 50
+	While (NVID != PCI_VID_NVIDIA) {
+		If (Local0 == 0) {
+			Break
+		}
+
+		Stall (100)
+		Local0--
+	}
 
 	Printf("    GPU GC6O FINISH")
 }
