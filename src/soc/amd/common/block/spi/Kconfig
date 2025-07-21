@@ -170,3 +170,23 @@ config SOC_AMD_PSP_ROM_ARMOR_64K_ERASE
 	  Enable 64KB erase block size support in addition to 4KB blocks.
 	  This can improve erase performance when erasing large regions.
 	  The PSP firmware must support 64KB erase commands for this to work.
+
+config SOC_AMD_COMMON_BLOCK_SPI_BACKUP_SPI_FLASH
+	bool
+	depends on SOC_AMD_COMMON_BLOCK_SPI
+	help
+	  Select this option when there is a second SPI flash
+	  which can be booted of when the primary SPI flash is
+	  corrupted. The recovery mechanism is board specific.
+	  The secondary SPI flash must be of the same type and
+	  same size as the primary SPI flash.
+
+config BACKUP_BOOT_DEVICE_SPI_CHIP_SELECT
+	int
+	depends on SOC_AMD_COMMON_BLOCK_SPI_BACKUP_SPI_FLASH
+	default 1
+	help
+	  Which chip select line the backup boot device is connected to.
+	  The assumption here is that chip select 0 and this one have an SPI flash connected to
+	  it. Depending on which chip select of these two we booted from, we deem one of them
+	  our backup/secondary (the one we didn't boot from) SPI flash.
