@@ -94,6 +94,7 @@ config SOC_AMD_CEZANNE_BASE
 config SOC_AMD_CEZANNE
 	bool
 	select SOC_AMD_CEZANNE_BASE
+	select SOC_AMD_COMMON_BLOCK_SPI_DWORD_ACCESS
 	help
 		AMD Cezanne support
 

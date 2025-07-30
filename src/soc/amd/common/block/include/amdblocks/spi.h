@@ -130,9 +130,12 @@ uintptr_t spi_get_bar(void);
 uint8_t spi_read8(uint8_t reg);
 uint16_t spi_read16(uint8_t reg);
 uint32_t spi_read32(uint8_t reg);
+void spi_read_block(uint8_t reg, uint8_t *dest, size_t len);
+
 void spi_write8(uint8_t reg, uint8_t val);
 void spi_write16(uint8_t reg, uint16_t val);
 void spi_write32(uint8_t reg, uint32_t val);
+void spi_write_block(uint8_t reg, const uint8_t *src, size_t len);
 
 /* Returns the active SPI ROM remapping */
 uint8_t fch_spi_rom_remapping(void);

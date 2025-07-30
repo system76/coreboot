@@ -8,6 +8,14 @@ config SOC_AMD_COMMON_BLOCK_SPI
 	  This overwrites the structure spi_flash_ops to use FCH SPI code
 	  instead of individual SPI specific code.
 
+config SOC_AMD_COMMON_BLOCK_SPI_DWORD_ACCESS
+	bool
+	depends on SOC_AMD_COMMON_BLOCK_SPI
+	help
+	  Select this option when the FCH SPI controller MMIO can be written to
+	  with DWORDs instead of just BYTEs. This is supported since AMD Familiy
+	  17h Model A0h.
+
 config SOC_AMD_COMMON_BLOCK_SPI_DEBUG
 	bool "Enable SPI debugging"
 
