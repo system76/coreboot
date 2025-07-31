@@ -251,11 +251,41 @@ int spi_flash_cmd_wait_ready(const struct spi_flash *flash,
 		CMD_READ_STATUS, STATUS_WIP);
 }
 
+/*
+ * Find a SPI flash block erase command from SFDP that fits the constrains.
+ *
+ * @param flash   Pointer to struct spi_flash
+ * @param offset  Offset in bytes from start of SPI flash to start of region to erase
+ * @param end     Offset in bytes from start of SPI flash to end of region to erase
+ *
+ * @return Pointer to struct sfdp_block_erase_info, NULL if not suitable SFDP block was found
+ */
+static const struct sfdp_block_erase_info *
+spi_flash_sfdp_erase_block(const struct sfdp_jedec_info *sfdp, const u32 offset, const u32 end)
+{
+	const struct sfdp_block_erase_info *info, *best = NULL;
+	for (int i = 0; i < ARRAY_SIZE(sfdp->erase_info); i++) {
+		info = &sfdp->erase_info[i];
+		if (!info->block_size_pow2)
+			break;
+		const uint32_t bs = (1U << info->block_size_pow2);
+		if ((offset + bs) > end)
+			continue;
+		if (!IS_ALIGNED(offset, bs))
+			continue;
+		if (best && best->block_size_pow2 > info->block_size_pow2)
+			continue;
+		best = info;
+	}
+	return best;
+}
+
 int spi_flash_cmd_erase(const struct spi_flash *flash, u32 offset, size_t len)
 {
 	u32 start, end, erase_size;
 	int ret = -1;
-	u8 cmd[4 + ADDR_MOD];
+	u8 cmd[4 + ADDR_MOD], erase_cmd;
+	struct sfdp_jedec_info info = {0};
 
 	erase_size = flash->sector_size;
 	if (offset % erase_size || len % erase_size) {
@@ -267,12 +297,53 @@ int spi_flash_cmd_erase(const struct spi_flash *flash, u32 offset, size_t len)
 		return -1;
 	}
 
-	cmd[0] = flash->erase_cmd;
+	/*
+	 * Only parse SFDP when necessary since reading it in is slow.
+	 * Using 33Mhz SPI bus frequency it takes about 150 usec to read it.
+	 *
+	 * The SFDP JEDEC info isn't cached as 'struct spi_flash' is read only here,
+	 * and erasing the flash isn't usually done as part of the boot.
+	 * On MT25QU256ABA using SFDP results in using 64KiB erase block sizes
+	 * over 4KiB blocks and thus reduces boot time by 67msec for each erased block.
+	 * The time to read SFDP, every time this function is called, is thus negligible.
+	 */
+	if (CONFIG(SPI_FLASH_SFDP) && (len >= 2 * erase_size)) {
+		if (spi_flash_get_sfdp_info(flash, &info) == CB_SUCCESS) {
+			for (int i = 0; i < ARRAY_SIZE(info.erase_info); i++) {
+				if (!info.erase_info[i].block_size_pow2)
+					continue;
+				printk(BIOS_DEBUG, "SF: Erase block size 0x%08x, OP=0x%02x\n",
+				       1U << info.erase_info[i].block_size_pow2,
+				       info.erase_info[i].opcode);
+			}
+		}
+	}
+
+	erase_cmd = flash->erase_cmd;
 	start = offset;
 	end = start + len;
 
 	while (offset < end) {
 		spi_flash_addr(offset, cmd);
+
+		/*
+		 * Try to find a better suited erase op code when SFDP is
+		 * available and spi_flash_get_sfdp_info() was successful.
+		 */
+		if (CONFIG(SPI_FLASH_SFDP) &&
+		    info.erase_info[0].block_size_pow2) {
+			const struct sfdp_block_erase_info *best =
+					spi_flash_sfdp_erase_block(&info, offset, end);
+			if (best) {
+				erase_size = 1U << best->block_size_pow2;
+				erase_cmd = best->opcode;
+			} else {
+				erase_size = flash->sector_size;
+				erase_cmd = flash->erase_cmd;
+			}
+		}
+
+		cmd[0] = erase_cmd;
 		offset += erase_size;
 
 		if (CONFIG(DEBUG_SPI_FLASH)) {
