@@ -1,6 +1,5 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#include "chip.h"
 #include <acpi/acpigen.h>
 #include <console/console.h>
 #include <delay.h>
@@ -9,48 +8,34 @@
 #include <device/pciexp.h>
 #include <device/pci_ids.h>
 #include <timer.h>
+#include "chip.h"
+#include "dtbt.h"
 
-#define PCIE2TBT 0x54C
-#define PCIE2TBT_VALID BIT(0)
-#define PCIE2TBT_GO2SX			2
-#define PCIE2TBT_GO2SX_NO_WAKE		3
-#define PCIE2TBT_SX_EXIT_TBT_CONNECTED	4
-#define PCIE2TBT_OS_UP			6
-#define PCIE2TBT_SET_SECURITY_LEVEL	8
-#define PCIE2TBT_GET_SECURITY_LEVEL	9
-#define PCIE2TBT_BOOT_ON		24
-#define PCIE2TBT_USB_ON			25
-#define PCIE2TBT_GET_ENUMERATION_METHOD	26
-#define PCIE2TBT_SET_ENUMERATION_METHOD	27
-#define PCIE2TBT_POWER_CYCLE		28
-#define PCIE2TBT_SX_START		29
-#define PCIE2TBT_ACL_BOOT		30
-#define PCIE2TBT_CONNECT_TOPOLOGY	31
 
-#define TBT2PCIE 0x548
-#define TBT2PCIE_DONE BIT(0)
-
-// Default timeout for mailbox commands unless otherwise specified.
-#define TIMEOUT_MS 1000
-// Default timeout for controller to ack GO2SX/GO2SX_NO_WAKE mailbox command.
-#define GO2SX_TIMEOUT_MS 600
+/*
+ * We only want to enable the first/primary bridge device,
+ * as sending mailbox commands to secondary ones will fail,
+ * and we only want to create a single ACPI device in the SSDT.
+ */
+static bool enable_done;
+static bool ssdt_done;
 
 static void dtbt_cmd(struct device *dev, u32 command, u32 data, u32 timeout)
 {
 	u32 reg = (data << 8) | (command << 1) | PCIE2TBT_VALID;
 	u32 status;
 
-	printk(BIOS_DEBUG, "dTBT send command %08x\n", command);
+	printk(BIOS_SPEW, "dTBT send command 0x%x\n", command);
+	/* Send command */
 	pci_write_config32(dev, PCIE2TBT, reg);
-
-	if (!wait_ms(timeout, (status = pci_read_config32(dev, TBT2PCIE)) & TBT2PCIE_DONE)) {
-		printk(BIOS_ERR, "dTBT command %08x send timeout %08x\n", command, status);
-	}
-
+	/* Wait for done bit to be cleared */
+	if (!wait_ms(timeout, (status = pci_read_config32(dev, TBT2PCIE)) & TBT2PCIE_DONE))
+		printk(BIOS_ERR, "dTBT command 0x%x send timeout, status 0x%x\n", command, status);
+	/* Clear valid bit */
 	pci_write_config32(dev, PCIE2TBT, 0);
-	if (!wait_ms(timeout, !(pci_read_config32(dev, TBT2PCIE) & TBT2PCIE_DONE))) {
-		printk(BIOS_ERR, "dTBT command %08x clear timeout\n", command);
-	}
+	/* Wait for done bit to be cleared */
+	if (!wait_ms(timeout, (status = pci_read_config32(dev, TBT2PCIE)) & TBT2PCIE_DONE))
+		printk(BIOS_ERR, "dTBT command 0x%x clear valid bit timeout, status 0x%x\n", command, status);
 }
 
 static void dtbt_write_dsd(void)
@@ -86,6 +71,9 @@ static void dtbt_fill_ssdt(const struct device *dev)
 	const char *parent_scope;
 	const char *dev_name = acpi_device_name(dev);
 
+	if (ssdt_done)
+		return;
+
 	bus = dev->upstream;
 	if (!bus) {
 		printk(BIOS_ERR, "dTBT bus invalid\n");
@@ -93,7 +81,7 @@ static void dtbt_fill_ssdt(const struct device *dev)
 	}
 
 	parent = bus->dev;
-	if (!parent || parent->path.type != DEVICE_PATH_PCI) {
+	if (!parent || !is_pci(parent)) {
 		printk(BIOS_ERR, "dTBT parent invalid\n");
 		return;
 	}
@@ -113,7 +101,7 @@ static void dtbt_fill_ssdt(const struct device *dev)
 	acpigen_write_name_integer("_ADR", 0);
 	dtbt_write_opregion(bus);
 
-	/* Method */
+	/* PTS Method */
 	acpigen_write_method_serialized("PTS", 0);
 
 	acpigen_write_debug_string("dTBT prepare to sleep");
@@ -129,24 +117,47 @@ static void dtbt_fill_ssdt(const struct device *dev)
 	acpigen_write_device_end();
 	acpigen_write_scope_end();
 
-	printk(BIOS_DEBUG, "dTBT fill SSDT\n");
-	printk(BIOS_DEBUG, "  Dev %s\n", dev_path(dev));
-	//printk(BIOS_DEBUG, "  Bus %s\n", bus_path(bus));
-	printk(BIOS_DEBUG, "  Parent %s\n", dev_path(parent));
-	printk(BIOS_DEBUG, "  Scope %s\n", parent_scope);
-	printk(BIOS_DEBUG, "    Device %s\n", dev_name);
-
 	// \.TBTS Method
 	acpigen_write_scope("\\");
 	acpigen_write_method("TBTS", 0);
 	acpigen_emit_namestring(acpi_device_path_join(dev, "PTS"));
 	acpigen_write_method_end();
 	acpigen_write_scope_end();
+
+	printk(BIOS_INFO, "%s.%s %s\n", parent_scope, dev_name, dev_path(dev));
+	ssdt_done = true;
 }
 
 static const char *dtbt_acpi_name(const struct device *dev)
 {
 	return "DTBT";
+}
+
+static void dtbt_enable(struct device *dev)
+{
+	if (!is_dev_enabled(dev) || enable_done)
+		return;
+
+	printk(BIOS_INFO, "dTBT controller found at %s\n", dev_path(dev));
+
+	// XXX: Recommendation is to set SL1 ("User Authorization")
+	printk(BIOS_DEBUG, "dTBT set security level SL0\n");
+	/* Set security level */
+	dtbt_cmd(dev, PCIE2TBT_SET_SECURITY_LEVEL, SEC_LEVEL_NONE, MBOX_TIMEOUT_MS);
+
+	if (acpi_is_wakeup_s3()) {
+		printk(BIOS_DEBUG, "dTBT SX exit\n");
+		dtbt_cmd(dev, PCIE2TBT_SX_EXIT_TBT_CONNECTED, 0, MBOX_TIMEOUT_MS);
+		/* Read TBT2PCIE register, verify not invalid */
+		if (pci_read_config32(dev, TBT2PCIE) == 0xffffffff)
+			printk(BIOS_ERR, "dTBT S3 resume failure.\n");
+	} else {
+		printk(BIOS_DEBUG, "dTBT set boot on\n");
+		dtbt_cmd(dev, PCIE2TBT_BOOT_ON, 0, MBOX_TIMEOUT_MS);
+		printk(BIOS_DEBUG, "dTBT set USB on\n");
+		dtbt_cmd(dev, PCIE2TBT_USB_ON, 0, MBOX_TIMEOUT_MS);
+	}
+	enable_done = true;
 }
 
 static struct pci_operations dtbt_device_ops_pci = {
@@ -162,38 +173,30 @@ static struct device_operations dtbt_device_ops = {
 	.scan_bus         = pciexp_scan_bridge,
 	.reset_bus        = pci_bus_reset,
 	.ops_pci          = &dtbt_device_ops_pci,
+	.enable           = dtbt_enable
 };
 
-static void dtbt_enable(struct device *dev)
-{
-	if (!is_dev_enabled(dev) || dev->path.type != DEVICE_PATH_PCI)
-		return;
+/* We only want to match the (first) bridge device */
+static const unsigned short pci_device_ids[] = {
+	AR_2C_BRG,
+	AR_4C_BRG,
+	AR_LP_BRG,
+	AR_4C_C0_BRG,
+	AR_2C_C0_BRG,
+	TR_2C_BRG,
+	TR_4C_BRG,
+	TR_DD_BRG,
+	MR_2C_BRG,
+	MR_4C_BRG,
+	0
+};
 
-	if (pci_read_config16(dev, PCI_VENDOR_ID) != PCI_VID_INTEL)
-		return;
-
-	// TODO: check device ID
-
-	dev->ops = &dtbt_device_ops;
-
-	printk(BIOS_INFO, "dTBT controller found at %s\n", dev_path(dev));
-
-	// XXX: Recommendation is to set SL1 ("User Authorization")
-	printk(BIOS_DEBUG, "dTBT set security level SL0\n");
-	dtbt_cmd(dev, PCIE2TBT_SET_SECURITY_LEVEL, 0, TIMEOUT_MS);
-	// XXX: Must verify change or rollback all controllers
-
-	if (acpi_is_wakeup_s3()) {
-		printk(BIOS_DEBUG, "dTBT SX exit\n");
-		dtbt_cmd(dev, PCIE2TBT_SX_EXIT_TBT_CONNECTED, 0, TIMEOUT_MS);
-		// TODO: "wait for fast link bring-up" loop (timeout: 5s)
-	} else {
-		printk(BIOS_DEBUG, "dTBT boot on\n");
-		dtbt_cmd(dev, PCIE2TBT_BOOT_ON, 0, TIMEOUT_MS);
-	}
-}
+static const struct pci_driver intel_dtbt_driver __pci_driver = {
+	.ops		= &dtbt_device_ops,
+	.vendor		= PCI_VID_INTEL,
+	.devices	= pci_device_ids,
+};
 
 struct chip_operations drivers_intel_dtbt_ops = {
 	.name = "Intel Discrete Thunderbolt",
-	.enable_dev = dtbt_enable,
 };
