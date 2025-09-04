@@ -38,6 +38,10 @@
 #define MR_4C_NHI	0x1137
 #define MR_4C_USB	0x1138
 
+/* Barlow Ridge device IDs */
+#define BR_4_BRG	0x5783
+#define BR_5_BRG	0x5780
+
 /* Security Levels */
 #define SEC_LEVEL_NONE			0
 #define SEC_LEVEL_USER			1
