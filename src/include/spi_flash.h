@@ -107,6 +107,22 @@ struct spi_flash_rpmc_cap {
 	uint8_t op2_read_cmd;
 };
 
+struct sfdp_block_erase_info {
+	uint8_t opcode;			/* 0 if not available */
+	uint8_t block_size_pow2;	/* Block size in bytes power of two.
+					 * 0 if unused or uninitialized. */
+};
+
+/**
+ * For now SFDP defines up to 5 different erase block sizes,
+ * not counting full chip erase.
+ */
+#define SFDP_NUM_ERASE_BLOCKS	5
+
+struct sfdp_jedec_info {
+	struct sfdp_block_erase_info erase_info[SFDP_NUM_ERASE_BLOCKS];
+};
+
 struct spi_flash {
 	struct spi_slave spi;
 	u8 vendor;

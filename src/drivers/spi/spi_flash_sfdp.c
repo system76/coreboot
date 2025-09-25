@@ -3,6 +3,7 @@
 #include <console/console.h>
 #include <spi-generic.h>
 #include <spi_flash.h>
+#include <string.h>
 #include <types.h>
 
 #include "spi_flash_internal.h"
@@ -361,5 +362,84 @@ enum cb_err spi_flash_get_sfdp_rpmc(const struct spi_flash *flash,
 				buf[SFDP_RPMC_TABLE_WRITE_COUNTER_POLLING_SHORT_DELAY]);
 	rpmc_info->write_counter_polling_long_delay_us = calc_rpmc_long_delay_us(
 				buf[SFDP_RPMC_TABLE_WRITE_COUNTER_POLLING_LONG_DELAY]);
+	return CB_SUCCESS;
+}
+
+#define SFDP_PARAMETER_ID_JEDEC					0xff00
+#define SFDP_JEDEC_PARAM_TABLE_LENGTH_DWORDS			9
+#define SFDP_JEDEC_PARAM_TABLE_SUPPORTED_MAJOR_REV		1
+
+/* RPMC parameter table byte offsets and fields */
+#define SFDP_JEDEC_TABLE_CONFIG					0
+#define   SFDP_JEDEC_TABLE_CONFIG_ERASE_MASK			0x3
+#define   SFDP_JEDEC_TABLE_CONFIG_ERASE_4K_SUPPORT		0x1
+
+#define SFDP_JEDEC_TABLE_CONFIG_4K_ERASE_OPCODE			1
+
+#define SFDP_JEDEC_TABLE_NUM_VAR_ERASE_BLOCKS			4
+#define SFDP_JEDEC_TABLE_ERASE_BLOCK_SIZE(x)			(0x1c + 2 * (x))
+#define SFDP_JEDEC_TABLE_ERASE_BLOCK_OPCODE(x)			(0x1d + 2 * (x))
+
+enum cb_err spi_flash_get_sfdp_info(const struct spi_flash *flash,
+				    struct sfdp_jedec_info *info)
+{
+	uint16_t rev;
+	uint8_t length_dwords;
+	uint32_t table_pointer;
+	uint8_t buf[SFDP_JEDEC_PARAM_TABLE_LENGTH_DWORDS * sizeof(uint32_t)];
+	uint8_t op, size;
+	size_t num_erasers = 0;
+
+	if (!flash || !info)
+		return CB_ERR_ARG;
+
+	memset(info, 0, sizeof(*info));
+
+	if (find_sfdp_parameter_header(flash, SFDP_PARAMETER_ID_JEDEC, &rev, &length_dwords,
+				       &table_pointer) != CB_SUCCESS)
+		return CB_ERR;
+
+	if (length_dwords < SFDP_JEDEC_PARAM_TABLE_LENGTH_DWORDS)
+		return CB_ERR;
+
+	if (rev >> 8 != SFDP_JEDEC_PARAM_TABLE_SUPPORTED_MAJOR_REV) {
+		printk(BIOS_ERR, "Unsupported major JEDEC param table revision: expected %#x, but is %#x\n",
+		       SFDP_JEDEC_PARAM_TABLE_SUPPORTED_MAJOR_REV, rev >> 8);
+		return CB_ERR;
+	}
+
+	if (read_sfdp_data(flash, table_pointer, sizeof(buf), buf) != CB_SUCCESS)
+		return CB_ERR;
+
+	/* 4K erase support */
+	op = buf[SFDP_JEDEC_TABLE_CONFIG_4K_ERASE_OPCODE];
+	size = buf[SFDP_JEDEC_TABLE_CONFIG] & SFDP_JEDEC_TABLE_CONFIG_ERASE_MASK;
+
+	if (size == SFDP_JEDEC_TABLE_CONFIG_ERASE_4K_SUPPORT && op != 0xff) {
+		info->erase_info[num_erasers].opcode = op;
+		info->erase_info[num_erasers].block_size_pow2 = 12;
+		num_erasers++;
+	}
+
+	/* block erase opcodes. The 4K erase opcode might be in the list as well. */
+	for (int n = 0; n < SFDP_JEDEC_TABLE_NUM_VAR_ERASE_BLOCKS; n++) {
+		size = buf[SFDP_JEDEC_TABLE_ERASE_BLOCK_SIZE(n)];
+		op = buf[SFDP_JEDEC_TABLE_ERASE_BLOCK_OPCODE(n)];
+
+		/* Already in list? */
+		for (int j = 0; j < num_erasers; j++) {
+			if (info->erase_info[j].opcode == op) {
+				size = 0;	/* then skip it */
+				break;
+			}
+		}
+
+		if (op && size > 0) {
+			info->erase_info[num_erasers].opcode = op;
+			info->erase_info[num_erasers].block_size_pow2 = size;
+			num_erasers++;
+		}
+	}
+
 	return CB_SUCCESS;
 }

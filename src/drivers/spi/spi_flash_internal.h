@@ -164,4 +164,15 @@ enum cb_err spi_flash_get_sfdp_rpmc(const struct spi_flash *flash,
 /* Fill rpmc_caps field in spi_flash struct with RPMC config from SFDP */
 void spi_flash_fill_rpmc_caps(struct spi_flash *flash);
 
+/**
+ * Get JEDEC flash parameters from the SPI flash's SFDP table.
+ *
+ * @param flash The SPI flash to read SFDP info from
+ * @param info  The struct to fill with parsed data
+ *
+ * @return CB_SUCCESS on Success
+ */
+enum cb_err spi_flash_get_sfdp_info(const struct spi_flash *flash,
+				    struct sfdp_jedec_info *info);
+
 #endif /* SPI_FLASH_INTERNAL_H */
