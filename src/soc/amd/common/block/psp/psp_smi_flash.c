@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+#include <amdblocks/backup_boot_device.h>
 #include <amdblocks/spi.h>
 #include <boot_device.h>
 #include <commonlib/region.h>
@@ -129,6 +130,20 @@ static bool spi_controller_busy(void)
 		uint8_t sr1 = 0;
 
 		spi_flash_dev = boot_device_spi_flash();
+		assert(spi_flash_dev);
+		if (spi_flash_dev) {
+			/* Read Status Register 1 */
+			if (spi_flash_status(spi_flash_dev, &sr1) < 0)
+				busy = true;
+			else if (sr1 & BIT(0))
+				busy = true;
+		}
+	}
+	if (CONFIG(SOC_AMD_COMMON_BLOCK_SPI_BACKUP_SPI_FLASH) && !busy) {
+		const struct spi_flash *spi_flash_dev;
+		uint8_t sr1 = 0;
+
+		spi_flash_dev = backup_boot_device_spi_flash();
 		assert(spi_flash_dev);
 		if (spi_flash_dev) {
 			/* Read Status Register 1 */
