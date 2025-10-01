@@ -105,25 +105,26 @@ static bool spi_flash_rpmc_is_extended_status_successful(uint8_t extended_status
 	return extended_status & RPMC_OP2_EXT_STATUS_SUCCESS;
 }
 
-static void spi_flash_rpmc_print_extended_status_error(uint8_t extended_status)
+static void spi_flash_rpmc_print_extended_status_error(const struct spi_flash *flash,
+						       uint8_t extended_status)
 {
 	if (extended_status & RPMC_OP2_EXT_STATUS_POLL_BUSY)
-		printk(BIOS_WARNING, "SPI flash RPMC is busy\n");
+		printk(BIOS_WARNING, "SPI flash CS %d RPMC is busy\n", flash->spi.cs);
 
 	if (extended_status & RPMC_OP2_EXT_STATUS_ERR_OTHER)
-		printk(BIOS_ERR, "SPI flash RPMC other error\n");
+		printk(BIOS_ERR, "SPI flash CS %d RPMC other error\n", flash->spi.cs);
 
 	if (extended_status & RPMC_OP2_EXT_STATUS_ERR_INVALID)
-		printk(BIOS_ERR, "SPI flash RPMC invalid input\n");
+		printk(BIOS_ERR, "SPI flash CS %d RPMC invalid input\n", flash->spi.cs);
 
 	if (extended_status & RPMC_OP2_EXT_STATUS_ERR_UNINITIALIZED)
-		printk(BIOS_ERR, "SPI flash RPMC uninitialized\n");
+		printk(BIOS_ERR, "SPI flash CS %d RPMC uninitialized\n", flash->spi.cs);
 
 	if (extended_status & RPMC_OP2_EXT_STATUS_ERR_BAD_COUNTER)
-		printk(BIOS_ERR, "SPI flash RPMC counter mismatch\n");
+		printk(BIOS_ERR, "SPI flash CS %d RPMC counter mismatch\n", flash->spi.cs);
 
 	if (extended_status & RPMC_OP2_EXT_STATUS_ERR_FATAL)
-		printk(BIOS_ERR, "SPI flash RPMC fatal error\n");
+		printk(BIOS_ERR, "SPI flash CS %d RPMC fatal error\n", flash->spi.cs);
 }
 
 static enum cb_err spi_flash_rpmc_check_extended_status(const struct spi_flash *flash)
@@ -136,7 +137,7 @@ static enum cb_err spi_flash_rpmc_check_extended_status(const struct spi_flash *
 	if (spi_flash_rpmc_is_extended_status_successful(extended_status))
 		return CB_SUCCESS;
 
-	spi_flash_rpmc_print_extended_status_error(extended_status);
+	spi_flash_rpmc_print_extended_status_error(flash, extended_status);
 
 	return CB_ERR;
 }
@@ -329,7 +330,7 @@ enum cb_err spi_flash_rpmc_request(const struct spi_flash *flash, uint8_t counte
 		return CB_ERR;
 
 	if (!spi_flash_rpmc_is_extended_status_successful(extended_status)) {
-		spi_flash_rpmc_print_extended_status_error(extended_status);
+		spi_flash_rpmc_print_extended_status_error(flash, extended_status);
 		return CB_ERR;
 	}
 
