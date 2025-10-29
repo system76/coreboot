@@ -44,6 +44,15 @@ static void write_ssdt_domain_mmio_producer_range(const char *domain_name,
 		MEM_RSRC_FLAG_MEM_READ_WRITE | MEM_RSRC_FLAG_MEM_ATTR_NON_CACHE);
 }
 
+static void write_ssdt_domain_tpm_mmio_producer_range(const struct device *domain)
+{
+	if ((CONFIG(MEMORY_MAPPED_TPM) && (CONFIG_TPM_TIS_BASE_ADDRESS == 0xfed40000)) ||
+	    (CONFIG(CRB_TPM) && (CONFIG_CRB_TPM_BASE_ADDRESS == 0xfed40000))) {
+		write_ssdt_domain_mmio_producer_range(acpi_device_name(domain),
+							0xfed40000, 0xfed44fff);
+	}
+}
+
 void pci_domain_fill_ssdt(const struct device *domain)
 {
 	const char *acpi_scope = acpi_device_path(domain);
@@ -64,6 +73,7 @@ void pci_domain_fill_ssdt(const struct device *domain)
 		/* ACPI 6.4.2.5 I/O Port Descriptor */
 		acpigen_write_io16(PCI_IO_CONFIG_INDEX, PCI_IO_CONFIG_LAST_PORT, 1,
 				   PCI_IO_CONFIG_PORT_COUNT, 1);
+		write_ssdt_domain_tpm_mmio_producer_range(domain);
 	}
 
 	struct resource *res;
