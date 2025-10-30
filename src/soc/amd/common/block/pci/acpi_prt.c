@@ -11,7 +11,13 @@
 #define FCH_IOAPIC_INTERRUPTS	24
 #define GNB_GSI_BASE		FCH_IOAPIC_INTERRUPTS
 
-static void acpigen_write_PRT_GSI(const struct pci_routing_info *routing_info)
+__weak unsigned int soc_get_gsi_base(const struct device *dev)
+{
+	return GNB_GSI_BASE;
+}
+
+static void acpigen_write_PRT_GSI(const struct device *dev,
+				  const struct pci_routing_info *routing_info)
 {
 	unsigned int irq;
 
@@ -22,7 +28,7 @@ static void acpigen_write_PRT_GSI(const struct pci_routing_info *routing_info)
 		acpigen_write_PRT_GSI_entry(
 			0, /* There is only one device attached to the bridge */
 			i, /* pin */
-			GNB_GSI_BASE + irq);
+			soc_get_gsi_base(dev) + irq);
 	}
 	acpigen_pop_len(); /* Package - APIC Routing */
 }
@@ -143,7 +149,7 @@ void acpigen_write_pci_GNB_PRT(const struct device *dev)
 
 	/* Return (Package{...}) */
 	acpigen_emit_byte(RETURN_OP);
-	acpigen_write_PRT_GSI(routing_info);
+	acpigen_write_PRT_GSI(dev, routing_info);
 
 	/* Else */
 	acpigen_write_else();
