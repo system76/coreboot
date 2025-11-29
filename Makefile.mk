@@ -555,6 +555,7 @@ CFLAGS_common += -ffunction-sections
 CFLAGS_common += -fdata-sections
 CFLAGS_common += -fno-pie
 CFLAGS_common += -Wstring-compare
+CFLAGS_common += -Werror
 ifeq ($(CONFIG_COMPILER_GCC),y)
 CFLAGS_common += -Wold-style-declaration
 CFLAGS_common += -Wcast-function-type
@@ -636,9 +637,6 @@ LDFLAGS_common += -static
 LDFLAGS_common += -z noexecstack
 LDFLAGS_common += --emit-relocs
 
-ifeq ($(CONFIG_WARNINGS_ARE_ERRORS),y)
-CFLAGS_common += -Werror
-endif
 ifneq ($(GDB_DEBUG),)
 CFLAGS_common += -Og
 ADAFLAGS_common += -Og
