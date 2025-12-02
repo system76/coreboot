@@ -206,19 +206,19 @@ typedef struct _psp_directory_header {
 	union {
 		uint32_t additional_info;
 		struct {
-			uint32_t dir_size:10;
+			uint32_t dir_size:10;		/* in 4K blocks */
 			uint32_t spi_block_size:4;
-			uint32_t base_addr:15;
-			uint32_t address_mode:2;
-			uint32_t version:1;
+			uint32_t base_addr:15;		/* [26:12] of directory base addr */
+			uint32_t address_mode:2;	/* directory address mode */
+			uint32_t version:1;		/* Always 0 */
 		} __attribute__((packed)) additional_info_fields;
 		struct {
-			uint32_t dir_size:16;
-			uint32_t spi_block_size:4;
-			uint32_t dir_header_size:4;
-			uint32_t address_mode:2;
+			uint32_t dir_size:16;		/* in 4K blocks */
+			uint32_t spi_block_size:4;	/* 4K << (1 << value) */
+			uint32_t dir_hdr_size:4;	/* in 1K blocks */
+			uint32_t address_mode:2;	/* directory address mode */
 			uint32_t reserved:5;
-			uint32_t version:1;
+			uint32_t version:1;		/* Always 1 */
 		} __attribute__((packed)) additional_info_fields_v1;
 	};
 } __attribute__((packed, aligned(16))) psp_directory_header;
@@ -268,7 +268,6 @@ typedef struct _psp_combo_directory {
 } __attribute__((packed, aligned(16))) psp_combo_directory;
 
 #define MAX_COMBO_ENTRIES 2
-
 typedef struct _bios_directory_hdr {
 	uint32_t cookie;
 	uint32_t checksum;
@@ -276,19 +275,19 @@ typedef struct _bios_directory_hdr {
 	union {
 		uint32_t additional_info;
 		struct {
-			uint32_t dir_size:10;
+			uint32_t dir_size:10;		/* in 4K blocks */
 			uint32_t spi_block_size:4;
 			uint32_t base_addr:15;
 			uint32_t address_mode:2;
-			uint32_t version:1;
+			uint32_t version:1;		/* Always 0 */
 		} __attribute__((packed)) additional_info_fields;
 		struct {
-			uint32_t dir_size:16;
-			uint32_t spi_block_size:4;
-			uint32_t dir_header_size:4;
-			uint32_t address_mode:2;
+			uint32_t dir_size:16;		/* in 4K blocks */
+			uint32_t spi_block_size:4;	/* 4K << (1 << value) */
+			uint32_t dir_hdr_size:4;	/* in 1K blocks */
+			uint32_t address_mode:2;	/* directory address mode */
 			uint32_t reserved:5;
-			uint32_t version:1;
+			uint32_t version:1;		/* Always 1 */
 		} __attribute__((packed)) additional_info_fields_v1;
 	};
 } __attribute__((packed, aligned(16))) bios_directory_hdr;
@@ -456,6 +455,7 @@ typedef struct _amd_cb_config {
 	bool multi_level;
 	bool s0i3;
 	bool second_gen;
+	bool directory_header_aif_v1;	/* Additional Info Field version */
 	bool have_mb_spl;
 	bool recovery_ab;
 	bool recovery_ab_single_copy;

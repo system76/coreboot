@@ -830,6 +830,24 @@ static bool is_second_gen(enum platform platform_type)
 	}
 }
 
+/*
+ * Returns true when the PSP supports the Additional Information Field v1
+ * in the directory header. Allows to support directories bigger than
+ * 4 MiB in total.
+ */
+static bool has_dir_header_v1(enum platform platform_type)
+{
+	switch (platform_type) {
+	case PLATFORM_STRIX:
+	case PLATFORM_KRACKAN2E:
+	case PLATFORM_STRIXHALO:
+		return true;
+	default:
+		return false;
+	}
+}
+
+
 #define FW_LOCATION "FIRMWARE_LOCATION"
 #define SOC_NAME "SOC_NAME"
 /*
@@ -875,6 +893,7 @@ uint8_t process_config(FILE *config, amd_cb_config *cb_config)
 	}
 
 	cb_config->second_gen = is_second_gen(cb_config->soc_id);
+	cb_config->directory_header_aif_v1 = has_dir_header_v1(cb_config->soc_id);
 
 	if (needs_ish(cb_config->soc_id))
 		cb_config->need_ish = true;
