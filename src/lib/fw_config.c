@@ -72,8 +72,19 @@ uint64_t fw_config_get_field(const struct fw_config_field *field)
 	return value;
 }
 
+bool __weak fw_config_probe_mainboard_override(const struct fw_config *match, bool *result)
+{
+	return false;
+}
+
 bool fw_config_probe(const struct fw_config *match)
 {
+	bool result;
+
+	/* Give mainboard a chance to override this probe */
+	if (fw_config_probe_mainboard_override(match, &result))
+		return result;
+
 	/* If fw_config is not provisioned, then there is nothing to match. */
 	if (!fw_config_is_provisioned())
 		return false;
