@@ -2,8 +2,8 @@ Musl's <sched.h> uses calloc() which is marked as poisoned by GCC's
 "system.h". Work around that by making sure that <sched.h> gets
 included first.
 
---- gcc-13.2.0/gcc/ada/adaint.c
-+++ gcc-13.2.0.musl/gcc/ada/adaint.c
+--- gcc-15-20250112/gcc/ada/adaint.c
++++ gcc-15-20250112.musl/gcc/ada/adaint.c
 @@ -101,6 +101,10 @@
  #include <sys/time.h>
  #endif
@@ -23,8 +23,8 @@ included first.
  
  /* glibc versions earlier than 2.7 do not define the routines to handle
     dynamically allocated CPU sets. For these targets, we use the static
---- gcc-14-20240211/gcc/ada/argv.c
-+++ gcc-14-20240211.musl/gcc/ada/argv.c
+--- gcc-15-20250112/gcc/ada/argv.c
++++ gcc-15-20250112.musl/gcc/ada/argv.c
 @@ -51,10 +51,6 @@
  #include "system.h"
  #endif
@@ -36,8 +36,8 @@ included first.
  #ifdef __cplusplus
  extern "C" {
  #endif
---- gcc-13.2.0/gcc/ada/cio.c
-+++ gcc-13.2.0.musl/gcc/ada/cio.c
+--- gcc-15-20250112/gcc/ada/cio.c
++++ gcc-15-20250112.musl/gcc/ada/cio.c
 @@ -29,6 +29,8 @@
   *                                                                          *
   ****************************************************************************/
@@ -56,8 +56,8 @@ included first.
  
  /* We need L_tmpnam definition */
  #include <stdio.h>
---- gcc-13.2.0/gcc/ada/cstreams.c
-+++ gcc-13.2.0.musl/gcc/ada/cstreams.c
+--- gcc-15-20250112/gcc/ada/cstreams.c
++++ gcc-15-20250112.musl/gcc/ada/cstreams.c
 @@ -58,14 +58,14 @@
  #include "vxWorks.h"
  #endif
@@ -75,7 +75,7 @@ included first.
  
  #ifdef __cplusplus
  extern "C" {
---- gcc-13.2.0/gcc/ada/init.c
+--- gcc-15-20250112/gcc/ada/init.c
 +++ gcc-13.2.0.musl/gcc/ada/init.c
 @@ -53,6 +53,8 @@
  #undef __linux__
@@ -94,8 +94,8 @@ included first.
  #include "raise.h"
  
  #ifdef __cplusplus
---- gcc-13.2.0/gcc/ada/raise.c
-+++ gcc-13.2.0.musl/gcc/ada/raise.c
+--- gcc-15-20250112/gcc/ada/raise.c
++++ gcc-15-20250112.musl/gcc/ada/raise.c
 @@ -32,6 +32,8 @@
  /* Shared routines to support exception handling.  __gnat_unhandled_terminate
     is shared between all exception handling mechanisms.  */

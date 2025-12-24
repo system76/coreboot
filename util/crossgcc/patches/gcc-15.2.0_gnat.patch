@@ -9,18 +9,18 @@ like we do for a stage1 build.
 
 Signed-off-by: Nico Huber <nico.h@gmx.de>
 ---
- gcc/ada/gcc-interface/Make-lang.in | 16 +++++++++++++---
- gcc/ada/init.c                     |  4 ++++
- 2 files changed, 17 insertions(+), 3 deletions(-)
+ gcc/ada/gcc-interface/Make-lang.in | 15 +++++++++++++--
+ 1 file changed, 13 insertions(+), 2 deletions(-)
 
 diff --git a/gcc/ada/gcc-interface/Make-lang.in b/gcc/ada/gcc-interface/Make-lang.in
 index 9507f2f09203..cf7ec4cc1662 100644
 --- a/gcc/ada/gcc-interface/Make-lang.in
 +++ b/gcc/ada/gcc-interface/Make-lang.in
-@@ -57,18 +57,21 @@ WARN_ADAFLAGS= -W -Wall
+@@ -56,19 +56,21 @@
+ # need to be built by a recent/matching native so we might as well leave the
  # checks fully active.
  
- STAGE1=False
+-STAGE1=False
 +HOST_RT=False
  GNATBIND_FLAGS=
  GNATLIB=
@@ -40,8 +40,8 @@ index 9507f2f09203..cf7ec4cc1662 100644
 +  HOST_RT=True
  endif
  
- ALL_ADAFLAGS = \
-@@ -87,7 +89,7 @@ ifeq ($(strip $(filter-out hpux%,$(host_os))),)
+ ADA_CFLAGS =
+@@ -88,7 +90,7 @@
    STAGE1_LIBS=/usr/lib/libcl.a
  endif
  
@@ -50,7 +50,7 @@ index 9507f2f09203..cf7ec4cc1662 100644
    ADA_INCLUDES=$(COMMON_ADA_INCLUDES)
    adalib=$(dir $(shell $(CC) -print-libgcc-file-name))adalib
    GNATLIB=$(adalib)/$(if $(wildcard $(adalib)/libgnat.a),libgnat.a,libgnat.so) $(STAGE1_LIBS)
-@@ -485,6 +487,7 @@ GNAT1_C_OBJS+=    \
+@@ -506,6 +508,7 @@
   ada/rtinit.o     \
   ada/seh_init.o
  
@@ -58,7 +58,7 @@ index 9507f2f09203..cf7ec4cc1662 100644
  GNAT_ADA_OBJS+= \
   ada/gcc-interface/system.o \
   ada/libgnat/a-assert.o	\
-@@ -555,6 +558,7 @@ GNAT_ADA_OBJS+= \
+@@ -586,6 +589,7 @@
   ada/libgnat/s-wchstw.o	\
   ada/libgnat/s-widuns.o
  endif
@@ -66,17 +66,17 @@ index 9507f2f09203..cf7ec4cc1662 100644
  
  # Object files for gnat executables
  GNAT1_ADA_OBJS = $(GNAT_ADA_OBJS) ada/back_end.o ada/gnat1drv.o
-@@ -656,6 +660,9 @@ GNATBIND_OBJS +=  \
+@@ -692,6 +696,9 @@
   ada/rtfinal.o    \
   ada/rtinit.o     \
   ada/seh_init.o   \
-+
++ 
 +ifeq ($(HOST_RT),False)
 +GNATBIND_OBJS +=  \
   ada/gcc-interface/system.o \
   ada/libgnat/a-assert.o   \
   ada/libgnat/a-elchha.o   \
-@@ -707,6 +714,9 @@ GNATBIND_OBJS +=  \
+@@ -746,6 +753,9 @@
   ada/libgnat/s-wchjis.o   \
   ada/libgnat/s-wchstw.o   \
   ada/libgnat/s-widuns.o   \
@@ -86,23 +86,5 @@ index 9507f2f09203..cf7ec4cc1662 100644
   ada/adaint.o     \
   ada/argv.o       \
   ada/cio.o        \
-diff --git a/gcc/ada/init.c b/gcc/ada/init.c
-index 5212a38490d3..5ae2efd32ef3 100644
---- a/gcc/ada/init.c
-+++ b/gcc/ada/init.c
-@@ -93,8 +93,12 @@ extern struct Exception_Data storage_error;
- #ifdef CERT
- #define Raise_From_Signal_Handler __gnat_raise_exception
- #else
-+#if __GNUC__ < 12
-+#define Raise_From_Signal_Handler ada__exceptions__raise_from_signal_handler
-+#else
- #define Raise_From_Signal_Handler __gnat_raise_from_signal_handler
- #endif
-+#endif
- 
- extern void Raise_From_Signal_Handler (struct Exception_Data *, const void *)
-   ATTRIBUTE_NORETURN;
 -- 
-2.39.0
-
+2.45.1

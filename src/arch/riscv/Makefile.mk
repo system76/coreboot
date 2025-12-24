@@ -169,7 +169,7 @@ $(OPENSBI_TARGET): $(obj)/config.h | $(OPENSBI_SOURCE)
 	mkdir -p $(OPENSBI_BUILD)
 	$(MAKE) \
 		-C "$(OPENSBI_SOURCE)" \
-		CC="$(GCC_ramstage) -fno-builtin" \
+		CC="$(GCC_ramstage) -fno-builtin -std=gnu11" \
 		LD="$(LD_ramstage)" \
 		OBJCOPY="$(OBJCOPY_ramstage)" \
 		AR="$(AR_ramstage)" \

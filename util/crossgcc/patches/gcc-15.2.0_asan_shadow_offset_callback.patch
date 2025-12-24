@@ -37,17 +37,27 @@ diff --git a/gcc/asan.c b/gcc/asan.c
 index 235e21947..713bf994d 100644
 --- a/gcc/asan.cc
 +++ b/gcc/asan.cc
-@@ -1389,13 +1389,28 @@ asan_emit_stack_protection (rtx base, rtx pbase, unsigned int alignb,
-   TREE_ASM_WRITTEN (decl) = 1;
+@@ -2086,23 +2086,27 @@
    TREE_ASM_WRITTEN (id) = 1;
+   DECL_ALIGN_RAW (decl) = DECL_ALIGN_RAW (current_function_decl);
    emit_move_insn (mem, expand_normal (build_fold_addr_expr (decl)));
 -  shadow_base = expand_binop (Pmode, lshr_optab, base,
 -			      gen_int_shift_amount (Pmode, ASAN_SHADOW_SHIFT),
 -			      NULL_RTX, 1, OPTAB_DIRECT);
--  shadow_base
--    = plus_constant (Pmode, shadow_base,
--		     asan_shadow_offset ()
--		     + (base_align_bias >> ASAN_SHADOW_SHIFT));
+-  if (asan_dynamic_shadow_offset_p ())
+-    {
+-      ret = expand_normal (get_asan_shadow_memory_dynamic_address_decl ());
+-      shadow_base
+-	= expand_simple_binop (Pmode, PLUS, shadow_base, ret, NULL_RTX,
+-			       /* unsignedp = */ 1, OPTAB_WIDEN);
+-      shadow_base = plus_constant (Pmode, shadow_base,
+-				   (base_align_bias >> ASAN_SHADOW_SHIFT));
+-    }
+-  else
+-    {
+-      shadow_base = plus_constant (Pmode, shadow_base,
+-				   asan_shadow_offset ()
+-				     + (base_align_bias >> ASAN_SHADOW_SHIFT));
 +  if (param_asan_use_shadow_offset_callback) {
 +    rtx addr, shadow_offset_rtx;
 +    ret = init_one_libfunc ("__asan_shadow_offset");
@@ -56,25 +66,24 @@ index 235e21947..713bf994d 100644
 +                                  addr, ptr_mode);
 +    shadow_offset_rtx = convert_memory_address (Pmode, ret);
 +    shadow_base = expand_binop (Pmode, lshr_optab, base,
-+			                          gen_int_shift_amount (Pmode, ASAN_SHADOW_SHIFT),
-+			                          NULL_RTX, 1, OPTAB_DIRECT);
++                                                 gen_int_shift_amount (Pmode, ASAN_SHADOW_SHIFT),
++                                                 NULL_RTX, 1, OPTAB_DIRECT);
 +    shadow_base = expand_binop (Pmode, add_optab, shadow_base,
-+			                          shadow_offset_rtx, NULL_RTX, 1, OPTAB_LIB_WIDEN);
++                                                 shadow_offset_rtx, NULL_RTX, 1, OPTAB_LIB_WIDEN);
 +    shadow_base = plus_constant (Pmode, shadow_base,
-+		                            (base_align_bias >> ASAN_SHADOW_SHIFT));
++                                                   (base_align_bias >> ASAN_SHADOW_SHIFT));
 +  } else {
 +    shadow_base = expand_binop (Pmode, lshr_optab, base,
-+			                          gen_int_shift_amount (Pmode, ASAN_SHADOW_SHIFT),
-+			                          NULL_RTX, 1, OPTAB_DIRECT);
++                             gen_int_shift_amount (Pmode, ASAN_SHADOW_SHIFT),
++                             NULL_RTX, 1, OPTAB_DIRECT);
 +    shadow_base = plus_constant (Pmode, shadow_base,
-+		                            asan_shadow_offset ()
-+		                            + (base_align_bias >> ASAN_SHADOW_SHIFT));
-+  }
++                                  asan_shadow_offset ()
++                                    + (base_align_bias >> ASAN_SHADOW_SHIFT));
+     }
    gcc_assert (asan_shadow_set != -1
  	      && (ASAN_RED_ZONE_SIZE >> ASAN_SHADOW_SHIFT) == 4);
-   shadow_mem = gen_rtx_MEM (SImode, shadow_base);
---- gcc-11.1.0/gcc/params.opt~	2021-05-11 09:02:51.897508677 +0200
-+++ gcc-11.1.0/gcc/params.opt	2021-05-11 09:10:43.692610696 +0200
+--- gcc-15-20250112/gcc/params.opt~
++++ gcc-15-20250112/gcc/params.opt
 @@ -50,6 +50,10 @@
  Common Joined UInteger Var(param_asan_instrumentation_with_call_threshold) Init(7000) Param Optimization
  Use callbacks instead of inline code if number of accesses in function becomes greater or equal to this number.
