@@ -82,8 +82,8 @@ struct edid {
 	u32 bytes_per_line;
 
 	int hdmi_monitor_detected;
-	char ascii_string[EDID_ASCII_STRING_LENGTH + 1];
-	char manufacturer_name[3 + 1];
+	char __nonstring ascii_string[EDID_ASCII_STRING_LENGTH + 1];
+	char __nonstring manufacturer_name[3 + 1];
 };
 
 enum edid_status {

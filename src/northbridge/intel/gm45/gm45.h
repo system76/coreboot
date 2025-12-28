@@ -441,7 +441,7 @@ void mb_pre_raminit_setup(sysinfo_t *); /* optional */
 void mb_post_raminit_setup(void); /* optional */
 
 struct blc_pwm_t {
-	char ascii_string[13];
+	char __nonstring ascii_string[13];
 	int pwm_freq; /* In Hz */
 };
 int get_blc_values(const struct blc_pwm_t **entries);

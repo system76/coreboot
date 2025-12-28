@@ -28,7 +28,7 @@ struct smm_relocation_params {
 extern struct smm_relocation_params smm_reloc_params;
 
 struct ied_header {
-	char signature[10];
+	char __nonstring signature[10];
 	u32 size;
 	u8 reserved[34];
 } __packed;

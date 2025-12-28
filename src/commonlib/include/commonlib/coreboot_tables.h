@@ -321,7 +321,7 @@ struct lb_gpio {
 #define ACTIVE_HIGH	1
 	uint32_t value;
 #define GPIO_MAX_NAME_LENGTH 16
-	uint8_t name[GPIO_MAX_NAME_LENGTH];
+	uint8_t __nonstring name[GPIO_MAX_NAME_LENGTH];
 };
 
 struct lb_gpios {

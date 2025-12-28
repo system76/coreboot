@@ -8,7 +8,7 @@
 
 /* This structure is embedded somewhere in the (uncompressed) bootblock. */
 struct metadata_hash_anchor {
-	uint8_t magic[8];
+	uint8_t __nonstring magic[8];
 	struct vb2_hash cbfs_hash;
 	/* NOTE: This is just reserving space. sizeof(struct vb2_hash) may change between
 	   configurations/versions and cannot be relied upon, so the FMAP hash must be placed
