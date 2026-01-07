@@ -69,7 +69,7 @@ config SOC_INTEL_METEORLAKE
 	select SOC_INTEL_COMMON_BLOCK_GSPI_VERSION_2
 	select SOC_INTEL_COMMON_BLOCK_HDA
 	select SOC_INTEL_COMMON_BLOCK_HECI1_DISABLE_USING_PMC_IPC
-	select SOC_INTEL_COMMON_BLOCK_IPU
+	select SOC_INTEL_COMMON_BLOCK_IPU if !SOC_INTEL_ARROWLAKE_PCH_S
 	select SOC_INTEL_COMMON_BLOCK_IOE_P2SB
 	select SOC_INTEL_COMMON_BLOCK_IRQ
 	select SOC_INTEL_COMMON_BLOCK_ME_SPEC_18
@@ -136,6 +136,11 @@ config SOC_INTEL_METEORLAKE_PRE_PRODUCTION_SILICON
 	  silicon. Typically known as engineering samples (like ES). This type
 	  of the silicon are very common for early platform development.
 
+config SOC_INTEL_ARROWLAKE_PCH_S
+	bool
+	help
+	  Choose this option if your mainboard has an Arrow Lake PCH-S chipset.
+
 if SOC_INTEL_METEORLAKE
 
 config SOC_INTEL_METEORLAKE_TCSS_USB4_SUPPORT
@@ -157,7 +162,7 @@ config METEORLAKE_CAR_ENHANCED_NEM
 
 config MAX_CPUS
 	int
-	default 22
+	default 24
 
 config DCACHE_RAM_BASE
 	default 0xfef00000
@@ -187,6 +192,7 @@ config FSP_TEMP_RAM_SIZE
 
 config CHIPSET_DEVICETREE
 	string
+	default "soc/intel/meteorlake/chipset_pch_s.cb" if SOC_INTEL_ARROWLAKE_PCH_S
 	default "soc/intel/meteorlake/chipset.cb"
 
 config EXT_BIOS_WIN_BASE
@@ -225,14 +231,17 @@ endif # SOC_INTEL_ENABLE_USB4_PCIE_RESOURCES
 
 config MAX_TBT_ROOT_PORTS
 	int
+	default 2 if SOC_INTEL_ARROWLAKE_PCH_S
 	default 4
 
 config MAX_ROOT_PORTS
 	int
+	default 24 if SOC_INTEL_ARROWLAKE_PCH_S
 	default 12
 
 config MAX_PCIE_CLOCK_SRC
 	int
+	default 14 if SOC_INTEL_ARROWLAKE_PCH_S
 	default 9
 
 config SMM_TSEG_SIZE
