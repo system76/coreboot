@@ -167,6 +167,13 @@ static bool is_sme_enabled(int cpunum)
 	return !!(data.lo & (1 << 23));
 }
 
+static bool is_sme_hmk_enabled(int cpunum)
+{
+	msr_t data;
+	data = rdmsr_from_cpu(cpunum, 0xC0010010);
+	return !!(data.lo & (1 << 26));
+}
+
 static bool is_sev_snp_enabled(int cpunum)
 {
 	msr_t data;
@@ -196,9 +203,12 @@ static int print_sme(void)
 			printf("------------- CPU %d ----------------\n", i);
 			printf("SME supported             : %s\n",
 					sme_supported ? "YES" : "NO");
-			if (sme_supported)
+			if (sme_supported) {
 				printf("SME enabled               : %s\n",
 					is_sme_enabled(i) ? "YES" : "NO");
+				printf("SME-HMK enabled           : %s\n",
+					is_sme_hmk_enabled(i) ? "YES" : "NO");
+			}
 		}
 		error = 0;
 	}
