@@ -167,6 +167,13 @@ static bool is_sme_enabled(int cpunum)
 	return !!(data.lo & (1 << 23));
 }
 
+static bool is_sev_snp_enabled(int cpunum)
+{
+	msr_t data;
+	data = rdmsr_from_cpu(cpunum, 0xC0010010);
+	return !!(data.lo & (1 << 24));
+}
+
 #endif
 
 static int print_sme(void)
@@ -233,30 +240,6 @@ static bool is_sev_snp_supported(void)
 	return !!(cpuid_regs.eax & 0x10);
 }
 
-static bool is_sev_enabled(int cpunum)
-{
-	msr_t data;
-
-	data = rdmsr_from_cpu(cpunum, 0xC0010131);
-	return !!(data.lo & 1);
-}
-
-static bool is_sev_es_enabled(int cpunum)
-{
-	msr_t data;
-
-	data = rdmsr_from_cpu(cpunum, 0xC0010131);
-	return !!(data.lo & 2);
-}
-
-static bool is_sev_snp_enabled(int cpunum)
-{
-	msr_t data;
-
-	data = rdmsr_from_cpu(cpunum, 0xC0010131);
-	return !!(data.lo & 4);
-}
-
 static unsigned int get_sev_max_guest_num(void)
 {
 	cpuid_result_t cpuid_regs;
@@ -279,7 +262,7 @@ static int print_sev(void)
 #ifndef __DARWIN__
 	int ncpus = get_number_of_cpus();
 	int i = 0;
-	bool sev_supported, sev_es_supported, sev_snp_supported;
+	bool sev_supported, sev_snp_supported;
 	unsigned int max_guest, min_asid;
 
 	printf("\n============= Dumping AMD SEV status =============\n");
@@ -293,7 +276,6 @@ static int print_sev(void)
 		 * in the scope of processor.
 		 */
 		sev_supported = is_sev_supported();
-		sev_es_supported = is_sev_es_supported();
 		sev_snp_supported = is_sev_snp_supported();
 		if (sev_supported) {
 			max_guest = get_sev_max_guest_num();
@@ -309,14 +291,9 @@ static int print_sev(void)
 					max_guest);
 				printf("Min SEV ASID              : %u\n",
 					min_asid);
-				printf("SEV enabled               : %s\n",
-					is_sev_enabled(i) ? "YES" : "NO");
 			}
 			printf("SEV-ES supported          : %s\n",
-					sev_es_supported ? "YES" : "NO");
-			if (sev_es_supported)
-				printf("SEV-ES enabled            : %s\n",
-					is_sev_es_enabled(i) ? "YES" : "NO");
+					is_sev_es_supported() ? "YES" : "NO");
 			printf("SEV-SNP supported         : %s\n",
 					sev_snp_supported ? "YES" : "NO");
 			if (sev_snp_supported)
