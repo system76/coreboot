@@ -127,7 +127,6 @@ config SOC_INTEL_PANTHERLAKE_BASE
 	select UDK_202302_BINDING
 	select USE_COREBOOT_FOR_BMP_RENDERING
 	select USE_X86_64_SUPPORT
-	select X86_INIT_NEED_1_SIPI
 	help
 	  Intel Pantherlake support. Mainboards should specify the SoC
 	  type using the `SOC_INTEL_PANTHERLAKE_*` options instead

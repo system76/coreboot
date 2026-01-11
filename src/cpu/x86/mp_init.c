@@ -481,7 +481,16 @@ static enum cb_err start_aps(struct bus *cpu_bus, int ap_count, atomic_t *num_ap
 	/* Send INIT IPI to all but self. */
 	lapic_send_ipi_others(LAPIC_INT_ASSERT | LAPIC_MT_INIT);
 
-	if (!CONFIG(X86_INIT_NEED_1_SIPI)) {
+	if (CONFIG(X86_INIT_NEED_2ND_SIPI)) {
+		/*
+		 * The Multiprocessor Specification 1.4 (1997) example code suggests
+		 * that there should be a 10ms delay between the BSP asserting INIT
+		 * and de-asserting INIT, when starting a remote processor.
+		 * But that slows boot and resume on modern processors, which include
+		 * many cores and don't require that delay. Keep the delay for older
+		 * processors where removing the delay could not be tested.
+		 */
+
 		printk(BIOS_DEBUG, "Waiting for 10ms after sending INIT.\n");
 		mdelay(10);
 
