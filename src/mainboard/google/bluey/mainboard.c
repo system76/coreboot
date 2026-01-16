@@ -12,6 +12,7 @@
 #include <device/device.h>
 #include <device/i2c_simple.h>
 #include <ec/google/chromeec/ec.h>
+#include <edid.h>
 #include <gpio.h>
 #include <halt.h>
 #include <soc/clock.h>
@@ -20,8 +21,15 @@
 #include <soc/qupv3_i2c_common.h>
 #include <soc/qup_se_handlers_common.h>
 #include "board.h"
+#include <soc/symbols_common.h>
 #include <soc/rpmh_config.h>
 #include <soc/usb/usb.h>
+#include <soc/qcom_spmi.h>
+#include <timer.h>
+#include <timestamp.h>
+
+#define BATTERY_CHARGING_SPLASH_TIMEOUT_MS 5000
+static struct stopwatch splash_sw;
 
 #define C0_RETIMER_I2C_BUS	0x03
 #define C1_RETIMER_I2C_BUS	0x07
@@ -156,6 +164,86 @@ bool mainboard_needs_pcie_init(void)
 	return true;
 }
 
+#if CONFIG(PLATFORM_HAS_OFF_MODE_CHARGING_INDICATOR)
+bool platform_is_off_mode_charging_active(void)
+{
+	return (get_boot_mode() == LB_BOOT_MODE_OFFMODE_CHARGING);
+}
+#endif
+
+static void edp_configure_gpios(void)
+{
+	/* Panel power on GPIO enable */
+	gpio_output(GPIO_PANEL_POWER_ON, 1);
+
+	/* Panel HPD GPIO enable */
+	gpio_input_pulldown(GPIO_PANEL_HPD);
+}
+
+#define SLAVE_ID 0x03
+#define GPIO4_DIG_OUT_SOURCE_CTL ((SLAVE_ID << 16) | 0x8B44)
+#define GPIO4_MODE_CTL ((SLAVE_ID << 16) | 0x8B40)
+#define GPIO4_EN_CTL ((SLAVE_ID << 16) | 0x8B46)
+
+#define GPIO_PERPH_EN 0x80
+#define GPIO_OUTPUT_INVERT 0x80
+#define GPIO_MODE 0x1
+
+static void edp_enable_backlight(void)
+{
+	/* Enable backlight PMIC_D GPIO4 */
+	spmi_write8(GPIO4_DIG_OUT_SOURCE_CTL, GPIO_OUTPUT_INVERT);
+	spmi_write8(GPIO4_MODE_CTL, GPIO_MODE);
+	spmi_write8(GPIO4_EN_CTL, GPIO_PERPH_EN);
+}
+
+static void qcom_mdss_edp_init(struct edid *edid, uintptr_t fb_addr)
+{
+	/* TODO: Initialize eDP and DSI */
+}
+
+static void qcom_mdp_start(uintptr_t fb_addr)
+{
+	stopwatch_init_msecs_expire(&splash_sw, BATTERY_CHARGING_SPLASH_TIMEOUT_MS);
+
+	/* TODO: Enable timing engine */
+}
+
+static void qcom_mdp_stop(void)
+{
+	if (!get_lb_framebuffer())
+		return;
+
+	while (!stopwatch_expired(&splash_sw))
+		mdelay(100);
+
+	/* TODO: Disable timing engine */
+}
+
+static void display_logo(enum lb_fb_orientation orientation,
+			 uintptr_t fb_addr,
+			 const struct edid *edid)
+{
+	if (!CONFIG(BMP_LOGO) || !fb_addr)
+		return;
+
+	memset((void *)fb_addr, 0, edid->bytes_per_line * edid->y_resolution);
+
+	struct logo_config config = {
+		.panel_orientation = orientation,
+		.halignment = FW_SPLASH_HALIGNMENT_CENTER,
+		.valignment = FW_SPLASH_VALIGNMENT_CENTER,
+		.logo_bottom_margin = 200,
+	};
+	render_logo_to_framebuffer(&config);
+
+	qcom_mdp_start(fb_addr);
+
+	edp_enable_backlight();
+
+	timestamp_add_now(TS_FIRMWARE_SPLASH_RENDERED);
+}
+
 static void display_startup(void)
 {
 	/* TODO: Enable the display in normal mode once SMMU issue is fixed */
@@ -170,11 +258,25 @@ static void display_startup(void)
 		return;
 	}
 
+	struct edid edid = {};
+	struct fb_info *fb;
+	uintptr_t fb_addr = (REGION_SIZE(framebuffer)) ? (uintptr_t)_framebuffer : 0;
+	enum lb_fb_orientation orientation = LB_FB_ORIENTATION_NORMAL;
+
 	/* Initialize RPMh subsystem and display power rails */
 	if (display_rpmh_init() != CB_SUCCESS)
 		return;
 
 	enable_mdss_clk();
+	edp_configure_gpios();
+	qcom_mdss_edp_init(&edid, fb_addr);
+	if (edid.mode.ha == 0)
+		return;
+
+	edid_set_framebuffer_bits_per_pixel(&edid, 32, 0);
+	fb = fb_new_framebuffer_info_from_edid(&edid, fb_addr);
+	fb_set_orientation(fb, orientation);
+	display_logo(orientation, fb_addr, &edid);
 }
 
 static void trigger_critical_battery_shutdown(void)
@@ -224,6 +326,8 @@ static void handle_low_power_charging_boot(void)
 	 */
 	if (CONFIG(EC_GOOGLE_CHROMEEC_LED_CONTROL))
 		google_chromeec_lightbar_off();
+
+	qcom_mdp_stop();
 
 	/* Boot to charging applet; if this fails, the applet should trigger a reset */
 	launch_charger_applet();
