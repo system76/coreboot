@@ -176,9 +176,6 @@ romstage-libs ?=
 
 $(eval $(call link_stage,romstage))
 
-# Compiling crt0 with -g seems to trigger https://sourceware.org/bugzilla/show_bug.cgi?id=6428
-romstage-S-ccopts += -g0
-
 endif # CONFIG_ARCH_ROMSTAGE_X86_32 / CONFIG_ARCH_ROMSTAGE_X86_64
 
 ###############################################################################
