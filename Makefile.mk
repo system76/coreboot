@@ -73,11 +73,31 @@ build_complete:: | coreboot
 .PHONY: files_added
 files_added:: | build_complete
 
+# This target can be used to run rules once the ROM is fully finalised
+# (after all files were added to CBFS, and any files_added hooks ran).
+.PHONY: finalised_rom
+finalised_rom:: | files_added
+
+# Optional post-build targets.
+.PHONY: capsule
+capsule::
+
+ifeq ($(CONFIG_PAYLOAD_EDK2)$(CONFIG_DRIVERS_EFI_UPDATE_CAPSULES)$(CONFIG_DRIVERS_EFI_GENERATE_CAPSULE),yyy)
+finalised_rom:: $(obj)/coreboot.cap
+capsule:: $(obj)/coreboot.cap
+
+$(obj)/coreboot.cap: $(obj)/coreboot.rom $(DOTCONFIG) | files_added
+	$(MAKE) -C payloads/external/edk2 coreboot_capsule \
+		COREBOOT_ROM="$(abspath $<)" \
+		COREBOOT_CAPSULE_OUT="$(abspath $@)" \
+		$(EDK2_CAPSULE_ARGS)
+endif
+
 # This target should come just before the show_notices target.  If there
 # are no notices, the build should finish with the text of what was just
 # built.
 .PHONY: show_coreboot
-show_coreboot: | files_added
+show_coreboot: | finalised_rom
 	$(CBFSTOOL) $(obj)/coreboot.rom print -r $(subst $(spc),$(comma),$(all-regions))
 	printf "\nBuilt %s (%s)\n" $(MAINBOARDDIR) $(CONFIG_MAINBOARD_PART_NUMBER)
 	if [ -f "$(CCACHE_STATSLOG)" ]; then \

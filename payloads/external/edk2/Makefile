@@ -5,7 +5,17 @@ export SHELL := env bash
 
 project_name = edk2
 export WORKSPACE := $(CURDIR)/workspace
-export EDK2_PATH := $(WORKSPACE)/$(word 3,$(subst /, ,$(CONFIG_EDK2_REPOSITORY)))
+
+strip_quotes = $(subst ",,$(1))
+
+EDK2_REPOSITORY := $(call strip_quotes,$(CONFIG_EDK2_REPOSITORY))
+EDK2_PLATFORMS_REPOSITORY := $(call strip_quotes,$(CONFIG_EDK2_PLATFORMS_REPOSITORY))
+EDK2_PATH_REPO_ROOT := $(word 3,$(subst /, ,$(EDK2_REPOSITORY)))
+export EDK2_PATH := $(WORKSPACE)/$(EDK2_PATH_REPO_ROOT)
+
+define edk2_abspath
+$(if $(filter /%,$(1)),$(1),$(EDK2_PATH)/$(1))
+endef
 
 ifeq ($(CONFIG_EDK2_USE_EDK2_PLATFORMS),y)
 BUILD_STR += -D USE_EDK2_PLATFORMS=TRUE
@@ -128,6 +138,39 @@ ifeq ($(CONFIG_DRIVERS_EFI_UPDATE_CAPSULES),y)
 BUILD_STR += -D CAPSULE_SUPPORT=TRUE
 BUILD_STR += -D CAPSULE_MAIN_FW_GUID=$(CONFIG_DRIVERS_EFI_MAIN_FW_GUID)
 endif
+ifeq ($(CONFIG_DRIVERS_EFI_CAPSULE_ACCEPT_EMBEDDED_DRIVERS),y)
+BUILD_STR += --pcd gEfiMdeModulePkgTokenSpaceGuid.PcdCapsuleEmbeddedDriverSupport=TRUE
+endif
+ifeq ($(CONFIG_DRIVERS_EFI_CAPSULE_EMBED_FMP_DXE),y)
+BUILD_STR += -D CAPSULE_EMBED_FMP_DXE=TRUE
+endif
+
+CAPSULE_PCD_INC_REL := BaseTools/Source/Python/Pkcs7Sign/TestRoot.cer.gFmpDevicePkgTokenSpaceGuid.PcdFmpDevicePkcs7CertBufferXdr.inc
+CAPSULE_PCD_INC := $(EDK2_PATH)/$(CAPSULE_PCD_INC_REL)
+CAPSULE_PCD_NAME := gFmpDevicePkgTokenSpaceGuid.PcdFmpDevicePkcs7CertBufferXdr
+
+CAPSULE_GUID := $(call strip_quotes,$(CONFIG_DRIVERS_EFI_MAIN_FW_GUID))
+CAPSULE_REGIONS := $(call strip_quotes,$(CONFIG_DRIVERS_EFI_CAPSULE_REGIONS))
+CAPSULE_LOCALVERSION := $(call strip_quotes,$(CONFIG_LOCALVERSION))
+CAPSULE_SIGNER_PRIVATE_CERT := $(call strip_quotes,$(CONFIG_DRIVERS_EFI_CAPSULE_SIGNER_PRIVATE_CERT))
+CAPSULE_OTHER_PUBLIC_CERT := $(call strip_quotes,$(CONFIG_DRIVERS_EFI_CAPSULE_OTHER_PUBLIC_CERT))
+CAPSULE_TRUSTED_PUBLIC_CERT := $(call strip_quotes,$(CONFIG_DRIVERS_EFI_CAPSULE_TRUSTED_PUBLIC_CERT))
+
+CAPSULE_SIGNER_PRIVATE_CERT_PATH := $(call edk2_abspath,$(CAPSULE_SIGNER_PRIVATE_CERT))
+CAPSULE_OTHER_PUBLIC_CERT_PATH := $(call edk2_abspath,$(CAPSULE_OTHER_PUBLIC_CERT))
+CAPSULE_TRUSTED_PUBLIC_CERT_PATH := $(call edk2_abspath,$(CAPSULE_TRUSTED_PUBLIC_CERT))
+
+# AppendRmapManifest.py moved from BaseTools/Scripts to UefiPayloadPkg/Tools in
+# newer edk2 trees.
+EDK2_APPEND_RMAP_MANIFEST = $(firstword $(wildcard \
+	$(EDK2_PATH)/UefiPayloadPkg/Tools/AppendRmapManifest.py \
+	$(EDK2_PATH)/BaseTools/Scripts/AppendRmapManifest.py \
+))
+
+# If FmpDxe is built, edk2 also places it in the top-level X64 output dir.
+EDK2_FMP_DXE = $(WORKSPACE)/Build/UefiPayloadPkgX64/$(RELEASE_STR)_GCC/X64/FmpDxe.efi
+
+CAPSULE_ROOT_CERT_DER := $(WORKSPACE)/capsule_trusted_root.der
 
 #
 # One or more downstream edk2 repositories support the following additional options:
@@ -223,6 +266,10 @@ $(EDK2_PATH): $(WORKSPACE)
 	fi
 	cd $(EDK2_PATH); \
 		git checkout MdeModulePkg/Logo/Logo.bmp > /dev/null 2>&1 || true; \
+		git checkout "$(CAPSULE_PCD_INC_REL)" > /dev/null 2>&1 || true; \
+		if ! git ls-files --error-unmatch "$(CAPSULE_PCD_INC_REL)" >/dev/null 2>&1; then \
+			rm -f "$(CAPSULE_PCD_INC_REL)" || true; \
+		fi; \
 		if [ -e UefiPayloadPkg/ShimLayer/UniversalPayload.o ]; then \
 			rm UefiPayloadPkg/ShimLayer/UniversalPayload.o; \
 		fi; \
@@ -285,6 +332,19 @@ checktools:
 		echo "ERROR: Please install imagemagick"; \
 		exit 1; \
 	fi
+
+ifeq ($(CONFIG_DRIVERS_EFI_UPDATE_CAPSULES)$(CONFIG_DRIVERS_EFI_GENERATE_CAPSULE),yy)
+capsule_keys: $(EDK2_PATH)
+	type openssl > /dev/null 2>&1 || ( echo "ERROR: Please install openssl."; exit 1 )
+	test -f "$(CAPSULE_TRUSTED_PUBLIC_CERT_PATH)"
+	test -f "$(EDK2_PATH)/BaseTools/Scripts/BinToPcd.py"
+	mkdir -p "$(dir $(CAPSULE_PCD_INC))"
+	openssl x509 -in "$(CAPSULE_TRUSTED_PUBLIC_CERT_PATH)" -outform der -out "$(CAPSULE_ROOT_CERT_DER)"
+	python3 "$(EDK2_PATH)/BaseTools/Scripts/BinToPcd.py" -q -x \
+		-i "$(CAPSULE_ROOT_CERT_DER)" -o "$(CAPSULE_PCD_INC)" -p "$(CAPSULE_PCD_NAME)"
+
+prep: capsule_keys
+endif
 
 print:
 	echo "   ##### $(project_name) Build Summary #####"
@@ -359,3 +419,46 @@ distclean:
 	rm -rf $(WORKSPACE)
 
 .PHONY: $(EDK2_PATH) checktools logo UefiPayloadPkg UniversalPayload clean distclean
+
+.PHONY: coreboot_capsule capsule_keys
+
+coreboot_capsule: $(EDK2_PATH)
+	test -n "$(COREBOOT_ROM)"
+	test -n "$(COREBOOT_CAPSULE_OUT)"
+	test -f "$(COREBOOT_ROM)"
+	test -f "$(EDK2_APPEND_RMAP_MANIFEST)"
+	test -x "$(EDK2_PATH)/BaseTools/BinWrappers/PosixLike/GenerateCapsule"
+	test -f "$(CAPSULE_SIGNER_PRIVATE_CERT_PATH)"
+	test -f "$(CAPSULE_OTHER_PUBLIC_CERT_PATH)"
+	test -f "$(CAPSULE_TRUSTED_PUBLIC_CERT_PATH)"
+	rmap_rom="$${COREBOOT_CAPSULE_OUT%.cap}.rmap.rom"; \
+	set -e; \
+	python3 "$(EDK2_APPEND_RMAP_MANIFEST)" -o "$$rmap_rom" $(foreach r,$(CAPSULE_REGIONS),-r $(r)) "$(COREBOOT_ROM)"; \
+	embedded_driver_args=(); \
+	if [ "$(CONFIG_DRIVERS_EFI_CAPSULE_EMBED_FMP_DXE)" = "y" ]; then \
+		test -f "$(EDK2_FMP_DXE)"; \
+		embedded_driver_args=( --embedded-driver "$(EDK2_FMP_DXE)" ); \
+	fi; \
+	fw_version=$$(( $(CONFIG_DRIVERS_EFI_MAIN_FW_VERSION) )); \
+	if [ $$fw_version -eq 0 ]; then \
+		if [[ "$(CAPSULE_LOCALVERSION)" =~ ^[^0-9]*([0-9]+)[.]([0-9]+) ]]; then \
+			fw_version=$$(( (10#$${BASH_REMATCH[1]} << 16) | 10#$${BASH_REMATCH[2]} )); \
+		fi; \
+	fi; \
+	lsv=$$(( $(CONFIG_DRIVERS_EFI_MAIN_FW_LSV) )); \
+	if [ $$lsv -eq 0 ]; then \
+		lsv=$$fw_version; \
+	fi; \
+	capflags=( --capflag PersistAcrossReset ); \
+	if [ "$(CONFIG_DRIVERS_EFI_CAPSULE_INITIATE_RESET)" = "y" ]; then \
+		capflags+=( --capflag InitiateReset ); \
+	fi; \
+	"$(EDK2_PATH)/BaseTools/BinWrappers/PosixLike/GenerateCapsule" -e -o "$(COREBOOT_CAPSULE_OUT)" \
+		--guid "$(CAPSULE_GUID)" \
+		"$${capflags[@]}" \
+		--fw-version $$fw_version --lsv $$lsv \
+		--signer-private-cert "$(CAPSULE_SIGNER_PRIVATE_CERT_PATH)" \
+		--other-public-cert "$(CAPSULE_OTHER_PUBLIC_CERT_PATH)" \
+		--trusted-public-cert "$(CAPSULE_TRUSTED_PUBLIC_CERT_PATH)" \
+		"$${embedded_driver_args[@]}" \
+		"$$rmap_rom"

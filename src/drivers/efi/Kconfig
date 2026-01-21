@@ -57,3 +57,93 @@ config DRIVERS_EFI_UPDATE_CAPSULES
 	  Adds a driver that is able to parse CapsuleUpdateData* EFI variables
 	  to discover firmware updates and expose them for tianocore thorough
 	  CBMEM for execution.  tianocore is responsible for erasing the variables.
+
+config DRIVERS_EFI_CAPSULE_ACCEPT_EMBEDDED_DRIVERS
+	bool "Allow embedded drivers in update capsules"
+	depends on PAYLOAD_EDK2 && DRIVERS_EFI_UPDATE_CAPSULES
+	help
+	  Allow the EDK2 payload's capsule processing to load embedded drivers
+	  from capsules (PcdCapsuleEmbeddedDriverSupport).
+
+	  This is required for capsules that contain embedded drivers.
+
+	  Note: if Secure Boot is enabled, the embedded driver must be signed by a
+	  key trusted by the running firmware (or capsule processing may fail).
+
+config DRIVERS_EFI_GENERATE_CAPSULE
+	bool "Generate an update capsule during the build"
+	depends on PAYLOAD_EDK2 && DRIVERS_EFI_UPDATE_CAPSULES
+	help
+	  Generates a UEFI capsule from the final ROM image using EDK2 BaseTools.
+	  This is intended for fwupd update workflows that use the ESRT/FMP
+	  mechanism.
+
+config DRIVERS_EFI_CAPSULE_EMBED_FMP_DXE
+	bool "Embed FmpDxe driver into generated capsules"
+	depends on DRIVERS_EFI_GENERATE_CAPSULE
+	depends on DRIVERS_EFI_CAPSULE_ACCEPT_EMBEDDED_DRIVERS
+	help
+	  When generating build/coreboot.cap, embed the built FmpDxe.efi as an
+	  embedded driver in the capsule.
+
+
+config DRIVERS_EFI_CAPSULE_INITIATE_RESET
+	bool "Request reset after capsule is applied"
+	default n
+	depends on DRIVERS_EFI_GENERATE_CAPSULE
+	help
+	  Add the InitiateReset capsule flag when generating build/coreboot.cap.
+
+	  Note: Linux rejects capsules with InitiateReset when using
+	  /dev/efi_capsule_loader.
+
+
+config DRIVERS_EFI_CAPSULE_REGIONS
+	string "FMAP regions to include in the capsule manifest"
+	default "COREBOOT"
+	depends on DRIVERS_EFI_GENERATE_CAPSULE
+	help
+	  Whitespace-separated list of FMAP regions that the update capsule is
+	  allowed to modify. The list is embedded as a manifest inside the ROM
+	  image prior to building the capsule.
+
+menu "Capsule signing certificates"
+	depends on DRIVERS_EFI_GENERATE_CAPSULE
+
+config DRIVERS_EFI_CAPSULE_SIGNER_PRIVATE_CERT
+	string "PEM file used to sign generated capsules"
+	default "BaseTools/Source/Python/Pkcs7Sign/TestCert.pem"
+	depends on DRIVERS_EFI_GENERATE_CAPSULE
+	help
+	  Path to a PEM file containing the private key and leaf certificate used
+	  when signing the capsule with EDK2 GenerateCapsule.
+
+	  If the path is relative, it is interpreted relative to the configured
+	  EDK2 repository (payloads/external/edk2 workspace).
+
+	  See Documentation/drivers/efi_capsule_generation.md and
+	  BaseTools/Source/Python/Pkcs7Sign/Readme.md in the EDK2 tree.
+
+config DRIVERS_EFI_CAPSULE_OTHER_PUBLIC_CERT
+	string "Intermediate certificate for capsule signing (PEM)"
+	default "BaseTools/Source/Python/Pkcs7Sign/TestSub.pub.pem"
+	depends on DRIVERS_EFI_GENERATE_CAPSULE
+	help
+	  Path to the intermediate certificate (PEM) used when generating a PKCS#7
+	  signature for the capsule.
+
+	  If the path is relative, it is interpreted relative to the configured
+	  EDK2 repository (payloads/external/edk2 workspace).
+
+config DRIVERS_EFI_CAPSULE_TRUSTED_PUBLIC_CERT
+	string "Trusted root certificate for capsule signing (PEM)"
+	default "BaseTools/Source/Python/Pkcs7Sign/TestRoot.pub.pem"
+	depends on DRIVERS_EFI_GENERATE_CAPSULE
+	help
+	  Path to the trusted root certificate (PEM) used when generating a PKCS#7
+	  signature for the capsule.
+
+	  If the path is relative, it is interpreted relative to the configured
+	  EDK2 repository (payloads/external/edk2 workspace).
+
+endmenu
