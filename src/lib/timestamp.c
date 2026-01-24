@@ -18,6 +18,7 @@ static struct timestamp_table *glob_ts_table;
 static void timestamp_cache_init(struct timestamp_table *ts_cache,
 				 uint64_t base)
 {
+	ts_cache->tick_freq_mhz = 0;
 	ts_cache->num_entries = 0;
 	ts_cache->base_time = base;
 	ts_cache->max_entries = (REGION_SIZE(timestamp) -
