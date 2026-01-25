@@ -37,6 +37,17 @@ struct mp_callback {
 
 static char processor_name[49];
 
+static void write_back_cached_data(const void *start, size_t size)
+{
+	if (self_snooping_supported())
+		return;
+
+	if (clflush_supported())
+		clflush_region((uintptr_t)start, size);
+	else
+		wbinvd();
+}
+
 /*
  * A mp_flight_record details a sequence of calls for the APs to perform
  * along with the BSP to coordinate sequencing. Each flight record either
@@ -366,14 +377,9 @@ static atomic_t *load_sipi_vector(struct mp_params *mp_params)
 	ap_count = &sp->ap_count;
 	atomic_set(ap_count, 0);
 
-	if (!self_snooping_supported()) {
-		/* Make sure SIPI data hits RAM so the APs that come up will see the
-		   startup code even if the caches are disabled. */
-		if (clflush_supported())
-			clflush_region((uintptr_t)mod_loc, module_size);
-		else
-			wbinvd();
-	}
+	/* Make sure SIPI data hits RAM so the APs that come up will see the
+	   startup code even if the caches are disabled. */
+	write_back_cached_data(mod_loc, module_size);
 
 	return ap_count;
 }
@@ -612,6 +618,8 @@ static enum cb_err mp_init(struct bus *cpu_bus, struct mp_params *p)
 {
 	int num_cpus;
 	atomic_t *ap_count;
+	void *microcode_pointer_dram = NULL;
+	enum cb_err ret;
 
 	g_cpu_bus = cpu_bus;
 
@@ -639,6 +647,32 @@ static enum cb_err mp_init(struct bus *cpu_bus, struct mp_params *p)
 		return CB_ERR;
 	}
 
+	/*
+	 * On Server platforms with high core count or older platforms with
+	 * slow SPI flash interface loading the microcode from SPI flash MMIO
+	 * area on each AP slows down MPinit. On Server platforms tests showed
+	 * a difference of multiple seconds. Cache the microcode in DRAM once
+	 * before starting the APs.
+	 */
+	if (p->microcode_pointer && p->microcode_size) {
+		microcode_pointer_dram = malloc(p->microcode_size);
+		if (microcode_pointer_dram) {
+			memcpy(microcode_pointer_dram, p->microcode_pointer,
+			       p->microcode_size);
+			/*
+			 * Make sure microcode hits RAM so the APs that come up will
+			 * see the microcode even if the caches are disabled.
+			 */
+			write_back_cached_data(microcode_pointer_dram,
+					       p->microcode_size);
+			p->microcode_pointer = microcode_pointer_dram;
+		} else {
+			/* For developers: Increase CONFIG_HEAP_SIZE */
+			printk(BIOS_WARNING, "%s: Not enough heap. MPinit will be slower.\n",
+			       __func__);
+		}
+	}
+
 	/* Copy needed parameters so that APs have a reference to the plan. */
 	mp_info.num_records = p->num_records;
 	mp_info.records = p->flight_plan;
@@ -658,7 +692,11 @@ static enum cb_err mp_init(struct bus *cpu_bus, struct mp_params *p)
 	}
 
 	/* Walk the flight plan for the BSP. */
-	return bsp_do_flight_plan(p);
+	ret = bsp_do_flight_plan(p);
+
+	free(microcode_pointer_dram);
+
+	return ret;
 }
 
 void smm_initiate_relocation_parallel(void)
