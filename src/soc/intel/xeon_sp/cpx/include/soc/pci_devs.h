@@ -32,6 +32,7 @@
 /* Bus: B0, Device: 8, Function: 1 */
 #define SMM_FEATURE_CONTROL		0x7c
 #define SMM_CODE_CHK_EN			BIT(2)
+#define SMM_FC_CPU_SAVE_EN		BIT(1)
 #define SMM_FEATURE_CONTROL_LOCK	BIT(0)
 #define UBOX_DFX_DEVID			0x2015
 

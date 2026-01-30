@@ -26,6 +26,7 @@
 /* UBOX Registers [U(1), D:0, F:1] */
 #define SMM_FEATURE_CONTROL 0x8c
 #define SMM_CODE_CHK_EN BIT(2)
+#define SMM_FC_CPU_SAVE_EN BIT(1)
 #define SMM_FEATURE_CONTROL_LOCK BIT(0)
 #define UBOX_DFX_DEVID 0x3251
 
