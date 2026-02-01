@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: GPL-2.0-only
+
+config TCG_OPAL_S3_UNLOCK
+	bool "SMM-assisted OPAL NVMe unlock on S3 resume"
+	depends on ARCH_X86
+	depends on HAVE_SMI_HANDLER
+	depends on HAVE_ACPI_RESUME
+	depends on PCI
+	select SMM_OPAL_S3_SCRATCH_CBMEM
+	help
+	  Provide an SMM handler that accepts an OPAL password for the current
+	  sleep cycle and performs an NVMe Security Send/Receive unlock on S3
+	  resume.
+
+	  This is intended to be used by payloads which prompt the user for the
+	  OPAL password and pass it to SMM before entering S3.

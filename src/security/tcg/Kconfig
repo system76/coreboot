@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: GPL-2.0-only
+
+menu "TCG storage"
+
+source "src/security/tcg/opal_s3/Kconfig"
+
+endmenu

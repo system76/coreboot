@@ -6,6 +6,7 @@ source "src/lib/Kconfig.cbfs_verification"
 
 source "src/security/vboot/Kconfig"
 source "src/security/tpm/Kconfig"
+source "src/security/tcg/Kconfig"
 source "src/security/memory/Kconfig"
 source "src/security/intel/Kconfig"
 source "src/security/lockdown/Kconfig"
