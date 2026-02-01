@@ -7,6 +7,7 @@ config TCG_OPAL_S3_UNLOCK
 	depends on HAVE_ACPI_RESUME
 	depends on PCI
 	select SMM_OPAL_S3_SCRATCH_CBMEM
+	select SMM_OPAL_S3_STATE_SMRAM
 	help
 	  Provide an SMM handler that accepts an OPAL password for the current
 	  sleep cycle and performs an NVMe Security Send/Receive unlock on S3
