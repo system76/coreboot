@@ -66,6 +66,7 @@
 #define IC_CFG_MSR			0xC0011021
 #define DC_CFG_MSR			0xC0011022
 #define BU_CFG_MSR			0xC0011023
+#define   COMBINE_CR0_CD		(1ull << 49) // Core::X86::Msr::TW_CFG::CombineCr0Cd
 #define FP_CFG_MSR			0xC0011028
 #define DE_CFG_MSR			0xC0011029
 #define BU_CFG2_MSR			0xC001102A

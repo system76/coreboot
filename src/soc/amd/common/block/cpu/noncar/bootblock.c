@@ -5,6 +5,7 @@
 #include <bootblock_common.h>
 #include <console/console.h>
 #include <cpu/cpu.h>
+#include <cpu/amd/msr.h>
 #include <cpu/x86/tsc.h>
 #include <psp_verstage/psp_transfer.h>
 #include <soc/southbridge.h>
@@ -42,4 +43,17 @@ void bootblock_soc_init(void)
 	}
 
 	fch_early_init();
+
+	if (CONFIG(SOC_AMD_COMMON_BLOCK_ENABLE_CACHE_ON_RESUME) && acpi_is_wakeup_s3()) {
+		/*
+		 * Disable TwCfgCombineCr0Cd
+		 * FIXME: Unclear why this MSR is restored on S3 resume.
+		 *
+		 * Allows the BSP to use the cache and thus speeds up booting until MPinit
+		 * enables the caches on the other cores.
+		 */
+		msr_t msr = rdmsr(BU_CFG_MSR);
+		msr.raw &= ~COMBINE_CR0_CD;
+		wrmsr(BU_CFG_MSR, msr);
+	}
 }
