@@ -347,7 +347,7 @@
 /* When set <arch/smp/spinlock.h> is included for the spinlock implementation. */
 #define ENV_SUPPORTS_SMP		(CONFIG(SMP) && ENV_HAS_SPINLOCKS)
 
-#if ENV_X86 && CONFIG(COOP_MULTITASKING) && (ENV_RAMSTAGE || ENV_CREATES_CBMEM)
+#if CONFIG(COOP_MULTITASKING) && (ENV_RAMSTAGE || ENV_CREATES_CBMEM)
 /* TODO: Enable in all x86 stages */
 #define ENV_SUPPORTS_COOP         1
 #else

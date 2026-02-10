@@ -82,6 +82,7 @@ romstage-y += transition.c transition_asm.S
 ifneq ($(CONFIG_ARM64_CURRENT_EL),3)
 romstage-y += smc.c smc_asm.S
 endif
+romstage-$(CONFIG_COOP_MULTITASKING) += thread.c thread_switch.S
 
 rmodules_arm64-y += memset.S
 rmodules_arm64-y += memcpy.S
@@ -115,6 +116,7 @@ ramstage-y += transition.c transition_asm.S
 ifneq ($(CONFIG_ARM64_CURRENT_EL),3)
 ramstage-y += smc.c smc_asm.S
 endif
+ramstage-$(CONFIG_COOP_MULTITASKING) += thread.c thread_switch.S
 ramstage-$(CONFIG_PAYLOAD_FIT_SUPPORT) += fit_payload.c
 ramstage-$(CONFIG_HAVE_ACPI_TABLES) += acpi.c
 ramstage-y += dma.c

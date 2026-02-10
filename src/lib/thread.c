@@ -4,14 +4,17 @@
 #include <bootstate.h>
 #include <console/console.h>
 #include <lib.h>
+#include <memlayout.h>
 #include <smp/node.h>
 #include <thread.h>
 #include <timer.h>
 #include <types.h>
 
 _Static_assert(CONFIG_THREAD_STACK_SIZE > 0, "THREAD_STACK_SIZE is not set");
+_Static_assert(IS_ALIGNED(CONFIG_THREAD_STACK_SIZE, ARCH_STACK_ALIGN_SIZE),
+	       "THREAD_STACK_SIZE is not aligned to ARCH_STACK_ALIGN_SIZE");
 
-static u8 thread_stacks[CONFIG_THREAD_STACK_SIZE * CONFIG_NUM_THREADS] __aligned(sizeof(uint64_t));
+static u8 thread_stacks[CONFIG_THREAD_STACK_SIZE * CONFIG_NUM_THREADS] __aligned(ARCH_STACK_ALIGN_SIZE);
 static bool initialized;
 
 static void idle_thread_init(void);
@@ -229,8 +232,8 @@ thread_yield_timed_callback(struct timeout_callback *tocb,
 static void *thread_alloc_space(struct thread *t, size_t bytes)
 {
 	/* Allocate the amount of space on the stack keeping the stack
-	 * aligned to the pointer size. */
-	t->stack_current -= ALIGN_UP(bytes, sizeof(uintptr_t));
+	 * aligned to the architecture requirement. */
+	t->stack_current -= ALIGN_UP(bytes, ARCH_STACK_ALIGN_SIZE);
 
 	return (void *)t->stack_current;
 }
