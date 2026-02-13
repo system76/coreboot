@@ -8,6 +8,7 @@
 #include <cpu/x86/smm.h>
 #include <cpu/intel/em64t100_save_state.h>
 #include <cpu/intel/em64t101_save_state.h>
+#include <cpu/x86/save_state.h>
 #include <cpu/intel/msr.h>
 #include <delay.h>
 #include <device/mmio.h>
@@ -31,6 +32,8 @@
 #include <soc/smbus.h>
 #include <spi-generic.h>
 #include <stdint.h>
+#include <string.h>
+#include <types.h>
 
 /* SoC overrides. */
 
@@ -61,40 +64,6 @@ __weak void mainboard_smi_gpi_handler(
 __weak void mainboard_smi_espi_handler(void)
 {
 	/* no-op */
-}
-
-/* Common Functions */
-
-static void *find_save_state(const struct smm_save_state_ops *save_state_ops,
-	int cmd)
-{
-	int node;
-	void *state = NULL;
-	uint32_t io_misc_info;
-	uint8_t reg_al;
-
-	/* Check all nodes looking for the one that issued the IO */
-	for (node = 0; node < CONFIG_MAX_CPUS; node++) {
-		state = smm_get_save_state(node);
-
-		io_misc_info = save_state_ops->get_io_misc_info(state);
-
-		/* Check for Synchronous IO (bit0==1) */
-		if (!(io_misc_info & (1 << 0)))
-			continue;
-		/* Make sure it was a write (bit4==0) */
-		if (io_misc_info & (1 << 4))
-			continue;
-		/* Check for APMC IO port */
-		if (((io_misc_info >> 16) & 0xff) != APM_CNT)
-			continue;
-		/* Check AL against the requested command */
-		reg_al = save_state_ops->get_reg(state, RAX);
-		if (reg_al != cmd)
-			continue;
-		break;
-	}
-	return state;
 }
 
 /* Inherited from cpu/x86/smm.h resulting in a different signature */
@@ -251,22 +220,23 @@ static void southbridge_smi_gsmi(
 	const struct smm_save_state_ops *save_state_ops)
 {
 	u8 sub_command, ret;
-	void *io_smi = NULL;
-	uint32_t reg_ebx;
+	int node;
+	uint32_t eax_val, reg_ebx;
 
-	io_smi = find_save_state(save_state_ops, APM_CNT_ELOG_GSMI);
-	if (!io_smi)
+	node = save_state_ops->apmc_node(APM_CNT_ELOG_GSMI);
+	if (node < 0)
+		return;
+	if (save_state_ops->get_reg(RAX, node, &eax_val, sizeof(eax_val)) != 0)
 		return;
 	/* Command and return value in EAX */
-	sub_command = (save_state_ops->get_reg(io_smi, RAX) >> 8)
-		& 0xff;
+	sub_command = (eax_val >> 8) & 0xff;
 
-	/* Parameter buffer in EBX */
-	reg_ebx = save_state_ops->get_reg(io_smi, RBX);
+	if (save_state_ops->get_reg(RBX, node, &reg_ebx, sizeof(reg_ebx)) != 0)
+		return;
 
 	/* drivers/elog/gsmi.c */
 	ret = gsmi_exec(sub_command, &reg_ebx);
-	save_state_ops->set_reg(io_smi, RAX, ret);
+	save_state_ops->set_reg(RAX, node, &ret, sizeof(ret));
 }
 
 static void set_insmm_sts(const bool enable_writes)
@@ -287,17 +257,19 @@ static void southbridge_smi_store(
 	const struct smm_save_state_ops *save_state_ops)
 {
 	u8 sub_command, ret;
-	void *io_smi;
-	uint32_t reg_ebx;
+	int node;
+	uint32_t eax_val, reg_ebx;
 
-	io_smi = find_save_state(save_state_ops, APM_CNT_SMMSTORE);
-	if (!io_smi)
+	node = save_state_ops->apmc_node(APM_CNT_SMMSTORE);
+	if (node < 0)
+		return;
+	if (save_state_ops->get_reg(RAX, node, &eax_val, sizeof(eax_val)) != 0)
 		return;
 	/* Command and return value in EAX */
-	sub_command = (save_state_ops->get_reg(io_smi, RAX) >> 8) & 0xff;
+	sub_command = (eax_val >> 8) & 0xff;
 
-	/* Parameter buffer in EBX */
-	reg_ebx = save_state_ops->get_reg(io_smi, RBX);
+	if (save_state_ops->get_reg(RBX, node, &reg_ebx, sizeof(reg_ebx)) != 0)
+		return;
 
 	const bool wp_enabled = !fast_spi_wpd_status();
 	if (wp_enabled) {
@@ -313,7 +285,7 @@ static void southbridge_smi_store(
 
 	/* drivers/smmstore/smi.c */
 	ret = smmstore_exec(sub_command, (void *)(uintptr_t)reg_ebx);
-	save_state_ops->set_reg(io_smi, RAX, ret);
+	save_state_ops->set_reg(RAX, node, &ret, sizeof(ret));
 
 	if (wp_enabled) {
 		fast_spi_enable_wp();
@@ -555,118 +527,240 @@ void southbridge_smi_handler(void)
 	}
 }
 
-static uint32_t em64t100_smm_save_state_get_io_misc_info(void *state)
+static int em64t100_get_reg(const enum cpu_reg reg, const int node, void *out, const uint8_t length)
 {
-	em64t100_smm_state_save_area_t *smm_state = state;
-	return smm_state->io_misc_info;
-}
+	em64t100_smm_state_save_area_t *state;
+	u64 value;
 
-static uint64_t em64t100_smm_save_state_get_reg(void *state, enum smm_reg reg)
-{
-	uintptr_t value = 0;
-	em64t100_smm_state_save_area_t *smm_state = state;
+	if (!out || length > sizeof(value))
+		return -1;
+
+	state = smm_get_save_state(node);
+	if (!state)
+		return -1;
 
 	switch (reg) {
 	case RAX:
-		value = smm_state->rax;
+		value = state->rax;
 		break;
 	case RBX:
-		value = smm_state->rbx;
+		value = state->rbx;
 		break;
 	case RCX:
-		value = smm_state->rcx;
+		value = state->rcx;
 		break;
 	case RDX:
-		value = smm_state->rdx;
+		value = state->rdx;
 		break;
 	default:
-		break;
+		return -1;
 	}
-	return value;
+
+	memcpy(out, &value, length);
+	return 0;
 }
 
-static void em64t100_smm_save_state_set_reg(void *state, enum smm_reg reg,
-	uint64_t val)
+static int em64t100_set_reg(const enum cpu_reg reg, const int node, void *in, const uint8_t length)
 {
-	em64t100_smm_state_save_area_t *smm_state = state;
-	switch (reg) {
-	case RAX:
-		smm_state->rax = val;
-		break;
-	case RBX:
-		smm_state->rbx = val;
-		break;
-	case RCX:
-		smm_state->rcx = val;
-		break;
-	case RDX:
-		smm_state->rdx = val;
-		break;
-	default:
-		break;
-	}
-}
+	em64t100_smm_state_save_area_t *state;
+	u64 value;
 
-static uint32_t em64t101_smm_save_state_get_io_misc_info(void *state)
-{
-	em64t101_smm_state_save_area_t *smm_state = state;
-	return smm_state->io_misc_info;
-}
+	if (!in || length > sizeof(value))
+		return -1;
 
-static uint64_t em64t101_smm_save_state_get_reg(void *state, enum smm_reg reg)
-{
-	uintptr_t value = 0;
-	em64t101_smm_state_save_area_t *smm_state = state;
+	state = smm_get_save_state(node);
+	if (!state)
+		return -1;
+
+	value = 0;
+	memcpy(&value, in, length);
 
 	switch (reg) {
 	case RAX:
-		value = smm_state->rax;
+		state->rax = value;
 		break;
 	case RBX:
-		value = smm_state->rbx;
+		state->rbx = value;
 		break;
 	case RCX:
-		value = smm_state->rcx;
+		state->rcx = value;
 		break;
 	case RDX:
-		value = smm_state->rdx;
+		state->rdx = value;
 		break;
 	default:
-		break;
+		return -1;
 	}
-	return value;
+
+	return 0;
 }
 
-static void em64t101_smm_save_state_set_reg(void *state, enum smm_reg reg,
-	uint64_t val)
+static int em64t100_apmc_node(u8 cmd)
 {
-	em64t101_smm_state_save_area_t *smm_state = state;
+	int node;
+
+	for (node = 0; node < CONFIG_MAX_CPUS; node++) {
+		em64t100_smm_state_save_area_t *state;
+		u32 io_misc_info;
+		u8 reg_al;
+
+		state = smm_get_save_state(node);
+		if (!state)
+			continue;
+
+		io_misc_info = state->io_misc_info;
+
+		/* Synchronous I/O (bit0 == 1). */
+		if (!(io_misc_info & (1 << 0)))
+			continue;
+
+		/* Write (bit4 == 0). */
+		if (io_misc_info & (1 << 4))
+			continue;
+
+		/* APMC port. */
+		if (((io_misc_info >> 16) & 0xff) != APM_CNT)
+			continue;
+
+		reg_al = (u8)state->rax;
+		if (reg_al != cmd)
+			continue;
+
+		return node;
+	}
+
+	return -1;
+}
+
+static int em64t101_get_reg(const enum cpu_reg reg, const int node, void *out, const uint8_t length)
+{
+	em64t101_smm_state_save_area_t *state;
+	u64 value;
+
+	if (!out || length > sizeof(value))
+		return -1;
+
+	state = smm_get_save_state(node);
+	if (!state)
+		return -1;
+
 	switch (reg) {
 	case RAX:
-		smm_state->rax = val;
+		value = state->rax;
 		break;
 	case RBX:
-		smm_state->rbx = val;
+		value = state->rbx;
 		break;
 	case RCX:
-		smm_state->rcx = val;
+		value = state->rcx;
 		break;
 	case RDX:
-		smm_state->rdx = val;
+		value = state->rdx;
 		break;
 	default:
-		break;
+		return -1;
 	}
+
+	memcpy(out, &value, length);
+	return 0;
 }
+
+static int em64t101_set_reg(const enum cpu_reg reg, const int node, void *in, const uint8_t length)
+{
+	em64t101_smm_state_save_area_t *state;
+	u64 value;
+
+	if (!in || length > sizeof(value))
+		return -1;
+
+	state = smm_get_save_state(node);
+	if (!state)
+		return -1;
+
+	value = 0;
+	memcpy(&value, in, length);
+
+	switch (reg) {
+	case RAX:
+		state->rax = value;
+		break;
+	case RBX:
+		state->rbx = value;
+		break;
+	case RCX:
+		state->rcx = value;
+		break;
+	case RDX:
+		state->rdx = value;
+		break;
+	default:
+		return -1;
+	}
+
+	return 0;
+}
+
+static int em64t101_apmc_node(u8 cmd)
+{
+	int node;
+
+	for (node = 0; node < CONFIG_MAX_CPUS; node++) {
+		em64t101_smm_state_save_area_t *state;
+		u32 io_misc_info;
+		u8 reg_al;
+
+		state = smm_get_save_state(node);
+		if (!state)
+			continue;
+
+		io_misc_info = state->io_misc_info;
+
+		/* Synchronous I/O (bit0 == 1). */
+		if (!(io_misc_info & (1 << 0)))
+			continue;
+
+		/* Write (bit4 == 0). */
+		if (io_misc_info & (1 << 4))
+			continue;
+
+		/* APMC port. */
+		if (((io_misc_info >> 16) & 0xff) != APM_CNT)
+			continue;
+
+		reg_al = (u8)state->rax;
+		if (reg_al != cmd)
+			continue;
+
+		return node;
+	}
+
+	return -1;
+}
+
+static const uint32_t em64t100_revision_table[] = {
+	0x30100,
+	SMM_REV_INVALID,
+};
+
+static const uint32_t em64t101_revision_table[] = {
+	0x30101,
+	SMM_REV_INVALID,
+};
 
 const struct smm_save_state_ops em64t100_smm_ops = {
-	.get_io_misc_info = em64t100_smm_save_state_get_io_misc_info,
-	.get_reg = em64t100_smm_save_state_get_reg,
-	.set_reg = em64t100_smm_save_state_set_reg,
+	.revision_table = em64t100_revision_table,
+	.get_reg = em64t100_get_reg,
+	.set_reg = em64t100_set_reg,
+	.apmc_node = em64t100_apmc_node,
 };
 
+
 const struct smm_save_state_ops em64t101_smm_ops = {
-	.get_io_misc_info = em64t101_smm_save_state_get_io_misc_info,
-	.get_reg = em64t101_smm_save_state_get_reg,
-	.set_reg = em64t101_smm_save_state_set_reg,
+	.revision_table = em64t101_revision_table,
+	.get_reg = em64t101_get_reg,
+	.set_reg = em64t101_set_reg,
+	.apmc_node = em64t101_apmc_node,
 };
+
+const struct smm_save_state_ops *em64t100_ops = &em64t100_smm_ops;
+const struct smm_save_state_ops *em64t101_ops = &em64t101_smm_ops;

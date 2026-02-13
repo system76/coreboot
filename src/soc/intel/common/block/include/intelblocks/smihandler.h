@@ -3,33 +3,12 @@
 #ifndef SOC_INTEL_COMMON_BLOCK_SMI_HANDLER_H
 #define SOC_INTEL_COMMON_BLOCK_SMI_HANDLER_H
 
+#include <cpu/x86/save_state.h>
 #include <device/device.h>
 #include <stdint.h>
 
 struct gpi_status;
 struct global_nvs;
-
-/*
- * The register value is used with get_reg and set_reg
- */
-enum smm_reg {
-	RAX,
-	RBX,
-	RCX,
-	RDX,
-};
-
-struct smm_save_state_ops {
-	/* return io_misc_info from SMM Save State Area */
-	uint32_t (*get_io_misc_info)(void *state);
-
-	/* return value of the requested register from
-	 * SMM Save State Area
-	 */
-	uint64_t (*get_reg)(void *state, enum smm_reg reg);
-
-	void (*set_reg)(void *state, enum smm_reg reg, uint64_t val);
-};
 
 typedef void (*smi_handler_t)(const struct smm_save_state_ops *save_state_ops);
 
