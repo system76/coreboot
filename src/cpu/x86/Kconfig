@@ -196,6 +196,21 @@ config SMM_MODULE_STACK_SIZE
 	  This option determines the size of the stack within the SMM handler
 	  modules.
 
+config SMM_OPAL_S3_STATE_SMRAM
+	bool
+	help
+	  Reserve a small persistent region in SMRAM for OPAL S3 state so the
+	  OPAL secret survives SMM handler reload on S3 resume.
+
+config SMM_OPAL_S3_STATE_SMRAM_SIZE
+	hex
+	default 0x1000 if SMM_OPAL_S3_STATE_SMRAM
+	default 0x0
+	help
+	  Size in bytes of the persistent SMRAM region reserved for OPAL S3
+	  secret/state. Must be large enough to store the OPAL S3 state
+	  structure and should be kept minimal to reduce SMRAM pressure.
+
 config SMM_OPAL_S3_SCRATCH_CBMEM
 	bool
 	depends on HAVE_ACPI_RESUME

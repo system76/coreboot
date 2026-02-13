@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+#include <acpi/acpi.h>
 #include <acpi/acpi_gnvs.h>
 #include <cbmem.h>
 #include <commonlib/helpers.h>
@@ -384,6 +385,23 @@ static void setup_smihandler_params(struct smm_runtime *mod_params,
 	} else {
 		mod_params->opal_s3_scratch_base = (uintptr_t)scratch;
 		mod_params->opal_s3_scratch_size = opal_s3_scratch_size;
+	}
+#endif
+
+#if CONFIG(SMM_OPAL_S3_STATE_SMRAM)
+	uintptr_t state_base = 0;
+	size_t state_size = 0;
+	if (smm_subregion(SMM_SUBREGION_OPAL_S3_STATE, &state_base, &state_size)) {
+		printk(BIOS_ERR, "SMM: Failed to locate OPAL S3 state SMRAM region\n");
+		mod_params->opal_s3_state_base = 0;
+		mod_params->opal_s3_state_size = 0;
+	} else {
+		mod_params->opal_s3_state_base = state_base;
+		mod_params->opal_s3_state_size = state_size;
+
+		/* Clear any stale state on cold boot/reboot, but preserve it on S3 resume. */
+		if (!acpi_is_wakeup_s3())
+			memset((void *)state_base, 0, state_size);
 	}
 #endif
 }

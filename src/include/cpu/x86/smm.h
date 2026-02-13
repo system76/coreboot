@@ -100,6 +100,10 @@ struct smm_runtime {
 	uintptr_t opal_s3_scratch_base;
 	size_t opal_s3_scratch_size;
 #endif
+#if CONFIG(SMM_OPAL_S3_STATE_SMRAM)
+	uintptr_t opal_s3_state_base;
+	size_t opal_s3_state_size;
+#endif
 } __packed;
 
 struct smm_module_params {
@@ -206,6 +210,8 @@ static inline void aseg_region(uintptr_t *start, size_t *size)
 enum {
 	/* SMM handler area. */
 	SMM_SUBREGION_HANDLER,
+	/* Persistent OPAL S3 state area. */
+	SMM_SUBREGION_OPAL_S3_STATE,
 	/* SMM cache region. */
 	SMM_SUBREGION_CACHE,
 	/* Chipset specific area. */
@@ -244,6 +250,9 @@ void smm_pci_resource_store_init(struct smm_runtime *smm_runtime);
 void smm_get_smmstore_com_buffer(uintptr_t *base, size_t *size);
 #if CONFIG(SMM_OPAL_S3_SCRATCH_CBMEM)
 void smm_get_opal_s3_scratch_buffer(uintptr_t *base, size_t *size);
+#endif
+#if CONFIG(SMM_OPAL_S3_STATE_SMRAM)
+void smm_get_opal_s3_state_buffer(uintptr_t *base, size_t *size);
 #endif
 
 #endif /* CPU_X86_SMM_H */
