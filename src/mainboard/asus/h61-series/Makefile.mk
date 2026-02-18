@@ -6,3 +6,4 @@ bootblock-y += variants/$(VARIANT_DIR)/gpio.c
 romstage-y  += variants/$(VARIANT_DIR)/gpio.c
 ramstage-y  += variants/$(VARIANT_DIR)/hda_verb.c
 ramstage-$(CONFIG_MAINBOARD_USE_LIBGFXINIT) += variants/$(VARIANT_DIR)/gma-mainboard.ads
+smm-srcs += $(wildcard src/mainboard/$(MAINBOARDDIR)/variants/$(VARIANT_DIR)/smihandler.c)

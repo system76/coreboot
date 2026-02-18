@@ -1,0 +1,8 @@
+Category: desktop
+Board URL: https://www.asus.com/us/supportonly/p8h61-i%20r2-0/helpdesk_manual/
+ROM IC: W25Q64FV
+ROM package: DIP-8
+ROM protocol: SPI
+ROM socketed: y
+Flashrom support: y
+Release year: 2012

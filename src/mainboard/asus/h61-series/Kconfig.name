@@ -6,6 +6,9 @@ config BOARD_ASUS_H61M_A_USB3
 config BOARD_ASUS_H61M_CS
 	bool "H61M-CS"
 
+config BOARD_ASUS_P8H61_I_R2_0
+	bool "P8H61-I R2.0"
+
 config BOARD_ASUS_P8H61_M_LX
 	bool "P8H61-M LX"
 

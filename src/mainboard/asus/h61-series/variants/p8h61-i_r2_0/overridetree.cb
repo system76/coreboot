@@ -1,0 +1,66 @@
+## SPDX-License-Identifier: GPL-2.0-or-later
+
+chip northbridge/intel/sandybridge
+	device domain 0x0 on
+		subsystemid 0x1043 0x844d inherit
+		device ref peg10 on
+			smbios_slot_desc "SlotTypePciExpressGen2X16" "SlotLengthLong" "PCIEX16" "SlotDataBusWidth16X"
+		end
+		device ref igd on
+			register "gpu_dp_b_hotplug" = "4"
+			register "gpu_dp_d_hotplug" = "4"
+		end
+		chip southbridge/intel/bd82x6x # Intel 6 Series Cougar Point PCH
+			register "usb_port_config" = "{
+				{1, 0xf5f, 0},
+				{1, 0xf5f, 0},
+				{1, 0xf5f, 1},
+				{1, 0xf5f, 1},
+				{1, 0x95f, 2},
+				{1, 0xf5f, 2},
+				{1, 0xb57, 3},
+				{1, 0xb57, 3},
+				{1, 0x353, 4},
+				{1, 0x353, 4},
+				{1, 0xb5f, 6},
+				{1, 0xb5f, 5},
+				{1, 0xb57, 5},
+				{1, 0xb57, 6},
+			}"
+			device ref hda on
+				subsystemid 0x1043 0x8415
+			end
+			device ref pcie_rp5 on		# RTL8111F Gigabit Ethernet Controller
+				device pci 00.0 on end
+			end
+			device ref pcie_rp6 on end	# ASM1042A USB 3.0 Host Controller
+			device ref lpc on
+				register "gen1_dec" = "0x000c0291"
+				register "gen2_dec" = "0x00fc0a01"
+
+				chip superio/ite/it8772f
+					device pnp 2e.0 off end	# FDC
+					device pnp 2e.1 off	# COM
+						io  0x60 = 0x03f8
+						irq 0x70 = 0x04
+						irq 0xf1 = 0x50
+					end
+					device pnp 2e.4 on	# EC / HWM
+						io 0x60 = 0x0290
+						io 0x62 = 0x0a20
+					end
+					device pnp 2e.5 on	# Keyboard
+						io 0x60 = 0x0060
+						irq 0x70 = 1
+						io 0x62 = 0x0064
+					end
+					device pnp 2e.6 on	# Mouse
+						irq 0x70 = 12
+					end
+					device pnp 2e.7 off end	# GPIO
+					device pnp 2e.a off end	# IR
+				end
+			end
+		end
+	end
+end
