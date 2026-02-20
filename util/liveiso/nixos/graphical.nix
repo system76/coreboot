@@ -45,12 +45,14 @@
 				enable = true;
 				autoSuspend = false;
 			};
-			autoLogin = {
-				enable = true;
-				user = "user";
-			};
 		};
 		desktopManager.gnome.enable = true;
+	};
+	services.displayManager = {
+		autoLogin = {
+			enable = true;
+			user = "user";
+		};
 	};
 
 	hardware.pulseaudio.enable = false;

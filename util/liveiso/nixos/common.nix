@@ -8,13 +8,13 @@
 		<nixpkgs/nixos/modules/installer/cd-dvd/iso-image.nix>
 	];
 
-	system.stateVersion = "24.05";
+	system.stateVersion = "25.11";
 
 	isoImage = {
 		makeEfiBootable = true;
 		makeUsbBootable = true;
-		isoName = "${config.isoImage.isoBaseName}-${config.system.nixos.label}-${pkgs.stdenv.hostPlatform.system}.iso";
 	};
+	image.fileName = "${config.image.baseName}-${config.system.nixos.label}-${pkgs.stdenv.hostPlatform.system}.iso";
 
 	environment = {
 		variables = {
@@ -41,7 +41,6 @@
 		extraModulePackages = with config.boot.kernelPackages; [
 			acpi_call
 			chipsec
-			zfs
 		];
 		# Make programs more likely to work in low memory
 		# environments. The kernel's overcommit heustistics bite us
@@ -124,8 +123,8 @@
 		fuse3
 		fwts
 		gptfdisk
-		gitAndTools.gitFull
-		gitAndTools.tig
+		gitFull
+		tig
 		gzip
 		hdparm
 		hexdump
@@ -157,7 +156,7 @@
 		phoronix-test-suite
 		powertop
 		psmisc
-		python3Full
+		python3
 		rsync
 		screen
 		sdparm
