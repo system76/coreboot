@@ -76,16 +76,25 @@ static const char *table_level_name(size_t xlat_size)
 	}
 }
 
+static int init_next_free_table(void *start, void *end)
+{
+	if ((void *)next_free_table < start || (void *)next_free_table >= end)
+		next_free_table = start;
+	while (next_free_table[0] != UNUSED_DESC) {
+		next_free_table += GRANULE_SIZE / sizeof(*next_free_table);
+		if ((void *)next_free_table >= end)
+			return -1;
+	}
+	return 0;
+}
+
 /* Func : setup_new_table
  * Desc : Get next free table from TTB and set it up to match old parent entry.
  */
 static uint64_t *setup_new_table(uint64_t desc, size_t xlat_size)
 {
-	while (next_free_table[0] != UNUSED_DESC) {
-		next_free_table += GRANULE_SIZE/sizeof(*next_free_table);
-		if (_ettb - (u8 *)next_free_table <= 0)
-			die("Ran out of page table space!");
-	}
+	if (init_next_free_table(_ttb, _ettb))
+		die("Ran out of page table space!");
 
 	void *frame_base = (void *)(desc & XLAT_ADDR_MASK);
 	const char *level_name = table_level_name(xlat_size);
@@ -243,6 +252,7 @@ void mmu_config_range(void *start, size_t size, uint64_t tag)
 	print_tag(BIOS_INFO, tag);
 
 	sanity_check(base_addr, temp_size);
+	assert(raw_read_ttbr0() == (uint64_t)_ttb);
 
 	while (temp_size)
 		temp_size -= init_xlat_table(base_addr + (size - temp_size),
@@ -325,4 +335,65 @@ void mmu_enable(void)
 	raw_write_sctlr(sctlr | SCTLR_C | SCTLR_M | SCTLR_I);
 
 	isb();
+}
+
+/*
+ * Func : mmu_relocate_ttb
+ * Desc : Relocates a Translation Table Base (TTB) from _preram_ttb
+ * to _postram_ttb. This involves copying the table data and updating
+ * all internal pointers within the translation table entries to reflect
+ * the new location.
+ */
+void mmu_relocate_ttb(void)
+{
+	const uintptr_t old_base = (uintptr_t)_preram_ttb;
+	const uintptr_t new_base = (uintptr_t)_postram_ttb;
+	const uintptr_t offset = new_base - old_base;
+
+	ASSERT_MSG(offset, "TTB relocation is not required.\n");
+
+	/* Ensure that next_free_table pointer is correct. */
+	init_next_free_table(_preram_ttb, _epreram_ttb);
+
+	const size_t used_size = (uintptr_t)next_free_table - old_base;
+	uint64_t *entry;
+	uint64_t *end = (uint64_t *)(new_base + used_size);
+
+	printk(BIOS_INFO, "Relocating TTB: 0x%lx -> 0x%lx (offset 0x%lx)\n",
+		old_base, new_base, offset);
+
+	/* Copy the used TTB region to the new location. */
+	memcpy((void *)new_base, (void *)old_base, used_size);
+
+	/*
+	 * Update all internal table pointers. Since the entire TTB region is
+	 * moved as a single block, every table pointer inside the descriptors
+	 * needs to be adjusted by the same relative offset.
+	 */
+	for (entry = (uint64_t *)new_base; entry < end; entry++) {
+		/*
+		 * In ARMv8, a descriptor with bits [1:0] == 0b11 can be either a
+		 * Table descriptor or a Page descriptor. To differentiate, we
+		 * check the Access Flag (bit 10). Table descriptors do not use
+		 * this bit, whereas we ensure all Page/Block descriptors have it
+		 * set. This relies on TCR.HAFT[42] remaining 0.
+		 */
+		if ((*entry & DESC_MASK) == TABLE_DESC && !(*entry & BLOCK_ACCESS))
+			*entry += offset;
+	}
+
+	/* Mark remaining table slots unused (first PTE == UNUSED_DESC). */
+	for (entry = end; (u8 *)entry < _epostram_ttb; entry += GRANULE_SIZE / sizeof(*entry))
+		*entry = UNUSED_DESC;
+
+	/* Update TTBR0 to point to the new base address. */
+	dsb();
+	raw_write_ttbr0((uintptr_t)new_base);
+	isb();
+
+	tlb_invalidate_all();
+	dsb();
+	isb();
+
+	printk(BIOS_INFO, "TTB relocation is complete.\n");
 }
