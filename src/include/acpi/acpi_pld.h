@@ -98,8 +98,8 @@ struct acpi_pld {
 	/* Color field can be explicitly ignored */
 	bool ignore_color;
 	uint8_t color_red;
-	uint8_t color_blue;
 	uint8_t color_green;
+	uint8_t color_blue;
 
 	/* Port characteristics */
 	bool visible;		/* Can be seen by the user */
