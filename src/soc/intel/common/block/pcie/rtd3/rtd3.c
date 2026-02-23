@@ -3,6 +3,7 @@
 #include <acpi/acpigen.h>
 #include <acpi/acpi_device.h>
 #include <console/console.h>
+#include <cpu/x86/smm.h>
 #include <device/device.h>
 #include <device/pci_ids.h>
 #include <device/pci_ops.h>
@@ -138,7 +139,8 @@ static void
 pcie_rtd3_acpi_method_on(unsigned int pcie_rp,
 			 const struct soc_intel_common_block_pcie_rtd3_config *config,
 			 enum pcie_rp_type rp_type,
-			 const struct device *dev)
+			 const struct device *dev,
+			 bool trigger_opal_s3_unlock)
 {
 	const struct device *parent = dev->upstream->dev;
 
@@ -164,6 +166,13 @@ pcie_rtd3_acpi_method_on(unsigned int pcie_rp,
 	acpigen_emit_namestring(acpi_device_path_join(parent, "RTD3._STA"));
 	acpigen_emit_byte(LOCAL0_OP);
 	acpigen_write_if_lequal_op_int(LOCAL0_OP, ONE_OP);
+	/*
+	 * If _ON is called while the power resource is already ON (common during
+	 * resume), still trigger the OPAL S3 unlock request. The SMM handler will
+	 * ignore it unless an S3 resume cycle is armed.
+	 */
+	if (trigger_opal_s3_unlock)
+		acpigen_write_store_int_to_namestr(APM_CNT_OPAL_S3_UNLOCK, "APMC");
 	acpigen_write_return_op(ONE_OP);
 	acpigen_write_if_end();
 
@@ -200,6 +209,16 @@ pcie_rtd3_acpi_method_on(unsigned int pcie_rp,
 	/* Trigger L23 ready exit flow unless disabled by config. */
 	if (!config->disable_l23)
 		pcie_rtd3_acpi_l23_exit();
+
+	/*
+	 * If this root port has a storage device that can be powered down via RTD3,
+	 * the OPAL S3 unlock may need to wait until _ON powers it back up.
+	 *
+	 * Writing the OPAL S3 APMC command triggers a synchronous SMI. If the OPAL
+	 * S3 resume path is not armed, the SMM handler will ignore the request.
+	 */
+	if (trigger_opal_s3_unlock)
+		acpigen_write_store_int_to_namestr(APM_CNT_OPAL_S3_UNLOCK, "APMC");
 
 	if (config->use_rp_mutex)
 		acpigen_write_release(acpi_device_path_join(parent, RP_MUTEX_NAME));
@@ -388,6 +407,9 @@ static void pcie_rtd3_acpi_fill_ssdt(const struct device *dev)
 	const struct device *parent = dev->upstream->dev;
 	const char *scope = acpi_device_path(parent);
 	const struct opregion opregion = OPREGION("PXCS", PCI_CONFIG, 0, 0xff);
+	const bool is_storage = config->is_storage ||
+		(dev->sibling && (dev->sibling->class >> 16) == PCI_BASE_CLASS_STORAGE);
+	const bool trigger_opal_s3_unlock = CONFIG(TCG_OPAL_S3_UNLOCK) && is_storage;
 	const struct fieldlist fieldlist[] = {
 		FIELDLIST_OFFSET(PCH_PCIE_CFG_LSTS),
 		FIELDLIST_RESERVED(13),
@@ -473,6 +495,18 @@ static void pcie_rtd3_acpi_fill_ssdt(const struct device *dev)
 	acpigen_write_field("PXCS", fieldlist, ARRAY_SIZE(fieldlist),
 			    FIELD_ANYACC | FIELD_NOLOCK | FIELD_PRESERVE);
 
+	if (trigger_opal_s3_unlock) {
+		const struct opregion apm_opregion = OPREGION("APOR", SYSTEMIO, APM_CNT, 1);
+		const struct fieldlist apm_fieldlist[] = {
+			FIELDLIST_OFFSET(0),
+			FIELDLIST_NAMESTR("APMC", 8),
+		};
+
+		acpigen_write_opregion(&apm_opregion);
+		acpigen_write_field("APOR", apm_fieldlist, ARRAY_SIZE(apm_fieldlist),
+				    FIELD_BYTEACC | FIELD_NOLOCK | FIELD_PRESERVE);
+	}
+
 	if (config->ext_pm_support & ACPI_PCIE_RP_EMIT_L23) {
 		pcie_rtd3_acpi_method_dl23();
 		pcie_rtd3_acpi_method_l23d();
@@ -506,7 +540,7 @@ static void pcie_rtd3_acpi_fill_ssdt(const struct device *dev)
 	}
 
 	pcie_rtd3_acpi_method_status(config);
-	pcie_rtd3_acpi_method_on(pcie_rp, config, rp_type, dev);
+	pcie_rtd3_acpi_method_on(pcie_rp, config, rp_type, dev, trigger_opal_s3_unlock);
 	pcie_rtd3_acpi_method_off(pcie_rp, config, rp_type, dev);
 	acpigen_pop_len(); /* PowerResource */
 
@@ -528,8 +562,7 @@ static void pcie_rtd3_acpi_fill_ssdt(const struct device *dev)
 	 * Check the sibling device on the root port to see if it is storage class and add the
 	 * property for the OS to enable storage D3, or allow it to be enabled by config.
 	 */
-	if (config->is_storage
-	    || (dev->sibling && (dev->sibling->class >> 16) == PCI_BASE_CLASS_STORAGE)) {
+	if (is_storage) {
 		acpigen_write_device(acpi_device_name(dev));
 		acpigen_write_ADR(0);
 		acpigen_write_STA(ACPI_STATUS_DEVICE_ALL_ON);
