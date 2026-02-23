@@ -104,6 +104,7 @@ unsigned int smbios_processor_family(struct cpuid_result res);
 unsigned int smbios_cache_error_correction_type(u8 level);
 unsigned int smbios_cache_sram_type(void);
 unsigned int smbios_cache_conf_operation_mode(u8 level);
+u8 smbios_cache_speed(u8 level);
 
 /* Used by mainboard to add port information of type 8 */
 struct port_information;

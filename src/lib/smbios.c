@@ -445,6 +445,11 @@ unsigned int __weak smbios_cache_conf_operation_mode(u8 level)
 	return SMBIOS_CACHE_OP_MODE_UNKNOWN; /* Unknown */
 }
 
+u8 __weak smbios_cache_speed(u8 level)
+{
+	return 0; /* Unknown */
+}
+
 /* Returns the processor voltage in 100mV units */
 unsigned int __weak smbios_cpu_get_voltage(void)
 {
@@ -583,7 +588,7 @@ int smbios_write_type7(unsigned long *current,
 	t->associativity = associativity;
 	t->supported_sram_type = sram_type;
 	t->current_sram_type = sram_type;
-	t->cache_speed = 0; /* Unknown */
+	t->cache_speed = smbios_cache_speed(level);
 	t->error_correction_type = smbios_cache_error_correction_type(level);
 	t->system_cache_type = type;
 
