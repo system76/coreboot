@@ -132,3 +132,41 @@ config TPM_SPI_SPEED
 	    3: 16.66MHz
 	    4: 100MHz
 	    5: 800KHz
+
+config SOC_AMD_COMMON_BLOCK_PSP_ROM_ARMOR3
+	bool "Enable ROM Armor 3"
+	select BOOT_DEVICE_NOT_SPI_FLASH
+	select BOOT_DEVICE_MEMORY_MAPPED
+	select BOOT_DEVICE_SUPPORTS_WRITES
+	select SPI_FLASH
+	select SPI_FLASH_SMM
+	depends on HAVE_SMI_HANDLER
+	depends on SOC_AMD_COMMON_BLOCK_PSP
+	depends on SOC_AMD_COMMON_BLOCK_SPI
+	depends on !SOC_AMD_COMMON_BLOCK_PSP_SMI
+	help
+	  Select this option to use PSP ROM Armor3 protocol for SPI flash
+	  operations. This routes SPI read/write/erase operations through
+	  the SMM PSP firmware mailbox interface instead of direct FCH SPI
+	  controller access. After MPinit the SPI will become read only from
+	  x86 perspective and the SPI Ctrl interface will be deactived.
+
+	  You will be only able to write SPI regions that are marked 'writable' or
+	  are whitelisted by BIOS directory entries 0x6d (AMD_BIOS_NV_ST). To gain
+	  direct access to the SPI flash, you must issue a reboot.
+
+	  WARNING: Since the flash access in the SMI handler is a blocking
+	  operation during which all cores stay in SMM, an erase operation may
+	  lock up the system for a long enough time to be noticeable. Reads and
+	  writes with small data sizes are less problematic. This is AMD
+	  specific design and should be enabled when you don't want to service
+	  PSP SMI requests (see CONFIG_SOC_AMD_COMMON_BLOCK_PSP_SMI).
+
+config SOC_AMD_PSP_ROM_ARMOR_64K_ERASE
+	bool
+	depends on SOC_AMD_COMMON_BLOCK_PSP_ROM_ARMOR3
+	default n
+	help
+	  Enable 64KB erase block size support in addition to 4KB blocks.
+	  This can improve erase performance when erasing large regions.
+	  The PSP firmware must support 64KB erase commands for this to work.

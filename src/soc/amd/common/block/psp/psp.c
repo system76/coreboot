@@ -112,6 +112,9 @@ bool psp_get_hsti_state_rom_armor_enforced(void)
 {
 	uint32_t hsti_state;
 
+	if (!CONFIG(SOC_AMD_COMMON_BLOCK_PSP_ROM_ARMOR3))
+		return false;
+
 	static bool enforced;
 	if (enforced)
 		return true; /* ROM Armor already enforced, no need to check again */
