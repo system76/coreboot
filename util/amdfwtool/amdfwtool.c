@@ -1127,6 +1127,7 @@ static void integrate_psp_firmwares(context *ctx,
 			pspdir->entries[count].rsvd = 0;
 			pspdir->entries[count].size = size;
 			pspdir->entries[count].addr = addr;
+			pspdir->entries[count].writable = 1;
 
 			pspdir->entries[count].address_mode =
 				SET_ADDR_MODE(pspdir, AMD_ADDR_REL_BIOS);
