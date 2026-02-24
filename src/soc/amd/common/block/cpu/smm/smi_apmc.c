@@ -91,6 +91,25 @@ void handle_smi_store(void)
 	io_smi->rax = smmstore_exec(sub_command, (void *)(uintptr_t)reg_ebx);
 }
 
+static void handle_smi_rom_armor(void)
+{
+	u8 sub_command;
+	amd64_smm_state_save_area_t *io_smi;
+	u32 reg_ebx;
+
+	io_smi = find_save_state(APM_CNT_ROM_ARMOR);
+	if (!io_smi)
+		return;
+	/* Command and return value in EAX */
+	sub_command = (io_smi->rax >> 8) & 0xff;
+
+	/* Parameter buffer in EBX */
+	reg_ebx = io_smi->rbx;
+
+	/* ROM Armor handler */
+	io_smi->rax = rom_armor_exec(sub_command, (void *)(uintptr_t)reg_ebx);
+}
+
 void fch_apmc_smi_handler(void)
 {
 	const uint8_t cmd = apm_get_apmc();
@@ -110,6 +129,10 @@ void fch_apmc_smi_handler(void)
 	case APM_CNT_SMMSTORE:
 		if (CONFIG(SMMSTORE))
 			handle_smi_store();
+	break;
+	case APM_CNT_ROM_ARMOR:
+		if (CONFIG(SOC_AMD_COMMON_BLOCK_PSP_ROM_ARMOR3))
+			handle_smi_rom_armor();
 	break;
 	case APM_CNT_SMMINFO:
 		psp_notify_smm();

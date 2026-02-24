@@ -3,6 +3,7 @@
 #ifndef AMD_BLOCK_PSP_H
 #define AMD_BLOCK_PSP_H
 
+#include <commonlib/region.h>
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -101,5 +102,28 @@ bool psp_get_hsti_state_rom_armor_enforced(void);
 /* ROM Armor might get activated after SMM has been set up. It's safe to return false here. */
 static inline bool psp_get_hsti_state_rom_armor_enforced(void) { return false; }
 #endif
+
+/* Region device accessing the ROM through PSP mailbox */
+extern struct region_device rom_armor_smm_rw;
+
+/**
+ * psp_rom_armor_init - Initialize PSP ROM Armor
+ *
+ * Must be called from RAMSTAGE to enable ROM Armor.
+ * Calls into SMM to set up the ROM Armor command buffer and to prepare the
+ * PSP mailbox communication. Enables the ROM Armor feature on the PSP and
+ * disables the SPIBAR.
+ * After this call access to the SPI flash must use PSP mailbox communication
+ * in SMM. PSP will only grant access to regions marked as writable.
+ *
+ * @param allow_capsule_update Whether to allow capsule updates
+ */
+void psp_rom_armor_init(bool allow_capsule_update);
+
+/* SMM handler for ROM Armor operations - called from APMC handler */
+uint32_t rom_armor_exec(uint8_t command, void *param);
+
+/* Region device accessing the ROM through APMC SMI handler */
+extern const struct region_device rom_armor_apm_call_rw;
 
 #endif /* AMD_BLOCK_PSP_H */

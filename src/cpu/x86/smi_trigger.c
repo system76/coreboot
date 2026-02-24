@@ -22,6 +22,8 @@ static void apmc_log(const char *fn, u8 cmd)
 		break;
 	case APM_CNT_SMMSTORE:
 		break;
+	case APM_CNT_ROM_ARMOR:
+		break;
 	case APM_CNT_SMMINFO:
 		break;
 	default:

@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
 #include <acpi/acpi.h>
+#include <amdblocks/psp.h>
 #include <amdblocks/iomap.h>
 #include <console/console.h>
 #include <cpu/x86/mp.h>
@@ -19,6 +20,9 @@ void mp_init_cpus(struct bus *cpu_bus)
 	/* pre_mp_init made the flash not cacheable. Reset to WP for performance. */
 	mtrr_use_temp_range(FLASH_BELOW_4GB_MAPPING_REGION_BASE,
 			    FLASH_BELOW_4GB_MAPPING_REGION_SIZE, MTRR_TYPE_WRPROT);
+
+	if (CONFIG(SOC_AMD_COMMON_BLOCK_PSP_ROM_ARMOR3))
+		psp_rom_armor_init(false);	/* FIXME: No capsule updates for now */
 
 	/* SMMINFO only needs to be set up when booting from S5 */
 	if (!acpi_is_wakeup_s3())
