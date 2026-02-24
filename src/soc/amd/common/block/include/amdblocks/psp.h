@@ -95,5 +95,11 @@ bool psp_ftpm_is_active(void);
 void psp_ftpm_needs_recovery(bool *psp_rpmc_nvram,
 			     bool *psp_nvram,
 			     bool *psp_dir);
+#if ENV_RAMSTAGE || ENV_SMM
+bool psp_get_hsti_state_rom_armor_enforced(void);
+#else
+/* ROM Armor might get activated after SMM has been set up. It's safe to return false here. */
+static inline bool psp_get_hsti_state_rom_armor_enforced(void) { return false; }
+#endif
 
 #endif /* AMD_BLOCK_PSP_H */

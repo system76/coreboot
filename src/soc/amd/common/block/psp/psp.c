@@ -102,6 +102,33 @@ enum cb_err psp_get_hsti_state(uint32_t *state)
 }
 
 /*
+ * Returns true if ROM Armor is enforced, that is after PSP command
+ * MBOX_BIOS_CMD_ARMOR_ENTER_SMM_MODE has been executed, false otherwise.
+ *
+ * When ROM Armor is enforced the result will be cached.
+ */
+#if ENV_RAMSTAGE || ENV_SMM
+bool psp_get_hsti_state_rom_armor_enforced(void)
+{
+	uint32_t hsti_state;
+
+	static bool enforced;
+	if (enforced)
+		return true; /* ROM Armor already enforced, no need to check again */
+
+	if (psp_get_hsti_state(&hsti_state) != CB_SUCCESS) {
+		printk(BIOS_EMERG, "PSP: Failed to get HSTI state\n");
+		return false;
+	}
+	enforced = hsti_state & HSTI_STATE_ROM_ARMOR_ENFORCED;
+	if (enforced)
+		printk(BIOS_INFO, "PSP: ROM Armor enforced\n");
+
+	return enforced;
+}
+#endif
+
+/*
  * Notify the PSP that the system is completing the boot process.  Upon
  * receiving this command, the PSP will only honor commands where the buffer
  * is in SMM space.
