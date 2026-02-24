@@ -236,6 +236,171 @@ static void assert_correct_ttb_mapping(void *addr)
 	       == BLOCK_INDEX_MEM_NORMAL && !(pte & BLOCK_NS));
 }
 
+
+/* Decodes and prints the architectural attributes of a PTE. */
+static void print_pte_attributes(uint64_t pte)
+{
+	/* Invalid/Unused entries */
+	if (pte == 0 || (pte & DESC_MASK) == INVALID_DESC)
+		return;
+
+	printk(BIOS_INFO, "  Attributes: ");
+	printk(BIOS_INFO, (pte & BLOCK_NS) ? "Non-Secure | " : "Secure | ");
+	printk(BIOS_INFO, (pte & BLOCK_AP_RO) ? "Read-Only | " : "Read-Write | ");
+	printk(BIOS_INFO, (pte & BLOCK_ACCESS) ? "Accessed | " : "Not Accessed | ");
+	printk(BIOS_INFO, (pte & BLOCK_XN) ? "Execute-Never | " : "Executable | ");
+
+	uint64_t sh = pte & BLOCK_SH_MASK;
+	switch (sh) {
+	case BLOCK_SH_NON_SHAREABLE:
+		printk(BIOS_INFO, "Non-Shareable | ");
+		break;
+	case BLOCK_SH_UNPREDICTABLE:
+		printk(BIOS_INFO, "Unpredictable Shareability | ");
+		break;
+	case BLOCK_SH_OUTER_SHAREABLE:
+		printk(BIOS_INFO, "Outer-Shareable | ");
+		break;
+	case BLOCK_SH_INNER_SHAREABLE:
+		printk(BIOS_INFO, "Inner-Shareable | ");
+		break;
+	default:
+		printk(BIOS_INFO, "Unknown Shareability (0x%llx) | ", sh);
+		break;
+	}
+
+	uint64_t index = (pte >> BLOCK_INDEX_SHIFT) & BLOCK_INDEX_MASK;
+	switch (index) {
+	case BLOCK_INDEX_MEM_DEV_NGNRNE:
+		printk(BIOS_INFO, "Device NGNRNE");
+		break;
+	case BLOCK_INDEX_MEM_DEV_NGNRE:
+		printk(BIOS_INFO, "Device NGNRE");
+		break;
+	case BLOCK_INDEX_MEM_DEV_GRE:
+		printk(BIOS_INFO, "Device GRE");
+		break;
+	case BLOCK_INDEX_MEM_NORMAL_NC:
+		printk(BIOS_INFO, "Normal Non-Cacheable");
+		break;
+	case BLOCK_INDEX_MEM_NORMAL:
+		printk(BIOS_INFO, "Normal Cacheable (WBWAC)");
+		break;
+	default:
+		printk(BIOS_INFO, "Unknown Memory Type Index (%llu)", index);
+		break;
+	}
+	printk(BIOS_INFO, "\n");
+}
+
+/* Structure to hold the state of the last printed range */
+struct last_mmu_entry {
+	uint64_t start;
+	uint64_t end;
+	uint64_t pte;
+	const char *desc_type;
+	bool valid;
+};
+
+/* Function to print the accumulated range and reset the state */
+static void print_and_reset_last_range(struct last_mmu_entry *last)
+{
+	if (last->valid) {
+		printk(BIOS_INFO, "  Mapping [" ADDR_FMT ":" ADDR_FMT ") -> PTE: 0x%016llx (%s)\n",
+			  (uintptr_t)last->start, (uintptr_t)last->end, last->pte, last->desc_type);
+		print_pte_attributes(last->pte);
+		last->valid = false;
+	}
+}
+
+/*
+ * Prints the MMU entries for a given address range, merging contiguous
+ * mappings with identical attributes.
+ */
+static void print_mmu_range(uint64_t base_addr, size_t size)
+{
+	if (!CONFIG(ARCH_ARM64_DEBUG_MMU))
+		return;
+
+	uint64_t current_addr = base_addr;
+	uint64_t end_addr = base_addr + size;
+
+	printk(BIOS_INFO, "Dumping MMU entries for range [" ADDR_FMT ":" ADDR_FMT ")\n",
+		(uintptr_t)base_addr, (uintptr_t)end_addr);
+
+	struct last_mmu_entry last = { .valid = false };
+
+	while (current_addr < end_addr) {
+		int shift = L0_ADDR_SHIFT;
+		uint64_t *pte_ptr = (uint64_t *)_ttb;
+		uint64_t pte = 0;
+		uint64_t mapped_size = 0;
+		const char *desc_type = "UNKNOWN";
+
+		/* Perform a table walk to find the terminal PTE and its size. */
+		while (shift >= L3_ADDR_SHIFT) {
+			int index = (current_addr >> shift) & ((1UL << BITS_RESOLVED_PER_LVL) - 1);
+			pte = pte_ptr[index];
+
+			if (pte == 0) {
+				desc_type = "UNMAPPED";
+				mapped_size = 1UL << shift;
+				break;
+			} else if ((pte & DESC_MASK) == TABLE_DESC) {
+				if (shift == L3_ADDR_SHIFT) {
+					/* At L3, TABLE_DESC (0x3) is actually PAGE_DESC */
+					desc_type = "PAGE";
+					mapped_size = GRANULE_SIZE;
+					break;
+				} else {
+					/* At L0, L1, L2, it means TABLE_DESC, continue walk */
+					pte_ptr = (uint64_t *)(pte & XLAT_ADDR_MASK);
+					shift -= BITS_RESOLVED_PER_LVL;
+				}
+			} else if ((pte & DESC_MASK) == BLOCK_DESC) {
+				desc_type = "BLOCK";
+				mapped_size = 1UL << shift;
+				break;
+			} else {
+				desc_type = "IMPOSSIBLE";
+				mapped_size = 1UL << shift;
+				printk(BIOS_ERR, "Unexpected descriptor (PTE: 0x%016llx) found!\n", pte);
+				break;
+			}
+		}
+
+		/* Align the start address to the beginning of the mapped block/page. */
+		uint64_t start_of_mapping = ALIGN_DOWN(current_addr, mapped_size);
+		uint64_t current_print_end = start_of_mapping + mapped_size;
+
+		if (last.valid && start_of_mapping == last.end &&
+			(pte & ~XLAT_ADDR_MASK) == (last.pte & ~XLAT_ADDR_MASK)) {
+			/* Extend the last range */
+			last.end = current_print_end;
+		} else {
+			/* Print the previous range */
+			print_and_reset_last_range(&last);
+			/* Start a new range */
+			last.start = start_of_mapping;
+			last.end = current_print_end;
+			last.pte = pte;
+			last.desc_type = desc_type;
+			last.valid = true;
+		}
+
+		/* Advance current_addr */
+		current_addr = start_of_mapping + mapped_size;
+		if (current_addr <= start_of_mapping) {
+			printk(BIOS_ERR, "Address overflow in %s!\n", __func__);
+			break;
+		}
+	}
+
+	/* Print the very last accumulated range */
+	print_and_reset_last_range(&last);
+	printk(BIOS_INFO, "\n");
+}
+
 /* Func : mmu_config_range
  * Desc : This function repeatedly calls init_xlat_table with the base
  * address. Based on size returned from init_xlat_table, base_addr is updated
@@ -263,6 +428,8 @@ void mmu_config_range(void *start, size_t size, uint64_t tag)
 	tlbiall();
 	dsb();
 	isb();
+
+	print_mmu_range(0, 1UL << BITS_PER_VA);
 }
 
 /* Func : mmu_init
@@ -396,4 +563,5 @@ void mmu_relocate_ttb(void)
 	isb();
 
 	printk(BIOS_INFO, "TTB relocation is complete.\n");
+	print_mmu_range(0, 1UL << BITS_PER_VA);
 }

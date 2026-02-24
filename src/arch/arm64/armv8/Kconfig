@@ -30,4 +30,15 @@ config ARCH_ARMV8_EXTENSION
 	  need to be changed unless specific features (e.g. new instructions)
 	  are used by the SoC's coreboot code.
 
+config ARCH_ARM64_DEBUG_MMU
+	bool "Debug MMU table"
+	default n
+	help
+	  When enabled, the MMU table walker will dump the translation
+	  table entries and their attributes to the debug console during
+	  initialization or range configuration.
+
+	  This is useful for verifying that memory ranges (Normal, Device,
+	  Read-Only, etc.) are being mapped correctly in the page tables.
+
 endif # ARCH_ARM64
