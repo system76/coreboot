@@ -98,6 +98,65 @@ int psp_notify_smm(void)
 	return cmd_status;
 }
 
+int psp_rom_armor_enter_smm_mode(const bool allow_capsule_update, size_t *flash_size)
+{
+	int cmd_status;
+
+	*flash_size = 0;
+
+	/* Initialize and send ROM Armor Enter SMM Mode command */
+	struct mbox_rom_armor_enforce_buffer enforce_buffer = {
+		.header.size = sizeof(enforce_buffer),
+		.capsule_update = allow_capsule_update,
+	};
+
+	printk(BIOS_SPEW, "PSP: Entering ROM Armor SMM-only mode...\n");
+
+	cmd_status = send_psp_command(MBOX_BIOS_CMD_ARMOR_ENTER_SMM_MODE, &enforce_buffer);
+	psp_print_cmd_status(cmd_status, &enforce_buffer.header);
+
+	if (cmd_status || enforce_buffer.header.status)
+		return -1;
+
+	*flash_size = enforce_buffer.flash_size;
+	return 0;
+}
+
+int psp_rom_armor_spi_transaction(const struct mbox_rom_armor_flash_command *cmd_buf)
+{
+	int cmd_status;
+	struct mbox_rom_armor_flash_command_buffer *buffer;
+
+	/* PSP verifies that this buffer is at the address specified in psp_notify_smm() */
+	buffer = (struct mbox_rom_armor_flash_command_buffer *)c2p_buffer.buffer;
+	assert(buffer);
+	assert(cmd_buf);
+
+	buffer->header.size = sizeof(*buffer);
+	buffer->header.status = 0; /* Clear status before sending command */
+	memcpy(&buffer->cmd, cmd_buf, sizeof(*cmd_buf));
+
+	/* Sanity checks */
+	assert(buffer->cmd.transaction);
+	assert(buffer->cmd.buffer_ptr);
+	assert(buffer->cmd.size);
+
+	printk(BIOS_SPEW, "PSP: Sending transaction type=%u offset=0x%x size=0x%x buffer_ptr=0x%llx read_back=0x%x\n",
+	       buffer->cmd.transaction, buffer->cmd.offset, buffer->cmd.size,
+	       buffer->cmd.buffer_ptr, buffer->cmd.read_back);
+
+	asm volatile ("sfence");
+
+	/* Send command to PSP */
+	cmd_status = send_psp_command(MBOX_BIOS_CMD_ARMOR_SPI_TRANSACTION, buffer);
+	if (cmd_status || buffer->header.status) {
+		psp_print_cmd_status(cmd_status, &buffer->header);
+		return cmd_status ? cmd_status : buffer->header.status;
+	}
+
+	return 0;
+}
+
 /* Notify PSP the system is going to a sleep state. */
 void psp_notify_sx_info(uint8_t sleep_type)
 {
