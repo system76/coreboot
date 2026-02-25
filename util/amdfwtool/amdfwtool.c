@@ -1330,6 +1330,9 @@ static void integrate_bios_levels(context *ctx, amd_cb_config *cb_config)
 		ctx->biosdir->entries[count].dest = -1;
 		ctx->biosdir->entries[count].reset = 0;
 		ctx->biosdir->entries[count].ro = 0;
+		ctx->biosdir->entries[count].romid = 0;
+		ctx->biosdir->entries[count].writable = 0;
+		ctx->biosdir->entries[count].rsvd = 0;
 		count++;
 		fill_dir_header(ctx->biosdir, count, ctx);
 		ctx->current_table = current_table_save;
@@ -1451,6 +1454,9 @@ static void integrate_bios_firmwares(context *ctx,
 		biosdir->entries[count].compressed = fw_table[i].zlib;
 		biosdir->entries[count].inst = fw_table[i].inst;
 		biosdir->entries[count].subprog = fw_table[i].subpr;
+		biosdir->entries[count].romid = 0;
+		biosdir->entries[count].writable = 0;
+		biosdir->entries[count].rsvd = 0;
 
 		switch (fw_table[i].type) {
 		case AMD_BIOS_SIG:
@@ -1491,6 +1497,7 @@ static void integrate_bios_firmwares(context *ctx,
 					SET_ADDR_MODE(biosdir, AMD_ADDR_REL_BIOS);
 			}
 			biosdir->entries[count].size = fw_table[i].size;
+			biosdir->entries[count].writable = 1;
 			break;
 		case AMD_BIOS_BIN:
 			/* Don't make a 2nd copy, point to the same one */

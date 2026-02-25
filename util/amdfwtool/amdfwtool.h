@@ -301,7 +301,10 @@ typedef struct _bios_directory_entry {
 	int ro:1;
 	int compressed:1;
 	int inst:4;
-	uint8_t subprog; /* b[7:3] reserved */
+	uint8_t subprog:3;
+	uint8_t romid:2;
+	uint8_t writable:1;
+	uint8_t rsvd:2;
 	uint32_t size;
 	uint64_t source:62;
 	uint64_t address_mode:2;
