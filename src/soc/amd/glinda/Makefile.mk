@@ -152,6 +152,12 @@ SIGNED_AMDFW_A_FILE=$(obj)/amdfw_a.rom.signed
 SIGNED_AMDFW_B_FILE=$(obj)/amdfw_b.rom.signed
 endif # CONFIG_SEPARATE_SIGNED_PSPFW
 
+ifeq ($(CONFIG_SOC_AMD_COMMON_BLOCK_PSP_ROM_ARMOR3)$(CONFIG_SMMSTORE),yy)
+# Rom Armor needs the SMM Store region to be whitelisted
+PSP_BIOS_NV_ST_BASE=$(call get_fmap_value,FMAP_SECTION_SMMSTORE_START)
+PSP_BIOS_NV_ST_SIZE=$(call get_fmap_value,FMAP_SECTION_SMMSTORE_SIZE)
+endif
+
 # Helper function to return a value with given bit set
 # Soft Fuse type = 0xb - See #55758 (NDA) for bit definitions.
 set-bit=$(call int-shift-left, 1 $(call _toint,$1))
@@ -205,6 +211,9 @@ OPT_SPL_RW_AB_TABLE_FILE=$(call add_opt_prefix, $(SPL_RW_AB_TABLE_FILE), --spl-t
 # If vboot uses 2 RW slots, then 2 copies of PSP binaries are redundant
 OPT_RECOVERY_AB_SINGLE_COPY=$(if $(CONFIG_VBOOT_SLOTS_RW_AB), --recovery-ab-single-copy)
 
+OPT_BIOS_NV_ST_BASE=$(call add_opt_prefix, $(PSP_BIOS_NV_ST_BASE), --variable-nvram-base)
+OPT_BIOS_NV_ST_SIZE=$(call add_opt_prefix, $(PSP_BIOS_NV_ST_SIZE), --variable-nvram-size)
+
 AMDFW_COMMON_ARGS=$(OPT_PSP_APCB_FILES) \
 		$(OPT_PSP_NVRAM_BASE) \
 		$(OPT_PSP_NVRAM_SIZE) \
@@ -228,7 +237,9 @@ AMDFW_COMMON_ARGS=$(OPT_PSP_APCB_FILES) \
 		$(OPT_EFS_SPI_MICRON_FLAG) \
 		--config $(CONFIG_AMDFW_CONFIG_FILE) \
 		--flashsize $(CONFIG_ROM_SIZE) \
-		$(OPT_RECOVERY_AB_SINGLE_COPY)
+		$(OPT_RECOVERY_AB_SINGLE_COPY) \
+		$(OPT_BIOS_NV_ST_BASE) \
+		$(OPT_BIOS_NV_ST_SIZE)
 
 $(obj)/amdfw.rom:	$(call strip_quotes, $(PSP_BIOSBIN_FILE)) \
 			$(PSP_VERSTAGE_FILE) \
