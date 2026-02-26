@@ -1391,6 +1391,7 @@ static void integrate_bios_firmwares(context *ctx,
 				fw_table[i].type != AMD_BIOS_APOB_NV &&
 				fw_table[i].type != AMD_BIOS_L2_PTR &&
 				fw_table[i].type != AMD_BIOS_BIN &&
+				fw_table[i].type != AMD_BIOS_NV_ST &&
 				fw_table[i].type != AMD_BIOS_PSP_SHARED_MEM))
 			continue;
 
@@ -1475,6 +1476,7 @@ static void integrate_bios_firmwares(context *ctx,
 			biosdir->entries[count].address_mode = SET_ADDR_MODE_BY_TABLE(biosdir);
 			break;
 		case AMD_BIOS_APOB_NV:
+		case AMD_BIOS_NV_ST:
 			if (has_apob_nv_quirk(cb_config->soc_id)) {
 				/*
 				 * once ROM3 mapping (>16MiB) is used on any SOC that

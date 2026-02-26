@@ -61,6 +61,8 @@ enum {
 	AMDFW_OPT_SIGNED_OUTPUT,
 	AMDFW_OPT_SIGNED_ADDR,
 	AMDFW_OPT_BODY_LOCATION,
+	AMDFW_OPT_VARIABLE_NVRAM_BASE,
+	AMDFW_OPT_VARIABLE_NVRAM_SIZE,
 	/* begin after ASCII characters */
 	LONGOPT_SPI_READ_MODE	= 256,
 	LONGOPT_SPI_SPEED	= 257,
@@ -87,6 +89,8 @@ static struct option long_options[] = {
 	{"combo-config1",    required_argument, 0, AMDFW_OPT_COMBO1_CONFIG },
 	{"multilevel",             no_argument, 0, AMDFW_OPT_MULTILEVEL },
 	{"nvram",            required_argument, 0, AMDFW_OPT_NVRAM },
+	{"variable-nvram-base",     required_argument, 0, AMDFW_OPT_VARIABLE_NVRAM_BASE },
+	{"variable-nvram-size",     required_argument, 0, AMDFW_OPT_VARIABLE_NVRAM_SIZE },
 	{"nvram-base",       required_argument, 0, LONGOPT_NVRAM_BASE },
 	{"nvram-size",       required_argument, 0, LONGOPT_NVRAM_SIZE },
 	{"rpmc-nvram-base",  required_argument, 0, LONGOPT_RPMC_NVRAM_BASE },
@@ -141,78 +145,80 @@ static void usage(void)
 {
 	printf("amdfwtool: Create AMD Firmware combination\n");
 	printf("Usage: amdfwtool [options] --flashsize <size> --output <filename>\n");
-	printf("--xhci <FILE>                  Add XHCI blob\n");
-	printf("--imc <FILE>                   Add IMC blob\n");
-	printf("--gec <FILE>                   Add GEC blob\n");
+	printf("--xhci <FILE>                   Add XHCI blob\n");
+	printf("--imc <FILE>                    Add IMC blob\n");
+	printf("--gec <FILE>                    Add GEC blob\n");
 
 	printf("\nPSP options:\n");
-	printf("--use-combo                    Use the COMBO layout\n");
-	printf("--combo-config1 <config file>  Config for 1st combo entry\n");
-	printf("--multilevel                   Generate primary and secondary tables\n");
-	printf("--nvram <FILE>                 Add nvram binary\n");
-	printf("--soft-fuse                    Set soft fuse\n");
-	printf("--token-unlock                 Set token unlock\n");
-	printf("--nvram-base <HEX_VAL>         Base address of nvram\n");
-	printf("--nvram-size <HEX_VAL>         Size of nvram\n");
-	printf("--rpmc-nvram-base <HEX_VAL>    Base address of RPMC nvram\n");
-	printf("--rpmc-nvram-size <HEX_VAL>    Size of RPMC nvram\n");
-	printf("--whitelist                    Set if there is a whitelist\n");
-	printf("--use-pspsecureos              Set if psp secure OS is needed\n");
-	printf("--load-mp2-fw                  Set if load MP2 firmware\n");
-	printf("--load-s0i3                    Set if load s0i3 firmware\n");
-	printf("--verstage <FILE>              Add verstage\n");
-	printf("--verstage_sig                 Add verstage signature\n");
-	printf("--recovery-ab                  Use the recovery A/B layout\n");
+	printf("--use-combo                     Use the COMBO layout\n");
+	printf("--combo-config1 <config file>   Config for 1st combo entry\n");
+	printf("--multilevel                    Generate primary and secondary tables\n");
+	printf("--nvram <FILE>                  Add nvram binary\n");
+	printf("--soft-fuse                     Set soft fuse\n");
+	printf("--token-unlock                  Set token unlock\n");
+	printf("--nvram-base <HEX_VAL>          Base address of nvram\n");
+	printf("--nvram-size <HEX_VAL>          Size of nvram\n");
+	printf("--variable-nvram-base <HEX_VAL> Base address of variable nvram\n");
+	printf("--variable-nvram-size <HEX_VAL> Size of variable nvram\n");
+	printf("--rpmc-nvram-base <HEX_VAL>     Base address of RPMC nvram\n");
+	printf("--rpmc-nvram-size <HEX_VAL>     Size of RPMC nvram\n");
+	printf("--whitelist                     Set if there is a whitelist\n");
+	printf("--use-pspsecureos               Set if psp secure OS is needed\n");
+	printf("--load-mp2-fw                   Set if load MP2 firmware\n");
+	printf("--load-s0i3                     Set if load s0i3 firmware\n");
+	printf("--verstage <FILE>               Add verstage\n");
+	printf("--verstage_sig                  Add verstage signature\n");
+	printf("--recovery-ab                   Use the recovery A/B layout\n");
 	printf("\nBIOS options:\n");
-	printf("--instance <number>            Sets instance field for the next BIOS\n");
-	printf("                               firmware\n");
-	printf("--apcb <FILE>                  Add AGESA PSP customization block\n");
-	printf("--apcb-combo1 <FILE>           Add APCB for 1st combo\n");
-	printf("--apob-base <HEX_VAL>          Destination for AGESA PSP output block\n");
-	printf("--apob-nv-base <HEX_VAL>       Location of S3 resume data\n");
-	printf("--apob-nv-size <HEX_VAL>       Size of S3 resume data\n");
-	printf("--ucode <FILE>                 Add microcode patch\n");
-	printf("--bios-bin <FILE>              Add compressed image; auto source address\n");
-	printf("--bios-bin-src <HEX_VAL>       Address in flash of source if -V not used\n");
-	printf("--bios-bin-dest <HEX_VAL>      Destination for uncompressed BIOS\n");
-	printf("--bios-uncomp-size <HEX>       Uncompressed size of BIOS image\n");
-	printf("--output <filename>            output filename\n");
-	printf("--flashsize <HEX_VAL>          ROM size in bytes\n");
-	printf("                               size must be larger than %dKB\n",
+	printf("--instance <number>             Sets instance field for the next BIOS\n");
+	printf("                                firmware\n");
+	printf("--apcb <FILE>                   Add AGESA PSP customization block\n");
+	printf("--apcb-combo1 <FILE>            Add APCB for 1st combo\n");
+	printf("--apob-base <HEX_VAL>           Destination for AGESA PSP output block\n");
+	printf("--apob-nv-base <HEX_VAL>        Location of S3 resume data\n");
+	printf("--apob-nv-size <HEX_VAL>        Size of S3 resume data\n");
+	printf("--ucode <FILE>                  Add microcode patch\n");
+	printf("--bios-bin <FILE>               Add compressed image; auto source address\n");
+	printf("--bios-bin-src <HEX_VAL>        Address in flash of source if -V not used\n");
+	printf("--bios-bin-dest <HEX_VAL>       Destination for uncompressed BIOS\n");
+	printf("--bios-uncomp-size <HEX>        Uncompressed size of BIOS image\n");
+	printf("--output <filename>             output filename\n");
+	printf("--flashsize <HEX_VAL>           ROM size in bytes\n");
+	printf("                                size must be larger than %dKB\n",
 		MIN_ROM_KB);
-	printf("                               and must a multiple of 1024\n");
-	printf("--location                     Location of Directory\n");
-	printf("--anywhere                     Use any 64-byte aligned addr for Directory\n");
-	printf("--sharedmem                    Location of PSP/FW shared memory\n");
-	printf("--sharedmem-size               Maximum size of the PSP/FW shared memory\n");
-	printf("                               area\n");
-	printf("--output-manifest <FILE>       Writes a manifest with the blobs versions\n");
+	printf("                                and must a multiple of 1024\n");
+	printf("--location                      Location of Directory\n");
+	printf("--anywhere                      Use any 64-byte aligned addr for Directory\n");
+	printf("--sharedmem                     Location of PSP/FW shared memory\n");
+	printf("--sharedmem-size                Maximum size of the PSP/FW shared memory\n");
+	printf("                                area\n");
+	printf("--output-manifest <FILE>        Writes a manifest with the blobs versions\n");
 	printf("\nEmbedded Firmware Structure options used by the PSP:\n");
-	printf("--spi-speed <HEX_VAL>          SPI fast speed to place in EFS Table\n");
-	printf("                               0x0 66.66Mhz\n");
-	printf("                               0x1 33.33MHz\n");
-	printf("                               0x2 22.22MHz\n");
-	printf("                               0x3 16.66MHz\n");
-	printf("                               0x4 100MHz\n");
-	printf("                               0x5 800KHz\n");
-	printf("--spi-read-mode <HEX_VAL>      SPI read mode to place in EFS Table\n");
-	printf("                               0x0 Normal Read (up to 33M)\n");
-	printf("                               0x1 Reserved\n");
-	printf("                               0x2 Dual IO (1-1-2)\n");
-	printf("                               0x3 Quad IO (1-1-4)\n");
-	printf("                               0x4 Dual IO (1-2-2)\n");
-	printf("                               0x5 Quad IO (1-4-4)\n");
-	printf("                               0x6 Normal Read (up to 66M)\n");
-	printf("                               0x7 Fast Read\n");
-	printf("--spi-micron-flag <HEX_VAL>    Micron SPI part support for RV and later SOC\n");
-	printf("                               0x0 Micron parts are not used\n");
-	printf("                               0x1 Micron parts are always used\n");
-	printf("                               0x2 Micron parts optional, this option is only\n");
+	printf("--spi-speed <HEX_VAL>           SPI fast speed to place in EFS Table\n");
+	printf("                                0x0 66.66Mhz\n");
+	printf("                                0x1 33.33MHz\n");
+	printf("                                0x2 22.22MHz\n");
+	printf("                                0x3 16.66MHz\n");
+	printf("                                0x4 100MHz\n");
+	printf("                                0x5 800KHz\n");
+	printf("--spi-read-mode <HEX_VAL>       SPI read mode to place in EFS Table\n");
+	printf("                                0x0 Normal Read (up to 33M)\n");
+	printf("                                0x1 Reserved\n");
+	printf("                                0x2 Dual IO (1-1-2)\n");
+	printf("                                0x3 Quad IO (1-1-4)\n");
+	printf("                                0x4 Dual IO (1-2-2)\n");
+	printf("                                0x5 Quad IO (1-4-4)\n");
+	printf("                                0x6 Normal Read (up to 66M)\n");
+	printf("                                0x7 Fast Read\n");
+	printf("--spi-micron-flag <HEX_VAL>     Micron SPI part support for RV and later SOC\n");
+	printf("                                0x0 Micron parts are not used\n");
+	printf("                                0x1 Micron parts are always used\n");
+	printf("                                0x2 Micron parts optional, this option is only\n");
 	printf("                                   supported with RN/LCN SOC\n");
 	printf("\nGeneral options:\n");
-	printf("-c|--config <config file>      Config file\n");
-	printf("-d|--debug                     Print debug message\n");
-	printf("-h|--help                      Show this help\n");
+	printf("-c|--config <config file>       Config file\n");
+	printf("-d|--debug                      Print debug message\n");
+	printf("-h|--help                       Show this help\n");
 }
 
 extern amd_fw_entry amd_psp_fw_table[];
@@ -459,6 +465,16 @@ int amdfwtool_getopt(int argc, char *argv[], amd_cb_config *cb_config, context *
 		case AMDFW_OPT_APOB_NVSIZE:
 			/* APOB NV size */
 			register_bios_fw_addr(AMD_BIOS_APOB_NV, 0, 0, optarg);
+			sub = instance = 0;
+			break;
+		case AMDFW_OPT_VARIABLE_NVRAM_BASE:
+			/* APOB variable NVRAM base */
+			register_bios_fw_addr(AMD_BIOS_NV_ST, optarg, 0, 0);
+			sub = instance = 0;
+			break;
+		case AMDFW_OPT_VARIABLE_NVRAM_SIZE:
+			/* APOB variable NVRAM size */
+			register_bios_fw_addr(AMD_BIOS_NV_ST, 0, 0, optarg);
 			sub = instance = 0;
 			break;
 		case AMDFW_OPT_BIOSBIN:
