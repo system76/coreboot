@@ -115,6 +115,7 @@ static int wait_command(struct pspv1_mbox *mbox)
 int send_psp_command(uint32_t command, void *buffer)
 {
 	struct pspv1_mbox *mbox = soc_get_mbox_address();
+	int ret = 0;
 	if (!mbox)
 		return -PSPSTS_NOBASE;
 
@@ -132,19 +133,30 @@ int send_psp_command(uint32_t command, void *buffer)
 	if (wait_command(mbox))
 		return -PSPSTS_CMD_TIMEOUT;
 
+	if (ENV_SMM)
+		psp_set_smm_flag();
+
 	/* set address of command-response buffer and write command register */
 	wr_mbox_cmd_resp(mbox, buffer);
 	wr_mbox_cmd(mbox, command);
 
 	/* PSP clears command register when complete */
-	if (wait_command(mbox))
-		return -PSPSTS_CMD_TIMEOUT;
+	if (wait_command(mbox)) {
+		ret = -PSPSTS_CMD_TIMEOUT;
+		goto out;
+	}
 
 	/* check delivery status */
-	if (rd_mbox_sts(mbox) & (PSPV1_STATUS_ERROR | PSPV1_STATUS_TERMINATED))
-		return -PSPSTS_SEND_ERROR;
+	if (rd_mbox_sts(mbox) & (PSPV1_STATUS_ERROR | PSPV1_STATUS_TERMINATED)) {
+		ret = -PSPSTS_SEND_ERROR;
+		goto out;
+	}
 
-	return 0;
+out:
+	if (ENV_SMM)
+		psp_clear_smm_flag();
+
+	return ret;
 }
 
 /*

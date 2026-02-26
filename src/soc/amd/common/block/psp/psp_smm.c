@@ -36,25 +36,14 @@ struct {
  */
 static uint32_t smm_flag;
 
-static void set_smm_flag(void)
+void psp_set_smm_flag(void)
 {
 	smm_flag = 1;
 }
 
-static void clear_smm_flag(void)
+void psp_clear_smm_flag(void)
 {
 	smm_flag = 0;
-}
-
-static int send_psp_command_smm(uint32_t command, void *buffer)
-{
-	int cmd_status;
-
-	set_smm_flag();
-	cmd_status = send_psp_command(command, buffer);
-	clear_smm_flag();
-
-	return cmd_status;
 }
 
 /*
@@ -101,7 +90,7 @@ int psp_notify_smm(void)
 
 	printk(BIOS_DEBUG, "PSP: Notify SMM info... ");
 
-	cmd_status = send_psp_command_smm(MBOX_BIOS_CMD_SMM_INFO, &buffer);
+	cmd_status = send_psp_command(MBOX_BIOS_CMD_SMM_INFO, &buffer);
 
 	/* buffer's status shouldn't change but report it if it does */
 	psp_print_cmd_status(cmd_status, &buffer.header);
@@ -129,7 +118,7 @@ void psp_notify_sx_info(uint8_t sleep_type)
 
 	buffer->sleep_type = sleep_type;
 
-	cmd_status = send_psp_command_smm(MBOX_BIOS_CMD_SX_INFO, buffer);
+	cmd_status = send_psp_command(MBOX_BIOS_CMD_SX_INFO, buffer);
 
 	/* buffer's status shouldn't change but report it if it does */
 	psp_print_cmd_status(cmd_status, &buffer->header);

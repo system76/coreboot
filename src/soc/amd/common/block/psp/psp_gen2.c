@@ -152,6 +152,8 @@ static int wait_command(uintptr_t psp_mmio, bool wait_for_ready)
 int send_psp_command(uint32_t command, void *buffer)
 {
 	const uintptr_t psp_mmio = get_psp_mmio_base();
+	int ret = 0;
+
 	if (!psp_mmio)
 		return -PSPSTS_NOBASE;
 
@@ -161,20 +163,30 @@ int send_psp_command(uint32_t command, void *buffer)
 	if (wait_command(psp_mmio, true))
 		return -PSPSTS_CMD_TIMEOUT;
 
+	if (ENV_SMM)
+		psp_set_smm_flag();
+
 	/* set address of command-response buffer and write command register */
 	wr_mbox_buffer_ptr(psp_mmio, buffer);
 	wr_mbox_cmd(psp_mmio, command);
 
 	/* PSP clears command register when complete.  All commands except
 	 * SxInfo set the Ready bit. */
-	if (wait_command(psp_mmio, command != MBOX_BIOS_CMD_SX_INFO))
-		return -PSPSTS_CMD_TIMEOUT;
+	if (wait_command(psp_mmio, command != MBOX_BIOS_CMD_SX_INFO)) {
+		ret = -PSPSTS_CMD_TIMEOUT;
+		goto out;
+	}
 
 	/* check delivery status */
-	if (rd_mbox_sts(psp_mmio))
-		return -PSPSTS_SEND_ERROR;
+	if (rd_mbox_sts(psp_mmio)) {
+		ret = -PSPSTS_SEND_ERROR;
+		goto out;
+	}
 
-	return 0;
+out:
+	if (ENV_SMM)
+		psp_clear_smm_flag();
+	return ret;
 }
 
 enum cb_err psp_get_psp_capabilities(uint32_t *capabilities)

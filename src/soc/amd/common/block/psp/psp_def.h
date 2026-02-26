@@ -175,4 +175,7 @@ enum cb_err soc_read_c2p38(uint32_t *msg_38_value);
 
 void enable_psp_smi(void);
 
+void psp_set_smm_flag(void);
+void psp_clear_smm_flag(void);
+
 #endif /* __AMD_PSP_DEF_H__ */
