@@ -6,7 +6,7 @@ SeaBIOS/seabios/
 edk2/workspace
 tint/tint/
 U-Boot/u-boot/
-Memtest86Plus/memtest86plus/
+Memtest86Plus/memtest86plus_v*/
 iPXE/ipxe/
 skiboot/skiboot
 skiboot/build
