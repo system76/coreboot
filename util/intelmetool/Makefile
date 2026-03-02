@@ -2,15 +2,18 @@
 
 PROGRAM = intelmetool
 
-TOP     ?= $(abspath ../..)
-CC      ?= gcc
-INSTALL ?= /usr/bin/env install
-PREFIX  ?= /usr/local
-CFLAGS  ?= -O0 -g -Wall -Wextra -Wno-unused-parameter -Wno-sign-compare -Wno-unused-function \
+TOP      ?= $(abspath ../..)
+CC       ?= gcc
+INSTALL  ?= /usr/bin/env install
+PREFIX   ?= /usr/local
+CFLAGS   ?= -O0 -g -Wall -Wextra -Wno-unused-parameter -Wno-sign-compare -Wno-unused-function \
            -I $(TOP)/src/commonlib/bsd/include
-LDFLAGS += -lpci -lz
+LDFLAGS  += -lpci -lz
+SRCDIR   ?= src
+BUILDDIR ?= build
 
 OBJS = intelmetool.o me.o me_status.o mmap.o rcba.o msr.o
+OBJS_P = $(addprefix $(BUILDDIR)/, $(OBJS))
 
 OS_ARCH	= $(shell uname)
 ifeq ($(OS_ARCH), Darwin)
@@ -26,22 +29,30 @@ CFLAGS += -I/usr/pkg/include
 LDFLAGS += -L/usr/pkg/lib -Wl,-rpath-link,/usr/pkg/lib -lz -lpciutils -lpci -l$(shell uname -p)
 endif
 
-all: pciutils dep $(PROGRAM)
+all: builddir pciutils dep $(PROGRAM)
 
 oldarc: CFLAGS += -DOLDARC
 oldarc: all
 
-$(PROGRAM): $(OBJS)
-	$(CC) $(CFLAGS) -o $(PROGRAM) $(OBJS) $(LDFLAGS)
+$(PROGRAM): $(OBJS_P)
+	$(CC) $(CFLAGS) -o $(BUILDDIR)/$(PROGRAM) $(OBJS_P) $(LDFLAGS)
+
+# Define build dir and src dirs here. Instead of overloading the default .o target, we're forced to prefix our targets with the build dir. This allows make to pick up on whether a target has been built in the past or not.
+$(BUILDDIR)/%.o: $(SRCDIR)/%.c
+	$(CC) $(CFLAGS) -c -o $@ $<
 
 clean:
-	rm -f $(PROGRAM) *.o *~ junit.xml
+	rm -rf $(BUILDDIR) *~ junit.xml
 
 distclean: clean
 	rm -f .dependencies
 
 dep:
-	@$(CC) $(CFLAGS) -MM *.c > .dependencies
+	@$(CC) $(CFLAGS) -MM $(SRCDIR)/*.c > .dependencies
+
+# Make sure the build directory exists.
+builddir:
+	mkdir -p $(BUILDDIR)
 
 define LIBPCI_TEST
 /* Avoid a failing test due to libpci header symbol shadowing breakage */
@@ -64,18 +75,18 @@ export LIBPCI_TEST
 
 pciutils:
 	@printf "\nChecking for development libraries: pci and zlib... "
-	@echo "$$LIBPCI_TEST" > .test.c
-	@$(CC) $(CFLAGS) .test.c -o .test $(LDFLAGS) >/dev/null 2>&1 &&	  \
+	@echo "$$LIBPCI_TEST" > $(BUILDDIR)/.test.c
+	@$(CC) $(CFLAGS) $(BUILDDIR)/.test.c -o $(BUILDDIR)/.test $(LDFLAGS) >/dev/null 2>&1 &&	  \
 		printf "found.\n" || ( printf "not found.\n\n"; 	  \
 		printf "For RPM based distributions like Fedora, please install pciutils-devel and zlib-devel.\n"; \
 		printf "For DEB based distributions, please install libpci-dev and zlib1g-dev.\n"; \
-		rm -f .test.c .test; exit 1)
-	@rm -rf .test.c .test .test.dSYM
+		rm -f $(BUILDDIR)/.test.c $(BUILDDIR)/.test; exit 1)
+	@rm -rf $(BUILDDIR)/.test.c $(BUILDDIR)/.test $(BUILDDIR)/.test.dSYM
 
 install: $(PROGRAM)
 	mkdir -p $(DESTDIR)$(PREFIX)/sbin
-	$(INSTALL) $(PROGRAM) $(DESTDIR)$(PREFIX)/sbin
+	$(INSTALL) $(BUILDDIR)/$(PROGRAM) $(DESTDIR)$(PREFIX)/sbin
 
-.PHONY: all clean distclean dep pciutils oldarc
+.PHONY: all builddir clean distclean dep pciutils oldarc
 
 -include .dependencies
