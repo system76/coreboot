@@ -5,6 +5,7 @@ LinuxBoot/linuxboot/
 SeaBIOS/seabios/
 edk2/workspace
 tint/tint/
+tint/tint_*.tar.xz
 U-Boot/u-boot/
 Memtest86Plus/memtest86plus_v*/
 iPXE/ipxe/
