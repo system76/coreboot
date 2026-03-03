@@ -467,6 +467,17 @@
             "speedMbps": 9600,
             "lp5x": true
         }
+    },
+    {
+	"name": "SL5D32G32C2A-HC0",
+        "attribs": {
+            "densityPerDieGb": 16,
+            "diesPerPackage": 2,
+            "bitWidthPerChannel": 16,
+            "ranksPerChannel": 1,
+            "speedMbps": 7500,
+            "lp5x": true
+        }
     }
     ]
 }
