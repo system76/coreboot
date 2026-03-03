@@ -56,6 +56,7 @@ ramstage-$(CONFIG_PCI) += ../common/pcie_common.c
 ramstage-y += ../common/spmi.c
 ramstage-$(CONFIG_PCI) += pcie.c
 ramstage-y += cpucp_load_reset.c
+ramstage-y += adsp_load_reset.c
 ramstage-y += ../common/cmd_db.c
 ramstage-y += ../common/rpmh.c ../common/rpmh_bcm.c ../common/rpmh_regulator.c ../common/rpmh_rsc.c
 ramstage-y += rpmh_rsc_init.c
@@ -248,6 +249,23 @@ $(CPUCP_DTBS_CBFS)-file := $(CPUCP_DTBS_FILE)
 $(CPUCP_DTBS_CBFS)-type := payload
 $(CPUCP_DTBS_CBFS)-compression := $(CBFS_COMPRESS_FLAG)
 cbfs-files-y += $(CPUCP_DTBS_CBFS)
+
+################################################################################
+# ADSP (Audio DSP) Lite Firmware for Off-mode charging
+################################################################################
+ADSP_LITE_FILE := $(X1P42100_BLOB)/adsp/adsp.mbn
+ADSP_LITE_CBFS := $(CONFIG_CBFS_PREFIX)/adsp_lite
+$(ADSP_LITE_CBFS)-file := $(ADSP_LITE_FILE)
+$(ADSP_LITE_CBFS)-type := payload
+$(ADSP_LITE_CBFS)-compression := $(CBFS_COMPRESS_FLAG)
+cbfs-files-y += $(ADSP_LITE_CBFS)
+
+################################################################################
+ADSP_DTBS_FILE := $(X1P42100_BLOB)/adsp/adsp_dtbs.elf
+ADSP_DTBS_CBFS := $(CONFIG_CBFS_PREFIX)/adsp_dtbs
+$(ADSP_DTBS_CBFS)-file := $(ADSP_DTBS_FILE)
+$(ADSP_DTBS_CBFS)-type := payload
+cbfs-files-y += $(ADSP_DTBS_CBFS)
 
 ################################################################################
 SHRM_FILE := $(X1P42100_BLOB)/$(BLOB_VARIANT)/shrm/shrm.elf
