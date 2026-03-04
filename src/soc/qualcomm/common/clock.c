@@ -17,7 +17,7 @@ static bool clock_is_off(u32 *cbcr_addr)
 enum cb_err clock_enable_vote(void *cbcr_addr, void *vote_addr,
 				uint32_t vote_bit)
 {
-	int count = 100;
+	int count = CLK_POLL_COUNT;
 
 	setbits32(vote_addr, BIT(vote_bit));
 
@@ -34,7 +34,7 @@ enum cb_err clock_enable_vote(void *cbcr_addr, void *vote_addr,
 
 enum cb_err clock_enable(void *cbcr_addr)
 {
-	int count = 100;
+	int count = CLK_POLL_COUNT;
 
 	/* Set clock enable bit */
 	setbits32(cbcr_addr, BIT(CLK_CTL_EN_SHFT));
@@ -48,6 +48,74 @@ enum cb_err clock_enable(void *cbcr_addr)
 	printk(BIOS_ERR, "Failed to enable clock, register val: 0x%x\n",
 			read32(cbcr_addr));
 	return CB_ERR;
+}
+
+enum cb_err clock_disable(void *cbcr_addr)
+{
+	int count = CLK_POLL_COUNT;
+
+	if (!cbcr_addr)
+		return CB_ERR;
+
+	/* Clear clock enable bit */
+	clrbits32(cbcr_addr, BIT(CLK_CTL_EN_SHFT));
+
+	/* Ensure clock is disabled */
+	while (count-- > 0) {
+		if (clock_is_off(cbcr_addr))
+			return CB_SUCCESS;
+		udelay(1);
+	}
+
+	printk(BIOS_ERR, "Failed to disable clock, register val: 0x%x\n",
+	       read32(cbcr_addr));
+	return CB_ERR;
+}
+
+void clock_configure_ignore_rpmh_clk_dis(void *cbcr_addr, bool enable)
+{
+	if (!cbcr_addr)
+		return;
+
+	if (enable)
+		setbits32(cbcr_addr, BIT(CLK_CTL_IGNORE_RPMH_CLK_DIS_SHFT));
+	else
+		clrbits32(cbcr_addr, BIT(CLK_CTL_IGNORE_RPMH_CLK_DIS_SHFT));
+}
+
+void clock_configure_ignore_pmu_clk_dis(void *cbcr_addr, bool enable)
+{
+	if (!cbcr_addr)
+		return;
+
+	if (enable)
+		setbits32(cbcr_addr, BIT(CLK_CTL_IGNORE_PMU_CLK_DIS_SHFT));
+	else
+		clrbits32(cbcr_addr, BIT(CLK_CTL_IGNORE_PMU_CLK_DIS_SHFT));
+}
+
+void clock_configure_hw_ctl(void *cbcr_addr, bool enable)
+{
+	if (!cbcr_addr)
+		return;
+
+	/* Enable or disable hardware-controlled clock gating */
+	if (enable)
+		setbits32(cbcr_addr, BIT(CLK_CTL_HW_CTL_SHFT));
+	else
+		clrbits32(cbcr_addr, BIT(CLK_CTL_HW_CTL_SHFT));
+}
+
+void clock_configure_force_mem_core_on(void *cbcr_addr, bool enable)
+{
+	if (!cbcr_addr)
+		return;
+
+	/* Forces core-on signal to stay active during clk halt */
+	if (enable)
+		setbits32(cbcr_addr, BIT(CLK_CTL_FORCE_MEM_CORE_ON_SHFT));
+	else
+		clrbits32(cbcr_addr, BIT(CLK_CTL_FORCE_MEM_CORE_ON_SHFT));
 }
 
 /* Clock Block Reset Operations */
@@ -77,7 +145,7 @@ enum cb_err enable_and_poll_gdsc_status(void *gdscr_addr)
 	clrbits32(gdscr_addr, BIT(GDSC_ENABLE_BIT));
 
 	/* Ensure gdsc is enabled */
-	if (!wait_us(100, (read32(gdscr_addr) & CLK_CTL_OFF_BMSK)))
+	if (!wait_us(CLK_WAIT_US_TIMEOUT, (read32(gdscr_addr) & CLK_CTL_OFF_BMSK)))
 		return CB_ERR;
 
 	return CB_SUCCESS;
@@ -227,7 +295,7 @@ enum cb_err clock_configure_enable_gpll(struct alpha_pll_reg_val_config *cfg,
 		setbits32(cfg->reg_apcs_pll_br_en, BIT(br_enable));
 
 		/* Wait for Lock Detection */
-		if (!wait_us(100, read32(cfg->reg_mode) & PLL_LOCK_DET_BMSK)) {
+		if (!wait_us(CLK_WAIT_US_TIMEOUT, read32(cfg->reg_mode) & PLL_LOCK_DET_BMSK)) {
 			printk(BIOS_ERR, "PLL did not lock!\n");
 			return CB_ERR;
 		}
@@ -247,7 +315,7 @@ enum cb_err agera_pll_enable(struct alpha_pll_reg_val_config *cfg)
 	udelay(5);
 	setbits32(cfg->reg_mode, BIT(PLL_RESET_SHFT));
 
-	if (!wait_us(100, read32(cfg->reg_mode) & PLL_LOCK_DET_BMSK)) {
+	if (!wait_us(CLK_WAIT_US_TIMEOUT, read32(cfg->reg_mode) & PLL_LOCK_DET_BMSK)) {
 		printk(BIOS_ERR, "CPU PLL did not lock!\n");
 		return CB_ERR;
 	}
@@ -269,7 +337,7 @@ enum cb_err zonda_pll_enable(struct alpha_pll_reg_val_config *cfg)
 	setbits32(cfg->reg_mode, BIT(PLL_RESET_SHFT));
 	setbits32(cfg->reg_opmode, PLL_RUN_MODE);
 
-	if (!wait_us(100, read32(cfg->reg_mode) & PLL_LOCK_DET_BMSK)) {
+	if (!wait_us(CLK_WAIT_US_TIMEOUT, read32(cfg->reg_mode) & PLL_LOCK_DET_BMSK)) {
 		printk(BIOS_ERR, "CPU PLL did not lock!\n");
 		return CB_ERR;
 	}
@@ -292,7 +360,7 @@ enum cb_err zondaole_pll_enable(struct alpha_pll_reg_val_config *cfg)
 	setbits32(cfg->reg_mode, BIT(PLL_RESET_SHFT));
 	setbits32(cfg->reg_opmode, PLL_RUN_MODE);
 
-	if (!wait_us(100, read32(cfg->reg_mode) & PLL_LOCK_DET_BMSK)) {
+	if (!wait_us(CLK_WAIT_US_TIMEOUT, read32(cfg->reg_mode) & PLL_LOCK_DET_BMSK)) {
 		printk(BIOS_ERR, "CPU PLL did not lock!\n");
 		return CB_ERR;
 	}
@@ -312,7 +380,7 @@ enum cb_err lucidole_pll_enable(struct alpha_pll_reg_val_config *cfg)
 	setbits32(cfg->reg_opmode, PLL_RUN_MODE);
 	setbits32(cfg->reg_mode, BIT(PLL_RESET_SHFT));
 
-	if (!wait_us(100, read32(cfg->reg_mode) & PLL_LOCK_DET_BMSK)) {
+	if (!wait_us(CLK_WAIT_US_TIMEOUT, read32(cfg->reg_mode) & PLL_LOCK_DET_BMSK)) {
 		printk(BIOS_ERR, "CPU PLL did not lock!\n");
 		return CB_ERR;
 	}

@@ -4,6 +4,8 @@
 #define __SOC_QUALCOMM_COMMON_CLOCK_H__
 
 #define QCOM_CLOCK_DIV(div)	(2 * div - 1)
+#define CLK_POLL_COUNT		100
+#define CLK_WAIT_US_TIMEOUT	100
 
 /* Root Clock Generator */
 struct clock_rcg {
@@ -124,11 +126,19 @@ enum clk_ctl_cmd_rcgr {
 
 enum clk_ctl_cbcr {
 	CLK_CTL_EN_SHFT  = 0,
+	CLK_CTL_HW_CTL_SHFT = 1,
 	CLK_CTL_ARES_SHFT = 2,
+	CLK_CTL_FORCE_MEM_CORE_ON_SHFT = 14,
+	CLK_CTL_IGNORE_RPMH_CLK_DIS_SHFT = 20,
+	CLK_CTL_IGNORE_PMU_CLK_DIS_SHFT = 21,
 	CLK_CTL_OFF_SHFT = 31,
 	CLK_CTL_EN_BMSK = 0x1,
+	CLK_CTL_HW_CTL_BMSK = 0x1 << CLK_CTL_HW_CTL_SHFT,
 	CLK_CTL_ARES_BMSK = 0x1 << CLK_CTL_ARES_SHFT,
-	CLK_CTL_OFF_BMSK = 0x80000000,
+	CLK_CTL_FORCE_MEM_CORE_ON_BMSK = 0x1 << CLK_CTL_FORCE_MEM_CORE_ON_SHFT,
+	CLK_CTL_IGNORE_RPMH_CLK_DIS_BMSK = 0x1 << CLK_CTL_IGNORE_RPMH_CLK_DIS_SHFT,
+	CLK_CTL_IGNORE_PMU_CLK_DIS_BMSK = 0x1 << CLK_CTL_IGNORE_PMU_CLK_DIS_SHFT,
+	CLK_CTL_OFF_BMSK = 0x1 << CLK_CTL_OFF_SHFT,
 };
 
 enum clk_ctl_rcg_mnd {
@@ -154,6 +164,16 @@ enum cb_err clock_enable_vote(void *cbcr_addr, void *vote_addr,
 				uint32_t vote_bit);
 
 enum cb_err clock_enable(void *cbcr_addr);
+
+enum cb_err clock_disable(void *cbcr_addr);
+
+void clock_configure_ignore_rpmh_clk_dis(void *cbcr_addr, bool enable);
+
+void clock_configure_ignore_pmu_clk_dis(void *cbcr_addr, bool enable);
+
+void clock_configure_hw_ctl(void *cbcr_addr, bool enable);
+
+void clock_configure_force_mem_core_on(void *cbcr_addr, bool enable);
 
 enum cb_err enable_and_poll_gdsc_status(void *gdscr_addr);
 
