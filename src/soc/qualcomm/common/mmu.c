@@ -82,4 +82,8 @@ void qc_mmu_dram_config_post_dram_init(size_t ddr_size)
 
 	if (REGION_SIZE(framebuffer))
 		mmu_config_range((void *)_framebuffer, REGION_SIZE(framebuffer), UNCACHED_RAM);
+
+	/* Do not call mmu_config_range() after this point. */
+	if (_preram_ttb != _postram_ttb)
+		mmu_relocate_ttb();
 }
