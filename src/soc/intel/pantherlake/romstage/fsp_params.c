@@ -380,6 +380,8 @@ static void fill_fspm_vr_config_params(FSP_M_CONFIG *m_cfg,
 		if (config->ps3_threshold[i])
 			m_cfg->Ps3Threshold[i] = config->ps3_threshold[i];
 	}
+
+	m_cfg->VccsaShutdown = config->vccsa_shutdown;
 }
 
 #if CONFIG(PLATFORM_HAS_EARLY_LOW_BATTERY_INDICATOR)

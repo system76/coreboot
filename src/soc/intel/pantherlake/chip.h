@@ -773,6 +773,9 @@ struct soc_intel_pantherlake_config {
 		CD_CLK_461MHZ,
 		MAX_CD_CLOCK = CD_CLK_461MHZ
 	} vga_cd_clk_freq_sel;
+
+	/* Enable or Disable VCCSA Shutdown */
+	bool vccsa_shutdown;
 };
 
 typedef struct soc_intel_pantherlake_config config_t;
