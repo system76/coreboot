@@ -16,12 +16,22 @@
 struct x1p42100_lpass_qdsp6ss {
 	u8 _res0[0x10];
 	u32 rst_evb;
-	u8 _res1[0x60 - 0x14];
+	u8 _res1[0x18 - 0x14];
+	u32 dbg_cfg;
+	u32 ret_cfg;
+	u8 _res2[0x60 - 0x20];
 	u32 boot_params[6];
+	u8 _res3[0x400 - 0x78];
+	u32 boot_core_start;
+	u32 boot_cmd;
+	u32 boot_status;
 };
 
 check_member(x1p42100_lpass_qdsp6ss, rst_evb, 0x10);
+check_member(x1p42100_lpass_qdsp6ss, dbg_cfg, 0x18);
 check_member(x1p42100_lpass_qdsp6ss, boot_params, 0x60);
+check_member(x1p42100_lpass_qdsp6ss, boot_core_start, 0x400);
+check_member(x1p42100_lpass_qdsp6ss, boot_status, 0x408);
 
 /* LPASS EFUSE Q6SS Register Structure */
 struct x1p42100_lpass_efuse_q6ss {

@@ -223,6 +223,36 @@ struct x1p42100_lpass_aon_cc_pll_clock {
 	u32 pll_test_ctl_u2;
 };
 
+/* LPASS QDSP6SS PLL register structure */
+struct x1p42100_lpass_qdsp6ss_pll_clock {
+	u32 pll_mode;
+	u32 pll_opmode;
+	u32 pll_state;
+	u32 pll_status;
+	u32 pll_l_val;
+	u32 pll_alpha_val;
+	u32 pll_user_ctl;
+	u32 pll_user_ctl_u;
+	u32 pll_config_ctl;
+	u32 pll_config_ctl_u;
+	u32 pll_config_ctl_u1;
+	u32 pll_test_ctl;
+	u32 pll_test_ctl_u;
+	u32 pll_test_ctl_u1;
+	u32 pll_test_ctl_u2;
+};
+
+/* LPASS QDSP6SS Core CC register structure */
+struct x1p42100_lpass_qdsp6ss_core_cc {
+	u32 core_cmd_rcgr;
+	u32 core_cfg_rcgr;
+	u8 _res0[0x0020 - 0x0008];
+	u32 core_cbcr;
+};
+
+check_member(x1p42100_lpass_qdsp6ss_core_cc, core_cfg_rcgr, 0x0004);
+check_member(x1p42100_lpass_qdsp6ss_core_cc, core_cbcr, 0x0020);
+
 /* LPASS Audio CC register structure */
 struct x1p42100_lpass_audio_cc {
 	u8 _res0[0x28018];
@@ -277,28 +307,102 @@ struct x1p42100_lpass_core_gdsc {
 check_member(x1p42100_lpass_core_gdsc, lpass_core_gds_hm_ready, 0x000B8);
 check_member(x1p42100_lpass_core_gdsc, lpass_top_cc_lpass_core_sway_ahb_ls_cbcr, 0x09000);
 
-/* LPASS AON CC register structure */
-struct x1p42100_lpass_aon_cc {
-	u8 _res0[0x9060];
-	u32 va_mem0_cbcr;
-	u8 _res1[0x2c];
-	u32 lpass_audio_hm_gdscr;
-	u8 _res2[0x2f6c];
-	u32 lpass_hm_collapse_vote_for_q6;
-	u8 _res3[0x6008];
-	u32 va_2x_cbcr;
-	u8 _res4[0x4];
-	u32 va_cbcr;
-	u8 _res5[0xffc];
-	u32 tx_mclk_cbcr;
+/* LPASS Core CC register structure */
+struct x1p42100_lpass_core_cc {
+	u8 _res0[0x23000];
+	u32 lpass_lpass_core_cc_sysnoc_mport_core_cbcr;
 };
 
+check_member(x1p42100_lpass_core_cc, lpass_lpass_core_cc_sysnoc_mport_core_cbcr, 0x23000);
+
+/* LPASS AON CC register structure */
+struct x1p42100_lpass_aon_cc {
+	u8 _res0[0x2000];
+	u32 lpass_noc_island_isolation;
+	u8 _res1[0x801C - 0x2004];
+	u32 q6_xo_cbcr;
+	u8 _res2[0x901C - 0x8020];
+	u32 q6_ahbm_cbcr;
+	u8 _res3[0x9060 - 0x9020];
+	u32 va_mem0_cbcr;
+	u8 _res4[0x9090 - 0x9064];
+	u32 lpass_audio_hm_gdscr;
+	u8 _res5[0x0A014 - 0x9094];
+	u32 pclkdbg_cbcr;
+	u8 _res6[0x0A020 - 0x0A018];
+	u32 at_cbcr;
+	u8 _res7[0xC000 - 0x0A024];
+	u32 lpass_hm_collapse_vote_for_q6;
+	u8 _res8[0x1200C - 0xC004];
+	u32 va_2x_cbcr;
+	u8 _res9[0x12014 - 0x12010];
+	u32 va_cbcr;
+	u8 _res10[0x13014 - 0x12018];
+	u32 tx_mclk_cbcr;
+	u8 _res11[0x19008 - 0x13018];
+	u32 lpi_noc_hs_cbcr;
+	u8 _res12[0x1902C - 0x1900C];
+	u32 q6_axim_cbcr;
+};
+
+check_member(x1p42100_lpass_aon_cc, lpass_noc_island_isolation, 0x02000);
+check_member(x1p42100_lpass_aon_cc, q6_xo_cbcr, 0x801C);
+check_member(x1p42100_lpass_aon_cc, q6_ahbm_cbcr, 0x901C);
 check_member(x1p42100_lpass_aon_cc, va_mem0_cbcr, 0x9060);
 check_member(x1p42100_lpass_aon_cc, lpass_audio_hm_gdscr, 0x9090);
+check_member(x1p42100_lpass_aon_cc, pclkdbg_cbcr, 0x0A014);
+check_member(x1p42100_lpass_aon_cc, at_cbcr, 0x0A020);
 check_member(x1p42100_lpass_aon_cc, lpass_hm_collapse_vote_for_q6, 0xc000);
 check_member(x1p42100_lpass_aon_cc, va_2x_cbcr, 0x1200C);
 check_member(x1p42100_lpass_aon_cc, va_cbcr, 0x12014);
 check_member(x1p42100_lpass_aon_cc, tx_mclk_cbcr, 0x13014);
+check_member(x1p42100_lpass_aon_cc, lpi_noc_hs_cbcr, 0x19008);
+check_member(x1p42100_lpass_aon_cc, q6_axim_cbcr, 0x1902C);
+
+/* LPASS LPICX NOC register structure */
+struct x1p42100_lpass_lpicx_noc {
+	u8 _res0[0x2040];
+	u32 sidebandmanager_chipcx_sbm_faultinen0_low;
+	u8 _res1[0x6090 - 0x2044];
+	u32 sidebandmanager_rcg_sbm_flagoutstatus0_low;
+};
+
+check_member(x1p42100_lpass_lpicx_noc, sidebandmanager_chipcx_sbm_faultinen0_low, 0x2040);
+check_member(x1p42100_lpass_lpicx_noc, sidebandmanager_rcg_sbm_flagoutstatus0_low, 0x6090);
+
+/* LPASS MCC_LPASS_REG register block */
+struct x1p42100_lpass_mcc_lpass_reg {
+	u8 _res0[0x18];
+	u32 rsc_wait_event_ovrd_mask;
+	u8 _res1[0x5014 - 0x001c];
+	u32 atb_low_power_handshake;
+	u32 apb_low_power_handshake;
+	u8 _res2[0x5020 - 0x501c];
+	u32 nts_low_power_handshake;
+	u32 dap_low_power_handshake;
+};
+
+check_member(x1p42100_lpass_mcc_lpass_reg, rsc_wait_event_ovrd_mask, 0x0018);
+check_member(x1p42100_lpass_mcc_lpass_reg, atb_low_power_handshake, 0x5014);
+check_member(x1p42100_lpass_mcc_lpass_reg, nts_low_power_handshake, 0x5020);
+
+/* LPASS SSC_SCC register block */
+struct x1p42100_lpass_ssc_scc {
+	u8 _res0[0x30];
+	u32 ssc_scc_smem_cbcr;
+};
+
+check_member(x1p42100_lpass_ssc_scc, ssc_scc_smem_cbcr, 0x0030);
+
+/* LPASS LPI TCM register block */
+struct x1p42100_lpass_lpi_tcm {
+	u32 tcm_256kb_block_cbcr[10];
+	u8 _res0[0x0300 - 0x0028];
+	u32 axis_hs_cbcr;
+};
+
+check_member(x1p42100_lpass_lpi_tcm, tcm_256kb_block_cbcr, 0x0000);
+check_member(x1p42100_lpass_lpi_tcm, axis_hs_cbcr, 0x0300);
 
 struct x1p42100_disp_cc {
 	uint8_t _res0[0x00C];
@@ -335,7 +439,7 @@ struct x1p42100_disp_cc {
 	uint32_t xo_cbcr;
 };
 
-/* Offset checks (relative to DISP_CC_BASE) */
+/* Offset checks */
 check_member(x1p42100_disp_cc, mdss_mdp_cbcr,		0x00000C);
 check_member(x1p42100_disp_cc, mdss_vsync_cbcr,		0x000024);
 check_member(x1p42100_disp_cc, mdss_dptx3_pixel0_cbcr,	0x000094);
@@ -521,82 +625,111 @@ struct x1p42100_gcc {
 	u32 gcc_aggre_usb3_prim_axi_cbcr;
 	u8  _res36[0x42004 - 0x39094];
 	struct qupv3_clock qup_wrap0_s[8];
-	u8 _res37[0x47000 - 0x429c4];
-	u32 lpass_cfg_noc_sway_cbcr;
-	u8 _res38[0x4b000 - 0x47004];
+	u8 _res37[0x45150 - 0x429c4];
+	/* LPASS boot clock */
+	u32 gcc_noc_lpass_dcd_xo_cbcr;
+	u32 gcc_ddrss_lpass_shub_cbcr;
+	u8 _res38[0x47000 - 0x45158];
+	u32 gcc_lpass_cfg_noc_sway_cbcr;
+	u32 gcc_qmip_lpass_qtb_ahb_cbcr;
+	u8 _res39[0x47010 - 0x47008];
+	u32 gcc_lpass_aon_noc_ddrss_shub_cbcr;
+	u32 gcc_lpass_aggre_noc_mpu_client_ddrss_shub_cbcr;
+	u32 gcc_lpass_hw_af_noc_ddrss_shub_cbcr;
+	u8 _res40[0x47024 - 0x4701c];
+	u32 gcc_lpass_aggre_noc_ddrss_shub_cbcr;
+	u8 _res41[0x4702c - 0x47028];
+	struct clock_rcg lpass_ddrss_shub_rcg;
+	u8 _res42[0x47160 - 0x47034];
+	u32 gcc_cfg_noc_lpass_cbcr;
+	u8 _res43[0x4b000 - 0x47164];
 	u32 qspi_bcr;
 	u32 qspi_cnoc_ahb_cbcr;
 	u32 qspi_core_cbcr;
 	struct clock_rcg qspi_core;
-	u8 _res39[0x50000 - 0x4b014];
+	u8 _res44[0x50000 - 0x4b014];
 	u32 gcc_usb3_phy_prim_bcr;
 	u32 gcc_usb3phy_phy_prim_bcr;
-	u8 _res40[0x50010 - 0x50008];
+	u8 _res45[0x50010 - 0x50008];
 	u32 gcc_usb4_0_dp0_phy_prim_bcr;
-	u8 _res41[0x52000 - 0x50014];
+	u8 _res46[0x52000 - 0x50014];
 	u32 apcs_clk_br_en;
-	u8 _res42[0x52008 - 0x52004];
+	u8 _res47[0x52008 - 0x52004];
 	u32 apcs_clk_br_en1;
-	u8 _res43[0x52010 - 0x5200c];
+	u8 _res48[0x52010 - 0x5200c];
 	u32 apcs_clk_br_en2;
-	u8 _res44[0x52018 - 0x52014];
+	u8 _res49[0x52018 - 0x52014];
 	u32 apcs_clk_br_en3;
-	u8 _res45[0x52020 - 0x5201c];
+	u8 _res50[0x52020 - 0x5201c];
 	u32 apcs_clk_br_en4;
-	u8 _res46[0x52028 - 0x52024];
+	u8 _res51[0x52028 - 0x52024];
 	u32 apcs_clk_br_en5;
-	u8 _res47[0x52030 - 0x5202c];
+	u8 _res52[0x52030 - 0x5202c];
 	u32 apcs_pll_br_en;
-	u8 _res48[0x54000 - 0x52034];
+	u8 _res53[0x54000 - 0x52034];
 	u32 usb3_uniphy_mp1_bcr;
 	u32 usb3uniphy_phy_mp1_bcr;
 	u32 gcc_usb3_mp_ss1_phy_bcr;
 	u32 gcc_usb3_mp_ss1_phy_gdscr;
-	u8 _res49[0x8e000 - 0x54010];
+	u8 _res54[0x55224 - 0x54010];
+	u32 gcc_lpass_dsp_gdsc_sleep_ena_vote;
+	u8 _res55[0x8e000 - 0x55228];
 	u32 pcie_6_phy_gdscr;
-	u8 _res50[0xa1000 - 0x8e004];
+	u8 _res56[0x99000 - 0x8e004];
+	u32 gcc_lpass_qtb_gdscr;
+	u8 _res57[0x99014 - 0x99004];
+	u32 gcc_lpass_qtb_ahb_cbcr;
+	u32 gcc_lpass_audio_qtb_cbcr;
+	u8 _res58[0x99024 - 0x9901c];
+	u32 gcc_lpass_qosgen_extref_cbcr;
+	u32 gcc_lpass_qdss_tsctr_cbcr;
+	u32 gcc_lpass_qtb_at_cbcr;
+	u32 gcc_lpass_xo_cbcr;
+	u32 gcc_lpass_pwrctl_cbcr;
+	u32 gcc_tcu_lpass_audio_qtb_cbcr;
+	u8 _res59[0xa1000 - 0x9903c];
 	u32 gcc_usb30_sec_bcr;
 	u32 gcc_usb30_sec_gdscr;
-	u8 _res51[0xa1018 - 0xa1008];
+	u8 _res60[0xa1018 - 0xa1008];
 	u32 gcc_usb30_sec_master_cbcr;
-	u8 _res52[0xa1024 - 0xa101c];
+	u8 _res61[0xa1024 - 0xa101c];
 	u32 gcc_usb30_sec_sleep_cbcr;
 	u32 gcc_usb30_sec_mock_utmi_cbcr;
 	struct clock_rcg usb30_sec_master_rcg;
-	u8 _res53[0xa1060 - 0xa1034];
+	u8 _res62[0xa1060 - 0xa1034];
 	u32 gcc_usb3_sec_phy_aux_cbcr;
 	u32 gcc_usb3_sec_phy_com_aux_cbcr;
 	u32 gcc_usb3_sec_phy_pipe_cbcr;
 	u32 gcc_usb3_sec_phy_pipe_muxr;
-	u8 _res54[0xa108c - 0xa1070];
+	u8 _res63[0xa108c - 0xa1070];
 	u32 gcc_cfg_noc_usb3_sec_axi_cbcr;
 	u32 gcc_aggre_usb3_sec_axi_cbcr;
-	u8 _res55[0xa2000 - 0xa1094];
+	u8 _res64[0xa2000 - 0xa1094];
 	u32 gcc_usb30_tert_bcr;
 	u32 gcc_usb30_tert_gdscr;
-	u8 _res56[0xa2018 - 0xa2008];
+	u8 _res65[0xa2018 - 0xa2008];
 	u32 gcc_usb30_tert_master_cbcr;
-	u8 _res57[0xa2024 - 0xa201c];
+	u8 _res66[0xa2024 - 0xa201c];
 	u32 gcc_usb30_tert_sleep_cbcr;
 	u32 gcc_usb30_tert_mock_utmi_cbcr;
-	u8 _res58[0xa2034 - 0xa202c];
+	u8 _res67[0xa2034 - 0xa202c];
 	u32 gcc_usb30_tert_master_m;
 	u32 gcc_usb30_tert_master_n;
 	u32 gcc_usb30_tert_master_d;
-	u8 _res59[0xa2060 - 0xa2040];
+	u8 _res68[0xa2060 - 0xa2040];
 	u32 gcc_usb3_tert_phy_aux_cbcr;
 	u32 gcc_usb3_tert_phy_com_aux_cbcr;
 	u32 gcc_usb3_tert_phy_pipe_cbcr;
 	u32 gcc_usb3_tert_phy_pipe_muxr;
-	u8 _res60[0xa208c - 0xa2070];
+	u8 _res69[0xa208c - 0xa2070];
 	u32 gcc_cfg_noc_usb3_tert_axi_cbcr;
 	u32 gcc_aggre_usb3_tert_axi_cbcr;
-	u8 _res61[0xa3000 - 0xa2094];
+	u8 _res70[0xa3000 - 0xa2094];
 	u32 gcc_usb3_phy_tert_bcr;
 	u32 gcc_usb3phy_phy_tert_bcr;
-	u8 _res62[0xa3010 - 0xa3008];
+	u8 _res71[0xa3010 - 0xa3008];
 	u32 gcc_usb4_2_dp0_phy_tert_bcr;
-	u8 _res63[0xac01c - 0xa3014];
+	u8 _res72[0xac01c - 0xa3014];
 	u32 pcie_6a_phy_bcr;
 };
 
@@ -645,7 +778,16 @@ check_member(x1p42100_gcc, gcc_aggre_usb_noc_axi_cbcr, 0x2d034);
 check_member(x1p42100_gcc, gcc_aggre_noc_usb_south_axi_cbcr, 0x2d174);
 check_member(x1p42100_gcc, gcc_aggre_noc_usb_north_axi_cbcr, 0x2d17c);
 check_member(x1p42100_gcc, qup_wrap0_s, 0x42004);
-check_member(x1p42100_gcc, lpass_cfg_noc_sway_cbcr, 0x47000);
+check_member(x1p42100_gcc, gcc_noc_lpass_dcd_xo_cbcr, 0x45150);
+check_member(x1p42100_gcc, gcc_ddrss_lpass_shub_cbcr, 0x45154);
+check_member(x1p42100_gcc, gcc_lpass_cfg_noc_sway_cbcr, 0x47000);
+check_member(x1p42100_gcc, gcc_qmip_lpass_qtb_ahb_cbcr, 0x47004);
+check_member(x1p42100_gcc, gcc_lpass_aon_noc_ddrss_shub_cbcr, 0x47010);
+check_member(x1p42100_gcc, gcc_lpass_aggre_noc_mpu_client_ddrss_shub_cbcr, 0x47014);
+check_member(x1p42100_gcc, gcc_lpass_hw_af_noc_ddrss_shub_cbcr, 0x47018);
+check_member(x1p42100_gcc, gcc_lpass_aggre_noc_ddrss_shub_cbcr, 0x47024);
+check_member(x1p42100_gcc, lpass_ddrss_shub_rcg, 0x4702c);
+check_member(x1p42100_gcc, gcc_cfg_noc_lpass_cbcr, 0x47160);
 check_member(x1p42100_gcc, qspi_bcr, 0x4b000);
 check_member(x1p42100_gcc, apcs_clk_br_en, 0x52000);
 check_member(x1p42100_gcc, apcs_clk_br_en1, 0x52008);
@@ -655,6 +797,16 @@ check_member(x1p42100_gcc, apcs_clk_br_en4, 0x52020);
 check_member(x1p42100_gcc, apcs_clk_br_en5, 0x52028);
 check_member(x1p42100_gcc, apcs_pll_br_en, 0x52030);
 check_member(x1p42100_gcc, pcie_6_phy_gdscr, 0x8e000);
+check_member(x1p42100_gcc, gcc_lpass_qtb_gdscr, 0x99000);
+check_member(x1p42100_gcc, gcc_lpass_qtb_ahb_cbcr, 0x99014);
+check_member(x1p42100_gcc, gcc_lpass_audio_qtb_cbcr, 0x99018);
+check_member(x1p42100_gcc, gcc_lpass_qosgen_extref_cbcr, 0x99024);
+check_member(x1p42100_gcc, gcc_lpass_qdss_tsctr_cbcr, 0x99028);
+check_member(x1p42100_gcc, gcc_lpass_qtb_at_cbcr, 0x9902c);
+check_member(x1p42100_gcc, gcc_lpass_xo_cbcr, 0x99030);
+check_member(x1p42100_gcc, gcc_lpass_pwrctl_cbcr, 0x99034);
+check_member(x1p42100_gcc, gcc_tcu_lpass_audio_qtb_cbcr, 0x99038);
+check_member(x1p42100_gcc, gcc_lpass_dsp_gdsc_sleep_ena_vote, 0x55224);
 check_member(x1p42100_gcc, pcie_6a_phy_bcr, 0xac01c);
 
 /* Generic QUPV3 wrapper structure - all wrappers have identical layout */
@@ -868,6 +1020,25 @@ enum clk_lpass {
 	LPASS_CLK_COUNT
 };
 
+enum lpass_boot_clk {
+	DDRSS_LPASS_SHUB_CBCR,
+	LPASS_AGGRE_NOC_DDRSS_SHUB_CBCR,
+	LPASS_AGGRE_NOC_MPU_CLIENT_DDRSS_SHUB_CBCR,
+	LPASS_AON_NOC_DDRSS_SHUB_CBCR,
+	LPASS_AUDIO_QTB_CBCR,
+	LPASS_HW_AF_NOC_DDRSS_SHUB_CBCR,
+	LPASS_PWRCTL_CBCR,
+	LPASS_QDSS_TSCTR_CBCR,
+	LPASS_QOSGEN_EXTREF_CBCR,
+	LPASS_QTB_AHB_CBCR,
+	LPASS_QTB_AT_CBCR,
+	LPASS_XO_CBCR,
+	NOC_LPASS_DCD_XO_CBCR,
+	QMIP_LPASS_QTB_AHB_CBCR,
+	TCU_LPASS_AUDIO_QTB_CBCR,
+	LPASS_BOOT_CLK_COUNT
+};
+
 enum subsystem_reset {
 	AOP_RESET_SHFT,
 	CORE_SW_RESET,
@@ -919,6 +1090,13 @@ static struct x1p42100_lpass_audio_cc *const lpass_audio_cc = (void *)LPASS_AUDI
 static struct x1p42100_lpass_aon_cc *const lpass_aon_cc = (void *)LPASS_AON_CC_BASE;
 static struct x1p42100_lpass_aon_cc_pll_clock *const lpass_aon_cc_pll = (void *)LPASS_AON_CC_PLL_CM_BASE;
 static struct x1p42100_lpass_core_gdsc *const lpass_core_gdsc = (void *)LPASS_CORE_GDSC_REG_BASE;
+static struct x1p42100_lpass_core_cc *const lpass_core_cc = (void *)LPASS_LPASS_CORE_CC_REG_BASE;
+static struct x1p42100_lpass_lpicx_noc *const lpass_lpicx_noc = (void *)LPASS_LPICX_NOC_BASE;
+static struct x1p42100_lpass_qdsp6ss_pll_clock *const lpass_qdsp6ss_pll = (void *)LPASS_QDSP6SS_PLL_BASE;
+static struct x1p42100_lpass_qdsp6ss_core_cc *const lpass_qdsp6ss_core_cc = (void *)LPASS_QDSP6SS_CORE_CC_BASE;
+static struct x1p42100_lpass_mcc_lpass_reg *const lpass_mcc_lpass_reg = (void *)LPASS_MCC_LPASS_REG_BASE;
+static struct x1p42100_lpass_ssc_scc *const lpass_ssc_scc = (void *)LPASS_SSC_SCC_BASE;
+static struct x1p42100_lpass_lpi_tcm *const lpass_lpi_tcm = (void *)LPASS_LPI_TCM_REG_BASE;
 
 /* Does nothing */
 #define clock_reset_aop() do {} while (0)
