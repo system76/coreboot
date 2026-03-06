@@ -13,5 +13,4 @@ ramstage-y += variants/$(VARIANT_DIR)/gpio.c
 ramstage-y += variants/$(VARIANT_DIR)/ramstage.c
 ramstage-$(CONFIG_DRIVERS_I2C_TAS5825M) += variants/$(VARIANT_DIR)/tas5825m.c
 
-subdirs-y += variants/$(VARIANT_DIR)/memory
-subdirs-$(CONFIG_HAVE_SPD_IN_CBFS) += spd
+SPD_SOURCES = samsung-K3KL8L80DM-MGCU samsung-K3KL9L90EM-MGCU

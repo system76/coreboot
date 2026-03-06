@@ -63,13 +63,26 @@ static const struct mb_cfg board_cfg = {
 	},
 };
 
-static const struct mem_spd spd_info = {
-	.topo = MEM_TOPO_MEMORY_DOWN,
-	.cbfs_index = 0,
-};
+
+
+static size_t get_spd_index(void)
+{
+	if (gpio_get(GPP_E11)) {
+		// If BOARD_ID1 is high, the system has 16 GB of RAM using 4x32Gb modules
+		return 0;
+	} else {
+		// If BOARD_ID1 is low, the system has 32 GB of RAM using 4x64Gb modules
+		return 1;
+	}
+}
 
 void mainboard_memory_init_params(FSPM_UPD *mupd)
 {
+
+	const struct mem_spd spd_info = {
+		.topo = MEM_TOPO_MEMORY_DOWN,
+		.cbfs_index = get_spd_index(),
+	};
 	const bool half_populated = false;
 
 	mupd->FspmConfig.GpioOverride = 0;
