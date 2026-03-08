@@ -74,20 +74,19 @@ static struct {
 
 static void report_cpu_info(void)
 {
-	struct cpuid_result cpuidr;
-	u32 i, index, cpu_id, cpu_feature_flag;
-	char cpu_string[50], *cpu_name = cpu_string; /* 48 bytes are reported */
-	int vt, txt, aes;
 	const char *mode[] = {"NOT ", ""};
 	const char *cpu_type = "Unknown";
 
-	index = 0x80000000;
-	cpuidr = cpuid(index);
+	char cpu_string[50];
+	char *cpu_name = cpu_string; /* 48 bytes are reported */
+
+	const u32 index = 0x80000000;
+	struct cpuid_result cpuidr = cpuid(index);
 	if (cpuidr.eax < 0x80000004) {
 		strcpy(cpu_string, "Platform info not available");
 	} else {
 		u32 *p = (u32 *)cpu_string;
-		for (i = 2; i <= 4 ; i++) {
+		for (unsigned int i = 2; i <= 4; i++) {
 			cpuidr = cpuid(index + i);
 			*p++ = cpuidr.eax;
 			*p++ = cpuidr.ebx;
@@ -99,10 +98,10 @@ static void report_cpu_info(void)
 	while (cpu_name[0] == ' ')
 		cpu_name++;
 
-	cpu_id = cpu_get_cpuid();
+	const u32 cpu_id = cpu_get_cpuid();
 
 	/* Look for string to match the name */
-	for (i = 0; i < ARRAY_SIZE(cpu_table); i++) {
+	for (unsigned int i = 0; i < ARRAY_SIZE(cpu_table); i++) {
 		if (cpu_table[i].cpuid == cpu_id) {
 			cpu_type = cpu_table[i].name;
 			break;
@@ -113,24 +112,23 @@ static void report_cpu_info(void)
 	printk(BIOS_DEBUG, "CPU: ID %x, %s, ucode: %08x\n",
 	       cpu_id, cpu_type, get_current_microcode_rev());
 
-	cpu_feature_flag = cpu_get_feature_flags_ecx();
-	aes = (cpu_feature_flag & CPUID_AES) ? 1 : 0;
-	txt = (cpu_feature_flag & CPUID_SMX) ? 1 : 0;
-	vt = (cpu_feature_flag & CPUID_VMX) ? 1 : 0;
-	printk(BIOS_DEBUG, "CPU: AES %ssupported, TXT %ssupported, "
-	       "VT %ssupported\n", mode[aes], mode[txt], mode[vt]);
+	const u32 cpu_feature_flag = cpu_get_feature_flags_ecx();
+	const bool aes = (cpu_feature_flag & CPUID_AES);
+	const bool txt = (cpu_feature_flag & CPUID_SMX);
+	const bool vt  = (cpu_feature_flag & CPUID_VMX);
+	printk(BIOS_DEBUG, "CPU: AES %ssupported, TXT %ssupported, VT %ssupported\n",
+	       mode[aes], mode[txt], mode[vt]);
 }
 
 static void report_mch_info(void)
 {
-	int i;
-	u16 mch_device = pci_read_config16(HOST_BRIDGE, PCI_DEVICE_ID);
-	u8 mch_revision = pci_read_config8(HOST_BRIDGE, PCI_REVISION_ID);
+	const u16 mch_device = pci_read_config16(HOST_BRIDGE, PCI_DEVICE_ID);
+	const u8 mch_revision = pci_read_config8(HOST_BRIDGE, PCI_REVISION_ID);
 	const char *mch_type = "Unknown";
 
 	/* Look for string to match the revision for Broadwell U/Y */
 	if (mch_device == MCH_BROADWELL_ID_U_Y) {
-		for (i = 0; i < ARRAY_SIZE(mch_rev_table); i++) {
+		for (unsigned int i = 0; i < ARRAY_SIZE(mch_rev_table); i++) {
 			if (mch_rev_table[i].revid == mch_revision) {
 				mch_type = mch_rev_table[i].name;
 				break;
@@ -144,11 +142,10 @@ static void report_mch_info(void)
 
 static void report_pch_info(void)
 {
-	int i;
-	u16 lpcid = pch_type();
+	const u16 lpcid = pch_type();
 	const char *pch_type = "Unknown";
 
-	for (i = 0; i < ARRAY_SIZE(pch_table); i++) {
+	for (unsigned int i = 0; i < ARRAY_SIZE(pch_table); i++) {
 		if (pch_table[i].lpcid == lpcid) {
 			pch_type = pch_table[i].name;
 			break;
@@ -160,11 +157,10 @@ static void report_pch_info(void)
 
 static void report_igd_info(void)
 {
-	int i;
-	u16 igdid = pci_read_config16(SA_DEV_IGD, PCI_DEVICE_ID);
+	const u16 igdid = pci_read_config16(SA_DEV_IGD, PCI_DEVICE_ID);
 	const char *igd_type = "Unknown";
 
-	for (i = 0; i < ARRAY_SIZE(igd_table); i++) {
+	for (unsigned int i = 0; i < ARRAY_SIZE(igd_table); i++) {
 		if (igd_table[i].igdid == igdid) {
 			igd_type = igd_table[i].name;
 			break;

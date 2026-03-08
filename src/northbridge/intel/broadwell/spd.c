@@ -52,10 +52,9 @@ static void print_spd_info(uint8_t spd[])
 	spd_name[SPD_DDR3_PART_LEN] = 0;
 	printk(BIOS_INFO, "SPD: module part is %s\n", spd_name);
 
-	printk(BIOS_INFO, "SPD: banks %d, ranks %d, rows %d, columns %d, "
-	       "density %d Mb\n", banks, ranks, rows, cols, capmb);
-	printk(BIOS_INFO, "SPD: device width %d bits, bus width %d bits\n",
-	       devw, busw);
+	printk(BIOS_INFO, "SPD: banks %d, ranks %d, rows %d, columns %d, density %d Mb\n",
+	       banks, ranks, rows, cols, capmb);
+	printk(BIOS_INFO, "SPD: device width %d bits, bus width %d bits\n", devw, busw);
 
 	if (capmb > 0 && busw > 0 && devw > 0 && ranks > 0) {
 		/* SIZE = DENSITY / 8 * BUS_WIDTH / SDRAM_WIDTH * RANKS */

@@ -21,8 +21,7 @@ static pei_wrapper_entry_t load_reference_code(void)
 		return prog_entry(&prog);
 	}
 
-	struct prog prog =
-		PROG_INIT(PROG_REFCODE, CONFIG_CBFS_PREFIX "/refcode");
+	struct prog prog = PROG_INIT(PROG_REFCODE, CONFIG_CBFS_PREFIX "/refcode");
 	struct rmod_stage_load refcode = {
 		.cbmem_id = CBMEM_ID_REFCODE,
 		.prog = &prog,
@@ -41,9 +40,8 @@ static pei_wrapper_entry_t load_reference_code(void)
 
 void broadwell_run_reference_code(void)
 {
-	int ret, dummy;
+	int dummy;
 	struct pei_data pei_data;
-	pei_wrapper_entry_t entry;
 
 	memset(&pei_data, 0, sizeof(pei_data));
 	mainboard_fill_pei_data(&pei_data);
@@ -52,14 +50,14 @@ void broadwell_run_reference_code(void)
 	pei_data.boot_mode = acpi_is_wakeup_s3() ? ACPI_S3 : 0;
 	pei_data.saved_data = (void *)&dummy;
 
-	entry = load_reference_code();
+	pei_wrapper_entry_t entry = load_reference_code();
 	if (entry == NULL) {
 		printk(BIOS_ERR, "Reference code not found\n");
 		return;
 	}
 
 	/* Call into reference code. */
-	ret = entry(&pei_data);
+	int ret = entry(&pei_data);
 	if (ret != 0) {
 		printk(BIOS_ERR, "Reference code returned %d\n", ret);
 		return;

@@ -1,6 +1,5 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#include <acpi/acpi.h>
 #include <device/mmio.h>
 #include <device/pci_ops.h>
 #include <bootmode.h>
@@ -11,20 +10,20 @@
 #include <device/device.h>
 #include <device/pci.h>
 #include <device/pci_ids.h>
-#include <string.h>
-#include <reg_script.h>
 #include <drivers/intel/gma/i915.h>
 #include <drivers/intel/gma/i915_reg.h>
 #include <drivers/intel/gma/libgfxinit.h>
 #include <drivers/intel/gma/opregion.h>
-#include <soc/pm.h>
-#include <soc/systemagent.h>
+#include <reg_script.h>
 #include <northbridge/intel/broadwell/chip.h>
 #include <security/vboot/vbnv.h>
 #include <soc/igd.h>
+#include <soc/pm.h>
+#include <soc/systemagent.h>
+#include <string.h>
 #include <types.h>
 
-#define GT_RETRY		1000
+#define GTT_RETRY		1000
 enum {
 	GT_CDCLK_DEFAULT = 0,
 	GT_CDCLK_337,
@@ -43,7 +42,7 @@ struct reg_script haswell_early_init_script[] = {
 	/* Enable Force Wake */
 	REG_RES_WRITE32(PCI_BASE_ADDRESS_0, 0xa180, 0x00000020),
 	REG_RES_WRITE32(PCI_BASE_ADDRESS_0, 0xa188, 0x00010001),
-	REG_RES_POLL32(PCI_BASE_ADDRESS_0, FORCEWAKE_ACK_HSW, 1, 1, GT_RETRY),
+	REG_RES_POLL32(PCI_BASE_ADDRESS_0, FORCEWAKE_ACK_HSW, 1, 1, GTT_RETRY),
 
 	/* Enable Counters */
 	REG_RES_OR32(PCI_BASE_ADDRESS_0, 0xa248, 0x00000016),
@@ -104,10 +103,10 @@ struct reg_script haswell_early_init_script[] = {
 	REG_RES_WRITE32(PCI_BASE_ADDRESS_0, 0xa00c, 0x08000000),
 
 	/* Set RC6 VIDs */
-	REG_RES_POLL32(PCI_BASE_ADDRESS_0, 0x138124, (1 << 31), 0, GT_RETRY),
+	REG_RES_POLL32(PCI_BASE_ADDRESS_0, 0x138124, (1 << 31), 0, GTT_RETRY),
 	REG_RES_WRITE32(PCI_BASE_ADDRESS_0, 0x138128, 0),
 	REG_RES_WRITE32(PCI_BASE_ADDRESS_0, 0x138124, 0x80000004),
-	REG_RES_POLL32(PCI_BASE_ADDRESS_0, 0x138124, (1 << 31), 0, GT_RETRY),
+	REG_RES_POLL32(PCI_BASE_ADDRESS_0, 0x138124, (1 << 31), 0, GTT_RETRY),
 
 	/* Enable PM Interrupts */
 	REG_RES_WRITE32(PCI_BASE_ADDRESS_0, 0x4402c, 0x03000076),
@@ -127,13 +126,12 @@ static const struct reg_script haswell_late_init_script[] = {
 
 	/* Disable Force Wake */
 	REG_RES_WRITE32(PCI_BASE_ADDRESS_0, 0xa188, 0x00010000),
-	REG_RES_POLL32(PCI_BASE_ADDRESS_0, FORCEWAKE_ACK_HSW, 1, 0, GT_RETRY),
+	REG_RES_POLL32(PCI_BASE_ADDRESS_0, FORCEWAKE_ACK_HSW, 1, 0, GTT_RETRY),
 	REG_RES_WRITE32(PCI_BASE_ADDRESS_0, 0xa188, 0x00000001),
 
 	/* Enable power well for DP and Audio */
 	REG_RES_OR32(PCI_BASE_ADDRESS_0, 0x45400, (1 << 31)),
-	REG_RES_POLL32(PCI_BASE_ADDRESS_0, 0x45400,
-		       (1 << 30), (1 << 30), GT_RETRY),
+	REG_RES_POLL32(PCI_BASE_ADDRESS_0, 0x45400, (1 << 30), (1 << 30), GTT_RETRY),
 
 	REG_SCRIPT_END
 };
@@ -141,7 +139,7 @@ static const struct reg_script haswell_late_init_script[] = {
 static const struct reg_script broadwell_early_init_script[] = {
 	/* Enable Force Wake */
 	REG_RES_WRITE32(PCI_BASE_ADDRESS_0, 0xa188, 0x00010001),
-	REG_RES_POLL32(PCI_BASE_ADDRESS_0, FORCEWAKE_ACK_HSW, 1, 1, GT_RETRY),
+	REG_RES_POLL32(PCI_BASE_ADDRESS_0, FORCEWAKE_ACK_HSW, 1, 1, GTT_RETRY),
 
 	/* Enable push bus metric control and shift */
 	REG_RES_WRITE32(PCI_BASE_ADDRESS_0, 0xa248, 0x00000004),
@@ -206,10 +204,10 @@ static const struct reg_script broadwell_early_init_script[] = {
 	REG_RES_WRITE32(PCI_BASE_ADDRESS_0, 0xa090, 0x90040000),
 
 	/* Set RC6 VIDs */
-	REG_RES_POLL32(PCI_BASE_ADDRESS_0, 0x138124, (1 << 31), 0, GT_RETRY),
+	REG_RES_POLL32(PCI_BASE_ADDRESS_0, 0x138124, (1 << 31), 0, GTT_RETRY),
 	REG_RES_WRITE32(PCI_BASE_ADDRESS_0, 0x138128, 0),
 	REG_RES_WRITE32(PCI_BASE_ADDRESS_0, 0x138124, 0x80000004),
-	REG_RES_POLL32(PCI_BASE_ADDRESS_0, 0x138124, (1 << 31), 0, GT_RETRY),
+	REG_RES_POLL32(PCI_BASE_ADDRESS_0, 0x138124, (1 << 31), 0, GTT_RETRY),
 
 	/* Enable PM Interrupts */
 	REG_RES_WRITE32(PCI_BASE_ADDRESS_0, 0x4402c, 0x03000076),
@@ -228,12 +226,11 @@ static const struct reg_script broadwell_late_init_script[] = {
 
 	/* Disable Force Wake */
 	REG_RES_WRITE32(PCI_BASE_ADDRESS_0, 0xa188, 0x00010000),
-	REG_RES_POLL32(PCI_BASE_ADDRESS_0, FORCEWAKE_ACK_HSW, 1, 0, GT_RETRY),
+	REG_RES_POLL32(PCI_BASE_ADDRESS_0, FORCEWAKE_ACK_HSW, 1, 0, GTT_RETRY),
 
 	/* Enable power well for DP and Audio */
 	REG_RES_OR32(PCI_BASE_ADDRESS_0, 0x45400, (1 << 31)),
-	REG_RES_POLL32(PCI_BASE_ADDRESS_0, 0x45400,
-		       (1 << 30), (1 << 30), GT_RETRY),
+	REG_RES_POLL32(PCI_BASE_ADDRESS_0, 0x45400, (1 << 30), (1 << 30), GTT_RETRY),
 
 	REG_SCRIPT_END
 };
@@ -269,7 +266,8 @@ static inline void gtt_rmw(u32 reg, u32 andmask, u32 ormask)
 }
 
 int gtt_poll(u32 reg, u32 mask, u32 value)
-{	unsigned int try = GT_RETRY;
+{
+	unsigned int try = GTT_RETRY;
 	u32 data;
 
 	while (try--) {
@@ -322,13 +320,16 @@ static void gma_setup_panel(struct device *dev)
 		gtt_write(PCH_PP_DIVISOR, reg32);
 	}
 
-	/* So far all devices seem to use the PCH PWM function.
-	   The CPU PWM registers are all zero after reset.      */
+	/*
+	 * So far all devices seem to use the PCH PWM function.
+	 * The CPU PWM registers are all zero after reset.
+	 */
 	if (panel_cfg->backlight_pwm_hz) {
-		/* For Lynx Point-LP:
-		   Reference clock is 24MHz. We can choose either a 16
-		   or a 128 step increment. Use 16 if we would have less
-		   than 100 steps otherwise. */
+		/*
+		 * For Lynx Point-LP:
+		 * Reference clock is 24MHz. We can choose either a 16 or a 128 step
+		 * increment. Use 16 if we would have less than 100 steps otherwise.
+		 */
 		const unsigned int refclock = 24 * MHz;
 		const unsigned int hz_limit = refclock / 128 / 100;
 		unsigned int pwm_increment, pwm_period;
@@ -350,7 +351,7 @@ static void gma_setup_panel(struct device *dev)
 			refclock / MHz, pwm_increment, pwm_period,
 			DIV_ROUND_CLOSEST(refclock, pwm_increment * pwm_period));
 
-		/* Start with a 50% duty cycle. */
+		/* Start with a 50% duty cycle */
 		gtt_write(BLC_PWM_PCH_CTL2, pwm_period << 16 | pwm_period / 2);
 
 		gtt_write(BLC_PWM_PCH_CTL1,
@@ -382,8 +383,7 @@ static int igd_get_cdclk_haswell(u32 *const cdsel, bool *const inform_pc,
 	 */
 	if (gpu_is_ulx && cdclk <= GT_CDCLK_337)
 		cdclk = GT_CDCLK_337;
-	else if (gpu_is_ulx || cpu_is_ult ||
-			cdclk == GT_CDCLK_337 || cdclk == GT_CDCLK_450)
+	else if (gpu_is_ulx || cpu_is_ult || cdclk == GT_CDCLK_337 || cdclk == GT_CDCLK_450)
 		cdclk = GT_CDCLK_450;
 	else
 		cdclk = GT_CDCLK_540;
@@ -429,8 +429,7 @@ static int igd_get_cdclk_broadwell(u32 *const cdsel, bool *const inform_pc,
 	 */
 	if (cdclk == GT_CDCLK_337)
 		cdclk = GT_CDCLK_337;
-	else if (cdclk == GT_CDCLK_450 ||
-			(gpu_is_ulx && cdclk == GT_CDCLK_DEFAULT))
+	else if (cdclk == GT_CDCLK_450 || (gpu_is_ulx && cdclk == GT_CDCLK_DEFAULT))
 		cdclk = GT_CDCLK_450;
 	else if (cdclk == GT_CDCLK_540 || gpu_is_ulx ||
 			(cpu_is_ult && cdclk == GT_CDCLK_DEFAULT))
@@ -501,7 +500,7 @@ static void igd_cdclk_init(struct device *dev, const bool is_broadwell)
 	gtt_rmw(0x64810, 0xfffff800, dpdiv);
 }
 
-static void igd_init(struct device *dev)
+static void gma_init(struct device *dev)
 {
 	bool is_broadwell = !!(cpu_family_model() == BROADWELL_FAMILY_ULT);
 	u32 rp1_gfx_freq;
@@ -582,11 +581,11 @@ static void gma_generate_ssdt(const struct device *dev)
 	drivers_intel_gma_displays_ssdt_generate(&chip->gfx);
 }
 
-static struct device_operations igd_ops = {
+static struct device_operations gma_ops = {
 	.read_resources		= pci_dev_read_resources,
 	.set_resources		= pci_dev_set_resources,
 	.enable_resources	= pci_dev_enable_resources,
-	.init			= igd_init,
+	.init			= gma_init,
 	.acpi_fill_ssdt		= gma_generate_ssdt,
 	.ops_pci		= &pci_dev_ops_pci,
 };
@@ -606,7 +605,7 @@ static const unsigned short pci_device_ids[] = {
 };
 
 static const struct pci_driver igd_driver __pci_driver = {
-	.ops	 = &igd_ops,
-	.vendor	 = PCI_VID_INTEL,
+	.ops     = &gma_ops,
+	.vendor  = PCI_VID_INTEL,
 	.devices = pci_device_ids,
 };

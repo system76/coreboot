@@ -30,29 +30,28 @@ static void broadwell_setup_bars(void)
 
 void systemagent_early_init(void)
 {
-	const bool vtd_capable =
-		!(pci_read_config32(HOST_BRIDGE, CAPID0_A) & VTD_DISABLE);
+	const bool vtd_capable = !(pci_read_config32(HOST_BRIDGE, CAPID0_A) & VTD_DISABLE);
 
 	broadwell_setup_bars();
 
 	/* Device enable: IGD and Mini-HD */
 	pci_write_config32(HOST_BRIDGE, DEVEN, DEVEN_D0EN | DEVEN_D2EN | DEVEN_D3EN);
 
-	if (vtd_capable) {
-		/* setup BARs: zeroize top 32 bits; set enable bit */
-		mchbar_write32(GFXVTBAR + 4, GFXVT_BASE_ADDRESS >> 32);
-		mchbar_write32(GFXVTBAR + 0, GFXVT_BASE_ADDRESS | 1);
-		mchbar_write32(VTVC0BAR + 4, VTVC0_BASE_ADDRESS >> 32);
-		mchbar_write32(VTVC0BAR + 0, VTVC0_BASE_ADDRESS | 1);
+	if (!vtd_capable)
+		return;
 
-		/* set PRSCAPDIS, lock GFXVTBAR policy cfg registers */
-		u32 reg32;
-		reg32 = read32p(GFXVT_BASE_ADDRESS + ARCHDIS);
-		write32p(GFXVT_BASE_ADDRESS + ARCHDIS,
-				reg32 | DMAR_LCKDN | PRSCAPDIS);
-		/* lock VTVC0BAR policy cfg registers */
-		reg32 = read32p(VTVC0_BASE_ADDRESS + ARCHDIS);
-		write32p(VTVC0_BASE_ADDRESS + ARCHDIS,
-				reg32 | DMAR_LCKDN);
-	}
+	/* Setup BARs: zeroize top 32 bits; set enable bit */
+	mchbar_write32(GFXVTBAR + 4, GFXVT_BASE_ADDRESS >> 32);
+	mchbar_write32(GFXVTBAR + 0, GFXVT_BASE_ADDRESS | 1);
+	mchbar_write32(VTVC0BAR + 4, VTVC0_BASE_ADDRESS >> 32);
+	mchbar_write32(VTVC0BAR + 0, VTVC0_BASE_ADDRESS | 1);
+
+	/* Set PRSCAPDIS, lock GFXVTBAR policy config registers */
+	u32 reg32;
+	reg32 = read32p(GFXVT_BASE_ADDRESS + ARCHDIS);
+	write32p(GFXVT_BASE_ADDRESS + ARCHDIS, reg32 | DMAR_LCKDN | PRSCAPDIS);
+
+	/* lock VTVC0BAR policy cfg registers */
+	reg32 = read32p(VTVC0_BASE_ADDRESS + ARCHDIS);
+	write32p(VTVC0_BASE_ADDRESS + ARCHDIS, reg32 | DMAR_LCKDN);
 }

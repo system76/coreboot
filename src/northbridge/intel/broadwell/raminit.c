@@ -9,7 +9,6 @@
 #include <memory_info.h>
 #include <mrc_cache.h>
 #include <string.h>
-#include <soc/iomap.h>
 #include <soc/pei_data.h>
 #include <soc/pei_wrapper.h>
 #include <soc/pm.h>
@@ -84,25 +83,19 @@ static void report_memory_config(void)
  */
 static void sdram_initialize(struct pei_data *pei_data)
 {
-	size_t mrc_size;
-	pei_wrapper_entry_t entry;
-	int ret;
-
 	broadwell_fill_pei_data(pei_data);
 
 	/* Assume boot device is memory mapped. */
 	assert(CONFIG(BOOT_DEVICE_MEMORY_MAPPED));
 
-	pei_data->saved_data =
-		mrc_cache_current_mmap_leak(MRC_TRAINING_DATA, 0,
-					    &mrc_size);
+	size_t mrc_size;
+	pei_data->saved_data = mrc_cache_current_mmap_leak(MRC_TRAINING_DATA, 0, &mrc_size);
 	if (pei_data->saved_data) {
 		/* MRC cache found */
 		pei_data->saved_data_size = mrc_size;
 	} else if (pei_data->boot_mode == ACPI_S3) {
 		/* Waking from S3 and no cache. */
-		printk(BIOS_DEBUG,
-		       "No MRC cache found in S3 resume path.\n");
+		printk(BIOS_DEBUG, "No MRC cache found in S3 resume path.\n");
 		post_code(POSTCODE_RESUME_FAILURE);
 		system_reset();
 	} else {
@@ -110,7 +103,7 @@ static void sdram_initialize(struct pei_data *pei_data)
 	}
 
 	/*
-	 * Do not use saved pei data.  Can be set by mainboard romstage
+	 * Do not use saved pei data. Can be set by mainboard romstage
 	 * to force a full train of memory on every boot.
 	 */
 	if (pei_data->disable_saved_data) {
@@ -120,13 +113,13 @@ static void sdram_initialize(struct pei_data *pei_data)
 	}
 
 	/* We don't care about leaking the mapping */
-	entry = cbfs_ro_map("mrc.bin", NULL);
+	pei_wrapper_entry_t entry = cbfs_ro_map("mrc.bin", NULL);
 	if (entry == NULL)
 		die("mrc.bin not found!");
 
 	printk(BIOS_DEBUG, "Starting Memory Reference Code\n");
 
-	ret = entry(pei_data);
+	int ret = entry(pei_data);
 	if (ret < 0)
 		die("pei_data version mismatch\n");
 
@@ -141,10 +134,8 @@ static void sdram_initialize(struct pei_data *pei_data)
 
 static void setup_sdram_meminfo(struct pei_data *pei_data)
 {
-	struct memory_info *mem_info;
-
 	printk(BIOS_DEBUG, "create cbmem for dimm information\n");
-	mem_info = cbmem_add(CBMEM_ID_MEMINFO, sizeof(struct memory_info));
+	struct memory_info *mem_info = cbmem_add(CBMEM_ID_MEMINFO, sizeof(*mem_info));
 
 	if (!mem_info) {
 		printk(BIOS_ERR, "Error! Failed to add mem_info to cbmem\n");
@@ -156,8 +147,7 @@ static void setup_sdram_meminfo(struct pei_data *pei_data)
 	mem_info->dimm_cnt = pei_data->meminfo.dimm_cnt;
 	for (int i = 0; i < MIN(DIMM_INFO_TOTAL, PEI_DIMM_INFO_TOTAL); i++) {
 		struct dimm_info *dimm = &mem_info->dimm[i];
-		const struct pei_dimm_info *pei_dimm =
-			&pei_data->meminfo.dimm[i];
+		const struct pei_dimm_info *pei_dimm = &pei_data->meminfo.dimm[i];
 		dimm->dimm_size = pei_dimm->dimm_size;
 		dimm->ddr_type = pei_dimm->ddr_type;
 		dimm->ddr_frequency = pei_dimm->ddr_frequency;
@@ -167,8 +157,7 @@ static void setup_sdram_meminfo(struct pei_data *pei_data)
 		dimm->bank_locator = pei_dimm->bank_locator;
 		memcpy(&dimm->serial, &pei_dimm->serial,
 			MIN(sizeof(dimm->serial), sizeof(pei_dimm->serial)));
-		memcpy(&dimm->module_part_number,
-			&pei_dimm->module_part_number,
+		memcpy(&dimm->module_part_number, &pei_dimm->module_part_number,
 			MIN(sizeof(dimm->module_part_number),
 			sizeof(pei_dimm->module_part_number)));
 		dimm->module_part_number[DIMM_INFO_PART_NUMBER_SIZE - 1] = '\0';

@@ -4,7 +4,7 @@
 #define _SOC_INTEL_BROADWELL_CHIP_H_
 
 #include <drivers/intel/gma/gma.h>
-#include <stdint.h>
+#include <types.h>
 
 struct northbridge_intel_broadwell_config {
 	/*

@@ -1,6 +1,5 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#include <acpi/acpi.h>
 #include <arch/romstage.h>
 #include <console/console.h>
 #include <cpu/intel/haswell/haswell.h>
@@ -47,8 +46,7 @@ void mainboard_romstage_entry(void)
 	intel_me_status();
 
 	/* Save ME HSIO version */
-	intel_me_hsio_version(&power_state->hsio_version,
-			      &power_state->hsio_checksum);
+	intel_me_hsio_version(&power_state->hsio_version, &power_state->hsio_checksum);
 
 	perform_raminit(power_state);
 

@@ -2,10 +2,10 @@
 
 #include <console/streams.h>
 #include <device/device.h>
+#include <northbridge/intel/broadwell/chip.h>
 #include <soc/iomap.h>
 #include <soc/pei_data.h>
 #include <soc/pei_wrapper.h>
-#include <northbridge/intel/broadwell/chip.h>
 #include <static.h>
 
 static void ABI_X86 send_to_console(unsigned char b)

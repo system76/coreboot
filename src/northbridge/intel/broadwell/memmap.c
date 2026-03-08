@@ -10,7 +10,7 @@
 #include <device/pci_ops.h>
 #include <soc/pci_devs.h>
 #include <soc/systemagent.h>
-#include <stdint.h>
+#include <types.h>
 
 static uintptr_t dpr_region_start(void)
 {
@@ -52,6 +52,5 @@ void fill_postcar_frame(struct postcar_frame *pcf)
 	 * with different TSEG size configurations.
 	 */
 	const uintptr_t top_of_ram = ALIGN_DOWN(cbmem_top(), 8 * MiB);
-	postcar_frame_add_mtrr(pcf, top_of_ram - 8*MiB, 16*MiB,
-			MTRR_TYPE_WRBACK);
+	postcar_frame_add_mtrr(pcf, top_of_ram - 8 * MiB, 16 * MiB, MTRR_TYPE_WRBACK);
 }
