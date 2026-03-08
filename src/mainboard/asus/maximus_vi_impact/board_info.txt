@@ -1,0 +1,7 @@
+Category: desktop
+Board URL: https://rog.asus.com/motherboards/rog-maximus/rog-maximus-vi-impact-model/
+ROM protocol: SPI
+Flashrom support: y
+ROM package: DIP-8
+ROM socketed: y
+Release year: 2013
