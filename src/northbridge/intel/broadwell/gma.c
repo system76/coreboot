@@ -359,16 +359,16 @@ static void gma_setup_panel(struct device *dev)
 	}
 }
 
-static int igd_get_cdclk_haswell(u32 *const cdsel, int *const inform_pc,
+static int igd_get_cdclk_haswell(u32 *const cdsel, bool *const inform_pc,
 				 struct device *const dev)
 {
 	const struct northbridge_intel_broadwell_config *const conf = config_of(dev);
 	int cdclk = conf->cdclk;
 
 	/* Check for ULX GT1 or GT2 */
-	const int devid = pci_read_config16(dev, PCI_DEVICE_ID);
-	const int cpu_is_ult = cpu_family_model() == HASWELL_FAMILY_ULT;
-	const int gpu_is_ulx = devid == IGD_HASWELL_ULX_GT1 ||
+	const u16 devid = pci_read_config16(dev, PCI_DEVICE_ID);
+	const bool cpu_is_ult = cpu_family_model() == HASWELL_FAMILY_ULT;
+	const bool gpu_is_ulx = devid == IGD_HASWELL_ULX_GT1 ||
 				devid == IGD_HASWELL_ULX_GT2;
 
 	/* Check for fixed fused clock */
@@ -393,7 +393,7 @@ static int igd_get_cdclk_haswell(u32 *const cdsel, int *const inform_pc,
 	return cdclk;
 }
 
-static int igd_get_cdclk_broadwell(u32 *const cdsel, int *const inform_pc,
+static int igd_get_cdclk_broadwell(u32 *const cdsel, bool *const inform_pc,
 				   struct device *const dev)
 {
 	static const u32 cdsel_by_cdclk[] = { 0, 2, 0, 1, 3 };
@@ -401,9 +401,9 @@ static int igd_get_cdclk_broadwell(u32 *const cdsel, int *const inform_pc,
 	int cdclk = conf->cdclk;
 
 	/* Check for ULX */
-	const int devid = pci_read_config16(dev, PCI_DEVICE_ID);
-	const int cpu_is_ult = cpu_family_model() == BROADWELL_FAMILY_ULT;
-	const int gpu_is_ulx = devid == IGD_BROADWELL_Y_GT2;
+	const u16 devid = pci_read_config16(dev, PCI_DEVICE_ID);
+	const bool cpu_is_ult = cpu_family_model() == BROADWELL_FAMILY_ULT;
+	const bool gpu_is_ulx = devid == IGD_BROADWELL_Y_GT2;
 
 	/* Inform power controller of upcoming frequency change */
 	gtt_write(0x138128, 0);
@@ -442,10 +442,11 @@ static int igd_get_cdclk_broadwell(u32 *const cdsel, int *const inform_pc,
 	return cdclk;
 }
 
-static void igd_cdclk_init(struct device *dev, const int is_broadwell)
+static void igd_cdclk_init(struct device *dev, const bool is_broadwell)
 {
 	u32 dpdiv, cdsel, cdval;
-	int cdclk, inform_pc;
+	int cdclk;
+	bool inform_pc;
 
 	if (is_broadwell)
 		cdclk = igd_get_cdclk_broadwell(&cdsel, &inform_pc, dev);
@@ -502,7 +503,7 @@ static void igd_cdclk_init(struct device *dev, const int is_broadwell)
 
 static void igd_init(struct device *dev)
 {
-	int is_broadwell = !!(cpu_family_model() == BROADWELL_FAMILY_ULT);
+	bool is_broadwell = !!(cpu_family_model() == BROADWELL_FAMILY_ULT);
 	u32 rp1_gfx_freq;
 
 	intel_gma_init_igd_opregion();
