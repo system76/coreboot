@@ -54,4 +54,11 @@ config SOC_QUALCOMM_QCLIB_SKIP_MMU_TOGGLE
 	  flushes and TLB invalidations associated with mmu_disable() and
 	  mmu_enable() calls.
 
+config SOC_QUALCOMM_DEBUG_TSENS
+	bool
+	default n
+	help
+	  When enabled, a call to monitor TSENS will dump the sensor data on
+	  the debug console.
+
 endif
