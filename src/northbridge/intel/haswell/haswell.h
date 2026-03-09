@@ -16,6 +16,11 @@
 /* Device 0:0.0 PCI configuration space (Host Bridge) */
 #define HOST_BRIDGE	PCI_DEV(0, 0, 0)
 
+/* Device 0:1.x PCI configuration space (PCI Express Graphics) */
+#define PEG_DEV(func)		PCI_DEV(0, 1, func)
+
+#define MAX_PEG_FUNC		3
+
 /* Device 0:2.0 PCI configuration space (Graphics Device) */
 
 #define MSAC		0x62	/* Multi Size Aperture Control */

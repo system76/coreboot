@@ -8,7 +8,7 @@
 
 #include "haswell.h"
 
-static bool peg_hidden[3];
+static bool peg_hidden[MAX_PEG_FUNC];
 
 static void haswell_setup_bars(void)
 {
@@ -111,7 +111,7 @@ void haswell_unhide_peg(void)
 {
 	u32 deven = pci_read_config32(HOST_BRIDGE, DEVEN);
 
-	for (u8 fn = 0; fn <= 2; fn++) {
+	for (u8 fn = 0; fn < MAX_PEG_FUNC; fn++) {
 		if (peg_hidden[fn]) {
 			deven |= DEVEN_D1F0EN >> fn;
 			peg_hidden[fn] = false;
