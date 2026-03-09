@@ -9,7 +9,7 @@
 #include <cpu/x86/msr.h>
 #include "haswell.h"
 
-static void report_cpu_info(void)
+static void haswell_report_cpu_info(void)
 {
 	struct cpuid_result cpuidr;
 	u32 i, index, cpu_id, cpu_feature_flag;
@@ -96,6 +96,6 @@ static void report_pch_info(void)
 
 void report_platform_info(void)
 {
-	report_cpu_info();
+	haswell_report_cpu_info();
 	report_pch_info();
 }

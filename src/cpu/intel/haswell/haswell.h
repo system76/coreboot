@@ -172,6 +172,9 @@ int pcode_ready(void);
 u32 pcode_mailbox_read(u32 command);
 int pcode_mailbox_write(u32 command, u32 data);
 
+/* report_cpu_info.c */
+void report_cpu_info(void);
+
 /* CPU identification */
 static inline u32 cpu_family_model(void)
 {

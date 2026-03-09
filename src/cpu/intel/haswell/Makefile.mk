@@ -6,6 +6,7 @@ bootblock-y += ../car/bootblock.c
 bootblock-y += ../../x86/early_reset.S
 
 romstage-y += pcode_mailbox.c
+romstage-y += report_cpu_info.c
 romstage-y += romstage.c
 romstage-y += ../car/romstage.c
 
