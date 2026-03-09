@@ -57,6 +57,8 @@ ramstage-y += ../common/rpmh.c ../common/rpmh_bcm.c ../common/rpmh_regulator.c .
 ramstage-y += rpmh_rsc_init.c
 ramstage-y += display/disp.c
 ramstage-y += lpass.c
+ramstage-y += ../common/tsens.c
+ramstage-y += tsens_map.c
 
 ################################################################################
 
