@@ -72,10 +72,6 @@ static void haswell_setup_misc(void)
 	reg32 |= (1 << 9) | (1 << 10);
 	mchbar_write32(SAPMCTL, reg32);
 
-	/* Enable SA Clock Gating */
-	reg32 = mchbar_read32(SAPMCTL);
-	mchbar_write32(SAPMCTL, reg32 | 1);
-
 	reg32 = mchbar_read32(INTRDIRCTL);
 	reg32 |= (1 << 4) | (1 << 5);
 	mchbar_write32(INTRDIRCTL, reg32);
