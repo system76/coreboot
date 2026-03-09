@@ -8,7 +8,6 @@
 #include <string.h>
 #include <types.h>
 
-/* FIXME: Needs an update */
 static struct {
 	u32 cpuid;
 	const char *name;
@@ -18,10 +17,12 @@ static struct {
 	{ CPUID_HASWELL_C0,       "Haswell C0" },
 	{ CPUID_HASWELL_ULT_B0,   "Haswell ULT B0" },
 	{ CPUID_HASWELL_ULT_C0,   "Haswell ULT C0 or D0" },
-	{ CPUID_CRYSTALWELL_C0,   "Haswell Perf Halo" },
-	{ CPUID_BROADWELL_ULT_C0, "Broadwell C0" },
-	{ CPUID_BROADWELL_ULT_D0, "Broadwell D0" },
-	{ CPUID_BROADWELL_ULT_E0, "Broadwell E0 or F0" },
+	{ CPUID_CRYSTALWELL_B0,   "Crystalwell B0" },
+	{ CPUID_CRYSTALWELL_C0,   "Crystalwell C0" },
+	{ CPUID_BROADWELL_G0,     "Broadwell G0" },
+	{ CPUID_BROADWELL_ULT_C0, "Broadwell ULT C0" },
+	{ CPUID_BROADWELL_ULT_D0, "Broadwell ULT D0" },
+	{ CPUID_BROADWELL_ULT_E0, "Broadwell ULT E0 or F0" },
 };
 
 void report_cpu_info(void)
