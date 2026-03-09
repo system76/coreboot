@@ -332,7 +332,7 @@ static void systemagent_read_resources(struct device *dev)
 static void systemagent_init(struct device *dev)
 {
 	/* Enable Power Aware Interrupt Routing. */
-	mchbar_clrsetbits8(MCH_PAIR, 0x7, 0x4);	/* Clear 2:0, set Fixed Priority */
+	mchbar_clrsetbits8(INTRDIRCTL, 0x7, 0x4);	/* Clear 2:0, set Fixed Priority */
 
 	/*
 	 * Set bits 0 + 1 of BIOS_RESET_CPL to indicate to the CPU

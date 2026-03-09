@@ -95,7 +95,7 @@
 #define GFXVTBAR		0x5400
 #define EDRAMBAR		0x5408
 #define VTVC0BAR		0x5410
-#define MCH_PAIR		0x5418
+#define INTRDIRCTL		0x5418
 #define GDXCBAR			0x5420
 
 #define MCH_DDR_POWER_LIMIT_LO	0x58e0
