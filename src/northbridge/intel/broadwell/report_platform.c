@@ -74,7 +74,7 @@ static struct {
 
 static void report_cpu_info(void)
 {
-	const char *mode[] = {"NOT ", ""};
+	static const char *const mode[] = {"NOT ", ""};
 	const char *cpu_type = "Unknown";
 
 	char cpu_string[50];
