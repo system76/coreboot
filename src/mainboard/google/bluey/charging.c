@@ -7,6 +7,7 @@
 #include <reset.h>
 #include <soc/pmic.h>
 #include <soc/qcom_spmi.h>
+#include <soc/qcom_tsens.h>
 #include <timer.h>
 #include <types.h>
 
@@ -130,6 +131,7 @@ void launch_charger_applet(void)
 
 	static const long charging_enable_timeout_ms = CHARGING_RAIL_STABILIZATION_DELAY_MS;
 	struct stopwatch sw;
+	bool has_crossed_threshold = false;
 
 	printk(BIOS_INFO, "Inside %s. Initiating charging\n", __func__);
 
@@ -187,7 +189,13 @@ void launch_charger_applet(void)
 			do_board_reset();
 		}
 
-		/* TODO: add Tsense support and issue a shutdown in the event of temperature trip */
+		/* Issue a shutdown in the event of temperature trip */
+		qcom_tsens_monitor_all(&has_crossed_threshold);
+		if (has_crossed_threshold) {
+			printk(BIOS_INFO, "Issuing power-off due to temperature trip.\n");
+			google_chromeec_offmode_heartbeat();
+			google_chromeec_ap_poweroff();
+		}
 	} while (true);
 }
 
