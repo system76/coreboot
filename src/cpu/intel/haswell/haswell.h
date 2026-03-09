@@ -192,4 +192,27 @@ static inline bool haswell_is_ult(void)
 	return CONFIG(INTEL_LYNXPOINT_LP);
 }
 
+static inline bool cpu_is_haswell(void)
+{
+	switch (cpu_family_model()) {
+	case HASWELL_FAMILY_TRAD:
+	case HASWELL_FAMILY_ULT:
+	case CRYSTALWELL_FAMILY:
+		return true;
+	default:
+		return false;
+	}
+}
+
+static inline bool cpu_is_broadwell(void)
+{
+	switch (cpu_family_model()) {
+	case BROADWELL_FAMILY_TRAD:
+	case BROADWELL_FAMILY_ULT:
+		return true;
+	default:
+		return false;
+	}
+}
+
 #endif

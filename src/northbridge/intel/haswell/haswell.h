@@ -28,10 +28,7 @@
 #define ARCHDIS		0xff0	/* DMA Remap Engine Policy Control */
 #define  DMAR_LCKDN	(1 << 31)
 #define  SPCAPCTRL	(1 << 25)
-#define  L3HIT2PEND_DIS	(1 << 20)
 #define  PRSCAPDIS	(1 << 2)
-#define  GLBIOTLBINV	(1 << 1)
-#define  GLBCTXTINV	(1 << 0)
 
 void mb_late_romstage_setup(void); /* optional */
 

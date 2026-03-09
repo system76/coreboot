@@ -1,10 +1,11 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#include <stdint.h>
 #include <console/console.h>
+#include <cpu/intel/haswell/haswell.h>
 #include <device/mmio.h>
 #include <device/pci_def.h>
 #include <device/pci_ops.h>
+#include <types.h>
 
 #include "haswell.h"
 
@@ -80,10 +81,9 @@ static void haswell_setup_misc(void)
 	mchbar_write32(INTRDIRCTL, reg32);
 }
 
-static void haswell_setup_iommu(void)
+static void northbridge_setup_iommu(void)
 {
 	const u32 capid0_a = pci_read_config32(HOST_BRIDGE, CAPID0_A);
-
 	if (capid0_a & VTD_DISABLE)
 		return;
 
@@ -93,17 +93,37 @@ static void haswell_setup_iommu(void)
 	mchbar_write32(VTVC0BAR + 4, VTVC0_BASE_ADDRESS >> 32);
 	mchbar_write32(VTVC0BAR + 0, VTVC0_BASE_ADDRESS | 1);
 
-	/* Set L3HIT2PEND_DIS, lock GFXVTBAR policy config registers */
-	u32 reg32;
-	reg32 = read32p(GFXVT_BASE_ADDRESS + ARCHDIS);
-	write32p(GFXVT_BASE_ADDRESS + ARCHDIS, reg32 | DMAR_LCKDN | L3HIT2PEND_DIS);
+	if (cpu_is_haswell()) {
+		/*
+		 * Intel Document 492662 (Haswell System Agent BIOS Spec), Rev 1.6.0
+		 * Section 11.3 - DMA Remapping Engine Configuration
+		 */
+		const u32 gfxvt_archdis = 0x02100000 | DMAR_LCKDN;
+		write32p(GFXVT_BASE_ADDRESS + ARCHDIS, gfxvt_archdis);
 
-	/* Clear SPCAPCTRL */
-	reg32 = read32p(VTVC0_BASE_ADDRESS + ARCHDIS) & ~SPCAPCTRL;
+		clrsetbits32p(VTVC0_BASE_ADDRESS + 0xf04, 0xf << 15, 1 << 15);
 
-	/* Set GLBIOTLBINV, GLBCTXTINV; lock VTVC0BAR policy config registers */
-	write32p(VTVC0_BASE_ADDRESS + ARCHDIS,
-			reg32 | DMAR_LCKDN | GLBIOTLBINV | GLBCTXTINV);
+		u32 vtvc0_archdis = 0x000a5003 | DMAR_LCKDN;
+		if (pci_read_config16(PCI_DEV(0, 2, 0), PCI_DEVICE_ID) == 0xffff) {
+			vtvc0_archdis |= SPCAPCTRL;
+		}
+		write32p(VTVC0_BASE_ADDRESS + ARCHDIS, vtvc0_archdis);
+	}
+	if (cpu_is_broadwell()) {
+		/*
+		 * Intel Document 535094 (Broadwell BIOS Spec), Rev 2.2.0
+		 * Section 17.3 - DMA Remapping Engine Configuration
+		 */
+
+		/* TODO: For steppings <= D0 (pre-production), also clear bit 0 */
+		setbits32p(GFXVT_BASE_ADDRESS + ARCHDIS, DMAR_LCKDN | PRSCAPDIS);
+
+		write32p(GFXVT_BASE_ADDRESS + 0x100, 0x50a);
+
+		clrsetbits32p(VTVC0_BASE_ADDRESS + 0xf04, 0xf << 15, 1 << 15);
+
+		setbits32p(VTVC0_BASE_ADDRESS + ARCHDIS, DMAR_LCKDN);
+	}
 }
 
 void haswell_early_initialization(void)
@@ -112,7 +132,7 @@ void haswell_early_initialization(void)
 	haswell_setup_bars();
 
 	/* Setup IOMMU BARs */
-	haswell_setup_iommu();
+	northbridge_setup_iommu();
 
 	if (!CONFIG(INTEL_LYNXPOINT_LP))
 		northbridge_setup_peg();
