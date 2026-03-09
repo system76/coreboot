@@ -37,7 +37,9 @@ void mb_late_romstage_setup(void); /* optional */
 
 void haswell_early_initialization(void);
 void haswell_late_initialization(void);
-void haswell_unhide_peg(void);
+
+void northbridge_setup_peg(void);
+void northbridge_unhide_peg(void);
 
 void dmi_early_init(void);
 void peg_dmi_recipe(const bool is_peg, const pci_devfn_t dev);

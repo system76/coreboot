@@ -56,7 +56,8 @@ void mainboard_romstage_entry(void)
 		txt_dump_regions();
 	}
 
-	haswell_unhide_peg();
+	if (!CONFIG(INTEL_LYNXPOINT_LP))
+		northbridge_unhide_peg();
 
 	romstage_handoff_init(s3resume);
 

@@ -20,6 +20,10 @@ romstage-y += raminit_shared.c
 
 postcar-y += memmap.c
 
+ifneq ($(CONFIG_INTEL_LYNXPOINT_LP),y)
+romstage-y += early_peg.c
+endif
+
 ifeq ($(CONFIG_USE_NATIVE_RAMINIT),y)
 romstage-y += early_dmi.c early_pcie.c vcu_mailbox.c
 subdirs-y  += native_raminit
