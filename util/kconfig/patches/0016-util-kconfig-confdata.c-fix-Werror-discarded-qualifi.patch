@@ -1,0 +1,41 @@
+From 2a1a1d1b305ab276279234f70410bb6486a2049f Mon Sep 17 00:00:00 2001
+From: Mike Banon <mikebdp2@gmail.com>
+Date: Tue, 10 Mar 2026 00:14:58 +0100
+Subject: [PATCH] util/kconfig/confdata.c: fix -Werror=discarded-qualifiers
+
+In conf_read_simple(), strchr() is called on 'sym_name', which is
+declared const char. The function returns a char that discards the
+const qualifier when assigned to 'p', possibly triggering a compiler
+warning when building the kconfig tools (e.g. with "make menuconfig").
+
+The data comes from the modifiable 'line' buffer, so the const qualifier
+is misplaced. Removing it makes sym_name non-const, matching reality,
+while all subsequent uses are read-only (passed to sym_find() and
+conf_touch_dep() which expect const char*). This change is safe and
+eliminates the warning without any downsides.
+
+Change-Id: I1ed6d033a97bd08b46bd6c9aebf29848560d573a
+Signed-off-by: Mike Banon <mikebdp2@gmail.com>
+---
+ util/kconfig/confdata.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+Index: kconfig/confdata.c
+===================================================================
+diff --git a/util/kconfig/confdata.c b/util/kconfig/confdata.c
+index 0105917..ae6ae2b 100644
+--- a/util/kconfig/confdata.c
++++ b/util/kconfig/confdata.c
+@@ -390,10 +390,10 @@
+ 	FILE *in = NULL;
+ 	char   *line = NULL;
+ 	size_t  line_asize = 0;
+-	char *p, *val;
++	char *p, *val, *sym_name;
+ 	struct symbol *sym;
+ 	int i, def_flags;
+-	const char *warn_unknown, *sym_name;
++	const char *warn_unknown;
+ 
+ 	warn_unknown = getenv("KCONFIG_WARN_UNKNOWN_SYMBOLS");
+ 	if (name) {

@@ -390,10 +390,10 @@ int conf_read_simple(const char *name, int def)
 	FILE *in = NULL;
 	char   *line = NULL;
 	size_t  line_asize = 0;
-	char *p, *val;
+	char *p, *val, *sym_name;
 	struct symbol *sym;
 	int i, def_flags;
-	const char *warn_unknown, *sym_name;
+	const char *warn_unknown;
 
 	warn_unknown = getenv("KCONFIG_WARN_UNKNOWN_SYMBOLS");
 	if (name) {

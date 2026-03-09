@@ -8,3 +8,4 @@
 0013-util-kconfig-detect-ncurses-on-FreeBSD.patch
 0014-util-kconfig-Move-Kconfig-deps-back-into-build-confi.patch
 0015-fix-incorrect-spdx-strings.patch
+0016-util-kconfig-confdata.c-fix-Werror-discarded-qualifi.patch
