@@ -188,8 +188,7 @@ static void trigger_critical_battery_shutdown(void)
  */
 static void handle_low_power_charging_boot(void)
 {
-	/* TODO: enable fast charging */
-	enable_slow_battery_charging();
+	enable_fast_battery_charging();
 
 	/*
 	 * Disable the lightbar for Low-Battery or Off-Mode charging sequences.

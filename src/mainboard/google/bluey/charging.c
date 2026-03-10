@@ -5,6 +5,8 @@
 #include <delay.h>
 #include <ec/google/chromeec/ec.h>
 #include <reset.h>
+#include <soc/adsp.h>
+#include <soc/lpass.h>
 #include <soc/pmic.h>
 #include <soc/qcom_spmi.h>
 #include <soc/qcom_tsens.h>
@@ -275,4 +277,20 @@ void disable_slow_battery_charging(void)
 	spmi_write8(SMB2_CHGR_CHRG_EN_CMD, CHRG_DISABLE);
 	spmi_write8(SMB1_CHGR_MAX_FCC_CFG, FCC_DISABLE);
 	spmi_write8(SMB2_CHGR_MAX_FCC_CFG, FCC_DISABLE);
+}
+
+/*
+ * Enable fast battery charging with ADSP support.
+ *
+ * This function loads ADSP firmware and configures fast charging.
+ */
+void enable_fast_battery_charging(void)
+{
+	/* Load ADSP firmware first */
+	adsp_fw_load();
+
+	/* Bring up LPASS/QDSP6 (ADSP) for ADSP-dependent charging support */
+	if (lpass_bring_up() != CB_SUCCESS) {
+		printk(BIOS_ERR, "LPASS bring-up failed; skipping fast charging.\n");
+	}
 }

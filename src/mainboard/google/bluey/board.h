@@ -65,5 +65,6 @@ void configure_debug_access_port(void);
 void enable_slow_battery_charging(void);
 void disable_slow_battery_charging(void);
 void launch_charger_applet(void);
+void enable_fast_battery_charging(void);
 
 #endif /* MAINBOARD_GOOGLE_BLUEY_BOARD_H */
