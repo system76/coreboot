@@ -666,7 +666,7 @@ static void fill_psp_directory_to_efs(embedded_firmware *amd_romsig, void *pspdi
 	case PLATFORM_CEZANNE:
 	case PLATFORM_MENDOCINO:
 	case PLATFORM_PHOENIX:
-	case PLATFORM_GLINDA:
+	case PLATFORM_STRIX:
 	case PLATFORM_CARRIZO:
 	case PLATFORM_STONEYRIDGE:
 	case PLATFORM_RAVEN:
@@ -706,7 +706,7 @@ static void fill_bios_directory_to_efs(embedded_firmware *amd_romsig, void *bios
 		break;
 	case PLATFORM_MENDOCINO:
 	case PLATFORM_PHOENIX:
-	case PLATFORM_GLINDA:
+	case PLATFORM_STRIX:
 	case PLATFORM_FAEGAN:
 	case PLATFORM_STRIXHALO:
 		break;
@@ -742,7 +742,7 @@ static uint32_t get_psp_id(enum platform soc_id)
 	case PLATFORM_STONEYRIDGE:
 		psp_id = 0x10220B00;
 		break;
-	case PLATFORM_GLINDA:
+	case PLATFORM_STRIX:
 		psp_id = 0xBC0E0200;
 		break;
 	case PLATFORM_PHOENIX:
@@ -1622,7 +1622,7 @@ static int set_efs_table(uint8_t soc_id, amd_cb_config *cb_config,
 	case PLATFORM_CEZANNE:
 	case PLATFORM_MENDOCINO:
 	case PLATFORM_PHOENIX:
-	case PLATFORM_GLINDA:
+	case PLATFORM_STRIX:
 	case PLATFORM_GENOA:
 	case PLATFORM_FAEGAN:
 	case PLATFORM_STRIXHALO:
@@ -1683,7 +1683,7 @@ static bool is_initial_alignment_required(enum platform soc_id)
 	switch (soc_id) {
 	case PLATFORM_MENDOCINO:
 	case PLATFORM_PHOENIX:
-	case PLATFORM_GLINDA:
+	case PLATFORM_STRIX:
 	case PLATFORM_FAEGAN:
 	case PLATFORM_STRIXHALO:
 		return false;

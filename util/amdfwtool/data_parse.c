@@ -113,8 +113,8 @@ static enum platform identify_platform(char *soc_name)
 		return PLATFORM_LUCIENNE;
 	else if (!strcasecmp(soc_name, "Phoenix"))
 		return PLATFORM_PHOENIX;
-	else if (!strcasecmp(soc_name, "Glinda"))
-		return PLATFORM_GLINDA;
+	else if (!strcasecmp(soc_name, "Strix"))
+		return PLATFORM_STRIX;
 	else if (!strcasecmp(soc_name, "Genoa"))
 		return PLATFORM_GENOA;
 	else if (!strcasecmp(soc_name, "Faegan"))
@@ -793,7 +793,7 @@ static uint8_t process_one_line(char *oneline, regmatch_t *match, char *dir,
 static bool needs_ish(enum platform platform_type)
 {
 	if (platform_type == PLATFORM_MENDOCINO || platform_type == PLATFORM_PHOENIX ||
-		platform_type == PLATFORM_GLINDA || platform_type == PLATFORM_FAEGAN ||
+		platform_type == PLATFORM_STRIX || platform_type == PLATFORM_FAEGAN ||
 		platform_type == PLATFORM_STRIXHALO)
 		return true;
 	else
@@ -818,7 +818,7 @@ static bool is_second_gen(enum platform platform_type)
 	case PLATFORM_CEZANNE:
 	case PLATFORM_MENDOCINO:
 	case PLATFORM_PHOENIX:
-	case PLATFORM_GLINDA:
+	case PLATFORM_STRIX:
 	case PLATFORM_GENOA:
 	case PLATFORM_FAEGAN:
 	case PLATFORM_STRIXHALO:
