@@ -179,7 +179,8 @@ void mtk_dsi_cphy_timing(struct dsi_regs *dsi_reg, u32 data_rate,
 void mtk_dsi_cphy_vdo_timing(const u32 lanes, const struct edid *edid,
 			     const struct mtk_phy_timing *phy_timing,
 			     const u32 bytes_per_pixel, const u32 hbp, const u32 hfp,
-			     s32 *hbp_byte, s32 *hfp_byte, u32 *hsync_active_byte);
+			     s32 *hbp_byte, s32 *hfp_byte, u32 *hsync_active_byte,
+			     u32 *hfp_wc_upper);
 void mtk_dsi_cphy_disable_ck_mode(struct mipi_tx_regs *mipi_tx_reg);
 void mtk_dsi_dphy_disable_ck_mode(struct mipi_tx_regs *mipi_tx_reg);
 void mtk_dsi_dphy_timing_calculation(u32 data_rate_mhz, struct mtk_phy_timing *timing);

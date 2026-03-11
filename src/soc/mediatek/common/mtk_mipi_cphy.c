@@ -91,7 +91,8 @@ void mtk_dsi_cphy_vdo_timing(const u32 lanes,
 			     const u32 hfp,
 			     s32 *hbp_byte,
 			     s32 *hfp_byte,
-			     u32 *hsync_active_byte)
+			     u32 *hsync_active_byte,
+			     u32 *hfp_wc_upper)
 {
 	s32 active_byte, phy_cycle, phy_trail, tmp;
 	u32 hs_vb_ps_wc, ps_wc, data_phy_cycles;
@@ -106,8 +107,10 @@ void mtk_dsi_cphy_vdo_timing(const u32 lanes,
 	phy_trail = 2 * (phy_timing->da_hs_trail + 1) * lanes - 6 * lanes - 14;
 	tmp = hfp * bytes_per_pixel - phy_cycle;
 	*hfp_byte = MIN(MAX(8, tmp), phy_trail);
+
+	/* Return upper bits separately for CPHY HFP_WC register */
 	ps_wc = edid->mode.ha * bytes_per_pixel;
 	hs_vb_ps_wc = ps_wc - (phy_timing->lpx + phy_timing->da_hs_exit +
 		phy_timing->da_hs_prepare + phy_timing->da_hs_zero + 2) * lanes;
-	*hfp_byte |= hs_vb_ps_wc << 16 | HFP_HS_EN;
+	*hfp_wc_upper = hs_vb_ps_wc << 16 | HFP_HS_EN;
 }

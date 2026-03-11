@@ -278,6 +278,8 @@ static void mtk_dsi_config_vdo_timing(struct dsi_regs *const dsi_reg, u32 mode_f
 	u32 hbp_offset;
 	bool is_cphy = !!(mode_flags & MIPI_DSI_MODE_CPHY);
 	bool is_dsc_enabled = !!(mode_flags & MIPI_DSI_DSC_MODE);
+	bool cphy_mode;
+	u32 hfp_wc_upper = 0;
 	int channels = !!(mode_flags & MIPI_DSI_DUAL_CHANNEL) ? 2 : 1;
 	int dsc_ratio = is_dsc_enabled ? COMPRESSION_RATIO : UNCOMPRESSED_RATIO;
 
@@ -301,9 +303,11 @@ static void mtk_dsi_config_vdo_timing(struct dsi_regs *const dsi_reg, u32 mode_f
 
 	hfp_byte = hfp * bytes_per_pixel;
 
-	if (CONFIG(MEDIATEK_DSI_CPHY) && is_cphy)
+	cphy_mode = CONFIG(MEDIATEK_DSI_CPHY) && is_cphy;
+
+	if (cphy_mode)
 		mtk_dsi_cphy_vdo_timing(lanes, edid, phy_timing, bytes_per_pixel, hbp, hfp,
-					&hbp_byte, &hfp_byte, &hsync_active_byte);
+					&hbp_byte, &hfp_byte, &hsync_active_byte, &hfp_wc_upper);
 	else
 		mtk_dsi_dphy_vdo_timing(mode_flags, lanes, edid, phy_timing, bytes_per_pixel,
 					hbp, hfp, &hbp_byte, &hfp_byte, &hsync_active_byte);
@@ -325,7 +329,7 @@ static void mtk_dsi_config_vdo_timing(struct dsi_regs *const dsi_reg, u32 mode_f
 
 	write32(&dsi_reg->dsi_hsa_wc, hsync_active_byte);
 	write32(&dsi_reg->dsi_hbp_wc, hbp_byte);
-	write32(&dsi_reg->dsi_hfp_wc, hfp_byte);
+	write32(&dsi_reg->dsi_hfp_wc, hfp_byte | hfp_wc_upper);
 
 	if (is_dsc_enabled)
 		packet_fmt = COMPRESSED_PIXEL_STREAM_V2;
