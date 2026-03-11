@@ -18,9 +18,9 @@
 #define COMMON_PTL_U_POWER_LIMITS	\
 	.pl1_min_power = 10000,		\
 	.pl1_max_power = 15000,		\
-	.pl2_min_power = 50000,		\
-	.pl2_max_power = 50000,		\
-	.pl4_power = 65000
+	.pl2_min_power = 25000,		\
+	.pl2_max_power = 25000,		\
+	.pl4_power = 25000
 const struct cpu_tdp_power_limits power_optimized_limits[] = {
 	{
 		.mch_id = PCI_DID_INTEL_PTL_H_ID_1,
@@ -85,6 +85,18 @@ const struct cpu_tdp_power_limits power_optimized_limits[] = {
 	{
 		.mch_id = PCI_DID_INTEL_PTL_U_ID_3,
 		.cpu_tdp = TDP_15W,
+		.power_limits_index = PTL_CORE_2,
+		COMMON_PTL_U_POWER_LIMITS
+	},
+	{
+		.mch_id = PCI_DID_INTEL_PTL_U_ID_1,
+		.cpu_tdp = TDP_25W,
+		.power_limits_index = PTL_CORE_1,
+		COMMON_PTL_U_POWER_LIMITS
+	},
+	{
+		.mch_id = PCI_DID_INTEL_PTL_U_ID_2,
+		.cpu_tdp = TDP_25W,
 		.power_limits_index = PTL_CORE_2,
 		COMMON_PTL_U_POWER_LIMITS
 	},
