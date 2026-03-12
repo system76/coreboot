@@ -14,8 +14,9 @@ static void disable_microphone(uint8_t *base)
 	azalia_program_verb_table(base, override_verb, ARRAY_SIZE(override_verb));
 }
 
-void mainboard_azalia_program_runtime_verbs(uint8_t *base, uint32_t viddid)
+void __weak mainboard_azalia_program_runtime_verbs(uint8_t *base, uint32_t viddid)
 {
+	(void)viddid;
 	if (get_uint_option("microphone", 1) == 0)
 		disable_microphone(base);
 }

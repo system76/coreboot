@@ -8,6 +8,25 @@
 #include <variants.h>
 #include <common/cfr.h>
 
+#if CONFIG(BOARD_STARLABS_STARFIGHTER_MTL)
+static const struct sm_object legacy_speaker_control = SM_DECLARE_BOOL({
+	.opt_name	= "legacy_speaker_control",
+	.ui_name	= "Legacy Speaker Control",
+	.ui_helptext	= "Enabled: keep the default speaker initialization.\n"
+			  "Disabled: boot with GPIO2 low and LINE2 EAPD off "
+			  "so the speakers start muted.",
+	.default_value	= true,
+});
+
+static struct sm_obj_form audio_group = {
+	.ui_name = "Audio",
+	.obj_list = (const struct sm_object *[]) {
+		&legacy_speaker_control,
+		NULL
+	},
+};
+#endif
+
 static struct sm_obj_form battery_group = {
 	.ui_name = "Battery",
 	.obj_list = (const struct sm_object *[]) {
@@ -128,6 +147,9 @@ static struct sm_obj_form wireless_group = {
 };
 
 static struct sm_obj_form *sm_root[] = {
+	#if CONFIG(BOARD_STARLABS_STARFIGHTER_MTL)
+	&audio_group,
+	#endif
 	&battery_group,
 	&debug_group,
 	#if CONFIG(DRIVERS_INTEL_USB4_RETIMER)

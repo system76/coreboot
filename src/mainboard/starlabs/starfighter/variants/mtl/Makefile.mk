@@ -8,6 +8,7 @@ romstage-y += romstage.c
 ramstage-y += board_id.c
 ramstage-y += devtree.c
 ramstage-y += gpio.c
+ramstage-y += hda.c
 ramstage-y += hda_verb.c
 ramstage-y += ramstage.c
 $(call add_vbt_to_cbfs, vbt_qhd.bin, data_qhd.vbt)
