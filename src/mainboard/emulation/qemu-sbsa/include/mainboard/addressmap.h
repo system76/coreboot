@@ -16,6 +16,7 @@
 #define SBSA_GPIO_BASE            0x60020000
 #define SBSA_SECURE_UART_BASE     0x60030000
 #define SBSA_SMMU_BASE            0x60050000
+#define SBSA_GIC_ITS              0x44081000
 #define SBSA_AHCI_BASE            0x60100000
 #define SBSA_EHCI_BASE            0x60110000
 #define SBSA_SECMEM_BASE          0x20000000

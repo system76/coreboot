@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
 #include <acpi/acpi.h>
+#include <acpi/acpi_iort.h>
 #include <mainboard/addressmap.h>
 
 
@@ -22,6 +23,45 @@ uintptr_t platform_get_gicd_base(void)
 uintptr_t platform_get_gicr_base(void)
 {
 	return SBSA_GIC_REDIST;
+}
+
+static uintptr_t gic_its[] = {
+	SBSA_GIC_ITS,
+};
+
+int platform_get_gic_its(uintptr_t **base)
+{
+	*base = gic_its;
+	return ARRAY_SIZE(gic_its);
+}
+
+unsigned long acpi_soc_fill_iort(acpi_iort_t *iort, unsigned long current)
+{
+	acpi_iort_node_t *its, *rc;
+	u32 its_reference;
+	u32 identifiers[] = {0};	/* GIC ITS ID 0 */
+
+	/* ITS Group node */
+	current = acpi_iort_its_entry(current, iort, &its, 1, identifiers);
+	its_reference = (unsigned long)its - (unsigned long)iort;
+
+	/* Root Complex node for PCIe host bridge (segment 0) */
+	current = acpi_iort_rc_entry(current, iort, &rc,
+				     0,		/* memory_properties */
+				     0,		/* ats_attribute */
+				     0,		/* pci_segment_number */
+				     0x30,	/* memory_address_limit (48-bit) */
+				     0);	/* pasid_capabilities */
+
+	/* Map all PCI RIDs (0-0xFFFF) 1:1 to ITS device IDs */
+	current = acpi_iort_id_map_entry(current, rc,
+					 0,		/* input_base */
+					 0x10000,	/* id_count (65536 RIDs) */
+					 0,		/* output_base */
+					 its_reference,	/* output_reference */
+					 0);		/* flags */
+
+	return current;
 }
 
 #define SEC_EL1_TIMER_GISV 0x1d
