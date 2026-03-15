@@ -371,7 +371,7 @@ static void southbridge_smi_tco(void)
 	if (tco_sts & (1 << 8)) {
 		u8 bios_cntl = pci_read_config16(PCH_DEV_LPC, BIOS_CNTL);
 
-		if (bios_cntl & 1) {
+		if (bios_cntl & BIOS_CNTL_BIOSWE) {
 			/*
 			 * BWE is RW, so the SMI was caused by a
 			 * write to BWE, not by a write to the BIOS
@@ -383,7 +383,7 @@ static void southbridge_smi_tco(void)
 			 * box.
 			 */
 			printk(BIOS_DEBUG, "Switching back to RO\n");
-			pci_write_config32(PCH_DEV_LPC, BIOS_CNTL,  (bios_cntl & ~1));
+			pci_write_config32(PCH_DEV_LPC, BIOS_CNTL, bios_cntl & ~BIOS_CNTL_BIOSWE);
 		} /* No else for now? */
 	} else if (tco_sts & (1 << 3)) { /* TIMEOUT */
 		/* Handle TCO timeout */

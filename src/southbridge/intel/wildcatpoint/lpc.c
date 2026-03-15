@@ -200,7 +200,7 @@ static void pch_misc_init(struct device *dev)
 	pci_or_config8(dev, GEN_PMCON_2, 1 << 7);
 
 	/* Enable BIOS updates outside of SMM */
-	pci_and_config8(dev, BIOS_CNTL, ~(1 << 5));
+	pci_and_config8(dev, BIOS_CNTL, ~BIOS_CNTL_SMM_BWP);
 
 	/* Clear status bits to prevent unexpected wake */
 	RCBA32_OR(0x3310, 0x2f);

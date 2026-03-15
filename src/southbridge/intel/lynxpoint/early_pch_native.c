@@ -3,6 +3,7 @@
 #include <console/console.h>
 #include <device/pci_def.h>
 #include <device/pci_ops.h>
+#include <southbridge/intel/common/lpc_def.h>
 #include <southbridge/intel/lynxpoint/hsio/hsio.h>
 #include <southbridge/intel/lynxpoint/pch.h>
 #include <types.h>
@@ -97,7 +98,7 @@ void early_pch_init_native(bool s3resume)
 	early_sata_init(pch_revision);
 
 	pci_or_config8(PCH_LPC_DEV, 0xa6, 1 << 1);
-	pci_and_config8(PCH_LPC_DEV, 0xdc, ~(1 << 5 | 1 << 1));
+	pci_and_config8(PCH_LPC_DEV, BIOS_CNTL, ~(BIOS_CNTL_SMM_BWP | BIOS_CNTL_BLE));
 
 	/** TODO: Send GET HSIO VER and update ChipsetInit table? Is it needed? **/
 

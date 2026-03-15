@@ -15,6 +15,7 @@
 #include <southbridge/intel/common/pmbase.h>
 #include <smmstore.h>
 
+#include "lpc_def.h"
 #include "pmutil.h"
 
 u16 get_pmbase(void)
@@ -375,9 +376,9 @@ static void southbridge_smi_tco(void)
 	if (tco_sts & (1 << 8)) { // BIOSWR
 		u8 bios_cntl;
 
-		bios_cntl = pci_read_config8(PCI_DEV(0, 0x1f, 0), 0xdc);
+		bios_cntl = pci_read_config8(PCI_DEV(0, 0x1f, 0), BIOS_CNTL);
 
-		if (bios_cntl & 1) {
+		if (bios_cntl & BIOS_CNTL_BIOSWE) {
 			/* BWE is RW, so the SMI was caused by a
 			 * write to BWE, not by a write to the BIOS
 			 */
@@ -389,8 +390,8 @@ static void southbridge_smi_tco(void)
 			 * box.
 			 */
 			printk(BIOS_DEBUG, "Switching back to RO\n");
-			pci_write_config8(PCI_DEV(0, 0x1f, 0), 0xdc,
-					(bios_cntl & ~1));
+			pci_write_config8(PCI_DEV(0, 0x1f, 0), BIOS_CNTL,
+					(bios_cntl & ~BIOS_CNTL_BIOSWE));
 		} /* No else for now? */
 	} else if (tco_sts & (1 << 3)) { /* TIMEOUT */
 		/* Handle TCO timeout */
