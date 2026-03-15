@@ -12,6 +12,7 @@
 #include <halt.h>
 #include <option.h>
 #include <southbridge/intel/common/finalize.h>
+#include <southbridge/intel/common/lpc_def.h>
 #include <northbridge/intel/haswell/haswell.h>
 #include <cpu/intel/haswell/haswell.h>
 #include <soc/nvs.h>

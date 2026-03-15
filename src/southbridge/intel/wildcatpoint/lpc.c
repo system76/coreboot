@@ -19,6 +19,7 @@
 #include <soc/rcba.h>
 #include <southbridge/intel/wildcatpoint/chip.h>
 #include <acpi/acpigen.h>
+#include <southbridge/intel/common/lpc_def.h>
 #include <southbridge/intel/common/rtc.h>
 #include <southbridge/intel/lynxpoint/iobp.h>
 #include <southbridge/intel/lynxpoint/lp_gpio.h>

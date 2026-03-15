@@ -22,6 +22,7 @@
 #include <soc/pm.h>
 #include <soc/rcba.h>
 #include <soc/xhci.h>
+#include <southbridge/intel/common/lpc_def.h>
 
 /**
  * @brief Set the EOS bit

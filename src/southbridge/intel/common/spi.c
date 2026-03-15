@@ -20,6 +20,7 @@
 #include <timer.h>
 #include <types.h>
 
+#include "lpc_def.h"
 #include "spi.h"
 
 #define HSFC_FCYCLE_OFF		1	/* 1-2: FLASH Cycle */
@@ -1124,11 +1125,6 @@ void spi_finalize_ops(void)
 __weak void intel_southbridge_override_spi(struct intel_swseq_spi_config *spi_config)
 {
 }
-
-#define BIOS_CNTL		0xdc
-#define  BIOS_CNTL_BIOSWE	(1 << 0)
-#define  BIOS_CNTL_BLE		(1 << 1)
-#define  BIOS_CNTL_SMM_BWP	(1 << 5)
 
 static void spi_set_smm_only_flashing(bool enable)
 {
