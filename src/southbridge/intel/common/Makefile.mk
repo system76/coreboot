@@ -50,6 +50,7 @@ ramstage-$(CONFIG_SOUTHBRIDGE_INTEL_COMMON_RCBA_PIRQ) += rcba_pirq.c
 ramstage-$(CONFIG_SOUTHBRIDGE_INTEL_COMMON_SMM) += pmutil.c smi.c
 smm-$(CONFIG_SOUTHBRIDGE_INTEL_COMMON_SMM) += pmutil.c smihandler.c
 
+smm-$(CONFIG_HAVE_INSMM_STS) += insmm_sts.c
 smm-$(CONFIG_SOUTHBRIDGE_INTEL_COMMON_FINALIZE) += finalize.c
 
 all-$(CONFIG_SOUTHBRIDGE_INTEL_COMMON_RTC) += rtc.c

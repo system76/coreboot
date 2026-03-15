@@ -15,6 +15,7 @@
 #include <southbridge/intel/common/pmbase.h>
 #include <smmstore.h>
 
+#include "insmm_sts.h"
 #include "lpc_def.h"
 #include "pmutil.h"
 
@@ -267,9 +268,22 @@ static void southbridge_smi_store(void)
 	/* Parameter buffer in EBX */
 	reg_rbx = (uintptr_t)io_smi->rbx;
 
+	const pci_devfn_t lpc_dev = PCI_DEV(0, 0x1f, 0);
+	const bool wp_enabled = !(pci_read_config16(lpc_dev, BIOS_CNTL) & BIOS_CNTL_BIOSWE);
+	if (wp_enabled) {
+		if (CONFIG(HAVE_INSMM_STS))
+			set_insmm_sts(true);
+		pci_or_config16(lpc_dev, BIOS_CNTL, BIOS_CNTL_BIOSWE);
+	}
 	/* drivers/smmstore/smi.c */
 	ret = smmstore_exec(sub_command, (void *)reg_rbx);
 	io_smi->rax = ret;
+
+	if (wp_enabled) {
+		pci_and_config16(lpc_dev, BIOS_CNTL, ~BIOS_CNTL_BIOSWE);
+		if (CONFIG(HAVE_INSMM_STS))
+			set_insmm_sts(false);
+	}
 }
 
 static int mainboard_finalized = 0;

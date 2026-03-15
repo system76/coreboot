@@ -22,6 +22,7 @@
 #include <soc/pm.h>
 #include <soc/rcba.h>
 #include <soc/xhci.h>
+#include <southbridge/intel/common/insmm_sts.h>
 #include <southbridge/intel/common/lpc_def.h>
 
 /**
@@ -290,9 +291,21 @@ static void southbridge_smi_store(void)
 	/* Parameter buffer in EBX */
 	reg_ebx = io_smi->rbx;
 
+	const pci_devfn_t lpc_dev = PCI_DEV(0, 0x1f, 0);
+	const bool wp_enabled = !(pci_read_config16(lpc_dev, BIOS_CNTL) & BIOS_CNTL_BIOSWE);
+	if (wp_enabled) {
+		set_insmm_sts(true);
+		pci_or_config16(lpc_dev, BIOS_CNTL, BIOS_CNTL_BIOSWE);
+	}
+
 	/* drivers/smmstore/smi.c */
 	ret = smmstore_exec(sub_command, (void *)reg_ebx);
 	io_smi->rax = ret;
+
+	if (wp_enabled) {
+		pci_and_config16(lpc_dev, BIOS_CNTL, ~BIOS_CNTL_BIOSWE);
+		set_insmm_sts(false);
+	}
 }
 
 static void southbridge_smi_apmc(void)
