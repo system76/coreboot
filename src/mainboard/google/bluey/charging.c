@@ -40,6 +40,9 @@
 #define EN_DEBUG_ACCESS_SRC 0x01
 #define EN_SWITCHER_DAM_500 0x05
 
+#define PMIC_PD_NEGOTIATION_FLAG	0x7E7C
+#define SKIP_PORT_RESET			0x08
+
 #define PMC8380F_SLAVE_ID	0x05
 #define GPIO07_MODE_CTL			0x8E40
 #define GPIO07_DIG_OUT_SOURCE_CTL	0x8E44
@@ -280,12 +283,24 @@ void disable_slow_battery_charging(void)
 }
 
 /*
+ * Instruct ADSP to skip type-c port resets
+ */
+static void adsp_skip_port_reset(void)
+{
+	uint8_t flags = (uint8_t)spmi_read8(PMIC_PD_NEGOTIATION_FLAG);
+	spmi_write8(PMIC_PD_NEGOTIATION_FLAG, flags | SKIP_PORT_RESET);
+	printk(BIOS_INFO, "Configured ADSP to avoid port resets\n");
+}
+
+/*
  * Enable fast battery charging with ADSP support.
  *
  * This function loads ADSP firmware and configures fast charging.
  */
 void enable_fast_battery_charging(void)
 {
+	adsp_skip_port_reset();
+
 	/* Load ADSP firmware first */
 	adsp_fw_load();
 
