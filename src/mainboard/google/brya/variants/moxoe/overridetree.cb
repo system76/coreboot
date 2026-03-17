@@ -28,8 +28,6 @@ chip soc/intel/alderlake
 		.enable_fast_vmode = 1,
 	}"
 
-	register "sagv" = "SaGv_Enabled"
-
 	register "usb2_ports[1]" = "USB2_PORT_EMPTY"	# Disable USB2 Port 1
 	register "usb2_ports[2]" = "USB2_PORT_EMPTY"	# Disable USB2 Port 2
 	register "usb2_ports[4]" = "USB2_PORT_EMPTY"	# Disable USB2 Port 4
