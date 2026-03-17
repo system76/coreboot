@@ -132,7 +132,7 @@
  *               |                ... Usable memory ...                     |      |
  * 0x14860C00    +----------------------------------------------------------+      |
  *               |                     FMAP_CACHE                           |      |
- * 0x14860000    +----------------------------------------------------------+    BSRAM
+ * 0x14861800    +----------------------------------------------------------+    BSRAM
  *               |                    CBFS_MCACHE                           |      |
  * 0x1485C000    +----------------------------------------------------------+      |
  *               |                  qclib_serial_log                        |      |
@@ -217,8 +217,8 @@ SECTIONS
 	VBOOT2_WORK(0x14854000, 12K)
 	PRERAM_DMA_COHERENT(0x14858000, 8K)
 	REGION(qclib_serial_log, 0x1485B000, 4K, 4K)
-	CBFS_MCACHE(0x1485C000,16K)
-	FMAP_CACHE(0x14860400, 2K)
+	CBFS_MCACHE(0x1485C000,22K)
+	FMAP_CACHE(0x14861800, 2K)
 	REGION(dcb, 0x14862000, 56K, 4K)
 	REGION(dtb, 0x14870000, 32K, 4K)
 	REGION(ddr_training, 0x14878000, 64K, 4K)
