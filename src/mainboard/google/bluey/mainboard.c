@@ -201,7 +201,17 @@ static void handle_low_power_charging_boot(void)
 	launch_charger_applet();
 }
 
-static void mainboard_init(struct device *dev)
+static void load_qc_se_firmware_early(void)
+{
+	/* ADSP I2C (Charger/Fuel gauge) */
+	qupv3_se_fw_load_and_init(QUPV3_2_SE4, SE_PROTOCOL_I2C, MIXED);
+
+	gpi_firmware_load(QUP_0_GSI_BASE);
+	gpi_firmware_load(QUP_1_GSI_BASE);
+	gpi_firmware_load(QUP_2_GSI_BASE);
+}
+
+static void mainboard_init(void *chip_info)
 {
 	configure_parallel_charging();
 	configure_debug_access_port();
@@ -215,12 +225,7 @@ static void mainboard_init(struct device *dev)
 	if (get_boot_mode() == LB_BOOT_MODE_LOW_BATTERY)
 		trigger_critical_battery_shutdown();
 
-	/* ADSP I2C (Charger/Fuel gauge) */
-	qupv3_se_fw_load_and_init(QUPV3_2_SE4, SE_PROTOCOL_I2C, MIXED);
-
-	gpi_firmware_load(QUP_0_GSI_BASE);
-	gpi_firmware_load(QUP_1_GSI_BASE);
-	gpi_firmware_load(QUP_2_GSI_BASE);
+	load_qc_se_firmware_early();
 
 	configure_parallel_charging_late();
 
@@ -229,7 +234,10 @@ static void mainboard_init(struct device *dev)
 		handle_low_power_charging_boot();
 		halt();
 	}
+}
 
+static void load_qc_se_firmware_late(void)
+{
 	/*
 	 * Load console UART QUP firmware.
 	 * This is required even if coreboot's serial output is disabled.
@@ -251,18 +259,22 @@ static void mainboard_init(struct device *dev)
 
 	if (!CONFIG(MAINBOARD_NO_USB_A_PORT))
 		qupv3_se_fw_load_and_init(QUPV3_0_SE1, SE_PROTOCOL_I2C, MIXED); /* USB-A retimer */
+
 	qupv3_se_fw_load_and_init(QUPV3_0_SE5, SE_PROTOCOL_I2C, MIXED); /* eUSB repeater */
+
 	if (CONFIG(MAINBOARD_HAS_FINGERPRINT_VIA_SPI))
 		qupv3_se_fw_load_and_init(QUPV3_2_SE2, SE_PROTOCOL_SPI, MIXED); /* Fingerprint SPI */
+}
+
+static void mainboard_enable(struct device *dev)
+{
+	load_qc_se_firmware_late();
 
 	/* Enable touchpad power */
 	if (CONFIG_MAINBOARD_GPIO_PIN_FOR_TOUCHPAD_POWER)
 		gpio_output(GPIO_TP_POWER_EN, 1);
 
-	/*
-	 * Deassert FPMCU reset. Power applied in romstage
-	 * has now stabilized.
-	 */
+	/* Deassert FPMCU reset. Power applied in romstage has now stabilized. */
 	if (CONFIG(MAINBOARD_HAS_FINGERPRINT))
 		gpio_output(GPIO_FP_RST_L, 1);
 
@@ -273,11 +285,7 @@ static void mainboard_init(struct device *dev)
 	setup_audio();
 }
 
-static void mainboard_enable(struct device *dev)
-{
-	dev->ops->init = &mainboard_init;
-}
-
 struct chip_operations mainboard_ops = {
 	.enable_dev = mainboard_enable,
+	.init = mainboard_init,
 };
