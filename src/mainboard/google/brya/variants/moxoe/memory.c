@@ -27,17 +27,17 @@ static const struct mb_cfg ddr5_mem_config = {
 	},
 };
 
-const struct mb_cfg *__weak variant_memory_params(void)
+const struct mb_cfg *variant_memory_params(void)
 {
 	return &ddr5_mem_config;
 }
 
-bool __weak variant_is_half_populated(void)
+bool variant_is_half_populated(void)
 {
 	return false;
 }
 
-void __weak variant_get_spd_info(struct mem_spd *spd_info)
+void variant_get_spd_info(struct mem_spd *spd_info)
 {
 	spd_info->topo = MEM_TOPO_DIMM_MODULE;
 	spd_info->smbus[0].addr_dimm[0] = 0x50;
