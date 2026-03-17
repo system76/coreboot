@@ -3,6 +3,8 @@
 config BOARD_GOOGLE_BLUEY_COMMON
 	def_bool n
 	select COMMON_CBFS_SPI_WRAPPER
+	# FIXME: keep ADB for development phase
+	select GBB_FLAG_ENABLE_ADB if VBOOT
 	select MAINBOARD_HAS_CHROMEOS
 	select SPI_FLASH
 	select SPI_FLASH_FORCE_4_BYTE_ADDR_MODE
