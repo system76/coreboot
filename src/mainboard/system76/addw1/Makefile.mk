@@ -11,3 +11,4 @@ ramstage-y += ramstage.c
 ramstage-y += variants/$(VARIANT_DIR)/gpio.c
 ramstage-y += variants/$(VARIANT_DIR)/hda_verb.c
 ramstage-y += variants/$(VARIANT_DIR)/tas5825m.c
+ramstage-$(CONFIG_DRIVERS_OPTION_CFR) += cfr.c
