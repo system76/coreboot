@@ -967,8 +967,8 @@ static void fill_fsps_pcie_params(FSP_S_CONFIG *s_cfg,
 		s_cfg->PcieRpHotPlug[i] = !!(rp_cfg->flags & PCIE_RP_HOTPLUG)
 				|| CONFIG(SOC_INTEL_COMPLIANCE_TEST_MODE);
 		s_cfg->PcieRpClkReqDetect[i] = !!(rp_cfg->flags & PCIE_RP_CLK_REQ_DETECT);
-		/* PcieRpSlotImplemented default to 1 (slot implemented) in FSP; 0: built-in */
-		if (!!(rp_cfg->flags & PCIE_RP_BUILT_IN))
+		/* PcieRpSlotImplemented defaults to 1 (slot implemented) in FSP; 0: built-in */
+		if (rp_cfg->flags & PCIE_RP_BUILT_IN)
 			s_cfg->PcieRpSlotImplemented[i] = false;
 		s_cfg->PcieRpDetectTimeoutMs[i] = rp_cfg->pcie_rp_detect_timeout_ms;
 		configure_pch_rp_power_management(s_cfg, rp_cfg, i);
