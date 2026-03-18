@@ -1,7 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
 #include <device/device.h>
-#include <soc/ramstage.h>
 #include <variants.h>
 
 static void init_mainboard(void *chip_info)
