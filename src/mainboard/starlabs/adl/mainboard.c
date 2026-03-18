@@ -2,8 +2,6 @@
 
 #include <bootstate.h>
 #include <device/device.h>
-#include <drivers/intel/gma/opregion.h>
-#include <soc/ramstage.h>
 #include <variants.h>
 
 static void starlabs_configure_mainboard(void *unused)
