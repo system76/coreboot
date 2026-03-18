@@ -38,6 +38,10 @@ romstage-y += ../common/aop_load_reset.c
 romstage-$(CONFIG_DRIVERS_UART) += ../common/qupv3_uart.c
 romstage-y += ../common/spmi.c
 romstage-y += pmic.c
+ifeq ($(CONFIG_SOC_QUALCOMM_PCIE_ASYNCHRONOUS_INIT),y)
+romstage-$(CONFIG_PCI) += ../common/pcie_common.c
+romstage-$(CONFIG_PCI) += pcie.c
+endif
 
 ################################################################################
 ramstage-y += soc.c
