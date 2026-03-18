@@ -178,6 +178,9 @@ static enum cb_err qcom_pcie_dw_link_up(struct qcom_pcie_cntlr_t *pcie)
 	/* enable link training */
 	setbits32(pcie->cntlr_cfg->parf + PCIE_PARF_LTSSM, LTSSM_EN);
 
+	if (CONFIG(SOC_QUALCOMM_PCIE_ASYNCHRONOUS_INIT))
+		return CB_SUCCESS;
+
 	/* Check that link was established */
 	if (wait_link_up(pcie)) {
 		printk(BIOS_INFO, "PCIe link is up\n");
@@ -562,8 +565,7 @@ void qcom_pci_domain_read_resources(struct device *dev)
 	res->flags = IORESOURCE_MEM | IORESOURCE_SUBTRACTIVE | IORESOURCE_ASSIGNED;
 }
 
-/* PCI domain ops enable callback */
-void qcom_setup_pcie_host(struct device *dev)
+static enum cb_err pcie_initiate_link(void)
 {
 	gcom_pcie_get_config(&qcom_pcie_cfg);
 
@@ -576,6 +578,57 @@ void qcom_setup_pcie_host(struct device *dev)
 	qcom_pcie_configure_gpios(qcom_pcie_cfg.cntlr_cfg);
 
 	if (!qcom_dw_pcie_enable(&qcom_pcie_cfg))
+		return CB_SUCCESS;
+	else
+		return CB_ERR;
+}
+
+static enum cb_err pcie_verify_link_status(void)
+{
+	gcom_pcie_get_config(&qcom_pcie_cfg);
+
+	if (is_pcie_link_up(&qcom_pcie_cfg)) {
+		printk(BIOS_INFO, "PCIe Link is already up\n");
+		return CB_SUCCESS;
+	}
+
+	/* Check that link was established */
+	if (wait_link_up(&qcom_pcie_cfg)) {
+		printk(BIOS_INFO, "PCIe link is up\n");
+		return CB_SUCCESS;
+	}
+
+	/*
+	 * Link can be established in Gen 1 as it failed to establish in Gen2.
+	 * So allow some time to do it.
+	 */
+	udelay(100);
+
+	return is_pcie_link_up(&qcom_pcie_cfg) ? CB_SUCCESS : CB_ERR;
+}
+
+/* PCI domain ops enable callback */
+void qcom_setup_pcie_host(struct device *dev)
+{
+	/* STAGE 1: Initiate Hardware (Sync or Async)
+	 * In Romstage (or if Async is disabled), we always start the hardware.
+	 */
+	if (ENV_SEPARATE_ROMSTAGE || !CONFIG(SOC_QUALCOMM_PCIE_ASYNCHRONOUS_INIT)) {
+		if (pcie_initiate_link() != CB_SUCCESS) {
+			printk(BIOS_EMERG, "Failed to enable PCIe\n");
+			return;
+		}
+
+		/* Async in Romstage */
+		if (ENV_SEPARATE_ROMSTAGE)
+			return;
+	}
+
+	/* STAGE 2: Late Check (Async only)
+	 * If we are in Ramstage and Async is enabled, the hardware was already
+	 * kicked off in Romstage. Now we just verify the result.
+	 */
+	if (pcie_verify_link_status() == CB_SUCCESS)
 		printk(BIOS_NOTICE, "PCIe enumerated succussfully..\n");
 	else
 		printk(BIOS_EMERG, "Failed to enable PCIe\n");

@@ -61,4 +61,14 @@ config SOC_QUALCOMM_DEBUG_TSENS
 	  When enabled, a call to monitor TSENS will dump the sensor data on
 	  the debug console.
 
+config SOC_QUALCOMM_PCIE_ASYNCHRONOUS_INIT
+	bool
+	default n
+	help
+	  When enabled, qcom_setup_pcie_host will initiate the PCIe
+	  hardware power-up sequence but will not block the boot flow
+	  to wait for the link-up status. This can reduce overall
+	  boot time, but requires late-stage drivers to verify link
+	  readiness before access.
+
 endif
