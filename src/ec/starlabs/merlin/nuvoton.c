@@ -5,8 +5,6 @@
 #include <device/pnp.h>
 #include <ec/acpi/ec.h>
 #include <option.h>
-#include <halt.h>
-
 #include "ecdefs.h"
 #include "ec.h"
 
