@@ -2,7 +2,6 @@
 
 #include <bootstate.h>
 #include <device/device.h>
-#include <soc/ramstage.h>
 #include <variants.h>
 
 static void starlabs_configure_gpios(void *unused)
