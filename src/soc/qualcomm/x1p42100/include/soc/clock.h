@@ -20,6 +20,7 @@
 
 /* CPU PLL*/
 #define L_VAL_1363P2MHz		0x47
+#define L_VAL_806MHz		0x2A
 
 /* DISP PLL */
 #define L_VAL_1725MHz		0x59
@@ -892,6 +893,7 @@ enum cb_err mdss_clock_enable(enum clk_mdss clk_type);
 enum cb_err disp_pll_init_and_set(struct x1p42100_disp_pll_clock *disp_pll,
 		u32 l_val, u32 alpha_val);
 enum cb_err lpass_init(void);
+enum cb_err pll_init_and_set(struct x1p42100_ncc0_clock *ncc0, u32 l_val);
 
 void clock_configure_dfsr_table_x1p42100(int qup, struct clock_freq_config *clk_cfg,
 		uint32_t num_perfs);

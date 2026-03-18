@@ -612,7 +612,7 @@ enum cb_err usb_clock_configure_mux(enum clk_pipe_usb clk_type, u32 src_type)
 	return CB_SUCCESS;
 }
 
-static enum cb_err pll_init_and_set(struct x1p42100_ncc0_clock *ncc0, u32 l_val)
+enum cb_err pll_init_and_set(struct x1p42100_ncc0_clock *ncc0, u32 l_val)
 {
 	int ret;
 	struct alpha_pll_reg_val_config ncc0_pll_cfg = {0};
