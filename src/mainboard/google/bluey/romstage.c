@@ -10,6 +10,7 @@
 #include <gpio.h>
 #include <security/vboot/vboot_common.h>
 #include <soc/aop_common.h>
+#include <soc/pcie.h>
 #include <soc/pmic.h>
 #include <soc/qclib_common.h>
 #include <soc/shrm.h>
@@ -188,4 +189,8 @@ void platform_romstage_postram(void)
 		*boot_mode_ptr = boot_mode;
 		printk(BIOS_INFO, "Boot mode is %d\n", *boot_mode_ptr);
 	}
+
+	/* Perform PCIe setup early in async mode if supported to save 100ms */
+	if (boot_mode == LB_BOOT_MODE_NORMAL)
+		qcom_setup_pcie_host(NULL);
 }
