@@ -1,13 +1,8 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#include <soc/soc_chip.h>
-#include <device/device.h>
-#include <device/pci_def.h>
 #include <ec/starlabs/merlin/ec.h>
 #include <smbios.h>
 #include <types.h>
-#include <uuid.h>
-#include <variants.h>
 
 /* Get the Embedded Controller firmware version */
 void smbios_ec_revision(uint8_t *ec_major_revision, uint8_t *ec_minor_revision)
