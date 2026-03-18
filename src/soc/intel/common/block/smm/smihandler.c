@@ -66,6 +66,20 @@ __weak void mainboard_smi_espi_handler(void)
 	/* no-op */
 }
 
+#define SMMSTORE_SYNC_SMI_SETTLE_USEC 50
+#define SMMSTORE_SYNC_SMI_CLEAR_TRIES 8
+
+static void smmstore_drain_sync_smi(void)
+{
+	int i;
+
+	for (i = 0; i < SMMSTORE_SYNC_SMI_CLEAR_TRIES; i++) {
+		if (!fast_spi_clear_sync_smi_status())
+			return;
+		udelay(SMMSTORE_SYNC_SMI_SETTLE_USEC);
+	}
+}
+
 /* Inherited from cpu/x86/smm.h resulting in a different signature */
 void southbridge_smi_set_eos(void)
 {
@@ -279,12 +293,13 @@ static void southbridge_smi_store(
 		 * bit is a must prior setting SPI_BIOS_CONTROL_WPD" bit
 		 * to avoid 3-strike error.
 		 */
-		fast_spi_clear_sync_smi_status();
+		smmstore_drain_sync_smi();
 		fast_spi_disable_wp();
 	}
 
 	/* drivers/smmstore/smi.c */
 	ret = smmstore_exec(sub_command, (void *)(uintptr_t)reg_ebx);
+	smmstore_drain_sync_smi();
 	save_state_ops->set_reg(RAX, node, &ret, sizeof(ret));
 
 	if (wp_enabled) {
