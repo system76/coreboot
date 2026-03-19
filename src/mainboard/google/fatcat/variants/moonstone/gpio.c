@@ -195,7 +195,7 @@ static const struct pad_config gpio_table[] = {
 	/* GPP_E03:     GEN5_SSD_RESET_N */
 	PAD_CFG_GPO(GPP_E03, 1, PLTRST),
 	/* GPP_E05:     TCHSCR_RPT_EN */
-	PAD_CFG_GPO(GPP_E05, 0, PLTRST),
+	PAD_CFG_GPO(GPP_E05, 1, PLTRST),
 	/* GPP_E06:     NC */
 	PAD_NC(GPP_E06, NONE),
 	/* GPP_E07 : [] ==> EC_SOC_INT_ODL */
@@ -256,7 +256,7 @@ static const struct pad_config gpio_table[] = {
 	/* GPP_F13:     TCHSCR_I2C5_SDA */
 	PAD_CFG_NF(GPP_F13, NONE, DEEP, NF8),
 	/* GPP_F16:     TCHSCR_RST_L */
-	PAD_CFG_GPO(GPP_F16, 1, DEEP),
+	PAD_CFG_GPO(GPP_F16, 0, DEEP),
 	/* GPP_F17:     NC */
 	PAD_NC(GPP_F17, NONE),
 	/* GPP_F18:     TCHSCR_INT_L */
@@ -392,6 +392,8 @@ static const struct pad_config romstage_gpio_table[] = {
 	PAD_CFG_NF(GPP_C01, NONE, DEEP, NF1),
 	/* GPP_E03:     GEN5_SSD_RESET_N */
 	PAD_CFG_GPO(GPP_E03, 1, PLTRST),
+	/* GPP_F08:     EN_TCHSCR_PWR */
+	PAD_CFG_GPO(GPP_F08, 1, DEEP),
 };
 
 const struct pad_config *variant_gpio_table(size_t *num)

@@ -5,6 +5,7 @@
 #include <console/console.h>
 #include <fw_config.h>
 #include <sar.h>
+#include <variant/gpio.h>
 
 const char *get_wifi_sar_cbfs_filename(void)
 {
@@ -65,4 +66,12 @@ void variant_update_soc_chip_config(struct soc_intel_pantherlake_config *config)
 		printk(BIOS_INFO, "Enable tcss_usb3_port3 to USB3_C1(MB)\n");
 		config->tcss_ports[3] = (struct tcss_port_config) TCSS_PORT_DEFAULT(OC_SKIP);
 	}
+}
+
+void fw_config_post_gpio_configure(void)
+{
+	/* ensures touchscreen reset pin is asserted at the correct stage,
+	   satisfying the requirement that reset must occur after BL_ON. */
+	gpio_output(TCHSCR_RST_L, 1);
+	printk(BIOS_INFO, "TSR: assert touchscreen reset pin ...\n");
 }
