@@ -111,7 +111,7 @@ static const char *crb_tpm_acpi_name(const struct device *dev)
 	return "TPM2";
 }
 
-#if CONFIG(GENERATE_SMBIOS_TABLES)
+#if CONFIG(GENERATE_SMBIOS_TABLES) && CONFIG(TPM2)
 static tpm_result_t tpm_get_cap(uint32_t property, uint32_t *value)
 {
 	TPMS_CAPABILITY_DATA cap_data;
@@ -188,7 +188,7 @@ static struct device_operations __maybe_unused amd_crb_ops = {
 	.acpi_name = crb_tpm_acpi_name,
 	.acpi_fill_ssdt = crb_tpm_fill_ssdt,
 #endif
-#if CONFIG(GENERATE_SMBIOS_TABLES)
+#if CONFIG(GENERATE_SMBIOS_TABLES) && CONFIG(TPM2)
 	.get_smbios_data	= smbios_write_type43_tpm,
 #endif
 };
