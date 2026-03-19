@@ -464,6 +464,8 @@ enum boot_mode_t {
 	CB_BOOT_MODE_LOW_BATTERY_CHARGING,
 	/* Device is booting in due to charger insertion */
 	CB_BOOT_MODE_OFFMODE_CHARGING,
+	/* Device is booting in due to RTC alarm */
+	CB_BOOT_MODE_RTC_WAKE,
 };
 
 /*
