@@ -114,6 +114,17 @@ config CHIPSET_DEVICETREE
 	string
 	default "soc/amd/glinda/chipset.cb"
 
+config VGA_BIOS_FILE
+	string
+	default "3rdparty/amd_blobs/strix_krackan/KRK2E_GENERIC_vbios.sbin" if SOC_AMD_FAEGAN
+
+config VGA_BIOS_ID
+	string
+	default "1002,1902"
+	help
+	  The default VGA BIOS PCI vendor/device ID should be set to the
+	  result of the map_oprom_vendev() function in graphics.c.
+
 config CPU_PT_ROM_MAP_GB
 	default 1024
 
