@@ -70,7 +70,8 @@ static bool is_low_power_boot_with_charger(void)
 	bool ret = false;
 	enum boot_mode_t boot_mode = get_boot_mode();
 	if ((boot_mode == LB_BOOT_MODE_LOW_BATTERY_CHARGING) ||
-	    (boot_mode == LB_BOOT_MODE_OFFMODE_CHARGING))
+	    (boot_mode == LB_BOOT_MODE_OFFMODE_CHARGING) ||
+	    (boot_mode == LB_BOOT_MODE_RTC_WAKE))
 		ret = true;
 
 	return ret;
@@ -155,7 +156,8 @@ bool mainboard_needs_pcie_init(void)
 
 static void display_startup(void)
 {
-	if (!display_init_required() || (CONFIG(VBOOT_LID_SWITCH) && !get_lid_switch())) {
+	if ((get_boot_mode() == LB_BOOT_MODE_RTC_WAKE) || !display_init_required() ||
+		    (CONFIG(VBOOT_LID_SWITCH) && !get_lid_switch())) {
 		printk(BIOS_INFO, "Skipping display init.\n");
 		return;
 	}

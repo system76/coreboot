@@ -41,7 +41,9 @@ static enum boot_mode_t set_boot_mode(void)
 
 	enum boot_mode_t boot_mode_new;
 
-	if (is_off_mode() && google_chromeec_is_battery_present()) {
+	if (google_chromeec_is_rtc_event()) {
+		boot_mode_new = LB_BOOT_MODE_RTC_WAKE;
+	} else if (is_off_mode() && google_chromeec_is_battery_present()) {
 		boot_mode_new = LB_BOOT_MODE_OFFMODE_CHARGING;
 	} else if (google_chromeec_is_below_critical_threshold()) {
 		if (google_chromeec_is_charger_present())
