@@ -31,6 +31,6 @@ its location when building coreboot.
 
 When `mrc.bin` has finished executing, ECC is active on the channels
 populated with ECC DIMMs. However, `mrc.bin` was tailored specifically
-for Haswell Chromebooks and Chomeboxes, none of which support ECC DRAM.
+for Haswell Chromebooks and Chromeboxes, none of which support ECC DRAM.
 While ECC likely functions correctly, it is advised to further validate
 the correct operation of ECC if data integrity is absolutely critical.
