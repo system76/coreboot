@@ -2,6 +2,7 @@
 
 #include <arch/mmio.h>
 #include <commonlib/bsd/stdlib.h>
+#include <delay.h>
 #include <soc/addressmap.h>
 #include <soc/qcom_spmi.h>
 #include <timer.h>
@@ -19,8 +20,13 @@
 
 #define ERROR_APID_NOT_FOUND	(-(int)BIT(8))
 #define ERROR_TIMEOUT		(-(int)BIT(9))
+/* Add this for your specific SPMI read error (-9) */
+#define ERROR_SPMI_READ_FAILED  (-9)
 
 #define ARB_COMMAND_TIMEOUT_MS	100
+
+#define MAX_SPMI_RETRIES    6
+#define SPMI_RETRY_DELAY_MS 50
 
 // Individual register block per APID
 struct qcom_spmi_regs {
@@ -101,7 +107,7 @@ int spmi_read8(uint32_t addr)
 	int ret = wait_for_done(regs);
 	if (ret != 0) {
 		printk(BIOS_ERR, "ERROR: SPMI_ARB read error [0x%x]: 0x%x\n", addr, ret);
-		return ret;
+		return ERROR_SPMI_READ_FAILED;
 	}
 
 	return read32(&regs->rdata0) & 0xff;
@@ -140,4 +146,25 @@ int spmi_read_bytes(uint32_t addr, uint8_t *data, uint32_t num_bytes)
 		data++;
 	}
 	return 0;
+}
+
+/* Helper to handle transient SPMI bus errors with retries */
+int spmi_read8_safe(uint32_t reg)
+{
+	int val;
+	int retries = 0;
+
+	do {
+		val = spmi_read8(reg);
+		if (val != ERROR_SPMI_READ_FAILED)
+			return val;
+
+		printk(BIOS_WARNING, "SPMI read error at 0x%x. Retry %d/%d in %dms\n",
+		       reg, retries + 1, MAX_SPMI_RETRIES, SPMI_RETRY_DELAY_MS);
+
+		mdelay(SPMI_RETRY_DELAY_MS);
+		retries++;
+	} while (retries < MAX_SPMI_RETRIES);
+
+	return ERROR_SPMI_READ_FAILED;
 }
