@@ -1186,6 +1186,14 @@ bool google_chromeec_is_charger_present(void)
 		  EC_HOST_EVENT_MASK(EC_HOST_EVENT_AC_CONNECTED));
 }
 
+/* This API checks if RTC event. */
+bool google_chromeec_is_rtc_event(void)
+{
+	/* Check if the Chrome EC has an active RTC event. */
+	return !!(google_chromeec_get_events_b() &
+		  EC_HOST_EVENT_MASK(EC_HOST_EVENT_RTC));
+}
+
 /*
  * Using below scenarios to conclude if device has a barrel charger attached.
  * +-----------+-----------------+------------------+---------------------------------+

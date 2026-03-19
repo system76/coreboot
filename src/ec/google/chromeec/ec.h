@@ -159,6 +159,14 @@ bool google_chromeec_is_usb_pd_attached(void);
 bool google_chromeec_is_charger_present(void);
 
 /**
+ * Check if the Chrome EC has an active RTC event.
+ *
+ * @return		true: if the RTC event is present
+ *			false: if the RTC event is not present
+ */
+bool google_chromeec_is_rtc_event(void);
+
+/**
  * Check if barrel charger is present.
  *
  * @return		true: if the barrel charger is present
