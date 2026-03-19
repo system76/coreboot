@@ -3,6 +3,7 @@
 #include <boot_device.h>
 #include <endian.h>
 #include <spi_flash.h>
+#include <amdblocks/psp.h>
 #include <amdblocks/spi.h>
 
 #if CONFIG_ROM_SIZE >= (16 * MiB)
@@ -22,8 +23,11 @@ const struct region_device *boot_device_ro(void)
 	/*
 	 * The following code assumes that ROM2 is mapped at flash offset 0. This is the default
 	 * configuration currently enforced by soft-straps.
+	 * When ROM Armor is enabled, don't call fch_spi_rom_remapping()
+	 * because the SPIBAR is no longer accessible.
 	 */
-	if (fch_spi_rom_remapping() != 0)
+	const bool rom_armor = psp_get_hsti_state_rom_armor_enforced();
+	if (!rom_armor && fch_spi_rom_remapping() != 0)
 		die("Non default SPI ROM remapping is not supported!");
 
 	return &boot_dev.rdev;
