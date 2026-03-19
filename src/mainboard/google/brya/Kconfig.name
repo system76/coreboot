@@ -45,6 +45,9 @@ config BOARD_GOOGLE_CROTA
 config BOARD_GOOGLE_DIRKS
 	bool "->  Dirks (Acer Chromebox Mini CXM2 (TWL))"
 
+config BOARD_GOOGLE_DIRKSON
+	bool "->  Dirkson"
+
 config BOARD_GOOGLE_DOCHI
 	bool "->  Dochi (Acer Chromebook Plus Spin 514)"
 
