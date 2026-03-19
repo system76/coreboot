@@ -58,11 +58,18 @@ enum charging_status {
 static int get_battery_icurr_ma(void)
 {
 	/* Read battery i-current value */
-	int icurr = spmi_read8(SMB1_CHGR_CHARGING_FCC);
-	if (icurr <= 0)
-		icurr = spmi_read8(SMB2_CHGR_CHARGING_FCC);
-	if (icurr < 0)
+	mdelay(5);
+	int icurr = spmi_read8_safe(SMB1_CHGR_CHARGING_FCC);
+	if (icurr <= 0) {
+		mdelay(5);
+		icurr = spmi_read8_safe(SMB2_CHGR_CHARGING_FCC);
+	}
+
+	/* Final safety: if both failed (still negative), treat as 0 */
+	if (icurr < 0) {
+		printk(BIOS_ERR, "Critical: Both SMB registers failed to read.\n");
 		icurr = 0;
+	}
 
 	icurr *= 50;
 	return icurr;
