@@ -67,12 +67,12 @@ void __weak fw_config_post_gpio_configure(void)
 	/* default implementation does nothing */
 }
 
-static void mainboard_pre_dev_init_chips(void *unused)
+static void mainboard_post_dev_init_chips(void *unused)
 {
 	fw_config_post_gpio_configure();
 }
 
-BOOT_STATE_INIT_ENTRY(BS_DEV_INIT_CHIPS, BS_ON_ENTRY, mainboard_pre_dev_init_chips, NULL);
+BOOT_STATE_INIT_ENTRY(BS_DEV_INIT_CHIPS, BS_ON_EXIT, mainboard_post_dev_init_chips, NULL);
 
 void __weak baseboard_devtree_update(void)
 {
