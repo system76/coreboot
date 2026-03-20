@@ -1,8 +1,8 @@
-Upcoming release - coreboot 26.03
+coreboot 26.03 release
 ========================================================================
 
 The coreboot project is pleased to announce the release of coreboot 26.03.
-This release incorporates 856 commits from 95 contributors, reflecting
+This release incorporates 876 commits from 95 contributors, reflecting
 continued focus on runtime configuration, security hardening, platform
 enablement, and memory/display data reliability across supported systems.
 
@@ -218,15 +218,15 @@ Platform Updates
 
 Statistics from the 25.12 to the 26.03 release
 --------------------------------------------
-* Total Commits: 856
-* Average Commits per day: 9.42
-* Total lines added: 107457
-* Average lines added per commit: 125.53
-* Number of patches adding more than 100 lines: 72
-* Average lines added per small commit: 41.11
-* Total lines removed: 22154
-* Average lines removed per commit: 25.88
-* Total difference between added and removed: 85303
+* Total Commits: 876
+* Average Commits per day: 9.53
+* Total lines added: 113570
+* Average lines added per commit: 129.65
+* Number of patches adding more than 100 lines: 78
+* Average lines added per small commit: 40.96
+* Total lines removed: 22309
+* Average lines removed per commit: 25.47
+* Total difference between added and removed: 91261
 * Total authors: 95
 
 
