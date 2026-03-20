@@ -9,6 +9,6 @@ romstage-y += romstage.c
 romstage-y += variants/$(VARIANT_DIR)/romstage.c
 
 ramstage-y += ramstage.c
-ramstage-y += tas5825m.c
 ramstage-y += variants/$(VARIANT_DIR)/gpio.c
 ramstage-y += variants/$(VARIANT_DIR)/hda_verb.c
+ramstage-$(CONFIG_DRIVERS_I2C_TAS5825M) += variants/$(VARIANT_DIR)/tas5825m.c

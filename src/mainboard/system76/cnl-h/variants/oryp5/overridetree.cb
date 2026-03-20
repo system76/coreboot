@@ -1,27 +1,12 @@
 # SPDX-License-Identifier: GPL-2.0-only
 
 chip soc/intel/cannonlake
-	register "common_soc_config" = "{
-		// Touchpad I2C bus
-		.i2c[0] = {
-			.speed = I2C_SPEED_FAST,
-			.rise_time_ns = 80,
-			.fall_time_ns = 110,
-		},
-	}"
-
 # CPU (soc/intel/cannonlake/cpu.c)
 	# Power limit
 	register "power_limits_config" = "{
 		.tdp_pl1_override = 45,
 		.tdp_pl2_override = 78,
 	}"
-
-	# Enable Enhanced Intel SpeedStep
-	register "eist_enable" = "true"
-
-# FSP Memory (soc/intel/cannonlake/romstage/fsp_params.c)
-	register "enable_c6dram" = "1"
 
 # FSP Silicon (soc/intel/cannonlake/fsp_params.c)
 	# Serial I/O
@@ -31,20 +16,8 @@ chip soc/intel/cannonlake
 		[PchSerialIoIndexUART2] = PchSerialIoPci, // Debug console
 	}"
 
-	# Misc
-	register "AcousticNoiseMitigation" = "1"
-
-	# Power
-	register "PchPmSlpS3MinAssert" = "3" # 50ms
-	register "PchPmSlpS4MinAssert" = "1" # 1s
-	register "PchPmSlpSusMinAssert" = "4" # 4s
-	register "PchPmSlpAMinAssert" = "4" # 2s
-
 	# Thermal
 	register "tcc_offset" = "13"
-
-	# Serial IRQ Continuous
-	register "serirq_mode" = "SERIRQ_CONTINUOUS"
 
 # PM Util (soc/intel/cannonlake/pmutil.c)
 	# GPE configuration
@@ -58,16 +31,7 @@ chip soc/intel/cannonlake
 # Actual device tree
 	device domain 0 on
 		subsystemid 0x1558 0x95e6 inherit
-		device ref peg0		on
-			# PCI Express Graphics #0 x16, Clock 8 (NVIDIA GPU)
-			register "PcieClkSrcUsage[8]" = "0x40"
-			register "PcieClkSrcClkReq[8]" = "8"
-		end
-		device ref igpu		on
-			register "gfx" = "GMA_DEFAULT_PANEL(0)"
-		end
-		device ref dptf		on	end
-		device ref thermal	on	end
+
 		device ref xhci		on
 			register "usb2_ports" = "{
 				[0] = USB2_PORT_TYPE_C(OC_SKIP),	/* Type-C */
@@ -88,7 +52,6 @@ chip soc/intel/cannonlake
 				[6] = USB3_PORT_DEFAULT(OC_SKIP),	/* 3G/LTE */
 			}"
 		end
-		device ref shared_sram	on	end
 		device ref cnvi_wifi	on
 			#chip drivers/intel/wifi
 			#	register "wake" = "PME_B0_EN_BIT"
@@ -138,23 +101,14 @@ chip soc/intel/cannonlake
 			register "PcieClkSrcUsage[15]" = "15"
 			register "PcieClkSrcClkReq[15]" = "15"
 		end
-		device ref lpc_espi	on
-			register "gen1_dec" = "0x00040069"
-			register "gen2_dec" = "0x00fc0e01"
-			register "gen3_dec" = "0x00fc0f01"
-			chip drivers/pc80/tpm
-				device pnp 0c31.0 on end
-			end
-		end
 		device ref hda		on
 			subsystemid 0x1558 0x96e1
-			register "PchHdaAudioLinkHda" = "1"
 		end
 		device ref smbus	on
 			chip drivers/i2c/tas5825m
 				register "id" = "0"
 				device i2c 4e on end # (8bit address: 0x9c)
-			end # tas5825m
+			end
 		end
 	end
 end

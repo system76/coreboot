@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#include <mainboard/gpio.h>
+#include <variant/gpio.h>
 #include <soc/gpe.h>
 #include <soc/gpio.h>
 
@@ -261,7 +261,7 @@ static const struct pad_config gpio_table[] = {
 	PAD_NC(GPP_K23, NONE),
 };
 
-void mainboard_configure_gpios(void)
+void variant_configure_gpios(void)
 {
 	gpio_configure_pads(gpio_table, ARRAY_SIZE(gpio_table));
 }
