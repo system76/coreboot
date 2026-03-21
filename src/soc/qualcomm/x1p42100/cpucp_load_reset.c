@@ -1,13 +1,21 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+#include <arch/cache.h>
+#include <arch/mmu.h>
 #include <console/console.h>
 #include <program_loading.h>
 #include <soc/cpucp.h>
 #include <device/mmio.h>
 #include <soc/addressmap.h>
+#include <soc/mmu_common.h>
+#include <soc/symbols_common.h>
+#include <symbols.h>
 
 void cpucp_fw_load_reset(void)
 {
+	/* map to cached region to force address to be 4 byte aligned */
+	mmu_config_range((void *)_cpucp, REGION_SIZE(cpucp), CACHED_RAM);
+
 	struct prog cpucp_dtbs_prog =
 		PROG_INIT(PROG_PAYLOAD, CONFIG_CBFS_PREFIX "/cpucp_dtbs");
 
@@ -21,6 +29,11 @@ void cpucp_fw_load_reset(void)
 
 	if (!selfload(&cpucp_fw_prog))
 		die("SOC image: CPUCP load failed");
+
+	/* flush cached region */
+	dcache_clean_by_mva(_cpucp, REGION_SIZE(cpucp));
+	/* remap back to device memory */
+	mmu_config_range((void *)_cpucp, REGION_SIZE(cpucp), DEV_MEM);
 
 	printk(BIOS_DEBUG, "SOC image: CPUCP image loaded successfully.\n");
 
