@@ -224,7 +224,7 @@ CPUCP_FILE := $(X1P42100_BLOB)/cpucp/cpucp.elf
 CPUCP_CBFS := $(CONFIG_CBFS_PREFIX)/cpucp
 $(CPUCP_CBFS)-file := $(CPUCP_FILE)
 $(CPUCP_CBFS)-type := payload
-$(CPUCP_CBFS)-compression := $(CBFS_COMPRESS_FLAG)
+$(CPUCP_CBFS)-compression := none
 cbfs-files-y += $(CPUCP_CBFS)
 
 ################################################################################
