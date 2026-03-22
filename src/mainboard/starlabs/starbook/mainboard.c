@@ -18,8 +18,3 @@ static void starlabs_configure_gpios(void *unused)
 BOOT_STATE_INIT_ENTRY(BS_PRE_DEVICE, BS_ON_ENTRY, starlabs_configure_gpios, NULL);
 
 struct chip_operations mainboard_ops = {};
-
-const char *mainboard_vbt_filename(void)
-{
-	return "vbt.bin";
-}
