@@ -6,6 +6,7 @@
 #include <drivers/option/cfr_frontend.h>
 #include <soc/soc_chip.h>
 #include <common/powercap.h>
+#include <common/touchpad.h>
 
 void cfr_card_reader_update(struct sm_object *new_obj);
 void cfr_touchscreen_update(struct sm_object *new_obj);
@@ -109,6 +110,66 @@ static const struct sm_object thunderbolt = SM_DECLARE_BOOL({
 	.ui_name	= "Thunderbolt",
 	.ui_helptext	= "Enable or disable Thunderbolt support",
 	.default_value	= true,
+});
+
+static const struct sm_object touchpad_haptics = SM_DECLARE_ENUM({
+	.opt_name	= "touchpad_haptics",
+	.ui_name	= "Touchpad Vibration Intensity",
+	.ui_helptext	= "Choose how strong the touchpad click vibration feels.",
+	.default_value	= STARLABS_TOUCHPAD_HAPTICS_DEFAULT,
+	.values		= (const struct sm_enum_value[]) {
+		{ "Off",	0 },
+		{ "Low",	1 },
+		{ "Medium",	2 },
+		{ "High",	3 },
+		{ "Maximum",	4 },
+		SM_ENUM_VALUE_END,
+	},
+});
+
+static const struct sm_object touchpad_force_press = SM_DECLARE_ENUM({
+	.opt_name	= "touchpad_force_press",
+	.ui_name	= "Touchpad Click Force",
+	.ui_helptext	= "Choose how much force it takes to click the touchpad.",
+	.default_value	= STARLABS_TOUCHPAD_PRESS_FORCE_DEFAULT,
+	.values		= (const struct sm_enum_value[]) {
+		{ "Minimal",	STARLABS_TOUCHPAD_FORCE_MINIMAL },
+		{ "Low",	STARLABS_TOUCHPAD_FORCE_LOW },
+		{ "Average",	STARLABS_TOUCHPAD_FORCE_AVERAGE },
+		{ "High",	STARLABS_TOUCHPAD_FORCE_HIGH },
+		{ "Hulk",	STARLABS_TOUCHPAD_FORCE_HULK },
+		SM_ENUM_VALUE_END,
+	},
+});
+
+static const struct sm_object touchpad_force_release = SM_DECLARE_ENUM({
+	.opt_name	= "touchpad_force_release",
+	.ui_name	= "Touchpad Release Force",
+	.ui_helptext	= "Choose how much force it takes for the touchpad click to release.",
+	.default_value	= STARLABS_TOUCHPAD_RELEASE_FORCE_DEFAULT,
+	.values		= (const struct sm_enum_value[]) {
+		{ "Minimal",	STARLABS_TOUCHPAD_FORCE_MINIMAL },
+		{ "Low",	STARLABS_TOUCHPAD_FORCE_LOW },
+		{ "Average",	STARLABS_TOUCHPAD_FORCE_AVERAGE },
+		{ "High",	STARLABS_TOUCHPAD_FORCE_HIGH },
+		{ "Hulk",	STARLABS_TOUCHPAD_FORCE_HULK },
+		SM_ENUM_VALUE_END,
+	},
+});
+
+static const struct sm_object touchpad_report_rate = SM_DECLARE_ENUM({
+	.opt_name	= "touchpad_report_rate",
+	.ui_name	= "Touchpad Tracking Speed",
+	.ui_helptext	= "Choose how quickly the touchpad reports movement.",
+	.default_value	= STARLABS_TOUCHPAD_REPORT_RATE_DEFAULT,
+	.values		= (const struct sm_enum_value[]) {
+		{ "Relaxed",	STARLABS_TOUCHPAD_RATE_RELAXED },
+		{ "Balanced",	STARLABS_TOUCHPAD_RATE_BALANCED },
+		{ "Fast",	STARLABS_TOUCHPAD_RATE_FAST },
+		{ "Ludicrous",	STARLABS_TOUCHPAD_RATE_LUDICROUS },
+		{ "Plaid",	STARLABS_TOUCHPAD_RATE_PLAID },
+		SM_ENUM_VALUE_END,
+	},
 });
 
 static const struct sm_object touchscreen = SM_DECLARE_BOOL({

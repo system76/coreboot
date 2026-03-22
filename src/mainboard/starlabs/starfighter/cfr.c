@@ -67,6 +67,17 @@ static struct sm_obj_form keyboard_group = {
 	},
 };
 
+static struct sm_obj_form trackpad_group = {
+	.ui_name = "Trackpad",
+	.obj_list = (const struct sm_object *[]) {
+		&touchpad_haptics,
+		&touchpad_force_press,
+		&touchpad_force_release,
+		&touchpad_report_rate,
+		NULL
+	},
+};
+
 static struct sm_obj_form leds_group = {
 	.ui_name = "LEDs",
 	.obj_list = (const struct sm_object *[]) {
@@ -156,6 +167,7 @@ static struct sm_obj_form *sm_root[] = {
 	&io_expansion_group,
 	#endif
 	&keyboard_group,
+	&trackpad_group,
 	&leds_group,
 	&pcie_power_management_group,
 	&performance_group,
