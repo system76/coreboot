@@ -7,6 +7,8 @@
 #ifndef _EC_STARLABS_EC_H
 #define _EC_STARLABS_EC_H
 
+#include <stdint.h>
+
 /*
  * Define the expected value of the PNP base address that is fixed through
  * the BADRSEL register controlled within the EC domain by the EC Firmware.
