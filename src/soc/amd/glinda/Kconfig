@@ -456,6 +456,51 @@ config CMOS_RECOVERY_BYTE
 	  This is the byte before the default first byte used by VBNV
 	  (0x26 + 0x0E - 1)
 
+menu "RAS Config Options"
+choice
+	prompt "PCIe AER Report Mechanism"
+	depends on SOC_AMD_FAEGAN
+	default AMD_PCIE_AER_OS_FIRST_HANDLING
+	help
+	  Choose a PCIe AER Report Mechanism.
+
+config AMD_PCIE_AER_PFEH_FIRMWARE_FIRST_REPORTING
+	bool "PFEH-based Firmware First reporting"
+
+config AMD_PCIE_AER_OS_FIRST_HANDLING
+	bool "OS First handling"
+
+config AMD_PCIE_AER_FIRMWARE_FIRST_HANDLING
+	bool "Firmware First handling through SMI"
+endchoice
+
+choice
+	prompt "AMD NBIO Ras Control V2"
+	depends on SOC_AMD_FAEGAN
+	default AMD_NBIO_RAS_MCA_REPORTING if SOC_AMD_FAEGAN
+	default AMD_NBIO_RAS_DISABLE
+	help
+	  Choose an AMD NBIO RAS control option.
+
+config AMD_NBIO_RAS_DISABLE
+	bool "Disable NBIO Ras Control"
+
+config AMD_NBIO_RAS_MCA_REPORTING
+	bool "MCA reporting"
+
+config AMD_NBIO_RAS_LEGACY_MODE
+	bool "Legacy Mode"
+endchoice
+
+config AMD_PCIE_ECRC_ENABLEMENT
+	bool "PCIe ECRC Enablement"
+	depends on SOC_AMD_FAEGAN
+	default y if SOC_AMD_FAEGAN
+	default n
+	help
+	  Enable/Disable PCIe ECRC support.
+endmenu
+
 if VBOOT_SLOTS_RW_AB && VBOOT_STARTS_BEFORE_BOOTBLOCK
 
 config RWA_REGION_ONLY
