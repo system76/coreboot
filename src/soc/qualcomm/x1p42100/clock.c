@@ -697,9 +697,9 @@ void enable_disp_clock_tcsr(void)
 
 static void speed_up_boot_cpu(void)
 {
-	/* 1363.2 MHz */
-	if (!pll_init_and_set(apss_ncc0, L_VAL_1363P2MHz))
-		printk(BIOS_DEBUG, "NCC Frequency bumped to 1.363(GHz)\n");
+	/* 3 GHz */
+	if (!pll_init_and_set(apss_ncc0, L_VAL_2995P2MHz))
+		printk(BIOS_DEBUG, "NCC Frequency bumped to 3.0(GHz)\n");
 }
 
 void clock_init(void)
