@@ -46,6 +46,9 @@ if BOARD_GOOGLE_BASEBOARD_FIZZ
 config DISABLE_HECI1_AT_PRE_BOOT
 	default y
 
+config INTEL_OC_MAILBOX_ENABLE_UNDERVOLTING
+	default y
+
 config DEVICETREE
 	default "variants/baseboard/devicetree.cb"
 
