@@ -1484,7 +1484,7 @@ static void integrate_bios_firmwares(context *ctx,
 				 * using an MMIO address is then not as simply as adding
 				 * the SPI_ROM_BASE offset anymore.
 				 */
-				if (fw_table[i].src + fw_table[i].size >= 16*MiB) {
+				if (fw_table[i].src + fw_table[i].size > 16*MiB) {
 					fprintf(stderr,
 						"APOB_NV location too high (0x%lx + 0x%lx)\n",
 						fw_table[i].src, fw_table[i].size);
