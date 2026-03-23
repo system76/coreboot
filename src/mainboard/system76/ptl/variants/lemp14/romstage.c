@@ -67,15 +67,15 @@ static const struct mb_cfg board_cfg = {
 
 static size_t get_spd_index(void)
 {
-    // 0: Foresee 16 GiB
-    // 1: Foresee 32 GiB
-    // 2: Micron 16 GiB
-    // 3: Micron 32 GiB
-    size_t index = 0;
-    if (gpio_get(GPP_E15)) {
-        // If BOARD_ID3 is high, the system uses Micron memory
-        index += 2;
-    }
+	// 0: Foresee 16 GiB
+	// 1: Foresee 32 GiB
+	// 2: Micron 16 GiB
+	// 3: Micron 32 GiB
+	size_t index = 0;
+	if (gpio_get(GPP_E15)) {
+		// If BOARD_ID3 is high, the system uses Micron memory
+		index += 2;
+	}
 	if (!gpio_get(GPP_E11)) {
 		// If BOARD_ID1 is low, the system has 32 GB of RAM
 		index += 1;
