@@ -192,4 +192,12 @@ static const struct sm_object pkg_power_limit_lock = SM_DECLARE_BOOL({
 	.default_value	= false,
 });
 
+/* Same semantics as CONFIG_DISABLE_HECI1_AT_PRE_BOOT; runtime override via CMOS/CBFS. */
+static const struct sm_object disable_heci1_at_pre_boot = SM_DECLARE_BOOL({
+	.opt_name	= "disable_heci1_at_pre_boot",
+	.ui_name	= "Disable HECI1 at end of boot",
+	.ui_helptext	= "Make HECI1 (CSE) function-disabled before handing off to the payload.",
+	.default_value	= CONFIG(DISABLE_HECI1_AT_PRE_BOOT),
+});
+
 #endif /* SOC_INTEL_CMN_CFR_H */
