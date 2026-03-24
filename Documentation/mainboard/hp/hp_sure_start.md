@@ -7,6 +7,9 @@ It is implemented in HP notebooks since 2013, and desktops since 2015.
 This document talks about some mechanism of HP Sure Start on some machines, and
 the method to bypass it.
 
+The method may no longer be applicable to more recent boards. HP has a later
+[revision of the whitepaper] from 2019 and there may be others.
+
 ## Laptops with SMSC MEC1322 embedded controller
 
 Haswell EliteBook, ZBook and ProBook 600 series use SMSC MEC1322 embedded controller.
@@ -57,4 +60,5 @@ located at the high address of the flash chip (and in the protected region),
 we can leave it untouched, and do not need to extract the EC firmware to put it in
 the coreboot image.
 
-[HP Sure Start Technical Whitepaper]: http://h10032.www1.hp.com/ctg/Manual/c05163901
+[HP Sure Start Technical Whitepaper]: https://h10032.www1.hp.com/ctg/Manual/c05163901.pdf
+[revision of the whitepaper]: https://h10032.www1.hp.com/ctg/Manual/c06216928.pdf
