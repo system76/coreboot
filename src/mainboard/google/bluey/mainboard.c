@@ -188,8 +188,8 @@ static void trigger_critical_battery_shutdown(void)
  */
 static void handle_low_power_charging_boot(void)
 {
-	if (!pll_init_and_set(apss_ncc0, L_VAL_806MHz))
-		printk(BIOS_DEBUG, "CPU Frequency set to 806MHz\n");
+	if (!pll_init_and_set(apss_ncc0, L_VAL_710P4MHz))
+		printk(BIOS_DEBUG, "CPU Frequency set to 710MHz\n");
 
 	enable_fast_battery_charging();
 
