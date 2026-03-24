@@ -508,6 +508,7 @@ chip soc/intel/pantherlake
 						# SoundWire Link 3 ID 0
 						register "desc" = ""Headset Codec""
 						register "sub" = ""1337""
+						register "detect_us" = "DET_100_US"
 						device generic 3.0 on end
 					end
 					chip drivers/soundwire/cs35l56
