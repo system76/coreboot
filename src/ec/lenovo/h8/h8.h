@@ -70,7 +70,7 @@ void h8_mb_init(void);
 #define H8_LED_CONTROL			0x0c
 #define H8_LED_CONTROL_OFF		0x00
 #define H8_LED_CONTROL_ON		0x80
-#define H8_LED_CONTROL_PULSE		0xa0	/* Some models, power LED only*/
+#define H8_LED_CONTROL_PULSE		0xa0	/* Some models, power LED and logo LED only*/
 #define H8_LED_CONTROL_BLINK		0xc0
 
 #define H8_LED_CONTROL_POWER_LED	0x00
@@ -80,6 +80,7 @@ void h8_mb_init(void);
 #define H8_LED_CONTROL_SUSPEND_LED	0x07
 #define H8_LED_CONTROL_DOCK_LED1	0x08
 #define H8_LED_CONTROL_DOCK_LED2	0x09
+#define H8_LED_CONTROL_LOGO_LED		0x0a	/* red i-dot LED in ThinkPad logo (display lid) */
 #define H8_LED_CONTROL_ACDC_LED		0x0c
 #define H8_LED_CONTROL_MUTE_LED		0x0e
 

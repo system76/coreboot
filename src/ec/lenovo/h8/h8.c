@@ -268,6 +268,7 @@ static void h8_enable(struct device *dev)
 	 * (Without this warm reboot leaves LEDs off)
 	 */
 	ec_write(H8_LED_CONTROL, H8_LED_CONTROL_ON | H8_LED_CONTROL_POWER_LED);
+	ec_write(H8_LED_CONTROL, H8_LED_CONTROL_ON | H8_LED_CONTROL_LOGO_LED);
 
 	beepmask0 = conf->beepmask0;
 	beepmask1 = conf->beepmask1;
