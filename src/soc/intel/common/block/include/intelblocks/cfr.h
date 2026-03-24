@@ -184,4 +184,12 @@ static const struct sm_object bios_lock = SM_DECLARE_BOOL({
 	.default_value	= CONFIG(BOOTMEDIA_SMM_BWP),
 }, WITH_CALLBACK(update_smm_bwp));
 
+static const struct sm_object pkg_power_limit_lock = SM_DECLARE_BOOL({
+	.opt_name	= "pkg_power_limit_lock",
+	.ui_name	= "Package power limit lock",
+	.ui_helptext	= "Lock the package power limits after programming.\n"
+			  "This prevents the power limits from being changed by the OS or runtime tools.",
+	.default_value	= false,
+});
+
 #endif /* SOC_INTEL_CMN_CFR_H */
