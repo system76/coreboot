@@ -220,7 +220,9 @@ static void mainboard_init(void *chip_info)
 	configure_parallel_charging();
 	configure_debug_access_port();
 
-	display_startup();
+	/* Do early display init for low/off-mode charging */
+	if (get_boot_mode() != LB_BOOT_MODE_NORMAL)
+		display_startup();
 
 	/*
 	 * Low-battery boot indicator is done. Therefore, power off if battery
@@ -270,9 +272,12 @@ static void load_qc_se_firmware_late(void)
 		qupv3_se_fw_load_and_init(QUPV3_2_SE2, SE_PROTOCOL_SPI, MIXED); /* Fingerprint SPI */
 }
 
-static void mainboard_enable(struct device *dev)
+static void mainboard_late_init(struct device *dev)
 {
 	load_qc_se_firmware_late();
+
+	/* Do late display init in normal boot mode */
+	display_startup();
 
 	/* Enable touchpad power */
 	if (CONFIG_MAINBOARD_GPIO_PIN_FOR_TOUCHPAD_POWER)
@@ -287,6 +292,11 @@ static void mainboard_enable(struct device *dev)
 
 	/* Setup audio related initial config */
 	setup_audio();
+}
+
+static void mainboard_enable(struct device *dev)
+{
+	dev->ops->init = &mainboard_late_init;
 }
 
 struct chip_operations mainboard_ops = {
