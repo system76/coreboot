@@ -569,9 +569,6 @@ static enum cb_err pcie_initiate_link(void)
 {
 	gcom_pcie_get_config(&qcom_pcie_cfg);
 
-	/* Ensure PCIe endpoints are powered-on before initiating PCIe link training */
-	gcom_pcie_power_on_ep();
-
 	printk(BIOS_INFO, "Setup PCIe in RC mode\n");
 
 	/* Configure PERST gpio */
