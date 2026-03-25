@@ -16,6 +16,8 @@
 #include <gpio.h>
 #include <halt.h>
 #include <soc/clock.h>
+#include <soc/display/edp_ctrl.h>
+#include <soc/display/mdssreg.h>
 #include <soc/pcie.h>
 #include <soc/qupv3_config_common.h>
 #include <soc/qupv3_i2c_common.h>
@@ -199,14 +201,24 @@ static void edp_enable_backlight(void)
 
 static void qcom_mdss_edp_init(struct edid *edid, uintptr_t fb_addr)
 {
-	/* TODO: Initialize eDP and DSI */
+	if (edp_ctrl_init(edid) != CB_SUCCESS)
+		return;
+
+	configure_vbif_qos();
+	mdss_layer_mixer_setup(edid);
+	mdss_source_pipe_config(edid, fb_addr);
+
+	intf_tg_setup(edid);
+	intf_fetch_start_config(edid);
+
+	merge_3d_active();
 }
 
 static void qcom_mdp_start(uintptr_t fb_addr)
 {
 	stopwatch_init_msecs_expire(&splash_sw, BATTERY_CHARGING_SPLASH_TIMEOUT_MS);
 
-	/* TODO: Enable timing engine */
+	write32(&mdp_intf->timing_eng_enable, 1);
 }
 
 static void qcom_mdp_stop(void)
@@ -217,7 +229,7 @@ static void qcom_mdp_stop(void)
 	while (!stopwatch_expired(&splash_sw))
 		mdelay(100);
 
-	/* TODO: Disable timing engine */
+	write32(&mdp_intf->timing_eng_enable, 0);
 }
 
 static void display_logo(enum lb_fb_orientation orientation,
