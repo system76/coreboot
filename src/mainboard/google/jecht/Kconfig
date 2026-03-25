@@ -69,4 +69,7 @@ config EDK2_BOOT_TIMEOUT
 	int
 	default 5
 
+config INTEL_OC_MAILBOX_ENABLE_UNDERVOLTING
+	default y
+
 endif
