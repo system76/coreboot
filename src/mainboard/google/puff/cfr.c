@@ -2,6 +2,7 @@
 
 #include <boot/coreboot_tables.h>
 #include <baseboard/board.h>
+#include <drivers/intel/oc_mailbox/cfr.h>
 #include <drivers/option/cfr_frontend.h>
 #include <ec/google/chromeec/cfr.h>
 #include <intelblocks/cfr.h>
@@ -79,6 +80,9 @@ static struct sm_obj_form *sm_root[] = {
 	&system,
 	&ec,
 	&power,
+#if CONFIG(INTEL_OC_MAILBOX_ENABLE_UNDERVOLTING)
+	&cpu_voltage,
+#endif
 	NULL
 };
 
