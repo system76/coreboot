@@ -2,6 +2,7 @@
 
 #include <boot/coreboot_tables.h>
 #include <cpu/intel/haswell/cfr.h>
+#include <drivers/intel/oc_mailbox/cfr.h>
 #include <drivers/option/cfr_frontend.h>
 #include <southbridge/intel/lynxpoint/cfr.h>
 
@@ -53,6 +54,9 @@ static struct sm_obj_form power = {
 static struct sm_obj_form *sm_root[] = {
 	&system,
 	&power,
+#if CONFIG(INTEL_OC_MAILBOX_ENABLE_UNDERVOLTING)
+	&cpu_voltage,
+#endif
 	NULL
 };
 
