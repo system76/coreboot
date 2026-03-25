@@ -6,6 +6,7 @@
 #include <program_loading.h>
 #include <soc/cpucp.h>
 #include <device/mmio.h>
+#include <security/vboot/vboot_common.h>
 #include <soc/addressmap.h>
 #include <soc/mmu_common.h>
 #include <soc/symbols_common.h>
@@ -24,8 +25,11 @@ void cpucp_fw_load_reset(void)
 
 	printk(BIOS_DEBUG, "SOC image: CPUCP DTBS image loaded successfully.\n");
 
-	struct prog cpucp_fw_prog =
-		PROG_INIT(PROG_PAYLOAD, CONFIG_CBFS_PREFIX "/cpucp");
+	const char *cpucp_name = (CONFIG(VBOOT) && !vboot_recovery_mode_enabled())
+			 ? CONFIG_CBFS_PREFIX "/cpucp_rw"
+			 : CONFIG_CBFS_PREFIX "/cpucp_ro";
+
+	struct prog cpucp_fw_prog = PROG_INIT(PROG_PAYLOAD, cpucp_name);
 
 	if (!selfload(&cpucp_fw_prog))
 		die("SOC image: CPUCP load failed");
