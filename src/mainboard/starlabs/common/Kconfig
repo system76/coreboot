@@ -48,6 +48,9 @@ config STARLABS_ACPI_EFI_OPTION_SMI
 	  (e.g. keyboard backlight and trackpad state) to the UEFI variable
 	  store via an SMM APMC SMI handler.
 
+config SOC_INTEL_COMMON_BLOCK_SMM_TCO_INTRUDER_SMI_ENABLE
+	default n
+
 source "src/mainboard/starlabs/common/hda/Kconfig"
 
 endmenu
