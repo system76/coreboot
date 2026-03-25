@@ -9,9 +9,30 @@
 
 int parse_integer(char *src, int base);
 int copy_string(const char *src);
+
+char *lineptr = NULL;
+size_t linebuffer_len = 0;
+ssize_t consumed = 0;
+ssize_t available = 0;
+
+size_t min(size_t a, size_t b);
+#define YY_INPUT(buf,result,max_size) { \
+	if(available <= 0) { \
+		consumed = 0; \
+		available = getline(&lineptr, &linebuffer_len, yyin); \
+		if (available < 0) { \
+		if (ferror(yyin)) { perror("read error:"); } \
+			available = 0; \
+		} \
+	} \
+	result = min(available, max_size); \
+	strncpy(buf, lineptr + consumed, result); \
+	consumed += result; \
+	available -= result; \
+	}
 %}
 
-%option noyywrap
+%option noyywrap yylineno noinput
 %s FLAGS
 
 MULTIPLIER [KMG]
@@ -63,4 +84,8 @@ int copy_string(const char *src)
 {
 	yylval.strval = strdup(src);
 	return STRING;
+}
+
+size_t min(size_t a, size_t b) {
+	return b < a ? b : a;
 }

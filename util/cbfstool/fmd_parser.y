@@ -8,6 +8,9 @@
 #include <stdlib.h>
 
 struct flashmap_descriptor *res = NULL;
+
+extern int yylineno;
+extern char *lineptr;
 %}
 
 %union {
@@ -176,5 +179,6 @@ struct flashmap_descriptor *parse_descriptor(
 
 void yyerror(const char *s)
 {
-	fprintf(stderr, "%s\n", s);
+	fprintf(stderr, "error: %s in line %d:\n", s, yylineno);
+	fprintf(stderr, "> %s\n", lineptr);
 }

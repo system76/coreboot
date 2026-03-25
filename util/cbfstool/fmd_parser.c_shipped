@@ -75,6 +75,9 @@
 
 struct flashmap_descriptor *res = NULL;
 
+extern int yylineno;
+extern char *lineptr;
+
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -515,9 +518,9 @@ static const yytype_int8 yytranslate[] =
 /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_int8 yyrline[] =
 {
-       0,    68,    68,    74,    88,    95,    96,    97,    97,    98,
-      99,   100,   101,   102,   103,   104,   105,   107,   111,   112,
-     113,   124
+       0,    71,    71,    77,    91,    98,    99,   100,   100,   101,
+     102,   103,   104,   105,   106,   107,   108,   110,   114,   115,
+     116,   127
 };
 #endif
 
@@ -1435,7 +1438,9 @@ struct flashmap_descriptor *parse_descriptor(
 	return region;
 }
 
+
 void yyerror(const char *s)
 {
-	fprintf(stderr, "%s\n", s);
+	fprintf(stderr, "error: %s in line %d:\n", s, yylineno);
+	fprintf(stderr, "> %s\n", lineptr);
 }
