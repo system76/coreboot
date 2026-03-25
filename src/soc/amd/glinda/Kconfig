@@ -117,10 +117,12 @@ config CHIPSET_DEVICETREE
 config VGA_BIOS_FILE
 	string
 	default "3rdparty/amd_blobs/strix_krackan/KRK2E_GENERIC_vbios.sbin" if SOC_AMD_FAEGAN
+	default "3rdparty/amd_blobs/strix_krackan/StrixKrackan_Generic_VBIOS.sbin"
 
 config VGA_BIOS_ID
 	string
-	default "1002,1902"
+	default "1002,1902" if SOC_AMD_FAEGAN
+	default "1002,150e"
 	help
 	  The default VGA BIOS PCI vendor/device ID should be set to the
 	  result of the map_oprom_vendev() function in graphics.c.
