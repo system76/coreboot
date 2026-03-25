@@ -3,4 +3,4 @@
 #include <types.h>
 #include <mainboard/addressmap.h>
 
-uintptr_t io_port_mmio_base = QEMU_VIRT_FW_CFG;
+uintptr_t io_port_mmio_base = QEMU_VIRT_PCIE_PIO;
