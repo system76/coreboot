@@ -1,0 +1,208 @@
+#!/usr/bin/env bash
+#
+# SPDX-License-Identifier: GPL-2.0-only
+#
+# Identify new contributors between two git points in time.
+# Optionally update the AUTHORS file with any newly found names.
+
+set -euo pipefail
+
+usage() {
+	echo
+	echo "Usage: $0 [--update] [--full] <old_version> <new_version>"
+	echo
+	echo "Examples:"
+	echo "  $0 24.02 25.01"
+	echo "  $0 --update 24.02 25.01"
+	echo "  $0 --full 24.02 25.01"
+	echo
+	echo "Notes:"
+	echo "  * 'old_version' and 'new_version' can be tags, branches, or commit IDs."
+	echo "  * New contributors are names present in history up to new_version"
+	echo "    that were not present in history up to old_version."
+	echo
+}
+
+fail() {
+	echo "ERROR: $*" >&2
+	exit 1
+}
+
+UPDATE=0
+FULL=0
+
+while [ $# -gt 0 ]; do
+	case "$1" in
+	--update)
+		UPDATE=1
+		shift
+		;;
+	--full)
+		FULL=1
+		shift
+		;;
+	-h|--help)
+		usage
+		exit 0
+		;;
+	--)
+		shift
+		break
+		;;
+	-*)
+		fail "Unknown option: $1"
+		;;
+	*)
+		break
+		;;
+	esac
+done
+
+[ $# -eq 2 ] || { usage; exit 1; }
+
+OLD_GIT_VERSION="$1"
+NEW_GIT_VERSION="$2"
+
+if ! { cdup="$(git rev-parse --show-cdup 2>/dev/null)" && [ -z "${cdup}" ]; }; then
+	fail "This is not the top directory of a git repo."
+fi
+
+git rev-parse --verify "${OLD_GIT_VERSION}^{commit}" >/dev/null 2>&1 || \
+	fail "Invalid old_version: ${OLD_GIT_VERSION}"
+git rev-parse --verify "${NEW_GIT_VERSION}^{commit}" >/dev/null 2>&1 || \
+	fail "Invalid new_version: ${NEW_GIT_VERSION}"
+
+before_emails="$(mktemp)"
+after_emails="$(mktemp)"
+new_emails_tmp="$(mktemp)"
+new_names_tmp="$(mktemp)"
+trap 'rm -f "$before_emails" "$after_emails" "$new_emails_tmp" "$new_names_tmp"' EXIT
+
+git log --pretty=%ae "${OLD_GIT_VERSION}" 2>/dev/null | \
+	awk '{ print tolower($0) }' | sort -u > "$before_emails"
+git log --pretty=%ae "${NEW_GIT_VERSION}" 2>/dev/null | \
+	awk '{ print tolower($0) }' | sort -u > "$after_emails"
+
+grep -Fxv -f "$before_emails" "$after_emails" > "$new_emails_tmp" || true
+NEW_AUTHOR_COUNT="$(wc -l < "$new_emails_tmp" | tr -d ' ')"
+
+# Map each newly seen email to the first author name observed in the target range.
+git log --reverse --pretty=format:'%ae%x1f%an' "${OLD_GIT_VERSION}..${NEW_GIT_VERSION}" | \
+	awk -F '\x1f' '
+		NR == FNR {
+			new_emails[$1] = 1
+			next
+		}
+		{
+			email = tolower($1)
+			if (new_emails[email] && !seen[email]) {
+				print $2
+				seen[email] = 1
+			}
+		}
+	' "$new_emails_tmp" - > "$new_names_tmp"
+
+printf "New contributors between %s and %s:\n" "$OLD_GIT_VERSION" "$NEW_GIT_VERSION"
+if [ "$NEW_AUTHOR_COUNT" -eq 0 ]; then
+	echo "(none)"
+elif [ "$FULL" -eq 0 ]; then
+	cat "$new_names_tmp"
+else
+	while IFS= read -r author_email; do
+		first_commit="$(
+			git log --reverse --date=short \
+				--pretty=format:'%an%x1f%ae%x1f%ad%x1f%H%x1f%s' \
+				"${OLD_GIT_VERSION}..${NEW_GIT_VERSION}" | \
+				awk -F '\x1f' -v author_email="$author_email" '
+					!found && tolower($2) == author_email {
+						print $1 "\x1f" $2 "\x1f" $3 "\x1f" $4 "\x1f" $5
+						found = 1
+					}
+				'
+		)"
+		if [ -z "$first_commit" ]; then
+			printf "* (unknown) | email: %s | date: (unknown) | hash: (unknown) | subject: (unknown)\n" \
+				"$author_email"
+			continue
+		fi
+		IFS=$'\x1f' read -r author_name commit_email first_date first_hash first_subject <<EOF
+$first_commit
+EOF
+		printf "* %s | email: %s | date: %s | hash: %s | subject: %s\n" \
+			"$author_name" "$commit_email" "$first_date" "$first_hash" "$first_subject"
+	done < "$new_emails_tmp"
+fi
+
+printf "\nCount: %s\n" "$NEW_AUTHOR_COUNT"
+
+if [ "$UPDATE" -eq 1 ]; then
+
+	if [ "$NEW_AUTHOR_COUNT" -eq 0 ]; then
+		echo "No AUTHORS update needed."
+		exit 0
+	fi
+
+	AUTHORS_FILE="AUTHORS"
+	[ -f "$AUTHORS_FILE" ] || fail "AUTHORS file not found at repo root."
+
+	header_tmp="$(mktemp)"
+	existing_names_tmp="$(mktemp)"
+	new_names_sorted_tmp="$(mktemp)"
+	working_names_tmp="$(mktemp)"
+	inserted_tmp="$(mktemp)"
+	new_authors_file_tmp="$(mktemp)"
+	trap 'rm -f "$before_emails" "$after_emails" "$new_emails_tmp" "$new_names_tmp" "$header_tmp" "$existing_names_tmp" "$new_names_sorted_tmp" "$working_names_tmp" "$inserted_tmp" "$new_authors_file_tmp"' EXIT
+
+	# Header is the leading comment/blank block.
+	awk '
+		BEGIN { in_header = 1 }
+		in_header && ($0 ~ /^#/ || $0 ~ /^[[:space:]]*$/) { print; next }
+		{ in_header = 0 }
+	' "$AUTHORS_FILE" > "$header_tmp"
+
+	# Names start at the first non-comment, non-blank line.
+	awk '
+		BEGIN { in_names = 0 }
+		!in_names && ($0 ~ /^#/ || $0 ~ /^[[:space:]]*$/) { next }
+		{ in_names = 1; print }
+	' "$AUTHORS_FILE" > "$existing_names_tmp"
+
+	sed '/^[[:space:]]*$/d' "$new_names_tmp" | LC_ALL=C sort -fu > "$new_names_sorted_tmp"
+	cp "$existing_names_tmp" "$working_names_tmp"
+
+	while IFS= read -r new_author; do
+		# Skip if a case-insensitive match already exists.
+		if awk -v new_author="$new_author" '
+			BEGIN { found = 1; target = tolower(new_author) }
+			tolower($0) == target { found = 0; exit }
+			END { exit found }
+		' "$working_names_tmp"; then
+			continue
+		fi
+
+		# Insert at the first case-insensitive position that sorts after new_author.
+		awk -v new_author="$new_author" '
+			BEGIN { inserted = 0; target = tolower(new_author) }
+			{
+				if (!inserted && tolower($0) > target) {
+					print new_author
+					inserted = 1
+				}
+				print
+			}
+			END {
+				if (!inserted)
+					print new_author
+			}
+		' "$working_names_tmp" > "$inserted_tmp"
+		mv "$inserted_tmp" "$working_names_tmp"
+	done < "$new_names_sorted_tmp"
+
+	{
+		cat "$header_tmp"
+		cat "$working_names_tmp"
+	} > "$new_authors_file_tmp"
+
+	mv "$new_authors_file_tmp" "$AUTHORS_FILE"
+	echo "Updated AUTHORS with ${NEW_AUTHOR_COUNT} new contributor(s)."
+fi
