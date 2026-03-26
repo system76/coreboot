@@ -20,16 +20,6 @@ chip soc/intel/pantherlake
 
 	device domain 0 on
 		device ref system_agent on end
-		device ref igpu on
-			# DDIA is eDP, TCP3 is HDMI
-			register "ddi_port_A_config" = "1"
-			register "ddi_ports_config" = "{
-				[DDI_PORT_A] = DDI_ENABLE_HPD,
-				[DDI_PORT_3] = DDI_ENABLE_HPD | DDI_ENABLE_DDC,
-			}"
-
-			#TODO: not in pantherlake chip: register "gfx" = "GMA_DEFAULT_PANEL(0)"
-		end
 		device ref npu on end
 		device ref pmc_shared_sram on end
 		device ref cnvi_wifi on

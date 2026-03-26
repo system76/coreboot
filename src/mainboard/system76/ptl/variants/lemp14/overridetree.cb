@@ -10,6 +10,28 @@ chip soc/intel/pantherlake
 	device domain 0 on
 		subsystemid 0x1558 0x2a00 inherit
 
+		device ref igpu on
+			# DDIA is eDP, TCP3 is HDMI
+			register "ddi_port_A_config" = "1"
+			register "ddi_ports_config" = "{
+				[DDI_PORT_A] = DDI_ENABLE_HPD,
+				[DDI_PORT_3] = DDI_ENABLE_HPD | DDI_ENABLE_DDC,
+			}"
+
+			chip drivers/gfx/generic
+				register "device_count" = "3"
+				# DDIA: eDP
+				register "device[0].name" = ""LCD0""
+				register "device[0].type" = "panel"
+				# TCP0: TBT
+				register "device[1].name" = ""DD01""
+				register "device[1].use_pld" = "true"
+				register "device[1].pld" = "ACPI_PLD_TYPE_C(LEFT, CENTER, ACPI_PLD_GROUP(1, 1))"
+				# TCP3: HDMI
+				register "device[2].name" = ""DD02""
+				device generic 0 on end
+			end
+		end
 		device ref tbt_pcie_rp0 on end
 		device ref tcss_xhci on
 			register "tcss_ports[0]" = "TCSS_PORT_DEFAULT(OC_SKIP)"
