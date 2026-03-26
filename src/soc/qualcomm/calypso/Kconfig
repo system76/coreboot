@@ -1,0 +1,67 @@
+## SPDX-License-Identifier: GPL-2.0-only
+
+config SOC_QUALCOMM_CALYPSO_BASE
+	bool
+	default n
+	select ARCH_BOOTBLOCK_ARMV8_64
+	select ARCH_RAMSTAGE_ARMV8_64
+	select ARCH_ROMSTAGE_ARMV8_64
+	select ARCH_VERSTAGE_ARMV8_64
+	select ARM64_USE_ARCH_TIMER
+	select CACHE_MRC_SETTINGS
+	select COMMONLIB_STORAGE
+	select COMMONLIB_STORAGE_SD
+	select FIXED_UART_FOR_CONSOLE
+	select GENERIC_GPIO_LIB
+	select GENERIC_UDELAY
+	select HAS_RECOVERY_MRC_CACHE
+	select HAVE_CBFS_FILE_OPTION_BACKEND
+	select HAVE_LINEAR_FRAMEBUFFER
+	select HAVE_MONOTONIC_TIMER
+	select HAVE_UART_SPECIAL
+	select MAINBOARD_FORCE_NATIVE_VGA_INIT
+	select MAINBOARD_HAS_NATIVE_VGA_INIT
+	select SOC_QUALCOMM_COMMON
+	select SOC_QUALCOMM_QCLIB_SKIP_MMU_TOGGLE
+
+config SOC_QUALCOMM_CALYPSO
+	bool
+	select SOC_QUALCOMM_CALYPSO_BASE
+	default n
+	help
+	  Choose this option if the mainboard is built using Calypso system-on-a-chip SoC.
+
+if SOC_QUALCOMM_CALYPSO_BASE
+
+config QC_BLOBS_UPSTREAM
+	bool "QC blobs are available in upstream repository"
+	select USE_QC_BLOBS
+	default n
+	help
+	  Select based on availability of QC blobs in upstream coreboot `3rdparty/qc_blobs`.
+
+config MEMLAYOUT_LD_FILE
+	string
+	default "src/soc/qualcomm/calypso/memlayout.ld"
+
+config VBOOT
+	select VBOOT_MUST_REQUEST_DISPLAY
+	select VBOOT_RETURN_FROM_VERSTAGE
+	select VBOOT_SEPARATE_VERSTAGE
+	select VBOOT_STARTS_IN_BOOTBLOCK
+
+config BOOT_DEVICE_SPI_FLASH_BUS
+	int
+	default 0 # TODO
+
+config UART_FOR_CONSOLE
+	int
+	default 0 # TODO
+	help
+	 Select the QUP instance to be used for UART console output.
+
+config UART_BITBANG_TX_DELAY_MS
+	int
+	default 1
+
+endif
