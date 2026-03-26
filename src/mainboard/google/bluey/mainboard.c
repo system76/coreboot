@@ -178,6 +178,7 @@ static void trigger_critical_battery_shutdown(void)
 
 	platform_handle_emergency_low_battery();
 
+	configure_dam_on_system_state_change(false);
 	google_chromeec_ap_poweroff();
 }
 
