@@ -1,0 +1,15 @@
+/* SPDX-License-Identifier: GPL-2.0-only */
+
+#ifndef MAINBOARD_GOOGLE_MENSA_BOARD_H
+#define MAINBOARD_GOOGLE_MENSA_BOARD_H
+
+#include <assert.h>
+#include <gpio.h>
+
+/* TODO: update as per datasheet */
+#define GPIO_AP_EC_INT		GPIO(0)
+#define GPIO_GSC_AP_INT		GPIO(0)
+
+void setup_chromeos_gpios(void);
+
+#endif /* MAINBOARD_GOOGLE_MENSA_BOARD_H */

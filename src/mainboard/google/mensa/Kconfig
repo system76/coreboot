@@ -1,0 +1,97 @@
+## SPDX-License-Identifier: GPL-2.0-only
+
+config BOARD_GOOGLE_MENSA_COMMON
+	def_bool n
+	select COMMON_CBFS_SPI_WRAPPER
+	# FIXME: keep ADB for development phase
+	select GBB_FLAG_ENABLE_ADB if VBOOT
+	select MAINBOARD_HAS_CHROMEOS
+	select SPI_FLASH
+	select SPI_FLASH_FORCE_4_BYTE_ADDR_MODE
+	select SPI_FLASH_INCLUDE_ALL_DRIVERS
+
+config BOARD_GOOGLE_BASEBOARD_MENSA
+	def_bool n
+	select BOARD_GOOGLE_MENSA_COMMON
+
+config BOARD_GOOGLE_MODEL_MENSA
+	def_bool n
+	select BOARD_GOOGLE_BASEBOARD_MENSA
+	select BOARD_ROMSIZE_KB_32768
+	select EC_GOOGLE_CHROMEEC_BATTERY_SOC_DYNAMIC
+	select MAINBOARD_HAS_CHROME_EC
+	select MAINBOARD_HAS_GOOGLE_TPM
+
+config BOARD_GOOGLE_MENSA
+	select BOARD_GOOGLE_MODEL_MENSA
+	select SOC_QUALCOMM_CALYPSO
+
+if BOARD_GOOGLE_MENSA_COMMON
+
+config MAINBOARD_DIR
+	default "google/mensa"
+
+config MAINBOARD_HAS_GOOGLE_TPM
+	bool
+	default n
+	select I2C_TPM
+	select MAINBOARD_HAS_TPM2
+	select TPM_GOOGLE_TI50
+	help
+	  Enable this option if your mainboard is equipped with Google TPM aka GSC.
+
+config MAINBOARD_HAS_CHROME_EC
+	bool
+	default n
+	select EC_GOOGLE_CHROMEEC
+	select EC_GOOGLE_CHROMEEC_RTC
+	select EC_GOOGLE_CHROMEEC_SPI
+	select EC_GOOGLE_CHROMEEC_SWITCHES if VBOOT
+	select RTC
+	help
+	  Enable this option if your mainboard is equipped with Chrome EC.
+
+config MAINBOARD_VENDOR
+	string
+	default "Google"
+
+config VBOOT
+	select VBOOT_ALWAYS_ENABLE_DISPLAY
+	select VBOOT_LID_SWITCH if MAINBOARD_HAS_CHROME_EC
+	select VBOOT_NO_BOARD_SUPPORT if !MAINBOARD_HAS_CHROME_EC
+	select VBOOT_VBNV_FLASH
+
+##########################################################
+#### Update below when adding a new derivative board. ####
+##########################################################
+
+config MAINBOARD_PART_NUMBER
+	default "Mensa" if BOARD_GOOGLE_MENSA
+
+config DRIVER_TPM_I2C_BUS
+	depends on I2C_TPM
+	hex
+	default 0x0 # TODO
+
+config DRIVER_TPM_I2C_ADDR
+	default 0x50
+
+config EC_GOOGLE_CHROMEEC_SPI_BUS
+	depends on EC_GOOGLE_CHROMEEC
+	hex
+	default 0x0 # TODO
+
+config MAINBOARD_GPIO_PIN_FOR_GSC_AP_INTERRUPT
+	depends on TPM_GOOGLE_TI50
+	int
+	default 0 # TODO
+	help
+	  This option specifies the GPIO pin number on the mainboard that is
+	  used for the interrupt line from the Google Security Chip (GSC) to the
+	  Application Processor (AP).
+
+config FMDFILE
+	default "src/mainboard/\$(CONFIG_MAINBOARD_DIR)/chromeos.fmd" if MAINBOARD_HAS_GOOGLE_TPM
+	default "src/mainboard/\$(CONFIG_MAINBOARD_DIR)/chromeos-nogsc.fmd"
+
+endif # BOARD_GOOGLE_MENSA_COMMON

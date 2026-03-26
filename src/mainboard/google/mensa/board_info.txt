@@ -1,0 +1,6 @@
+Vendor name: Google
+Board name: Mensa reference board with Calypso SoC
+Category: eval
+ROM protocol: SPI
+ROM socketed: n
+Flashrom support: y
