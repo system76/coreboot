@@ -168,6 +168,9 @@ static void mainboard_setup_peripherals_early(void)
 
 	edp_configure_gpios();
 
+	/* This GPIO has external pullup hence disable default PD */
+	gpio_input(GPIO_LID_OPEN_S3);
+
 	/* Setup early USB related config */
 	early_setup_usb();
 

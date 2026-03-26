@@ -47,6 +47,8 @@
 /* Charging GPIOs */
 #define GPIO_PARALLEL_CHARGING_CFG GPIO(71)
 
+#define GPIO_LID_OPEN_S3	GPIO(92)
+
 /* SD card specific GPIOs. Only for SD-enabled devices. */
 #if CONFIG(MAINBOARD_HAS_SD_CONTROLLER)
 #define GPIO_SD_CD_L		GPIO(71)
