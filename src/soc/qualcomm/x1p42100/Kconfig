@@ -1,6 +1,6 @@
 ## SPDX-License-Identifier: GPL-2.0-only
 
-config SOC_QUALCOMM_BASE
+config SOC_QUALCOMM_X1P42100_BASE
 	bool
 	default n
 	select ARCH_BOOTBLOCK_ARMV8_64
@@ -33,7 +33,7 @@ config SOC_QUALCOMM_BASE
 
 config SOC_QUALCOMM_X1P42100
 	bool
-	select SOC_QUALCOMM_BASE
+	select SOC_QUALCOMM_X1P42100_BASE
 	default n
 	help
 	  Choose this option if the mainboard is built using Qualcomm X1P42100 system-on-a-chip SoC.
@@ -42,12 +42,12 @@ config SOC_QUALCOMM_HAMOA
 	bool
 	select ARM64_USE_SECURE_OS
 	select ARM64_USE_SECURE_OS_PAYLOAD
-	select SOC_QUALCOMM_BASE
+	select SOC_QUALCOMM_X1P42100_BASE
 	default n
 	help
 	  Choose this option if the mainboard is built using Qualcomm Hamoa system-on-a-chip SoC.
 
-if SOC_QUALCOMM_BASE
+if SOC_QUALCOMM_X1P42100_BASE
 
 config QC_BLOBS_UPSTREAM
 	bool "QC blobs are available in upstream repository"

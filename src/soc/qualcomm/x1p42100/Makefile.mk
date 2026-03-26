@@ -1,5 +1,5 @@
 ## SPDX-License-Identifier: GPL-2.0-only
-ifeq ($(CONFIG_SOC_QUALCOMM_BASE),y)
+ifeq ($(CONFIG_SOC_QUALCOMM_X1P42100_BASE),y)
 
 decompressor-y += decompressor.c
 decompressor-y += mmu.c
@@ -392,4 +392,4 @@ endif # ifeq ($(CONFIG_QC_RAMDUMP_ENABLE),y)
 endif # ifeq ($(CONFIG_USE_QC_BLOBS),y)
 
 endif # ifeq ($(CONFIG_QC_BLOBS_UPSTREAM),y)
-endif # ifeq ($(CONFIG_SOC_QUALCOMM_BASE),y)
+endif # ifeq ($(CONFIG_SOC_QUALCOMM_X1P42100_BASE),y)
