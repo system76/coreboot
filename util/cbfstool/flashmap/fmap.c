@@ -592,7 +592,7 @@ static int fmap_find_test(struct fmap *fmap)
 	memset(buf, 0, total_size);
 	memcpy(&buf[total_size - fmap_size(fmap) + 1],
 	       fmap,
-	       fmap_size(fmap) + 1);
+	       fmap_size(fmap) - 1);
 	if (fmap_find(buf, total_size - 1) >= 0) {
 		printf("FAILURE: lsearch failed to catch overrun\n");
 		goto fmap_find_test_exit;
