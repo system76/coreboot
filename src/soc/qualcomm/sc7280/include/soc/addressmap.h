@@ -58,6 +58,9 @@
 /* QUPV3_2 - Dummy Entry */
 #define QUP_WRAP2_BASE			0x00000000
 
+/* QUPV3_3 - Dummy Entry */
+#define QUP_WRAP3_BASE			0x00000000
+
 #define EPSSTOP_EPSS_TOP		0x18598000
 #define EPSSFAST_BASE_ADDR		0x18580000
 

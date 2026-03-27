@@ -37,6 +37,9 @@
 /* QUPV3_2 - Dummy Entry */
 #define QUP_WRAP2_BASE			0x00000000
 
+/* QUPV3_3 - Dummy Entry */
+#define QUP_WRAP3_BASE			0x00000000
+
 /*
  * USB BASE ADDRESSES
  */

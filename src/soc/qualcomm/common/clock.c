@@ -205,6 +205,11 @@ void clock_configure_dfsr_table(int qup, struct clock_freq_config *clk_cfg,
 	unsigned int idx, s = qup % QUP_WRAP1_S0;
 	uint32_t reg_val;
 
+#if QUP_WRAP3_BASE
+	if (qup >= QUP_WRAP3_S0)
+		qup_clk = &gcc->qup_wrap3_s[s];
+	else
+#endif
 #if QUP_WRAP2_BASE
 	if (qup >= QUP_WRAP2_S0)
 		qup_clk = &gcc->qup_wrap2_s[s];
