@@ -71,7 +71,7 @@ config MAINBOARD_PART_NUMBER
 config DRIVER_TPM_I2C_BUS
 	depends on I2C_TPM
 	hex
-	default 0x0 # TODO
+	default 0x01 # QUP0_SE1
 
 config DRIVER_TPM_I2C_ADDR
 	default 0x50
@@ -79,12 +79,12 @@ config DRIVER_TPM_I2C_ADDR
 config EC_GOOGLE_CHROMEEC_SPI_BUS
 	depends on EC_GOOGLE_CHROMEEC
 	hex
-	default 0x0 # TODO
+	default 0x16 # QUP2_SE6
 
 config MAINBOARD_GPIO_PIN_FOR_GSC_AP_INTERRUPT
 	depends on TPM_GOOGLE_TI50
 	int
-	default 0 # TODO
+	default 23
 	help
 	  This option specifies the GPIO pin number on the mainboard that is
 	  used for the interrupt line from the Google Security Chip (GSC) to the
