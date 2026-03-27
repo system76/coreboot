@@ -52,11 +52,11 @@ config VBOOT
 
 config BOOT_DEVICE_SPI_FLASH_BUS
 	int
-	default 0 # TODO
+	default 26
 
 config UART_FOR_CONSOLE
 	int
-	default 0 # TODO
+	default 21 # QUP2_SE5
 	help
 	 Select the QUP instance to be used for UART console output.
 
