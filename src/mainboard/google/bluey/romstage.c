@@ -180,8 +180,10 @@ void platform_romstage_main(void)
 	 * when MAINBOARD_HAS_FINGERPRINT_VIA_SPI Kconfig is enabled.
 	 * Requires >=200ms delay after its pin was driven low in bootblock.
 	 */
-	if (CONFIG(MAINBOARD_HAS_FINGERPRINT_VIA_SPI))
-		gpio_output(GPIO_EN_FP_RAILS, 1);
+	if (CONFIG(MAINBOARD_HAS_FINGERPRINT_VIA_SPI)) {
+		if (boot_mode == LB_BOOT_MODE_NORMAL)
+			gpio_output(GPIO_EN_FP_RAILS, 1);
+	}
 }
 
 void platform_romstage_postram(void)
