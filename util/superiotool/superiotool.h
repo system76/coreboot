@@ -209,6 +209,10 @@ void print_infineon_chips(void);
 void probe_idregs_ite(uint16_t port);
 void print_ite_chips(void);
 
+/* microchip.c */
+void probe_idregs_microchip(uint16_t port);
+void print_microchip_chips(void);
+
 /* nsc.c */
 void probe_idregs_nsc(uint16_t port);
 void print_nsc_chips(void);
@@ -237,16 +241,17 @@ static const struct {
 	int ports[MAXNUMPORTS]; /* Signed, as we need EOT. */
 } superio_ports_table[] = {
 	{probe_idregs_ali,	{0x3f0, 0x370, EOT}},
-        {probe_idregs_aspeed,   {0x2e, 0x4e, EOT}},
+	{probe_idregs_aspeed,	{0x2e, 0x4e, EOT}},
 	{probe_idregs_exar,	{0x2e, 0x4e, EOT}},
 	{probe_idregs_fintek,	{0x2e, 0x4e, EOT}},
 	{probe_idregs_fintek_alternative,	{0x2e, 0x4e, EOT}},
 	/* Only use 0x370 for ITE, but 0x3f0 or 0x3bd would also be valid. */
 	{probe_idregs_ite,	{0x20e, 0x25e, 0x2e, 0x4e, 0x370, 0x6e, EOT}},
+	{probe_idregs_microchip,{0x2e, 0x4e, EOT}},
 	{probe_idregs_nsc,	{0x2e, 0x4e, 0x15c, 0x164e, EOT}},
 	/* I/O pairs on Nuvoton EC chips can be configured by firmware in
 	 * addition to the following hardware strapping options. */
-	{probe_idregs_nuvoton, {0x164e, 0x2e, 0x4e, EOT}},
+	{probe_idregs_nuvoton,	{0x164e, 0x2e, 0x4e, EOT}},
 	{probe_idregs_smsc,	{0x2e, 0x4e, 0x162e, 0x164e, 0x3f0, 0x370, EOT}},
 	{probe_idregs_winbond,	{0x2e, 0x4e, 0x3f0, 0x370, 0x250, EOT}},
 #ifdef PCI_SUPPORT
@@ -266,6 +271,7 @@ static const struct {
 	{print_exar_chips},
 	{print_fintek_chips},
 	{print_ite_chips},
+	{print_microchip_chips},
 	{print_nsc_chips},
 	{print_nuvoton_chips},
 	{print_smsc_chips},

@@ -17,7 +17,7 @@ CFLAGS += -O2 -Wall -Wstrict-prototypes -Wundef -Wstrict-aliasing \
 LDFLAGS += -lz
 
 OBJS = superiotool.o serverengines.o ali.o exar.o fintek.o ite.o nsc.o \
-       nuvoton.o smsc.o winbond.o infineon.o aspeed.o
+       nuvoton.o smsc.o winbond.o infineon.o aspeed.o microchip.o
 
 OS_ARCH ?= $(shell uname)
 ifeq ($(OS_ARCH), Darwin)
