@@ -535,6 +535,7 @@ static uint16_t get_vccin_aux_imon_iccmax(const struct soc_intel_alderlake_confi
 	case PCI_DID_INTEL_RPL_S_ID_3:
 	case PCI_DID_INTEL_RPL_S_ID_4:
 	case PCI_DID_INTEL_RPL_S_ID_5:
+	case PCI_DID_INTEL_RPL_S_ID_6:
 		return ICC_MAX_RPL_S;
 	default:
 		printk(BIOS_ERR, "Unknown MCH ID: 0x%4x, skipping VccInAuxImonIccMax config\n",

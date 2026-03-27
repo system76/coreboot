@@ -105,6 +105,7 @@ static struct {
 	{ PCI_DID_INTEL_RPL_S_ID_3, "Raptorlake-S (8+8)" },
 	{ PCI_DID_INTEL_RPL_S_ID_4, "Raptorlake-S (6+8)" },
 	{ PCI_DID_INTEL_RPL_S_ID_5, "Raptorlake-S (6+4)" },
+	{ PCI_DID_INTEL_RPL_S_ID_6, "Raptorlake-S (8+12)" },
 };
 
 static struct {
