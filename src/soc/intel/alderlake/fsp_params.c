@@ -484,7 +484,6 @@ static uint16_t get_vccin_aux_imon_iccmax(const struct soc_intel_alderlake_confi
 	case PCI_DID_INTEL_ADL_P_ID_6:
 	case PCI_DID_INTEL_ADL_P_ID_7:
 	case PCI_DID_INTEL_ADL_P_ID_8:
-	case PCI_DID_INTEL_ADL_P_ID_9:
 	case PCI_DID_INTEL_ADL_P_ID_10:
 	case PCI_DID_INTEL_RPL_P_ID_1:
 	case PCI_DID_INTEL_RPL_P_ID_2:
