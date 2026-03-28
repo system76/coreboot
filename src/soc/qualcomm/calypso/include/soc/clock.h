@@ -44,6 +44,8 @@ enum clk_qup {
 	QUP_WRAP2_S5,
 	QUP_WRAP2_S6,
 	QUP_WRAP2_S7,
+	QUP_WRAP3_S0,
+	QUP_WRAP3_S1,
 };
 
 /* Subsystem Reset */

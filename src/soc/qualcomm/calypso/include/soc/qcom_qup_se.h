@@ -10,7 +10,6 @@
 #include <timer.h>
 #include <types.h>
 
-/* TODO: update as per datasheet */
 enum qup_se {
 	QUPV3_0_SE0,
 	QUPV3_0_SE1,
@@ -36,6 +35,8 @@ enum qup_se {
 	QUPV3_2_SE5,
 	QUPV3_2_SE6,
 	QUPV3_2_SE7,
+	QUPV3_3_SE0,
+	QUPV3_3_SE1,
 	QUPV3_SE_MAX,
 };
 

@@ -4,6 +4,6 @@
 #define __SOC_QUALCOMM_CALYPSO_UART_TX_H__
 
 /* TODO: update as per datasheet */
-#define UART_TX_PIN GPIO(0)
+#define UART_TX_PIN GPIO(86)
 
 #endif /* __SOC_QUALCOMM_CALYPSO_UART_TX_H__ */
