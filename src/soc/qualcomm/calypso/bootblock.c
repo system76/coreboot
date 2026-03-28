@@ -15,6 +15,8 @@ void bootblock_soc_early_init(void)
 
 void bootblock_soc_init(void)
 {
+	clock_init();
+
 	quadspi_init(SPI_BUS_CLOCK_FREQ);
 	qupv3_fw_init();
 }
