@@ -2,6 +2,10 @@
 
 #include <bootblock_common.h>
 #include <soc/mmu.h>
+#include <soc/qspi_common.h>
+#include <soc/qupv3_config_common.h>
+
+#define SPI_BUS_CLOCK_FREQ (75 * MHz)
 
 void bootblock_soc_early_init(void)
 {
@@ -11,5 +15,6 @@ void bootblock_soc_early_init(void)
 
 void bootblock_soc_init(void)
 {
-	/* Placeholder */
+	quadspi_init(SPI_BUS_CLOCK_FREQ);
+	qupv3_fw_init();
 }
