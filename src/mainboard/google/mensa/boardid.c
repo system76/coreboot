@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
 #include <boardid.h>
+#include <ec/google/chromeec/ec.h>
 
 uint32_t board_id(void)
 {
@@ -12,6 +13,11 @@ uint32_t board_id(void)
 uint32_t sku_id(void)
 {
 	static uint32_t id = UNDEFINED_STRAPPING_ID;
-	/* Placeholder */
+	if (id != UNDEFINED_STRAPPING_ID)
+		return id;
+
+	if (CONFIG(EC_GOOGLE_CHROMEEC))
+		id = google_chromeec_get_board_sku();
+
 	return id;
 }
