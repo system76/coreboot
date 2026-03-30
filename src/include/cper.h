@@ -415,37 +415,63 @@ typedef struct cper_ia32x64_ctx_x64state {
 	u16 tr;
 } __packed cper_ia32x64_ctx_x64state_t;
 
+/* Memory Error Section Valid bit fields (Table 275) */
+#define CPER_MEM_VALID_ERROR_STATUS	BIT(0)
+#define CPER_MEM_VALID_PA		BIT(1)
+#define CPER_MEM_VALID_PA_MASK		BIT(2)
+#define CPER_MEM_VALID_NODE		BIT(3)
+#define CPER_MEM_VALID_CARD		BIT(4)
+#define CPER_MEM_VALID_MODULE		BIT(5)
+#define CPER_MEM_VALID_BANK		BIT(6)
+#define CPER_MEM_VALID_DEVICE		BIT(7)
+#define CPER_MEM_VALID_ROW		BIT(8)
+#define CPER_MEM_VALID_COLUMN		BIT(9)
+#define CPER_MEM_VALID_BIT_POSITION	BIT(10)
+#define CPER_MEM_VALID_REQUESTOR_ID	BIT(11)
+#define CPER_MEM_VALID_RESPONDER_ID	BIT(12)
+#define CPER_MEM_VALID_TARGET_ID	BIT(13)
+#define CPER_MEM_VALID_ERROR_TYPE	BIT(14)
+#define CPER_MEM_VALID_RANK		BIT(15)
+#define CPER_MEM_VALID_CARD_HANDLE	BIT(16)
+#define CPER_MEM_VALID_MODULE_HANDLE	BIT(17)
+#define CPER_MEM_VALID_EXTENDED		BIT(18)
+#define CPER_MEM_VALID_BANK_GROUP	BIT(19)
+#define CPER_MEM_VALID_BANK_ADDRESS	BIT(20)
+#define CPER_MEM_VALID_CHIP_ID		BIT(21)
+
 /* UEFI Spec 2.10, Appendix N.2.5 Memory Error Types (Table N.31) */
-#define CPER_UNDEFINED			0
+#define CPER_MEM_UNKNOWN		0
+#define CPER_MEM_UNDEFINED		0
 #define CPER_ERR_SINGLE_BIT_ECC		2
 #define CPER_ERR_MULTI_BIT_ECC		3
+#define CPER_ERR_TARGET_ABORT		7
 #define CPER_ERR_MEM_PARITY_ERR		8
 #define CPER_ERR_MEM_SCRUB_CE_ERR	13
 #define CPER_ERR_MEM_SCRUB_UCE_ERR	14
 
-/* UEFI Spec 2.10, Appendix N.2.5 Memory Error Section (Table N.31) */
-struct __packed cper_memory_section {
-	u64	valid_bits;
-	u64	err_sts;
-	u64	phys_addr;
-	u64	phys_addr_mask;
-	u16	node;
-	u16	card;
-	u16	module;
-	u16	bank;
-	u16	device;
-	u16	row;
-	u16	column;
-	u16	bit_position;
-	u64	requestor_id;
-	u64	responder_id;
-	u64	target_id;
-	u8	mem_err_type;
-	u8	extended;
-	u16	rank_number;
-	u16	card_handle;
-	u16	module_handle;
-};
+/// UEFI 2.6 Appendix N Table 275 Spec.
+typedef struct cper_mem_section {
+	u64 validation_bits;	// see CPER_MEM_VALID_ macros above
+	u64 error_status;	// Error Status
+	u64 physical_addr;	// Physical memory address of detected error
+	u64 physical_addr_mask;	// Physical Error Address mask
+	u16 node;		// Node Number
+	u16 card;		// Card Number
+	u16 module;		// Module Number
+	u16 bank;		// Bank Number
+	u16 device;		// Device Number
+	u16 row;		// Row Number
+	u16 column;		// Column Number
+	u16 bit_position;	// Bit Position
+	u64 requestor_id;	// Requestor ID
+	u64 responder_id;	// Responder ID
+	u64 target_id;		// Target ID
+	u8  error_type;		// Memory Error Type
+	u8  extended;		// Extended
+	u16 rank;		// Rank Number
+	u16 card_handle;	// Card Number
+	u16 module_handle;	// Module Number
+} __packed cper_mem_section_t;
 
 #define FW_ERR_RECORD_ID_CRASHLOG_GUID				\
 	GUID_INIT(0x8f87f311, 0xc998, 0x4d9e,			\

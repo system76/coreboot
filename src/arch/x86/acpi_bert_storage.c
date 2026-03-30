@@ -192,6 +192,8 @@ static size_t sizeof_error_section(guid_t *guid)
 		return sizeof(cper_ia32x64_proc_error_section_t);
 	else if (!guidcmp(guid, &CPER_SEC_FW_ERR_REC_REF_GUID))
 		return sizeof(cper_fw_err_rec_section_t);
+	else if (!guidcmp(guid, &CPER_SEC_PLATFORM_MEM_GUID))
+		return sizeof(cper_mem_section_t);
 	/* else if ... sizeof(structures not yet defined) */
 	else if (CONFIG(SOC_BERT_SIZEOF_ERROR_SECTION)) {
 		size_t size = soc_bert_sizeof_error_section(guid);
@@ -430,6 +432,31 @@ cper_ia32x64_proc_error_info_t *new_cper_ia32x64_check(
 	return proc_err_info;
 }
 
+/* Helper to append an ACPI Generic Error Data Entry plus a CPER Memory
+ * Error Section.  As many fields are populated as possible for the
+ * caller.
+ */
+acpi_hest_generic_data_v300_t *bert_append_plat_mem(acpi_generic_error_status_t *status)
+{
+	acpi_hest_generic_data_v300_t *entry;
+	cper_mem_section_t *mem_sec;
+
+	entry = bert_append_error_datasection(status, &CPER_SEC_PLATFORM_MEM_GUID);
+	if (!entry)
+		return NULL;
+
+	status->block_status |= GENERIC_ERR_STS_UNCORRECTABLE_VALID;
+	status->error_severity = ACPI_GENERROR_SEV_FATAL;
+
+	memset(entry, 0, sizeof(*entry));
+	entry->error_severity = ACPI_GENERROR_SEV_FATAL;
+
+	mem_sec = section_of_acpientry(mem_sec, entry);
+	memset(mem_sec, 0, sizeof(*mem_sec));
+
+	return entry;
+}
+
 /* Helper to append an ACPI Generic Error Data Entry plus a CPER IA32/X64
  * Processor Error Section.  As many fields are populated as possible for the
  * caller.
@@ -541,6 +568,8 @@ acpi_generic_error_status_t *bert_new_event(guid_t *guid)
 		r = bert_append_ia32x64(status);
 	else if (!guidcmp(guid, &CPER_SEC_FW_ERR_REC_REF_GUID))
 		r = bert_append_fw_err(status);
+	else if (!guidcmp(guid, &CPER_SEC_PLATFORM_MEM_GUID))
+		r = bert_append_plat_mem(status);
 	else
 		r = bert_append_error_datasection(status, guid);
 

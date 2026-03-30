@@ -132,6 +132,8 @@ acpi_hest_generic_data_v300_t *bert_append_ia32x64(
 void *new_cper_fw_error_crashlog(acpi_generic_error_status_t *status, size_t cl_size);
 acpi_hest_generic_data_v300_t *bert_append_fw_err(acpi_generic_error_status_t *status);
 
+acpi_hest_generic_data_v300_t *bert_append_plat_mem(acpi_generic_error_status_t *status);
+
 /* Add a new event to the BERT region.  An event consists of an ACPI Error
  * Status Block, a Generic Error Data Entry, and an associated CPER Error
  * Section.
