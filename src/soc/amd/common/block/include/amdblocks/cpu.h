@@ -11,6 +11,7 @@
 void early_cache_setup(void);
 int get_cpu_count(void);
 unsigned int get_threads_per_core(void);
+int cpu_node_id(void);
 void set_cstate_io_addr(void);
 void write_resume_eip(void);
 

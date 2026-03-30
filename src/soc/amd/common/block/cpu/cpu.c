@@ -15,6 +15,12 @@ int get_cpu_count(void)
 	return 1 + (cpuid_ecx(0x80000008) & 0xff);
 }
 
+int cpu_node_id(void)
+{
+	return ((cpuid_ecx(CPUID_ECX_NODE_ID) & CPUID_ECX_NODE_ID_MASK))
+		>> CPUID_ECX_NODE_ID_SHIFT;
+}
+
 unsigned int get_threads_per_core(void)
 {
 	return 1 + ((cpuid_ebx(CPUID_EBX_CORE_ID) & CPUID_EBX_THREADS_MASK)
