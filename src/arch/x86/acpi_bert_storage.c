@@ -133,6 +133,7 @@ static acpi_generic_error_status_t *new_bert_status(void)
 		return NULL;
 	}
 
+	memset(status, 0, sizeof(*status));
 	status->error_severity = ACPI_GENERROR_SEV_NONE;
 	return status;
 }
