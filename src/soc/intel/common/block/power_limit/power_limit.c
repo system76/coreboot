@@ -121,10 +121,10 @@ void set_power_limits(u8 power_limit_1_time,
 
 	/* Get power defaults for this SKU */
 	msr = rdmsr(MSR_PKG_POWER_SKU);
-	tdp = msr.lo & 0x7fff;
-	min_power = (msr.lo >> 16) & 0x7fff;
-	max_power = msr.hi & 0x7fff;
-	max_time = (msr.hi >> 16) & 0x7f;
+	tdp = msr.lo & PKG_POWER_LIMIT_MASK;
+	min_power = (msr.lo >> 16) & PKG_POWER_LIMIT_MASK;
+	max_power = msr.hi & PKG_POWER_LIMIT_MASK;
+	max_time = (msr.hi >> 16) & PKG_POWER_LIMIT_TIME_MASK;
 
 	printk(BIOS_INFO, "CPU TDP = %u Watts\n", tdp / power_unit);
 
@@ -263,7 +263,7 @@ u8 get_cpu_tdp(void)
 
 	/* Get power defaults for this SKU */
 	msr = rdmsr(MSR_PKG_POWER_SKU);
-	cpu_tdp = msr.lo & 0x7fff;
+	cpu_tdp = msr.lo & PKG_POWER_LIMIT_MASK;
 
 	return cpu_tdp / power_unit;
 }
