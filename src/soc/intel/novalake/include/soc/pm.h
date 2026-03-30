@@ -104,6 +104,8 @@
 #define   SWGPE_EN		BIT(2)
 #define   HOT_PLUG_EN		BIT(1)
 
+#define EN_BLOCK		3
+
 /*
  * Enable SMI generation:
  *  - on APMC writes (io 0xb2)

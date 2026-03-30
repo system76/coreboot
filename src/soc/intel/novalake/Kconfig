@@ -3,22 +3,48 @@
 config SOC_INTEL_NOVALAKE_BASE
 	bool
 	select ACPI_INTEL_HARDWARE_SLEEP_VALUES
+	select ARCH_ALL_STAGES_X86_64
 	select ARCH_X86
 	select BOOT_DEVICE_SUPPORTS_WRITES
 	select CACHE_MRC_SETTINGS
+	select CBFS_PRELOAD
+	select COOP_MULTITASKING
+	select CPU_INTEL_COMMON
+	select CPU_INTEL_COMMON_VOLTAGE
 	select CPU_INTEL_FIRMWARE_INTERFACE_TABLE
+	select CPU_SUPPORTS_PM_TIMER_EMULATION
+	select DEFAULT_SOFTWARE_CONNECTION_MANAGER if MAINBOARD_HAS_CHROMEOS
+	select DEFAULT_X2APIC_RUNTIME
+	select DISPLAY_FSP_VERSION_INFO_2
+	select DRAM_SUPPORT_DDR5
+	select FAST_SPI_DMA
 	select FAST_SPI_SUPPORTS_EXT_BIOS_WINDOW
+	select FSP_DIMM_INFO
+	select FSP_M_XIP
+	select FSP_USES_CB_DEBUG_EVENT_HANDLER
+	select HAVE_DEBUG_RAM_SETUP
+	select HAVE_FSP_GOP
 	select HAVE_X86_64_SUPPORT
 	select IDT_IN_EVERY_STAGE
 	select INTEL_DESCRIPTOR_MODE_CAPABLE
+	select INTEL_GMA_ADD_VBT if RUN_FSP_GOP
+	select IOAPIC
 	select MICROCODE_BLOB_UNDISCLOSED
+	select MRC_CACHE_USING_MRC_VERSION
+	select MRC_SETTINGS_PROTECT
+	select PCIE_CLOCK_CONTROL_THROUGH_P2SB
 	select PLATFORM_USES_FSP2_4
+	select POSTPONE_SPI_ACCESS
 	select SOC_INTEL_COMMON
+	select SOC_INTEL_COMMON_BASECODE
+	select SOC_INTEL_COMMON_BASECODE_RAMTOP
 	select SOC_INTEL_COMMON_BLOCK
 	select SOC_INTEL_COMMON_BLOCK_CAR
 	select SOC_INTEL_COMMON_BLOCK_CAR_ENHANCED_NEM
+	select SOC_INTEL_COMMON_BLOCK_CHIP_CONFIG
 	select SOC_INTEL_COMMON_BLOCK_CPU
 	select SOC_INTEL_COMMON_BLOCK_GSPI_VERSION_2
+	select SOC_INTEL_COMMON_BLOCK_MEMINIT
 	select SOC_INTEL_COMMON_BLOCK_P2SB2
 	select SOC_INTEL_COMMON_BLOCK_SA
 	select SOC_INTEL_COMMON_FEATURE
@@ -58,6 +84,14 @@ config SOC_INTEL_NOVALAKE_H_P
 
 if SOC_INTEL_NOVALAKE_BASE
 
+config SOC_INTEL_NOVALAKE_TCSS_USB4_SUPPORT
+	bool
+	default y
+	select SOC_INTEL_COMMON_BLOCK_TCSS
+	select SOC_INTEL_COMMON_BLOCK_USB4
+	select SOC_INTEL_COMMON_BLOCK_USB4_PCIE
+	select SOC_INTEL_COMMON_BLOCK_USB4_XHCI
+
 config MAX_CPUS
 	int
 	default 28
@@ -92,6 +126,10 @@ config HEAP_SIZE
 	hex
 	default 0x10000
 
+config CHIPSET_DEVICETREE
+	string
+	default "soc/intel/novalake/chipset.cb"
+
 config EXT_BIOS_WIN_BASE
 	default 0xf8000000
 
@@ -105,6 +143,26 @@ config IFD_CHIPSET
 config IED_REGION_SIZE
 	hex
 	default 0x400000
+
+# Intel recommends reserving the PCIe TBT root port resources as below:
+# - 42 buses
+# - 194 MiB Non-prefetchable memory
+# - 448 MiB Prefetchable memory
+if SOC_INTEL_ENABLE_USB4_PCIE_RESOURCES
+
+config PCIEXP_HOTPLUG_BUSES
+	int
+	default 42
+
+config PCIEXP_HOTPLUG_MEM
+	hex
+	default 0xc200000
+
+config PCIEXP_HOTPLUG_PREFETCH_MEM
+	hex
+	default 0x1c000000
+
+endif # SOC_INTEL_ENABLE_USB4_PCIE_RESOURCES
 
 config MAX_TBT_ROOT_PORTS
 	int
@@ -121,6 +179,14 @@ config MAX_ROOT_PORTS
 config MAX_PCIE_CLOCK_SRC
 	int
 	default 9
+
+config SMM_TSEG_SIZE
+	hex
+	default 0x2000000
+
+config SMM_RESERVED_SIZE
+	hex
+	default 0x200000
 
 config PCR_BASE_ADDRESS
 	hex
@@ -236,5 +302,89 @@ config CONSOLE_CBMEM_BUFFER_SIZE
 	hex
 	default 0x100000 if BUILDING_WITH_DEBUG_FSP
 	default 0x40000
+
+config FSP_HEADER_PATH
+	string "Location of FSP headers"
+	default "src/vendorcode/intel/fsp/fsp2_0/novalake/"
+
+# Override platform debug consent value:
+#  0: Disabled,
+#  2: Enabled Trace active: TraceHub is enabled and trace is active, blocks s0ix,
+#  4: Enabled Trace ready: TraceHub is enabled and allowed S0ix,
+#  6: Enabled Trace power off: TraceHub is powergated, provide setting close to functional
+#    low power state,
+#  7: User needs to configure Advanced Debug Settings manually.
+config SOC_INTEL_COMMON_DEBUG_CONSENT
+	int
+	default 4 if SOC_INTEL_DEBUG_CONSENT
+
+config DATA_BUS_WIDTH
+	int
+	default 128
+
+config DIMMS_PER_CHANNEL
+	int
+	default 2
+
+config DIMM_MAX
+	default 16
+
+config MRC_CHANNEL_WIDTH
+	int
+	default 16
+
+config SOC_INTEL_GFX_FRAMEBUFFER_OFFSET
+	hex
+	default 0x800000
+
+config DROP_CPU_FEATURE_PROGRAM_IN_FSP
+	bool
+	default y if MP_SERVICES_PPI_V2_NOOP || CHROMEOS
+	default n
+	help
+	  This is to avoid FSP running basic CPU feature programming on BSP
+	  and on APs using the "CpuFeaturesPei.efi" module. The feature programming
+	  includes enabling x2APIC, MCA, MCE and Turbo etc.
+
+	  Most of these feature programming are getting performed today in scope
+	  of coreboot doing MP Init. Running these redundant programming in scope
+	  of FSP (when `USE_FSP_FEATURE_PROGRAM_ON_APS` config is enabled) would
+	  results in CPU exception.
+
+	  SoC users to select this config after dropping "CpuFeaturesPei.ffs" module
+	  from FSP-S Firmware Volume (FV). Upon selection, coreboot runs those additional
+	  feature programming on BSP and APs.
+
+	  This feature is default enabled, in case of "coreboot running MP init"
+	  aka MP_SERVICES_PPI_V2_NOOP config is selected.
+
+config PCIE_LTR_MAX_SNOOP_LATENCY
+	hex
+	default 0x100f
+	help
+	  Latency tolerance reporting, max snoop latency value defaults to 15.73 ms.
+
+config PCIE_LTR_MAX_NO_SNOOP_LATENCY
+	hex
+	default 0x100f
+	help
+	  Latency tolerance reporting, max non-snoop latency value defaults to 15.73 ms.
+
+config SOC_PHYSICAL_ADDRESS_WIDTH
+	int
+	default 42
+
+# Override DEBUG Kconfig to avoid false alarm about stack overflow.
+config DEBUG_STACK_OVERFLOW_BREAKPOINTS
+	bool
+	default n
+
+config DEBUG_STACK_OVERFLOW_BREAKPOINTS_IN_ALL_STAGES
+	bool
+	default n
+
+# Fast SPI DMA operations require 1 KiB-aligned memory buffers.
+config CBFS_CACHE_ALIGN
+	default 1024
 
 endif

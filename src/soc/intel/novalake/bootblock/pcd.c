@@ -21,6 +21,7 @@
 #include <soc/pci_devs.h>
 #include <soc/pcr_ids.h>
 #include <soc/pm.h>
+#include <soc/romstage.h>
 #include <soc/systemagent.h>
 
 #define PCR_PSF8_TO_SHDW_PMC_REG_BASE	0xA80
