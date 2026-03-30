@@ -61,6 +61,7 @@
 
 #define DELAY_CHARGING_APPLET_MS 2000 /* 2sec */
 #define CHARGING_RAIL_STABILIZATION_DELAY_MS 3000 /* 3sec */
+#define LOW_BATTERY_CHARGING_LOOP_EXIT_MS (10 * 60 * 1000) /* 10min */
 #define DELAY_CHARGING_ACTIVE_LB_MS 4000 /* 4sec */
 
 enum charging_status {
@@ -162,6 +163,7 @@ void launch_charger_applet(void)
 	static const long charging_enable_timeout_ms = CHARGING_RAIL_STABILIZATION_DELAY_MS;
 	struct stopwatch sw;
 	bool has_crossed_threshold = false;
+	bool has_entered_low_battery_mode = false;
 
 	printk(BIOS_INFO, "Inside %s. Initiating charging\n", __func__);
 
@@ -191,9 +193,36 @@ void launch_charger_applet(void)
 	}
 	printk(BIOS_INFO, "Charging ready after %lld ms\n", stopwatch_duration_msecs(&sw));
 
+	static const long low_battery_charging_timeout_ms = LOW_BATTERY_CHARGING_LOOP_EXIT_MS;
+	uint32_t batt_pct;
+	if (!platform_get_battery_soc_information(&batt_pct)) {
+		printk(BIOS_WARNING, "Failed to get battery level\n");
+		return;
+	}
+	/*
+	 * If the battery is at 0%, enter low-battery charging mode and
+	 * start a timeout timer to prevent getting stuck in a dead-loop
+	 * if the battery fails to charge.
+	 *
+	 * FIXME: b/497622018
+	 */
+	if (!batt_pct) {
+		has_entered_low_battery_mode = true;
+		stopwatch_init_msecs_expire(&sw, low_battery_charging_timeout_ms);
+	}
+
 	do {
 		/* Add static delay before reading the charging applet pre-requisites */
 		mdelay(DELAY_CHARGING_APPLET_MS);
+
+		if (has_entered_low_battery_mode) {
+			if (stopwatch_expired(&sw)) {
+				printk(BIOS_INFO, "Issuing power-off as switching from slow charging "
+						"to fast charging mode.\n");
+				configure_dam_on_system_state_change(false);
+				google_chromeec_ap_poweroff();
+			}
+		}
 
 		/*
 		 * Issue a shutdown if not charging.
@@ -327,4 +356,15 @@ void enable_fast_battery_charging(void)
 	if (lpass_bring_up() != CB_SUCCESS) {
 		printk(BIOS_ERR, "LPASS bring-up failed; skipping fast charging.\n");
 	}
+}
+
+bool platform_get_battery_soc_information(uint32_t *batt_pct)
+{
+	if (!CONFIG(EC_GOOGLE_CHROMEEC))
+		return false;
+
+	if (google_chromeec_read_batt_state_of_charge(batt_pct))
+		return false;
+
+	return true;
 }

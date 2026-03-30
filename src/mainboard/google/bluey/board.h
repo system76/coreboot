@@ -4,6 +4,7 @@
 #define MAINBOARD_GOOGLE_BLUEY_BOARD_H
 
 #include <assert.h>
+#include <commonlib/coreboot_tables.h>
 #include <gpio.h>
 
 #define GPIO_AP_EC_INT		GPIO(67)
@@ -66,6 +67,7 @@ void configure_dam_on_system_state_change(bool poweron);
 void enable_slow_battery_charging(void);
 void disable_slow_battery_charging(void);
 void launch_charger_applet(void);
+bool platform_get_battery_soc_information(uint32_t *batt_pct);
 void enable_fast_battery_charging(void);
 
 #endif /* MAINBOARD_GOOGLE_BLUEY_BOARD_H */

@@ -192,7 +192,22 @@ static void handle_low_power_charging_boot(void)
 	if (!pll_init_and_set(apss_ncc0, L_VAL_710P4MHz))
 		printk(BIOS_DEBUG, "CPU Frequency set to 710MHz\n");
 
-	enable_fast_battery_charging();
+	uint32_t batt_pct;
+	if (!platform_get_battery_soc_information(&batt_pct)) {
+		printk(BIOS_WARNING, "Failed to get battery level\n");
+		return;
+	}
+
+	/*
+	 * Use slow charging for a completely depleted battery (0% SoC)
+	 * to ensure stability; otherwise, enable fast charging.
+	 *
+	 * FIXME: b/497622018
+	 */
+	if (!batt_pct)
+		enable_slow_battery_charging();
+	else
+		enable_fast_battery_charging();
 
 	/*
 	 * Disable the lightbar for Low-Battery or Off-Mode charging sequences.
