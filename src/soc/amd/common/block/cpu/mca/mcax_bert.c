@@ -38,6 +38,14 @@ static inline size_t mca_report_size_reqd(int used_registers_per_bank)
 	return size;
 }
 
+static void fill_generic_entry(acpi_hest_generic_data_v300_t *entry,
+			       struct mca_bank_status *mci)
+{
+	entry->validation_bits |= ACPI_GENERROR_VALID_FRUID_TEXT;
+	entry->flags |= CPER_SEC_PRIMARY;
+	strcpy((char *)entry->fru_text, "ProcessorError");
+}
+
 /* Convert an error reported by an MCA bank into BERT information to be reported
  * by the OS.  The ACPI driver doesn't recognize/parse the IA32/X64 structure,
  * which is the best method to report MSR context.  As a result, add two
@@ -64,6 +72,9 @@ void build_bert_mca_error(struct mca_bank_status *mci)
 		goto failed;
 
 	gen_entry = acpi_hest_generic_data3(status);
+
+	fill_generic_entry(gen_entry, mci);
+
 	gen_sec = section_of_acpientry(gen_sec, gen_entry);
 
 	fill_generic_section(gen_sec, mci);
