@@ -21,8 +21,8 @@ static struct thread all_threads[TOTAL_NUM_THREADS];
 
 /* All runnable (but not running) and free threads are kept on their
  * respective lists. */
-static struct thread *runnable_threads;
-static struct thread *free_threads;
+static struct list_node runnable_threads;
+static struct list_node free_threads;
 
 static struct thread *active_thread;
 
@@ -45,25 +45,20 @@ static inline struct thread *current_thread(void)
 	return active_thread;
 }
 
-static inline int thread_list_empty(struct thread **list)
+static inline struct thread *pop_thread(struct list_node *head)
 {
-	return *list == NULL;
+	struct list_node *node;
+
+	node = list_pop(head);
+	if (node == NULL)
+		return NULL;
+
+	return container_of(node, struct thread, list_node);
 }
 
-static inline struct thread *pop_thread(struct thread **list)
+static inline void push_thread(struct list_node *head, struct thread *t)
 {
-	struct thread *t;
-
-	t = *list;
-	*list = t->next;
-	t->next = NULL;
-	return t;
-}
-
-static inline void push_thread(struct thread **list, struct thread *t)
-{
-	t->next = *list;
-	*list = t;
+	list_append(&t->list_node, head);
 }
 
 static inline void push_runnable(struct thread *t)
@@ -80,10 +75,9 @@ static inline struct thread *get_free_thread(void)
 {
 	struct thread *t;
 
-	if (thread_list_empty(&free_threads))
-		return NULL;
-
 	t = pop_thread(&free_threads);
+	if (t == NULL)
+		return NULL;
 
 	/* Reset the current stack value to the original. */
 	if (!t->stack_orig)
@@ -116,9 +110,9 @@ static void schedule(struct thread *t)
 
 	/* If t is NULL need to find new runnable thread. */
 	if (t == NULL) {
-		if (thread_list_empty(&runnable_threads))
-			die("Runnable thread list is empty!\n");
 		t = pop_runnable();
+		if (t == NULL)
+			die("Runnable thread list is empty!\n");
 	} else {
 		/* current is still runnable. */
 		push_runnable(current);

@@ -4,6 +4,7 @@
 
 #include <arch/cpu.h>
 #include <bootstate.h>
+#include <commonlib/list.h>
 #include <types.h>
 
 struct thread_mutex {
@@ -43,7 +44,7 @@ struct thread {
 	int id;
 	uintptr_t stack_current;
 	uintptr_t stack_orig;
-	struct thread *next;
+	struct list_node list_node;
 	enum cb_err (*entry)(void *);
 	void *entry_arg;
 	int can_yield;
