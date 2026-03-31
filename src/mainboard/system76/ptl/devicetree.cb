@@ -16,8 +16,6 @@ chip soc/intel/pantherlake
 	# Thermal
 	register "tcc_offset" = "8"
 
-	device cpu_cluster 0 on end
-
 	device domain 0 on
 		device ref npu on end
 		device ref pmc_shared_sram on end
