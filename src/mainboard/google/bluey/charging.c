@@ -200,13 +200,13 @@ void launch_charger_applet(void)
 		return;
 	}
 	/*
-	 * If the battery is at 0%, enter low-battery charging mode and
+	 * If the battery is less than 2%, enter low-battery charging mode and
 	 * start a timeout timer to prevent getting stuck in a dead-loop
 	 * if the battery fails to charge.
 	 *
 	 * FIXME: b/497622018
 	 */
-	if (!batt_pct) {
+	if (batt_pct <= SLOW_CHARGING_BATTERY_THRESHOLD) {
 		has_entered_low_battery_mode = true;
 		stopwatch_init_msecs_expire(&sw, low_battery_charging_timeout_ms);
 	}

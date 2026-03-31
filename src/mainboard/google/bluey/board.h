@@ -58,6 +58,8 @@
 #define GPIO_USB_C1_EN_PP0900		GPIO(188)
 #define GPIO_USB_C1_RETIMER_RESET_L	GPIO(176)
 
+#define SLOW_CHARGING_BATTERY_THRESHOLD 2
+
 void setup_chromeos_gpios(void);
 bool is_off_mode(void);
 void configure_parallel_charging(void);

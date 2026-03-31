@@ -199,12 +199,12 @@ static void handle_low_power_charging_boot(void)
 	}
 
 	/*
-	 * Use slow charging for a completely depleted battery (0% SoC)
-	 * to ensure stability; otherwise, enable fast charging.
+	 * Use slow charging if battery is less than 2% to ensure stability
+	 * otherwise, enable fast charging.
 	 *
 	 * FIXME: b/497622018
 	 */
-	if (!batt_pct)
+	if (batt_pct <= SLOW_CHARGING_BATTERY_THRESHOLD)
 		enable_slow_battery_charging();
 	else
 		enable_fast_battery_charging();
