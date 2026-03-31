@@ -1,7 +1,9 @@
 # SPDX-License-Identifier: GPL-2.0-only
 
-config BOARD_AMD_CRATER_COMMON
-	def_bool n
+if BOARD_AMD_CRATER
+
+config BOARD_SPECIFIC_OPTIONS
+	def_bool y
 	select BOARD_ROMSIZE_KB_16384
 	select EC_ACPI
 	select SOC_AMD_COMMON_BLOCK_USE_ESPI if !SOC_AMD_COMMON_BLOCK_SIMNOW_BUILD
@@ -18,26 +20,21 @@ config BOARD_AMD_CRATER_COMMON
 	select SPI_FLASH_EXIT_4_BYTE_ADDR_MODE
 	select SOC_AMD_COMMON_BLOCK_PSP_RPMC
 	select SOC_AMD_COMMON_BLOCK_PSP_SMI
+	select SOC_AMD_V2000A
 	select KEEP_ACP_RUNNING_IN_S3
 
-config BOARD_AMD_CRATER_RENOIR
-	select BOARD_AMD_CRATER_COMMON
-	select SOC_AMD_RENOIR
-
-if BOARD_AMD_CRATER_RENOIR
-
 config FMDFILE
-	default "src/mainboard/amd/crater/chromeos_renoir.fmd" if CHROMEOS
-	default "src/mainboard/amd/crater/board_renoir.fmd"
+	default "src/mainboard/amd/crater/chromeos_v2000a.fmd" if CHROMEOS
+	default "src/mainboard/amd/crater/board_v2000a.fmd"
 
 config MAINBOARD_DIR
 	default "amd/crater"
 
 config MAINBOARD_PART_NUMBER
-	default "Crater_RENOIR"
+	default "Crater_V2000A"
 
 config DEVICETREE
-	default "devicetree_renoir.cb"
+	default "devicetree_v2000a.cb"
 
 config CRATER_HAVE_MCHP_FW
 	bool "Have Microchip EC firmware?"
@@ -200,4 +197,4 @@ config TPM_SPI_SPEED
 
 endif # !EM100
 
-endif # BOARD_AMD_CRATER_COMMON
+endif # BOARD_AMD_CRATER

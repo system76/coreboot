@@ -1,4 +1,4 @@
 comment "Crater"
 
-config BOARD_AMD_CRATER_RENOIR
-	bool "->  Crater for Renoir SoC"
+config BOARD_AMD_CRATER
+	bool "->  Crater for V2000A SoC"
