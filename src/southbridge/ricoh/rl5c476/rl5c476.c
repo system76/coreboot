@@ -7,11 +7,12 @@
 #include <console/console.h>
 #include <device/cardbus.h>
 #include <delay.h>
+#include <stdint.h>
 #include "rl5c476.h"
 #include "chip.h"
 
 static int enable_cf_boot = 0;
-static unsigned int cf_base;
+static uintptr_t cf_base;
 
 static void rl5c476_init(struct device *dev)
 {
@@ -21,7 +22,7 @@ static void rl5c476_init(struct device *dev)
 	/* cardbus controller function 1 for CF Socket */
 	printk(BIOS_DEBUG, "Ricoh RL5c476: Initializing.\n");
 
-	printk(BIOS_DEBUG, "CF Base = %0x\n",cf_base);
+	printk(BIOS_DEBUG, "CF Base = %0lx\n", cf_base);
 
 	/* misc control register */
 	pci_write_config16(dev,0x82,0x00a0);
@@ -44,7 +45,7 @@ static void rl5c476_init(struct device *dev)
 	/* pick up where 16 bit card control structure is
 	 * (0x800 bytes into config structure)
 	 */
-	base = (unsigned char *)pci_read_config32(dev,0x10);
+	base = (unsigned char *)(uintptr_t)pci_read_config32(dev, 0x10);
 	pc16 = (pc16reg_t *)(base + 0x800);
 
 	/* disable memory and io windows and turn off socket power */
