@@ -11,7 +11,7 @@ smm-y += psp_smm.c
 bootblock-y += psp_efs.c
 verstage-y += psp_efs.c
 
-all-y += ftpm.c
+ramstage-$(CONFIG_AMD_CRB_FTPM) += ftpm.c
 
 endif # CONFIG_SOC_AMD_COMMON_BLOCK_PSP
 
