@@ -1,0 +1,6 @@
+Category: desktop
+Board URL: https://www.asus.com/supportonly/p8h61-m_lx2/helpdesk_knowledge/
+ROM package: DIP-8
+ROM protocol: SPI
+ROM socketed: y
+Flashrom support: y

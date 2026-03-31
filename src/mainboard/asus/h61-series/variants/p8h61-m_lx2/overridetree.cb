@@ -1,0 +1,98 @@
+## SPDX-License-Identifier: GPL-2.0-or-later
+
+chip northbridge/intel/sandybridge
+	register "gpu_dp_b_hotplug" = "4"
+	device domain 0 on
+		subsystemid 0x1043 0x844d inherit
+		chip southbridge/intel/bd82x6x
+			register "usb_port_config" = "{
+				{1, 0xf5f, 0},
+				{1, 0xf5f, 0},
+				{1, 5, 1},
+				{1, 0x25f, 1},
+				{1, 0x4f2, 2},
+				{1, 0x757, 2},
+				{1, 0xb57, 3},
+				{1, 0xb57, 3},
+				{1, 0x353, 4},
+				{1, 0x353, 4},
+				{1, 0xb5f, 5},
+				{1, 0xb5f, 5},
+				{1, 0xb57, 6},
+				{1, 0xb57, 6},
+			}"
+			register "gen1_dec" = "0x000c0291"
+			device ref hda on
+				subsystemid 0x1043 0x8415
+			end
+			device ref pcie_rp1 on  end	# PCIe x1 Port (PCIEX1_1)
+			device ref pcie_rp2 on  end	# PCIe x1 Port (PCIEX1_2)
+			device ref pcie_rp3 on		# ASMedia ASM1083 PCIe-to-PCI bridge
+				device pci 00.0 on
+					subsystemid 0x1043 0x8489
+				end
+			end
+			device ref pcie_rp4 on		# Realtek RTL8111E Ethernet Controller
+				chip drivers/net
+					register "customized_leds" = "0x00f6"
+					register "wake" = "9"
+					device pci 00.0 on
+						subsystemid 0x1043 0x8432
+					end
+				end
+			end
+			device ref pcie_rp5 off end	# USB 3.0 controller, unpopulated
+			device ref pcie_rp6 off end	# SATA controller, unpopulated
+
+			device ref lpc on
+				chip superio/nuvoton/nct6776
+					device pnp 2e.0 off end		# Floppy
+					device pnp 2e.1 off end		# Parallel port
+					device pnp 2e.2 on		# COM1
+						io 0x60 = 0x3f8
+						irq 0x70 = 4
+					end
+					device pnp 2e.3 off end		# COM2, IR
+					device pnp 2e.5 on		# Keyboard
+						io 0x60 = 0x60
+						io 0x62 = 0x64
+						irq 0x70 = 1
+						irq 0x72 = 12
+						irq 0xf0 = 0x82
+					end
+					device pnp 2e.6 off end		# CIR
+					device pnp 2e.7 off end		# GPIO6-9
+					device pnp 2e.8 off end		# WDT1, GPIO0, GPIO1, GPIOA
+					device pnp 2e.9 off end		# GPIO2-5
+					device pnp 2e.a on		# ACPI
+						irq 0xe5 = 0x02
+						irq 0xe6 = 0x5c
+						irq 0xe7 = 0x01
+						irq 0xf0 = 0x00
+						irq 0xf2 = 0x5d
+					end
+					device pnp 2e.b on		# HWM, LED
+						io 0x60 = 0x0290
+						io 0x62 = 0x0000
+					end
+					device pnp 2e.d on  end		# VID
+					device pnp 2e.e off end		# CIR WAKE-UP
+					device pnp 2e.f on		# GPIO Push-Pull or Open-drain
+						irq 0xf0 = 0x9d
+					end
+					device pnp 2e.14 off end	# SVID
+					device pnp 2e.16 on		# Deep Sleep
+						io 0x30 = 0x20
+					end
+					device pnp 2e.17 on		# GPIOA
+						irq 0xe0 = 0xff
+						irq 0xe1 = 0xff
+						irq 0xe2 = 0xff
+						irq 0xe3 = 0xff
+						irq 0xe5 = 0xff
+					end
+				end
+			end
+		end
+	end
+end
