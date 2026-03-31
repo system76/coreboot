@@ -1,4 +1,4 @@
 # SPDX-License-Identifier: GPL-2.0-only
 
 CPPFLAGS_common += -I$(src)/mainboard/starlabs/common/cfr
-ramstage-y += cfr.c
+ramstage-$(CONFIG_STARLABS_COMMON_CFR) += cfr.c

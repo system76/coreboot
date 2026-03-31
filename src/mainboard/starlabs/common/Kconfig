@@ -5,13 +5,23 @@ if VENDOR_STARLABS
 menu "Star Labs Settings"
 
 config BOOTMEDIA_SMM_BWP
-	def_bool y
+	bool
+	default y if SOC_INTEL_COMMON_BLOCK_SMM
 
 config BOOTMEDIA_SMM_BWP_RUNTIME_OPTION
-	def_bool y
+	bool
+	default y if SOC_INTEL_COMMON_BLOCK_SMM
 
 config DRIVERS_EFI_FW_INFO
 	def_bool y
+
+config STARLABS_COMMON_POWERCAP
+	bool
+	default y if SOC_INTEL_COMMON_BLOCK_POWER_LIMIT
+
+config STARLABS_COMMON_CFR
+	bool
+	default y if CPU_INTEL_COMMON
 
 config STARLABS_NVME_POWER_SEQUENCE
 	bool "Enable NVMe/M.2 slot power sequence"
