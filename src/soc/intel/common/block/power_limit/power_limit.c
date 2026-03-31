@@ -95,7 +95,6 @@ void set_power_limits(u8 power_limit_1_time,
 			/* Elkhartlake SoC does not shadow PKG_POWER_LIMIT MCHBAR settings
 			   to MSR correctly. */
 			if (CONFIG(SOC_INTEL_ELKHARTLAKE)) {
-				msr = rdmsr(MSR_PKG_POWER_LIMIT);
 				msr.hi = 0;
 				msr.lo = 0;
 				wrmsr(MSR_PKG_POWER_LIMIT, msr);
