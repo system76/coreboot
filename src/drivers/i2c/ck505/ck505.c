@@ -8,6 +8,16 @@
 
 #define SMBUS_BLOCK_SIZE 32
 
+__weak void mb_pre_ck505_init(void)
+{
+	// do nothing
+}
+
+__weak void mb_post_ck505_init(void)
+{
+	// do nothing
+}
+
 static void ck505_init(struct device *dev)
 {
 	struct drivers_i2c_ck505_config *config;
@@ -17,6 +27,8 @@ static void ck505_init(struct device *dev)
 
 	if (!dev->enabled || dev->path.type != DEVICE_PATH_I2C)
 		return;
+
+	mb_pre_ck505_init();
 
 	config = dev->chip_info;
 
@@ -41,6 +53,8 @@ static void ck505_init(struct device *dev)
 
 	if (smbus_block_write(dev, 0, dev_nregs, block) < 0)
 		printk(BIOS_ERR, "Failed writing ck505 configuration!\n");
+
+	mb_post_ck505_init();
 }
 
 static struct device_operations ck505_operations = {
