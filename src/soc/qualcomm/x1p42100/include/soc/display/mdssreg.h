@@ -708,6 +708,32 @@ enum {
 	INTF_FLUSH_5 = BIT(5),
 };
 
+enum mdss_flush_bits {
+	FLUSH_INTF        = BIT(31),
+	FLUSH_PERIPH      = BIT(30),
+	FLUSH_MERGE_3D    = BIT(23),
+	FLUSH_CTL         = BIT(17),
+	FLUSH_LM1         = BIT(7),
+	FLUSH_LM0         = BIT(6),
+	FLUSH_VIG1        = BIT(1),
+	FLUSH_VIG0        = BIT(0),
+};
+
+#define MDP_CTL_LAYER_VIG0_OUT_SHIFT   0
+#define MDP_CTL_LAYER_VIG1_OUT_SHIFT   3
+#define MDP_CTL_LAYER_BORDER_OUT      BIT(24)
+#define MDP_LM_STAGE3_FG              0x5
+
+#define MDP_CTL_LAYER0_VIG0_STAGE3_CFG \
+	((MDP_LM_STAGE3_FG << MDP_CTL_LAYER_VIG0_OUT_SHIFT) | \
+	MDP_CTL_LAYER_BORDER_OUT)
+
+#define MDP_CTL_LAYER1_VIG1_STAGE3_CFG \
+	((MDP_LM_STAGE3_FG << MDP_CTL_LAYER_VIG1_OUT_SHIFT) | \
+	MDP_CTL_LAYER_BORDER_OUT)
+
+#define LM_LAYER_OP_MODE_SPLIT_RIGHT	BIT(31)
+
 enum {
 	MDSS_HW_REG_BASE = MDSS_BASE + 0x00000000,
 	MDSS_HW_REG_BASE_SIZE = 0x1000,
@@ -752,7 +778,7 @@ static struct vbif_nrt_regs *const vbif_nrt = (struct vbif_nrt_regs *)VBIF_NRT_B
 static struct mdp_periph_top1_regs *const mdp_periph_top1 =
 	(struct mdp_periph_top1_regs *)MDP_PERIPH_TOP1;
 
-void merge_3d_active(void);
+void merge_3d_active(struct edid *edid);
 void configure_vbif_qos(void);
 void intf_tg_setup(struct edid *edid);
 void intf_fetch_start_config(struct edid *edid);

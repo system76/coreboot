@@ -27,8 +27,7 @@ static void edp_phy_ssc_en(bool en)
 	}
 }
 
-int edp_phy_enable(void)
-
+void early_phy_enable(void)
 {
 	write32(&edp_phy->pd_ctl, 0x2);
 	write32(&edp_phy->pd_ctl, 0x7D);
@@ -59,13 +58,73 @@ int edp_phy_enable(void)
 	printk(BIOS_DEBUG, "qserdes_com_cmn_status = 0x%x\n",
 	       read32(&edp_phy_pll->qserdes_com_cmn_status));
 
-	write32(&edp_phy_lane_tx0->tx_ldo_config, 0x91);
-	write32(&edp_phy_lane_tx1->tx_ldo_config, 0x91);
+	write32(&edp_phy_lane_tx0->tx_lane_mode1, 0x00);
+	write32(&edp_phy_lane_tx1->tx_lane_mode1, 0x00);
+}
+
+int edp_phy_enable(uint32_t link_rate)
+{
+	write32(&edp_phy->pd_ctl, 0x2);
+	write32(&edp_phy->pd_ctl, 0x7D);
+
+	write32(&edp_phy->aux_interrupt_mask, 0x1F);
+
+	write32(&edp_phy_pll->qserdes_com_bias_en_clkbuflr_en, 0x1F);
+
+	write32(&edp_phy->aux_cfg[0], 0x00);
+	write32(&edp_phy->aux_cfg[1], 0x00);
+	write32(&edp_phy->aux_cfg[2], 0xA4);
+	write32(&edp_phy->aux_cfg[3], 0x00);
+	write32(&edp_phy->aux_cfg[4], 0x0A);
+	write32(&edp_phy->aux_cfg[5], 0x26);
+	write32(&edp_phy->aux_cfg[6], 0x0A);
+	write32(&edp_phy->aux_cfg[7], 0x03);
+	write32(&edp_phy->aux_cfg[8], 0x37);
+	write32(&edp_phy->aux_cfg[9], 0x03);
+
+	write32(&edp_phy->aux_interrupt_mask, 0x1f);
+	write32(&edp_phy->mode, 0xFC);
+
+	if (!wait_us(10000, read32(&edp_phy_pll->qserdes_com_cmn_status) & BIT(7)))
+		printk(BIOS_ERR, "%s: refgen not ready : 0x%x , Add= %p\n", __func__,
+		       read32(&edp_phy_pll->qserdes_com_cmn_status),
+		       (void *)(&edp_phy_pll->qserdes_com_cmn_status));
+
+	printk(BIOS_DEBUG, "qserdes_com_cmn_status = 0x%x\n",
+	       read32(&edp_phy_pll->qserdes_com_cmn_status));
+
+	write32(&edp_phy_lane_tx0->tx_lane_mode1, 0x00);
+	write32(&edp_phy_lane_tx1->tx_lane_mode1, 0x00);
+
+	if (link_rate >= 324000) {
+		printk(BIOS_DEBUG, "%s: link rate %u\n", __func__, link_rate);
+		write32(&edp_phy_lane_tx0->tx_ldo_config, 0x91);
+		write32(&edp_phy_lane_tx1->tx_ldo_config, 0x91);
+	} else {
+		printk(BIOS_DEBUG, "%s: link rate %u\n", __func__, link_rate);
+		write32(&edp_phy_lane_tx0->tx_ldo_config, 0x51);
+		write32(&edp_phy_lane_tx1->tx_ldo_config, 0x51);
+	}
+
 	write32(&edp_phy_lane_tx0->tx_lane_mode1, 0x00);
 	write32(&edp_phy_lane_tx1->tx_lane_mode1, 0x00);
 
 	return 0;
 }
+
+
+static const u8 edp_rbr_voltage_swing[4][4] = {
+	{0x07, 0x0f, 0x16, 0x1f},
+	{0x0d, 0x16, 0x1e, 0xff},
+	{0x11, 0x1b, 0xff, 0xff},
+	{0x16, 0xff, 0xff, 0xff}
+};
+static const u8 edp_rbr_pre_emphasis[4][4] = {
+	{0x05, 0x11, 0x17, 0x1d},
+	{0x05, 0x11, 0x18, 0xff},
+	{0x06, 0x11, 0xff, 0xff},
+	{0x00, 0xff, 0xff, 0xff}
+};
 
 static const u8 edp_hbr2_voltage_swing[4][4] = {
 	{0x0b, 0x11, 0x17, 0x1c}, /* sw0, 0.4v  */
@@ -81,28 +140,71 @@ static const u8 edp_hbr2_pre_emphasis[4][4] = {
 	{0x0d, 0xFF, 0xFF, 0xFF}  /* pe3, 9.5 db */
 };
 
-void edp_phy_vm_pe_init(void)
+static void edp_phy_vm_pe_init(uint32_t link_rate, uint32_t lane_count)
 {
-	write32(&edp_phy_lane_tx0->tx_drv_lvl, edp_hbr2_voltage_swing[0][0]);
-	write32(&edp_phy_lane_tx0->tx_emp_post1_lvl, edp_hbr2_pre_emphasis[0][0]);
-	write32(&edp_phy_lane_tx1->tx_drv_lvl, edp_hbr2_voltage_swing[0][0]);
-	write32(&edp_phy_lane_tx1->tx_emp_post1_lvl, edp_hbr2_pre_emphasis[0][0]);
+	if (link_rate >= 324000) {
+		printk(BIOS_DEBUG, "%s: link rate %u\n", __func__, link_rate);
+		write32(&edp_phy_lane_tx0->tx_drv_lvl, edp_hbr2_voltage_swing[0][0]);
+		write32(&edp_phy_lane_tx0->tx_emp_post1_lvl, edp_hbr2_pre_emphasis[0][0]);
+		write32(&edp_phy_lane_tx1->tx_drv_lvl, edp_hbr2_voltage_swing[0][0]);
+		write32(&edp_phy_lane_tx1->tx_emp_post1_lvl, edp_hbr2_pre_emphasis[0][0]);
+	} else {
+		printk(BIOS_DEBUG, "%s: link rate %u\n", __func__, link_rate);
+		write32(&edp_phy_lane_tx0->tx_drv_lvl, edp_rbr_voltage_swing[0][0]);
+		write32(&edp_phy_lane_tx0->tx_emp_post1_lvl, edp_rbr_pre_emphasis[0][0]);
+		write32(&edp_phy_lane_tx1->tx_drv_lvl, edp_rbr_voltage_swing[0][0]);
+		write32(&edp_phy_lane_tx1->tx_emp_post1_lvl, edp_rbr_pre_emphasis[0][0]);
+	}
 
-	write32(&edp_phy_lane_tx0->tx_highz_drvr_en, 4);
-	write32(&edp_phy_lane_tx0->tx_transceiver_bias_en, 3);
-	write32(&edp_phy_lane_tx1->tx_highz_drvr_en, 4);
-	write32(&edp_phy_lane_tx1->tx_transceiver_bias_en, 3);
-	write32(&edp_phy->cfg1, 0x0F);
+	u32 bias_en0, bias_en1, drvr_en0, drvr_en1, phy_cfg_1;
+
+	if (lane_count == 1) {
+		printk(BIOS_DEBUG, "%s: lanes %u\n", __func__, lane_count);
+		bias_en0 = 0x01;
+		bias_en1 = 0x00;
+		drvr_en0 = 0x06;
+		drvr_en1 = 0x07;
+		phy_cfg_1 = 0x01;
+	} else if (lane_count == 2) {
+		printk(BIOS_DEBUG, "%s: lanes %u\n", __func__, lane_count);
+		bias_en0 = 0x03;
+		bias_en1 = 0x00;
+		drvr_en0 = 0x04;
+		drvr_en1 = 0x07;
+		phy_cfg_1 = 0x03;
+	} else {
+		printk(BIOS_DEBUG, "%s: lanes %u\n", __func__, lane_count);
+		bias_en0 = 0x03;
+		bias_en1 = 0x03;
+		drvr_en0 = 0x04;
+		drvr_en1 = 0x04;
+		phy_cfg_1 = 0x0f;
+	}
+
+	write32(&edp_phy_lane_tx0->tx_highz_drvr_en, drvr_en0);
+	write32(&edp_phy_lane_tx0->tx_transceiver_bias_en, bias_en0);
+	write32(&edp_phy_lane_tx1->tx_highz_drvr_en, drvr_en1);
+	write32(&edp_phy_lane_tx1->tx_transceiver_bias_en, bias_en1);
+	write32(&edp_phy->cfg1, phy_cfg_1);
 
 	printk(BIOS_DEBUG, "%s: Ends\n", __func__);
 }
 
-void edp_phy_config(u8 v_level, u8 p_level)
+void edp_phy_config(u8 v_level, u8 p_level, uint32_t link_rate)
 {
-	write32(&edp_phy_lane_tx0->tx_drv_lvl, edp_hbr2_voltage_swing[v_level][p_level]);
-	write32(&edp_phy_lane_tx0->tx_emp_post1_lvl, edp_hbr2_pre_emphasis[v_level][p_level]);
-	write32(&edp_phy_lane_tx1->tx_drv_lvl, edp_hbr2_voltage_swing[v_level][p_level]);
-	write32(&edp_phy_lane_tx1->tx_emp_post1_lvl, edp_hbr2_pre_emphasis[v_level][p_level]);
+	if (link_rate >= 324000) {
+		printk(BIOS_DEBUG, "%s: link rate %u\n", __func__, link_rate);
+		write32(&edp_phy_lane_tx0->tx_drv_lvl, edp_hbr2_voltage_swing[v_level][p_level]);
+		write32(&edp_phy_lane_tx0->tx_emp_post1_lvl, edp_hbr2_pre_emphasis[v_level][p_level]);
+		write32(&edp_phy_lane_tx1->tx_drv_lvl, edp_hbr2_voltage_swing[v_level][p_level]);
+		write32(&edp_phy_lane_tx1->tx_emp_post1_lvl, edp_hbr2_pre_emphasis[v_level][p_level]);
+	} else {
+		printk(BIOS_DEBUG, "%s: link rate %u\n", __func__, link_rate);
+		write32(&edp_phy_lane_tx0->tx_drv_lvl, edp_rbr_voltage_swing[v_level][p_level]);
+		write32(&edp_phy_lane_tx0->tx_emp_post1_lvl, edp_rbr_pre_emphasis[v_level][p_level]);
+		write32(&edp_phy_lane_tx1->tx_drv_lvl, edp_rbr_voltage_swing[v_level][p_level]);
+		write32(&edp_phy_lane_tx1->tx_emp_post1_lvl, edp_rbr_pre_emphasis[v_level][p_level]);
+	}
 }
 
 static void edp_phy_pll_vco_init(uint32_t link_rate)
@@ -156,18 +258,40 @@ static void edp_phy_pll_vco_init(uint32_t link_rate)
 
 		write32(&edp_phy_pll->qserdes_com_bin_vcocal_cmp_code1_mode0, 0x97);
 		write32(&edp_phy_pll->qserdes_com_bin_vcocal_cmp_code2_mode0, 0x10);
+	} else if (link_rate == 270000) {
+		printk(BIOS_DEBUG, "%s: link rate %u\n", __func__, link_rate);
+		write32(&edp_phy_pll->qserdes_com_hsclk_sel, 0x03);
+		write32(&edp_phy_pll->qserdes_com_dec_start_mode0, 0x34);
+		write32(&edp_phy_pll->qserdes_com_div_frac_start1_mode0, 0x00);
+		write32(&edp_phy_pll->qserdes_com_div_frac_start2_mode0, 0xC0);
+		write32(&edp_phy_pll->qserdes_com_div_frac_start3_mode0, 0x0B);
+		write32(&edp_phy_pll->qserdes_com_lock_cmp1_mode0, 0x07);
+		write32(&edp_phy_pll->qserdes_com_lock_cmp2_mode0, 0x07);
+
+		write32(&edp_phy_pll->qserdes_com_bin_vcocal_cmp_code1_mode0, 0x71);
+		write32(&edp_phy_pll->qserdes_com_bin_vcocal_cmp_code2_mode0, 0x0C);
+	} else if (link_rate == 162000) {
+		printk(BIOS_DEBUG, "%s: link rate %u\n", __func__, link_rate);
+		write32(&edp_phy_pll->qserdes_com_hsclk_sel, 0x05);
+		write32(&edp_phy_pll->qserdes_com_dec_start_mode0, 0x34);
+		write32(&edp_phy_pll->qserdes_com_div_frac_start1_mode0, 0x00);
+		write32(&edp_phy_pll->qserdes_com_div_frac_start2_mode0, 0xC0);
+		write32(&edp_phy_pll->qserdes_com_div_frac_start3_mode0, 0x0B);
+		write32(&edp_phy_pll->qserdes_com_lock_cmp1_mode0, 0x37);
+		write32(&edp_phy_pll->qserdes_com_lock_cmp2_mode0, 0x04);
+
+		write32(&edp_phy_pll->qserdes_com_bin_vcocal_cmp_code1_mode0, 0x71);
+		write32(&edp_phy_pll->qserdes_com_bin_vcocal_cmp_code2_mode0, 0x0C);
 	}
 }
 
 static void edp_phy_lanes_init(void)
 {
-	write32(&edp_phy_lane_tx0->tx_transceiver_bias_en, 0x03);
 	write32(&edp_phy_lane_tx0->tx_clk_buf_enable, 0x0f);
 	write32(&edp_phy_lane_tx0->tx_reset_tsync_en, 0x03);
 	write32(&edp_phy_lane_tx0->tx_tran_drvr_emp_en, 0x01);
 	write32(&edp_phy_lane_tx0->tx_tx_band, 0x4);
 
-	write32(&edp_phy_lane_tx1->tx_transceiver_bias_en, 0x03);
 	write32(&edp_phy_lane_tx1->tx_clk_buf_enable, 0x0f);
 	write32(&edp_phy_lane_tx1->tx_reset_tsync_en, 0x03);
 	write32(&edp_phy_lane_tx1->tx_tran_drvr_emp_en, 0x01);
@@ -176,12 +300,7 @@ static void edp_phy_lanes_init(void)
 
 static void edp_lanes_configure(void)
 {
-	write32(&edp_phy_lane_tx0->tx_highz_drvr_en, 0x1f);
-	write32(&edp_phy_lane_tx0->tx_highz_drvr_en, 0x04);
 	write32(&edp_phy_lane_tx0->tx_tx_pol_inv, 0x00);
-
-	write32(&edp_phy_lane_tx1->tx_highz_drvr_en, 0x1f);
-	write32(&edp_phy_lane_tx1->tx_highz_drvr_en, 0x04);
 	write32(&edp_phy_lane_tx1->tx_tx_pol_inv, 0x00);
 
 	write32(&edp_phy_lane_tx0->tx_drv_lvl_offset, 0x10);
@@ -194,13 +313,13 @@ static void edp_lanes_configure(void)
 	write32(&edp_phy_lane_tx1->tx_rescode_lane_offset_tx1, 0x11);
 }
 
-static int edp_phy_pll_vco_configure(uint32_t link_rate)
+static int edp_phy_pll_vco_configure(uint32_t link_rate, uint32_t lane_count)
 {
 	u32 phy_vco_div = 0;
 
 	switch (link_rate) {
 	case 162000:
-		phy_vco_div = 2;
+		phy_vco_div = 1;
 		break;
 	case 216000:
 	case 243000:
@@ -236,8 +355,8 @@ static int edp_phy_pll_vco_configure(uint32_t link_rate)
 	}
 
 	write32(&edp_phy->cfg, 0x19);
-	edp_lanes_configure(); //
-	edp_phy_vm_pe_init();
+	edp_lanes_configure();
+	edp_phy_vm_pe_init(link_rate, lane_count);
 	if (!wait_us(10000, read32(&edp_phy->status) & BIT(1))) {
 		printk(BIOS_ERR, "%s: PHY not ready. Status\n", __func__);
 		return -1;
@@ -256,7 +375,7 @@ static int edp_phy_pll_vco_configure(uint32_t link_rate)
 	return 0;
 }
 
-int edp_phy_power_on(uint32_t link_rate)
+int edp_phy_power_on(uint32_t link_rate, uint32_t lane_count)
 {
 	int ret = 0;
 	edp_phy_pll_vco_init(link_rate);
@@ -264,7 +383,7 @@ int edp_phy_power_on(uint32_t link_rate)
 	write32(&edp_phy->tx0_tx1_lane_ctl, 0x5);
 	write32(&edp_phy->tx2_tx3_lane_ctl, 0x5);
 	edp_phy_lanes_init();
-	ret = edp_phy_pll_vco_configure(link_rate);
+	ret = edp_phy_pll_vco_configure(link_rate, lane_count);
 
 	return ret;
 }

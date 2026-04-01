@@ -28,11 +28,11 @@ static void edp_ctrl_phy_enable(int enable)
 
 	uint32_t active_status = read32(&edp_ahbclk->clk_active);
 
-	printk(BIOS_INFO, " \033[32m[    edp_ahbclk->phy_ctrl active ]\033[0m  =  %d\n",
-	       active_status);
+	printk(BIOS_INFO, "edp_ahbclk->phy_ctrl active = %d\n", active_status);
 
-	edp_phy_enable();
+	early_phy_enable();
 
+	/* early link-side initialization */
 	write32(&edp_auxclk->hpd_int_ack, EDP_HPD_INT_ACK_CLEAR_ALL);
 	write32(&edp_auxclk->aux_ctrl, EDP_AUX_CTRL_ENABLE_BASIC);
 	write32(&edp_auxclk->hpd_reftimer, EDP_HPD_REFTIMER_ENABLE_0013);
@@ -105,7 +105,7 @@ enum cb_err edp_ctrl_init(struct edid *edid)
 		printk(BIOS_DEBUG, "[DPCD] 0000..000F: ");
 
 		for (int i = 0; i <= dump_len; i++) {
-			printk(BIOS_INFO, "%02x ", (unsigned int)dpcd[i]);
+			printk(BIOS_INFO, "%02x ", (uint32_t)dpcd[i]);
 		}
 	}
 
@@ -133,7 +133,7 @@ enum cb_err edp_ctrl_init(struct edid *edid)
 
 void edp_backlight_aux(void)
 {
-	// eDP DPCD AUX transactions: enable backlight control and set brightness
+	/* eDP DPCD AUX transactions: enable backlight control and set brightness */
 	uint8_t rx_buf[4], tx_buf[4];
 	int ret;
 
@@ -141,7 +141,7 @@ void edp_backlight_aux(void)
 	if (ret < 0)
 		printk(BIOS_DEBUG, " Error\n");
 
-	tx_buf[0] = 0x02; // Set DPCD 0x721 bits (per original logic)
+	tx_buf[0] = 0x02; /* Set DPCD 0x721 bits (per original logic) */
 	ret = edp_aux_transfer(0x721, DP_AUX_NATIVE_WRITE, tx_buf, 1);
 	if (ret < 0)
 		printk(BIOS_DEBUG, " Error\n");
@@ -150,14 +150,14 @@ void edp_backlight_aux(void)
 	if (ret < 0)
 		printk(BIOS_DEBUG, " Error\n");
 
-	tx_buf[0] = 0x01; // Enable backlight via DPCD 0x720
+	tx_buf[0] = 0x01; /* Enable backlight via DPCD 0x720 */
 	ret = edp_aux_transfer(0x720, DP_AUX_NATIVE_WRITE, tx_buf, 1);
 	if (ret < 0)
 		printk(BIOS_DEBUG, " Error\n");
 
-	// Brightness: MSB @ 0x722, LSB @ 0x723 (0x0400)
-	tx_buf[0] = 0x04; // MSB
-	tx_buf[1] = 0x00; // LSB
+	/* Brightness: MSB @ 0x722, LSB @ 0x723 (0x0400) */
+	tx_buf[0] = 0x04;
+	tx_buf[1] = 0x00;
 	ret = edp_aux_transfer(0x722, DP_AUX_NATIVE_WRITE, tx_buf, 2);
 	if (ret < 0)
 		printk(BIOS_DEBUG, " Error\n");

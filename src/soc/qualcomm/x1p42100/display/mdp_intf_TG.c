@@ -4,6 +4,7 @@
 #include <soc/clock.h>
 #include <soc/display/mdssreg.h>
 #include <console/console.h>
+#include <soc/display/edp_reg.h>
 #include <soc/qcom_spmi.h>
 #include <gpio.h>
 
@@ -16,9 +17,11 @@ void intf_tg_setup(struct edid *edid)
 	uint32_t h_total, h_start, h_pw, h_end;
 	uint32_t v_total, v_start, v_pw;
 
-	uint32_t num_pipes = (edid->mode.ha > MDSS_MAX_SINGLE_PIPE_PIXEL_WIDTH) ? 2 : 1;
+	/* 2 because of Databus widen, 2 pixels per clock.
+	HSYNC Period would be divided by 2 */
+	uint32_t wide_bus = 2;
 
-	if (!edid || !num_pipes)
+	if (!edid)
 		return;
 
 	m = &edid->mode;
@@ -35,12 +38,12 @@ void intf_tg_setup(struct edid *edid)
 	v_pw = m->vspw;
 
 	/* Per-pipe horizontal timing */
-	h_total = full_h_total / num_pipes;
-	h_start = full_h_start / num_pipes;
-	h_pw = full_h_pw / num_pipes;
+	h_total = full_h_total / wide_bus;
+	h_start = full_h_start / wide_bus;
+	h_pw = full_h_pw / wide_bus;
 	h_end = h_total - 1;
 
-	write32(&mdp_intf->intf_mux, 0xF0000); // use ping_pong 0 & disable split
+	write32(&mdp_intf->intf_mux, 0xF0000); /* use ping_pong 0 & disable split */
 
 	write32(&mdp_intf->intf_hsync_ctl, (h_total << 16) | (h_pw));
 
@@ -60,7 +63,7 @@ void intf_tg_setup(struct edid *edid)
 
 	write32(&mdp_intf->polarity_ctl, (m->phsync ? 0x1 : 0x0) | (m->pvsync ? 0x2 : 0x0));
 
-	write32(&mdp_intf->intf_panel_format, 0x2100); // Color Format : RGB
+	write32(&mdp_intf->intf_panel_format, 0x2100); /* Color Format : RGB */
 	write32(&mdp_intf->intf_prof_fetch_start, 0);
 }
 
@@ -70,14 +73,16 @@ void intf_fetch_start_config(struct edid *edid)
 	uint32_t prefetch_avail, prefetch_needed;
 	uint32_t fetch_enable = PROG_FETCH_START_EN;
 
-	uint32_t num_pipes = (edid->mode.ha > MDSS_MAX_SINGLE_PIPE_PIXEL_WIDTH) ? 2 : 1;
+	/* 2 because of Databus widen, 2 pixels per clock.
+	HSYNC Period would be divided by 2 */
+	uint32_t wide_bus = 2;
 
 	v_total = edid->mode.va + edid->mode.vbl;
 
 	/* Per-pipe horizontal total (match TG programming) */
-	if (((edid->mode.ha + edid->mode.hbl) % num_pipes) != 0)
+	if (((edid->mode.ha + edid->mode.hbl) % wide_bus) != 0)
 		return;
-	h_total = (edid->mode.ha + edid->mode.hbl) / num_pipes;
+	h_total = (edid->mode.ha + edid->mode.hbl) / wide_bus;
 
 	vfp_start = edid->mode.va + edid->mode.vbl - edid->mode.vso;
 
@@ -94,4 +99,28 @@ void intf_fetch_start_config(struct edid *edid)
 
 	write32(&mdp_intf->intf_prof_fetch_start, fetch_start);
 	write32(&mdp_intf->intf_config, fetch_enable);
+}
+
+void merge_3d_active(struct edid *edid)
+{
+	bool dual = (edid->mode.ha > MDSS_MAX_SINGLE_PIPE_PIXEL_WIDTH);
+
+	if (dual)
+		write32(&mdp_ctl_0->merge_3d_flush, 0x1);
+
+	write32(&mdp_ctl_0->ctl_intf_flush, 0x20);
+	write32(&mdp_ctl_0->periph_flush, 0x20);
+
+	u32 flush_mask = FLUSH_INTF | FLUSH_PERIPH | FLUSH_CTL | FLUSH_LM0 | FLUSH_VIG0;
+
+	if (dual)
+		flush_mask |= FLUSH_MERGE_3D | FLUSH_LM1 | FLUSH_VIG1;
+
+	write32(&mdp_ctl_0->ctl_flush, flush_mask);
+
+	write32(&edp_lclk->vsc_db16_db17_db18_pb8, 0x10100);
+	write32(&edp_lclk->compression_mode_ctrl, 0x2800);
+	write32(&mdp_intf->intf_config2, 0x111);
+	write32(&edp_lclk->db_ctrl, 0x01);
+	write32(&mdp_intf->intf_config, 0x800000);
 }

@@ -22,9 +22,9 @@ static inline s64 div64_s64(s64 dividend, s64 divisor)
 	return dividend / divisor;
 }
 
-static inline unsigned int drm_fixp_msbset(s64 a)
+static inline uint32_t drm_fixp_msbset(s64 a)
 {
-	unsigned int shift, sign = (a >> 63) & 1;
+	uint32_t shift, sign = (a >> 63) & 1;
 
 	for (shift = 62; shift > 0; --shift)
 		if (((a >> shift) & 1) != sign)
@@ -35,7 +35,7 @@ static inline unsigned int drm_fixp_msbset(s64 a)
 
 static inline s64 drm_fixp_div(s64 a, s64 b)
 {
-	unsigned int shift = 62 - drm_fixp_msbset(a);
+	uint32_t shift = 62 - drm_fixp_msbset(a);
 	s64 result;
 
 	a <<= shift;
@@ -72,7 +72,7 @@ static inline u64 div64_u64_rem(u64 dividend, u64 divisor, u64 *remainder)
 
 static inline s64 drm_fixp_mul(s64 a, s64 b)
 {
-	unsigned int shift = drm_fixp_msbset(a) + drm_fixp_msbset(b);
+	uint32_t shift = drm_fixp_msbset(a) + drm_fixp_msbset(b);
 	s64 result;
 
 	if (shift > 61) {
@@ -211,7 +211,7 @@ static void _tu_valid_boundary_calc(struct tu_algo_data *tu)
 	temp2_fp = drm_fixp_div(temp1_fp, tu->average_valid2_fp);
 	tu->n_tus = drm_fixp2int(temp2_fp);
 
-	if ((unsigned int)temp2_fp > 0xFFFFF000)
+	if ((uint32_t)temp2_fp > 0xFFFFF000)
 		tu->n_tus += 1;
 
 	temp1_fp = drm_fixp_from_fraction(tu->n_tus, 1);
@@ -286,7 +286,7 @@ static void _tu_valid_boundary_calc(struct tu_algo_data *tu)
 	temp1_fp = drm_fixp_mul(temp2_fp, temp1_fp);
 	temp1 = fixp2int_ceil(temp1_fp);
 
-	if ((unsigned int)temp1_fp < DP_TU_FP_EDGE)
+	if ((uint32_t)temp1_fp < DP_TU_FP_EDGE)
 		temp1 = drm_fixp2int(temp1_fp);
 
 	temp = tu->i_upper_boundary_count * tu->nlanes;
@@ -298,7 +298,7 @@ static void _tu_valid_boundary_calc(struct tu_algo_data *tu)
 	temp2_fp = drm_fixp_mul(temp1_fp, temp2_fp);
 	temp2 = fixp2int_ceil(temp2_fp);
 
-	if ((unsigned int)temp2_fp < DP_TU_FP_EDGE)
+	if ((uint32_t)temp2_fp < DP_TU_FP_EDGE)
 		temp2 = drm_fixp2int(temp2_fp);
 
 	tu->extra_required_bytes_new_tmp = temp1 + temp2;
@@ -313,7 +313,7 @@ static void _tu_valid_boundary_calc(struct tu_algo_data *tu)
 	temp1_fp = drm_fixp_div(temp2_fp, tu->pclk_fp);
 	temp = fixp2int_ceil(temp1_fp);
 
-	if ((unsigned int)temp1_fp < DP_TU_FP_EDGE)
+	if ((uint32_t)temp1_fp < DP_TU_FP_EDGE)
 		temp = drm_fixp2int(temp1_fp);
 
 	tu->extra_pclk_cycles_in_link_clk_tmp = temp;
@@ -360,7 +360,7 @@ static void _tu_valid_boundary_calc(struct tu_algo_data *tu)
 				temp1_fp = drm_fixp_from_fraction(temp, 250);
 				tu->parity_symbols = fixp2int_ceil(temp1_fp) * 6 + 1;
 			}
-		} else { //no fec BW impact
+		} else { /* no fec BW impact */
 			tu->parity_symbols = 0;
 		}
 
@@ -454,7 +454,7 @@ static void _dp_calc_extra_bytes(struct tu_algo_data *tu)
 
 	temp2_fp = fixp_subtract(temp1_fp, temp2_fp);
 
-	if ((unsigned int)temp2_fp <= DP_TU_FP_EDGE) {
+	if ((uint32_t)temp2_fp <= DP_TU_FP_EDGE) {
 		tu->extra_bytes = 0;
 		printk(BIOS_DEBUG, "extra_bytes set to 0\n");
 	} else {
@@ -547,7 +547,7 @@ static void dp_tu_update_timings(struct dp_tu_calc_input *in, struct tu_algo_dat
 	if (!in->dsc_en)
 		goto fec_check;
 
-	tu->bpp = 24; // hardcode to 24 if DSC is enabled.
+	tu->bpp = 24; /* hardcode to 24 if DSC is enabled. */
 
 	temp1_fp = drm_fixp_from_fraction(in->compress_ratio, 100);
 	temp2_fp = drm_fixp_from_fraction(in->bpp, 1);
@@ -614,7 +614,7 @@ static void dp_tu_calculate(struct dp_tu_calc_input *in)
 
 	u8 DP_BRUTE_FORCE = 1;
 	s64 BRUTE_FORCE_THRESHOLD_fp = drm_fixp_from_fraction(1, 10); /* 0.1 */
-	unsigned int EXTRA_PIXCLK_CYCLE_DELAY = 4;
+	uint32_t EXTRA_PIXCLK_CYCLE_DELAY = 4;
 	s64 HBLANK_MARGIN = drm_fixp_from_fraction(4, 1);
 	s64 HBLANK_MARGIN_EXTRA = 0;
 
@@ -826,7 +826,7 @@ static void dp_tu_calculate(struct dp_tu_calc_input *in)
 				temp1_fp = drm_fixp_from_fraction(temp, 250);
 				tu.parity_symbols = fixp2int_ceil(temp1_fp) * 6 + 1;
 			}
-		} else { //no fec BW impact
+		} else { /* no fec BW impact */
 			tu.parity_symbols = 0;
 		}
 
@@ -937,7 +937,7 @@ void edp_ctrl_config_TU(struct edp_ctrl *ctrl, struct edid *edid)
 	/* bits per pixel from EDID */
 	inp.bpp = edid->panel_bits_per_pixel;
 
-	//Defaults unless advertised
+	/* Defaults unless advertised */
 	inp.pixel_enc = 444;
 	inp.dsc_en = 0;
 	inp.fec_en = 0;

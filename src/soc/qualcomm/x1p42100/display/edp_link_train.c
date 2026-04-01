@@ -16,6 +16,8 @@
 #include <soc/display/edp_link_train.h>
 #include <soc/display/mdssreg.h>
 
+#define BPC_TO_ENUM(bpc) ((enum edp_color_depth)((bpc / 2) - 3))
+
 static uint8_t dp_get_lane_status(const uint8_t link_status[DP_LINK_STATUS_SIZE], int lane)
 {
 	int i = DP_LANE0_1_STATUS + (lane >> 1);
@@ -134,7 +136,7 @@ static int edp_lane_set_write(uint8_t voltage_level, uint8_t pre_emphasis_level)
 		pre_emphasis_level |= 0x20;
 
 	for (int i = 0; i < 4; i++)
-		buf[i] = voltage_level | (pre_emphasis_level << 3); // shifting by 3
+		buf[i] = voltage_level | (pre_emphasis_level << 3);
 
 	printk(BIOS_DEBUG, "VP:perlane =0x%x:0x%x:0x%x:0x%x\n", buf[0], buf[1], buf[2], buf[3]);
 	if (edp_aux_transfer(DP_TRAINING_LANE0_SET, DP_AUX_NATIVE_WRITE, buf, 4) < 4) {
@@ -202,7 +204,7 @@ static void edp_host_train_set(uint32_t train)
 static int edp_voltage_pre_emphasis_set(struct edp_ctrl *ctrl)
 {
 	printk(BIOS_INFO, "v=%d p=%d\n", ctrl->v_level, ctrl->p_level);
-	edp_phy_config(ctrl->v_level, ctrl->p_level);
+	edp_phy_config(ctrl->v_level, ctrl->p_level, ctrl->link_rate_khz);
 	return edp_lane_set_write(ctrl->v_level, ctrl->p_level);
 }
 
@@ -339,7 +341,7 @@ static int edp_link_rate_down_shift(struct edp_ctrl *ctrl, uint8_t *dpcd)
 
 	if (!ret) {
 		ctrl->link_rate_khz = link_rate;
-		ctrl->link_rate = link_rate / 27000;
+		ctrl->link_rate = link_rate / DP_LINK_RATE_UNIT_KHZ;
 		printk(BIOS_INFO, "new rate=%d\n", ctrl->link_rate_khz);
 	}
 	return ret;
@@ -361,7 +363,7 @@ static int edp_link_lane_down_shift(struct edp_ctrl *ctrl, uint8_t *dpcd)
 		return -1;
 
 	ctrl->lane_cnt = ctrl->lane_cnt >> 1;
-	ctrl->link_rate_khz = dpcd[DP_MAX_LINK_RATE] * 27000;
+	ctrl->link_rate_khz = dpcd[DP_MAX_LINK_RATE] * DP_LINK_RATE_UNIT_KHZ;
 	ctrl->link_rate = dpcd[DP_MAX_LINK_RATE];
 	ctrl->p_level = 0;
 	ctrl->v_level = 0;
@@ -406,7 +408,7 @@ static int edp_do_link_train(struct edp_ctrl *ctrl, uint8_t *dpcd)
 			printk(BIOS_ERR, "failed to write link rate, ret:%d\n", ret);
 			return EDP_TRAIN_FAIL;
 		}
-	} else { // CRD base
+	} else {
 		if (edp_aux_transfer(DP_LINK_BW_SET, DP_AUX_NATIVE_WRITE, &values[0], 1) < 0)
 			return EDP_TRAIN_FAIL;
 
@@ -423,7 +425,7 @@ static int edp_do_link_train(struct edp_ctrl *ctrl, uint8_t *dpcd)
 	edp_aux_transfer(DP_EDP_CONFIGURATION_SET, DP_AUX_NATIVE_WRITE, &edp_config, 1);
 	printk(BIOS_DEBUG, "Setting %8x  : %x\n", DP_EDP_CONFIGURATION_SET, edp_config);
 
-	write32(&edp_p0clk->intf_config, 0x10); // Databus Widen, 2 Pixel / Pixels per clock
+	write32(&edp_p0clk->intf_config, 0x10); /* Databus Widen, 2 Pixel / Pixels per clock */
 
 	values[0] = 0x10;
 	if (dpcd[DP_MAX_DOWNSPREAD] & 1)
@@ -511,7 +513,7 @@ static int edp_ctrl_pixel_clock_dividers(struct edp_ctrl *ctrl, uint32_t *pixel_
 
 	uint32_t stream_rate_khz =
 		(ctrl->pixel_rate) /
-		2; // Databus Widen, 2 Pixel / Pixels per clock settings in edp_do_link_train()
+		2; /* Databus Widen, 2 Pixel / Pixels per clock settings in edp_do_link_train() */
 
 	if (rate == DP_LINK_BW_8_1)
 		pixel_div = 6;
@@ -527,7 +529,7 @@ static int edp_ctrl_pixel_clock_dividers(struct edp_ctrl *ctrl, uint32_t *pixel_
 	dispcc_input_rate = (ctrl->link_rate_khz * 10) / pixel_div;
 
 	rational_best_approximation(dispcc_input_rate, stream_rate_khz,
-				    (unsigned long)(1 << 16) - 1, (unsigned long)(1 << 16) - 1,
+				    (uint64_t)(1 << 16) - 1, (uint64_t)(1 << 16) - 1,
 				    &den, &num);
 
 	printk(BIOS_INFO, "M = %lu , N= %lu\n", num, den);
@@ -536,9 +538,47 @@ static int edp_ctrl_pixel_clock_dividers(struct edp_ctrl *ctrl, uint32_t *pixel_
 	return 0;
 }
 
+static int edp_check_link_bandwidth(uint32_t pixel_clock_khz, uint32_t link_rate_khz,
+				 uint32_t lane_count, uint32_t bits_per_color)
+{
+	uint32_t bpp = bits_per_color * 3;
+
+	uint64_t pixel_data_rate_bps = (uint64_t)pixel_clock_khz * 1000ULL * bpp;
+
+	uint64_t raw_link_bps = (uint64_t)link_rate_khz * 1000ULL * 10ULL * lane_count;
+
+	/* payload shrink */
+	uint64_t effective_link_bps = (raw_link_bps * 8ULL) / 10ULL;
+
+	return pixel_data_rate_bps <= effective_link_bps;
+}
+
+static uint32_t choose_best_color_depth(struct edid *edid, uint32_t link_rate_khz,
+					    uint32_t lane_count)
+{
+	uint32_t clk = edid->mode.pixel_clock;
+
+	printk(BIOS_DEBUG, "%d %d %d\n", clk, link_rate_khz, lane_count);
+
+	if ((edid->panel_bits_per_color >= COLOR_DEPTH_10BPC) &&
+		(edp_check_link_bandwidth(clk, link_rate_khz, lane_count, 10)))
+		return COLOR_DEPTH_10BPC;
+
+	if ((edid->panel_bits_per_color >= COLOR_DEPTH_8BPC) &&
+		(edp_check_link_bandwidth(clk, link_rate_khz, lane_count, 8)))
+		return COLOR_DEPTH_8BPC;
+
+	if ((edid->panel_bits_per_color >= COLOR_DEPTH_6BPC) &&
+		(edp_check_link_bandwidth(clk, link_rate_khz, lane_count, 6)))
+		return COLOR_DEPTH_6BPC;
+
+	printk(BIOS_ERR, "Searching for suitable color width failed\n");
+	return 0;
+}
+
 static void edp_config_ctrl(struct edp_ctrl *ctrl, uint8_t *dpcd)
 {
-	uint32_t config = 0, depth = (ctrl->color_depth >= 8) ? EDP_8BIT : EDP_6BIT;
+	uint32_t config = 0, depth = BPC_TO_ENUM(ctrl->color_depth);
 
 	/* Default-> LSCLK DIV: 1/4 LCLK  */
 	config |= (2 << EDP_CONFIGURATION_CTRL_LSCLK_DIV_SHIFT);
@@ -567,7 +607,7 @@ static void edp_config_ctrl(struct edp_ctrl *ctrl, uint8_t *dpcd)
 static void edp_ctrl_config_misc(struct edp_ctrl *ctrl)
 {
 	uint32_t misc_val;
-	enum edp_color_depth depth = (ctrl->color_depth >= 8) ? EDP_8BIT : EDP_6BIT;
+	enum edp_color_depth depth = BPC_TO_ENUM(ctrl->color_depth);
 
 	misc_val = read32(&edp_lclk->misc1_misc0);
 
@@ -603,9 +643,9 @@ static int edp_ctrl_config_msa(struct edp_ctrl *ctrl)
 		nvid = temp;
 	}
 
-	mvid = mvid * 2; // Databus Widen, 2 Pixel / Pixels clock
+	mvid = mvid * 2; /* Databus Widen, 2 Pixel / Pixels clock */
 
-	// Link Rate scaling ..
+	/* Link Rate scaling */
 	if (rate == DP_LINK_BW_5_4)
 		nvid *= 2;
 
@@ -624,9 +664,11 @@ static int edp_ctrl_config_msa(struct edp_ctrl *ctrl)
 static void edp_ctrl_timing_cfg(struct edid *edid)
 {
 	uint32_t hpolarity = (edid->mode.phsync == '+');
-	uint32_t vpolarity =
-		(edid->mode.pvsync ==
-		 '-'); // This has to be plus "+", since there is bug in coreboot code EDID parsing which fills + if vsyns is not present in EDID, we are keeping it minus "-"for missing override.
+
+	/* This has to be plus "+", since there is bug in EDID parsing,
+	which fills + if vsyns is not present in EDID,
+	we are keeping it minus "-"for missing override. */
+	uint32_t vpolarity = (edid->mode.pvsync == '-');
 
 	printk(BIOS_DEBUG,
 	       "Confirm Parsing phsync=%c pvsync=%c hpol=%u vpol=%u hspw=0x%x vspw=0x%x\n",
@@ -643,9 +685,9 @@ static void edp_ctrl_timing_cfg(struct edid *edid)
 			(((edid->mode.vbl - edid->mode.vso) << 16) & 0xffff0000));
 
 	write32(&edp_lclk->hysnc_vsync_width_polarity,
-		(edid->mode.hspw & 0x7fff) |                 // HSW[14:0]
-			(hpolarity << 15) |                  // HSP[15]
-			((edid->mode.vspw & 0x7fff) << 16) | // VSW[30:16]
+		(edid->mode.hspw & 0x7fff) |                 /* HSW[14:0] */
+			(hpolarity << 15) |                  /* HSP[15] */
+			((edid->mode.vspw & 0x7fff) << 16) | /* VSW[30:16] */
 			(vpolarity << 31));
 
 	write32(&edp_lclk->active_hor_ver,
@@ -662,15 +704,6 @@ static void edp_mainlink_ctrl(int enable)
 	write32(&edp_lclk->mainlink_ctrl, data);
 }
 
-static void edp_ctrl_phy_enable(int enable)
-{
-	if (enable) {
-		write32(&edp_ahbclk->phy_ctrl, 0x4 | 0x1);
-		write32(&edp_ahbclk->phy_ctrl, 0x0);
-		edp_phy_enable();
-	}
-}
-
 static void edp_ctrl_link_enable(struct edp_ctrl *ctrl, struct edid *edid, uint8_t *dpcd,
 				 int enable)
 {
@@ -680,7 +713,7 @@ static void edp_ctrl_link_enable(struct edp_ctrl *ctrl, struct edid *edid, uint8
 	if (enable) {
 		uint64_t link_hz;
 
-		edp_phy_power_on(ctrl->link_rate_khz);
+		edp_phy_power_on(ctrl->link_rate_khz, ctrl->lane_cnt);
 
 		/* link_rate_khz is in kHz -> convert to Hz */
 		link_hz = (uint64_t)ctrl->link_rate_khz * 1000ULL;
@@ -709,14 +742,9 @@ static void edp_ctrl_link_enable(struct edp_ctrl *ctrl, struct edid *edid, uint8
 		/* Get pixel clock divider values for the current mode/link */
 		edp_ctrl_pixel_clock_dividers(ctrl, &m, &n);
 
-		/*
-		`pixel_hz` below
-		desired pixel clock (from DPCD mode timing).
-		write32(&edp_p0clk->intf_config, 0x10); // Databus Widen, 2 Pixel / Pixels per clock settings in edp_do_link_train()
-		*/
-		uint64_t pixel_hz = (ctrl->pixel_rate / 1000) / 2 *
-				    MHz; // divide by 2 because of Databus widen.
-		// 2 pixels per clock. 326 for 65537 pixel clock from DPCD
+		/* divide by 2 because of Databus widen.
+		2 pixels per clock. 326 for <if:65537> pixel clock from DPCD */
+		uint64_t pixel_hz = (ctrl->pixel_rate / 1000) / 2 * MHz;
 
 		struct clock_freq_config pixel0_cfg[] = {
 			{
@@ -736,6 +764,27 @@ static void edp_ctrl_link_enable(struct edp_ctrl *ctrl, struct edid *edid, uint8
 		clock_enable(&disp_cc->mdss_dptx3_pixel0_cbcr);
 
 		printk(BIOS_DEBUG, "[ Setting Mainlink control as 1 ]\n");
+
+		/* mainlink_levels */
+		uint32_t safe_to_exit_level = eDP_SAFE_EXIT_LVL_LANE1;
+		switch (ctrl->lane_cnt) {
+		case 1:
+			safe_to_exit_level = eDP_SAFE_EXIT_LVL_LANE1;
+			break;
+		case 2:
+			safe_to_exit_level = eDP_SAFE_EXIT_LVL_LANE2;
+			break;
+		case 4:
+			safe_to_exit_level = eDP_SAFE_EXIT_LVL_LANE4;
+			break;
+		default:
+			printk(BIOS_DEBUG, "setting the default safe_to_exit_level = %u\n",
+			       safe_to_exit_level);
+			break;
+		}
+
+		write32(&edp_lclk->mainlink_levels, safe_to_exit_level);
+
 		edp_mainlink_ctrl(1);
 	} else {
 		edp_mainlink_ctrl(0);
@@ -749,12 +798,18 @@ static int edp_ctrl_training(struct edp_ctrl *ctrl, struct edid *edid, uint8_t *
 	int ret = edp_do_link_train(ctrl, dpcd);
 
 	/* Re-configure main link */
-	while (ret == 15) { // EDP_TRAIN_RECONFIG
+	while (ret == EDP_TRAIN_RECONFIG) {
 		edp_ctrl_irq_enable(0);
 		edp_ctrl_link_enable(ctrl, edid, dpcd, 0);
-		edp_ctrl_phy_enable(1);
+
+		/* edp Phy enable */
+		write32(&edp_ahbclk->phy_ctrl, 0x4 | 0x1);
+		write32(&edp_ahbclk->phy_ctrl, 0x0);
+		edp_phy_enable(ctrl->link_rate_khz);
+
 		edp_ctrl_irq_enable(1);
 		edp_ctrl_link_enable(ctrl, edid, dpcd, 1);
+
 		ret = edp_do_link_train(ctrl, dpcd);
 	}
 	return ret;
@@ -790,6 +845,7 @@ static void edp_get_best_rate_from_table(struct edp_ctrl *ctrl, uint8_t *dpcd)
 	ctrl->use_rate_select = true;
 	ctrl->rate_select_idx = best_idx;
 
+	/* manual override for link rate < best_idx = -1;> */
 	if (best_idx < 0) {
 		ctrl->link_rate_khz = 540000;
 		ctrl->use_rate_select = false;
@@ -798,7 +854,7 @@ static void edp_get_best_rate_from_table(struct edp_ctrl *ctrl, uint8_t *dpcd)
 		printk(BIOS_DEBUG, "No valid eDP rate table, fallback 540000 kHz\n");
 	}
 
-	dpcd[DP_MAX_LINK_RATE] = ctrl->link_rate_khz / 27000;
+	dpcd[DP_MAX_LINK_RATE] = ctrl->link_rate_khz / DP_LINK_RATE_UNIT_KHZ;
 	ctrl->link_rate = dpcd[DP_MAX_LINK_RATE];
 
 	printk(BIOS_DEBUG, "eDP rate-table: best_rate_khz=%u idx=%d\n", best_rate_khz,
@@ -810,13 +866,22 @@ int edp_ctrl_on(struct edp_ctrl *ctrl, struct edid *edid, uint8_t *dpcd)
 	uint8_t value;
 	int ret;
 
-	printk(BIOS_DEBUG,
-	       "\nBefore reading DP_SUPPORTED_LINK_RATES, DPCD available max link rate = %u\n",
-	       dpcd[DP_MAX_LINK_RATE]);
-	edp_get_best_rate_from_table(ctrl, dpcd);
+	printk(BIOS_DEBUG, "\nDPCD provided max link rate = %u\n", dpcd[DP_MAX_LINK_RATE]);
+
+	if (dpcd[DP_MAX_LINK_RATE] == 0) {
+		edp_get_best_rate_from_table(ctrl, dpcd);
+	} else {
+		ctrl->link_rate_khz = dpcd[DP_MAX_LINK_RATE] * DP_LINK_RATE_UNIT_KHZ;
+		ctrl->link_rate = dpcd[DP_MAX_LINK_RATE];
+		ctrl->use_rate_select = false;
+		ctrl->rate_select_idx = 0;
+	}
 
 	ctrl->lane_cnt = dpcd[DP_MAX_LANE_COUNT] & DP_MAX_LANE_COUNT_MASK;
-	edid->panel_bits_per_color = edid->panel_bits_per_color >= 8 ? 8 : 6;
+
+	edid->panel_bits_per_color =
+		choose_best_color_depth(edid, ctrl->link_rate_khz, ctrl->lane_cnt);
+
 	edid->panel_bits_per_pixel = edid->panel_bits_per_color * 3;
 	ctrl->color_depth = edid->panel_bits_per_color;
 	ctrl->pixel_rate = edid->mode.pixel_clock;

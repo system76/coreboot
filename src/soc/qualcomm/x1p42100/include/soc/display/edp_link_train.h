@@ -9,6 +9,7 @@
 #define DPCD_LINK_VOLTAGE_MAX      4
 #define DPCD_LINK_PRE_EMPHASIS_MAX 4
 #define MAX_LINK_TRAINING_LOOP     5
+#define DP_LINK_RATE_UNIT_KHZ 27000
 
 /* DP_TX Registers */
 #define MAX_16BITS_VALUE                   ((1 << 16) - 1) /* 16 bits value */

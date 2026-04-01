@@ -75,7 +75,7 @@ static void qcom_mdss_edp_init(struct edid *edid, uintptr_t fb_addr)
 	intf_tg_setup(edid);
 	intf_fetch_start_config(edid);
 
-	merge_3d_active();
+	merge_3d_active(edid);
 }
 
 static void qcom_mdp_start(uintptr_t fb_addr)
