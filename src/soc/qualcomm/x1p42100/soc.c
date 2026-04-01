@@ -32,7 +32,6 @@ static void soc_read_resources(struct device *dev)
 		ram_range(dev, index++, (uintptr_t)config[i].offset, config[i].size);
 
 	mmio_range(dev, index++, (uintptr_t)_dram_aop_cmd_db, REGION_SIZE(dram_aop_cmd_db));
-	mmio_range(dev, index++, (uintptr_t)_framebuffer, REGION_SIZE(framebuffer));
 
 	reserved_ram_range(dev, index++, (uintptr_t)_dram_ncc, REGION_SIZE(dram_ncc));
 	reserved_ram_range(dev, index++, (uintptr_t)_dram_cpucp, REGION_SIZE(dram_cpucp));
