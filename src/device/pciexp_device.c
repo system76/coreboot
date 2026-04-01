@@ -814,7 +814,7 @@ void pciexp_dev_read_resources(struct device *dev)
 	if (!sriovpos)
 		return;
 
-	sriovpos = pciexp_find_extended_cap(dev, PCIE_EXT_CAP_SRIOV_ID, PCIE_EXT_CAP_OFFSET);
+	sriovpos = pciexp_find_extended_cap(dev, PCIE_EXT_CAP_SRIOV_ID, 0);
 	if (!sriovpos)
 		return;
 
