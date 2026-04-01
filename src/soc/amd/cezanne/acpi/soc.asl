@@ -43,7 +43,9 @@ Scope(\_SB) {
 /* Enable DPTC interface with AMD ALIB */
 External(\_SB.DPTC, MethodObj)
 
+#if CONFIG(CHROMEOS)
 #include "rtc_workaround.asl"
+#endif
 
 /*
  * Platform Notify
