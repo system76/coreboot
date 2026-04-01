@@ -26,12 +26,10 @@ it with the version available from LANL.
 #include <lib.h>
 #include <console/console.h>
 #include <symbols.h>
+#include <thread.h>
 
-int checkstack(void *top_of_stack, int core)
+int _checkstack(void *top_of_stack, size_t stack_size, int core)
 {
-	/* Not all archs use CONFIG_STACK_SIZE, those who don't set it to 0. */
-	size_t stack_size = CONFIG_STACK_SIZE ?
-			    CONFIG_STACK_SIZE : REGION_SIZE(stack);
 	int i;
 	u32 *stack = (u32 *) (top_of_stack - stack_size);
 
@@ -57,4 +55,20 @@ int checkstack(void *top_of_stack, int core)
 	}
 
 	return 0;
+}
+
+int checkstack(void *top_of_stack, int core)
+{
+	int ret;
+	/* Not all archs use CONFIG_STACK_SIZE, those who don't set it to 0. */
+	size_t stack_size = CONFIG_STACK_SIZE ?
+			    CONFIG_STACK_SIZE : REGION_SIZE(stack);
+
+	printk(BIOS_SPEW, "Check main stack:\n");
+	ret = _checkstack(top_of_stack, stack_size, core);
+
+	if (CONFIG(COOP_MULTITASKING) && ENV_SUPPORTS_COOP)
+		ret |= thread_check_stacks();
+
+	return ret;
 }

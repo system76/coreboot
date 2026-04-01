@@ -3,12 +3,15 @@
 #include <assert.h>
 #include <bootstate.h>
 #include <console/console.h>
+#include <lib.h>
 #include <smp/node.h>
 #include <thread.h>
 #include <timer.h>
 #include <types.h>
 
-static u8 thread_stacks[CONFIG_STACK_SIZE * CONFIG_NUM_THREADS] __aligned(sizeof(uint64_t));
+_Static_assert(CONFIG_THREAD_STACK_SIZE > 0, "THREAD_STACK_SIZE is not set");
+
+static u8 thread_stacks[CONFIG_THREAD_STACK_SIZE * CONFIG_NUM_THREADS] __aligned(sizeof(uint64_t));
 static bool initialized;
 
 static void idle_thread_init(void);
@@ -249,12 +252,15 @@ static void threads_initialize(void)
 	t->id = 0;
 	t->can_yield = 1;
 
-	stack_top = &thread_stacks[CONFIG_STACK_SIZE];
+	for (i = 0; i < sizeof(thread_stacks) / sizeof(u32); i++)
+		((u32 *)thread_stacks)[i] = 0xDEADBEEF;
+
+	stack_top = &thread_stacks[CONFIG_THREAD_STACK_SIZE];
 	for (i = 1; i < TOTAL_NUM_THREADS; i++) {
 		t = &all_threads[i];
 		t->stack_orig = (uintptr_t)stack_top;
 		t->id = i;
-		stack_top += CONFIG_STACK_SIZE;
+		stack_top += CONFIG_THREAD_STACK_SIZE;
 		free_thread(t);
 	}
 
@@ -347,6 +353,23 @@ int thread_yield_microseconds(unsigned int microsecs)
 		return -1;
 
 	return 0;
+}
+
+int thread_check_stacks(void)
+{
+	int i;
+	int ret = 0;
+
+	if (!initialized)
+		return 0;
+
+	for (i = 1; i < TOTAL_NUM_THREADS; i++) {
+		struct thread *t = &all_threads[i];
+		printk(BIOS_SPEW, "Check thread %d stack:\n", i);
+		ret |= _checkstack((void *)t->stack_orig, CONFIG_THREAD_STACK_SIZE, 0);
+	}
+
+	return ret;
 }
 
 void thread_coop_enable(void)

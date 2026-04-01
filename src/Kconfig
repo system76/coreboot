@@ -818,6 +818,14 @@ config STACK_SIZE
 	default 0x2000 if ARCH_X86
 	default 0x0
 
+config THREAD_STACK_SIZE
+	hex
+	depends on COOP_MULTITASKING
+	default 0x2000
+	help
+	  The stack size for each cooperative thread. This is separate from
+	  the main CPU stack size (STACK_SIZE).
+
 config MAX_CPUS
 	int
 	default 1

@@ -21,6 +21,7 @@ void quick_ram_check_or_die(uintptr_t dst);
 int primitive_memtest(uintptr_t base, uintptr_t size);
 
 /* Defined in src/lib/stack.c */
+int _checkstack(void *top_of_stack, size_t stack_size, int core);
 int checkstack(void *top_of_stack, int core);
 
 /*

@@ -96,5 +96,7 @@ static inline void thread_mutex_lock(struct thread_mutex *mutex) {}
 
 static inline void thread_mutex_unlock(struct thread_mutex *mutex) {}
 #endif
+/* Check all thread stacks for overruns. */
+int thread_check_stacks(void);
 
 #endif /* THREAD_H_ */
