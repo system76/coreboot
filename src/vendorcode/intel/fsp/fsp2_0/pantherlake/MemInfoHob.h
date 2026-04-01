@@ -389,6 +389,9 @@ typedef struct {
   PSMI_MEM_INFO     PsmiInfo[MAX_TRACE_CACHE_TYPE];
   PSMI_MEM_INFO     PsmiRegionInfo[MAX_TRACE_REGION];
   BOOLEAN           MrcBasicMemoryTestPass;
+  UINT8             Reserved1[3];                      // Reserved for alignment
+  UINT64            BiosPeiMemoryBaseAddress;
+  UINT64            BiosPeiMemoryLength;
 } MEMORY_PLATFORM_DATA;
 
 typedef struct {
