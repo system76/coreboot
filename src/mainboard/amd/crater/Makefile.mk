@@ -12,12 +12,8 @@ ramstage-y += gpio.c
 ramstage-y += ec.c
 ramstage-$(CONFIG_BOARD_AMD_CRATER_RENOIR) += port_descriptors_renoir.c
 
-ifneq ($(wildcard $(MAINBOARD_BLOBS_DIR)/APCB_RN_D4_Updatable.bin),)
-APCB_SOURCES = $(MAINBOARD_BLOBS_DIR)/APCB_RN_D4_Updatable.bin
-APCB_SOURCES_RECOVERY = $(MAINBOARD_BLOBS_DIR)/APCB_RN_D4_DefaultRecovery.bin
-else
-show_notices:: warn_no_apcb
-endif
+# APCB_SOURCES is empty, since we don't need to update APCB settings from the running system
+APCB_SOURCES_RECOVERY = $(src)/mainboard/$(MAINBOARDDIR)/APCB_RN_D4_DefaultRecovery_32GB_DRAM_512MB_VRAM.apcb
 
 ifeq ($(CONFIG_CRATER_HAVE_MCHP_FW),y)
 subdirs-y += ../../../../util/mec152x
