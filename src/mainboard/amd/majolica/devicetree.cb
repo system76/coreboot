@@ -39,12 +39,6 @@ chip soc/amd/cezanne
 				chip drivers/usb/acpi
 					device ref xhci_0_root_hub on
 						chip drivers/usb/acpi
-							device ref usb3_port0 on end
-						end
-						chip drivers/usb/acpi
-							device ref usb3_port1 on end
-						end
-						chip drivers/usb/acpi
 							device ref usb2_port0 on end
 						end
 						chip drivers/usb/acpi
@@ -56,18 +50,18 @@ chip soc/amd/cezanne
 						chip drivers/usb/acpi
 							device ref usb2_port3 on end
 						end
+						chip drivers/usb/acpi
+							device ref usb3_port0 on end
+						end
+						chip drivers/usb/acpi
+							device ref usb3_port1 on end
+						end
 					end
 				end
 			end
 			device ref xhci_1 on # USB 3.1 (USB1)
 				chip drivers/usb/acpi
 					device ref xhci_1_root_hub on
-						chip drivers/usb/acpi
-							device ref usb3_port4 on end
-						end
-						chip drivers/usb/acpi
-							device ref usb3_port5 on end
-						end
 						chip drivers/usb/acpi
 							device ref usb2_port4 on end
 						end
@@ -79,6 +73,12 @@ chip soc/amd/cezanne
 						end
 						chip drivers/usb/acpi
 							device ref usb2_port7 on end
+						end
+						chip drivers/usb/acpi
+							device ref usb3_port2 on end
+						end
+						chip drivers/usb/acpi
+							device ref usb3_port3 on end
 						end
 					end
 				end
