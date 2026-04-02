@@ -92,7 +92,6 @@ config SOC_AMD_GLINDA_BASE
 	select X86_AMD_FIXED_MTRRS
 	select X86_INIT_NEED_1_SIPI
 	select HAVE_X86_64_SUPPORT
-	select SPI_FLASH_SFDP if SPI_FLASH
 	help
 	  AMD Glinda support
 
