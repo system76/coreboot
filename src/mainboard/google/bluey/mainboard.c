@@ -258,12 +258,6 @@ static void display_logo(enum lb_fb_orientation orientation,
 
 static void display_startup(void)
 {
-	/* TODO: Enable the display in normal mode once SMMU issue is fixed */
-	if (get_boot_mode() == LB_BOOT_MODE_NORMAL) {
-		printk(BIOS_INFO, "Skipping display init in normal boot.\n");
-		return;
-	}
-
 	if ((get_boot_mode() == LB_BOOT_MODE_RTC_WAKE) || !display_init_required() ||
 		    (CONFIG(VBOOT_LID_SWITCH) && !get_lid_switch())) {
 		printk(BIOS_INFO, "Skipping display init.\n");
