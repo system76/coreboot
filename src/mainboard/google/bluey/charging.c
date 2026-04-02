@@ -5,13 +5,18 @@
 #include <delay.h>
 #include <ec/google/chromeec/ec.h>
 #include <reset.h>
+#include <soc/addressmap.h>
 #include <soc/adsp.h>
 #include <soc/lpass.h>
 #include <soc/pmic.h>
+#include <soc/pmic_gpio.h>
 #include <soc/qcom_spmi.h>
 #include <soc/qcom_tsens.h>
 #include <timer.h>
 #include <types.h>
+
+#define PMIC_F_GPIO_07 7
+#define PMIC_F_GPIO_09 9
 
 #define SMB1_SLAVE_ID 0x07
 #define SMB2_SLAVE_ID 0x0A
@@ -46,18 +51,6 @@
 
 #define PMIC_PD_NEGOTIATION_FLAG	0x7E7C
 #define SKIP_PORT_RESET			0x08
-
-#define PMC8380F_SLAVE_ID	0x05
-#define GPIO07_MODE_CTL			0x8E40
-#define GPIO07_DIG_OUT_SOURCE_CTL	0x8E44
-#define GPIO07_EN_CTL			0x8E46
-#define GPIO09_MODE_CTL			0x9040
-#define GPIO09_DIG_OUT_SOURCE_CTL	0x9044
-#define GPIO09_EN_CTL			0x9046
-
-#define MODE_OUTPUT		0x01
-#define OUTPUT_INVERT		0x80
-#define PERPH_EN		0x80
 
 #define DELAY_CHARGING_APPLET_MS 2000 /* 2sec */
 #define CHARGING_RAIL_STABILIZATION_DELAY_MS 3000 /* 3sec */
@@ -270,12 +263,8 @@ void configure_parallel_charging(void)
 		return;
 
 	printk(BIOS_INFO, "Configure parallel charging support\n");
-	spmi_write8(SPMI_ADDR(PMC8380F_SLAVE_ID, GPIO07_DIG_OUT_SOURCE_CTL), OUTPUT_INVERT);
-	spmi_write8(SPMI_ADDR(PMC8380F_SLAVE_ID, GPIO07_EN_CTL), PERPH_EN);
-	spmi_write8(SPMI_ADDR(PMC8380F_SLAVE_ID, GPIO07_MODE_CTL), MODE_OUTPUT);
-	spmi_write8(SPMI_ADDR(PMC8380F_SLAVE_ID, GPIO09_DIG_OUT_SOURCE_CTL), OUTPUT_INVERT);
-	spmi_write8(SPMI_ADDR(PMC8380F_SLAVE_ID, GPIO09_EN_CTL), PERPH_EN);
-	spmi_write8(SPMI_ADDR(PMC8380F_SLAVE_ID, GPIO09_MODE_CTL), MODE_OUTPUT);
+	pmic_gpio_output(PMIC_F_SLAVE_ID, PMIC_F_GPIO_07, true);
+	pmic_gpio_output(PMIC_F_SLAVE_ID, PMIC_F_GPIO_09, true);
 }
 
 /*

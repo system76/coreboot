@@ -19,6 +19,7 @@
 #include <soc/display/edp_ctrl.h>
 #include <soc/display/mdssreg.h>
 #include <soc/pcie.h>
+#include <soc/pmic_gpio.h>
 #include <soc/qupv3_config_common.h>
 #include <soc/qupv3_i2c_common.h>
 #include <soc/qup_se_handlers_common.h>
@@ -26,9 +27,10 @@
 #include <soc/symbols_common.h>
 #include <soc/rpmh_config.h>
 #include <soc/usb/usb.h>
-#include <soc/qcom_spmi.h>
 #include <timer.h>
 #include <timestamp.h>
+
+#define PMIC_D_GPIO_04 4
 
 #define BATTERY_CHARGING_SPLASH_TIMEOUT_MS 5000
 static struct stopwatch splash_sw;
@@ -182,21 +184,10 @@ static void edp_configure_gpios(void)
 	gpio_input_pulldown(GPIO_PANEL_HPD);
 }
 
-#define SLAVE_ID 0x03
-#define GPIO4_DIG_OUT_SOURCE_CTL ((SLAVE_ID << 16) | 0x8B44)
-#define GPIO4_MODE_CTL ((SLAVE_ID << 16) | 0x8B40)
-#define GPIO4_EN_CTL ((SLAVE_ID << 16) | 0x8B46)
-
-#define GPIO_PERPH_EN 0x80
-#define GPIO_OUTPUT_INVERT 0x80
-#define GPIO_MODE 0x1
-
 static void edp_enable_backlight(void)
 {
-	/* Enable backlight PMIC_D GPIO4 */
-	spmi_write8(GPIO4_DIG_OUT_SOURCE_CTL, GPIO_OUTPUT_INVERT);
-	spmi_write8(GPIO4_MODE_CTL, GPIO_MODE);
-	spmi_write8(GPIO4_EN_CTL, GPIO_PERPH_EN);
+	/* Enable backlight */
+	pmic_gpio_output(PMIC_D_SLAVE_ID, PMIC_D_GPIO_04, true);
 }
 
 static void qcom_mdss_edp_init(struct edid *edid, uintptr_t fb_addr)
