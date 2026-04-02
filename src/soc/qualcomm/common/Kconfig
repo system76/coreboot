@@ -41,6 +41,14 @@ config QC_RAMDUMP_ENABLE
 	  Ramdump is a debug image that is loaded during a system crash to capture
 	  memory contents for post-crash analysis.
 
+config SOC_QUALCOMM_CDT
+	bool
+	default n
+	help
+	  When enabled, the CDT data from RW_CDT partition is passed to QcLib,
+	  which populates the platform information in SMEM. This information is
+	  later used by depthcharge to select the platform-specific DTBO.
+
 config SOC_QUALCOMM_QCLIB_SKIP_MMU_TOGGLE
 	bool
 	default n
