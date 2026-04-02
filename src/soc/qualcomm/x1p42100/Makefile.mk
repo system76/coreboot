@@ -72,6 +72,7 @@ ramstage-y += display/edp_panel_tu.c
 ramstage-y += lpass.c
 ramstage-y += ../common/tsens.c
 ramstage-y += tsens_map.c
+ramstage-y += ../common/pmic_gpio.c
 
 ################################################################################
 
