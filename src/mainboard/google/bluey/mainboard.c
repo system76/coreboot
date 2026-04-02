@@ -44,6 +44,27 @@ static struct stopwatch splash_sw;
 #define USB3_MODE_NORMAL_VAL	0x21
 #define USB3_MODE_FLIP_VAL	0x23
 
+/* Threshold for selecting lower-resolution assets */
+#define FHD_WIDTH_THRESHOLD		1920
+
+static struct {
+	uint32_t x_res;
+} cached_display_params;
+
+/*
+ * Mainboard-specific override for logo filenames.
+ */
+const char *mainboard_bmp_logo_filename(void)
+{
+	/* For panels at or below Full HD (1920px width), use the
+	 * lower-resolution bitmap.
+	 */
+	if (cached_display_params.x_res <= FHD_WIDTH_THRESHOLD)
+		return "cb_plus_logo.bmp";
+
+	return "cb_logo.bmp";
+}
+
 void mainboard_usb_typec_configure(uint8_t port_num, bool inverse_polarity)
 {
 	if (!CONFIG(MAINBOARD_HAS_PS8820_RETIMER))
@@ -280,6 +301,8 @@ static void display_startup(void)
 	qcom_mdss_edp_init(&edid, fb_addr);
 	if (edid.mode.ha == 0)
 		return;
+
+	cached_display_params.x_res = edid.x_resolution;
 
 	edid_set_framebuffer_bits_per_pixel(&edid, 32, 0);
 	fb = fb_new_framebuffer_info_from_edid(&edid, fb_addr);
