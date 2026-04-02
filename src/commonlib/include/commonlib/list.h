@@ -22,21 +22,6 @@ struct list_node {
 /* Initialize a circular list, with `head` being a placeholder head node. */
 void _list_init(struct list_node *head);
 
-// Remove list_node node from the doubly linked list it's a part of.
-void list_remove(struct list_node *node);
-// Insert list_node node after list_node after in a doubly linked list.
-void list_insert_after(struct list_node *node, struct list_node *after);
-// Insert list_node node before list_node before in a doubly linked list.
-// `before` must not be the placeholder head node.
-void list_insert_before(struct list_node *node, struct list_node *before);
-// Append the node to the end of the list.
-static inline void list_append(struct list_node *node, struct list_node *head)
-{
-	_list_init(head);
-	/* With a circular list, we just need to insert before the head. */
-	list_insert_before(node, head);
-}
-
 // Return if the list is empty.
 static inline bool list_is_empty(const struct list_node *head)
 {
@@ -67,6 +52,31 @@ static inline struct list_node *list_first(const struct list_node *head)
 static inline struct list_node *list_last(const struct list_node *head)
 {
 	return list_prev(head, head);
+}
+
+// Remove list_node node from the doubly linked list it's a part of.
+void list_remove(struct list_node *node);
+// Insert list_node node after list_node after in a doubly linked list.
+void list_insert_after(struct list_node *node, struct list_node *after);
+// Insert list_node node before list_node before in a doubly linked list.
+// `before` must not be the placeholder head node.
+void list_insert_before(struct list_node *node, struct list_node *before);
+
+// Append the node to the end of the list.
+static inline void list_append(struct list_node *node, struct list_node *head)
+{
+	_list_init(head);
+	/* With a circular list, we just need to insert before the head. */
+	list_insert_before(node, head);
+}
+
+// Pop the node from the end of the list.
+static inline struct list_node *list_pop(struct list_node *head)
+{
+	struct list_node *last = list_last(head);
+	if (last)
+		list_remove(last);
+	return last;
 }
 
 // Get the number of list elements.

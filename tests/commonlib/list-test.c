@@ -154,15 +154,16 @@ static void test_list_remove_head(void **state)
 	expect_assert_failure(list_remove(&head));
 }
 
-static void test_list_append(void **state)
+static void test_list_append_and_pop(void **state)
 {
-	size_t idx;
+	int idx;
 	struct test_container *node;
 	struct list_node head = {};
 	struct test_container nodes[] = {
 		{1}, {2}, {3}
 	};
 
+	/* Append nodes. */
 	for (idx = 0; idx < ARRAY_SIZE(nodes); ++idx)
 		list_append(&nodes[idx].list_node, &head);
 
@@ -174,6 +175,15 @@ static void test_list_append(void **state)
 
 	assert_int_equal(3, idx);
 	assert_int_equal(3, list_length(&head));
+
+	/* Pop nodes. */
+	for (idx = ARRAY_SIZE(nodes) - 1; idx >= 0; idx--) {
+		struct list_node *last = list_pop(&head);
+		assert_non_null(last);
+		assert_ptr_equal(last, &nodes[idx].list_node);
+	}
+
+	assert_null(list_pop(&head));
 }
 
 static void test_list_move(void **state)
@@ -237,7 +247,7 @@ int main(void)
 		cmocka_unit_test(test_list_insert_before_head),
 		cmocka_unit_test(test_list_remove),
 		cmocka_unit_test(test_list_remove_head),
-		cmocka_unit_test(test_list_append),
+		cmocka_unit_test(test_list_append_and_pop),
 		cmocka_unit_test(test_list_move),
 		cmocka_unit_test(test_list_move_empty),
 		cmocka_unit_test(test_list_move_invalid),
