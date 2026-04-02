@@ -61,6 +61,7 @@ config BOARD_GOOGLE_QUENBIH
 
 config BOARD_GOOGLE_QUARTZ
 	select BOARD_GOOGLE_MODEL_QUARTZ
+	select DAP_USE_SMB1
 	select HAVE_DEBUG_ACCESS_PORT_SOURCE_SINK
 	select SOC_QUALCOMM_HAMOA
 	select MAINBOARD_HAS_PS8820_RETIMER
@@ -139,6 +140,26 @@ config HAVE_DEBUG_ACCESS_PORT_SOURCE_SINK
 	default n
 	help
 	  Enable this option to allow source and sink modes on the debug access port.
+
+config DAP_SMB_SLAVE_ID
+	depends on HAVE_DEBUG_ACCESS_PORT_SOURCE_SINK
+	hex
+	default 0x07 if DAP_USE_SMB1
+	default 0x0a if DAP_USE_SMB2
+	help
+	  The Slave ID for the Debug Access Port communication.
+
+config DAP_USE_SMB1
+	depends on HAVE_DEBUG_ACCESS_PORT_SOURCE_SINK
+	bool
+	help
+	  Select this to use SMB1 for DAP.
+
+config DAP_USE_SMB2
+	depends on HAVE_DEBUG_ACCESS_PORT_SOURCE_SINK
+	bool
+	help
+	  Select this to use SMB2 for DAP.
 
 config MAINBOARD_HAS_GOOGLE_TPM
 	bool
