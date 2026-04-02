@@ -17,6 +17,7 @@
 #include <halt.h>
 #include <soc/clock.h>
 #include <soc/display/edp_ctrl.h>
+#include <soc/display/edp_reg.h>
 #include <soc/display/mdssreg.h>
 #include <soc/pcie.h>
 #include <soc/pmic_gpio.h>
@@ -221,6 +222,16 @@ static void qcom_mdp_stop(void)
 		mdelay(100);
 
 	write32(&mdp_intf->timing_eng_enable, 0);
+	mdelay(20);
+	write32(&edp_ahbclk->sw_reset, 1);
+	mdelay(20);
+	write32(&edp_ahbclk->sw_reset, 0);
+
+	/* Disable backlight */
+	pmic_gpio_output(PMIC_D_SLAVE_ID, PMIC_D_GPIO_04, false);
+
+	/* Panel power off */
+	gpio_output(GPIO_PANEL_POWER_ON, 0);
 }
 
 static void display_logo(enum lb_fb_orientation orientation,
