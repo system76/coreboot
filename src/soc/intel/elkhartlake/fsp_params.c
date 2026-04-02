@@ -460,7 +460,7 @@ void platform_fsp_silicon_init_params_cb(FSPS_UPD *supd)
 	params->DcLoadline[0] = DC_LOADLINE_LANE_0_MAX;
 	params->AcLoadline[1] = AC_LOADLINE_LANE_1_MAX;
 	params->DcLoadline[1] = DC_LOADLINE_LANE_1_MAX;
-	params->IccMax[0] = ICC_LIMIT_MAX;
+	params->IccMax[0] = config->IccMax ? config->IccMax : ICC_LIMIT_MAX;
 	params->OneCoreRatioLimit = CORE_RATIO_LIMIT;
 	params->TwoCoreRatioLimit = CORE_RATIO_LIMIT;
 	params->ThreeCoreRatioLimit = CORE_RATIO_LIMIT;

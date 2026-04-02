@@ -400,6 +400,9 @@ struct soc_intel_elkhartlake_config {
 		unsigned int spread_spectrum;
 	} fivr;
 
+	/* IccMax limit for IA (CPU) domain in 1/4 A units (0-1020) */
+	uint16_t IccMax;
+
 	/*
 	 * PCH power button override period.
 	 * Values: 0x0 - 4s, 0x1 - 6s, 0x2 - 8s, 0x3 - 10s, 0x4 - 12s, 0x5 - 14s
