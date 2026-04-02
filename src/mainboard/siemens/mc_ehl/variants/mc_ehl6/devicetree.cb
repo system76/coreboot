@@ -140,6 +140,9 @@ chip soc/intel/elkhartlake
 		.vcc_low_high_us = 50,
 	}"
 
+	# Set IccMax for IA (CPU) domain in 1/4 A units
+	register "IccMax" = "60"
+
 	# Disable L1 prefetcher for real-time demands
 	register "L1_prefetcher_disable" = "true"
 
