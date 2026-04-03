@@ -104,11 +104,11 @@ func (b bd82x6x) Scan(ctx Context, addr PCIDevData) {
 		pcieHotplugMap += "0 }"
 	}
 
-	pchComment := "Intel Series "
+	pchComment := "Intel "
 	if b.variant == "BD82X6X" {
-		pchComment += "6 Cougar Point PCH"
+		pchComment += "6 Series Cougar Point PCH"
 	} else {
-		pchComment += "7 Panther Point PCH"
+		pchComment += "7 Series Panther Point PCH"
 	}
 
 	cur := DevTreeNode{

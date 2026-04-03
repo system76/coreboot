@@ -183,7 +183,7 @@ func (b lynxpoint) Scan(ctx Context, addr PCIDevData) {
 
 	cur := DevTreeNode{
 		Chip:    "southbridge/intel/lynxpoint",
-		Comment: "Intel Series 8 Lynx Point PCH",
+		Comment: "Intel 8 Series Lynx Point PCH",
 
 		/* alt_gp_smi_en is not generated because coreboot doesn't use SMI like OEM firmware */
 		Registers: map[string]string{
