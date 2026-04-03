@@ -1,0 +1,44 @@
+## SPDX-License-Identifier: GPL-2.0-only
+
+config BOARD_GOOGLE_ATRIA_COMMON
+	def_bool n
+	select BOARD_ROMSIZE_KB_32768
+	select CPU_INTEL_SOCKET_OTHER
+	select GENERATE_SMBIOS_TABLES
+	select GOOGLE_SMBIOS_MAINBOARD_VERSION
+	select HAVE_ACPI_TABLES
+	select MAINBOARD_DISABLE_STAGE_CACHE
+	select MB_COMPRESS_RAMSTAGE_LZ4
+	select SOC_INTEL_PANTHERLAKE_U_H
+
+config BOARD_GOOGLE_BASEBOARD_ATRIA
+	def_bool n
+	select BOARD_GOOGLE_ATRIA_COMMON
+	select SYSTEM_TYPE_LAPTOP
+
+config BOARD_GOOGLE_ATRIA
+	select BOARD_GOOGLE_BASEBOARD_ATRIA
+
+if BOARD_GOOGLE_ATRIA_COMMON
+
+config BASEBOARD_DIR
+	string
+	default "atria"
+
+config CBFS_SIZE
+	default 0x1000000
+
+config DEVICETREE
+	default "variants/baseboard/devicetree.cb"
+
+config MAINBOARD_DIR
+	default "google/atria"
+
+config MAINBOARD_FAMILY
+	string
+	default "Google_Atria"
+
+config MAINBOARD_PART_NUMBER
+	default "Atria" if BOARD_GOOGLE_ATRIA
+
+endif # BOARD_GOOGLE_ATRIA_COMMON
