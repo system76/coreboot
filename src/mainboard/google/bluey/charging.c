@@ -52,6 +52,15 @@
 #define PMIC_PD_NEGOTIATION_FLAG	0x7E7C
 #define SKIP_PORT_RESET			0x08
 
+#define PMIC0_SLAVE_ID			0
+#define SDAM16_MEM_030			0x7F5E
+#define PMIC0_SDAM16_MEM_030		((PMIC0_SLAVE_ID << 16) | SDAM16_MEM_030)
+#define SDAM16_OS_TYPE_MASK		0x01	/* Bit 0: OSType */
+#define SDAM16_BOOT_REASON_MASK		0x30	/* Bits 5:4: ADSP boot reason */
+#define SDAM16_INIT_MASK		(SDAM16_BOOT_REASON_MASK | SDAM16_OS_TYPE_MASK)
+#define OS_TYPE_BOOTLOADER		0x00
+#define BOOT_REASON_FRESHBOOT		0x00
+
 #define DELAY_CHARGING_APPLET_MS 2000 /* 2sec */
 #define CHARGING_RAIL_STABILIZATION_DELAY_MS 5000 /* 5sec */
 #define LOW_BATTERY_CHARGING_LOOP_EXIT_MS (10 * 60 * 1000) /* 10min */
@@ -337,6 +346,18 @@ static void adsp_skip_port_reset(void)
 }
 
 /*
+ * Set ADSP boot reason to fresh boot and OS type to bootloader.
+ */
+static void adsp_boot_reason_init(void)
+{
+	uint8_t val = (uint8_t)spmi_read8(PMIC0_SDAM16_MEM_030);
+	spmi_write8(PMIC0_SDAM16_MEM_030,
+		    (val & ~SDAM16_INIT_MASK) |
+		    (BOOT_REASON_FRESHBOOT << 4) |
+		    OS_TYPE_BOOTLOADER);
+}
+
+/*
  * Enable fast battery charging with ADSP support.
  *
  * This function loads ADSP firmware and configures fast charging.
@@ -347,6 +368,8 @@ void enable_fast_battery_charging(void)
 
 	/* Load ADSP firmware first */
 	adsp_fw_load();
+
+	adsp_boot_reason_init();
 
 	/* Bring up LPASS/QDSP6 (ADSP) for ADSP-dependent charging support */
 	if (lpass_bring_up() != CB_SUCCESS) {
