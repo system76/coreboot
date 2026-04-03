@@ -12,6 +12,7 @@
 #include <option.h>
 #include <reset.h>
 #include <security/vboot/misc.h>
+#include <soc/cdt.h>
 #include <soc/mmu.h>
 #include <soc/mmu_common.h>
 #include <soc/qclib_common.h>
@@ -383,6 +384,12 @@ void qclib_load_and_run(void)
 		}
 
 		qclib_add_if_table_entry(QCLIB_TE_APDP_META_SETTINGS, _apdp_ramdump_meta, data_size, 0);
+	}
+
+	if (CONFIG(SOC_QUALCOMM_CDT)) {
+		data_size = cdt_read(_cdt_data, REGION_SIZE(cdt_data));
+		if (data_size > 0)
+			qclib_add_if_table_entry(QCLIB_TE_CDT_SETTINGS, _cdt_data, data_size, 0);
 	}
 
 	/* Attempt to load QCLib elf */

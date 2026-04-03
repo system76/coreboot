@@ -1,0 +1,35 @@
+/* SPDX-License-Identifier: GPL-2.0-only */
+
+#include <boot_device.h>
+#include <console/console.h>
+#include <fmap.h>
+#include <commonlib/region.h>
+#include <soc/cdt.h>
+
+ssize_t cdt_read(void *buffer, size_t buffer_size)
+{
+	struct region_device rdev;
+	ssize_t bytes_read;
+	size_t read_size;
+
+	if (!buffer || buffer_size == 0) {
+		printk(BIOS_ERR, "CDT: Invalid buffer parameters\n");
+		return 0;
+	}
+
+	if (fmap_locate_area_as_rdev(CDT_REGION_NAME, &rdev) < 0) {
+		printk(BIOS_ERR, "CDT: Could not locate '%s' region\n", CDT_REGION_NAME);
+		return 0;
+	}
+
+	read_size = MIN(buffer_size, region_device_sz(&rdev));
+
+	bytes_read = rdev_readat(&rdev, buffer, 0, read_size);
+	if (bytes_read < 0) {
+		printk(BIOS_ERR, "CDT: Failed to read data from flash\n");
+		return 0;
+	}
+
+	printk(BIOS_INFO, "CDT: Read %zd bytes from '%s'\n", bytes_read, CDT_REGION_NAME);
+	return bytes_read;
+}
