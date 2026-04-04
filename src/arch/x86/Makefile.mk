@@ -4,6 +4,12 @@ ifeq ($(CONFIG_POSTCAR_STAGE),y)
 $(eval $(call init_standard_toolchain,postcar))
 endif
 
+ifeq ($(CONFIG_ARCH_X86),y)
+ifneq ($(CONFIG_NO_SMM),y)
+$(eval $(call init_standard_toolchain,smm))
+endif
+endif
+
 ################################################################################
 # i386 specific tools
 NVRAMTOOL:=$(objutil)/nvramtool/nvramtool

@@ -5,7 +5,7 @@ ramstage-$(CONFIG_SMM_PCI_RESOURCE_STORE) += pci_resource_store.c
 
 smm-$(CONFIG_SMM_PCI_RESOURCE_STORE) += pci_resource_store.c
 
-ifeq ($(CONFIG_ARCH_RAMSTAGE_X86_32),y)
+ifeq ($(CONFIG_ARCH_SMM_X86_32),y)
 $(eval $(call create_class_compiler,smm,x86_32))
 $(eval $(call create_class_compiler,smmstub,x86_32))
 else
@@ -51,7 +51,7 @@ ramstage-srcs += $(obj)/cpu/x86/smm/smmstub.manual
 $(obj)/smmstub/smmstub.o: $$(smmstub-objs) $(COMPILER_RT_smmstub)
 	$(LD_smmstub) -nostdlib -r -o $@ $(COMPILER_RT_FLAGS_smmstub) --whole-archive --start-group $(smmstub-objs) --no-whole-archive $(COMPILER_RT_smmstub) --end-group
 
-ifeq ($(CONFIG_ARCH_RAMSTAGE_X86_32),y)
+ifeq ($(CONFIG_ARCH_SMM_X86_32),y)
 $(eval $(call rmodule_link,$(obj)/smmstub/smmstub.elf, $(obj)/smmstub/smmstub.o,x86_32))
 else
 $(eval $(call rmodule_link,$(obj)/smmstub/smmstub.elf, $(obj)/smmstub/smmstub.o,x86_64))
@@ -66,7 +66,7 @@ $(call src-to-obj,ramstage,$(obj)/cpu/x86/smm/smmstub.manual): $(obj)/smmstub/sm
 
 # C-based SMM handler.
 
-ifeq ($(CONFIG_ARCH_RAMSTAGE_X86_32),y)
+ifeq ($(CONFIG_ARCH_SMM_X86_32),y)
 $(eval $(call rmodule_link,$(obj)/smm/smm.elf, $(obj)/smm/smm.a,x86_32))
 else
 $(eval $(call rmodule_link,$(obj)/smm/smm.elf, $(obj)/smm/smm.a,x86_64))

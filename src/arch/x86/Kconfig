@@ -26,6 +26,10 @@ config ARCH_POSTCAR_X86_32
 config ARCH_RAMSTAGE_X86_32
 	bool
 
+config ARCH_SMM_X86_32
+	bool
+	default ARCH_RAMSTAGE_X86_32 && !NO_SMM
+
 config ARCH_ALL_STAGES_X86_32
 	bool
 	default !ARCH_ALL_STAGES_X86_64
@@ -56,6 +60,10 @@ config ARCH_POSTCAR_X86_64
 config ARCH_RAMSTAGE_X86_64
 	bool
 	select SSE2
+
+config ARCH_SMM_X86_64
+	bool
+	default ARCH_RAMSTAGE_X86_64 && !NO_SMM
 
 config ARCH_ALL_STAGES_X86_64
 	bool
