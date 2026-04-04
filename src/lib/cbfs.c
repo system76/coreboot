@@ -176,12 +176,7 @@ static bool cbfs_file_hash_mismatch(const void *buffer, size_t size,
 
 	const struct vb2_hash *hash = NULL;
 
-	/*
-	 * Skipping this block in SMM because vboot library isn't linked to SMM stage.  This is
-	 * an issue only if using a CMOS options backend, then SMM refers to an option and tries
-	 * to verify cmos.layout here.
-	 */
-	if (CONFIG(CBFS_VERIFICATION) && !ENV_SMM && !skip_verification) {
+	if (CONFIG(CBFS_VERIFICATION) && !skip_verification) {
 		hash = cbfs_file_hash(mdata);
 		if (!hash) {
 			ERROR("'%s' does not have a file hash!\n", mdata->h.filename);
