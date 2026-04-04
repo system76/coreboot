@@ -3,4 +3,33 @@
 #ifndef __BASEBOARD_VARIANTS_H__
 #define __BASEBOARD_VARIANTS_H__
 
+#include <soc/gpio.h>
+
+/**
+ * @brief Get the variant GPIO table
+ *
+ * @param[out] num  Number of entries in the table
+ *
+ * @return Pointer to the variant GPIO table
+ */
+const struct pad_config *variant_gpio_table(size_t *num);
+
+/**
+ * @brief Get the variant early GPIO table
+ *
+ * @param[out] num  Number of entries in the table
+ *
+ * @return Pointer to the variant early GPIO table
+ */
+const struct pad_config *variant_early_gpio_table(size_t *num);
+
+/**
+ * @brief Get the variant romstage GPIO table
+ *
+ * @param[out] num  Number of entries in the table
+ *
+ * @return Pointer to the variant romstage GPIO table
+ */
+const struct pad_config *variant_romstage_gpio_table(size_t *num);
+
 #endif /* __BASEBOARD_VARIANTS_H__ */
