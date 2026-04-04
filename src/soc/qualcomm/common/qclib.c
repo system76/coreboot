@@ -25,11 +25,43 @@
 /* store QcLib return data until CBMEM_CREATION_HOOK runs */
 static struct mem_chip_info *mem_chip_info;
 
+static void dump_mem_chip_info(const struct mem_chip_info *info)
+{
+	if (!CONFIG(QC_DUMP_MEMCHIP_INFO))
+		return;
+
+	printk(BIOS_DEBUG, "MEM Chip Info: version=%d, entries=%d\n",
+	       info->struct_version, info->num_entries);
+
+	for (int i = 0; i < info->num_entries; i++) {
+		const struct mem_chip_entry *e = &info->entries[i];
+
+		printk(BIOS_DEBUG, "  Entry [%d]:\n", i);
+		printk(BIOS_DEBUG, "    Channel: %d, Rank: %d\n", e->channel, e->rank);
+		printk(BIOS_DEBUG, "    Type: %d, Channel I/O Width: %d\n",
+		       e->type, e->channel_io_width);
+		printk(BIOS_DEBUG, "    Density: %u Mbits, Chip I/O Width: %d\n",
+		       e->density_mbits, e->io_width);
+		printk(BIOS_DEBUG, "    Manufacturer ID: 0x%02x\n",
+		       e->manufacturer_id);
+		printk(BIOS_DEBUG, "    Revision ID: 0x%02x 0x%02x\n",
+		       e->revision_id[0], e->revision_id[1]);
+		printk(BIOS_DEBUG, "    Serial ID: ");
+		for (int j = 0; j < 8; j++)
+			printk(BIOS_DEBUG, "%02x", e->serial_id[j]);
+
+		printk(BIOS_DEBUG, "\n");
+	}
+}
+
 static void write_mem_chip_information(struct qclib_cb_if_table_entry *te)
 {
 	struct mem_chip_info *info = (void *)te->blob_address;
 	if (te->size > sizeof(struct mem_chip_info) &&
 	    te->size == mem_chip_info_size(info->num_entries)) {
+
+		dump_mem_chip_info(info);
+
 		/* Save mem_chip_info in global variable ahead of hook running */
 		mem_chip_info = info;
 	}

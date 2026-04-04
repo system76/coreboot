@@ -71,4 +71,17 @@ config SOC_QUALCOMM_PCIE_ASYNCHRONOUS_INIT
 	  boot time, but requires late-stage drivers to verify link
 	  readiness before access.
 
+config QC_DUMP_MEMCHIP_INFO
+	bool
+	default n
+	help
+	  When enabled, coreboot will print detailed memory chip attributes
+	  to the console during the boot process. This includes
+	  Manufacturer IDs, Revision IDs, and Serial IDs for each rank.
+
+	  Note: Enabling this feature increases the size of the romstage
+	  binary. If your platform is near its ROM size limit, this may
+	  cause a build failure. Only enable this for memory bring-up or
+	  debugging.
+
 endif
