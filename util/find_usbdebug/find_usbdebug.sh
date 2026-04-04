@@ -55,7 +55,11 @@ find_devs_in_tree () {
 		portstr=`printf "Port %03d" "$port"`
 	fi
 
-	hubs_to_ignore="8087:0020 8087:0024 8087:8000 8087:8008"
+	hubs_to_ignore=""
+	hubs_to_ignore+="8087:0020 "            # Intel   5 Series PCH
+	hubs_to_ignore+="8087:0024 "            # Intel 6/7 Series PCH
+	hubs_to_ignore+="8087:8000 8087:8008 "  # Intel 8/9 Series PCH
+	hubs_to_ignore+="8087:8001 8087:8009 "  # Intel   9 Series PCH
 	reqlvl=1
 
 	found=
