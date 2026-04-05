@@ -2390,7 +2390,8 @@ int main(int argc, char **argv)
 				return 1;
 			}
 
-			if (is_main_cbfs_region(param.region_name))
+			// "COREBOOT" CBFS region is a mandatory one.
+			if (strcmp(param.region_name, SECTION_NAME_PRIMARY_CBFS) == 0)
 				seen_primary_cbfs = true;
 
 			param.image_region = image_regions + region;
