@@ -108,6 +108,7 @@ config DRIVER_TPM_I2C_BUS
 	default 0x01 # QUP0_SE1
 
 config DRIVER_TPM_I2C_ADDR
+	depends on I2C_TPM
 	default 0x50
 
 config EC_GOOGLE_CHROMEEC_SPI_BUS
