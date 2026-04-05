@@ -2,5 +2,8 @@
 
 comment "Calypso (Qualcomm Calypso)"
 
+config BOARD_GOOGLE_CALYPSO
+	bool "->  Calypso"
+
 config BOARD_GOOGLE_MENSA
 	bool "->  Mensa"
