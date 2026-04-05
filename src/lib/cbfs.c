@@ -510,6 +510,24 @@ static void *do_alloc(union cbfs_mdata *mdata, struct region_device *rdev,
 	return loc;
 }
 
+static enum cb_err check_or_query_type(const union cbfs_mdata *mdata, enum cbfs_type *type)
+{
+	if (type == NULL)
+		return CB_SUCCESS;
+
+	const enum cbfs_type real_type = be32toh(mdata->h.type);
+	if (*type == CBFS_TYPE_QUERY) {
+		*type = real_type;
+		return CB_SUCCESS;
+	}
+
+	if (*type == real_type)
+		return CB_SUCCESS;
+
+	ERROR("'%s' type mismatch (is %u, expected %u)\n", mdata->h.filename, real_type, *type);
+	return CB_ERR;
+}
+
 void *_cbfs_alloc(const char *name, cbfs_allocator_t allocator, void *arg,
 		  size_t *size_out, bool force_ro, enum cbfs_type *type)
 {
@@ -523,16 +541,8 @@ void *_cbfs_alloc(const char *name, cbfs_allocator_t allocator, void *arg,
 	if (_cbfs_boot_lookup(name, force_ro, &mdata, &rdev))
 		return NULL;
 
-	if (type) {
-		const enum cbfs_type real_type = be32toh(mdata.h.type);
-		if (*type == CBFS_TYPE_QUERY)
-			*type = real_type;
-		else if (*type != real_type) {
-			ERROR("'%s' type mismatch (is %u, expected %u)\n",
-			      mdata.h.filename, real_type, *type);
-			return NULL;
-		}
-	}
+	if (check_or_query_type(&mdata, type) != CB_SUCCESS)
+		return NULL;
 
 	/* Update the rdev with the preload content */
 	if (!force_ro && get_preload_rdev(&rdev, name) == CB_SUCCESS)
@@ -566,16 +576,8 @@ void *_cbfs_unverified_area_alloc(const char *area, const char *name,
 		return NULL;
 	}
 
-	if (type) {
-		const enum cbfs_type real_type = be32toh(mdata.h.type);
-		if (*type == CBFS_TYPE_QUERY)
-			*type = real_type;
-		else if (*type != real_type) {
-			ERROR("'%s' type mismatch (is %u, expected %u)\n",
-			      mdata.h.filename, real_type, *type);
-			return NULL;
-		}
-	}
+	if (check_or_query_type(&mdata, type) != CB_SUCCESS)
+		return NULL;
 
 	if (rdev_chain(&file_rdev, &area_rdev, data_offset, be32toh(mdata.h.len)))
 		return NULL;
