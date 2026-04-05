@@ -30,7 +30,7 @@ config BOARD_GOOGLE_MENSA
 if BOARD_GOOGLE_CALYPSO_COMMON
 
 config MAINBOARD_DIR
-	default "google/mensa"
+	default "google/calypso"
 
 config MAINBOARD_HAS_FINGERPRINT_VIA_SPI
 	bool
