@@ -9,10 +9,6 @@
 #include <stdio.h>
 #include <string.h>
 
-/* This include is available as <intelblocks/rtc.h> only if CONFIG_SOC_INTEL_COMMON_BLOCK is
-   set, which is not guaranteed for this file. */
-#include <soc/intel/common/block/include/intelblocks/rtc.h>
-
 static int tpm_log_initialized;
 static inline int tpm_log_available(void)
 {
@@ -79,14 +75,6 @@ static tpm_result_t tspi_init_crtm(void)
 		void *mapping = NULL;
 
 		if (CONFIG(INTEL_TOP_SWAP_SEPARATE_REGIONS)) {
-			enum ts_config top_swap = get_rtc_buc_top_swap_status();
-			if (top_swap == TS_ENABLE)
-				printk(BIOS_INFO,
-				       "CRTM Top Swap: Measuring bootblock in TOPSWAP (will be logged as BOOTBLOCK).\n");
-			else
-				printk(BIOS_INFO,
-				       "CRTM Top Swap: Measuring bootblock in BOOTBLOCK.\n");
-
 			/*
 			 * Whether Top Swap is active or not, FMAP always refers to the same
 			 * memory ranges but the contents of BOOTBLOCK and TOPSWAP are swapped.
