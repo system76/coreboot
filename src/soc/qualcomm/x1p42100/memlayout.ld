@@ -273,14 +273,7 @@ SECTIONS
 	REGION(dram_tz, 0xD8000000, 0x56A000, 4K)
 	BL31(0xD856A000, 800K)
 	REGION(dram_ta, 0xD8632000, 0x1000000, 4K)
-	/*
-	 * Add a dummy region around the framebuffer which prevents it from being
-	 * combined with surrounding reserved memory ranges while creating DTS
-	 * entries for the kernel.
-	 */
-	REGION(_dummy0, 0xE47FF000, 0x1000, 4K)
 	FRAMEBUFFER(0xE4800000, 0x2200000)
-	REGION(_dummy1, 0xE6A00000, 0x1000, 4K)
 	REGION(dram_llcc_lpi, 0xFF800000, 0x600000, 4K)
 	REGION(dram_smem, 0xFFE00000, 0x200000, 4K)
 	DRAM_END(0x100000000)
