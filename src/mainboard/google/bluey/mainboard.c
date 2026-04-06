@@ -302,11 +302,11 @@ static void display_startup(void)
 	if (edid.mode.ha == 0)
 		return;
 
-	cached_display_params.x_res = edid.x_resolution;
-
 	edid_set_framebuffer_bits_per_pixel(&edid, 32, 0);
 	fb = fb_new_framebuffer_info_from_edid(&edid, fb_addr);
 	fb_set_orientation(fb, orientation);
+
+	cached_display_params.x_res = edid.x_resolution;
 	display_logo(orientation, fb_addr, &edid);
 }
 
