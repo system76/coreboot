@@ -64,11 +64,6 @@ static const uint32_t action_keymaps[] = {
 
 /* Keymap for numeric keypad keys */
 static uint32_t numeric_keypad_keymaps[] = {
-	/* Row-0 */
-	KEYMAP(0xc9, KEY_PAGEUP),
-	KEYMAP(0xd1, KEY_PAGEDOWN),
-	KEYMAP(0xc7, KEY_HOME),
-	KEYMAP(0xcf, KEY_END),
 	/* Row-1 */
 	KEYMAP(0xb5, KEY_KPSLASH),
 	KEYMAP(0x37, KEY_KPASTERISK),
@@ -181,6 +176,11 @@ static uint32_t rest_of_keymaps[] = {
 	KEYMAP(0xd2, KEY_INSERT),
 	/* Screen Lock */
 	KEYMAP(0xab, KEY_SCREENLOCK),
+	/* Navigation keys */
+	KEYMAP(0xc9, KEY_PAGEUP),
+	KEYMAP(0xd1, KEY_PAGEDOWN),
+	KEYMAP(0xc7, KEY_HOME),
+	KEYMAP(0xcf, KEY_END),
 };
 
 static void ssdt_generate_physmap(struct acpi_dp *dp, uint8_t num_top_row_keys,
