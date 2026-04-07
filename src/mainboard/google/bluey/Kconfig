@@ -257,4 +257,7 @@ config FMDFILE
 	default "src/mainboard/\$(CONFIG_MAINBOARD_DIR)/chromeos-nogsc.fmd" if BOARD_GOOGLE_MODEL_BLUEY
 	default "src/mainboard/\$(CONFIG_MAINBOARD_DIR)/chromeos.fmd"
 
+config RW_REGION_ONLY
+	default "%/apdp %/apdp_meta %/ramdump %/ramdump_meta"
+
 endif # BOARD_GOOGLE_BLUEY_COMMON
