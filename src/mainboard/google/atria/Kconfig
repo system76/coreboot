@@ -4,9 +4,11 @@ config BOARD_GOOGLE_ATRIA_COMMON
 	def_bool n
 	select BOARD_ROMSIZE_KB_32768
 	select CPU_INTEL_SOCKET_OTHER
+	select DUMP_SMBIOS_TYPE17
 	select GENERATE_SMBIOS_TABLES
 	select GOOGLE_SMBIOS_MAINBOARD_VERSION
 	select HAVE_ACPI_TABLES
+	select HAVE_SPD_IN_CBFS
 	select INTEL_LPSS_UART_FOR_CONSOLE
 	select MAINBOARD_DISABLE_STAGE_CACHE
 	select MB_COMPRESS_RAMSTAGE_LZ4
@@ -31,6 +33,9 @@ config CBFS_SIZE
 
 config DEVICETREE
 	default "variants/baseboard/devicetree.cb"
+
+config DIMM_SPD_SIZE
+	default 512
 
 config MAINBOARD_DIR
 	default "google/atria"
