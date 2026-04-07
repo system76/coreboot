@@ -713,6 +713,9 @@ static void fill_fsps_ufs_params(FSP_S_CONFIG *s_cfg,
 	/* Setting FSP UPD (1,0) to enable controller 0 */
 	s_cfg->UfsEnable[0] = is_devfn_enabled(PCI_DEVFN_UFS);
 	s_cfg->UfsEnable[1] = 0;
+	s_cfg->UfsInlineEncryption[0] = is_devfn_enabled(PCI_DEVFN_UFS)
+					&& config->ufs_inline_encryption;
+	s_cfg->UfsInlineEncryption[1] = 0;
 #else
 	/* Setting FSP UPD (0,0) to keep both controllers disabled */
 	s_cfg->UfsEnable[0] = 0;

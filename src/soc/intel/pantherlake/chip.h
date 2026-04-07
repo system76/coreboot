@@ -529,6 +529,9 @@ struct soc_intel_pantherlake_config {
 	/* CNVi BT Audio Offload: Enable/Disable BT Audio Offload. */
 	bool cnvi_bt_audio_offload;
 
+	/* UFS Inline Encryption Enable/Disable */
+	bool ufs_inline_encryption;
+
 	/* Debug interface selection */
 	enum {
 		DEBUG_INTERFACE_RAM = BIT(0),
