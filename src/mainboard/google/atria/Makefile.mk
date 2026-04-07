@@ -2,10 +2,14 @@
 
 bootblock-y += bootblock.c
 
+verstage-$(CONFIG_CHROMEOS) += chromeos.c
+
+romstage-$(CONFIG_CHROMEOS) += chromeos.c
 romstage-y += romstage.c
 
 ramstage-y += ec.c
 ramstage-y += mainboard.c
+ramstage-$(CONFIG_CHROMEOS) += chromeos.c
 
 subdirs-y += variants/baseboard
 subdirs-y += variants/$(VARIANT_DIR)

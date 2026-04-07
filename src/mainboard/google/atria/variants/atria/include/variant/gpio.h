@@ -5,6 +5,7 @@
 
 #include <baseboard/gpio.h>
 
+#define GPIO_PCH_WP GPP_D02
 /* eSPI virtual wire reporting */
 #define EC_SCI_GPI GPE0_ESPI
 /* EC wake is LAN_WAKE# which is a special DeepSX wake pin */
