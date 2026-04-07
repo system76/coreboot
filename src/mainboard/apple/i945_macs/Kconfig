@@ -1,9 +1,7 @@
 ## SPDX-License-Identifier: GPL-2.0-only
 
-if BOARD_APPLE_MACBOOK11 || BOARD_APPLE_MACBOOK21 || BOARD_APPLE_IMAC52
-
-config BOARD_SPECIFIC_OPTIONS
-	def_bool y
+config BOARD_APPLE_I945_MACS_COMMON
+	bool
 	select SYSTEM_TYPE_LAPTOP
 	select CPU_INTEL_SOCKET_M
 	select NORTHBRIDGE_INTEL_I945
@@ -17,22 +15,44 @@ config BOARD_SPECIFIC_OPTIONS
 	select INTEL_INT15
 	select HAVE_ACPI_TABLES
 	select HAVE_ACPI_RESUME
+
+config BOARD_APPLE_MACBOOK11
+	bool
+	select BOARD_APPLE_I945_MACS_COMMON
 	select I945_LVDS
 
+config BOARD_APPLE_MACBOOK21
+	bool
+	select BOARD_APPLE_I945_MACS_COMMON
+	select I945_LVDS
+
+config BOARD_APPLE_IMAC52
+	bool
+	select BOARD_APPLE_I945_MACS_COMMON
+	select I945_LVDS
+
+if BOARD_APPLE_I945_MACS_COMMON
+
 config MAINBOARD_DIR
-	default "apple/macbook21"
+	default "apple/i945_macs"
 
 config MAINBOARD_PART_NUMBER
 	default "Macbook1,1" if BOARD_APPLE_MACBOOK11
 	default "MacBook2,1" if BOARD_APPLE_MACBOOK21
 	default "iMac5,2" if BOARD_APPLE_IMAC52
 
+config VARIANT_DIR
+	default "macbook1_1" if BOARD_APPLE_MACBOOK11
+	default "macbook2_1" if BOARD_APPLE_MACBOOK21
+	default "imac5_2" if BOARD_APPLE_IMAC52
+
+config OVERRIDE_DEVICETREE
+	default "variants/\$(CONFIG_VARIANT_DIR)/overridetree.cb"
+
 config MAX_CPUS
-	int
 	default 2
 
 config MAINBOARD_SMBIOS_MANUFACTURER
-	string
 	default "Apple Inc."
 
 endif

@@ -1,17 +1,6 @@
 ## SPDX-License-Identifier: GPL-2.0-only
 
 chip northbridge/intel/i945
-	# IGD Displays
-	register "gfx" = "GMA_STATIC_DISPLAYS(0)"
-
-	register "gpu_hotplug" = "0x00000220"
-	register "gpu_lvds_use_spread_spectrum_clock" = "true"
-	register "pwm_freq" = "180"
-	register "gpu_panel_power_up_delay" = "250"
-	register "gpu_panel_power_backlight_on_delay" = "2380"
-	register "gpu_panel_power_down_delay" = "250"
-	register "gpu_panel_power_backlight_off_delay" = "2380"
-	register "gpu_panel_power_cycle_delay" = "2"
 
 	device cpu_cluster 0 on ops i945_cpu_bus_ops end		# APIC cluster
 	register "pci_mmio_size" = "768"
