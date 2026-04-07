@@ -1,5 +1,12 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 chip soc/intel/pantherlake
+	register "serial_io_uart_mode" = "{
+		[PchSerialIoIndexUART0] = PchSerialIoSkipInit,
+		[PchSerialIoIndexUART1] = PchSerialIoDisabled,
+		[PchSerialIoIndexUART2] = PchSerialIoDisabled,
+	}"
+
 	device domain 0 on
+		device ref uart0 on end
 	end # domain
 end # chip soc/intel/pantherlake
