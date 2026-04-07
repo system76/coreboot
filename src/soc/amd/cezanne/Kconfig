@@ -106,6 +106,14 @@ config SOC_AMD_RENOIR
 	help
 		AMD Renoir support
 
+config SOC_AMD_V2000A
+	bool
+	select SOC_AMD_CEZANNE_BASE
+	select SOC_AMD_SUPPORTS_WARM_RESET
+	select SOC_AMD_COMMON_BLOCK_CPU_SYNC_PSP_ADDR_MSR
+	help
+		AMD V2000A support
+
 if SOC_AMD_CEZANNE_BASE
 
 config KEEP_ACP_RUNNING_IN_S3
@@ -122,6 +130,7 @@ config CHIPSET_DEVICETREE
 config FSP_M_FILE
 	string "FSP-M (memory init) binary path and filename"
 	depends on ADD_FSP_BINARIES
+	#default "3rdparty/amd_blobs/v2000a/V2000A_M.fd" if SOC_AMD_V2000A
 	#default "3rdparty/amd_blobs/renoir/RENOIR_M.fd" if SOC_AMD_RENOIR
 	default "3rdparty/amd_blobs/cezanne/CEZANNE_M.fd"
 	help
@@ -130,6 +139,7 @@ config FSP_M_FILE
 config FSP_S_FILE
 	string "FSP-S (silicon init) binary path and filename"
 	depends on ADD_FSP_BINARIES
+	#default "3rdparty/amd_blobs/v2000a/V2000A_S.fd" if SOC_AMD_V2000A
 	#default "3rdparty/amd_blobs/renoir/RENOIR_S.fd" if SOC_AMD_RENOIR
 	default "3rdparty/amd_blobs/cezanne/CEZANNE_S.fd"
 	help
@@ -158,12 +168,12 @@ config PSP_APOB_DRAM_ADDRESS
 
 config PSP_APOB_DRAM_SIZE
 	hex
-	default 0x1E000 if SOC_AMD_RENOIR
+	default 0x1E000 if (SOC_AMD_RENOIR || SOC_AMD_V2000A)
 	default 0x10000
 
 config PSP_SHAREDMEM_BASE
 	hex
-	default 0x201F000 if VBOOT && SOC_AMD_RENOIR
+	default 0x201F000 if VBOOT && (SOC_AMD_RENOIR || SOC_AMD_V2000A)
 	default 0x2011000 if VBOOT
 	default 0x0
 	help
@@ -275,11 +285,11 @@ config RO_REGION_ONLY
 	default "apu/amdfw"
 
 config ECAM_MMCONF_BASE_ADDRESS
-	default 0xE0000000 if SOC_AMD_RENOIR
+	default 0xE0000000 if (SOC_AMD_RENOIR || SOC_AMD_V2000A)
 	default 0xF8000000
 
 config ECAM_MMCONF_BUS_NUMBER
-	default 256 if SOC_AMD_RENOIR
+	default 256 if (SOC_AMD_RENOIR || SOC_AMD_V2000A)
 	default 64
 
 config MAX_CPUS
@@ -290,7 +300,7 @@ config MAX_CPUS
 
 config VGA_BIOS_ID
 	string
-	default "1002,1636" if SOC_AMD_RENOIR
+	default "1002,1636" if (SOC_AMD_RENOIR || SOC_AMD_V2000A)
 	default "1002,1638"
 	help
 	  The default VGA BIOS PCI vendor/device ID should be set to the
@@ -298,6 +308,7 @@ config VGA_BIOS_ID
 
 config VGA_BIOS_FILE
 	string
+	default "3rdparty/amd_blobs/v2000a/RenoirGenericVbios.bin" if SOC_AMD_V2000A
 	#default "3rdparty/amd_blobs/renoir/RenoirGenericVbios.bin" if SOC_AMD_RENOIR
 	default "3rdparty/amd_blobs/cezanne/CezanneGenericVbios.bin"
 
@@ -368,6 +379,7 @@ menu "PSP Configuration Options"
 
 config AMDFW_CONFIG_FILE
 	string "AMD PSP Firmware config file"
+	default "src/soc/amd/cezanne/fw_v2000a.cfg" if SOC_AMD_V2000A
 	#default "src/soc/amd/cezanne/fw_renoir.cfg" if SOC_AMD_RENOIR
 	default "src/soc/amd/cezanne/fw.cfg"
 	help
@@ -419,6 +431,7 @@ config HAVE_PSP_WHITELIST_FILE
 config PSP_WHITELIST_FILE
 	string "Debug whitelist file path"
 	depends on HAVE_PSP_WHITELIST_FILE
+	default "3rdparty/amd_blobs/v2000a/PSP/wtl-rn.sbin" if SOC_AMD_V2000A
 	#default "3rdparty/amd_blobs/renoir/PSP/wtl-rn.sbin" if SOC_AMD_RENOIR
 	default "3rdparty/amd_blobs/cezanne/PSP/wtl-czn.sbin"
 

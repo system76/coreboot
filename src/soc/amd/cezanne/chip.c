@@ -57,6 +57,8 @@ struct chip_operations soc_amd_cezanne_ops = {
 	.name = "AMD Cezanne SoC",
 #elif CONFIG(SOC_AMD_RENOIR)
 	.name = "AMD Renoir SoC",
+#elif CONFIG(SOC_AMD_V2000A)
+	.name = "AMD V2000A SoC",
 #endif
 	.init = soc_init,
 	.final = soc_final

@@ -14,7 +14,7 @@
 
 #if CONFIG(SOC_AMD_CEZANNE)
 #include <vendorcode/amd/fsp/cezanne/FspUsb.h>
-#elif CONFIG(SOC_AMD_RENOIR)
+#elif CONFIG(SOC_AMD_RENOIR) || CONFIG(SOC_AMD_V2000A)
 #include <vendorcode/amd/fsp/renoir/FspUsb.h>
 #endif
 

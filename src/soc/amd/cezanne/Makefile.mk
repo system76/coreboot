@@ -19,6 +19,7 @@ bootblock-y	+= espi_util.c
 romstage-y	+= fsp_m_params.c
 romstage-$(CONFIG_SOC_AMD_CEZANNE) += fsp_m_params_cezanne.c
 romstage-$(CONFIG_SOC_AMD_RENOIR)  += fsp_m_params_renoir.c
+romstage-$(CONFIG_SOC_AMD_V2000A)  += fsp_m_params_renoir.c
 
 ramstage-y	+= acpi.c
 ramstage-y	+= chip.c
@@ -44,7 +45,7 @@ ifeq ($(CONFIG_SOC_AMD_CEZANNE),y)
 CPPFLAGS_common += -I$(src)/vendorcode/amd/fsp/cezanne
 endif
 
-ifeq ($(CONFIG_SOC_AMD_RENOIR),y)
+ifeq ($(CONFIG_SOC_AMD_RENOIR)$(CONFIG_SOC_AMD_V2000A),y)
 CPPFLAGS_common += -I$(src)/vendorcode/amd/fsp/renoir
 endif
 
