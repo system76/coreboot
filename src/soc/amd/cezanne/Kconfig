@@ -279,6 +279,7 @@ config ECAM_MMCONF_BASE_ADDRESS
 	default 0xF8000000
 
 config ECAM_MMCONF_BUS_NUMBER
+	default 256 if SOC_AMD_RENOIR
 	default 64
 
 config MAX_CPUS
