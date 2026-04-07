@@ -366,6 +366,7 @@ chip soc/intel/pantherlake
 		device ref ufs on
 			probe STORAGE STORAGE_UFS
 			probe STORAGE STORAGE_UNKNOWN
+			register "ufs_inline_encryption" = "true"
 		end
 
 		device ref pcie_rp1 on
