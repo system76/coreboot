@@ -518,6 +518,7 @@ static void fill_fsps_cnvi_params(FSP_S_CONFIG *s_cfg,
 	s_cfg->CnviWifiCore = config->cnvi_wifi_core;
 	s_cfg->CnviBtCore = config->cnvi_bt_core;
 	s_cfg->CnviBtAudioOffload = config->cnvi_bt_audio_offload;
+	s_cfg->CnviWwanCoex = config->cnvi_wwan_coex;
 
 	if (!s_cfg->CnviMode && s_cfg->CnviWifiCore) {
 		printk(BIOS_ERR, "CNVi WiFi is enabled without CNVi being enabled\n");
@@ -531,6 +532,10 @@ static void fill_fsps_cnvi_params(FSP_S_CONFIG *s_cfg,
 		printk(BIOS_ERR, "CNVi BT is enabled without CNVi being enabled\n");
 		s_cfg->CnviBtCore = 0;
 		s_cfg->CnviBtAudioOffload = 0;
+	}
+	if (!s_cfg->CnviMode && s_cfg->CnviWwanCoex) {
+		printk(BIOS_ERR, "CNVi WWAN Coex enabled without CNVi being enabled\n");
+		s_cfg->CnviWwanCoex = 0;
 	}
 
 	s_cfg->CnviBtInterface = is_devfn_enabled(PCI_DEVFN_CNVI_BT) ? 2 : 1;

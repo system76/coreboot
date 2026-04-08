@@ -532,6 +532,9 @@ struct soc_intel_pantherlake_config {
 	/* UFS Inline Encryption Enable/Disable */
 	bool ufs_inline_encryption;
 
+	/* CNVi WWAN Coexistence Enable/Disable */
+	bool cnvi_wwan_coex;
+
 	/* Debug interface selection */
 	enum {
 		DEBUG_INTERFACE_RAM = BIT(0),
