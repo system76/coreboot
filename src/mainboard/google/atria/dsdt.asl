@@ -2,6 +2,8 @@
 
 #include <acpi/acpi.h>
 #include <soc/gpio.h>
+#include <variant/ec.h>
+#include <variant/gpio.h>
 
 DefinitionBlock(
 	"dsdt.aml",
@@ -23,6 +25,15 @@ DefinitionBlock(
 	Device (\_SB.PCI0) {
 		#include <soc/intel/common/block/acpi/acpi/northbridge.asl>
 		#include <soc/intel/pantherlake/acpi/southbridge.asl>
+	}
+
+	/* ChromeOS Embedded Controller */
+	Scope (\_SB.PCI0.LPCB)
+	{
+		/* ACPI code for EC SuperIO functions */
+		#include <ec/google/chromeec/acpi/superio.asl>
+		/* ACPI code for EC functions */
+		#include <ec/google/chromeec/acpi/ec.asl>
 	}
 
 	#include <southbridge/intel/common/acpi/sleepstates.asl>

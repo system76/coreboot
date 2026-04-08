@@ -2,10 +2,11 @@
 
 #include <acpi/acpi.h>
 #include <device/device.h>
+#include <variant/ec.h>
 
 static void mainboard_init(void *chip_info)
 {
-	/* TODO: Perform mainboard initialization */
+	mainboard_ec_init();
 }
 
 static void mainboard_fill_ssdt(const struct device *dev)
