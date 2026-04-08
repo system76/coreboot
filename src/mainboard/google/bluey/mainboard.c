@@ -16,25 +16,15 @@
 #include <gpio.h>
 #include <halt.h>
 #include <soc/clock.h>
-#include <soc/display/edp_ctrl.h>
-#include <soc/display/edp_reg.h>
-#include <soc/display/mdssreg.h>
 #include <soc/pcie.h>
-#include <soc/pmic_gpio.h>
 #include <soc/qupv3_config_common.h>
 #include <soc/qupv3_i2c_common.h>
 #include <soc/qup_se_handlers_common.h>
-#include "board.h"
 #include <soc/symbols_common.h>
-#include <soc/rpmh_config.h>
 #include <soc/usb/usb.h>
-#include <timer.h>
-#include <timestamp.h>
 
-#define PMIC_D_GPIO_04 4
-
-#define BATTERY_CHARGING_SPLASH_TIMEOUT_MS 5000
-static struct stopwatch splash_sw;
+#include "board.h"
+#include "display.h"
 
 #define C0_RETIMER_I2C_BUS	0x03
 #define C1_RETIMER_I2C_BUS	0x07
@@ -43,27 +33,6 @@ static struct stopwatch splash_sw;
 #define PS8820_USB_PORT_CONN_STATUS_REG	0x00
 #define USB3_MODE_NORMAL_VAL	0x21
 #define USB3_MODE_FLIP_VAL	0x23
-
-/* Threshold for selecting lower-resolution assets */
-#define FHD_WIDTH_THRESHOLD		1920
-
-static struct {
-	uint32_t x_res;
-} cached_display_params;
-
-/*
- * Mainboard-specific override for logo filenames.
- */
-const char *mainboard_bmp_logo_filename(void)
-{
-	/* For panels at or below Full HD (1920px width), use the
-	 * lower-resolution bitmap.
-	 */
-	if (cached_display_params.x_res <= FHD_WIDTH_THRESHOLD)
-		return "cb_plus_logo.bmp";
-
-	return "cb_logo.bmp";
-}
 
 void mainboard_usb_typec_configure(uint8_t port_num, bool inverse_polarity)
 {
@@ -197,119 +166,6 @@ bool platform_is_off_mode_charging_active(void)
 }
 #endif
 
-static void edp_configure_gpios(void)
-{
-	/* Panel power on GPIO enable */
-	gpio_output(GPIO_PANEL_POWER_ON, 1);
-
-	/* Panel HPD GPIO enable */
-	gpio_input_pulldown(GPIO_PANEL_HPD);
-}
-
-static void edp_enable_backlight(void)
-{
-	/* Enable backlight */
-	pmic_gpio_output(PMIC_D_SLAVE_ID, PMIC_D_GPIO_04, true);
-}
-
-static void qcom_mdss_edp_init(struct edid *edid, uintptr_t fb_addr)
-{
-	if (edp_ctrl_init(edid) != CB_SUCCESS)
-		return;
-
-	configure_vbif_qos();
-	mdss_layer_mixer_setup(edid);
-	mdss_source_pipe_config(edid, fb_addr);
-
-	intf_tg_setup(edid);
-	intf_fetch_start_config(edid);
-
-	merge_3d_active();
-}
-
-static void qcom_mdp_start(uintptr_t fb_addr)
-{
-	stopwatch_init_msecs_expire(&splash_sw, BATTERY_CHARGING_SPLASH_TIMEOUT_MS);
-
-	write32(&mdp_intf->timing_eng_enable, 1);
-}
-
-static void qcom_mdp_stop(void)
-{
-	if (!get_lb_framebuffer())
-		return;
-
-	while (!stopwatch_expired(&splash_sw))
-		mdelay(100);
-
-	write32(&mdp_intf->timing_eng_enable, 0);
-	mdelay(20);
-	write32(&edp_ahbclk->sw_reset, 1);
-	mdelay(20);
-	write32(&edp_ahbclk->sw_reset, 0);
-
-	/* Disable backlight */
-	pmic_gpio_output(PMIC_D_SLAVE_ID, PMIC_D_GPIO_04, false);
-
-	/* Panel power off */
-	gpio_output(GPIO_PANEL_POWER_ON, 0);
-}
-
-static void display_logo(enum lb_fb_orientation orientation,
-			 uintptr_t fb_addr,
-			 const struct edid *edid)
-{
-	if (!CONFIG(BMP_LOGO) || !fb_addr)
-		return;
-
-	memset((void *)fb_addr, 0, edid->bytes_per_line * edid->y_resolution);
-
-	struct logo_config config = {
-		.panel_orientation = orientation,
-		.halignment = FW_SPLASH_HALIGNMENT_CENTER,
-		.valignment = FW_SPLASH_VALIGNMENT_CENTER,
-		.logo_bottom_margin = 200,
-	};
-	render_logo_to_framebuffer(&config);
-
-	qcom_mdp_start(fb_addr);
-
-	edp_enable_backlight();
-
-	timestamp_add_now(TS_FIRMWARE_SPLASH_RENDERED);
-}
-
-static void display_startup(void)
-{
-	if ((get_boot_mode() == LB_BOOT_MODE_RTC_WAKE) || !display_init_required() ||
-		    (CONFIG(VBOOT_LID_SWITCH) && !get_lid_switch())) {
-		printk(BIOS_INFO, "Skipping display init.\n");
-		return;
-	}
-
-	struct edid edid = {};
-	struct fb_info *fb;
-	uintptr_t fb_addr = (REGION_SIZE(framebuffer)) ? (uintptr_t)_framebuffer : 0;
-	enum lb_fb_orientation orientation = LB_FB_ORIENTATION_NORMAL;
-
-	/* Initialize RPMh subsystem and display power rails */
-	if (display_rpmh_init() != CB_SUCCESS)
-		return;
-
-	enable_mdss_clk();
-	edp_configure_gpios();
-	qcom_mdss_edp_init(&edid, fb_addr);
-	if (edid.mode.ha == 0)
-		return;
-
-	edid_set_framebuffer_bits_per_pixel(&edid, 32, 0);
-	fb = fb_new_framebuffer_info_from_edid(&edid, fb_addr);
-	fb_set_orientation(fb, orientation);
-
-	cached_display_params.x_res = edid.x_resolution;
-	display_logo(orientation, fb_addr, &edid);
-}
-
 static void trigger_critical_battery_shutdown(void)
 {
 	printk(BIOS_WARNING, "Critical battery level detected without charger! Shutting down.\n");
@@ -358,7 +214,7 @@ static void handle_low_power_charging_boot(void)
 	if (CONFIG(EC_GOOGLE_CHROMEEC_LED_CONTROL))
 		google_chromeec_lightbar_off();
 
-	qcom_mdp_stop();
+	display_stop();
 
 	/* Boot to charging applet; if this fails, the applet should trigger a reset */
 	launch_charger_applet();
@@ -379,8 +235,12 @@ static void mainboard_init(void *chip_info)
 	configure_parallel_charging();
 	configure_debug_access_port();
 
+	enum boot_mode_t boot_mode = get_boot_mode();
+
 	/* Do early display init for low/off-mode charging */
-	if (get_boot_mode() != LB_BOOT_MODE_NORMAL)
+	if ((boot_mode == LB_BOOT_MODE_LOW_BATTERY) ||
+			 (boot_mode == LB_BOOT_MODE_LOW_BATTERY_CHARGING) ||
+			 (boot_mode == LB_BOOT_MODE_OFFMODE_CHARGING))
 		display_startup();
 
 	/*
@@ -436,7 +296,8 @@ static void mainboard_late_init(struct device *dev)
 	load_qc_se_firmware_late();
 
 	/* Do late display init in normal boot mode */
-	display_startup();
+	if (get_boot_mode() == LB_BOOT_MODE_NORMAL)
+		display_startup();
 
 	/* Enable touchpad power */
 	if (CONFIG_MAINBOARD_GPIO_PIN_FOR_TOUCHPAD_POWER)
