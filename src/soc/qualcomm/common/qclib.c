@@ -55,12 +55,40 @@ static void dump_mem_chip_info(const struct mem_chip_info *info)
 	}
 }
 
+/*
+ * Filter out undefined memory chip entries.
+ *
+ * This function performs an in-place "collapse" of the entries array by
+ * removing all entries marked as MEM_CHIP_UNDEFINED. It maintains the
+ * relative order of valid entries and updates the total count (num_entries)
+ * once the filtering is complete.
+ */
+static void process_mem_chip_information(struct mem_chip_info *info)
+{
+	if (!CONFIG(QC_SANITIZE_MEMCHIP_INFO))
+		return;
+
+	int next_valid = 0;
+
+	for (int i = 0; i < info->num_entries; i++) {
+		/* Check if the entry is valid/non-empty */
+		if (info->entries[i].type != MEM_CHIP_UNDEFINED) {
+			if (next_valid != i)
+				info->entries[next_valid] = info->entries[i];
+
+			next_valid++;
+		}
+	}
+
+	info->num_entries = next_valid;
+}
+
 static void write_mem_chip_information(struct qclib_cb_if_table_entry *te)
 {
 	struct mem_chip_info *info = (void *)te->blob_address;
 	if (te->size > sizeof(struct mem_chip_info) &&
 	    te->size == mem_chip_info_size(info->num_entries)) {
-
+		process_mem_chip_information(info);
 		dump_mem_chip_info(info);
 
 		/* Save mem_chip_info in global variable ahead of hook running */

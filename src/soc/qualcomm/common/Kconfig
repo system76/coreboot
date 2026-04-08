@@ -92,4 +92,17 @@ config QC_DUMP_MEMCHIP_INFO
 	  cause a build failure. Only enable this for memory bring-up or
 	  debugging.
 
+config QC_SANITIZE_MEMCHIP_INFO
+	bool
+	default n
+	help
+	  Enable this option to filter out MEM_CHIP_UNDEFINED entries from the
+	  memory chip information table provided by the Qualcomm library (QCLib).
+
+	  When enabled, the table is collapsed in-place to remove empty slots,
+	  ensuring that logs and downstream data consumers only see valid
+	  memory hardware information.
+
+	  If unsure, say N.
+
 endif
