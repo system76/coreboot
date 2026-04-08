@@ -22,6 +22,9 @@ void variant_update_soc_chip_config(struct soc_intel_pantherlake_config *config)
 		config->cnvi_wifi_core = true;
 		config->cnvi_bt_core = true;
 
+		if (fw_config_probe(FW_CONFIG(CELLULAR, CELLULAR_PCIE)))
+			config->cnvi_wwan_coex = true;
+
 		if (fw_config_probe(FW_CONFIG(AUDIO, AUDIO_MAX98360_ALC5682I_I2S)) ||
 			fw_config_probe(FW_CONFIG(AUDIO, AUDIO_ALC722_SNDW)) ||
 			fw_config_probe(FW_CONFIG(AUDIO, AUDIO_ALC721_SNDW))) {
