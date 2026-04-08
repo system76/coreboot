@@ -22,6 +22,11 @@ __weak void variant_update_soc_memory_init_params(FSPM_UPD *memupd)
 	/* Nothing to do */
 }
 
+void __weak variant_post_gpio_configure(void)
+{
+	/* default implementation does nothing */
+}
+
 void mainboard_memory_init_params(FSPM_UPD *memupd)
 {
 	const struct pad_config *pads;
@@ -42,4 +47,6 @@ void mainboard_memory_init_params(FSPM_UPD *memupd)
 
 	/* Override FSP-M UPD per board if required. */
 	variant_update_soc_memory_init_params(memupd);
+
+	variant_post_gpio_configure();
 }

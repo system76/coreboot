@@ -29,6 +29,7 @@ bool variant_is_half_populated(void);
 void variant_update_soc_memory_init_params(FSPM_UPD *memupd);
 void variant_update_soc_chip_config(struct soc_intel_pantherlake_config *config);
 bool variant_is_barrel_charger_present(void);
+void variant_post_gpio_configure(void);
 
 enum s0ix_entry {
 	S0IX_EXIT,
