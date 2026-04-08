@@ -67,8 +67,6 @@ static const struct pad_config gpio_table[] = {
 	PAD_CFG_NF(GPP_B12, NONE, DEEP, NF1),
 	/* GPP_B13:     PLT_RST_N */
 	PAD_CFG_NF(GPP_B13, NONE, DEEP, NF1),
-	/* GPP_B14:     GPP_B14_DDSP_HPDB */
-	PAD_CFG_NF(GPP_B14, NONE, DEEP, NF2),
 	/* GPP_B16:     COINLESS_MODE_SELECT */
 	PAD_CFG_GPI(GPP_B16, NONE, DEEP),
 	/* GPP_B17:     SPI_TPM_INT_N */
@@ -123,10 +121,6 @@ static const struct pad_config gpio_table[] = {
 	PAD_CFG_NF(GPP_C18, NONE, DEEP, NF1),
 	/* GPP_C19:     MOD_TCSS2_LS_RX_DDC_SDA */
 	PAD_CFG_NF(GPP_C19, NONE, DEEP, NF1),
-	/* GPP_C22:     DDPB_HDMI_CTRLCLK */
-	PAD_CFG_NF(GPP_C22, NONE, DEEP, NF2),
-	/* GPP_C23:     DDPB_HDMI_CTRLDATA */
-	PAD_CFG_NF(GPP_C23, NONE, DEEP, NF2),
 
 	/* GPP_D */
 	/* GPP_D01:     MOD_TCSS1_TYP_A_VBUS_EN */
@@ -340,8 +334,14 @@ static const struct pad_config gpio_table[] = {
 
 /* Early pad configuration in bootblock */
 static const struct pad_config early_gpio_table[] = {
+	/* GPP_B14:     GPP_B14_DDSP_HPDB */
+	PAD_CFG_NF(GPP_B14, NONE, DEEP, NF2),
 	/* GPP_B17:     SPI_TPM_INT_N */
 	PAD_CFG_GPI_APIC(GPP_B17, NONE, DEEP, LEVEL, INVERT),
+	/* GPP_C22:     DDPB_HDMI_CTRLCLK */
+	PAD_CFG_NF(GPP_C22, NONE, DEEP, NF2),
+	/* GPP_C23:     DDPB_HDMI_CTRLDATA */
+	PAD_CFG_NF(GPP_C23, NONE, DEEP, NF2),
 	/* GPP_H06: I2C3_SDA_PSS */
 	PAD_CFG_NF(GPP_H06, NONE, DEEP, NF1),
 	/* GPP_H07: I2C3_SCL_PSS */
