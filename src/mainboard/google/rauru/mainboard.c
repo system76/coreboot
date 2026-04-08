@@ -16,6 +16,7 @@
 #include <soc/pcie.h>
 #include <soc/storage.h>
 #include <soc/usb.h>
+#include <thread.h>
 #include <variants.h>
 
 #define AFE_SE_SECURE_CON1	(AUDIO_BASE + 0x5634)
@@ -108,15 +109,51 @@ bool mainboard_needs_pcie_init(void)
 	return mainboard_get_storage_type() == STORAGE_NVME;
 }
 
+static struct thread_handle display_thread;
+static struct thread_mutex display_thread_start_mutex;
+
+static enum cb_err display_init_thread(void *unused)
+{
+	/* The display thread takes the mutex to block the main thread from
+	   starting soc_init until the display thread is ready.  */
+	thread_mutex_lock(&display_thread_start_mutex);
+
+	if (mtk_display_init(&display_thread_start_mutex) < 0) {
+		printk(BIOS_ERR, "%s: Failed to init display\n", __func__);
+		thread_mutex_unlock(&display_thread_start_mutex);
+		return CB_ERR;
+	}
+
+	return CB_SUCCESS;
+}
+
+static void mainboard_final(struct device *dev)
+{
+	if (!ENV_SUPPORTS_COOP)
+		return;
+	thread_join(&display_thread);
+}
+
 static void mainboard_init(struct device *dev)
 {
 	if (display_init_required()) {
 		enable_display_power_rail();
-		if (mtk_display_init() < 0)
-			printk(BIOS_ERR, "%s: Failed to init display\n", __func__);
+		if (ENV_SUPPORTS_COOP) {
+			if (thread_run(&display_thread, display_init_thread, NULL))
+				die("%s: Failed to start display init thread\n", __func__);
+		} else {
+			if (mtk_display_init(NULL) < 0)
+				printk(BIOS_ERR, "%s: Failed to init display\n", __func__);
+
+		}
 	} else {
 		printk(BIOS_INFO, "%s: Skipped display initialization\n", __func__);
 	}
+
+	/* The main thread waits here until the display thread reaches the MIPI
+	   delay window and unlocks this mutex. */
+	thread_mutex_lock(&display_thread_start_mutex);
+	thread_mutex_unlock(&display_thread_start_mutex);
 
 	setup_usb_host();
 	power_on_fpmcu();
@@ -132,6 +169,7 @@ static void mainboard_init(struct device *dev)
 static void mainboard_enable(struct device *dev)
 {
 	dev->ops->init = &mainboard_init;
+	dev->ops->final = &mainboard_final;
 }
 
 struct chip_operations mainboard_ops = {

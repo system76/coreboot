@@ -156,7 +156,7 @@ static void mainboard_init(struct device *dev)
 		register_reset_to_bl31(GPIO_AP_EC_WARM_RST_REQ.id, true);
 
 	if (display_init_required()) {
-		if (mtk_display_init() < 0)
+		if (mtk_display_init(NULL) < 0)
 			printk(BIOS_ERR, "%s: Failed to init display\n", __func__);
 	} else {
 		printk(BIOS_INFO, "%s: Skipping display init; disabling secure mode\n",

@@ -102,7 +102,7 @@ static void configure_audio(void)
 static void mainboard_init(struct device *dev)
 {
 	if (display_init_required())
-		mtk_display_init();
+		mtk_display_init(NULL);
 	else
 		printk(BIOS_INFO, "%s: Skipped display initialization\n", __func__);
 

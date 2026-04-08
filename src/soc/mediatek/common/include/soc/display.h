@@ -7,6 +7,7 @@
 #include <edid.h>
 #include <mipi/panel.h>
 #include <stdbool.h>
+#include <thread.h>
 
 enum disp_path_sel {
 	DISP_PATH_NONE = 0,
@@ -31,7 +32,7 @@ struct panel_description {
 
 struct panel_description *get_active_panel(void);
 void mtk_display_disable_secure_mode(void);
-int mtk_display_init(void);
+int mtk_display_init(struct thread_mutex *ready_mutex);
 int mtk_mipi_panel_poweroff(void);
 
 void mtk_ddp_init(void);

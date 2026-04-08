@@ -5,6 +5,7 @@
 
 #include <edid.h>
 #include <types.h>
+#include <thread.h>
 
 enum mipi_dsi_pixel_format {
 	MIPI_DSI_FMT_RGB888,
@@ -50,7 +51,7 @@ enum {
 
 /* Public API for common display code (display.c). */
 int mtk_dsi_init(u32 mode_flags, u32 format, u32 lanes, const struct edid *edid,
-		 const u8 *init_commands);
+		 const u8 *init_commands, struct thread_mutex *ready_mutex);
 int mtk_dsi_panel_poweroff(u32 mode_flags, const u8 *poweroff_cmds);
 
 #endif /* SOC_MEDIATEK_DISPLAY_DSI_H */
