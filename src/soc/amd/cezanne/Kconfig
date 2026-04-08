@@ -95,7 +95,6 @@ config SOC_AMD_CEZANNE
 	bool
 	select ADD_FSP_BINARIES if USE_AMD_BLOBS
 	select SOC_AMD_CEZANNE_BASE
-	select SOC_AMD_COMMON_BLOCK_SPI_DWORD_ACCESS
 	help
 		AMD Cezanne support
 
