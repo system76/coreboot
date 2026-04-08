@@ -1,15 +1,18 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+#include <assert.h>
 #include <delay.h>
+#include <limits.h>
+#include <timer.h>
+
 void mdelay(unsigned int msecs)
 {
-	unsigned int i;
-	for (i = 0; i < msecs; i++)
-		udelay(1000);
+	assert(msecs <= UINT_MAX / USECS_PER_MSEC);
+	return udelay(msecs * USECS_PER_MSEC);
 }
+
 void delay(unsigned int secs)
 {
-	unsigned int i;
-	for (i = 0; i < secs; i++)
-		mdelay(1000);
+	assert(secs <= UINT_MAX / MSECS_PER_SEC);
+	return mdelay(secs * MSECS_PER_SEC);
 }
