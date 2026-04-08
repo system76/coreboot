@@ -64,6 +64,9 @@ enum charging_status {
 
 void configure_dam_on_system_state_change(bool poweron)
 {
+	if (!CONFIG(HAVE_DEBUG_ACCESS_PORT_SOURCE_SINK))
+		return;
+
 	uint8_t value = (uint8_t)spmi_read8(SMBx_SCHG_TYPE_C_TYPE_C_CRUDE_SENSOR_CFG
 						(CONFIG_DAP_SMB_SLAVE_ID));
 	if (poweron)
@@ -273,10 +276,10 @@ void configure_parallel_charging(void)
  */
 void configure_debug_access_port(void)
 {
-	configure_dam_on_system_state_change(true);
-
 	if (!CONFIG(HAVE_DEBUG_ACCESS_PORT_SOURCE_SINK))
 		return;
+
+	configure_dam_on_system_state_change(true);
 
 	printk(BIOS_INFO, "Enable support of source and sink modes for debug access port\n");
 	spmi_write8(SMBx_SCHG_TYPE_C_TYPE_C_DEBUG_ACCESS_SRC_CFG(CONFIG_DAP_SMB_SLAVE_ID),
