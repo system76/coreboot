@@ -7,6 +7,7 @@
 #include <delay.h>
 #include <device/device.h>
 #include <edid.h>
+#include <elog.h>
 #include <gpio.h>
 #include <soc/clock.h>
 #include <soc/display/edp_ctrl.h>
@@ -126,6 +127,10 @@ static void display_logo(enum lb_fb_orientation orientation, uintptr_t fb_addr,
 	edp_enable_backlight();
 
 	timestamp_add_now(TS_FIRMWARE_SPLASH_RENDERED);
+
+	printk(BIOS_DEBUG, "Firmware Splash Screen : Enabled\n");
+
+	elog_add_event_byte(ELOG_TYPE_FW_SPLASH_SCREEN, 1);
 }
 
 void display_startup(void)
