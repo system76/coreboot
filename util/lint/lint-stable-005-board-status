@@ -22,7 +22,7 @@ for mobodir in $(${FIND_FILES} src/mainboard | sed -n 's,^\(src/mainboard/[^/]*/
     fi
     category="$(sed -n 's#^Category: \(.*\)$#\1#p' < "$board_info")"
     case "$category" in
-	desktop|server|laptop|half|mini|settop|"eval"|sbc|emulation|misc)
+	desktop|server|laptop|half|mini|settop|"eval"|sbc|emulation|misc|aio)
 	    ;;
 	"")
 	    echo "$board_info doesn't contain 'Category' tag"
