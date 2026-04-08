@@ -9,6 +9,7 @@
 
 /* Command line options. */
 int dump = 0, verbose = 0, extra_dump = 0, alternate_dump = 0;
+int dump_unknown_regs = 0, dump_unknown_ldns = 0;
 
 /* Global flag which indicates whether a chip was detected at all. */
 int chip_found = 0;
@@ -106,28 +107,33 @@ static void set_extra_selector(uint16_t port, const struct extra_selector *esel)
 			esel->val);
 }
 
-static void dump_regs(const struct superio_registers reg_table[],
-		      int i, int j, uint16_t port, uint8_t ldn_sel)
+static void dump_regs(const struct superio_registers_ldn *reg_table_ldn,
+		      uint16_t port, uint8_t ldn_sel)
 {
 	int k;
+	uint8_t reg_dumped[256] = {0};
 	const int16_t *idx, *def;
 
-	if (reg_table[i].ldn[j].ldn != NOLDN) {
-		printf("LDN 0x%02x", reg_table[i].ldn[j].ldn);
-		if (reg_table[i].ldn[j].name != NULL)
-			printf(" (%s)", reg_table[i].ldn[j].name);
-		regwrite(port, ldn_sel, reg_table[i].ldn[j].ldn);
+	// The LDN selector will never be listed as register in the reg_table_ldn,
+	// yet it should not be displayed as "unknown register" in the dump.
+	reg_dumped[ldn_sel] = 1;
+
+	if (reg_table_ldn->ldn != NOLDN) {
+		printf("LDN 0x%02x", reg_table_ldn->ldn);
+		if (reg_table_ldn->name != NULL)
+			printf(" (%s)", reg_table_ldn->name);
+		regwrite(port, ldn_sel, reg_table_ldn->ldn);
 	} else {
-		if (reg_table[i].ldn[j].name == NULL)
+		if (reg_table_ldn->name == NULL)
 			printf("Register dump:");
 		else
-			printf("(%s)", reg_table[i].ldn[j].name);
+			printf("(%s)", reg_table_ldn->name);
 	}
 
-	set_extra_selector(port, &reg_table[i].ldn[j].esel);
+	set_extra_selector(port, &reg_table_ldn->esel);
 
-	idx = reg_table[i].ldn[j].idx;
-	def = reg_table[i].ldn[j].def;
+	idx = reg_table_ldn->idx;
+	def = reg_table_ldn->def;
 
 	if (alternate_dump) {
 		int skip_def = 0;
@@ -143,6 +149,7 @@ static void dump_regs(const struct superio_registers reg_table[],
 			}
 
 			printf("0x%02x:  ", idx[k]);
+			reg_dumped[idx[k]] = 1;
 			val = regval(port, idx[k]);
 
 			if (def[k] == NANA)
@@ -156,6 +163,20 @@ static void dump_regs(const struct superio_registers reg_table[],
 					printf("0x%02x   0x%02x\n", def[k], val);
 				else
 					printf("0x%02x  [0x%02x]\n", def[k], val);
+			}
+		}
+
+		if (dump_unknown_regs) {
+			int reg_begin = reg_table_ldn->ldn == NOLDN ? 0 : 0x30;
+			int reg_limit = reg_table_ldn->ldn == NOLDN ? 0x30 : 256;
+			for (int reg = reg_begin; reg < reg_limit; reg++) {
+				if (!reg_dumped[reg]) {
+					val = regval(port, reg);
+					if (val != 0x00 && val != 0xff) {
+						printf("0x%02x:  ", reg);
+						printf("       0x%02x\n", val);
+					}
+				}
 			}
 		}
 	} else {
@@ -195,6 +216,7 @@ void dump_superio(const char *vendor,
 		  uint16_t port, uint16_t id, uint8_t ldn_sel)
 {
 	int i, j, no_dump_available = 1;
+	uint8_t ldn_dumped[256] = {0};
 
 	if (!dump)
 		return;
@@ -210,7 +232,22 @@ void dump_superio(const char *vendor,
 			if (reg_table[i].ldn[j].ldn == EOT)
 				break;
 			no_dump_available = 0;
-			dump_regs(reg_table, i, j, port, ldn_sel);
+			ldn_dumped[reg_table[i].ldn[j].ldn] = 1;
+			dump_regs(&reg_table[i].ldn[j], port, ldn_sel);
+		}
+
+		if (dump_unknown_ldns) {
+			for (int ldn = 0; ldn < 128; ldn++) {
+				if (!ldn_dumped[ldn]) {
+					const struct superio_registers_ldn fake_ldn = {
+						.ldn = ldn,
+						.name = "?",
+						.idx = {EOT},
+						.def = {EOT}
+					};
+					dump_regs(&fake_ldn, port, ldn_sel);
+				}
+			}
 		}
 
 		if (no_dump_available)
@@ -309,6 +346,8 @@ int main(int argc, char *argv[])
 		{"dump",		no_argument, NULL, 'd'},
 		{"extra-dump",		no_argument, NULL, 'e'},
 		{"alternate-dump",	no_argument, NULL, 'a'},
+		{"unknown-regs",	no_argument, NULL, 'u'},
+		{"unknown-ldns",	no_argument, NULL, 'U'},
 		{"list-supported",	no_argument, NULL, 'l'},
 		{"verbose",		no_argument, NULL, 'V'},
 		{"version",		no_argument, NULL, 'v'},
@@ -316,11 +355,20 @@ int main(int argc, char *argv[])
 		{0, 0, 0, 0}
 	};
 
-	while ((opt = getopt_long(argc, argv, "dealVvh",
+	while ((opt = getopt_long(argc, argv, "dealVvhuU",
 				  long_options, &option_index)) != EOF) {
 		switch (opt) {
 		case 'd':
 			dump = 1;
+			break;
+		case 'u':
+			dump_unknown_regs = 1;
+			alternate_dump = 1; // only works in alternate display mode
+			break;
+		case 'U':
+			dump_unknown_ldns = 1;
+			dump_unknown_regs = 1; // only makes sense when also dumping unknown regs
+			alternate_dump = 1; // only works in alternate display mode
 			break;
 		case 'e':
 			extra_dump = 1;

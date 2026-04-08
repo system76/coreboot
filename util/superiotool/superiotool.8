@@ -83,6 +83,18 @@ the output of the
 .B --dump
 option.
 .TP
+.B "\-a, \-\-alternate-dump"
+Use alternative dump format, more suitable for diff.
+.TP
+.B "\-u, \-\-unknown-regs"
+Dump all registers in the known LDNs (displays only those unequal to 0x00 and 0xff).
+Implies
+.B \-\-alternate-dump
+.TP
+.B "\-U, \-\-unknown-ldns"
+Dump all registers in all LDNs, probing through all of them. Implies
+.B \-\-unknown-regs
+.TP
 .B "\-l, \-\-list-supported"
 List all Super I/O chips recognized by
 .BR superiotool ". The phrase"

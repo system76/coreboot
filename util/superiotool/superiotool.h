@@ -95,6 +95,11 @@ static __inline__ uint32_t inl(uint16_t port)
   -d | --dump            Dump Super I/O register contents\n\
   -e | --extra-dump      Dump secondary registers too (e.g. EC registers)\n\
   -a | --alternate-dump  Use alternative dump format, more suitable for diff\n\
+  -u | --unknown-regs    Dump all registers in the known LDNs (displays only\n\
+                         those unequal to 0x00 and 0xff).\n\
+                         Implies --alternate-dump.\n\
+  -U | --unknown-ldns    Dump all registers in all LDNs, probing through all\n\
+                         of them. Implies --unknown-regs.\n\
   -l | --list-supported  Show the list of supported Super I/O chips\n\
   -V | --verbose         Verbose mode\n\
   -v | --version         Show the superiotool version\n\
@@ -143,7 +148,7 @@ struct extra_selector {
 struct superio_registers {
 	int32_t superio_id;		/* Signed, as we need EOT. */
 	const char *name;		/* Super I/O name */
-	struct {
+	struct superio_registers_ldn {
 		int8_t ldn;
 		const char *name;	/* LDN name */
 		int16_t idx[IDXSIZE];
