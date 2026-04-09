@@ -330,6 +330,12 @@ void gcom_pcie_power_on_ep(void)
 	gpio_output(NVME_REG_EN, 1);
 }
 
+/* Turn off NVMe */
+void gcom_pcie_power_off_ep(void)
+{
+	gpio_output(NVME_REG_EN, 0);
+}
+
 void gcom_pcie_get_config(struct qcom_pcie_cntlr_t *host_cfg)
 {
 	host_cfg->cntlr_cfg = &pcie_host;
