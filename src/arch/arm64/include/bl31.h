@@ -18,4 +18,10 @@ void *soc_get_bl31_plat_params(void);
    that use the default soc_get_bl31_plat_params() implementation. */
 void register_bl31_aux_param(struct bl_aux_param_header *param);
 
+/*
+ * Perform SoC-specific housekeeping (e.g., clearing reset status,
+ * configuring security controller, or locking down registers).
+ */
+void soc_prepare_bl31_handoff(void);
+
 #endif /* __BL31_H__ */

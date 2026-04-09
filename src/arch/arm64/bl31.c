@@ -71,6 +71,11 @@ __weak void *soc_get_bl31_plat_params(void)
 	return bl_aux_params;
 }
 
+__weak void soc_prepare_bl31_handoff(void)
+{
+	/* Default: do nothing */
+}
+
 void run_bl31(u64 payload_entry, u64 payload_arg0, u64 payload_spsr)
 {
 	struct prog bl31 = PROG_INIT(PROG_BL31, CONFIG_CBFS_PREFIX"/bl31");
@@ -105,6 +110,12 @@ void run_bl31(u64 payload_entry, u64 payload_arg0, u64 payload_spsr)
 	bl33_ep_info.args.arg0 = payload_arg0;
 
 	void *bl31_plat_params = soc_get_bl31_plat_params();
+
+	/*
+	 * Perform SoC-specific housekeeping (e.g., clearing reset status,
+	 * configuring security controller, or locking down registers).
+	 */
+	soc_prepare_bl31_handoff();
 
 	/* MMU disable will flush cache, so passed params land in memory. */
 	raw_write_daif(SPSR_EXCEPTION_MASK);
