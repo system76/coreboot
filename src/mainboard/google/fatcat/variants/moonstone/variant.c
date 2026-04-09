@@ -68,7 +68,7 @@ void variant_update_soc_chip_config(struct soc_intel_pantherlake_config *config)
 	}
 }
 
-void fw_config_post_gpio_configure(void)
+void variant_post_dev_init_chips_configure(void)
 {
 	/* ensures touchscreen reset pin is asserted at the correct stage,
 	   satisfying the requirement that reset must occur after BL_ON. */

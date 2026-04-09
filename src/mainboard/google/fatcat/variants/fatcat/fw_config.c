@@ -776,7 +776,7 @@ void fw_config_gpio_padbased_override(struct pad_config *padbased_table)
 	}
 }
 
-void fw_config_post_gpio_configure(void)
+void variant_pre_dev_init_chips_configure(void)
 {
 	if (!fw_config_probe(FW_CONFIG(SD, SD_NONE)))
 		GPIO_CONFIGURE_PADS(post_x1slot_pads);
