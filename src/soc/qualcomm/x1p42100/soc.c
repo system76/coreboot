@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+#include <bl31.h>
 #include <device/device.h>
 #include <soc/mmu.h>
 #include <soc/mmu_common.h>
@@ -7,7 +8,21 @@
 #include <soc/pcie.h>
 #include <soc/clock.h>
 #include <soc/cpucp.h>
+#include <soc/qspi_common.h>
 #include <program_loading.h>
+
+#define SPI_BUS_CLOCK_FREQ (50 * MHz)
+
+/*
+ * FIXME: Reduce SPI Frequency to 50-MHz to improve
+ * the platform stability during payload stage.
+ */
+void soc_prepare_bl31_handoff(void)
+{
+	printk(BIOS_WARNING, "%s: Reduce SPI frequency to 50MHz to better stability\n",
+		 __func__);
+	qspi_set_bus_clock(SPI_BUS_CLOCK_FREQ);
+}
 
 static struct device_operations pci_domain_ops = {
 	.read_resources = &qcom_pci_domain_read_resources,
