@@ -3,16 +3,19 @@
 #include <assert.h>
 #include <console/console.h>
 #include <device/mmio.h>
+#include <soc/dma_mutex.h>
 #include <soc/flash_controller_common.h>
 #include <soc/symbols.h>
 #include <spi_flash.h>
 #include <spi-generic.h>
 #include <string.h>
 #include <symbols.h>
+#include <thread.h>
 #include <timer.h>
 #include <types.h>
 
 static struct mtk_nor_regs *const mtk_nor = (void *)SFLASH_REG_BASE;
+struct thread_mutex mtk_dma_mutex;
 
 #define GET_NTH_BYTE(d, n)	((d >> (8 * n)) & 0xff)
 
@@ -150,8 +153,14 @@ static int nor_read(const struct spi_flash *flash, u32 addr, size_t len,
 	/* DMA: start [ skip | len | drop ] = total end */
 	for (done = 0; done < total; dest += copy_len) {
 		read_len = MIN(dma_buf_len, total - done);
-		if (dma_read(start + done, dma_buf, read_len))
+
+		/* Protect shared SPI controller and dma_buf during transfer AND copy */
+		thread_mutex_lock(&mtk_dma_mutex);
+
+		if (dma_read(start + done, dma_buf, read_len)) {
+			thread_mutex_unlock(&mtk_dma_mutex);
 			return -1;
+		}
 
 		done += read_len;
 		/* decide the range to copy into buffer */
@@ -160,8 +169,12 @@ static int nor_read(const struct spi_flash *flash, u32 addr, size_t len,
 
 		copy_len = read_len - skip;
 		memcpy(dest, (uint8_t *)dma_buf + skip, copy_len);
+
 		if (skip)
 			skip = 0;  /* Only apply skip in first iteration. */
+
+		/* Release bus immediately after data is safely copied out of shared buffer */
+		thread_mutex_unlock(&mtk_dma_mutex);
 	}
 	return 0;
 }

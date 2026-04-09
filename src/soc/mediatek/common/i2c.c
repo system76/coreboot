@@ -7,9 +7,11 @@
 #include <timer.h>
 #include <symbols.h>
 #include <device/mmio.h>
+#include <soc/dma_mutex.h>
 #include <soc/i2c.h>
 #include <soc/i2c_common.h>
 #include <device/i2c_simple.h>
+#include <thread.h>
 
 const struct i2c_spec_values standard_mode_spec = {
 	.min_low_ns = 4700 + I2C_STANDARD_MODE_BUFFER,
@@ -167,6 +169,8 @@ static int mtk_i2c_transfer(uint8_t bus, struct i2c_msg *seg,
 	write32(&regs->intr_mask, I2C_HS_NACKERR | I2C_ACKERR |
 		I2C_TRANSAC_COMP);
 
+	thread_mutex_lock(&mtk_dma_mutex);
+
 	switch (mode) {
 	case I2C_WRITE_MODE:
 		memcpy(_dma_coherent, write_buffer, write_len);
@@ -268,6 +272,8 @@ static int mtk_i2c_transfer(uint8_t bus, struct i2c_msg *seg,
 			break;
 		}
 	}
+
+	thread_mutex_unlock(&mtk_dma_mutex);
 
 	write32(&regs->intr_stat, I2C_TRANSAC_COMP | I2C_ACKERR |
 		I2C_HS_NACKERR);
