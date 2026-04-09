@@ -1,0 +1,100 @@
+## SPDX-License-Identifier: GPL-2.0-only
+
+config BOARD_STARLABS_CEZANNE_SERIES
+	def_bool n
+	select AMD_FWM_POSITION_820000_DEFAULT
+	select AMD_SOC_CONSOLE_UART
+	select AZALIA_HDA_CODEC_SUPPORT
+	select AZALIA_USE_LEGACY_VERB_TABLE
+	select BOARD_ROMSIZE_KB_16384
+	select DISABLE_KEYBOARD_RESET_PIN
+	select DRIVERS_EFI_VARIABLE_STORE
+	select DRIVERS_I2C_HID
+	select DRIVERS_OPTION_CFR_ENABLED
+	select DRIVERS_PCIE_RTD3_DEVICE
+	select EC_STARLABS_ITE
+	select EC_STARLABS_KBL_LEVELS
+	select EC_STARLABS_MERLIN
+	select HAVE_ACPI_RESUME
+	select HAVE_ACPI_TABLES
+	select HAVE_HDA_DMIC
+	select PCIEXP_ASPM
+	select PCIEXP_CLK_PM
+	select PCIEXP_COMMON_CLOCK
+	select PCIEXP_L1_SUB_STATE
+	select SERIRQ_CONTINUOUS_MODE
+	select SOC_AMD_CEZANNE
+	select SOC_AMD_COMMON_BLOCK_GRAPHICS_ATIF
+	select SPI_FLASH_WINBOND
+	select SYSTEM_TYPE_LAPTOP
+	select VGA_BIOS
+
+config BOARD_STARLABS_STARBOOK_CEZANNE
+	select BOARD_STARLABS_CEZANNE_SERIES
+
+if BOARD_STARLABS_CEZANNE_SERIES
+
+config ADD_APCB_SOURCES
+	bool "Add PSP customisation files"
+
+config APCB_SOURCES_PATH
+	string "Path to APCB files"
+
+config CONSOLE_SERIAL
+	default n if !EDK2_DEBUG
+
+config DEVICETREE
+	default "variants/\$(CONFIG_VARIANT_DIR)/devicetree.cb"
+
+config EC_GPE_SCI
+	default 0x17
+
+config EC_STARLABS_ADD_ITE_BIN
+	default y
+
+config EC_STARLABS_ITE_BIN_PATH
+	default "3rdparty/blobs/mainboard/\$(MAINBOARDDIR)/\$(CONFIG_VARIANT_DIR)/ec.bin"
+
+config EDK2_BOOTSPLASH_FILE
+	default "3rdparty/blobs/mainboard/starlabs/Logo.bmp"
+
+config FMDFILE
+	default "src/mainboard/\$(CONFIG_MAINBOARD_DIR)/board.fmd"
+
+config MAINBOARD_DIR
+	default "starlabs/cezanne"
+
+config MAINBOARD_FAMILY
+	default "B6-A"
+
+config MAINBOARD_PART_NUMBER
+	default "StarBook Mk VI"
+
+config MAINBOARD_SMBIOS_PRODUCT_NAME
+	default "StarBook"
+
+config POST_IO
+	default y
+
+config PSP_LOAD_MP2_FW
+	default y
+
+config PSP_POSTCODES_ON_ESPI
+	default n
+
+config S3_VGA_ROM_RUN
+	default n
+
+config VARIANT_DIR
+	default "starbook"
+
+config EFS_SPI_SPEED
+	default 4	# 100MHz
+
+config NORMAL_READ_SPI_SPEED
+	default 1	# 33MHz
+
+config ALT_SPI_SPEED
+	default 0	# 66MHz
+
+endif

@@ -356,6 +356,7 @@ StarLite Mk IV <starlabs/lite_glkr.md>
 StarLite Mk V <starlabs/lite_adl.md>
 StarBook Mk V <starlabs/starbook_tgl.md>
 StarBook Mk VI <starlabs/starbook_adl.md>
+StarBook Mk VI AMD <starlabs/starbook_czn.md>
 StarBook Mk VII (N200) <starlabs/starbook_adl_n.md>
 StarBook Mk VII (165H) <starlabs/starbook_mtl.md>
 StarBook Horizon <starlabs/adl_horizon.md>

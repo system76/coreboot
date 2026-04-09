@@ -1,0 +1,153 @@
+chip soc/amd/cezanne
+	# Memory
+	register "i2c_pad[2].rx_level"		= "I2C_PAD_RX_3_3V"
+
+	register "system_configuration" = "2"
+
+	register "pspp_policy" = "DXIO_PSPP_BALANCED"
+
+	# general purpose PCIe clock output configuration
+	register "gpp_clk_config[0]" = "GPP_CLK_OFF"
+	register "gpp_clk_config[1]" = "GPP_CLK_REQ" # SSD
+	register "gpp_clk_config[2]" = "GPP_CLK_OFF"
+	register "gpp_clk_config[3]" = "GPP_CLK_OFF"
+	register "gpp_clk_config[4]" = "GPP_CLK_OFF"
+	register "gpp_clk_config[5]" = "GPP_CLK_OFF"
+	register "gpp_clk_config[6]" = "GPP_CLK_REQ" # WLAN
+
+	device domain 0 on
+		device ref iommu on end
+		device ref gpp_bridge_0		on		# SSD
+			chip drivers/pcie/rtd3/device
+				register "name"		= ""NVME""
+				device pci 00.0 on end
+			end
+		end
+		device ref gpp_bridge_3		on		# WIFI
+			chip drivers/pcie/rtd3/device
+				register "name"		= ""WIFI""
+				device pci 00.0 on end
+			end
+		end
+		device ref gpp_bridge_a		on
+			device ref gfx		on  end
+			device ref gfx_hda	on  end
+			device ref crypto	on  end
+			device ref xhci_0 on # USB 3.1 (USB0)
+				chip drivers/usb/acpi
+					device ref xhci_0_root_hub on
+						chip drivers/usb/acpi
+							register "desc" = ""Left Type-A Port""
+							register "type" = "UPC_TYPE_USB3_A"
+							register "use_custom_pld" = "true"
+							register "custom_pld" = "ACPI_PLD_TYPE_A(LEFT, LEFT, ACPI_PLD_GROUP(1, 1))"
+							device ref usb2_port0 on end
+						end
+						chip drivers/usb/acpi
+							register "desc" = ""Right Rear Type-A Port""
+							register "type" = "UPC_TYPE_USB3_A"
+							register "use_custom_pld" = "true"
+							register "custom_pld" = "ACPI_PLD_TYPE_A(RIGHT, RIGHT, ACPI_PLD_GROUP(1, 2))"
+							device ref usb2_port1 on end
+						end
+						chip drivers/usb/acpi
+							register "desc" = ""Internal USB 2.0 Hub""
+							register "type" = "UPC_TYPE_HUB"
+							device ref usb2_port2 on end
+						end
+						chip drivers/usb/acpi
+							register "desc" = ""Camera""
+							register "type" = "UPC_TYPE_INTERNAL"
+							device ref usb2_port3 on end
+						end
+						chip drivers/usb/acpi
+							register "desc" = ""Left Type-A Port""
+							register "type" = "UPC_TYPE_USB3_A"
+							register "use_custom_pld" = "true"
+							register "custom_pld" = "ACPI_PLD_TYPE_A(LEFT, LEFT, ACPI_PLD_GROUP(1, 1))"
+							device ref usb3_port0 on end
+						end
+					end
+				end
+			end
+			device ref xhci_1 on # USB 3.1 (USB1)
+				chip drivers/usb/acpi
+					device ref xhci_1_root_hub on
+						chip drivers/usb/acpi
+							register "desc" = ""Bluetooth""
+							register "type" = "UPC_TYPE_INTERNAL"
+							register "is_intel_bluetooth" = "true"
+							register "enable_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPIO_69)"
+							register "reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPIO_69)"
+							device ref usb2_port4 on end
+						end
+						chip drivers/usb/acpi
+							register "desc" = ""USB Type-C Port""
+							register "type" = "UPC_TYPE_C_USB2_SS_SWITCH"
+							register "use_custom_pld" = "true"
+							register "custom_pld" = "ACPI_PLD_TYPE_C(LEFT, RIGHT, ACPI_PLD_GROUP(2, 1))"
+							device ref usb2_port5 on end
+						end
+						chip drivers/usb/acpi
+							register "desc" = ""Fingerprint Reader""
+							register "type" = "UPC_TYPE_INTERNAL"
+							register "use_custom_pld" = "true"
+							register "custom_pld" = "ACPI_PLD_TYPE_A(RIGHT, LEFT, ACPI_PLD_GROUP(4, 1))"
+							device ref usb2_port7 on end
+						end
+						chip drivers/usb/acpi
+							register "desc" = ""USB Type-C Port""
+							register "type" = "UPC_TYPE_C_USB2_SS_SWITCH"
+							register "use_custom_pld" = "true"
+							register "custom_pld" = "ACPI_PLD_TYPE_C(LEFT, RIGHT, ACPI_PLD_GROUP(2, 2))"
+							device ref usb3_port3 on end
+						end
+					end
+				end
+			end
+			device ref acp		on  end
+			device ref hda		on
+				subsystemid 0x14f1 0x0216
+			end
+		end
+		device ref gpp_bridge_b on
+			device ref sata_1	on  end
+		end
+		device ref gpp_bridge_c		off end
+		device ref lpc_bridge		on
+			chip ec/starlabs/merlin
+				# Port pair 4Eh/4Fh
+				device pnp 4e.01 off end			# Com 1
+				device pnp 4e.02 off end			# Com 2
+				device pnp 4e.04 off end			# System Wake-Up
+				device pnp 4e.05 off end			# PS/2 Mouse
+				device pnp 4e.06 on				# PS/2 Keyboard
+					io 0x60			= 0x0060
+					io 0x62			= 0x0064
+					irq 0x70		= 1
+				end
+				device pnp 4e.0a off end			# Consumer IR
+				device pnp 4e.0f off end			# Shared Memory/Flash Interface
+				device pnp 4e.10 off end			# RTC-like Timer
+				device pnp 4e.11 off end			# Power Management Channel 1
+				device pnp 4e.12 off end			# Power Management Channel 2
+				device pnp 4e.13 off end			# Serial Peripheral Interface
+				device pnp 4e.14 off end			# Platform EC Interface
+				device pnp 4e.17 off end			# Power Management Channel 3
+				device pnp 4e.18 off end			# Power Management Channel 4
+				device pnp 4e.19 off end			# Power Management Channel 5
+			end
+		end
+	end
+	device ref i2c_3	on
+		register "i2c_pad[3].rx_level"	= "I2C_PAD_RX_3_3V"
+		chip drivers/i2c/hid
+			register "generic.hid"		= ""STAR0001""
+			register "generic.desc"		= ""Touchpad""
+			register "generic.irq_gpio"	= "ACPI_GPIO_IRQ_LEVEL_LOW(GPIO_9)"
+			register "hid_desc_reg_offset"	= "0x20"
+			device i2c 2c on end
+		end
+	end
+	device ref uart_0	on  end
+end
