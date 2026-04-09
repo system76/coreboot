@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+#include <bootstate.h>
 #include <console/console.h>
 #include <device/device.h>
 #include <device/pnp.h>
@@ -34,24 +35,11 @@ static uint16_t ec_get_chip_id(unsigned int port)
 	return (pnp_read_index(port, ITE_CHIPID1) << 8) | pnp_read_index(port, ITE_CHIPID2);
 }
 
-static void merlin_init(struct device *dev)
+static void merlin_restore_options(void *unused)
 {
-	if (!dev->enabled)
-		return;
+	(void)unused;
 
-	/*
-	 * The address/data IO port pair for the ite EC are configurable
-	 * through the EC domain and are fixed by the EC's firmware blob. If
-	 * the value(s) passed through the "dev" structure don't match the
-	 * expected values then output severe warnings.
-	 */
-	if (dev->path.pnp.port != ITE_FIXED_ADDR) {
-		printk(BIOS_ERR, "ITE: Incorrect ports defined in devicetree.cb.\n");
-		printk(BIOS_ERR, "ITE: Serious operational issues will arise.\n");
-		return;
-	}
-
-	const uint16_t chip_id = ec_get_chip_id(dev->path.pnp.port);
+	const uint16_t chip_id = ec_get_chip_id(ITE_FIXED_ADDR);
 
 	if (chip_id != ITE_IT5570 && chip_id != ITE_IT8987) {
 		printk(BIOS_ERR, "ITE: Unsupported chip ID 0x%04x.\n", chip_id);
@@ -264,9 +252,9 @@ static void merlin_init(struct device *dev)
 			 get_ec_value_from_option("charge_led", LED_NORMAL, led_brightness,
 						  ARRAY_SIZE(led_brightness)));
 }
+BOOT_STATE_INIT_ENTRY(BS_DEV_INIT, BS_ON_ENTRY, merlin_restore_options, NULL);
 
 static struct device_operations ops = {
-	.init = merlin_init,
 	.read_resources = noop_read_resources,
 	.set_resources = noop_set_resources,
 };
