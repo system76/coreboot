@@ -143,6 +143,14 @@ void platform_romstage_main(void)
 {
 	platform_init_lightbar();
 
+	/*
+	 * Power on NVMe early so that the DDR init and other operations
+	 * that follow provide an organic >50ms delay before PCIe PERST
+	 * de-assertion in platform_romstage_postram(), satisfying the
+	 * NVMe spec requirement without a static mdelay().
+	 */
+	gcom_pcie_power_on_ep();
+
 	/* Setup early USB related config */
 	early_setup_usb();
 
@@ -165,15 +173,6 @@ void platform_romstage_main(void)
 
 	/* Underlying PMIC registers are accessible only at this point */
 	set_boot_mode();
-
-	/*
-	 * Power on NVMe early so that the DDR init and other operations
-	 * that follow provide an organic >50ms delay before PCIe PERST
-	 * de-assertion in platform_romstage_postram(), satisfying the
-	 * NVMe spec requirement without a static mdelay().
-	 */
-	if (boot_mode == LB_BOOT_MODE_NORMAL)
-		gcom_pcie_power_on_ep();
 
 	aop_fw_load_reset();
 
@@ -202,4 +201,6 @@ void platform_romstage_postram(void)
 	/* Perform PCIe setup early in async mode if supported to save 100ms */
 	if (boot_mode == LB_BOOT_MODE_NORMAL)
 		qcom_setup_pcie_host(NULL);
+	else
+		gcom_pcie_power_off_ep();
 }
