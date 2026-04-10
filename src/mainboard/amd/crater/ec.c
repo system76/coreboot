@@ -214,7 +214,7 @@ void crater_ec_get_mac_addresses(uint64_t *xgbe_port0_mac, uint64_t *xgbe_port1_
 	ec_set_ports(CRATER_EC_CMD, CRATER_EC_DATA);
 	for (index = 0; index < MACID_LEN; index++) {
 		value = ec_read(offset + index);
-		printk(BIOS_SPEW, "READ MACID REG 0x%2x Value 0x%02x\n", offset - index, value);
+		printk(BIOS_SPEW, "READ MACID REG 0x%2x Value 0x%02x\n", offset + index, value);
 
 		if (index < 6) {
 			port0_mac = (port0_mac << 8) | value;
