@@ -48,7 +48,7 @@ chip soc/intel/alderlake
 
 	register "serial_io_i2c_mode" = "{
 		[PchSerialIoIndexI2C0] = PchSerialIoPci,
-		[PchSerialIoIndexI2C1] = PchSerialIoDisabled,
+		[PchSerialIoIndexI2C1] = PchSerialIoPci,
 		[PchSerialIoIndexI2C2] = PchSerialIoDisabled,
 		[PchSerialIoIndexI2C3] = PchSerialIoDisabled,
 		[PchSerialIoIndexI2C4] = PchSerialIoDisabled,
@@ -128,6 +128,7 @@ chip soc/intel/alderlake
 			}"
 		end
 		device ref i2c0 on end
+		device ref i2c1 on end
 		device ref i2c6 on end
 		device ref xhci on
 			chip drivers/usb/acpi
