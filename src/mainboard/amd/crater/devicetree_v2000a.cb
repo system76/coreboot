@@ -58,14 +58,16 @@ chip soc/amd/cezanne
 
 	device domain 0 on
 		device ref iommu on end
-		device ref gpp_gfx_bridge_0 on end #GFX
-		device ref gpp_gfx_bridge_1 on end
+		device ref gpp_gfx_bridge_0 on end # MXM
+		device ref gpp_gfx_bridge_1 on end # DT if CONFIG(PCIE_DT_SLOT)
+		device ref gpp_gfx_bridge_2 on end # WWAN if CONFIG(XGBE_WWAN_WLAN)
 		device ref gpp_bridge_0 off end
-		device ref gpp_bridge_1 off end
-		device ref gpp_bridge_2 on end
+		device ref gpp_bridge_1 on end # WLAN if CONFIG(XGBE_WWAN_WLAN)
+		device ref gpp_bridge_2 on end # TB if CONFIG(XGBE_WWAN_WLAN)
 		device ref gpp_bridge_3 on end # NVME
 		device ref gpp_bridge_4 off end
 		device ref gpp_bridge_5 off end
+		device ref gpp_bridge_6 off end
 		device ref gpp_bridge_a on # Internal GPP Bridge 0 to Bus A
 			device ref gfx on end # Internal GPU (GFX)
 			device ref gfx_hda on end # gfx_hda
