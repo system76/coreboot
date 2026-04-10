@@ -103,12 +103,8 @@ static void setup_usb_typec(void)
 
 static void setup_audio_gpios(void)
 {
-	gpio_configure_no_egpio(GPIO_SNDW_AMP_0_ENABLE, GPIO_FUNC_GPIO,
-				GPIO_NO_PULL, GPIO_2MA, GPIO_OUTPUT);
-	gpio_set(GPIO_SNDW_AMP_0_ENABLE, 0);
-	gpio_configure_no_egpio(GPIO_SNDW_AMP_1_ENABLE, GPIO_FUNC_GPIO,
-				GPIO_NO_PULL, GPIO_2MA, GPIO_OUTPUT);
-	gpio_set(GPIO_SNDW_AMP_1_ENABLE, 0);
+	gpio_output(GPIO_SNDW_AMP_0_ENABLE, 0);
+	gpio_output(GPIO_SNDW_AMP_1_ENABLE, 0);
 	gpio_configure_no_egpio(GPIO_SNDW_0_SCL, GPIO_FUN_SNDW_0_SCL,
 		GPIO_NO_PULL, GPIO_16MA, GPIO_OUTPUT);
 	gpio_configure_no_egpio(GPIO_SNDW_0_SDA, GPIO_FUN_SNDW_0_SDA,
