@@ -139,11 +139,42 @@ static void platform_init_lightbar(void)
 		google_chromeec_set_lightbar_rgb(0xff, 0xff, 0x00, 0x00);
 }
 
+static void edp_configure_gpios(void)
+{
+	/* Panel power on GPIO enable */
+	gpio_output(GPIO_PANEL_POWER_ON, 1);
+
+	/* Panel HPD GPIO enable */
+	gpio_input_pulldown(GPIO_PANEL_HPD);
+}
+
+/* Perform romstage early hardware initialization */
+static void mainboard_setup_peripherals_early(void)
+{
+	platform_init_lightbar();
+
+	/*
+	 * Power on NVMe early so that the DDR init and other operations
+	 * that follow provide an organic >50ms delay before PCIe PERST
+	 * de-assertion in platform_romstage_postram(), satisfying the
+	 * NVMe spec requirement without a static mdelay().
+	 */
+	gcom_pcie_power_on_ep();
+
+	edp_configure_gpios();
+
+	/* Setup early USB related config */
+	early_setup_usb();
+
+	/* Watchdog must be checked first to avoid erasing watchdog info later. */
+	check_wdog();
+}
+
 /*
- * Perform early hardware initialization based on boot mode.
+ * Perform romstage late hardware initialization based on boot mode.
  * Handles PCIe host setup and fingerprint sensor power rails.
  */
-static void mainboard_setup_peripherals(int mode)
+static void mainboard_setup_peripherals_late(int mode)
 {
 	/* Perform PCIe setup early in async mode if supported to save 100ms */
 	if (mode == LB_BOOT_MODE_NORMAL)
@@ -164,21 +195,7 @@ static void mainboard_setup_peripherals(int mode)
 
 void platform_romstage_main(void)
 {
-	platform_init_lightbar();
-
-	/*
-	 * Power on NVMe early so that the DDR init and other operations
-	 * that follow provide an organic >50ms delay before PCIe PERST
-	 * de-assertion in platform_romstage_postram(), satisfying the
-	 * NVMe spec requirement without a static mdelay().
-	 */
-	gcom_pcie_power_on_ep();
-
-	/* Setup early USB related config */
-	early_setup_usb();
-
-	/* Watchdog must be checked first to avoid erasing watchdog info later. */
-	check_wdog();
+	mainboard_setup_peripherals_early();
 
 	if (CONFIG(EC_GOOGLE_CHROMEEC) && CONFIG(CONSOLE_SERIAL)) {
 		uint32_t batt_pct;
@@ -199,7 +216,7 @@ void platform_romstage_main(void)
 
 	aop_fw_load_reset();
 
-	mainboard_setup_peripherals(boot_mode);
+	mainboard_setup_peripherals_late(boot_mode);
 
 	qclib_rerun();
 }

@@ -240,8 +240,14 @@ static void mainboard_init(void *chip_info)
 	/* Do early display init for low/off-mode charging */
 	if ((boot_mode == LB_BOOT_MODE_LOW_BATTERY) ||
 			 (boot_mode == LB_BOOT_MODE_LOW_BATTERY_CHARGING) ||
-			 (boot_mode == LB_BOOT_MODE_OFFMODE_CHARGING))
+			 (boot_mode == LB_BOOT_MODE_OFFMODE_CHARGING)) {
+		/*
+		 * Manual delay for panel readiness; required because standard SOC IP
+		 * initialization is bypassed to prioritize fast-charging boot speeds.
+		 */
+		mdelay(250);
 		display_startup();
+	}
 
 	/*
 	 * Low-battery boot indicator is done. Therefore, power off if battery

@@ -48,15 +48,6 @@ const char *mainboard_bmp_logo_filename(void)
 	return "cb_logo.bmp";
 }
 
-static void edp_configure_gpios(void)
-{
-	/* Panel power on GPIO enable */
-	gpio_output(GPIO_PANEL_POWER_ON, 1);
-
-	/* Panel HPD GPIO enable */
-	gpio_input_pulldown(GPIO_PANEL_HPD);
-}
-
 static void edp_enable_backlight(void)
 {
 	/* Enable backlight */
@@ -150,7 +141,6 @@ void display_startup(void)
 		return;
 
 	enable_mdss_clk();
-	edp_configure_gpios();
 	qcom_mdss_edp_init(&edid, fb_addr);
 	if (edid.mode.ha == 0)
 		return;
