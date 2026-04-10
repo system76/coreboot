@@ -128,7 +128,21 @@ chip soc/intel/alderlake
 			}"
 		end
 		device ref i2c0 on end
-		device ref i2c1 on end
+		device ref i2c1 on
+			# Enable external RTC chip
+			chip drivers/i2c/rv3028c7
+				register "bus_speed" = "I2C_SPEED_STANDARD"
+				register "set_user_date" = "1"
+				register "user_year" = "04"
+				register "user_month" = "07"
+				register "user_day" = "01"
+				register "user_weekday" = "4"
+				register "bckup_sw_mode" = "BACKUP_SW_LEVEL"
+				register "cap_charge" = "CHARGE_OFF"
+				register "sync_to_cmos_rtc" = "1"
+				device i2c 0x52 on end  # RTC RV3028-C7
+			end
+		end
 		device ref i2c6 on end
 		device ref xhci on
 			chip drivers/usb/acpi
