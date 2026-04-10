@@ -43,6 +43,7 @@ struct drivers_i2c_rv3028c7_config {
 	unsigned char set_user_date;	/* Use user date from devicetree */
 	enum sw_mode bckup_sw_mode;	/* Mode for switching between VDD and VBACKUP */
 	enum charge_mode cap_charge;	/* Mode for capacitor charging */
+	unsigned char sync_to_cmos_rtc;	/* Sync the RTC date & time to the CMOS RTC */
 };
 
 #endif /* __DRIVERS_I2C_RV3028C7_CHIP_H__ */

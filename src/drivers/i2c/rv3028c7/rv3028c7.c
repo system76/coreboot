@@ -8,6 +8,7 @@
 #include <device/device.h>
 #include <device/i2c.h>
 #include <device/i2c_bus.h>
+#include <rtc.h>
 #include <timer.h>
 #include <types.h>
 #include <version.h>
@@ -99,6 +100,9 @@ static void rtc_final(struct device *dev)
 {
 	uint8_t buf[7];
 	int val;
+	struct drivers_i2c_rv3028c7_config *config = dev->chip_info;
+	struct rtc_time cmos_dt;
+
 	/* Read back current RTC date and time byte by byte */
 	printk(BIOS_DEBUG, "%s: Reading current date and time...\n", dev->chip_ops->name);
 
@@ -110,6 +114,21 @@ static void rtc_final(struct device *dev)
 			return;
 		}
 		buf[i] = (uint8_t)val;
+	}
+	/* Synchronize the x86 CMOS RTC with the external RTC if enabled. */
+	if (config->sync_to_cmos_rtc) {
+		printk(BIOS_INFO, "%s: Synchronize to CMOS RTC\n", dev->chip_ops->name);
+		/* The RV3028-C7 does not store the century but only years 0..99.
+		 * Use the coreboot build date to get a meaningful century value.
+		 */
+		cmos_dt.year = bcd2bin(buf[6]) + (100 * bcd2bin(coreboot_build_date.century));
+		cmos_dt.mon = bcd2bin(buf[5]);
+		cmos_dt.mday = bcd2bin(buf[4]);
+		cmos_dt.wday = bcd2bin(buf[3]);
+		cmos_dt.hour = bcd2bin(buf[2]);
+		cmos_dt.min = bcd2bin(buf[1]);
+		cmos_dt.sec = bcd2bin(buf[0]);
+		rtc_set(&cmos_dt);
 	}
 
 	printk(BIOS_INFO, "%s: Current date %02d.%02d.%02d %02d:%02d:%02d\n",
