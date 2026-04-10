@@ -139,6 +139,29 @@ static void platform_init_lightbar(void)
 		google_chromeec_set_lightbar_rgb(0xff, 0xff, 0x00, 0x00);
 }
 
+/*
+ * Perform early hardware initialization based on boot mode.
+ * Handles PCIe host setup and fingerprint sensor power rails.
+ */
+static void mainboard_setup_peripherals(int mode)
+{
+	/* Perform PCIe setup early in async mode if supported to save 100ms */
+	if (mode == LB_BOOT_MODE_NORMAL)
+		qcom_setup_pcie_host(NULL);
+	else
+		gcom_pcie_power_off_ep();
+
+	/*
+	 * Enable fingerprint power rail early for stability prior to
+	 * its reset being deasserted in ramstage.
+	 * Requires >=200ms delay after its pin was driven low in bootblock.
+	 */
+	if (CONFIG(MAINBOARD_HAS_FINGERPRINT_VIA_SPI)) {
+		if (mode == LB_BOOT_MODE_NORMAL)
+			gpio_output(GPIO_EN_FP_RAILS, 1);
+	}
+}
+
 void platform_romstage_main(void)
 {
 	platform_init_lightbar();
@@ -176,18 +199,9 @@ void platform_romstage_main(void)
 
 	aop_fw_load_reset();
 
-	qclib_rerun();
+	mainboard_setup_peripherals(boot_mode);
 
-	/*
-	 * Enable this power rail now for FPMCU stability prior to
-	 * its reset being deasserted in ramstage. This applies
-	 * when MAINBOARD_HAS_FINGERPRINT_VIA_SPI Kconfig is enabled.
-	 * Requires >=200ms delay after its pin was driven low in bootblock.
-	 */
-	if (CONFIG(MAINBOARD_HAS_FINGERPRINT_VIA_SPI)) {
-		if (boot_mode == LB_BOOT_MODE_NORMAL)
-			gpio_output(GPIO_EN_FP_RAILS, 1);
-	}
+	qclib_rerun();
 }
 
 void platform_romstage_postram(void)
@@ -197,10 +211,4 @@ void platform_romstage_postram(void)
 		*boot_mode_ptr = boot_mode;
 		printk(BIOS_INFO, "Boot mode is %d\n", *boot_mode_ptr);
 	}
-
-	/* Perform PCIe setup early in async mode if supported to save 100ms */
-	if (boot_mode == LB_BOOT_MODE_NORMAL)
-		qcom_setup_pcie_host(NULL);
-	else
-		gcom_pcie_power_off_ep();
 }
