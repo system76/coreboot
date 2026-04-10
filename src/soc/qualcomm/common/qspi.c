@@ -247,10 +247,15 @@ static void reg_init(void)
 	write32(&qcom_qspi->rd_fifo_rst, RESET_FIFO);
 }
 
+void qspi_set_bus_clock(uint32_t hz)
+{
+	clock_configure_qspi(hz * 4);
+}
+
 void quadspi_init(uint32_t hz)
 {
 	assert(dcache_line_bytes() == CACHE_LINE_SIZE);
-	clock_configure_qspi(hz * 4);
+	qspi_set_bus_clock(hz);
 	configure_gpios();
 	reg_init();
 }
