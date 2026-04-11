@@ -22,6 +22,7 @@
 #include <soc/qup_se_handlers_common.h>
 #include <soc/symbols_common.h>
 #include <soc/usb/usb.h>
+#include <soc/variant.h>
 
 #include "board.h"
 #include "display.h"
@@ -296,8 +297,10 @@ static void load_qc_se_firmware_late(void)
 static void mainboard_late_init(struct device *dev)
 {
 	load_qc_se_firmware_late();
+}
 
-	/* Do late display init in normal boot mode */
+void mainboard_soc_init(void)
+{
 	if (get_boot_mode() == LB_BOOT_MODE_NORMAL)
 		display_startup();
 
