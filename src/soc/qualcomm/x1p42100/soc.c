@@ -9,6 +9,7 @@
 #include <soc/clock.h>
 #include <soc/cpucp.h>
 #include <soc/qspi_common.h>
+#include <soc/variant.h>
 #include <program_loading.h>
 
 #define SPI_BUS_CLOCK_FREQ (50 * MHz)
@@ -22,6 +23,15 @@ void soc_prepare_bl31_handoff(void)
 	printk(BIOS_WARNING, "%s: Reduce SPI frequency to 50MHz to better stability\n",
 		 __func__);
 	qspi_set_bus_clock(SPI_BUS_CLOCK_FREQ);
+}
+
+/*
+ * Weak implementation of mainboard-specific display initialization.
+ * This can be overridden by mainboard-specific code.
+ */
+__weak void mainboard_soc_init(void)
+{
+	/* Default implementation: do nothing */
 }
 
 static struct device_operations pci_domain_ops = {
@@ -107,6 +117,7 @@ static void soc_init(struct device *dev)
 	cpucp_fw_load_reset();
 	qtee_fw_config_load();
 	lpass_init();
+	mainboard_soc_init();
 }
 
 static struct device_operations soc_ops = {
