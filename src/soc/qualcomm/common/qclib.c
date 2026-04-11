@@ -259,6 +259,12 @@ static bool qclib_debug_log_level(void)
 	return get_uint_option("qclib_debug_level", 1);
 }
 
+static bool qc_soc_debug_enabled(void)
+{
+	return !(CONFIG(QC_SKIP_SOC_DEBUG_FEATURES_IN_RECOVERY) && CONFIG(VBOOT) &&
+		vboot_recovery_mode_enabled());
+}
+
 struct prog qclib; /* This will be re-used by qclib_rerun() */
 
 static void qclib_prepare_and_run(void)
@@ -393,7 +399,7 @@ void qclib_load_and_run(void)
 	}
 
 	/* Load APDP image */
-	if (CONFIG(QC_APDP_ENABLE)) {
+	if (CONFIG(QC_APDP_ENABLE) && qc_soc_debug_enabled()) {
 		struct prog apdp_prog =
 				PROG_INIT(PROG_PAYLOAD, CONFIG_CBFS_PREFIX "/apdp");
 
@@ -480,7 +486,7 @@ void qclib_rerun(void)
 
 	qclib_add_if_table_entry(QCLIB_TE_AOP_DEVCFG_META_SETTINGS, _aop_blob_meta, data_size, 0);
 
-	if (CONFIG(QC_RAMDUMP_ENABLE) && qclib_check_dload_mode()) {
+	if (CONFIG(QC_RAMDUMP_ENABLE) && qc_soc_debug_enabled() && qclib_check_dload_mode()) {
 		struct prog ramdump_prog =
 				PROG_INIT(PROG_REFCODE, CONFIG_CBFS_PREFIX "/ramdump");
 

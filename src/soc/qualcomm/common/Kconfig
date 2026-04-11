@@ -41,6 +41,16 @@ config QC_RAMDUMP_ENABLE
 	  Ramdump is a debug image that is loaded during a system crash to capture
 	  memory contents for post-crash analysis.
 
+config QC_SKIP_SOC_DEBUG_FEATURES_IN_RECOVERY
+	bool
+	default n
+	help
+	  Skip Qualcomm SoC debug features in the recovery mode.
+
+	  Select this option if the platform's recovery partition is not
+	  sufficient to store binaries required to support Qualcomm SoC
+	  debug features such as ramdump.
+
 config SOC_QUALCOMM_CDT
 	bool
 	default n
