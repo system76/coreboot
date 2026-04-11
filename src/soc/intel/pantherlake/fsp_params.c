@@ -10,6 +10,7 @@
 #include <fsp/fsp_gop_blt.h>
 #include <fsp/ppi/mp_service_ppi.h>
 #include <intelblocks/aspm.h>
+#include <intelblocks/cfg.h>
 #include <intelblocks/irq.h>
 #include <intelblocks/mp_init.h>
 #include <intelblocks/pmclib.h>
@@ -289,13 +290,27 @@ static void fill_fsps_microcode_params(FSP_S_CONFIG *s_cfg,
 static void fill_fsps_igd_params(FSP_S_CONFIG *s_cfg,
 				 const struct soc_intel_pantherlake_config *config)
 {
-	/* Load VBT before devicetree-specific config. */
-	s_cfg->GraphicsConfigPtr = (uintptr_t)vbt_get();
+	struct soc_intel_common_config *common_config;
+	bool lid_is_open;
 
-	/* Check if IGD is present and fill Graphics init param accordingly */
+	/* Basic Graphics & VBT Configuration */
+	s_cfg->GraphicsConfigPtr = (uintptr_t)vbt_get();
 	s_cfg->PeiGraphicsPeimInit = CONFIG(RUN_FSP_GOP) && is_devfn_enabled(PCI_DEVFN_IGD);
-	s_cfg->LidStatus = CONFIG(VBOOT_LID_SWITCH) ? get_lid_switch() : CONFIG(RUN_FSP_GOP);
 	s_cfg->PavpEnable = CONFIG(PAVP);
+
+	/* Determine LID Status */
+	lid_is_open = CONFIG(VBOOT_LID_SWITCH) ? !!get_lid_switch() : !!CONFIG(RUN_FSP_GOP);
+	s_cfg->LidStatus = lid_is_open;
+
+	/*
+	 * Display Constraints
+	 * Only restrict to a single display if the LID is open and the
+	 * internal panel is in a non-standard (portrait) orientation.
+	 */
+	common_config = chip_get_common_soc_structure();
+	if (common_config && lid_is_open &&
+	    (common_config->panel_orientation != LB_FB_ORIENTATION_NORMAL))
+		s_cfg->MaxActiveDisplays = 1;
 }
 
 static void fill_fsps_tcss_params(FSP_S_CONFIG *s_cfg,
