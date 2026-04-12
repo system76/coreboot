@@ -45,7 +45,7 @@ DefinitionBlock(
 		#include <soc/intel/common/block/acpi/acpi/gna.asl>
 
 		/* PS/2 Keyboard */
-		#include <drivers/pc80/pc/ps2_controller.asl>
+		#include <drivers/pc80/pc/ps2_keyboard.asl>
 	}
 
 	#include <southbridge/intel/common/acpi/sleepstates.asl>

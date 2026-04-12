@@ -26,7 +26,7 @@ DefinitionBlock(
 		#include <drivers/intel/gma/acpi/default_brightness_levels.asl>
 
 		/* PS/2 Keyboard */
-		#include <drivers/pc80/pc/ps2_controller.asl>
+		#include <drivers/pc80/pc/ps2_keyboard.asl>
 #endif
 	}
 
