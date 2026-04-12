@@ -189,8 +189,8 @@ endif # !PAYLOAD_NONE
 
 config PAYLOAD_FIT_SUPPORT
 	bool "FIT support"
+	default y if PAYLOAD_LINUX
 	default n
-	default y if PAYLOAD_LINUX && (ARCH_ARM || ARCH_ARM64 || ARCH_RISCV)
 	depends on ARCH_ARM64 || ARCH_RISCV || ARCH_ARM
 	select FLATTENED_DEVICE_TREE
 	help
