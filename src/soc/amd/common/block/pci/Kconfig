@@ -18,3 +18,13 @@ config SOC_AMD_COMMON_BLOCK_PCIE_GPP_DRIVER
 	depends on SOC_AMD_COMMON_BLOCK_PCI
 	help
 	  Select this option to use AMD common PCIe GPP driver.
+
+config SOC_AMD_COMMON_BLOCK_PCI_DOMAIN_ROOT_PRT
+	bool
+	depends on SOC_AMD_COMMON_BLOCK_PCI
+	depends on HAVE_ACPI_TABLES
+	help
+	  After pci_domain_fill_ssdt(), emit Method(_PRT) on the PCI host bridge
+	  scope for root-bus devices (e.g. PCIe root ports) using
+	  get_pci_routing_table(). Needed when the SoC ACPI sources do not supply
+	  PCI0._PRT.

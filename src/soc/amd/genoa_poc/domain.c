@@ -67,5 +67,5 @@ struct device_operations genoa_pci_domain_ops = {
 	.scan_bus	= amd_pci_domain_scan_bus,
 	.init		= amd_pci_domain_init,
 	.acpi_name	= genoa_domain_acpi_name,
-	.acpi_fill_ssdt	= pci_domain_fill_ssdt,
+	.acpi_fill_ssdt	= amd_pci_domain_fill_ssdt,
 };

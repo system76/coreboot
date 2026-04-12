@@ -6,6 +6,7 @@
 #include <amdblocks/amd_pci_util.h>
 #include <arch/ioapic.h>
 #include <device/device.h>
+#include <device/pci_def.h>
 
 /* GNB IO-APIC is located after the FCH IO-APIC */
 #define FCH_IOAPIC_INTERRUPTS	24
@@ -157,6 +158,147 @@ void acpigen_write_pci_GNB_PRT(const struct device *dev)
 	/* Return (Package{...}) */
 	acpigen_emit_byte(RETURN_OP);
 	acpigen_write_PRT_PIC(routing_info);
+
+	acpigen_pop_len(); /* End Else */
+
+	acpigen_pop_len(); /* Method */
+}
+
+/* Counts table rows with a valid bridge_irq; used only for Package() element count. */
+static size_t count_pci_root_prt_entries(const struct pci_routing_info *routing_table,
+					 size_t routing_table_entries)
+{
+	size_t entries = 0;
+
+	for (size_t i = 0; i < routing_table_entries; ++i) {
+		if (routing_table[i].bridge_irq != UINT8_MAX)
+			entries++;
+	}
+
+	return entries;
+}
+
+/*
+ * Return payload for the PICM branch: one Package per root-port devfn using GSIs:
+ *     Package (0xNN)                  // NN = number of root ports
+ *     {
+ *         Package (0x04)
+ *         {
+ *             0xDDDDFFFF,
+ *             0xPP,
+ *             0x00,
+ *             0x000000GG
+ *         },
+ *         ...
+ *     }
+ */
+static void acpigen_write_root_PRT_GSI(const struct pci_routing_info *routing_table,
+				       size_t routing_table_entries, size_t prt_entries)
+{
+	acpigen_write_package(prt_entries); /* Package - APIC Routing */
+	for (size_t i = 0; i < routing_table_entries; ++i) {
+		if (routing_table[i].bridge_irq == UINT8_MAX)
+			continue;
+
+		/*
+		 * The HOB's bridge_irq/map byte is not an OS-visible APIC GSI here.
+		 * Route the root port's own INTx through its GNB group/swizzle instead.
+		 */
+		acpigen_write_PRT_GSI_entry_devfn(routing_table[i].devfn,
+						  0, /* root port interrupt pin A */
+						  GNB_GSI_BASE + pci_calculate_irq(&routing_table[i], 0));
+	}
+	acpigen_pop_len(); /* Package - APIC Routing */
+}
+
+/*
+ * Return payload for the PIC branch: one Package per root-port devfn using link objects:
+ *     Package (0xNN)
+ *     {
+ *         Package (0x04)
+ *         {
+ *             0xDDDDFFFF,
+ *             0xPP,
+ *             \_SB.INTx,
+ *             0x00000000
+ *         },
+ *         ...
+ *     }
+ */
+static void acpigen_write_root_PRT_PIC(const struct pci_routing_info *routing_table,
+				       size_t routing_table_entries, size_t prt_entries)
+{
+	char link_template[] = "\\_SB.INTX";
+	unsigned int irq;
+
+	acpigen_write_package(prt_entries); /* Package - PIC Routing */
+	for (size_t i = 0; i < routing_table_entries; ++i) {
+		if (routing_table[i].bridge_irq == UINT8_MAX)
+			continue;
+
+		irq = pci_calculate_irq(&routing_table[i], 0);
+		link_template[8] = 'A' + (irq % 8);
+		acpigen_write_PRT_source_entry_devfn(routing_table[i].devfn,
+						     0, /* root port interrupt pin A */
+						     link_template,
+						     0);
+	}
+	acpigen_pop_len(); /* Package - PIC Routing */
+}
+
+/*
+ * Host-bridge _PRT for root-bus devices (per devfn from the routing table)
+ *
+ *     Method (_PRT, 0, NotSerialized)
+ *     {
+ *         If (PICM)
+ *         {
+ *             Return (Package (0xNN)
+ *             {
+ *                 Package (0x04) { 0xDDDDFFFF, 0xPP, 0x00, 0x000000GG },
+ *                 ...
+ *             })
+ *         }
+ *         Else
+ *         {
+ *             Return (Package (0xNN)
+ *             {
+ *                 Package (0x04) { 0xDDDDFFFF, 0xPP, \_SB.INTx, 0x00000000 },
+ *                 ...
+ *             })
+ *         }
+ *     }
+ */
+void acpigen_write_pci_root_PRT(void)
+{
+	const struct pci_routing_info *routing_table;
+	size_t routing_table_entries = 0;
+	size_t prt_entries;
+
+	routing_table = get_pci_routing_table(&routing_table_entries);
+	if (!routing_table || !routing_table_entries)
+		return;
+
+	prt_entries = count_pci_root_prt_entries(routing_table, routing_table_entries);
+	if (!prt_entries)
+		return;
+
+	acpigen_write_method("_PRT", 0);
+
+	/* If (PICM) */
+	acpigen_write_if();
+	acpigen_emit_namestring("PICM");
+
+	/* Return (Package{...}) */
+	acpigen_emit_byte(RETURN_OP);
+	acpigen_write_root_PRT_GSI(routing_table, routing_table_entries, prt_entries);
+
+	/* Else */
+	acpigen_write_else();
+
+	/* Return (Package{...}) */
+	acpigen_emit_byte(RETURN_OP);
+	acpigen_write_root_PRT_PIC(routing_table, routing_table_entries, prt_entries);
 
 	acpigen_pop_len(); /* End Else */
 

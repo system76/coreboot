@@ -1,5 +1,9 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+#include <acpi/acpi_device.h>
+#include <acpi/acpigen.h>
+#include <acpi/acpigen_pci.h>
+#include <amdblocks/amd_pci_util.h>
 #include <amdblocks/data_fabric.h>
 #include <amdblocks/root_complex.h>
 #include <arch/ioapic.h>
@@ -210,5 +214,16 @@ void amd_pci_domain_read_resources(struct device *domain)
 		add_pci_cfg_resources(domain, &idx);
 
 		read_soc_memmap_resources(domain, &idx);
+	}
+}
+
+void amd_pci_domain_fill_ssdt(const struct device *domain)
+{
+	pci_domain_fill_ssdt(domain);
+
+	if (CONFIG(SOC_AMD_COMMON_BLOCK_PCI_DOMAIN_ROOT_PRT)) {
+		acpigen_write_scope(acpi_device_path(domain));
+		acpigen_write_pci_root_PRT();
+		acpigen_pop_len();
 	}
 }
