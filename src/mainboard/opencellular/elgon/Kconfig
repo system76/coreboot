@@ -56,8 +56,9 @@ config UART_FOR_CONSOLE
 	default 0
 
 config FMDFILE
-	default "src/mainboard/\$(CONFIG_MAINBOARD_DIR)/board.fmd"
 	default "src/mainboard/\$(CONFIG_MAINBOARD_DIR)/vboot.fmd" if VBOOT
+	default "src/mainboard/\$(CONFIG_MAINBOARD_DIR)/board.fmd"
+
 
 config MAX_CPUS
 	default 4
