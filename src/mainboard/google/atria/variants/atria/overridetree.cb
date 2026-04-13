@@ -38,6 +38,35 @@ chip soc/intel/pantherlake
 	}"
 
 	device domain 0 on
+		device ref pcie_rp5 on
+			register "pcie_rp[PCIE_RP(5)]" = "{
+			.clk_src = 4,
+			.clk_req = 4,
+			.flags = PCIE_RP_CLK_REQ_DETECT | PCIE_RP_LTR | PCIE_RP_AER,
+			}"
+			chip soc/intel/common/block/pcie/rtd3
+				register "is_storage" = "true"
+				register "enable_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_E04)"
+				register "reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_A11)"
+				register "srcclk_pin" = "4"
+				device generic 0 on end
+			end
+		end # Gen4 M.2 SSD
+		device ref pcie_rp9 on
+			register "pcie_rp[PCIE_RP(9)]" = "{
+			.clk_src = 0,
+			.clk_req = 0,
+			.flags = PCIE_RP_CLK_REQ_DETECT | PCIE_RP_LTR | PCIE_RP_AER,
+			}"
+			chip soc/intel/common/block/pcie/rtd3
+				register "is_storage" = "true"
+				register "enable_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_E04)"
+				register "reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_E03)"
+				register "srcclk_pin" = "0"
+				device generic 0 on end
+			end
+		end # Gen5 M.2 SSD
+
 		# NOTE: i2c0 is function 0; hence it needs to be enabled when any of i2c1-5 is enabled.
 		# TPM device is under i2c3. Therefore, i2c0 needs to be enabled anyways.
 		device ref i2c0 on end
