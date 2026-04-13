@@ -6,6 +6,7 @@
 #include <console/console.h>
 #include <delay.h>
 #include <edid.h>
+#include <elog.h>
 #include <framebuffer_info.h>
 #include <soc/ddp.h>
 #include <soc/display.h>
@@ -100,6 +101,8 @@ static void display_logo(struct panel_description *panel,
 	panel_configure_backlight(panel, true);
 
 	timestamp_add_now(TS_FIRMWARE_SPLASH_RENDERED);
+	printk(BIOS_DEBUG, "Firmware Splash Screen: Enabled\n");
+	elog_add_event_byte(ELOG_TYPE_FW_SPLASH_SCREEN, 1);
 }
 
 int mtk_display_init(void)
