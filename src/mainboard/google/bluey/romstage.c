@@ -12,6 +12,7 @@
 #include <soc/aop_common.h>
 #include <soc/pcie.h>
 #include <soc/pmic.h>
+#include <soc/qcom_spmi.h>
 #include <soc/qclib_common.h>
 #include <soc/shrm.h>
 #include <soc/watchdog.h>
@@ -210,6 +211,9 @@ void platform_romstage_main(void)
 
 	/* QCLib: DDR init & train */
 	qclib_load_and_run();
+
+	if (CONFIG(DAM_SINK_SENSOR_Z1_OPTIMIZATION))
+		spmi_write8(PMIC_SDAM3_PSI_VARIANT_MAJOR, PMIC_PSI_WORKAROUND_ENABLE);
 
 	/* Underlying PMIC registers are accessible only at this point */
 	set_boot_mode();
