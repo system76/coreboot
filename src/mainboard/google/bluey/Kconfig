@@ -10,6 +10,7 @@ config BOARD_GOOGLE_BLUEY_COMMON
 	select SPI_FLASH
 	select SPI_FLASH_FORCE_4_BYTE_ADDR_MODE
 	select SPI_FLASH_INCLUDE_ALL_DRIVERS
+	select QC_SKIP_SOC_DEBUG_FEATURES_IN_RECOVERY
 
 config BOARD_GOOGLE_BASEBOARD_BLUEY
 	def_bool n
@@ -258,6 +259,6 @@ config FMDFILE
 	default "src/mainboard/\$(CONFIG_MAINBOARD_DIR)/chromeos.fmd"
 
 config RW_REGION_ONLY
-	default "%/apdp %/apdp_meta %/ramdump %/ramdump_meta"
+	default "%/apdp %/apdp_meta %/ramdump %/ramdump_meta" if QC_SKIP_SOC_DEBUG_FEATURES_IN_RECOVERY
 
 endif # BOARD_GOOGLE_BLUEY_COMMON
