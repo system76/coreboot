@@ -54,7 +54,13 @@ uint64_t fw_config_get(void)
 				__func__);
 	}
 
+	fw_config_get_mainboard_override(&fw_config_value);
+
 	return fw_config_value;
+}
+
+void __weak fw_config_get_mainboard_override(uint64_t *fw_config)
+{
 }
 
 uint64_t fw_config_get_field(const struct fw_config_field *field)
@@ -70,6 +76,15 @@ uint64_t fw_config_get_field(const struct fw_config_field *field)
 		PRIx64 "\n", field->field_name, field->mask, shift, value);
 
 	return value;
+}
+
+void fw_config_value_set_field(uint64_t *fw_config,
+			       const struct fw_config_field *field,
+			       uint64_t value)
+{
+	const int shift = __ffs64(field->mask);
+	*fw_config &= ~field->mask;
+	*fw_config |= (value << shift) & field->mask;
 }
 
 bool __weak fw_config_probe_mainboard_override(const struct fw_config *match, bool *result)
