@@ -456,7 +456,7 @@ chip soc/intel/pantherlake
 			end
 		end #Trackpad
 		device ref thc1 on
-			register "thc_wake_on_touch[1]" = "true"
+			register "thc_wake_on_touch[1]" = "false"
 			register "thc_mode[1]" = "THC_HID_I2C_MODE"
 			probe TOUCHSCREEN TOUCHSCREEN_RAYDIUM
 			probe TOUCHSCREEN TOUCHSCREEN_ILITEK
@@ -468,7 +468,7 @@ chip soc/intel/pantherlake
 				register "dev_hidi2c.intf.hidi2c.addr" = "0x39"
 				register "dev_hidi2c.intf.hidi2c.descriptor_address" = "0"
 				register "enable_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_F08)"
-				register "wake_on_touch" = "true"
+				register "wake_on_touch" = "false"
 				# NOTE: Use GpioInt() in _CRS and does not use GPE.
 				register "wake_gpio" = "ACPI_GPIO_IRQ_LEVEL_LOW_WAKE(GPP_VGPIO3_THC1)"
 				register "active_ltr" = "1"
@@ -487,7 +487,7 @@ chip soc/intel/pantherlake
 				register "dev_hidi2c.intf.hidi2c.addr" = "0x41"
 				register "dev_hidi2c.intf.hidi2c.descriptor_address" = "0x0001"
 				register "enable_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_F08)"
-				register "wake_on_touch" = "true"
+				register "wake_on_touch" = "false"
 				# NOTE: Use GpioInt() in _CRS and does not use GPE.
 				register "wake_gpio" = "ACPI_GPIO_IRQ_LEVEL_LOW_WAKE(GPP_VGPIO3_THC1)"
 				register "active_ltr" = "1"
