@@ -56,9 +56,9 @@ static void rx6110sa_final(struct device *dev)
 	month = rx6110sa_read(dev, MONTH_REG);
 	day = rx6110sa_read(dev, DAY_REG);
 
-	printk(BIOS_INFO, "%s: Current date %02d.%02d.%02d %02d:%02d:%02d\n",
-		dev->chip_ops->name, bcd2bin(month), bcd2bin(day),
-		bcd2bin(year), bcd2bin(hour), bcd2bin(minute), bcd2bin(second));
+	printk(BIOS_INFO, "%s: Current date %02u-%02u-%02u %02u:%02u:%02u\n",
+		dev->chip_ops->name, bcd2bin(year), bcd2bin(month),
+		bcd2bin(day), bcd2bin(hour), bcd2bin(minute), bcd2bin(second));
 }
 
 static void rx6110sa_init(struct device *dev)

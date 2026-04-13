@@ -131,9 +131,9 @@ static void rtc_final(struct device *dev)
 		rtc_set(&cmos_dt);
 	}
 
-	printk(BIOS_INFO, "%s: Current date %02d.%02d.%02d %02d:%02d:%02d\n",
-			dev->chip_ops->name, bcd2bin(buf[5]), bcd2bin(buf[4]),
-			bcd2bin(buf[6]), bcd2bin(buf[2]), bcd2bin(buf[1]),
+	printk(BIOS_INFO, "%s: Current date %02u-%02u-%02u %02u:%02u:%02u\n",
+			dev->chip_ops->name, bcd2bin(buf[6]), bcd2bin(buf[5]),
+			bcd2bin(buf[4]), bcd2bin(buf[2]), bcd2bin(buf[1]),
 			bcd2bin(buf[0]));
 
 	/* Make sure the EEPROM automatic refresh is enabled. */
