@@ -1,5 +1,8 @@
 /* SPDX-License-Identifier: GPL-2.0-only OR MIT */
 
+#include <baseboard/gpio.h>
+#include <baseboard/panel.h>
+#include <baseboard/storage.h>
 #include <boot/coreboot_tables.h>
 #include <bootmode.h>
 #include <commonlib/coreboot_tables.h>
@@ -20,10 +23,6 @@
 #include <soc/storage.h>
 #include <soc/usb.h>
 #include <vendorcode/google/chromeos/chromeos.h>
-
-#include "gpio.h"
-#include "panel.h"
-#include "storage.h"
 
 #define AFE_SE_SECURE_CON1	(AUDIO_BASE + 0x5634)
 

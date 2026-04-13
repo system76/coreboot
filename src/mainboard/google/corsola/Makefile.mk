@@ -30,3 +30,5 @@ ramstage-y += reset.c
 ramstage-$(CONFIG_BOARD_GOOGLE_STARMIE) += panel_starmie.c
 ramstage-$(CONFIG_BOARD_GOOGLE_WUGTRIO) += panel_wugtrio.c
 ramstage-$(CONFIG_BOARD_GOOGLE_WYRDEER) += panel_wyrdeer.c
+
+CPPFLAGS_common += -I$(src)/mainboard/$(MAINBOARDDIR)/include

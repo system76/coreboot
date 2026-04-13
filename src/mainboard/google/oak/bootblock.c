@@ -1,15 +1,14 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+#include <baseboard/gpio.h>
 #include <boardid.h>
 #include <bootblock_common.h>
-#include <gpio.h>
 #include <device/mmio.h>
+#include <gpio.h>
 #include <soc/i2c.h>
 #include <soc/mt6391.h>
 #include <soc/pericfg.h>
 #include <soc/spi.h>
-
-#include "gpio.h"
 
 static void i2c_set_gpio_pinmux(void)
 {

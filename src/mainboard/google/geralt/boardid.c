@@ -1,11 +1,11 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
 #include <assert.h>
+#include <baseboard/panel.h>
 #include <boardid.h>
 #include <console/console.h>
 #include <ec/google/chromeec/ec.h>
 #include <soc/auxadc.h>
-#include "panel.h"
 
 /* board_id is provided by ec/google/chromeec/ec_boardid.c */
 

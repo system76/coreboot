@@ -1,9 +1,9 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+#include <baseboard/gpio.h>
 #include <boardid.h>
-#include <gpio.h>
 #include <console/console.h>
-#include "gpio.h"
+#include <gpio.h>
 
 static int board_id_value = -1;
 

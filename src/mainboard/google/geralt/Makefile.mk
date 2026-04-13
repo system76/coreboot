@@ -25,3 +25,5 @@ ramstage-y += regulator.c
 ramstage-y += reset.c
 ramstage-$(CONFIG_BOARD_GOOGLE_CIRI) += panel_ciri.c
 ramstage-$(CONFIG_BOARD_GOOGLE_GERALT) += panel_geralt.c
+
+CPPFLAGS_common += -I$(src)/mainboard/$(MAINBOARDDIR)/include

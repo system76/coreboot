@@ -1,9 +1,8 @@
 /* SPDX-License-Identifier: GPL-2.0-only OR MIT */
 
+#include <baseboard/gpio.h>
 #include <gpio.h>
 #include <reset.h>
-
-#include "gpio.h"
 
 void do_board_reset(void)
 {

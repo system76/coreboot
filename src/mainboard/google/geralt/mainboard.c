@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+#include <baseboard/gpio.h>
 #include <bootmode.h>
 #include <device/device.h>
 #include <fw_config.h>
@@ -10,8 +11,6 @@
 #include <soc/mt6359p.h>
 #include <soc/mtcmos.h>
 #include <soc/usb.h>
-
-#include "gpio.h"
 
 #define AFE_SE_SECURE_CON	(AUDIO_BASE + 0x17a8)
 

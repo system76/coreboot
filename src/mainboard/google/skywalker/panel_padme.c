@@ -1,9 +1,8 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+#include <baseboard/gpio.h>
+#include <baseboard/panel.h>
 #include <console/console.h>
-
-#include "gpio.h"
-#include "panel.h"
 
 static struct panel_description padme_panels[] = {
 	[0x22] = {

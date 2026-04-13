@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+#include <baseboard/gpio.h>
 #include <boardid.h>
 #include <bootmode.h>
 #include <console/console.h>
@@ -17,8 +18,6 @@
 #include <soc/spm.h>
 #include <soc/usb.h>
 #include <types.h>
-
-#include "gpio.h"
 
 /* GPIO to schematics names */
 #define GPIO_AP_EDP_BKLTEN GPIO(DGI_D5)

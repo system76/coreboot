@@ -1,10 +1,9 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+#include <baseboard/gpio.h>
+#include <baseboard/panel.h>
 #include <soc/i2c.h>
 #include <soc/regulator.h>
-
-#include "gpio.h"
-#include "panel.h"
 
 #define PMIC_TPS65132_I2C	I2C3
 #define VOLTAGE_5_7V	0x11

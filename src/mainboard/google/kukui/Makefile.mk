@@ -30,3 +30,5 @@ ramstage-$(CONFIG_DRIVER_PARADE_PS8640) += panel_ps8640.c
 ramstage-$(CONFIG_DRIVER_ANALOGIX_ANX7625) += panel_anx7625.c
 
 ramstage-y += reset.c
+
+CPPFLAGS_common += -I$(src)/mainboard/$(MAINBOARDDIR)/include

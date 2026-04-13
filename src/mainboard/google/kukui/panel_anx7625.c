@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+#include <baseboard/panel.h>
 #include <console/console.h>
 #include <delay.h>
 #include <drivers/analogix/anx7625/anx7625.h>
@@ -7,8 +8,6 @@
 #include <gpio.h>
 #include <soc/dsi.h>
 #include <soc/i2c.h>
-
-#include "panel.h"
 
 #define ANX7625_I2C_BUS 4
 

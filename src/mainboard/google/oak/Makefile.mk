@@ -17,3 +17,5 @@ ramstage-y += mainboard.c
 ramstage-y += chromeos.c
 ramstage-y += boardid.c
 ramstage-$(CONFIG_OAK_HAS_TPM2) += tpm_tis.c
+
+CPPFLAGS_common += -I$(src)/mainboard/$(MAINBOARDDIR)/include

@@ -1,13 +1,12 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+#include <baseboard/gpio.h>
 #include <bootblock_common.h>
 #include <device/mmio.h>
 #include <gpio.h>
 #include <soc/i2c.h>
 #include <soc/pcie.h>
 #include <soc/spi.h>
-
-#include "gpio.h"
 
 static void nor_set_gpio_pinmux(void)
 {

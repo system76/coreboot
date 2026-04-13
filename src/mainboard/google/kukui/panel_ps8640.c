@@ -1,13 +1,12 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+#include <baseboard/panel.h>
 #include <console/console.h>
 #include <delay.h>
 #include <drivers/parade/ps8640/ps8640.h>
 #include <edid.h>
 #include <gpio.h>
 #include <soc/i2c.h>
-
-#include "panel.h"
 
 static void power_on_ps8640(void)
 {

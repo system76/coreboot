@@ -1,15 +1,13 @@
 /* SPDX-License-Identifier: GPL-2.0-only OR MIT */
 
+#include <baseboard/gpio.h>
+#include <baseboard/panel.h>
 #include <console/console.h>
 #include <delay.h>
 #include <device/i2c_simple.h>
-
 #include <gpio.h>
 #include <soc/display.h>
 #include <soc/regulator.h>
-
-#include "gpio.h"
-#include "panel.h"
 
 static void aw37503_init(unsigned int bus)
 {

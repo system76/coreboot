@@ -1,5 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+#include <baseboard/gpio.h>
+#include <baseboard/storage.h>
 #include <bootmode.h>
 #include <console/console.h>
 #include <device/device.h>
@@ -15,9 +17,6 @@
 #include <soc/storage.h>
 #include <soc/usb.h>
 #include <variants.h>
-
-#include "gpio.h"
-#include "storage.h"
 
 #define AFE_SE_SECURE_CON1	(AUDIO_BASE + 0x5634)
 

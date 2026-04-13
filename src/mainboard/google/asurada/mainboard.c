@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+#include <baseboard/gpio.h>
 #include <bootmode.h>
 #include <console/console.h>
 #include <delay.h>
@@ -20,8 +21,6 @@
 #include <soc/regulator.h>
 #include <soc/spm.h>
 #include <soc/usb.h>
-
-#include "gpio.h"
 
 #define MSDC0_BASE	0x11f60000
 #define MSDC0_TOP_BASE	0x11f50000

@@ -1,12 +1,11 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+#include <baseboard/gpio.h>
+#include <baseboard/panel.h>
 #include <console/console.h>
 #include <delay.h>
 #include <gpio.h>
 #include <soc/mt6363.h>
-
-#include "gpio.h"
-#include "panel.h"
 
 static void mipi_panel_power_on(void)
 {

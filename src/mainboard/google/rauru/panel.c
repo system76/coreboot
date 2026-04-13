@@ -1,13 +1,12 @@
 /* SPDX-License-Identifier: GPL-2.0-only OR MIT */
 
+#include <baseboard/gpio.h>
+#include <baseboard/panel.h>
 #include <fw_config.h>
 #include <gpio.h>
 #include <soc/ddp.h>
 #include <soc/dsi.h>
 #include <variants.h>
-
-#include "gpio.h"
-#include "panel.h"
 
 void configure_backlight(bool enable)
 {

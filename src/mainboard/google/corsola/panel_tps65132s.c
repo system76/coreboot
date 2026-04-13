@@ -1,13 +1,12 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+#include <baseboard/gpio.h>
+#include <baseboard/panel.h>
 #include <console/console.h>
 #include <delay.h>
 #include <gpio.h>
 #include <soc/regulator.h>
 #include <soc/tps65132s.h>
-
-#include "gpio.h"
-#include "panel.h"
 
 void tps65132s_power_on(struct tps65132s_cfg *config)
 {

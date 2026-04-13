@@ -1,11 +1,11 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+#include <baseboard/gpio.h>
 #include <gpio.h>
 #include <soc/mt8183.h>
 #include <soc/spi.h>
 
 #include "early_init.h"
-#include "gpio.h"
 
 #define BOOTBLOCK_EN_L (GPIO(KPROW0))
 #define AP_IN_SLEEP_L (GPIO(SRCLKENA0))

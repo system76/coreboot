@@ -21,3 +21,5 @@ ramstage-y += chromeos.c
 ramstage-y += mainboard.c
 ramstage-y += regulator.c
 ramstage-y += reset.c
+
+CPPFLAGS_common += -I$(src)/mainboard/$(MAINBOARDDIR)/include

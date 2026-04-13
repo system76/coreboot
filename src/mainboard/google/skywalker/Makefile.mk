@@ -15,3 +15,5 @@ ramstage-y += panel.c
 ramstage-y += regulator.c
 
 ramstage-$(CONFIG_BOARD_GOOGLE_PADME) += panel_padme.c
+
+CPPFLAGS_common += -I$(src)/mainboard/$(MAINBOARDDIR)/include

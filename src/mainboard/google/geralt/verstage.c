@@ -1,10 +1,9 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+#include <baseboard/gpio.h>
 #include <security/vboot/vboot_common.h>
 #include <soc/i2c.h>
 #include <soc/spi.h>
-
-#include "gpio.h"
 
 void verstage_mainboard_init(void)
 {

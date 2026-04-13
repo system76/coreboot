@@ -1,6 +1,8 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
 #include <assert.h>
+#include <baseboard/gpio.h>
+#include <baseboard/panel.h>
 #include <boardid.h>
 #include <bootmode.h>
 #include <cbfs.h>
@@ -20,9 +22,6 @@
 #include <soc/spm.h>
 #include <soc/usb.h>
 #include <stdio.h>
-
-#include "gpio.h"
-#include "panel.h"
 
 static void configure_emmc(void)
 {

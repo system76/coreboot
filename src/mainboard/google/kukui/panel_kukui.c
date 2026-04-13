@@ -1,10 +1,9 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+#include <baseboard/panel.h>
 #include <boardid.h>
 #include <delay.h>
 #include <gpio.h>
-
-#include "panel.h"
 
 static void power_on_ssd2858(void)
 {

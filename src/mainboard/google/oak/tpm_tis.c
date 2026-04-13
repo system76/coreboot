@@ -1,9 +1,8 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+#include <baseboard/gpio.h>
 #include <drivers/tpm/cr50.h>
 #include <gpio.h>
-
-#include "gpio.h"
 
 int cr50_plat_irq_status(void)
 {

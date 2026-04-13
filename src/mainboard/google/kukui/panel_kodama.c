@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#include "panel.h"
+#include <baseboard/panel.h>
 
 static struct panel_description kodama_panels[] = {
 	[1] = { .name = "AUO_B101UAN08_3", .orientation = LB_FB_ORIENTATION_LEFT_UP},

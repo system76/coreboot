@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#include "panel.h"
+#include <baseboard/panel.h>
 
 static struct panel_description kakadu_panels[] = {
 	[1] = { .name = "BOE_TV105WUM_NW0", .orientation = LB_FB_ORIENTATION_LEFT_UP},

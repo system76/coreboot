@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#include "panel.h"
+#include <baseboard/panel.h>
 
 static struct panel_description krane_panels[] = {
 	[0] = { .name = "AUO_KD101N80_45NA", .orientation = LB_FB_ORIENTATION_LEFT_UP},

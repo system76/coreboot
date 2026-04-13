@@ -1,5 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+#include <baseboard/gpio.h>
+#include <baseboard/panel.h>
 #include <boardid.h>
 #include <cbfs.h>
 #include <console/console.h>
@@ -10,9 +12,6 @@
 #include <soc/i2c.h>
 #include <soc/pmif.h>
 #include <soc/regulator.h>
-
-#include "gpio.h"
-#include "panel.h"
 
 struct panel_description __weak *get_panel_description(uint32_t panel_id)
 {

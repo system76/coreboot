@@ -1,13 +1,12 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#include <bootmode.h>
+#include <baseboard/gpio.h>
 #include <boot/coreboot_tables.h>
+#include <bootmode.h>
 #include <drivers/tpm/cr50.h>
 #include <ec/google/chromeec/ec.h>
 #include <gpio.h>
 #include <stdbool.h>
-
-#include "gpio.h"
 
 void setup_chromeos_gpios(void)
 {

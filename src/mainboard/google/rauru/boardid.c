@@ -1,14 +1,13 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
 #include <assert.h>
+#include <baseboard/panel.h>
+#include <baseboard/storage.h>
 #include <boardid.h>
 #include <console/console.h>
 #include <device/mmio.h>
 #include <ec/google/chromeec/ec.h>
 #include <soc/mt6363_sdmadc.h>
-
-#include "panel.h"
-#include "storage.h"
 
 #define ADC_LEVELS 8
 

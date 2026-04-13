@@ -1,5 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+#include <baseboard/gpio.h>
+#include <baseboard/panel.h>
 #include <bootmode.h>
 #include <console/console.h>
 #include <device/device.h>
@@ -11,9 +13,6 @@
 #include <soc/msdc.h>
 #include <soc/spm.h>
 #include <soc/usb.h>
-
-#include "gpio.h"
-#include "panel.h"
 
 static void configure_alc1019(void)
 {

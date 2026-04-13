@@ -1,5 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+#include <baseboard/gpio.h>
+#include <baseboard/panel.h>
 #include <boardid.h>
 #include <cbfs.h>
 #include <device/i2c_simple.h>
@@ -8,9 +10,6 @@
 #include <soc/dsi.h>
 #include <soc/gpio_common.h>
 #include <soc/mtcmos.h>
-
-#include "gpio.h"
-#include "panel.h"
 
 void aw37503_init(unsigned int bus)
 {
