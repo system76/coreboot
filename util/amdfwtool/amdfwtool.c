@@ -554,7 +554,7 @@ static void *new_ish_dir(context *ctx)
 	void *ptr;
 	adjust_current_pointer(ctx, 0, TABLE_ALIGNMENT);
 	ptr = BUFF_CURRENT(*ctx);
-	adjust_current_pointer(ctx, TABLE_ALIGNMENT, 1);
+	adjust_current_pointer(ctx, TABLE_GRANULARITY, 1);
 
 	return ptr;
 }
@@ -673,18 +673,17 @@ static void fill_dir_header(void *directory, uint32_t count, context *ctx)
 		 * the count and fletcher. So does the BIOS table. */
 		if (psp_directory_size_from_aif(dir) == 0) {
 			table_size = ctx->current - ctx->current_table;
-			if ((table_size % TABLE_ALIGNMENT) != 0 &&
-				(table_size / TABLE_ALIGNMENT) != 0) {
-				fprintf(stderr, "The PSP table size should be 4K aligned\n");
+			if ((table_size % TABLE_GRANULARITY) != 0 && (table_size / TABLE_GRANULARITY) != 0) {
+				fprintf(stderr, "The PSP table size should be %d aligned\n", TABLE_GRANULARITY);
 				amdfwtool_cleanup(ctx);
 				exit(1);
 			}
 			if (psp_directory_aif_version(dir) == 1) {
 				u_int32_t hdr_size = sizeof(psp_directory_header) + count * sizeof(psp_directory_entry);
-				dir->header.additional_info_fields_v1.dir_size = table_size / TABLE_ALIGNMENT;
+				dir->header.additional_info_fields_v1.dir_size = table_size / TABLE_GRANULARITY;
 				dir->header.additional_info_fields_v1.dir_hdr_size = DIV_ROUND_UP(hdr_size, 1024);
 			} else {
-				dir->header.additional_info_fields.dir_size = table_size / TABLE_ALIGNMENT;
+				dir->header.additional_info_fields.dir_size = table_size / TABLE_GRANULARITY;
 			}
 		}
 		dir->header.num_entries = count;
@@ -698,19 +697,18 @@ static void fill_dir_header(void *directory, uint32_t count, context *ctx)
 	case BHDL2_COOKIE:
 		if (bdt_directory_size_from_aif(bdir) == 0) {
 			table_size = ctx->current - ctx->current_table;
-			if ((table_size % TABLE_ALIGNMENT) != 0 &&
-				table_size / TABLE_ALIGNMENT != 0) {
-				fprintf(stderr, "The BIOS table size should be 4K aligned\n");
+			if ((table_size % TABLE_GRANULARITY) != 0 && table_size / TABLE_GRANULARITY != 0) {
+				fprintf(stderr, "The BIOS table size should be %d aligned\n", TABLE_GRANULARITY);
 				amdfwtool_cleanup(ctx);
 				exit(1);
 			}
 
 			if (bdt_directory_aif_version(bdir) == 1) {
 				u_int32_t hdr_size = sizeof(bios_directory_table) + count * sizeof(bios_directory_entry);
-				bdir->header.additional_info_fields_v1.dir_size = table_size / TABLE_ALIGNMENT;
+				bdir->header.additional_info_fields_v1.dir_size = table_size / TABLE_GRANULARITY;
 				bdir->header.additional_info_fields_v1.dir_hdr_size = DIV_ROUND_UP(hdr_size, 1024);
 			} else {
-				bdir->header.additional_info_fields.dir_size = table_size / TABLE_ALIGNMENT;
+				bdir->header.additional_info_fields.dir_size = table_size / TABLE_GRANULARITY;
 			}
 		}
 		bdir->header.num_entries = count;
@@ -1004,7 +1002,7 @@ static void integrate_psp_ab(context *ctx, psp_directory_table *pspdir,
 				BUFF_TO_RUN_MODE(*ctx, ish, AMD_ADDR_REL_BIOS);
 		pspdir->entries[count].address_mode =
 				SET_ADDR_MODE(pspdir, AMD_ADDR_REL_BIOS);
-		pspdir->entries[count].size = TABLE_ALIGNMENT;
+		pspdir->entries[count].size = TABLE_GRANULARITY;
 	} else {
 		pspdir->entries[count].addr =
 				BUFF_TO_RUN_MODE(*ctx, pspdir2, AMD_ADDR_REL_BIOS);

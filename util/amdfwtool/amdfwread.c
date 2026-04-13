@@ -344,7 +344,7 @@ static int amdfw_psp_dir_size(FILE *fw, uint32_t psp_offset, uint32_t cookie, ui
 	else
 		*size = header.additional_info_fields.dir_size;
 
-	*size *= TABLE_ALIGNMENT;
+	*size *= TABLE_GRANULARITY;
 	return 0;
 }
 
@@ -373,7 +373,7 @@ static int amdfw_bios_dir_size(FILE *fw, uint32_t bios_offset, uint32_t cookie, 
 	else
 		*size = header.additional_info_fields.dir_size;
 
-	*size *= TABLE_ALIGNMENT;
+	*size *= TABLE_GRANULARITY;
 	return 0;
 }
 
