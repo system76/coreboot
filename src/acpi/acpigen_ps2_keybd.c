@@ -181,6 +181,8 @@ static uint32_t rest_of_keymaps[] = {
 	KEYMAP(0xd1, KEY_PAGEDOWN),
 	KEYMAP(0xc7, KEY_HOME),
 	KEYMAP(0xcf, KEY_END),
+	/* Contextual Insert Key */
+	KEYMAP(0xac, KEY_CONTEXTUAL_INSERT),
 };
 
 static void ssdt_generate_physmap(struct acpi_dp *dp, uint8_t num_top_row_keys,
