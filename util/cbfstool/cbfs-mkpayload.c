@@ -248,6 +248,11 @@ int parse_fv_to_payload(const struct buffer *input, struct buffer *output,
 
 	DEBUG("start: parse_fv_to_payload\n");
 
+	if (input->size < sizeof(*fv)) {
+		INFO("Too small for a UEFI firmware volume.\n");
+		return -1;
+	}
+
 	fv = (firmware_volume_header_t *)input->data;
 	if (fv->signature != FV_SIGNATURE) {
 		INFO("Not a UEFI firmware volume.\n");
