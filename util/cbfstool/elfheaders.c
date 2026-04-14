@@ -493,6 +493,11 @@ int parse_elf(const struct buffer *pinput, struct parsed_elf *pelf, int flags)
 	/* Zero out the parsed elf structure. */
 	memset(pelf, 0, sizeof(*pelf));
 
+	if (buffer_size(pinput) < sizeof(*ehdr)) {
+		DEBUG("The stage file is too short!\n");
+		return -1;
+	}
+
 	if (!iself(buffer_get(pinput))) {
 		DEBUG("The stage file is not in ELF format!\n");
 		return -1;
