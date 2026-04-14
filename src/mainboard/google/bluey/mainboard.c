@@ -3,7 +3,6 @@
 #include <boot/coreboot_tables.h>
 #include <bootmode.h>
 #include <bootsplash.h>
-#include <bootstate.h>
 #include <cbmem.h>
 #include <commonlib/bsd/cbmem_id.h>
 #include <commonlib/coreboot_tables.h>
@@ -123,7 +122,7 @@ static void setup_usb(void)
 	enable_usb_camera();
 }
 
-static void setup_usb_late(void *unused)
+static void setup_usb_late(void)
 {
 	/* Skip USB initialization if boot mode is "low-battery" or "off-mode charging"*/
 	if (is_low_power_boot_with_charger())
@@ -131,8 +130,6 @@ static void setup_usb_late(void *unused)
 
 	setup_usb_host0();
 }
-
-BOOT_STATE_INIT_ENTRY(BS_DEV_INIT, BS_ON_EXIT, setup_usb_late, NULL);
 
 void lb_add_boot_mode(struct lb_header *header)
 {
@@ -301,6 +298,9 @@ static void mainboard_late_init(struct device *dev)
 
 void mainboard_soc_init(void)
 {
+	/* Setup USB related initial config */
+	setup_usb();
+
 	if (get_boot_mode() == LB_BOOT_MODE_NORMAL)
 		display_startup();
 
@@ -312,11 +312,11 @@ void mainboard_soc_init(void)
 	if (CONFIG(MAINBOARD_HAS_FINGERPRINT))
 		gpio_output(GPIO_FP_RST_L, 1);
 
-	/* Setup USB related initial config */
-	setup_usb();
-
 	/* Setup audio related initial config */
 	setup_audio();
+
+	/* Setup USB related late config */
+	setup_usb_late();
 }
 
 static void mainboard_enable(struct device *dev)
