@@ -198,4 +198,7 @@ config PAYLOAD_FIT_SUPPORT
 	  Enables FIT parser and devicetree patching. The FIT is non
 	  self-extracting and needs to have a compatible compression format.
 
+	  In case the Payload is added afterwards (e.g. using cbfstool), one
+	  can enable this option in combination with PAYLOAD_NONE=y.
+
 endmenu
