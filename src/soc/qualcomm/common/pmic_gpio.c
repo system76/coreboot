@@ -14,12 +14,13 @@ void pmic_gpio_configure(uint8_t sid, uint8_t gpio_num,
 		return;
 	}
 
-	spmi_write8(SPMI_ADDR(sid, PMIC_GPIO_BASE(gpio_num) + PMIC_GPIO_DIG_OUT_SOURCE_CTL),
-			source);
-	spmi_write8(SPMI_ADDR(sid, PMIC_GPIO_BASE(gpio_num) + PMIC_GPIO_EN_CTL),
-			enable);
-	spmi_write8(SPMI_ADDR(sid, PMIC_GPIO_BASE(gpio_num) + PMIC_GPIO_MODE_CTL),
-			mode);
+	uint32_t spmi_base = SPMI_ADDR(sid, PMIC_GPIO_BASE(gpio_num));
+	if (!sid)
+		spmi_base += PMIC_PMK_GPIO_OFFSET;
+
+	spmi_write8(spmi_base + PMIC_GPIO_DIG_OUT_SOURCE_CTL, source);
+	spmi_write8(spmi_base + PMIC_GPIO_EN_CTL, enable);
+	spmi_write8(spmi_base + PMIC_GPIO_MODE_CTL, mode);
 }
 
 void pmic_gpio_output(uint8_t sid, uint8_t gpio_num, bool high)
