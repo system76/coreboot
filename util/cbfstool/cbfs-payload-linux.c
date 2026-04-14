@@ -214,6 +214,11 @@ int parse_bzImage_to_payload(const struct buffer *input,
 	if (bzp_add_cmdline(&bzp, cmdline) != 0)
 		return -1;
 
+	if (input->size < sizeof(*hdr)) {
+		DEBUG("File too small.\n");
+		return -1;
+	}
+
 	if (hdr->setup_sects != 0) {
 		setup_size = (hdr->setup_sects + 1) * 512;
 	} else {
