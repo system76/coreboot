@@ -17,7 +17,7 @@
 #define RAM_ID_0	GPIO(RDP2_A)
 #define RAM_ID_3	GPIO(RDN1_A)
 /* Write Protect */
-#define WRITE_PROTECT	GPIO(EINT4)
+#define GPIO_WP		GPIO(EINT4)
 /* Power button */
 #define POWER_BUTTON	GPIO(EINT14)
 /* EC Interrupt */

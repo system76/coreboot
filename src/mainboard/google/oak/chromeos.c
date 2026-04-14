@@ -9,7 +9,7 @@
 
 void setup_chromeos_gpios(void)
 {
-	gpio_input(WRITE_PROTECT);
+	gpio_input(GPIO_WP);
 	gpio_input_pullup(EC_IN_RW);
 	gpio_input_pullup(EC_IRQ);
 	gpio_input(LID);
@@ -32,7 +32,7 @@ void fill_lb_gpios(struct lb_gpios *gpios)
 
 int get_write_protect_state(void)
 {
-	return !gpio_get(WRITE_PROTECT);
+	return !gpio_get(GPIO_WP);
 }
 
 int get_ec_is_trusted(void)
