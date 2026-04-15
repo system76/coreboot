@@ -179,10 +179,6 @@ static void gma_pm_init_pre_vbios(struct device *dev)
 {
 	printk(BIOS_DEBUG, "GT Power Management Init\n");
 
-	gtt_res = probe_resource(dev, PCI_BASE_ADDRESS_0);
-	if (!gtt_res || !gtt_res->base)
-		return;
-
 	power_well_enable();
 
 	/*
@@ -420,6 +416,10 @@ static void gma_func0_init(struct device *dev)
 	int lightup_ok = 0;
 
 	intel_gma_init_igd_opregion();
+
+	gtt_res = probe_resource(dev, PCI_BASE_ADDRESS_0);
+	if (!gtt_res || !gtt_res->base)
+		return;
 
 	/* Init graphics power management */
 	gma_pm_init_pre_vbios(dev);
