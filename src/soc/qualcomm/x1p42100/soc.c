@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
 #include <bl31.h>
+#include <bootstate.h>
 #include <cbfs.h>
 #include <device/device.h>
 #include <soc/mmu.h>
@@ -133,8 +134,6 @@ static void soc_init(struct device *dev)
 {
 	cpucp_fw_load_reset();
 	qtee_fw_config_load();
-	lpass_init();
-	mainboard_soc_init();
 	preload_bl31();
 	preload_bl32();
 }
@@ -161,3 +160,14 @@ struct chip_operations soc_qualcomm_x1p42100_ops = {
 	.name = "SOC Qualcomm X1P-42-100",
 	.enable_dev = enable_soc_dev,
 };
+
+static void soc_late_init(void *unused)
+{
+	/* Doing LPASS init late to optimize boot time */
+	lpass_init();
+
+	/* Doing board specific init late to optimize boot time */
+	mainboard_soc_init();
+}
+
+BOOT_STATE_INIT_ENTRY(BS_WRITE_TABLES, BS_ON_ENTRY, soc_late_init, NULL);
