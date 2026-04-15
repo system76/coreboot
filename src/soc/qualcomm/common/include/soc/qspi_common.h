@@ -106,4 +106,7 @@ int qspi_xfer(const struct spi_slave *slave, const void *dout,
 		size_t out_bytes, void *din, size_t in_bytes);
 int qspi_xfer_dual(const struct spi_slave *slave, const void *dout,
 		     size_t out_bytes, void *din, size_t in_bytes);
+
+/* SoC override */
+void qspi_configure_gpios(void);
 #endif /* __SOC_QUALCOMM_QSPI_H__ */
