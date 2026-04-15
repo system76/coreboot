@@ -173,6 +173,18 @@ int gtt_poll(u32 reg, u32 mask, u32 value)
 	return 0;
 }
 
+static int gtt_pcode_write(u32 mbox, u32 val)
+{
+	if (!gtt_poll(GEN6_PCODE_MAILBOX, GEN6_PCODE_READY, 0))
+		return 0;
+
+	gtt_write(GEN6_PCODE_DATA, val);
+	gtt_write(GEN6_PCODE_DATA1, 0);
+	gtt_write(GEN6_PCODE_MAILBOX, GEN6_PCODE_READY | mbox);
+
+	return gtt_poll(GEN6_PCODE_MAILBOX, GEN6_PCODE_READY, 0);
+}
+
 static void gma_pm_init_pre_vbios(struct device *dev)
 {
 	printk(BIOS_DEBUG, "GT Power Management Init\n");
@@ -298,35 +310,177 @@ static void gma_setup_panel(struct device *dev)
 	gtt_write(DDI_BUF_CTL_A, reg32);
 }
 
+enum gpu_type {
+	GPU_TYPE_ULX,
+	GPU_TYPE_ULT,
+	GPU_TYPE_TRAD,
+};
+
+static enum gpu_type get_gpu_type(struct device *dev)
+{
+	if (haswell_is_ult()) {
+		const u16 devid = pci_read_config16(dev, PCI_DEVICE_ID);
+		switch (devid) {
+		case 0x0a0e:
+		case 0x0a1e:
+		case 0x161e:
+			return GPU_TYPE_ULX;
+		default:
+			return GPU_TYPE_ULT;
+		}
+	} else {
+		return GPU_TYPE_TRAD;
+	}
+}
+
+enum gt_cdclk {
+	GT_CDCLK_DEFAULT = 0,
+	GT_CDCLK_337,
+	GT_CDCLK_450,
+	GT_CDCLK_540,
+	GT_CDCLK_675,
+};
+
+static enum gt_cdclk get_cdclk(bool is_broadwell, enum gpu_type type)
+{
+	/* TODO: Make this a config option? */
+	enum gt_cdclk cdclk = GT_CDCLK_DEFAULT;
+
+	/* If CDCLK frequency selection is not supported, 450 MHz is forced */
+	if (gtt_read(HSW_FUSE_STRAP) & HSW_CDCLK_LIMIT)
+		return GT_CDCLK_450;
+
+	/*
+	 * BDW ULT/ULX requires extra cooling to run at the highest frequency
+	 * TODO: Make this a devicetree setting?
+	 */
+	const bool bdw_ult_high_power = false;
+
+	enum gt_cdclk lower_cdclk;
+	enum gt_cdclk upper_cdclk;
+	switch (type) {
+	case GPU_TYPE_ULX:
+		if (is_broadwell) {
+			lower_cdclk = GT_CDCLK_337;
+			upper_cdclk = bdw_ult_high_power ? GT_CDCLK_540 : GT_CDCLK_450;
+		} else {
+			lower_cdclk = GT_CDCLK_337;
+			upper_cdclk = GT_CDCLK_450;
+		}
+		break;
+	case GPU_TYPE_ULT:
+		if (is_broadwell) {
+			lower_cdclk = GT_CDCLK_337;
+			upper_cdclk = bdw_ult_high_power ? GT_CDCLK_675 : GT_CDCLK_540;
+		} else {
+			lower_cdclk = GT_CDCLK_450;
+			upper_cdclk = GT_CDCLK_450;
+		}
+		break;
+	case GPU_TYPE_TRAD:
+		if (is_broadwell) {
+			lower_cdclk = GT_CDCLK_337;
+			upper_cdclk = GT_CDCLK_675;
+		} else {
+			lower_cdclk = GT_CDCLK_450;
+			upper_cdclk = GT_CDCLK_540;
+		}
+		break;
+	default:
+		lower_cdclk = GT_CDCLK_450;
+		upper_cdclk = GT_CDCLK_450;
+		break;
+	}
+
+	if (cdclk == GT_CDCLK_DEFAULT)
+		cdclk = upper_cdclk;
+
+	/* Clamp CDCLK to supported range */
+	return MAX(lower_cdclk, MIN(cdclk, upper_cdclk));
+}
+
+static u32 cdsel_from_cdclk(bool is_broadwell, enum gt_cdclk cdclk)
+{
+	if (!is_broadwell)
+		return cdclk != GT_CDCLK_450;
+
+	switch (cdclk) {
+		default:
+		case GT_CDCLK_450: return 0;
+		case GT_CDCLK_540: return 1;
+		case GT_CDCLK_337: return 2;
+		case GT_CDCLK_675: return 3;
+	}
+}
+
+#define HSW_PCODE_DE_WRITE_FREQ_REQ		0x17
+#define BDW_PCODE_DISPLAY_FREQ_CHANGE_REQ	0x18
+
+static void gma_cdclk_init(struct device *dev, bool is_broadwell)
+{
+	if (is_broadwell) {
+		/* Inform power controller of upcoming frequency change */
+		if (!gtt_pcode_write(BDW_PCODE_DISPLAY_FREQ_CHANGE_REQ, 0)) {
+			printk(BIOS_ERR, "Failed to inform pcode about cdclk change\n");
+			return;
+		}
+	}
+
+	const enum gpu_type type = get_gpu_type(dev);
+	const enum gt_cdclk cdclk = get_cdclk(is_broadwell, type);
+
+	assert(cdclk >= GT_CDCLK_337);
+
+	const u32 cdsel = cdsel_from_cdclk(is_broadwell, cdclk);
+
+	/*
+	 * Set CD Clock Frequency Select
+	 * TODO: For BDW, should we switch CDCLK source to FCLK before
+	 * updating the CDCLK frequency selector, or is it a non-issue
+	 * when done so early?
+	 */
+	gtt_rmw(LCPLL_CTL, ~LCPLL_CLK_FREQ_MASK, cdsel << 26);
+
+	if (is_broadwell || type == GPU_TYPE_ULX) {
+		/* Inform power controller of selected frequency */
+		gtt_pcode_write(HSW_PCODE_DE_WRITE_FREQ_REQ, cdsel);
+	}
+
+	if (is_broadwell) {
+		u32 cdval, dpdiv;
+		switch (cdclk) {
+		case GT_CDCLK_337:
+			cdval = 337;
+			dpdiv = 169;
+			break;
+		case GT_CDCLK_450:
+			cdval = 449;
+			dpdiv = 225;
+			break;
+		case GT_CDCLK_540:
+			cdval = 539;
+			dpdiv = 270;
+			break;
+		case GT_CDCLK_675:
+			cdval = 674;
+			dpdiv = 338;
+			break;
+		default:
+			return;
+		}
+
+		/* Program CD Clock Frequency */
+		gtt_rmw(0x46200, 0xfffffc00, cdval);
+
+		/* Set CPU DP AUX 2X bit clock dividers */
+		gtt_rmw(0x64010, 0xfffff800, dpdiv);
+		gtt_rmw(0x64810, 0xfffff800, dpdiv);
+	}
+}
+
 static void gma_pm_init_post_vbios(struct device *dev)
 {
-	int cdclk = 0;
-	int devid = pci_read_config16(dev, PCI_DEVICE_ID);
-	int gpu_is_ulx = 0;
-
-	if (devid == 0x0a0e || devid == 0x0a1e)
-		gpu_is_ulx = 1;
-
-	/* CD Frequency */
-	if ((gtt_read(0x42014) & 0x1000000) || gpu_is_ulx || haswell_is_ult())
-		cdclk = 0; /* fixed frequency */
-	else
-		cdclk = 2; /* variable frequency */
-
-	if (gpu_is_ulx || cdclk != 0)
-		gtt_rmw(0x130040, 0xf7ffffff, 0x04000000);
-	else
-		gtt_rmw(0x130040, 0xf3ffffff, 0x00000000);
-
-	/* More magic */
-	if (haswell_is_ult() || gpu_is_ulx) {
-		if (!gpu_is_ulx)
-			gtt_write(0x138128, 0x00000000);
-		else
-			gtt_write(0x138128, 0x00000001);
-		gtt_write(0x13812c, 0x00000000);
-		gtt_write(0x138124, 0x80000017);
-	}
+	gma_cdclk_init(dev, false);
 
 	/* Disable Force Wake */
 	gtt_write(0x0a188, 0x00010000);
