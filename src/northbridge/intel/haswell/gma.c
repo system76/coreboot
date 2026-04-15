@@ -28,9 +28,11 @@ struct gt_reg {
 };
 
 static const struct gt_reg haswell_gt_setup[] = {
-	/* Enable Counters */
-	{ 0x0a248, 0x00000000, 0x00000016 },
+	/* Enable counters except Power Meter */
+	{ 0x0a248, 0xffffffff, 0x00000016 },
+	/* GFXPAUSE settings (C0 and later) */
 	{ 0x0a000, 0x00000000, 0x00070020 },
+	/* ECO settings (C0 and later), Render Standby */
 	{ 0x0a180, 0xff3fffff, 0x15000000 },
 	/* Enable DOP Clock Gating */
 	{ 0x09424, 0x00000000, 0x000003fd },
@@ -39,6 +41,7 @@ static const struct gt_reg haswell_gt_setup[] = {
 	{ 0x09404, 0x00000000, 0x40401000 },
 	{ 0x09408, 0x00000000, 0x00000000 },
 	{ 0x0940c, 0x00000000, 0x02000001 },
+	/* Set RP1 graphics frequency */
 	{ 0x0a008, 0x00000000, 0x08000000 },
 	/* Wake Rate Limits */
 	{ 0x0a090, 0xffffffff, 0x00000000 },
@@ -50,6 +53,7 @@ static const struct gt_reg haswell_gt_setup[] = {
 	{ 0x02054, 0x00000000, 0x0000000a },
 	{ 0x12054, 0x00000000, 0x0000000a },
 	{ 0x22054, 0x00000000, 0x0000000a },
+	{ 0x1a054, 0x00000000, 0x0000000a },
 	/* RC Sleep / RCx Thresholds */
 	{ 0x0a0b0, 0xffffffff, 0x00000000 },
 	{ 0x0a0b4, 0xffffffff, 0x000003e8 },
@@ -181,9 +185,7 @@ static void gma_pm_init_pre_vbios(struct device *dev)
 
 	power_well_enable();
 
-	/*
-	 * Enable RC6
-	 */
+	/* Note: we unconditionally enable Render Standby */
 
 	/* Enable Force Wake */
 	gtt_write(0x0a180, 1 << 5);
