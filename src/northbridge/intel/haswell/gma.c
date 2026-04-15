@@ -173,17 +173,9 @@ int gtt_poll(u32 reg, u32 mask, u32 value)
 	return 0;
 }
 
-static void power_well_enable(void)
-{
-	gtt_write(HSW_PWR_WELL_CTL1, HSW_PWR_WELL_ENABLE);
-	gtt_poll(HSW_PWR_WELL_CTL1, HSW_PWR_WELL_STATE, HSW_PWR_WELL_STATE);
-}
-
 static void gma_pm_init_pre_vbios(struct device *dev)
 {
 	printk(BIOS_DEBUG, "GT Power Management Init\n");
-
-	power_well_enable();
 
 	/* Note: we unconditionally enable Render Standby */
 
@@ -294,9 +286,6 @@ static void gma_setup_panel(struct device *dev)
 			BLM_PCH_OVERRIDE_ENABLE | BLM_PCH_PWM_ENABLE);
 	}
 
-	/* Get display,pipeline,and DDI registers into a basic sane state */
-	power_well_enable();
-
 	/*
 	 * DDI-A params set:
 	 * bit 0: Display detected (RO)
@@ -371,6 +360,10 @@ static void gma_func0_init(struct device *dev)
 
 	/* Init graphics power management */
 	gma_pm_init_pre_vbios(dev);
+
+	/* Enable power well for DP and Audio */
+	gtt_write(HSW_PWR_WELL_CTL1, HSW_PWR_WELL_ENABLE);
+	gtt_poll(HSW_PWR_WELL_CTL1, HSW_PWR_WELL_STATE, HSW_PWR_WELL_STATE);
 
 	/* Pre panel init */
 	gma_setup_panel(dev);
