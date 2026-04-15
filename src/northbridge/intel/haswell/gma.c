@@ -31,30 +31,39 @@ u32 map_oprom_vendev(u32 vendev)
 	u32 new_vendev = vendev;
 
 	switch (vendev) {
-	case 0x80860402:		/* GT1 Desktop */
-	case 0x80860406:		/* GT1 Mobile */
-	case 0x8086040a:		/* GT1 Server */
-	case 0x80860a06:		/* GT1 ULT */
-	case 0x80860a0e:		/* GT1 ULX */
+	case 0x80860402:		/* HSW GT1 Desktop */
+	case 0x80860406:		/* HSW GT1 Mobile */
+	case 0x8086040a:		/* HSW GT1 Server */
+	case 0x80860a06:		/* HSW GT1 ULT */
+	case 0x80860a0e:		/* HSW GT1 ULX */
 
-	case 0x80860412:		/* GT2 Desktop */
-	case 0x80860416:		/* GT2 Mobile */
-	case 0x8086041a:		/* GT2 Server */
-	case 0x8086041e:		/* GT1.5 Desktop */
-	case 0x80860a16:		/* GT2 ULT */
-	case 0x80860a1e:		/* GT2 ULX */
+	case 0x80860412:		/* HSW GT2 Desktop */
+	case 0x80860416:		/* HSW GT2 Mobile */
+	case 0x8086041a:		/* HSW GT2 Server */
+	case 0x8086041e:		/* HSW GT1.5 Desktop */
+	case 0x80860a16:		/* HSW GT2 ULT */
+	case 0x80860a1e:		/* HSW GT2 ULX */
 
-	case 0x80860422:		/* GT3 Desktop */
-	case 0x80860426:		/* GT3 Mobile */
-	case 0x8086042a:		/* GT3 Server */
-	case 0x80860a26:		/* GT3 ULT */
+	case 0x80860422:		/* HSW GT3 Desktop */
+	case 0x80860426:		/* HSW GT3 Mobile */
+	case 0x8086042a:		/* HSW GT3 Server */
+	case 0x80860a26:		/* HSW GT3 ULT */
 
-	case 0x80860d22:		/* GT3e Desktop */
-	case 0x80860d16:		/* GT1 Mobile 4+3 */
-	case 0x80860d26:		/* GT2 Mobile 4+3, GT3e Mobile */
-	case 0x80860d36:		/* GT3 Mobile 4+3 */
+	case 0x80860d22:		/* HSW GT3e Desktop */
+	case 0x80860d16:		/* HSW GT1 Mobile 4+3 */
+	case 0x80860d26:		/* HSW GT2 Mobile 4+3, GT3e Mobile */
+	case 0x80860d36:		/* HSW GT3 Mobile 4+3 */
 
-		new_vendev = 0x80860406;	/* GT1 Mobile */
+	case 0x80861612:		/* BDW Halo GT2 */
+	case 0x80861622:		/* BDW Halo/Desktop GT3 */
+
+	case 0x80861606:		/* BDW ULT GT1 */
+	case 0x80861616:		/* BDW ULT GT2 */
+	case 0x80861626:		/* BDW ULT GT3 15W */
+	case 0x8086162b:		/* BDW ULT GT3 28W */
+	case 0x8086161e:		/* BDW ULX GT2 */
+
+		new_vendev = 0x80860406;	/* HSW GT1 Mobile */
 		break;
 	}
 
@@ -659,25 +668,32 @@ static struct device_operations gma_func0_ops = {
 };
 
 static const unsigned short pci_device_ids[] = {
-	0x0402, /* Desktop GT1 */
-	0x0412, /* Desktop GT2 */
-	0x041e, /* Desktop GT1.5 */
-	0x0422, /* Desktop GT3 */
-	0x0d22, /* Desktop GT3e */
-	0x0406, /* Mobile GT1 */
-	0x0416, /* Mobile GT2 */
-	0x0426, /* Mobile GT3 */
-	0x040a, /* Server GT1 */
-	0x041a, /* Server GT2 */
-	0x042a, /* Server GT3 */
-	0x0d16, /* Mobile 4+3 GT1 */
-	0x0d26, /* Mobile 4+3 GT2, Mobile GT3e */
-	0x0d36, /* Mobile 4+3 GT3 */
-	0x0a06, /* ULT GT1 */
-	0x0a16, /* ULT GT2 */
-	0x0a26, /* ULT GT3 */
-	0x0a0e, /* ULX GT1 */
-	0x0a1e, /* ULX GT2 */
+	0x0402, /* HSW Desktop GT1 */
+	0x0412, /* HSW Desktop GT2 */
+	0x041e, /* HSW Desktop GT1.5 */
+	0x0422, /* HSW Desktop GT3 */
+	0x0d22, /* HSW Desktop GT3e */
+	0x0406, /* HSW Mobile GT1 */
+	0x0416, /* HSW Mobile GT2 */
+	0x0426, /* HSW Mobile GT3 */
+	0x040a, /* HSW Server GT1 */
+	0x041a, /* HSW Server GT2 */
+	0x042a, /* HSW Server GT3 */
+	0x0d16, /* HSW Mobile 4+3 GT1 */
+	0x0d26, /* HSW Mobile 4+3 GT2, Mobile GT3e */
+	0x0d36, /* HSW Mobile 4+3 GT3 */
+	0x0a06, /* HSW ULT GT1 */
+	0x0a16, /* HSW ULT GT2 */
+	0x0a26, /* HSW ULT GT3 */
+	0x0a0e, /* HSW ULX GT1 */
+	0x0a1e, /* HSW ULX GT2 */
+	0x1612, /* BDW Halo GT2 */
+	0x1622, /* BDW Halo/Desktop GT3 */
+	0x1606, /* BDW ULT GT1 */
+	0x1616, /* BDW ULT GT2 */
+	0x1626, /* BDW ULT GT3 15W */
+	0x162b, /* BDW ULT GT3 28W */
+	0x161e, /* BDW ULX GT2 */
 	0,
 };
 
