@@ -47,6 +47,7 @@ void acpi_fill_fadt(acpi_fadt_t *fadt)
 	fadt->iapc_boot_arch = cfg->common_config.fadt_boot_arch; /* legacy free default */
 	fadt->flags |=	ACPI_FADT_WBINVD | /* See table 5-34 ACPI 6.3 spec */
 			ACPI_FADT_C1_SUPPORTED |
+			ACPI_FADT_SLEEP_BUTTON |
 			ACPI_FADT_S4_RTC_WAKE |
 			ACPI_FADT_32BIT_TIMER |
 			ACPI_FADT_PCI_EXPRESS_WAKE |
