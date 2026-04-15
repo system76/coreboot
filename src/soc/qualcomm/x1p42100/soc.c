@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
 #include <bl31.h>
+#include <cbfs.h>
 #include <device/device.h>
 #include <soc/mmu.h>
 #include <soc/mmu_common.h>
@@ -23,6 +24,22 @@ void soc_prepare_bl31_handoff(void)
 	printk(BIOS_WARNING, "%s: Reduce SPI frequency to 50MHz to better stability\n",
 		 __func__);
 	qspi_set_bus_clock(SPI_BUS_CLOCK_FREQ);
+}
+
+static void preload_bl31(void)
+{
+	if (!CONFIG(CBFS_PRELOAD))
+		return;
+
+	cbfs_preload(CONFIG_CBFS_PREFIX"/bl31");
+}
+
+static void preload_bl32(void)
+{
+	if (!CONFIG(CBFS_PRELOAD))
+		return;
+
+	cbfs_preload(CONFIG_CBFS_PREFIX"/secure_os");
 }
 
 /*
@@ -118,6 +135,8 @@ static void soc_init(struct device *dev)
 	qtee_fw_config_load();
 	lpass_init();
 	mainboard_soc_init();
+	preload_bl31();
+	preload_bl32();
 }
 
 static struct device_operations soc_ops = {
