@@ -220,26 +220,6 @@ static void gma_pm_init_pre_vbios(struct device *dev)
 	gtt_write_regs(haswell_gt_lock);
 }
 
-static void init_display_planes(void)
-{
-	int pipe, plane;
-
-	/* Disable cursor mode */
-	for (pipe = PIPE_A; pipe <= PIPE_C; pipe++) {
-		gtt_write(CURCNTR_IVB(pipe), CURSOR_MODE_DISABLE);
-		gtt_write(CURBASE_IVB(pipe), 0x00000000);
-	}
-
-	/* Disable primary plane and set surface base address */
-	for (plane = PLANE_A; plane <= PLANE_C; plane++) {
-		gtt_write(DSPCNTR(plane), DISPLAY_PLANE_DISABLE);
-		gtt_write(DSPSURF(plane), 0x00000000);
-	}
-
-	/* Disable VGA display */
-	gtt_write(CPU_VGACNTRL, CPU_VGA_DISABLE);
-}
-
 static void gma_setup_panel(struct device *dev)
 {
 	struct northbridge_intel_haswell_config *conf = config_of(dev);
@@ -317,8 +297,6 @@ static void gma_setup_panel(struct device *dev)
 	/* Get display,pipeline,and DDI registers into a basic sane state */
 	power_well_enable();
 
-	init_display_planes();
-
 	/*
 	 * DDI-A params set:
 	 * bit 0: Display detected (RO)
@@ -329,35 +307,6 @@ static void gma_setup_panel(struct device *dev)
 	if (!conf->gpu_ddi_e_connected)
 		reg32 |= DDI_A_4_LANES;
 	gtt_write(DDI_BUF_CTL_A, reg32);
-
-	/* Set FDI registers - is this required? */
-	gtt_write(_FDI_RXA_MISC, 0x00200090);
-	gtt_write(_FDI_RXA_MISC, 0x0a000000);
-
-	/* Enable the handshake with PCH display when processing reset */
-	gtt_write(NDE_RSTWRN_OPT, RST_PCH_HNDSHK_EN);
-
-	/* Undocumented */
-	gtt_write(0x42090, 0x04000000);
-	gtt_write(0x9840,  0x00000000);
-	gtt_write(0x42090, 0xa4000000);
-
-	gtt_write(SOUTH_DSPCLK_GATE_D, PCH_LP_PARTITION_LEVEL_DISABLE);
-
-	/* Undocumented */
-	gtt_write(0x42080, 0x00004000);
-
-	/* Hot plug detect buffer enabled for port A */
-	gtt_write(DIGITAL_PORT_HOTPLUG_CNTRL, DIGITAL_PORTA_HOTPLUG_ENABLE);
-
-	/* Enable HPD buffer for digital port D and B */
-	gtt_write(PCH_PORT_HOTPLUG, PORTD_HOTPLUG_ENABLE | PORTB_HOTPLUG_ENABLE);
-
-	/*
-	 * Bits 4:0 - Power cycle delay (default 0x6 --> 500ms)
-	 * Bits 31:8 - Reference divider (0x0004af ----> 24MHz)
-	 */
-	gtt_write(PCH_PP_DIVISOR, 0x0004af06);
 }
 
 static void gma_pm_init_post_vbios(struct device *dev)
