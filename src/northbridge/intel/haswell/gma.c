@@ -480,8 +480,6 @@ static void gma_cdclk_init(struct device *dev, bool is_broadwell)
 
 static void gma_pm_init_post_vbios(struct device *dev)
 {
-	gma_cdclk_init(dev, false);
-
 	/* Disable Force Wake */
 	gtt_write(0x0a188, 0x00010000);
 	gtt_poll(FORCEWAKE_ACK_HSW, 1 << 0, 0 << 0);
@@ -521,6 +519,8 @@ static void gma_func0_init(struct device *dev)
 
 	/* Pre panel init */
 	gma_setup_panel(dev);
+
+	gma_cdclk_init(dev, false);
 
 	if (!CONFIG(NO_GFX_INIT))
 		pci_or_config16(dev, PCI_COMMAND, PCI_COMMAND_MASTER);
