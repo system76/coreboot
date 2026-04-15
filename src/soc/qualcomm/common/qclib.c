@@ -487,31 +487,33 @@ void qclib_rerun(void)
 
 	init_qclib_cb_if_table(&qclib_cb_if_table);
 
-	struct prog aop_cfg_fw_prog =
-				PROG_INIT(PROG_PAYLOAD, CONFIG_CBFS_PREFIX "/aop_cfg");
+	if(!qclib_check_dload_mode()){
+		struct prog aop_cfg_fw_prog =
+					PROG_INIT(PROG_PAYLOAD, CONFIG_CBFS_PREFIX "/aop_cfg");
 
-	if (!selfload(&aop_cfg_fw_prog))
-		die("SOC image: AOP load failed");
+		if (!selfload(&aop_cfg_fw_prog))
+			die("SOC image: AOP load failed");
 
-	/* Attempt to load aop_meta Blob (reuse the qc_blob_meta region). */
-	data_size = cbfs_load(qclib_file(QCLIB_CBFS_AOP_META),
-			_qc_blob_meta, REGION_SIZE(qc_blob_meta));
-	if (!data_size) {
-		printk(BIOS_ERR, "[%s] /aop_meta failed\n", __func__);
-		goto fail;
+		/* Attempt to load aop_meta Blob (reuse the qc_blob_meta region). */
+		data_size = cbfs_load(qclib_file(QCLIB_CBFS_AOP_META),
+				_qc_blob_meta, REGION_SIZE(qc_blob_meta));
+		if (!data_size) {
+			printk(BIOS_ERR, "[%s] /aop_meta failed\n", __func__);
+			goto fail;
+		}
+
+		qclib_add_if_table_entry(QCLIB_TE_AOP_META_SETTINGS, _qc_blob_meta, data_size, 0);
+
+		/* Attempt to load aop_devcfg_meta Blob. */
+		data_size = cbfs_load(qclib_file(QCLIB_CBFS_AOP_DEVCFG_META),
+				_aop_blob_meta, REGION_SIZE(aop_blob_meta));
+		if (!data_size) {
+			printk(BIOS_ERR, "[%s] /aop_devcfg_meta failed\n", __func__);
+			goto fail;
+		}
+
+		qclib_add_if_table_entry(QCLIB_TE_AOP_DEVCFG_META_SETTINGS, _aop_blob_meta, data_size, 0);
 	}
-
-	qclib_add_if_table_entry(QCLIB_TE_AOP_META_SETTINGS, _qc_blob_meta, data_size, 0);
-
-	/* Attempt to load aop_devcfg_meta Blob. */
-	data_size = cbfs_load(qclib_file(QCLIB_CBFS_AOP_DEVCFG_META),
-			_aop_blob_meta, REGION_SIZE(aop_blob_meta));
-	if (!data_size) {
-		printk(BIOS_ERR, "[%s] /aop_devcfg_meta failed\n", __func__);
-		goto fail;
-	}
-
-	qclib_add_if_table_entry(QCLIB_TE_AOP_DEVCFG_META_SETTINGS, _aop_blob_meta, data_size, 0);
 
 	if (CONFIG(QC_RAMDUMP_ENABLE) && qc_soc_debug_enabled() && qclib_check_dload_mode()) {
 		struct prog ramdump_prog =
