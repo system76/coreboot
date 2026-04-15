@@ -21,68 +21,6 @@
 #include "chip.h"
 #include "haswell.h"
 
-struct gt_reg {
-	u32 reg;
-	u32 andmask;
-	u32 ormask;
-};
-
-static const struct gt_reg haswell_gt_setup[] = {
-	/* Enable counters except Power Meter */
-	{ 0x0a248, 0xffffffff, 0x00000016 },
-	/* GFXPAUSE settings (C0 and later) */
-	{ 0x0a000, 0x00000000, 0x00070020 },
-	/* ECO settings (C0 and later), Render Standby */
-	{ 0x0a180, 0xff3fffff, 0x15000000 },
-	/* Enable DOP Clock Gating */
-	{ 0x09424, 0x00000000, 0x000003fd },
-	/* Enable Unit Level Clock Gating */
-	{ 0x09400, 0x00000000, 0x00000080 },
-	{ 0x09404, 0x00000000, 0x40401000 },
-	{ 0x09408, 0x00000000, 0x00000000 },
-	{ 0x0940c, 0x00000000, 0x02000001 },
-	/* Set RP1 graphics frequency */
-	{ 0x0a008, 0x00000000, 0x08000000 },
-	/* Wake Rate Limits */
-	{ 0x0a090, 0xffffffff, 0x00000000 },
-	{ 0x0a098, 0xffffffff, 0x03e80000 },
-	{ 0x0a09c, 0xffffffff, 0x00280000 },
-	{ 0x0a0a8, 0xffffffff, 0x0001e848 },
-	{ 0x0a0ac, 0xffffffff, 0x00000019 },
-	/* Render/Video/Blitter Idle Max Count */
-	{ 0x02054, 0x00000000, 0x0000000a },
-	{ 0x12054, 0x00000000, 0x0000000a },
-	{ 0x22054, 0x00000000, 0x0000000a },
-	{ 0x1a054, 0x00000000, 0x0000000a },
-	/* RC Sleep / RCx Thresholds */
-	{ 0x0a0b0, 0xffffffff, 0x00000000 },
-	{ 0x0a0b4, 0xffffffff, 0x000003e8 },
-	{ 0x0a0b8, 0xffffffff, 0x0000c350 },
-	/* RP Settings */
-	{ 0x0a010, 0xffffffff, 0x000f4240 },
-	{ 0x0a014, 0xffffffff, 0x12060000 },
-	{ 0x0a02c, 0xffffffff, 0x0000e808 },
-	{ 0x0a030, 0xffffffff, 0x0003bd08 },
-	{ 0x0a068, 0xffffffff, 0x000101d0 },
-	{ 0x0a06c, 0xffffffff, 0x00055730 },
-	{ 0x0a070, 0xffffffff, 0x0000000a },
-	/* RP Control */
-	{ 0x0a024, 0x00000000, 0x00000b92 },
-	/* HW RC6 Control */
-	{ 0x0a090, 0x00000000, 0x88040000 },
-	/* Video Frequency Request */
-	{ 0x0a00c, 0x00000000, 0x08000000 },
-	{ 0 },
-};
-
-static const struct gt_reg haswell_gt_lock[] = {
-	{ 0x0a248, 0xffffffff, 0x80000000 },
-	{ 0x0a004, 0xffffffff, 0x00000010 },
-	{ 0x0a080, 0xffffffff, 0x00000004 },
-	{ 0x0a180, 0xffffffff, 0x80000000 },
-	{ 0 },
-};
-
 /*
  * Some VGA option roms are used for several chipsets but they only have one PCI ID in their
  * header. If we encounter such an option rom, we need to do the mapping ourselves.
@@ -145,14 +83,9 @@ static inline void gtt_rmw(u32 reg, u32 andmask, u32 ormask)
 	gtt_write(reg, val);
 }
 
-static inline void gtt_write_regs(const struct gt_reg *gt)
+static inline void gtt_or(u32 reg, u32 ormask)
 {
-	for (; gt && gt->reg; gt++) {
-		if (gt->andmask)
-			gtt_rmw(gt->reg, gt->andmask, gt->ormask);
-		else
-			gtt_write(gt->reg, gt->ormask);
-	}
+	gtt_rmw(reg, ~0ul, ormask);
 }
 
 #define GTT_RETRY 1000
@@ -185,31 +118,76 @@ static int gtt_pcode_write(u32 mbox, u32 val)
 	return gtt_poll(GEN6_PCODE_MAILBOX, GEN6_PCODE_READY, 0);
 }
 
-static void gma_pm_init_pre_vbios(struct device *dev)
+static void gma_pm_init_haswell(void)
 {
 	printk(BIOS_DEBUG, "GT Power Management Init\n");
 
 	/* Note: we unconditionally enable Render Standby */
 
 	/* Enable Force Wake */
-	gtt_write(0x0a180, 1 << 5);
-	gtt_write(0x0a188, 0x00010001);
+	gtt_or(0xa180, 1 << 5);
+	gtt_write(0xa188, 0x00010001);
 	gtt_poll(FORCEWAKE_ACK_HSW, 1 << 0, 1 << 0);
 
-	/* GT Settings */
-	gtt_write_regs(haswell_gt_setup);
+	/* Enable counters except Power Meter */
+	gtt_write(0xa248, 0x00000016);
 
-	/* Wait for Mailbox Ready */
-	gtt_poll(0x138124, (1 << 31), (0 << 31));
+	/* GFXPAUSE settings (C0 and later) */
+	gtt_write(0xa000, 0x00070020);
 
-	/* Mailbox Data - RC6 VIDS */
-	gtt_write(0x138128, 0x00000000);
+	/* ECO settings (C0 and later), Render Standby */
+	gtt_rmw(0xa180, 0xff3fffff, 0x15000000);
 
-	/* Mailbox Command */
-	gtt_write(0x138124, 0x80000004);
+	/* Enable DOP Clock Gating */
+	gtt_write(0x9424, 0x000003fd);
 
-	/* Wait for Mailbox Ready */
-	gtt_poll(0x138124, (1 << 31), (0 << 31));
+	/* Enable Unit Level Clock Gating */
+	gtt_write(0x9400, 0x00000080);
+	gtt_write(0x9404, 0x40401000);
+	gtt_write(0x9408, 0x00000000);
+	gtt_write(0x940c, 0x02000001);
+
+	/* Set RP1 graphics frequency */
+	gtt_write(0xa008, 0x08000000);
+
+	/* Wake Rate Limits */
+	gtt_write(0xa090, 0x00000000);
+	gtt_write(0xa098, 0x03e80000);
+	gtt_write(0xa09c, 0x00280000);
+	gtt_write(0xa0a8, 0x0001e848);
+	gtt_write(0xa0ac, 0x00000019);
+
+	/* Render/Video/Blitter Idle Max Count */
+	gtt_write(0x02054, 0x0000000a);
+	gtt_write(0x12054, 0x0000000a);
+	gtt_write(0x22054, 0x0000000a);
+	gtt_write(0x1a054, 0x0000000a);
+
+	/* RC Sleep / RCx Thresholds */
+	gtt_write(0xa0b0, 0x00000000);
+	gtt_write(0xa0b4, 0x000003e8);
+	gtt_write(0xa0b8, 0x0000c350);
+
+	/* RP Settings */
+	gtt_write(0xa010, 0x000f4240);
+	gtt_write(0xa014, 0x12060000);
+	gtt_write(0xa02c, 0x0000e808);
+	gtt_write(0xa030, 0x0003bd08);
+	gtt_write(0xa068, 0x000101d0);
+	gtt_write(0xa06c, 0x00055730);
+	gtt_write(0xa070, 0x0000000a);
+
+	/* RP Control */
+	gtt_write(0xa024, 0x00000b92);
+
+	/* HW RC6 Control */
+	gtt_write(0xa090, 0x88040000);
+
+	/* Video Frequency Request */
+	gtt_write(0xa00c, 0x08000000);
+
+	/* Set RC6 VIDs */
+	gtt_pcode_write(GEN6_PCODE_WRITE_RC6VIDS, 0);
 
 	/* Enable PM Interrupts */
 	gtt_write(GEN6_PMIER, GEN6_PM_MBOX_EVENT | GEN6_PM_THERMAL_EVENT |
@@ -218,10 +196,13 @@ static void gma_pm_init_pre_vbios(struct device *dev)
 		  GEN6_PM_RP_DOWN_EI_EXPIRED);
 
 	/* Enable RC6 in idle */
-	gtt_write(0x0a094, 0x00040000);
+	gtt_write(0xa094, 0x00040000);
 
 	/* PM Lock Settings */
-	gtt_write_regs(haswell_gt_lock);
+	gtt_or(0xa248, 1ul << 31);
+	gtt_or(0xa004, 1 << 4);
+	gtt_or(0xa080, 1 << 2);
+	gtt_or(0xa180, 1ul << 31);
 }
 
 static void gma_setup_panel(struct device *dev)
@@ -481,9 +462,9 @@ static void gma_cdclk_init(struct device *dev, bool is_broadwell)
 static void gma_pm_init_post_vbios(struct device *dev)
 {
 	/* Disable Force Wake */
-	gtt_write(0x0a188, 0x00010000);
+	gtt_write(0xa188, 0x00010000);
 	gtt_poll(FORCEWAKE_ACK_HSW, 1 << 0, 0 << 0);
-	gtt_write(0x0a188, 0x00000001);
+	gtt_write(0xa188, 0x00000001);
 }
 
 /* Enable SCI to ACPI _GPE._L06 */
@@ -511,7 +492,7 @@ static void gma_func0_init(struct device *dev)
 		return;
 
 	/* Init graphics power management */
-	gma_pm_init_pre_vbios(dev);
+	gma_pm_init_haswell();
 
 	/* Enable power well for DP and Audio */
 	gtt_write(HSW_PWR_WELL_CTL1, HSW_PWR_WELL_ENABLE);
