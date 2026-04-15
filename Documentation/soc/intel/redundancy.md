@@ -28,19 +28,19 @@ implementation for example has been developed basing mainly on ADL-P EDS Vol
 The implementation assumes four FMAP regions that are CBFS formatted and that
 use the following names.
 
-The bootblocks live in `BOOTBLOCK` and `TOPSWAP`. Each of these is a relatively
+The bootblocks live in `BOOTBLOCK` and `BOOTBLOCK_B`. Each of these is a relatively
 small CBFS region that contains a bootblock image and any additional files that
 must reside next to it for early boot on a given platform. These regions must
 exist in the board's `.fmd` file and must be sized with headroom for growth
 - keeping in mind the FIT table and Boot Guard ACM's must reside in the same
 region as the bootblock.
 
-The main firmware CBFS regions are `COREBOOT` and `COREBOOT_TS`. `COREBOOT` is
+The main firmware CBFS regions are `COREBOOT` and `COREBOOT_B`. `COREBOOT` is
 typically the base slot and is often placed under write protection, along with
-`BOOTBLOCK`. `COREBOOT_TS` is the alternate slot and is typically left writable
-so it can be replaced by an update mechanism, along with `TOPSWAP`.
+`BOOTBLOCK`. `COREBOOT_B` is the alternate slot and is typically left writable
+so it can be replaced by an update mechanism, along with `BOOTBLOCK_B`.
 
-The `BOOTBLOCK` and `TOPSWAP` regions are expected to be placed in the
+The `BOOTBLOCK` and `BOOTBLOCK_B` regions are expected to be placed in the
 flash area covered by the Top Swap configuration. The sizes of the regions
 must match and be equal to the corresponding field in the IFD. coreboot
 can adjust the The Top Swap size (also called Top Swap Block Size in
@@ -56,8 +56,8 @@ bootblock.
 The option `CONFIG_INTEL_TOP_SWAP_SEPARATE_REGIONS` changes where the bootblocks
 are stored. When it is disabled, both are stored in the primary CBFS region as
 on existing platforms. When it is enabled, they are placed in the `BOOTBLOCK`
-`TOPSWAP` FMAP regions. It also places copies of the following stages and
-required files from the `COREBOOT` region in the `COREBOOT_TS` region.
+`BOOTBLOCK_B` FMAP regions. It also places copies of the following stages and
+required files from the `COREBOOT` region in the `COREBOOT_B` region.
 
 If CBFS verification is enabled, the image build checks verification status for
 all main CBFS regions that are part of the redundancy configuration, not only
@@ -117,7 +117,7 @@ behavior.
 Intel Top Swap platforms provide a strong definition of
 `cbfs_fmap_region_hint()` in `src/soc/intel/common/block/rtc/rtc.c`. When
 `CONFIG_INTEL_TOP_SWAP_OPTION_CONTROL` is enabled and the Top Swap control
-bit is set, it returns `COREBOOT_TS`. Otherwise it returns `COREBOOT`.
+bit is set, it returns `COREBOOT_B`. Otherwise it returns `COREBOOT`.
 `cbfs_get_boot_device()` logs the selected region and stops with an error if the
 region cannot be found in FMAP.
 
@@ -138,7 +138,7 @@ A typical update and rollback sequence is as follows.
 The platform starts in slot A with Top Swap disabled. The hardware boots from
 the `BOOTBLOCK` and coreboot continues from the `COREBOOT` CBFS region.
 
-An update writes into the `TOPSWAP` and `COREBOOT_TS` regions, then sets the
+An update writes into the `BOOTBLOCK_B` and `COREBOOT_B` regions, then sets the
 `attempt_slot_b` CMOS option.
 
 On the next boot, `sync_rtc_buc_top_swap()` observes that the CMOS request
@@ -147,7 +147,7 @@ state, and resets the platform.
 
 After the reset, the hardware starts from the bootblock corresponding to
 the new Top Swap state. When coreboot later initializes its boot device,
-`cbfs_fmap_region_hint()` sees the Top Swap state and selects `COREBOOT_TS`, so
+`cbfs_fmap_region_hint()` sees the Top Swap state and selects `COREBOOT_B`, so
 the remainder of the boot uses the updated slot.
 
 Clearing CMOS or resetting `attempt_slot_b` triggers the same sequence in the
@@ -165,7 +165,7 @@ block implementation providing `cbfs_fmap_region_hint()` is linked into the
 stage that performs CBFS initialization on your platform.
 
 If the build fails to boot after enabling separate regions, confirm that the
-`.fmd` file defines `BOOTBLOCK`, `TOPSWAP`, `COREBOOT`, and `COREBOOT_TS` as
+`.fmd` file defines `BOOTBLOCK`, `BOOTBLOCK_B`, `COREBOOT`, and `COREBOOT_B` as
 CBFS regions and that the platform Top Swap configuration matches the reserved
 bootblock and Top Swap region placement and sizing.
 

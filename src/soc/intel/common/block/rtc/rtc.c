@@ -78,7 +78,7 @@ void sync_rtc_buc_top_swap(void)
 const char *cbfs_fmap_region_hint(void)
 {
 	if (CONFIG(INTEL_TOP_SWAP_OPTION_CONTROL) && get_rtc_buc_top_swap_status())
-		return "COREBOOT_TS";
+		return "COREBOOT_B";
 	else
 		return "COREBOOT";
 }

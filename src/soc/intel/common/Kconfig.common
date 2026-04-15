@@ -53,7 +53,7 @@ config INTEL_TOP_SWAP_SEPARATE_REGIONS
 	depends on INTEL_ADD_TOP_SWAP_BOOTBLOCK && BOOTBLOCK_IN_CBFS
 	default n
 	help
-	  Place the bootblocks in BOOTBLOCK and TOPSWAP regions for easy access, to
+	  Place the bootblocks in BOOTBLOCK and BOOTBLOCK_B regions for easy access, to
 	  facilitate firmware updates using the Top Swap as Slot A/Slot B redundancy.
 	  Requires a custom .fmd with the regions added at the end.
 
@@ -75,7 +75,7 @@ config TOP_SWAP_REDUNDANCY
 	select INTEL_TOP_SWAP_OPTION_CONTROL
 	help
 	  Toggle the Intel Top Swap based redundancy, where the BOOTBLOCK and COREBOOT
-	  regions form a read-only golden copy and TOPSWAP and COREBOOT_TS are an
+	  regions form a read-only golden copy and BOOTBLOCK_B and COREBOOT_B are an
 	  update partition. CMOS option "attempt_top_swap" decides which of the slots
 	  gets booted, which means the platform can be reverted to the known-good copy
 	  via CMOS reset.

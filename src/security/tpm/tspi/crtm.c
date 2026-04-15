@@ -77,7 +77,7 @@ static tpm_result_t tspi_init_crtm(void)
 		if (CONFIG(INTEL_TOP_SWAP_SEPARATE_REGIONS)) {
 			/*
 			 * Whether Top Swap is active or not, FMAP always refers to the same
-			 * memory ranges but the contents of BOOTBLOCK and TOPSWAP are swapped.
+			 * memory ranges but the contents of BOOTBLOCK and BOOTBLOCK_B are swapped.
 			 * Hence always using BOOTBLOCK region to access the active bootblock.
 			 */
 			mapping = cbfs_unverified_area_type_alloc("BOOTBLOCK", "bootblock",

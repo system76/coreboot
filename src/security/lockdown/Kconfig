@@ -80,7 +80,7 @@ config BOOTMEDIA_LOCK_TOPSWAP
 	help
 	  Select this if you want to write-protect the BOOTBLOCK and COREBOOT
 	  (Slot A) regions as specified in the Top Swap FMAP. You will be able to
-	  write to the TOPSWAP and COREBOOT_TS (Slot B) regions and set the
+	  write to the BOOTBLOCK_B and COREBOOT_B (Slot B) regions and set the
 	  attempt_slot_b CMOS option to run updated firmware. The BOOTBLOCK and
 	  COREBOOT regions will remain a read-only golden copy, which you can
 	  then revert to by resetting CMOS.

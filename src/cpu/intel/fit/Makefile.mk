@@ -15,9 +15,9 @@ intel_fit-align := 16
 
 ifeq ($(CONFIG_INTEL_TOP_SWAP_SEPARATE_REGIONS),y)
 regions-for-file-intel_fit = BOOTBLOCK
-regions-for-file-intel_fit_ts = TOPSWAP
+regions-for-file-intel_fit_ts = BOOTBLOCK_B
 
-TS_MCU_REGION = COREBOOT_TS
+TS_MCU_REGION = COREBOOT_B
 else
 TS_MCU_REGION = COREBOOT
 endif

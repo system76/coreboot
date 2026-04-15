@@ -986,7 +986,7 @@ ifeq ($(CONFIG_INTEL_ADD_TOP_SWAP_BOOTBLOCK),y)
 ifneq ($(CONFIG_INTEL_TOP_SWAP_SEPARATE_REGIONS),y)
 TS_OPTIONS := -j $(CONFIG_INTEL_TOP_SWAP_BOOTBLOCK_SIZE)
 else
-CBFS_REGIONS := COREBOOT,COREBOOT_TS
+CBFS_REGIONS := COREBOOT,COREBOOT_B
 endif
 endif
 
@@ -1285,7 +1285,7 @@ BB_FIT_REGION = COREBOOT
 TS_FIT_REGION = COREBOOT
 else
 BB_FIT_REGION = BOOTBLOCK
-TS_FIT_REGION = TOPSWAP
+TS_FIT_REGION = BOOTBLOCK_B
 bootblock_add_params = -f $(objcbfs)/bootblock.bin \
 	  -n bootblock -t bootblock \
 	  -b -$(call file-size,$(objcbfs)/bootblock.bin) \

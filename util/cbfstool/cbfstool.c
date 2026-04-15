@@ -124,7 +124,7 @@ enum mhc_kind {
 	MHC_NONE,    /* The cache is uninitialized. */
 	MHC_PRIMARY, /* Normal and always-present "COREBOOT" CBFS (separate or embedded
 			bootblock). */
-	MHC_TOPSWAP  /* Top Swap CBFS called "COREBOOT_TS" with bootblock in "TOPSWAP". */
+	MHC_SECONDARY /* Top Swap CBFS called "COREBOOT_B" with bootblock in "BOOTBLOCK_B". */
 };
 
 /*
@@ -147,15 +147,15 @@ struct mh_cache {
 static bool is_main_cbfs_region(const char *region_name)
 {
 	return strcmp(region_name, SECTION_NAME_PRIMARY_CBFS) == 0 ||
-		strcmp(region_name, SECTION_NAME_TOPSWAP_CBFS) == 0;
+		strcmp(region_name, SECTION_NAME_SECONDARY_CBFS) == 0;
 }
 
 static enum mhc_kind derive_mhc_kind(const char *region_name)
 {
 	/* Only these two regions are specific to Top Swap. */
-	if (strcmp(region_name, SECTION_NAME_TOPSWAP_CBFS) == 0 ||
-	    strcmp(region_name, SECTION_NAME_TOPSWAP) == 0)
-		return MHC_TOPSWAP;
+	if (strcmp(region_name, SECTION_NAME_SECONDARY_CBFS) == 0 ||
+	    strcmp(region_name, SECTION_NAME_BOOTBLOCK_B) == 0)
+		return MHC_SECONDARY;
 
 	return MHC_PRIMARY;
 }
@@ -182,8 +182,8 @@ static struct mh_cache *get_mh_cache(void)
 		goto no_metadata_hash;
 
 	const char *bootblock_region = SECTION_NAME_BOOTBLOCK;
-	if (kind == MHC_TOPSWAP)
-		bootblock_region = SECTION_NAME_TOPSWAP;
+	if (kind == MHC_SECONDARY)
+		bootblock_region = SECTION_NAME_BOOTBLOCK_B;
 
 	/* Find the metadata_hash container. If there is a "BOOTBLOCK" FMAP section, it's
 	   there. If not, it's a normal file in the primary CBFS section. */
@@ -197,7 +197,7 @@ static struct mh_cache *get_mh_cache(void)
 		size = buffer.size;
 	} else {
 		if (kind != MHC_PRIMARY) {
-			/* Top Swap requires TOPSWAP region. */
+			/* Top Swap requires BOOTBLOCK_B region. */
 			ERROR("Malformed image: '%s' region is missing\n", bootblock_region);
 			goto no_metadata_hash;
 		}
@@ -309,7 +309,7 @@ static int maybe_update_metadata_hash(struct cbfs_image *cbfs)
 static int maybe_update_fmap_hash(void)
 {
 	if (strcmp(param.region_name, SECTION_NAME_BOOTBLOCK) &&
-	    strcmp(param.region_name, SECTION_NAME_TOPSWAP) &&
+	    strcmp(param.region_name, SECTION_NAME_BOOTBLOCK_B) &&
 	    strcmp(param.region_name, SECTION_NAME_FMAP) &&
 	    param.type != CBFS_TYPE_BOOTBLOCK &&
 	    param.type != CBFS_TYPE_AMDFW)
