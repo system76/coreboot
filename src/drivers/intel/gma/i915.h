@@ -64,21 +64,6 @@ enum plane {
 	PLANE_C,
 };
 
-/* debug enums. These are for printks that, due to their place in the
- * middle of graphics device IO, might change timing.  Use with care
- * or not at all.
- */
-enum {
-	vio = 2, /* dump every IO */
-	vspin = 4, /* print # of times we spun on a register value */
-};
-
-/* The mainboard must provide these functions. */
-unsigned long io_i915_read32(unsigned long addr);
-void io_i915_write32(unsigned long val, unsigned long addr);
-
-void intel_prepare_ddi(void);
-
 int gtt_poll(u32 reg, u32 mask, u32 value);
 void gtt_write(u32 reg, u32 data);
 u32 gtt_read(u32 reg);

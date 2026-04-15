@@ -1,11 +1,5 @@
 ## SPDX-License-Identifier: GPL-2.0-only
 
-config INTEL_DDI
-	bool
-	default n
-	help
-	  helper functions for intel DDI operations
-
 config INTEL_EDID
 	bool
 	default n

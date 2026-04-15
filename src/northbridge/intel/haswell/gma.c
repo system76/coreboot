@@ -347,9 +347,6 @@ static void gma_setup_panel(struct device *dev)
 	/* Undocumented */
 	gtt_write(0x42080, 0x00004000);
 
-	/* Prepare DDI buffers for DP and FDI */
-	intel_prepare_ddi();
-
 	/* Hot plug detect buffer enabled for port A */
 	gtt_write(DIGITAL_PORT_HOTPLUG_CNTRL, DIGITAL_PORTA_HOTPLUG_ENABLE);
 
