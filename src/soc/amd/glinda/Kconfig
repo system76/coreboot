@@ -23,8 +23,6 @@ config SOC_AMD_GLINDA_BASE
 	select PARALLEL_MP_AP_WORK
 	select PLATFORM_USES_FSP2_0
 	select PROVIDES_ROM_SHARING
-	select PSP_SUPPORTS_EFS2_RELATIVE_ADDR if VBOOT_STARTS_BEFORE_BOOTBLOCK
-	select PSP_VERSTAGE_CCP_DMA if VBOOT_STARTS_BEFORE_BOOTBLOCK
 	select RTC
 	select SOC_AMD_COMMON
 	select SOC_AMD_COMMON_BLOCK_ACP_GEN2		# TODO: Check if this is still correct
@@ -90,7 +88,6 @@ config SOC_AMD_GLINDA_BASE
 	select USE_FSP_NOTIFY_PHASE_POST_PCI_ENUM
 	select USE_FSP_NOTIFY_PHASE_READY_TO_BOOT
 	select USE_FSP_NOTIFY_PHASE_END_OF_FIRMWARE
-	select VBOOT_DEFINE_WIDEVINE_COUNTERS if VBOOT_STARTS_BEFORE_BOOTBLOCK
 	select X86_AMD_FIXED_MTRRS
 	select HAVE_X86_64_SUPPORT
 	help
@@ -232,22 +229,6 @@ config FSP_TEMP_RAM_SIZE
 	help
 	  The amount of coreboot-allocated heap and stack usage by the FSP.
 
-config VERSTAGE_ADDR
-	hex
-	depends on VBOOT_SEPARATE_VERSTAGE
-	default 0x21A0000
-	help
-	  Sets the address in DRAM where verstage should be loaded if running
-	  as a separate stage on x86.
-
-config VERSTAGE_SIZE
-	hex
-	depends on VBOOT_SEPARATE_VERSTAGE
-	default 0x80000
-	help
-	  Sets the size of DRAM allocation for verstage in linker script if
-	  running as a separate stage on x86.
-
 config ASYNC_FILE_LOADING
 	bool "Loads files from SPI asynchronously"
 	select COOP_MULTITASKING
@@ -262,11 +243,6 @@ config ASYNC_FILE_LOADING
 config CBFS_CACHE_SIZE
 	hex
 	default 0x40000 if CBFS_PRELOAD
-
-config RO_REGION_ONLY
-	string
-	depends on VBOOT_SLOTS_RW_AB || VBOOT_SLOTS_RW_A
-	default "apu/amdfw"
 
 config ECAM_MMCONF_BASE_ADDRESS
 	default 0xE0000000
@@ -399,65 +375,11 @@ config PSP_SOFTFUSE_BITS
 
 	  See #55758 (NDA) for additional bit definitions.
 
-config PSP_VERSTAGE_FILE
-	string "Specify the PSP_verstage file path"
-	depends on VBOOT_STARTS_BEFORE_BOOTBLOCK
-	default "\$(obj)/psp_verstage.bin"
-	help
-	  Add psp_verstage file to the build & PSP Directory Table
-
-config PSP_VERSTAGE_SIGNING_TOKEN
-	string "Specify the PSP_verstage Signature Token file path"
-	depends on VBOOT_STARTS_BEFORE_BOOTBLOCK
-	default ""
-	help
-	  Add psp_verstage signature token to the build & PSP Directory Table
-
 config PSPV2_MBOX_CMD_OFFSET
 	hex
 	default 0x10970
 
 endmenu
-
-config VBOOT
-	select VBOOT_VBNV_CMOS
-	select VBOOT_VBNV_CMOS_BACKUP_TO_FLASH
-
-config VBOOT_STARTS_BEFORE_BOOTBLOCK
-	def_bool n
-	depends on VBOOT
-	select ARCH_VERSTAGE_ARMV7
-	help
-	  Runs verstage on the PSP.  Only available on
-	  certain ChromeOS branded parts from AMD.
-
-config VBOOT_HASH_BLOCK_SIZE
-	hex
-	default 0x9000
-	depends on VBOOT_STARTS_BEFORE_BOOTBLOCK
-	help
-	  Because the bulk of the time in psp_verstage to hash the RO cbfs is
-	  spent in the overhead of doing svc calls, increasing the hash block
-	  size significantly cuts the verstage hashing time as seen below.
-
-	  4k takes 180ms
-	  16k takes 44ms
-	  32k takes 33.7ms
-	  36k takes 32.5ms
-	  There's actually still room for an even bigger stack, but we've
-	  reached a point of diminishing returns.
-
-config CMOS_RECOVERY_BYTE
-	hex
-	default 0x51
-	depends on VBOOT_STARTS_BEFORE_BOOTBLOCK
-	help
-	  If the workbuf is not passed from the PSP to coreboot, set the
-	  recovery flag and reboot.  The PSP will read this byte, mark the
-	  recovery request in VBNV, and reset the system into recovery mode.
-
-	  This is the byte before the default first byte used by VBNV
-	  (0x26 + 0x0E - 1)
 
 menu "RAS Config Options"
 choice
@@ -503,23 +425,5 @@ config AMD_PCIE_ECRC_ENABLEMENT
 	help
 	  Enable/Disable PCIe ECRC support.
 endmenu
-
-if VBOOT_SLOTS_RW_AB && VBOOT_STARTS_BEFORE_BOOTBLOCK
-
-config RWA_REGION_ONLY
-	string
-	default "apu/amdfw_a"
-	help
-	  Add a space-delimited list of filenames that should only be in the
-	  RW-A section.
-
-config RWB_REGION_ONLY
-	string
-	default "apu/amdfw_b"
-	help
-	  Add a space-delimited list of filenames that should only be in the
-	  RW-B section.
-
-endif # VBOOT_SLOTS_RW_AB && VBOOT_STARTS_BEFORE_BOOTBLOCK
 
 endif # SOC_AMD_GLINDA_BASE

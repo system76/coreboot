@@ -5,8 +5,6 @@
 
 ifeq ($(CONFIG_SOC_AMD_GLINDA_BASE),y)
 
-subdirs-$(CONFIG_VBOOT_STARTS_BEFORE_BOOTBLOCK) += psp_verstage
-
 # Beware that all-y also adds the compilation unit to verstage on PSP
 all-y		+= aoac.c
 all-y		+= config.c
@@ -43,21 +41,6 @@ CPPFLAGS_common += -I$(src)/soc/amd/glinda/include
 CPPFLAGS_common += -I$(src)/soc/amd/glinda/acpi
 CPPFLAGS_common += -I$(src)/vendorcode/amd/fsp/glinda
 CPPFLAGS_common += -I$(src)/vendorcode/amd/fsp/common
-
-# Building the cbfs image will fail if the offset, aligned to 64 bytes, isn't large enough
-ifeq ($(CONFIG_CBFS_VERIFICATION),y)
-# 0x80 accounts for the cbfs_file struct + filename + metadata structs
-AMD_FW_AB_POSITION := 0x80
-else # ($(CONFIG_CBFS_VERIFICATION), y)
-# 0x40 accounts for the cbfs_file struct + filename + metadata structs without hash attribute
-AMD_FW_AB_POSITION := 0x40
-endif # ($(CONFIG_CBFS_VERIFICATION), y)
-
-GLINDA_FW_A_POSITION=$(call int-add, \
-	$(call get_fmap_value,FMAP_SECTION_FW_MAIN_A_START) $(AMD_FW_AB_POSITION))
-
-GLINDA_FW_B_POSITION=$(call int-add, \
-	$(call get_fmap_value,FMAP_SECTION_FW_MAIN_B_START) $(AMD_FW_AB_POSITION))
 
 #
 # PSP Directory Table items
@@ -104,11 +87,6 @@ PSP_RPMC_NVRAM_SIZE=$(call get_fmap_value,FMAP_SECTION_PSP_RPMC_NVRAM_SIZE)
 
 # type = 0x55
 SPL_TABLE_FILE=$(CONFIG_SPL_TABLE_FILE)
-ifeq ($(CONFIG_HAVE_SPL_RW_AB_FILE),y)
-SPL_RW_AB_TABLE_FILE=$(CONFIG_SPL_RW_AB_TABLE_FILE)
-else
-SPL_RW_AB_TABLE_FILE=$(CONFIG_SPL_TABLE_FILE)
-endif
 
 #
 # BIOS Directory Table items - proper ordering is managed by amdfwtool
@@ -132,25 +110,6 @@ ifneq ($(CONFIG_SOC_AMD_COMMON_BLOCK_APOB_NV_DISABLE),y)
 APOB_NV_SIZE=$(call get_fmap_value,FMAP_SECTION_RW_MRC_CACHE_SIZE)
 APOB_NV_BASE=$(call get_fmap_value,FMAP_SECTION_RW_MRC_CACHE_START)
 endif # !CONFIG_SOC_AMD_COMMON_BLOCK_APOB_NV_DISABLE
-
-ifeq ($(CONFIG_VBOOT_STARTS_BEFORE_BOOTBLOCK),y)
-# type = 0x6B - PSP Shared memory location
-ifneq ($(CONFIG_PSP_SHAREDMEM_SIZE),0x0)
-PSP_SHAREDMEM_SIZE=$(CONFIG_PSP_SHAREDMEM_SIZE)
-PSP_SHAREDMEM_BASE=$(shell awk '$$3 == "_psp_sharedmem_dram" {printf "0x" $$1}' $(objcbfs)/bootblock.map)
-endif
-
-# type = 0x52 - PSP Bootloader Userspace Application (verstage)
-PSP_VERSTAGE_FILE=$(call strip_quotes,$(CONFIG_PSP_VERSTAGE_FILE))
-PSP_VERSTAGE_SIG_FILE=$(call strip_quotes,$(CONFIG_PSP_VERSTAGE_SIGNING_TOKEN))
-endif # CONFIG_VBOOT_STARTS_BEFORE_BOOTBLOCK
-
-ifeq ($(CONFIG_SEPARATE_SIGNED_PSPFW),y)
-SIGNED_AMDFW_A_POSITION=$(call get_fmap_value,FMAP_SECTION_SIGNED_AMDFW_A_START)
-SIGNED_AMDFW_B_POSITION=$(call get_fmap_value,FMAP_SECTION_SIGNED_AMDFW_B_START)
-SIGNED_AMDFW_A_FILE=$(obj)/amdfw_a.rom.signed
-SIGNED_AMDFW_B_FILE=$(obj)/amdfw_b.rom.signed
-endif # CONFIG_SEPARATE_SIGNED_PSPFW
 
 ifeq ($(CONFIG_SOC_AMD_COMMON_BLOCK_PSP_ROM_ARMOR3)$(CONFIG_SMMSTORE),yy)
 # Rom Armor needs the SMM Store region to be whitelisted
@@ -177,9 +136,6 @@ OPT_PSP_NVRAM_SIZE=$(call add_opt_prefix, $(PSP_NVRAM_SIZE), --nvram-size)
 OPT_PSP_RPMC_NVRAM_BASE=$(call add_opt_prefix, $(PSP_RPMC_NVRAM_BASE), --rpmc-nvram-base)
 OPT_PSP_RPMC_NVRAM_SIZE=$(call add_opt_prefix, $(PSP_RPMC_NVRAM_SIZE), --rpmc-nvram-size)
 
-OPT_VERSTAGE_FILE=$(call add_opt_prefix, $(PSP_VERSTAGE_FILE), --verstage)
-OPT_VERSTAGE_SIG_FILE=$(call add_opt_prefix, $(PSP_VERSTAGE_SIG_FILE), --verstage_sig)
-
 OPT_PSP_APCB_FILES= $(if $(APCB_SOURCES), --instance 0 --apcb $(APCB_SOURCES)) \
                     $(if $(APCB_SOURCES_RECOVERY), --instance 10 --apcb $(APCB_SOURCES_RECOVERY)) \
                     $(if $(APCB_SOURCES_68), --instance 18 --apcb $(APCB_SOURCES_68))
@@ -189,27 +145,17 @@ OPT_PSP_BIOSBIN_FILE=$(call add_opt_prefix, $(PSP_BIOSBIN_FILE), --bios-bin)
 OPT_PSP_BIOSBIN_DEST=$(call add_opt_prefix, $(PSP_BIOSBIN_DEST), --bios-bin-dest)
 OPT_PSP_BIOSBIN_SIZE=$(call add_opt_prefix, $(PSP_BIOSBIN_SIZE), --bios-uncomp-size)
 
-OPT_PSP_SHAREDMEM_BASE=$(call add_opt_prefix, $(PSP_SHAREDMEM_BASE), --sharedmem)
-OPT_PSP_SHAREDMEM_SIZE=$(call add_opt_prefix, $(PSP_SHAREDMEM_SIZE), --sharedmem-size)
 OPT_APOB_NV_SIZE=$(call add_opt_prefix, $(APOB_NV_SIZE), --apob-nv-size)
 OPT_APOB_NV_BASE=$(call add_opt_prefix, $(APOB_NV_BASE),--apob-nv-base)
 OPT_EFS_SPI_READ_MODE=$(call add_opt_prefix, $(CONFIG_EFS_SPI_READ_MODE), --spi-read-mode)
 OPT_EFS_SPI_SPEED=$(call add_opt_prefix, $(CONFIG_EFS_SPI_SPEED), --spi-speed)
 OPT_EFS_SPI_MICRON_FLAG=$(call add_opt_prefix, $(CONFIG_EFS_SPI_MICRON_FLAG), --spi-micron-flag)
 
-OPT_SIGNED_AMDFW_A_POSITION=$(call add_opt_prefix, $(SIGNED_AMDFW_A_POSITION), --signed-addr)
-OPT_SIGNED_AMDFW_A_FILE=$(call add_opt_prefix, $(SIGNED_AMDFW_A_FILE), --signed-output)
-OPT_SIGNED_AMDFW_B_POSITION=$(call add_opt_prefix, $(SIGNED_AMDFW_B_POSITION), --signed-addr)
-OPT_SIGNED_AMDFW_B_FILE=$(call add_opt_prefix, $(SIGNED_AMDFW_B_FILE), --signed-output)
-
 OPT_PSP_SOFTFUSE=$(call add_opt_prefix, $(PSP_SOFTFUSE), --soft-fuse)
 
 OPT_WHITELIST_FILE=$(call add_opt_prefix, $(PSP_WHITELIST_FILE), --whitelist)
 OPT_SPL_TABLE_FILE=$(call add_opt_prefix, $(SPL_TABLE_FILE), --spl-table)
-OPT_SPL_RW_AB_TABLE_FILE=$(call add_opt_prefix, $(SPL_RW_AB_TABLE_FILE), --spl-table)
 
-# If vboot uses 2 RW slots, then 2 copies of PSP binaries are redundant
-OPT_RECOVERY_AB_SINGLE_COPY=$(if $(CONFIG_VBOOT_SLOTS_RW_AB), --recovery-ab-single-copy)
 OPT_BIOS_AMDCOMPRESS=$(if $(CONFIG_CBFS_VERIFICATION), --elfcopy, --compress)
 OPT_BIOS_FWCOMPRESS=$(if $(CONFIG_CBFS_VERIFICATION), --bios-bin-uncomp)
 
@@ -232,21 +178,16 @@ AMDFW_COMMON_ARGS=$(OPT_PSP_APCB_FILES) \
 		--load-s0i3 \
 		$(OPT_TOKEN_UNLOCK) \
 		$(OPT_WHITELIST_FILE) \
-		$(OPT_PSP_SHAREDMEM_BASE) \
-		$(OPT_PSP_SHAREDMEM_SIZE) \
 		$(OPT_EFS_SPI_READ_MODE) \
 		$(OPT_EFS_SPI_SPEED) \
 		$(OPT_EFS_SPI_MICRON_FLAG) \
 		--config $(CONFIG_AMDFW_CONFIG_FILE) \
 		--flashsize $(CONFIG_ROM_SIZE) \
-		$(OPT_RECOVERY_AB_SINGLE_COPY) \
 		$(OPT_BIOS_NV_ST_BASE) \
 		$(OPT_BIOS_NV_ST_SIZE) \
 		$(OPT_BIOS_FWCOMPRESS)
 
 $(obj)/amdfw.rom:	$(call strip_quotes, $(PSP_BIOSBIN_FILE)) \
-			$(PSP_VERSTAGE_FILE) \
-			$(PSP_VERSTAGE_SIG_FILE) \
 			$$(PSP_APCB_FILES) \
 			$(DEP_FILES) \
 			$(AMDFWTOOL) \
@@ -258,8 +199,6 @@ $(obj)/amdfw.rom:	$(call strip_quotes, $(PSP_BIOSBIN_FILE)) \
 		$(AMDFW_COMMON_ARGS) \
 		$(OPT_APOB_NV_SIZE) \
 		$(OPT_APOB_NV_BASE) \
-		$(OPT_VERSTAGE_FILE) \
-		$(OPT_VERSTAGE_SIG_FILE) \
 		$(OPT_SPL_TABLE_FILE) \
 		--location $(CONFIG_AMD_FWM_POSITION) \
 		--output $@
@@ -276,57 +215,5 @@ $(PSP_BIOSBIN_FILE): $(PSP_ELF_FILE) $(AMDCOMPRESS)
 	@printf "    AMDCOMPRS  $(subst $(obj)/,,$(@))\n"
 	$(AMDCOMPRESS) --infile $(PSP_ELF_FILE) --outfile $@ \
 		$(OPT_BIOS_AMDCOMPRESS) --maxsize $(PSP_BIOSBIN_SIZE)
-
-$(obj)/amdfw_a.rom: $(obj)/amdfw.rom
-	rm -f $@
-	@printf "    AMDFWTOOL  $(subst $(obj)/,,$(@))\n"
-	$(AMDFWTOOL) \
-		$(AMDFW_COMMON_ARGS) \
-		$(OPT_APOB_NV_SIZE) \
-		$(OPT_APOB_NV_BASE) \
-		$(OPT_SPL_RW_AB_TABLE_FILE) \
-		$(OPT_SIGNED_AMDFW_A_POSITION) \
-		$(OPT_SIGNED_AMDFW_A_FILE) \
-		--location $(call _tohex,$(GLINDA_FW_A_POSITION)) \
-		--anywhere \
-		--output $@
-
-$(obj)/amdfw_b.rom: $(obj)/amdfw.rom
-	rm -f $@
-	@printf "    AMDFWTOOL  $(subst $(obj)/,,$(@))\n"
-	$(AMDFWTOOL) \
-		$(AMDFW_COMMON_ARGS) \
-		$(OPT_APOB_NV_SIZE) \
-		$(OPT_APOB_NV_BASE) \
-		$(OPT_SPL_RW_AB_TABLE_FILE) \
-		$(OPT_SIGNED_AMDFW_B_POSITION) \
-		$(OPT_SIGNED_AMDFW_B_FILE) \
-		--location $(call _tohex,$(GLINDA_FW_B_POSITION)) \
-		--anywhere \
-		--output $@
-
-
-ifeq ($(CONFIG_VBOOT_SLOTS_RW_AB)$(CONFIG_VBOOT_STARTS_BEFORE_BOOTBLOCK),yy)
-cbfs-files-y += apu/amdfw_a
-apu/amdfw_a-file := $(obj)/amdfw_a.rom
-apu/amdfw_a-position := $(AMD_FW_AB_POSITION)
-apu/amdfw_a-type := raw
-
-cbfs-files-y += apu/amdfw_b
-apu/amdfw_b-file := $(obj)/amdfw_b.rom
-apu/amdfw_b-position := $(AMD_FW_AB_POSITION)
-apu/amdfw_b-type := raw
-
-ifeq ($(CONFIG_SEPARATE_SIGNED_PSPFW),y)
-build_complete:: $(obj)/amdfw_a.rom $(obj)/amdfw_b.rom
-	@printf "    Adding Signed ROM and HASH\n"
-	$(CBFSTOOL) $(obj)/coreboot.rom write -u -r SIGNED_AMDFW_A -i 0 -f $(obj)/amdfw_a.rom.signed
-	$(CBFSTOOL) $(obj)/coreboot.rom write -u -r SIGNED_AMDFW_B -i 0 -f $(obj)/amdfw_b.rom.signed
-	$(CBFSTOOL) $(obj)/coreboot.rom add -r FW_MAIN_A -f $(obj)/amdfw_a.rom.signed.hash \
-		-n apu/amdfw_a_hash -t raw
-	$(CBFSTOOL) $(obj)/coreboot.rom add -r FW_MAIN_B -f $(obj)/amdfw_b.rom.signed.hash \
-		-n apu/amdfw_b_hash -t raw
-endif # CONFIG_SEPARATE_SIGNED_PSPFW
-endif
 
 endif # ($(CONFIG_SOC_AMD_GLINDA_BASE),y)
