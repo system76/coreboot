@@ -111,6 +111,7 @@ typedef enum _amd_fw_type {
 	AMD_FW_AMF_MFD = 0x89,
 	AMD_FW_MPDMA_TF = 0x8c,
 	AMD_TA_IKEK = 0x8d,
+	AMD_FW_SFDR = 0x8e,
 	AMD_FW_MPCCX = 0x90,
 	AMD_FW_GMI3_PHY = 0x91,
 	AMD_FW_MPDMA_PM = 0x92,

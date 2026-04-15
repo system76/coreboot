@@ -242,6 +242,7 @@ amd_fw_entry amd_psp_fw_table[] = {
 	{ .type = AMD_RIB, .subprog = 2, .level = PSP_LVL2 | PSP_LVL2_AB },
 	{ .type = AMD_FW_MPDMA_TF, .level = PSP_BOTH | PSP_BOTH_AB },
 	{ .type = AMD_TA_IKEK, .level = PSP_BOTH | PSP_LVL2_AB, .skip_hashing = true },
+	{ .type = AMD_FW_SFDR, .level = PSP_LVL2 | PSP_LVL2_AB },
 	{ .type = AMD_FW_GMI3_PHY, .level = PSP_BOTH | PSP_BOTH_AB },
 	{ .type = AMD_FW_MPDMA_PM, .level = PSP_BOTH | PSP_BOTH_AB },
 	{ .type = AMD_FW_AMF_SRAM, .level = PSP_LVL2 | PSP_LVL2_AB },
