@@ -501,7 +501,7 @@ static const unsigned short pci_device_ids[] = {
 	0,
 };
 
-static const struct pci_driver pch_lpc __pci_driver = {
+static const struct pci_driver gma_func0_driver __pci_driver = {
 	.ops     = &gma_func0_ops,
 	.vendor  = PCI_VID_INTEL,
 	.devices = pci_device_ids,
