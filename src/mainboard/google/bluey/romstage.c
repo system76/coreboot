@@ -217,7 +217,8 @@ void platform_romstage_main(void)
 	/* Underlying PMIC registers are accessible only at this point */
 	set_boot_mode();
 
-	aop_fw_load_reset();
+	if (!qclib_check_dload_mode())
+		aop_fw_load_reset();
 
 	mainboard_setup_peripherals_late(boot_mode);
 
