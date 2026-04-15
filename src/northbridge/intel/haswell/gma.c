@@ -205,6 +205,104 @@ static void gma_pm_init_haswell(void)
 	gtt_or(0xa180, 1ul << 31);
 }
 
+static u8 systemagent_revision(void)
+{
+	return pci_read_config8(pcidev_on_root(0, 0), PCI_REVISION_ID);
+}
+
+static void gma_pm_init_broadwell(void)
+{
+	printk(BIOS_DEBUG, "GT Power Management Init\n");
+
+	/* Note: we unconditionally enable Render Standby */
+
+	/* Enable Force Wake */
+	gtt_write(0xa188, 0x00010001);
+	gtt_poll(FORCEWAKE_ACK_HSW, 1 << 0, 1 << 0);
+
+	/* Enable push bus metric control and shift */
+	gtt_write(0xa248, 0x00000004);
+	gtt_write(0xa250, 0x000000ff);
+	gtt_write(0xa25c, 0x00000010);
+
+	/* Set GFXPAUSE based on stepping */
+	if (cpu_stepping() <= (CPUID_BROADWELL_ULT_E0 & 0xf) &&
+		haswell_is_ult() && systemagent_revision() <= 9) {
+		gtt_write(0xa000, 0x300ff);
+	} else {
+		gtt_write(0xa000, 0x30020);
+	}
+
+	/* ECO settings */
+	gtt_write(0xa180, 0x45200000);
+
+	/* Enable DOP Clock Gating */
+	gtt_write(0x9424, 0x000000fd);
+
+	/* Enable Unit Level Clock Gating */
+	gtt_write(0x9400, 0x00000000);
+	gtt_write(0x9404, 0x40401000);
+	gtt_write(0x9408, 0x00000000);
+	gtt_write(0x940c, 0x02000001);
+	gtt_write(0x1a054, 0x0000000a);
+
+	/* Set RP1 graphics frequency */
+	const u32 rp1_gfx_freq = (mchbar_read32(0x5998) >> 8) & 0xff;
+	gtt_write(0xa008, rp1_gfx_freq << 24);
+
+	/* Video Frequency Request */
+	gtt_write(0xa00c, 0x08000000);
+
+	gtt_write(0x138158, 0x00000009);
+	gtt_write(0x13815c, 0x0000000d);
+
+	/* Wake Rate Limits */
+	gtt_write(0xa090, 0x00000000);
+	gtt_write(0xa098, 0x03e80000);
+	gtt_write(0xa09c, 0x00280000);
+	gtt_write(0xa0a8, 0x0001e848);
+	gtt_write(0xa0ac, 0x00000019);
+
+	/* Render/Video/Blitter Idle Max Count */
+	gtt_write(0x02054, 0x0000000a);
+	gtt_write(0x12054, 0x0000000a);
+	gtt_write(0x22054, 0x0000000a);
+
+	/* RC Sleep / RCx Thresholds */
+	gtt_write(0xa0b0, 0x00000000);
+	gtt_write(0xa0b8, 0x00000271);
+
+	/* RP Settings */
+	gtt_write(0xa010, 0x000f4240);
+	gtt_write(0xa014, 0x12060000);
+	gtt_write(0xa02c, 0x0000e808);
+	gtt_write(0xa030, 0x0003bd08);
+	gtt_write(0xa068, 0x000101d0);
+	gtt_write(0xa06c, 0x00055730);
+	gtt_write(0xa070, 0x0000000a);
+	gtt_write(0xa168, 0x00000006);
+
+	/* RP Control */
+	gtt_write(0xa024, 0x00000b92);
+
+	/* HW RC6 Control */
+	gtt_write(0xa090, 0x90040000);
+
+	/* Set RC6 VIDs */
+	gtt_pcode_write(GEN6_PCODE_WRITE_RC6VIDS, 0);
+
+	/* Enable PM Interrupts */
+	gtt_write(0x4402c, 0x03000076);
+
+	/* Enable RC6 in idle */
+	gtt_write(0xa094, 0x00040000);
+
+	/* PM Lock Settings */
+	gtt_or(0xa248, 1ul << 31);
+	gtt_or(0xa000, 1 << 18);
+	gtt_or(0xa180, 1ul << 31);
+}
+
 static void gma_setup_panel(struct device *dev)
 {
 	struct northbridge_intel_haswell_config *conf = config_of(dev);
@@ -459,12 +557,13 @@ static void gma_cdclk_init(struct device *dev, bool is_broadwell)
 	}
 }
 
-static void gma_pm_init_post_vbios(struct device *dev)
+static void gma_pm_init_post_vbios(bool is_broadwell)
 {
 	/* Disable Force Wake */
 	gtt_write(0xa188, 0x00010000);
 	gtt_poll(FORCEWAKE_ACK_HSW, 1 << 0, 0 << 0);
-	gtt_write(0xa188, 0x00000001);
+	if (!is_broadwell)
+		gtt_write(0xa188, 0x00000001);
 }
 
 /* Enable SCI to ACPI _GPE._L06 */
@@ -483,6 +582,8 @@ static void gma_enable_swsci(void)
 
 static void gma_func0_init(struct device *dev)
 {
+	const bool is_broadwell = cpu_is_broadwell();
+
 	int lightup_ok = 0;
 
 	intel_gma_init_igd_opregion();
@@ -492,7 +593,10 @@ static void gma_func0_init(struct device *dev)
 		return;
 
 	/* Init graphics power management */
-	gma_pm_init_haswell();
+	if (is_broadwell)
+		gma_pm_init_broadwell();
+	else
+		gma_pm_init_haswell();
 
 	/* Enable power well for DP and Audio */
 	gtt_write(HSW_PWR_WELL_CTL1, HSW_PWR_WELL_ENABLE);
@@ -501,7 +605,7 @@ static void gma_func0_init(struct device *dev)
 	/* Pre panel init */
 	gma_setup_panel(dev);
 
-	gma_cdclk_init(dev, false);
+	gma_cdclk_init(dev, is_broadwell);
 
 	if (!CONFIG(NO_GFX_INIT))
 		pci_or_config16(dev, PCI_COMMAND, PCI_COMMAND_MASTER);
@@ -526,7 +630,7 @@ static void gma_func0_init(struct device *dev)
 
 	printk(BIOS_DEBUG, "GT Power Management Init (post VBIOS)\n");
 
-	gma_pm_init_post_vbios(dev);
+	gma_pm_init_post_vbios(is_broadwell);
 
 	gma_enable_swsci();
 }
