@@ -12,7 +12,6 @@
 #include <soc/gpueb.h>
 #include <soc/mcupm.h>
 #include <soc/mmu_operations.h>
-#include <soc/mt6685.h>
 #include <soc/mtk_fsp.h>
 #include <soc/pcie.h>
 #include <soc/pi_image.h>
@@ -87,7 +86,6 @@ static void soc_init(struct device *dev)
 	sspm_init();
 	gpueb_init();
 	mcupm_init();
-	mt6685_init_pmif_arb();
 	/*
 	 * According to CI-700 documentation:
 	 * Registers are only accessible by Secure accesses. Writes to them must occur prior to

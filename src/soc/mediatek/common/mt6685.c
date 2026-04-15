@@ -11,15 +11,26 @@
 #define MT6685_TOP_RST_MISC_SET		0x128
 
 static struct pmif *pmif_arb;
+
+static void mt6685_init_pmif_arb(void)
+{
+	if (pmif_arb)
+		return;
+
+	pmif_arb = get_pmif_controller(PMIF_SPMI, SPMI_MASTER_1);
+	if (pmif_arb->check_init_done(pmif_arb))
+		die("ERROR - Failed to initialize pmif spmi");
+}
+
 u32 mt6685_read_field(u32 reg, u32 mask, u32 shift)
 {
-	assert(pmif_arb);
+	mt6685_init_pmif_arb();
 	return pmif_arb->read_field(pmif_arb, SPMI_SLAVE_9, reg, mask, shift);
 }
 
 void mt6685_write_field(u32 reg, u32 val, u32 mask, u32 shift)
 {
-	assert(pmif_arb);
+	mt6685_init_pmif_arb();
 	pmif_arb->write_field(pmif_arb, SPMI_SLAVE_9, reg, val, mask, shift);
 }
 
@@ -27,7 +38,7 @@ u8 mt6685_read8(u32 reg)
 {
 	u32 rdata = 0;
 
-	assert(pmif_arb);
+	mt6685_init_pmif_arb();
 	pmif_arb->read(pmif_arb, SPMI_SLAVE_9, reg, &rdata);
 
 	return (u8)rdata;
@@ -35,7 +46,7 @@ u8 mt6685_read8(u32 reg)
 
 void mt6685_write8(u32 reg, u8 reg_val)
 {
-	assert(pmif_arb);
+	mt6685_init_pmif_arb();
 	pmif_arb->write(pmif_arb, SPMI_SLAVE_9, reg, reg_val);
 }
 
@@ -43,14 +54,14 @@ u16 mt6685_read16(u32 reg)
 {
 	u16 rdata = 0;
 
-	assert(pmif_arb);
+	mt6685_init_pmif_arb();
 	pmif_arb->read16(pmif_arb, SPMI_SLAVE_9, reg, &rdata);
 	return rdata;
 }
 
 void mt6685_write16(u32 reg, u16 reg_val)
 {
-	assert(pmif_arb);
+	mt6685_init_pmif_arb();
 	pmif_arb->write16(pmif_arb, SPMI_SLAVE_9, reg, reg_val);
 }
 
@@ -78,23 +89,10 @@ static void mt6685_unlock(bool unlock)
 			      unlock ? key_protect_setting[i].val : 0);
 }
 
-void mt6685_init_pmif_arb(void)
-{
-	if (pmif_arb)
-		return;
-
-	pmif_arb = get_pmif_controller(PMIF_SPMI, SPMI_MASTER_1);
-	assert(pmif_arb);
-
-	if (pmif_arb->check_init_done(pmif_arb))
-		die("ERROR - Failed to initialize pmif spi");
-
-	printk(BIOS_INFO, "[%s]CHIP ID = %#x\n", __func__, mt6685_read_field(0xb, 0xFF, 0));
-}
-
 void mt6685_init(void)
 {
 	mt6685_init_pmif_arb();
+	printk(BIOS_INFO, "[%s]CHIP ID = %#x\n", __func__, mt6685_read_field(0xb, 0xFF, 0));
 	mt6685_unlock(true);
 	mt6685_wdt_set();
 	mt6685_init_setting();

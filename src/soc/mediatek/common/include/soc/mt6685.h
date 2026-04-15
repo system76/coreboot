@@ -19,7 +19,6 @@ struct mt6685_key_setting {
 };
 
 void mt6685_init(void);
-void mt6685_init_pmif_arb(void);
 void mt6685_write_field(u32 reg, u32 val, u32 mask, u32 shift);
 u32 mt6685_read_field(u32 reg, u32 mask, u32 shift);
 u8 mt6685_read8(u32 reg);
