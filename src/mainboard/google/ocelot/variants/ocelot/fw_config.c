@@ -2,6 +2,7 @@
 
 #include <baseboard/variants.h>
 #include <console/console.h>
+#include <delay.h>
 #include <fw_config.h>
 #include <gpio.h>
 #include <inttypes.h>
@@ -133,6 +134,16 @@ static const struct pad_config power_x4slot_pads[] = {
 static const struct pad_config clock_request_x4slot_pads[] = {
 	/* GPP_C11:     CLKREQ2_X4_GEN4_DT_CEM_SLOT1_N */
 	PAD_CFG_NF(GPP_C11, NONE, DEEP, NF1),
+};
+
+static const struct pad_config alt_clock_request_x4slot_pads[] = {
+	/* GPP_C14:     Used to simulate clock request from card */
+	PAD_CFG_GPO(GPP_C14, 0, DEEP),
+};
+
+static const struct pad_config disable_alt_clock_request_x4slot_pads[] = {
+	/* GPP_C14:     Used to simulate clock request from card */
+	PAD_CFG_GPI(GPP_C14, NONE, DEEP),
 };
 
 static const struct pad_config reset_deassert_x4slot_pads[] = {
@@ -519,6 +530,7 @@ void fw_config_configure_pre_mem_gpio(void)
 		 * Ocelot RVP hardware brings up power earlier, so no need
 		 * to delay 10mS before requesting clock.
 		 */
+		GPIO_CONFIGURE_PADS(alt_clock_request_x4slot_pads);
 		GPIO_CONFIGURE_PADS(clock_request_x4slot_pads);
 	}
 
@@ -548,8 +560,11 @@ void fw_config_configure_pre_mem_gpio(void)
 void variant_post_gpio_configure(void)
 {
 	// Deassert SD Card reset if needed
-	if (!fw_config_probe(FW_CONFIG(SD, SD_NONE)))
+	if (!fw_config_probe(FW_CONFIG(SD, SD_NONE))) {
 		GPIO_CONFIGURE_PADS(reset_deassert_x4slot_pads);
+		udelay(20);
+		GPIO_CONFIGURE_PADS(disable_alt_clock_request_x4slot_pads);
+	}
 }
 
 void fw_config_gpio_padbased_override(struct pad_config *padbased_table)
