@@ -62,6 +62,10 @@
 #define GPIO_USB_C1_EN_PP0900		GPIO(188)
 #define GPIO_USB_C1_RETIMER_RESET_L	GPIO(176)
 
+/* GPIO for controlling the panel backlight */
+#define BACKLIGHT_CONTROL_PMIC_GPIO 4
+#define BACKLIGHT_CONTROL_PMIC_ID PMIC_D_SLAVE_ID
+
 #define SLOW_CHARGING_BATTERY_THRESHOLD 2
 
 void setup_chromeos_gpios(void);

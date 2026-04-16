@@ -22,8 +22,6 @@
 #include "board.h"
 #include "display.h"
 
-#define PMIC_D_GPIO_04 4
-
 #define BATTERY_CHARGING_SPLASH_TIMEOUT_MS 5000
 static struct stopwatch splash_sw;
 
@@ -51,7 +49,7 @@ const char *mainboard_bmp_logo_filename(void)
 static void edp_enable_backlight(void)
 {
 	/* Enable backlight */
-	pmic_gpio_output(PMIC_D_SLAVE_ID, PMIC_D_GPIO_04, true);
+	pmic_gpio_output(BACKLIGHT_CONTROL_PMIC_ID, BACKLIGHT_CONTROL_PMIC_GPIO, true);
 }
 
 static void qcom_mdss_edp_init(struct edid *edid, uintptr_t fb_addr)
@@ -91,7 +89,7 @@ void display_stop(void)
 	write32(&edp_ahbclk->sw_reset, 0);
 
 	/* Disable backlight */
-	pmic_gpio_output(PMIC_D_SLAVE_ID, PMIC_D_GPIO_04, false);
+	pmic_gpio_output(BACKLIGHT_CONTROL_PMIC_ID, BACKLIGHT_CONTROL_PMIC_GPIO, false);
 
 	/* Panel power off */
 	gpio_output(GPIO_PANEL_POWER_ON, 0);
