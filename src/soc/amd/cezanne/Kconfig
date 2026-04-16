@@ -109,6 +109,7 @@ config SOC_AMD_RENOIR
 
 config SOC_AMD_V2000A
 	bool
+	select ADD_FSP_BINARIES if USE_AMD_BLOBS
 	select SOC_AMD_CEZANNE_BASE
 	select SOC_AMD_SUPPORTS_WARM_RESET
 	select SOC_AMD_COMMON_BLOCK_CPU_SYNC_PSP_ADDR_MSR
@@ -132,7 +133,7 @@ config CHIPSET_DEVICETREE
 config FSP_M_FILE
 	string "FSP-M (memory init) binary path and filename"
 	depends on ADD_FSP_BINARIES
-	#default "3rdparty/amd_blobs/v2000a/V2000A_M.fd" if SOC_AMD_V2000A
+	default "3rdparty/amd_blobs/v2000a/V2000A_M.fd" if SOC_AMD_V2000A
 	#default "3rdparty/amd_blobs/renoir/RENOIR_M.fd" if SOC_AMD_RENOIR
 	default "3rdparty/amd_blobs/cezanne/CEZANNE_M.fd"
 	help
@@ -141,7 +142,7 @@ config FSP_M_FILE
 config FSP_S_FILE
 	string "FSP-S (silicon init) binary path and filename"
 	depends on ADD_FSP_BINARIES
-	#default "3rdparty/amd_blobs/v2000a/V2000A_S.fd" if SOC_AMD_V2000A
+	default "3rdparty/amd_blobs/v2000a/V2000A_S.fd" if SOC_AMD_V2000A
 	#default "3rdparty/amd_blobs/renoir/RENOIR_S.fd" if SOC_AMD_RENOIR
 	default "3rdparty/amd_blobs/cezanne/CEZANNE_S.fd"
 	help
