@@ -95,6 +95,10 @@ void display_stop(void)
 
 	/* Panel power off */
 	gpio_output(GPIO_PANEL_POWER_ON, 0);
+
+	/* Disable power for Touchscreen if available */
+	if (CONFIG_MAINBOARD_GPIO_PIN_FOR_TOUCHSCREEN_POWER)
+		gpio_output(GPIO_TS_POWER_EN, 0);
 }
 
 static void display_logo(enum lb_fb_orientation orientation, uintptr_t fb_addr,

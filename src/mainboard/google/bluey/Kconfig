@@ -267,6 +267,16 @@ config MAINBOARD_GPIO_PIN_FOR_GSC_AP_INTERRUPT
 	  used for the interrupt line from the Google Security Chip (GSC) to the
 	  Application Processor (AP).
 
+config MAINBOARD_GPIO_PIN_FOR_TOUCHSCREEN_POWER
+	int
+	default 88 if BOARD_GOOGLE_MODEL_MICA
+	default 88 if BOARD_GOOGLE_MODEL_QUARTZ
+	default 0
+	help
+	  The GPIO pin number used to enable/disable power to the
+	  touchscreen controller. This varies by board revision.
+	  Set to 0x0 if power is hardwired.
+
 config FMDFILE
 	default "src/mainboard/\$(CONFIG_MAINBOARD_DIR)/chromeos-nogsc.fmd" if BOARD_GOOGLE_MODEL_BLUEY
 	default "src/mainboard/\$(CONFIG_MAINBOARD_DIR)/chromeos.fmd"

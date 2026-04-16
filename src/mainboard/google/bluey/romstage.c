@@ -142,6 +142,10 @@ static void platform_init_lightbar(void)
 
 static void edp_configure_gpios(void)
 {
+	/* Ensure enabling power for Touchscreen if available */
+	if (CONFIG_MAINBOARD_GPIO_PIN_FOR_TOUCHSCREEN_POWER)
+		gpio_output(GPIO_TS_POWER_EN, 1);
+
 	/* Panel power on GPIO enable */
 	gpio_output(GPIO_PANEL_POWER_ON, 1);
 
