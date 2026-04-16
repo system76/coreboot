@@ -476,7 +476,18 @@ endif
 
 $(eval $(call add_bmp_logo_file_to_cbfs,CONFIG_PLATFORM_HAS_LOW_BATTERY_INDICATOR, \
 	      low_battery.bmp,CONFIG_PLATFORM_LOW_BATTERY_INDICATOR_LOGO_PATH))
+
+ifeq ($(CONFIG_PLATFORM_HAS_LOW_BATTERY_INDICATOR),y)
+$(eval $(call add_bmp_logo_file_to_cbfs,CONFIG_PLATFORM_HAS_SECONDARY_BOOT_INDICATOR_LOGO, \
+	      low_battery_alt.bmp,CONFIG_PLATFORM_LOW_BATTERY_INDICATOR_LOGO_SECONDARY_PATH))
+endif
+
 $(eval $(call add_bmp_logo_file_to_cbfs,CONFIG_SPLASH_SCREEN_FOOTER, \
 	      footer_logo.bmp,CONFIG_SPLASH_SCREEN_FOOTER_LOGO_PATH))
 $(eval $(call add_bmp_logo_file_to_cbfs,CONFIG_PLATFORM_HAS_OFF_MODE_CHARGING_INDICATOR, \
 	      off_mode_charging.bmp,CONFIG_PLATFORM_OFF_MODE_CHARGING_INDICATOR_LOGO_PATH))
+
+ifeq ($(CONFIG_PLATFORM_HAS_OFF_MODE_CHARGING_INDICATOR),y)
+$(eval $(call add_bmp_logo_file_to_cbfs,CONFIG_PLATFORM_HAS_SECONDARY_BOOT_INDICATOR_LOGO, \
+	      off_mode_charging_alt.bmp,CONFIG_PLATFORM_OFF_MODE_CHARGING_INDICATOR_LOGO_SECONDARY_PATH))
+endif

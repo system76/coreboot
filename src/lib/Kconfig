@@ -239,6 +239,13 @@ config PLATFORM_POST_RENDER_DELAY_SEC
 	  teardown/synchronization after user notification before passing control
 	  to the OS.
 
+config PLATFORM_HAS_SECONDARY_BOOT_INDICATOR_LOGO
+	bool "Enable alternative (Secondary) resolution for boot indicator"
+	default n
+	help
+	  Select this if your board uses multiple panels with different
+	  resolutions and needs a second set of indicator logos in CBFS.
+
 if PLATFORM_HAS_LOW_BATTERY_INDICATOR
 
 config PLATFORM_HAS_EARLY_LOW_BATTERY_INDICATOR
@@ -253,7 +260,15 @@ config PLATFORM_HAS_EARLY_LOW_BATTERY_INDICATOR
 config PLATFORM_LOW_BATTERY_INDICATOR_LOGO_PATH
 	string "Path to low battery logo file"
 	default "3rdparty/blobs/mainboard/\$(MAINBOARDDIR)/low_battery.bmp"
-endif
+
+if PLATFORM_HAS_SECONDARY_BOOT_INDICATOR_LOGO
+
+config PLATFORM_LOW_BATTERY_INDICATOR_LOGO_SECONDARY_PATH
+	string "Path to secondary low battery logo"
+	default "3rdparty/blobs/mainboard/\$(MAINBOARDDIR)/low_battery_alt.bmp"
+
+endif # PLATFORM_HAS_SECONDARY_BOOT_INDICATOR_LOGO
+endif # PLATFORM_HAS_LOW_BATTERY_INDICATOR
 
 config SPLASH_SCREEN_FOOTER
 	bool "Enable custom footer on firmware splash screen"
@@ -283,9 +298,20 @@ config PLATFORM_HAS_OFF_MODE_CHARGING_INDICATOR
 	  This feature requires a functional display and depends on the
 	  BMP_LOGO infrastructure to render the charging assets.
 
+if PLATFORM_HAS_OFF_MODE_CHARGING_INDICATOR
+
 config PLATFORM_OFF_MODE_CHARGING_INDICATOR_LOGO_PATH
 	string "Path to off-mode charging logo file"
 	default "3rdparty/blobs/mainboard/\$(MAINBOARDDIR)/off_mode_charging.bmp"
+
+if PLATFORM_HAS_SECONDARY_BOOT_INDICATOR_LOGO
+
+config PLATFORM_OFF_MODE_CHARGING_INDICATOR_LOGO_SECONDARY_PATH
+	string "Path to secondary off-mode charging logo"
+	default "3rdparty/blobs/mainboard/\$(MAINBOARDDIR)/off_mode_charging_alt.bmp"
+
+endif # PLATFORM_HAS_SECONDARY_BOOT_INDICATOR_LOGO
+endif # PLATFORM_HAS_OFF_MODE_CHARGING_INDICATOR
 
 config FRAMEBUFFER_SPLASH_TEXT
 	bool "Enable splash screen text"

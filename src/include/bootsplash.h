@@ -202,6 +202,12 @@ static inline bool platform_is_low_battery_shutdown_needed(void) { return false;
 static inline void platform_handle_emergency_low_battery(void) { /* nop */ }
 #endif
 
+#if CONFIG(PLATFORM_HAS_SECONDARY_BOOT_INDICATOR_LOGO)
+bool platform_use_secondary_logo(void);
+#else
+static inline bool platform_use_secondary_logo(void) { return false; }
+#endif
+
 /*
  * Platform specific callbacks for off-mode bootsplash handling.
  *
