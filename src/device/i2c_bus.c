@@ -66,7 +66,7 @@ int i2c_dev_readb(struct device *const dev)
 		return busdev->ops->ops_smbus_bus->recv_byte(dev);
 	}
 
-	printk(BIOS_ERR, "%s Missing ops_smbus_bus->recv_byte", dev_path(busdev));
+	printk(BIOS_ERR, "%s Missing ops_smbus_bus->recv_byte\n", dev_path(busdev));
 	return -1;
 }
 
@@ -88,7 +88,7 @@ int i2c_dev_writeb(struct device *const dev, uint8_t val)
 		return busdev->ops->ops_smbus_bus->send_byte(dev, val);
 	}
 
-	printk(BIOS_ERR, "%s Missing ops_smbus_bus->send_byte", dev_path(busdev));
+	printk(BIOS_ERR, "%s Missing ops_smbus_bus->send_byte\n", dev_path(busdev));
 	return -1;
 }
 
@@ -125,7 +125,7 @@ int i2c_dev_readb_at(struct device *const dev, uint8_t off)
 		return busdev->ops->ops_smbus_bus->read_byte(dev, off);
 	}
 
-	printk(BIOS_ERR, "%s Missing ops_smbus_bus->read_byte", dev_path(busdev));
+	printk(BIOS_ERR, "%s Missing ops_smbus_bus->read_byte\n", dev_path(busdev));
 	return -1;
 }
 
@@ -148,7 +148,7 @@ int i2c_dev_writeb_at(struct device *const dev, const uint8_t off, const uint8_t
 		return busdev->ops->ops_smbus_bus->write_byte(dev, off, val);
 	}
 
-	printk(BIOS_ERR, "%s Missing ops_smbus_bus->write_byte", dev_path(busdev));
+	printk(BIOS_ERR, "%s Missing ops_smbus_bus->write_byte\n", dev_path(busdev));
 	return -1;
 }
 
@@ -183,7 +183,7 @@ int i2c_dev_read_at16(struct device *const dev, uint8_t *const buf, const size_t
 		else
 			return len;
 	} else {
-		printk(BIOS_ERR, "%s Missing ops_i2c_bus->transfer", dev_path(busdev));
+		printk(BIOS_ERR, "%s Missing ops_i2c_bus->transfer\n", dev_path(busdev));
 		return -1;
 	}
 }
@@ -218,7 +218,7 @@ int i2c_dev_read_at(struct device *const dev, uint8_t *const buf, const size_t l
 		else
 			return len;
 	} else {
-		printk(BIOS_ERR, "%s Missing ops_i2c_bus->transfer", dev_path(busdev));
+		printk(BIOS_ERR, "%s Missing ops_i2c_bus->transfer\n", dev_path(busdev));
 		return -1;
 	}
 }
@@ -253,7 +253,7 @@ int i2c_dev_write_at(struct device *const dev, uint8_t *const buf, const size_t 
 		else
 			return len;
 	} else {
-		printk(BIOS_ERR, "%s Missing ops_i2c_bus->transfer", dev_path(busdev));
+		printk(BIOS_ERR, "%s Missing ops_i2c_bus->transfer\n", dev_path(busdev));
 		return -1;
 	}
 }
