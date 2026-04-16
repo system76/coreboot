@@ -21,7 +21,12 @@
 /* address of locality 0 (CRB) */
 #define CRB_REG(REG) ((void *)(uintptr_t)(psp_ftpm_base_address() + (REG)))
 
+#if ENV_RAMSTAGE
 tpm_result_t crb_tpm_init(void);
+#else
+/* fTPM needs SMM to fully function. Indicate failure until ramstage. */
+static inline tpm_result_t crb_tpm_init(void) { return TPM_CB_PROBE_FAILURE; }
+#endif
 size_t crb_tpm_process_command(const void *tpm2_command, size_t command_size,
 			       void *tpm2_response, size_t max_response);
 bool crb_tpm_is_active(void);
