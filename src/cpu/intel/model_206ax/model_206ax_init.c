@@ -384,12 +384,19 @@ static void set_max_ratio(void)
 	perf_ctl.hi = 0;
 
 	/* Check for configurable TDP option */
-	if (cpu_config_tdp_levels()) {
-		/* Set to nominal TDP ratio */
+	if (get_turbo_state() == TURBO_ENABLED) {
+		/*
+		 * It takes 1200msec after BIOS_RESET_CPL before the CPU starts using
+		 * the turbo.
+		 */
+		msr = rdmsr(MSR_TURBO_RATIO_LIMIT);
+		perf_ctl.lo = (msr.lo & 0xff) << 8;
+	} else if (cpu_config_tdp_levels()) {
+		/* Set to nominal TDP ratio (no Turbo mode) */
 		msr = rdmsr(MSR_CONFIG_TDP_NOMINAL);
 		perf_ctl.lo = (msr.lo & 0xff) << 8;
 	} else {
-		/* Platform Info bits 15:8 give max ratio */
+		/* Platform Info bits 15:8 give max ratio (no Turbo mode) */
 		msr = rdmsr(MSR_PLATFORM_INFO);
 		perf_ctl.lo = msr.lo & 0xff00;
 	}
@@ -476,9 +483,6 @@ static void model_206ax_init(struct device *cpu)
 	/* Set energy policy */
 	set_energy_perf_bias(ENERGY_POLICY_NORMAL);
 
-	/* Set Max Ratio */
-	set_max_ratio();
-
 	/* Enable Turbo */
 	enable_turbo();
 }
@@ -531,6 +535,9 @@ static void per_cpu_smm_trigger(void)
 
 static void post_mp_init(void)
 {
+	/* Set Max Ratio. This has no effect until BIOS_RESET_CPL is set. */
+	set_max_ratio();
+
 	/* Now that all APs have been relocated as well as the BSP let SMIs
 	 * start flowing. */
 	global_smi_enable();

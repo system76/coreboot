@@ -57,10 +57,15 @@ static void set_max_ratio(void)
 
 	perf_ctl.hi = 0;
 
-	/* Platform Info bits 15:8 give max ratio */
-	msr = rdmsr(MSR_PLATFORM_INFO);
-	perf_ctl.lo = msr.lo & 0xff00;
-	wrmsr(IA32_PERF_CTL, perf_ctl);
+	/* Check for configurable TDP option */
+	if (get_turbo_state() == TURBO_ENABLED) {
+		msr = rdmsr(MSR_TURBO_RATIO_LIMIT);
+		perf_ctl.lo = (msr.lo & 0xff) << 8;
+	} else {
+		/* Platform Info bits 15:8 give max ratio (no Turbo mode) */
+		msr = rdmsr(MSR_PLATFORM_INFO);
+		perf_ctl.lo = msr.lo & 0xff00;
+	}
 
 	printk(BIOS_DEBUG, "model_x065x: frequency set to %d\n",
 	       ((perf_ctl.lo >> 8) & 0xff) * IRONLAKE_BCLK);
@@ -95,9 +100,6 @@ static void model_2065x_init(struct device *cpu)
 
 	/* Thermal throttle activation offset */
 	configure_thermal_target(cpu);
-
-	/* Set Max Ratio */
-	set_max_ratio();
 
 	/* Enable Turbo */
 	enable_turbo();
@@ -151,6 +153,9 @@ static void per_cpu_smm_trigger(void)
 
 static void post_mp_init(void)
 {
+	/* Set Max Ratio. This has no effect until BIOS_RESET_CPL is set. */
+	set_max_ratio();
+
 	/* Now that all APs have been relocated as well as the BSP let SMIs
 	 * start flowing. */
 	global_smi_enable();
