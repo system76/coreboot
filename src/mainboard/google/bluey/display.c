@@ -46,6 +46,19 @@ const char *mainboard_bmp_logo_filename(void)
 	return "cb_logo.bmp";
 }
 
+#if CONFIG(PLATFORM_HAS_SECONDARY_BOOT_INDICATOR_LOGO)
+bool platform_use_secondary_logo(void)
+{
+	/* For panels at or below Full HD (1920px width), use the
+	 * lower-resolution bitmap.
+	 */
+	if (cached_display_params.x_res <= FHD_WIDTH_THRESHOLD)
+		return true;
+
+	return false;
+}
+#endif
+
 static void edp_enable_backlight(void)
 {
 	/* Enable backlight PWM */
