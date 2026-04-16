@@ -66,6 +66,10 @@
 #define BACKLIGHT_CONTROL_PMIC_GPIO 4
 #define BACKLIGHT_CONTROL_PMIC_ID PMIC_D_SLAVE_ID
 
+/* GPIO for controlling the panel backlight PWM */
+#define BACKLIGHT_PWM_PMIC_GPIO 5
+#define BACKLIGHT_PWM_PMIC_ID PMIC_A_SLAVE_ID
+
 #define SLOW_CHARGING_BATTERY_THRESHOLD 2
 
 void setup_chromeos_gpios(void);

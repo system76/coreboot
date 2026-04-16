@@ -48,6 +48,10 @@ const char *mainboard_bmp_logo_filename(void)
 
 static void edp_enable_backlight(void)
 {
+	/* Enable backlight PWM */
+	if (CONFIG(MAINBOARD_HAS_BACKLIGHT_PWM))
+		pmic_gpio_output(BACKLIGHT_PWM_PMIC_ID, BACKLIGHT_PWM_PMIC_GPIO, true);
+
 	/* Enable backlight */
 	pmic_gpio_output(BACKLIGHT_CONTROL_PMIC_ID, BACKLIGHT_CONTROL_PMIC_GPIO, true);
 }
@@ -90,6 +94,10 @@ void display_stop(void)
 
 	/* Disable backlight */
 	pmic_gpio_output(BACKLIGHT_CONTROL_PMIC_ID, BACKLIGHT_CONTROL_PMIC_GPIO, false);
+
+	/* Disable backlight PWM */
+	if (CONFIG(MAINBOARD_HAS_BACKLIGHT_PWM))
+		pmic_gpio_output(BACKLIGHT_PWM_PMIC_ID, BACKLIGHT_PWM_PMIC_GPIO, false);
 
 	/* Panel power off */
 	gpio_output(GPIO_PANEL_POWER_ON, 0);
