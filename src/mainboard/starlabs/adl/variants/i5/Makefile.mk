@@ -4,6 +4,7 @@ bootblock-y += gpio.c
 
 romstage-y += romstage.c
 
+ramstage-$(CONFIG_DRIVERS_OPTION_CFR) += cfr.c
 ramstage-y += devtree.c
 ramstage-y += gpio.c
 ramstage-y += hda_verb.c

@@ -5,6 +5,7 @@
 #include <drivers/option/cfr_frontend.h>
 #include <option.h>
 #include <static.h>
+#include <common/cfr.h>
 
 void cfr_card_reader_update(struct sm_object *new_obj)
 {
