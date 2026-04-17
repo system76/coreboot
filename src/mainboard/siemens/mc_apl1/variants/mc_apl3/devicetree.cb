@@ -98,10 +98,10 @@ chip soc/intel/apollolake
 			# Enable external RTC chip
 			chip drivers/i2c/rx6110sa
 				register "pmon_sampling" = "PMON_SAMPL_256_MS"
-				register "bks_on" = "0"
-				register "bks_off" = "1"
-				register "iocut_en" = "1"
-				register "set_user_date" = "1"
+				register "bks_on" = "false"
+				register "bks_off" = "true"
+				register "iocut_en" = "true"
+				register "set_user_date" = "true"
 				register "user_year" = "04"
 				register "user_month" = "07"
 				register "user_day" = "01"
