@@ -133,9 +133,9 @@ chip soc/intel/alderlake
 			chip drivers/i2c/rv3028c7
 				register "bus_speed" = "I2C_SPEED_STANDARD"
 				register "set_user_date" = "true"
-				register "user_year" = "04"
-				register "user_month" = "07"
-				register "user_day" = "01"
+				register "user_year" = "4"
+				register "user_month" = "7"
+				register "user_day" = "1"
 				register "user_weekday" = "4"
 				register "bckup_sw_mode" = "BACKUP_SW_LEVEL"
 				register "cap_charge" = "CHARGE_OFF"

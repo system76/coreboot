@@ -170,9 +170,9 @@ chip soc/intel/elkhartlake
 				register "bks_off" = "true"
 				register "iocut_en" = "true"
 				register "set_user_date" = "true"
-				register "user_year" = "04"
-				register "user_month" = "07"
-				register "user_day" = "01"
+				register "user_year" = "4"
+				register "user_month" = "7"
+				register "user_day" = "1"
 				register "user_weekday" = "4"
 				device i2c 0x32 on end  # RTC RX6110 SA
 			end
