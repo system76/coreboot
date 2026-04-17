@@ -64,77 +64,104 @@ static enum cb_err rtc_eep_start_update(struct device *dev)
 	return CB_SUCCESS;
 }
 
-static void rtc_set_time_date(struct device *dev)
+static int rv3028c7_rtc_set(struct device *dev, struct rtc_time *time)
 {
-	struct drivers_i2c_rv3028c7_config *config = dev->chip_info;
-	uint8_t buf[7];
+	const uint8_t buf[7] = {
+		bin2bcd(time->sec),
+		bin2bcd(time->min),
+		bin2bcd(time->hour),
+		bin2bcd(time->wday),
+		bin2bcd(time->mday),
+		bin2bcd(time->mon),
+		bin2bcd(time->year % 100)
+	};
 
-	/* The buffer contains the seconds through years of the new time and date.
-	   Whenever a new date is set, the time is set to 00:00:00. */
-	buf[0] = 0;	/* Entry for seconds. */
-	buf[1] = 0;	/* Entry for minutes. */
-	buf[2] = 0;	/* Entry for hours. */
-	if (config->set_user_date) {
-		buf[3] = config->user_weekday;
-		buf[4] = bin2bcd(config->user_day);
-		buf[5] = bin2bcd(config->user_month);
-		buf[6] = bin2bcd(config->user_year);
-		printk(BIOS_DEBUG, "%s: Set to user date\n", dev->chip_ops->name);
-	} else {
-		buf[3] = coreboot_build_date.weekday;
-		buf[4] = coreboot_build_date.day;
-		buf[5] = coreboot_build_date.month;
-		buf[6] = coreboot_build_date.year;
-		printk(BIOS_DEBUG, "%s: Set to coreboot build date\n", dev->chip_ops->name);
-	}
 	for (size_t i = 0; i < ARRAY_SIZE(buf); i++) {
 		if (i2c_dev_writeb_at(dev, i, buf[i]) < 0) {
 			printk(BIOS_ERR, "%s: Failed to write register 0x%02zx!\n",
 				dev->chip_ops->name, i);
-			return;
+			return 1;
 		}
+	}
+	return 0;
+}
+
+static int rv3028c7_rtc_get(struct device *dev, struct rtc_time *time)
+{
+	int buf[7];
+
+	for (size_t i = 0; i < ARRAY_SIZE(buf); i++) {
+		buf[i] = i2c_dev_readb_at(dev, i);
+		if (buf[i] < 0) {
+			printk(BIOS_ERR, "%s: Failed to read register 0x%02zx!\n",
+				dev->chip_ops->name, i);
+			return 1;
+		}
+	}
+	/* Convert the BCD register values into decimal date and time values. */
+	time->sec = bcd2bin((uint8_t)buf[SECOND_REG]);
+	time->min = bcd2bin((uint8_t)buf[MINUTE_REG]);
+	time->hour = bcd2bin((uint8_t)buf[HOUR_REG]);
+	time->wday = bcd2bin((uint8_t)buf[WDAY_REG]);
+	time->mday = bcd2bin((uint8_t)buf[MDAY_REG]);
+	time->mon = bcd2bin((uint8_t)buf[MONTH_REG]);
+	/* The RV3028-C7 does not store the century but only years 0..99.
+	   Use the coreboot build date to get a meaningful century value. */
+	time->year = bcd2bin(buf[YEAR_REG]) + (100 * bcd2bin(coreboot_build_date.century));
+	return 0;
+}
+
+static void rtc_set_time_date(struct device *dev)
+{
+	struct drivers_i2c_rv3028c7_config *config = dev->chip_info;
+	struct rtc_time time;
+
+	/* Whenever a new date is set, the time is set to 00:00:00. */
+	time.sec = 0;
+	time.min = 0;
+	time.hour = 0;
+	if (config->set_user_date) {
+		time.wday = config->user_weekday;
+		time.mday = bin2bcd(config->user_day);
+		time.mon = bin2bcd(config->user_month);
+		time.year = bin2bcd(config->user_year);
+		printk(BIOS_DEBUG, "%s: Use user date.\n", dev->chip_ops->name);
+	} else {
+		time.wday = coreboot_build_date.weekday;
+		time.mday = coreboot_build_date.day;
+		time.mon = coreboot_build_date.month;
+		time.year = coreboot_build_date.year;
+		printk(BIOS_DEBUG, "%s: Use coreboot build date.\n", dev->chip_ops->name);
+	}
+	if (rv3028c7_rtc_set(dev, &time) != 0) {
+		printk(BIOS_ERR, "%s: Not able to set date and time!\n", dev->chip_ops->name);
+	} else {
+		printk(BIOS_NOTICE, "%s: Date and time set.\n", dev->chip_ops->name);
 	}
 }
 
 static void rtc_final(struct device *dev)
 {
-	uint8_t buf[7];
-	int val;
 	struct drivers_i2c_rv3028c7_config *config = dev->chip_info;
-	struct rtc_time cmos_dt;
+	struct rtc_time time;
 
-	/* Read back current RTC date and time byte by byte */
-	printk(BIOS_DEBUG, "%s: Reading current date and time...\n", dev->chip_ops->name);
-
-	for (size_t i = 0; i < ARRAY_SIZE(buf); i++) {
-		val = i2c_dev_readb_at(dev, i);
-		if (val < 0) {
-			printk(BIOS_ERR, "%s: Failed to read register 0x%02zx!\n",
-			       dev->chip_ops->name, i);
-			return;
-		}
-		buf[i] = (uint8_t)val;
+	/* Read back current RTC date and time. */
+	printk(BIOS_SPEW, "%s: Read current date and time.\n", dev->chip_ops->name);
+	if (rv3028c7_rtc_get(dev, &time) != 0) {
+		printk(BIOS_ERR, "%s: Not able to read current date and time!\n",
+			dev->chip_ops->name);
+		return;
 	}
+
 	/* Synchronize the x86 CMOS RTC with the external RTC if enabled. */
 	if (config->sync_to_cmos_rtc) {
-		printk(BIOS_INFO, "%s: Synchronize to CMOS RTC\n", dev->chip_ops->name);
-		/* The RV3028-C7 does not store the century but only years 0..99.
-		 * Use the coreboot build date to get a meaningful century value.
-		 */
-		cmos_dt.year = bcd2bin(buf[6]) + (100 * bcd2bin(coreboot_build_date.century));
-		cmos_dt.mon = bcd2bin(buf[5]);
-		cmos_dt.mday = bcd2bin(buf[4]);
-		cmos_dt.wday = bcd2bin(buf[3]);
-		cmos_dt.hour = bcd2bin(buf[2]);
-		cmos_dt.min = bcd2bin(buf[1]);
-		cmos_dt.sec = bcd2bin(buf[0]);
-		rtc_set(&cmos_dt);
+		printk(BIOS_INFO, "%s: Synchronize to CMOS RTC.\n", dev->chip_ops->name);
+		rtc_set(&time);
 	}
 
-	printk(BIOS_INFO, "%s: Current date %02u-%02u-%02u %02u:%02u:%02u\n",
-			dev->chip_ops->name, bcd2bin(buf[6]), bcd2bin(buf[5]),
-			bcd2bin(buf[4]), bcd2bin(buf[2]), bcd2bin(buf[1]),
-			bcd2bin(buf[0]));
+	printk(BIOS_INFO, "%s: Current date is %02u-%02u-%02u %02u:%02u:%02u\n",
+			dev->chip_ops->name, time.year, time.mon, time.mday, time.hour,
+			time.min, time.sec);
 
 	/* Make sure the EEPROM automatic refresh is enabled. */
 	if (rtc_eep_auto_refresh(dev, EEP_REFRESH_EN) != CB_SUCCESS) {
