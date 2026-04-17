@@ -33,14 +33,19 @@ static struct {
 } cached_display_params;
 
 /*
+ * Helper to determine if the current panel is low-resolution (<= FHD).
+ */
+static bool is_low_res_panel(void)
+{
+	return cached_display_params.x_res <= FHD_WIDTH_THRESHOLD;
+}
+
+/*
  * Mainboard-specific override for logo filenames.
  */
 const char *mainboard_bmp_logo_filename(void)
 {
-	/* For panels at or below Full HD (1920px width), use the
-	 * lower-resolution bitmap.
-	 */
-	if (cached_display_params.x_res <= FHD_WIDTH_THRESHOLD)
+	if (is_low_res_panel())
 		return "cb_plus_logo.bmp";
 
 	return "cb_logo.bmp";
@@ -49,13 +54,7 @@ const char *mainboard_bmp_logo_filename(void)
 #if CONFIG(PLATFORM_HAS_SECONDARY_BOOT_INDICATOR_LOGO)
 bool platform_use_secondary_logo(void)
 {
-	/* For panels at or below Full HD (1920px width), use the
-	 * lower-resolution bitmap.
-	 */
-	if (cached_display_params.x_res <= FHD_WIDTH_THRESHOLD)
-		return true;
-
-	return false;
+	return is_low_res_panel();
 }
 #endif
 
@@ -132,7 +131,7 @@ static void display_logo(enum lb_fb_orientation orientation, uintptr_t fb_addr,
 		.panel_orientation = orientation,
 		.halignment = FW_SPLASH_HALIGNMENT_CENTER,
 		.valignment = FW_SPLASH_VALIGNMENT_CENTER,
-		.logo_bottom_margin = 200,
+		.logo_bottom_margin = is_low_res_panel() ? 100 : 200,
 	};
 	render_logo_to_framebuffer(&config);
 
