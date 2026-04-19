@@ -1,18 +1,14 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#include <commonlib/helpers.h>
 #include <console/console.h>
-#include <acpi/acpi.h>
+#include <cpu/intel/haswell/haswell.h>
 #include <delay.h>
 #include <drivers/intel/oc_mailbox/oc_mailbox.h>
-#include <cpu/intel/haswell/haswell.h>
 #include <device/device.h>
 #include <device/pci.h>
 #include <device/pci_ids.h>
 #include <device/pci_ops.h>
-#include <boot/tables.h>
 #include <security/intel/txt/txt_register.h>
-#include <southbridge/intel/lynxpoint/pch.h>
 #include <types.h>
 
 #include "chip.h"

@@ -1,12 +1,12 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+#include <assert.h>
 #include <console/console.h>
 #include <device/device.h>
-#include <device/pci.h>
 #include <device/pciexp.h>
+#include <device/pci.h>
 #include <device/pci_ids.h>
 #include <device/pci_ops.h>
-#include <assert.h>
 #include <types.h>
 
 #include "chip.h"

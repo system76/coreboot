@@ -1,14 +1,14 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#include <types.h>
-#include <console/console.h>
-#include <commonlib/helpers.h>
 #include <acpi/acpi.h>
 #include <arch/ioapic.h>
+#include <console/console.h>
 #include <device/device.h>
 #include <device/pci_ops.h>
-#include "haswell.h"
 #include <southbridge/intel/lynxpoint/pch.h>
+#include <types.h>
+
+#include "haswell.h"
 
 static unsigned long acpi_fill_dmar(unsigned long current)
 {

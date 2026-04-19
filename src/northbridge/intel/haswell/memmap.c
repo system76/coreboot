@@ -4,10 +4,11 @@
 #define __SIMPLE_DEVICE__
 
 #include <arch/romstage.h>
+#include <cbmem.h>
+#include <commonlib/helpers.h>
 #include <cpu/x86/mtrr.h>
 #include <cpu/x86/smm.h>
 #include <device/pci_ops.h>
-#include <cbmem.h>
 #include <security/intel/txt/txt_platform.h>
 #include <security/intel/txt/txt_register.h>
 #include <types.h>

@@ -1,9 +1,10 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
 #include <console/console.h>
-#include <device/pci_ops.h>
 #include <cpu/intel/haswell/haswell.h>
+#include <device/pci_ops.h>
 #include <southbridge/intel/lynxpoint/pch.h>
+#include <types.h>
 
 #include "haswell.h"
 

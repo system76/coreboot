@@ -1,19 +1,19 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
-#include <commonlib/helpers.h>
 #include <arch/io.h>
-#include <device/mmio.h>
-#include <device/pci_ops.h>
-#include <console/console.h>
 #include <bootmode.h>
+#include <console/console.h>
+#include <commonlib/helpers.h>
+#include <cpu/intel/haswell/haswell.h>
 #include <delay.h>
 #include <device/device.h>
+#include <device/mmio.h>
 #include <device/pci.h>
 #include <device/pci_ids.h>
+#include <device/pci_ops.h>
 #include <drivers/intel/gma/i915_reg.h>
 #include <drivers/intel/gma/i915.h>
 #include <drivers/intel/gma/libgfxinit.h>
-#include <cpu/intel/haswell/haswell.h>
 #include <drivers/intel/gma/opregion.h>
 #include <southbridge/intel/lynxpoint/pch.h>
 #include <types.h>
