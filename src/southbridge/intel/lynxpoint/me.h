@@ -3,7 +3,6 @@
 #ifndef _INTEL_ME_H
 #define _INTEL_ME_H
 
-#include <device/device.h>
 #include <types.h>
 
 #define ME_RETRY		100000	/* 1 second */
@@ -511,7 +510,5 @@ int intel_early_me_init(void);
 bool intel_early_me_cpu_replacement_check(void);
 int intel_early_me_uma_size(void);
 int intel_early_me_init_done(u8 status);
-
-void intel_me_finalize(struct device *dev);
 
 #endif /* _INTEL_ME_H */

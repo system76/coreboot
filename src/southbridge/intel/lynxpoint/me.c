@@ -516,7 +516,7 @@ static int mkhi_end_of_post(void)
 	return 0;
 }
 
-void intel_me_finalize(struct device *dev)
+static void intel_me_finalize(struct device *dev)
 {
 	union me_hfs hfs;
 	u32 reg32;
