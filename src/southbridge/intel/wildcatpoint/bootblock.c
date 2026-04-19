@@ -11,6 +11,7 @@
 #include <soc/pm.h>
 #include <soc/romstage.h>
 #include <southbridge/intel/common/early_spi.h>
+#include <southbridge/intel/common/lpc_def.h>
 
 static void map_rcba(void)
 {
@@ -55,7 +56,7 @@ static void pch_enable_bars(void)
 
 	pci_write_config8(PCH_DEV_LPC, ACPI_CNTL, ACPI_EN);
 
-	pci_write_config32(PCH_DEV_LPC, GPIO_BASE, GPIO_BASE_ADDRESS | 1);
+	pci_write_config32(PCH_DEV_LPC, GPIOBASE, GPIO_BASE_ADDRESS | 1);
 
 	/* Enable GPIO functionality. */
 	pci_write_config8(PCH_DEV_LPC, GPIO_CNTL, GPIO_EN);

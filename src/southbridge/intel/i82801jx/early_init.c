@@ -4,6 +4,7 @@
 #include <device/pci_ops.h>
 #include <device/smbus_host.h>
 #include <southbridge/intel/common/gpio.h>
+#include <southbridge/intel/common/lpc_def.h>
 #include <southbridge/intel/common/pmbase.h>
 #include <southbridge/intel/common/pmutil.h>
 #include "i82801jx.h"
@@ -58,7 +59,7 @@ void i82801jx_setup_bars(void)
 	pci_write_config8(d31f0, D31F0_ACPI_CNTL, 0x80);
 
 	/* Set up GPIOBASE. */
-	pci_write_config32(d31f0, D31F0_GPIO_BASE, DEFAULT_GPIOBASE);
+	pci_write_config32(d31f0, GPIOBASE, DEFAULT_GPIOBASE);
 	/* Enable GPIO. */
 	pci_or_config8(d31f0, D31F0_GPIO_CNTL, 0x10);
 }

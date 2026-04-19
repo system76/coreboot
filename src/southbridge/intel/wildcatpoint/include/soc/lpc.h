@@ -16,8 +16,6 @@
 #define  SCIS_IRQ21		5
 #define  SCIS_IRQ22		6
 #define  SCIS_IRQ23		7
-#define GPIOBASE		0x48
-#define GPIO_BASE		0x48 /* LPC GPIO Base Address Register */
 #define GPIO_CNTL		0x4C /* LPC GPIO Control Register */
 #define  GPIO_EN		(1 << 4)
 #define GPIO_ROUT		0xb8

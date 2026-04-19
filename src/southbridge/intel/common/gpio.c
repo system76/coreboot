@@ -9,6 +9,7 @@
 #include <gpio.h>
 
 #include "southbridge/intel/common/gpio.h"
+#include "southbridge/intel/common/lpc_def.h"
 
 #define MAX_GPIO_NUMBER 75 /* zero based */
 
@@ -16,9 +17,6 @@
  * If you want to use these macros outside this file, consider making
  * more helper functions to expose the functionality you want instead.
  */
-
-/* LPC GPIO Base Address Register */
-#define GPIO_BASE	0x48
 
 /* ICH7 GPIOBASE */
 #define GPIO_USE_SEL	0x00
@@ -40,15 +38,15 @@
 static u16 get_gpio_base(void)
 {
 #ifdef __SIMPLE_DEVICE__
-	/* Don't assume GPIO_BASE is still the same */
-	return pci_read_config16(PCI_DEV(0, 0x1f, 0), GPIO_BASE) & 0xfffe;
+	/* Don't assume GPIOBASE is still the same */
+	return pci_read_config16(PCI_DEV(0, 0x1f, 0), GPIOBASE) & 0xfffe;
 #else
 	static u16 gpiobase;
 
 	if (gpiobase)
 		return gpiobase;
 
-	gpiobase = pci_read_config16(pcidev_on_root(0x1f, 0), GPIO_BASE) & 0xfffe;
+	gpiobase = pci_read_config16(pcidev_on_root(0x1f, 0), GPIOBASE) & 0xfffe;
 
 	return gpiobase;
 #endif

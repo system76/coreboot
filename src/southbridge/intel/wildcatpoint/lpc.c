@@ -569,7 +569,7 @@ static void pch_lpc_add_io_resources(struct device *dev)
 
 	/* GPIOBASE */
 	pch_lpc_add_io_resource(dev, GPIO_BASE_ADDRESS,
-				GPIO_BASE_SIZE, GPIO_BASE);
+				GPIO_BASE_SIZE, GPIOBASE);
 
 	/* PMBASE */
 	pch_lpc_add_io_resource(dev, ACPI_BASE_ADDRESS, ACPI_BASE_SIZE, PMBASE);

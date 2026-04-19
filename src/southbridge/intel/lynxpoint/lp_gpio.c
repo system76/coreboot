@@ -6,6 +6,7 @@
 #include <device/device.h>
 #include <device/pci.h>
 #include <gpio.h>
+#include <southbridge/intel/common/lpc_def.h>
 
 #include "pch.h"
 #include "lp_gpio.h"
@@ -13,10 +14,10 @@
 static u16 get_gpio_base(void)
 {
 #ifdef __SIMPLE_DEVICE__
-	return pci_read_config16(PCH_LPC_DEV, GPIO_BASE) & 0xfffc;
+	return pci_read_config16(PCH_LPC_DEV, GPIOBASE) & 0xfffc;
 #else
 	return pci_read_config16(pcidev_on_root(0x1f, 0),
-				 GPIO_BASE) & 0xfffc;
+				 GPIOBASE) & 0xfffc;
 #endif
 }
 

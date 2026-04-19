@@ -17,6 +17,7 @@
 #include "pch.h"
 #include <acpi/acpigen.h>
 #include <southbridge/intel/common/acpi_pirq_gen.h>
+#include <southbridge/intel/common/lpc_def.h>
 #include <southbridge/intel/common/rcba_pirq.h>
 #include <southbridge/intel/common/rtc.h>
 #include <southbridge/intel/common/spi.h>
@@ -720,7 +721,7 @@ static void pch_lpc_add_io_resources(struct device *dev)
 	res->flags = IORESOURCE_IO | IORESOURCE_ASSIGNED | IORESOURCE_FIXED;
 
 	/* GPIOBASE */
-	pch_lpc_add_io_resource(dev, get_gpiobase(), DEFAULT_GPIOSIZE, GPIO_BASE);
+	pch_lpc_add_io_resource(dev, get_gpiobase(), DEFAULT_GPIOSIZE, GPIOBASE);
 
 	/* PMBASE */
 	pch_lpc_add_io_resource(dev, get_pmbase(), 256, PMBASE);

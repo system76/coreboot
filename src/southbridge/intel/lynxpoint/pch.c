@@ -4,6 +4,7 @@
 #include <device/pci_ops.h>
 #include <device/device.h>
 #include <device/pci.h>
+#include <southbridge/intel/common/lpc_def.h>
 #include "iobp.h"
 #include "pch.h"
 

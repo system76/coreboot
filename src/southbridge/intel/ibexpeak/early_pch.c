@@ -8,10 +8,11 @@
 #include <northbridge/intel/ironlake/ironlake.h>
 #include <southbridge/intel/ibexpeak/pch.h>
 #include <southbridge/intel/common/gpio.h>
+#include <southbridge/intel/common/lpc_def.h>
 
 static void early_gpio_init(void)
 {
-	pci_write_config32(PCH_LPC_DEV, GPIO_BASE, DEFAULT_GPIOBASE | 1);
+	pci_write_config32(PCH_LPC_DEV, GPIOBASE, DEFAULT_GPIOBASE | 1);
 	pci_write_config8(PCH_LPC_DEV, GPIO_CNTL, 0x10);
 
 	setup_pch_gpios(&mainboard_gpio_map);

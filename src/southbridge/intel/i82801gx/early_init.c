@@ -4,6 +4,7 @@
 #include <device/pci_ops.h>
 #include <device/smbus_host.h>
 #include <southbridge/intel/common/gpio.h>
+#include <southbridge/intel/common/lpc_def.h>
 #include <southbridge/intel/common/pmbase.h>
 #include <southbridge/intel/common/rcba.h>
 

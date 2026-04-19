@@ -5,6 +5,7 @@
 #include <device/device.h>
 #include <device/pci_def.h>
 #include <device/smbus_host.h>
+#include <southbridge/intel/common/lpc_def.h>
 #include <southbridge/intel/common/pmbase.h>
 
 #include "pch.h"
@@ -40,7 +41,7 @@ static void pch_enable_bars(void)
 	/* Enable ACPI BAR */
 	pci_write_config8(PCH_LPC_DEV, ACPI_CNTL, ACPI_EN);
 
-	pci_write_config32(PCH_LPC_DEV, GPIO_BASE, DEFAULT_GPIOBASE | 1);
+	pci_write_config32(PCH_LPC_DEV, GPIOBASE, DEFAULT_GPIOBASE | 1);
 
 	/* Enable GPIO functionality. */
 	pci_write_config8(PCH_LPC_DEV, GPIO_CNTL, 0x10);

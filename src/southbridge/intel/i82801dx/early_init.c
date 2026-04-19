@@ -12,7 +12,7 @@ void i82801dx_early_init(void)
 	pci_write_config32(dev, PMBASE, DEFAULT_PMBASE | 1);
 	pci_write_config8(dev, ACPI_CNTL, ACPI_EN);
 
-	pci_write_config32(dev, GPIO_BASE, GPIOBASE_ADDR | 1);
+	pci_write_config32(dev, GPIOBASE, GPIOBASE_ADDR | 1);
 	pci_write_config8(dev, GPIO_CNTL, 0x10);
 
 	if (ENV_RAMINIT)

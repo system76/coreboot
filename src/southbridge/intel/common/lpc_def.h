@@ -3,6 +3,9 @@
 #ifndef SOUTHBRIDGE_INTEL_LPC_DEF_H
 #define SOUTHBRIDGE_INTEL_LPC_DEF_H
 
+/* LPC GPIO Base Address Register */
+#define GPIOBASE		0x48
+
 #define BIOS_CNTL               0xdc
 #define  BIOS_CNTL_BIOSWE       (1 << 0)
 #define  BIOS_CNTL_BLE          (1 << 1)

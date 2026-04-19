@@ -3,6 +3,7 @@
 #include <arch/io.h>
 #include <device/pci_ops.h>
 #include <device/smbus_host.h>
+#include <southbridge/intel/common/lpc_def.h>
 #include <southbridge/intel/common/pmutil.h>
 #include "i82801ix.h"
 #include "chip.h"
@@ -59,7 +60,7 @@ void i82801ix_early_init(void)
 	pci_write_config8(d31f0, D31F0_ACPI_CNTL, 0x80);
 
 	/* Set up GPIOBASE. */
-	pci_write_config32(d31f0, D31F0_GPIO_BASE, DEFAULT_GPIOBASE);
+	pci_write_config32(d31f0, GPIOBASE, DEFAULT_GPIOBASE);
 	/* Enable GPIO. */
 	pci_or_config8(d31f0, D31F0_GPIO_CNTL, 0x10);
 

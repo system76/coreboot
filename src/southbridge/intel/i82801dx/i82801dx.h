@@ -44,7 +44,7 @@ void i82801dx_lpc_setup(void);
 #define ACPI_CNTL       0x44
 #define   ACPI_EN	(1 << 4)
 #define BIOS_CNTL       0x4E
-#define GPIO_BASE       0x58
+#define GPIOBASE        0x58
 #define GPIO_CNTL       0x5C
 #define   GPIOBASE_ADDR 0x0500
 #define PIRQA_ROUT	0x60

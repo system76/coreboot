@@ -35,7 +35,6 @@
 
 /* D31:F0 LPC bridge */
 #define D31F0_ACPI_CNTL		0x44
-#define D31F0_GPIO_BASE		0x48
 #define D31F0_GPIO_CNTL		0x4c
 #define D31F0_PIRQA_ROUT	0x60
 #define D31F0_PIRQB_ROUT	0x61
