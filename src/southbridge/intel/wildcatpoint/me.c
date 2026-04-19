@@ -42,9 +42,9 @@ static const char *const me_bios_path_values[] = {
 /* MMIO base address for MEI interface */
 static u8 *mei_base_address;
 
-static void mei_dump(void *ptr, int dword, int offset, const char *type)
+static void mei_dump(u32 dword, int offset, const char *type)
 {
-	struct mei_csr *csr;
+	union mei_csr csr;
 
 	if (!CONFIG(DEBUG_INTEL_ME))
 		return;
@@ -54,16 +54,12 @@ static void mei_dump(void *ptr, int dword, int offset, const char *type)
 	switch (offset) {
 	case MEI_H_CSR:
 	case MEI_ME_CSR_HA:
-		csr = ptr;
-		if (!csr) {
-			printk(BIOS_SPEW, "ERROR: 0x%08x\n", dword);
-			break;
-		}
+		csr.raw = dword;
 		printk(BIOS_SPEW, "cbd=%u cbrp=%02u cbwp=%02u ready=%u "
-		       "reset=%u ig=%u is=%u ie=%u\n", csr->buffer_depth,
-		       csr->buffer_read_ptr, csr->buffer_write_ptr,
-		       csr->ready, csr->reset, csr->interrupt_generate,
-		       csr->interrupt_status, csr->interrupt_enable);
+		       "reset=%u ig=%u is=%u ie=%u\n", csr.buffer_depth,
+		       csr.buffer_read_ptr, csr.buffer_write_ptr,
+		       csr.ready, csr.reset, csr.interrupt_generate,
+		       csr.interrupt_status, csr.interrupt_enable);
 		break;
 	case MEI_ME_CB_RW:
 	case MEI_H_CB_WW:
@@ -79,64 +75,47 @@ static void mei_dump(void *ptr, int dword, int offset, const char *type)
  * ME/MEI access helpers using memcpy to avoid aliasing.
  */
 
-static inline void mei_read_dword_ptr(void *ptr, int offset)
+static inline union mei_csr read_host_csr(void)
 {
-	u32 dword = read32(mei_base_address + offset);
-	memcpy(ptr, &dword, sizeof(dword));
-	mei_dump(ptr, dword, offset, "READ");
+	union mei_csr csr = { .raw = read32(mei_base_address + MEI_H_CSR) };
+	mei_dump(csr.raw, MEI_H_CSR, "READ");
+	return csr;
 }
 
-static inline void mei_write_dword_ptr(void *ptr, int offset)
+static inline void write_host_csr(union mei_csr csr)
 {
-	u32 dword = 0;
-	memcpy(&dword, ptr, sizeof(dword));
-	write32(mei_base_address + offset, dword);
-	mei_dump(ptr, dword, offset, "WRITE");
+	write32(mei_base_address + MEI_H_CSR, csr.raw);
+	mei_dump(csr.raw, MEI_H_CSR, "WRITE");
 }
 
-static inline void pci_read_dword_ptr(struct device *dev, void *ptr, int offset)
+static inline union mei_csr read_me_csr(void)
 {
-	u32 dword = pci_read_config32(dev, offset);
-	memcpy(ptr, &dword, sizeof(dword));
-	mei_dump(ptr, dword, offset, "PCI READ");
-}
-
-static inline void read_host_csr(struct mei_csr *csr)
-{
-	mei_read_dword_ptr(csr, MEI_H_CSR);
-}
-
-static inline void write_host_csr(struct mei_csr *csr)
-{
-	mei_write_dword_ptr(csr, MEI_H_CSR);
-}
-
-static inline void read_me_csr(struct mei_csr *csr)
-{
-	mei_read_dword_ptr(csr, MEI_ME_CSR_HA);
+	union mei_csr csr = { .raw = read32(mei_base_address + MEI_ME_CSR_HA) };
+	mei_dump(csr.raw, MEI_ME_CSR_HA, "READ");
+	return csr;
 }
 
 static inline void write_cb(u32 dword)
 {
 	write32(mei_base_address + MEI_H_CB_WW, dword);
-	mei_dump(NULL, dword, MEI_H_CB_WW, "WRITE");
+	mei_dump(dword, MEI_H_CB_WW, "WRITE");
 }
 
 static inline u32 read_cb(void)
 {
 	u32 dword = read32(mei_base_address + MEI_ME_CB_RW);
-	mei_dump(NULL, dword, MEI_ME_CB_RW, "READ");
+	mei_dump(dword, MEI_ME_CB_RW, "READ");
 	return dword;
 }
 
 /* Wait for ME ready bit to be asserted */
 static int mei_wait_for_me_ready(void)
 {
-	struct mei_csr me;
+	union mei_csr me;
 	unsigned int try = ME_RETRY;
 
 	while (try--) {
-		read_me_csr(&me);
+		me = read_me_csr();
 		if (me.ready)
 			return 0;
 		udelay(ME_DELAY);
@@ -148,31 +127,31 @@ static int mei_wait_for_me_ready(void)
 
 static void mei_reset(void)
 {
-	struct mei_csr host;
+	union mei_csr host;
 
 	if (mei_wait_for_me_ready() < 0)
 		return;
 
 	/* Reset host and ME circular buffers for next message */
-	read_host_csr(&host);
+	host = read_host_csr();
 	host.reset = 1;
 	host.interrupt_generate = 1;
-	write_host_csr(&host);
+	write_host_csr(host);
 
 	if (mei_wait_for_me_ready() < 0)
 		return;
 
 	/* Re-init and indicate host is ready */
-	read_host_csr(&host);
+	host = read_host_csr();
 	host.interrupt_generate = 1;
 	host.ready = 1;
 	host.reset = 0;
-	write_host_csr(&host);
+	write_host_csr(host);
 }
 
-static int mei_send_packet(struct mei_header *mei, void *req_data)
+static int mei_send_packet(union mei_header *mei, void *req_data)
 {
-	struct mei_csr host;
+	union mei_csr host;
 	unsigned int ndata, n;
 	u32 *data;
 
@@ -192,11 +171,11 @@ static int mei_send_packet(struct mei_header *mei, void *req_data)
 	 * Make sure there is still room left in the circular buffer.
 	 * Reset the buffer pointers if the requested message will not fit.
 	 */
-	read_host_csr(&host);
+	host = read_host_csr();
 	if ((host.buffer_depth - host.buffer_write_ptr) < ndata) {
 		printk(BIOS_ERR, "ME: circular buffer full, resetting...\n");
 		mei_reset();
-		read_host_csr(&host);
+		host = read_host_csr();
 	}
 
 	/* Ensure the requested length will fit in the circular buffer. */
@@ -207,7 +186,7 @@ static int mei_send_packet(struct mei_header *mei, void *req_data)
 	}
 
 	/* Write MEI header */
-	mei_write_dword_ptr(mei, MEI_H_CB_WW);
+	write_cb(mei->raw);
 	ndata--;
 
 	/* Write message data */
@@ -216,9 +195,9 @@ static int mei_send_packet(struct mei_header *mei, void *req_data)
 		write_cb(*data++);
 
 	/* Generate interrupt to the ME */
-	read_host_csr(&host);
+	host = read_host_csr();
 	host.interrupt_generate = 1;
-	write_host_csr(&host);
+	write_host_csr(host);
 
 	/* Make sure ME is ready after sending request data */
 	return mei_wait_for_me_ready();
@@ -227,11 +206,11 @@ static int mei_send_packet(struct mei_header *mei, void *req_data)
 static int mei_send_data(u8 me_address, u8 host_address,
 			 void *req_data, int req_bytes)
 {
-	struct mei_header header = {
+	union mei_header header = {
 		.client_address = me_address,
 		.host_address = host_address,
 	};
-	struct mei_csr host;
+	union mei_csr host;
 	int current = 0;
 	u8 *req_ptr = req_data;
 
@@ -239,7 +218,7 @@ static int mei_send_data(u8 me_address, u8 host_address,
 		int remain = req_bytes - current;
 		int buf_len;
 
-		read_host_csr(&host);
+		host = read_host_csr();
 		buf_len = host.buffer_depth - host.buffer_write_ptr;
 
 		if (buf_len > remain) {
@@ -263,7 +242,7 @@ static int mei_send_data(u8 me_address, u8 host_address,
 static int mei_send_header(u8 me_address, u8 host_address,
 			   void *header, int header_len, int complete)
 {
-	struct mei_header mei = {
+	union mei_header mei = {
 		.client_address = me_address,
 		.host_address   = host_address,
 		.length         = header_len,
@@ -275,8 +254,8 @@ static int mei_send_header(u8 me_address, u8 host_address,
 static int mei_recv_msg(void *header, int header_bytes,
 			void *rsp_data, int rsp_bytes)
 {
-	struct mei_header mei_rsp;
-	struct mei_csr me, host;
+	union mei_header mei_rsp;
+	union mei_csr me, host;
 	unsigned int ndata, n;
 	unsigned int expected;
 	u32 *data;
@@ -295,7 +274,7 @@ static int mei_recv_msg(void *header, int header_bytes,
 	 * expected number of dwords are present in the circular buffer.
 	 */
 	for (n = ME_RETRY; n; --n) {
-		read_me_csr(&me);
+		me = read_me_csr();
 		if ((me.buffer_write_ptr - me.buffer_read_ptr) >= expected)
 			break;
 		udelay(ME_DELAY);
@@ -308,7 +287,7 @@ static int mei_recv_msg(void *header, int header_bytes,
 	}
 
 	/* Read and verify MEI response header from the ME */
-	mei_read_dword_ptr(&mei_rsp, MEI_ME_CB_RW);
+	mei_rsp.raw = read_cb();
 	if (!mei_rsp.is_complete) {
 		printk(BIOS_ERR, "ME: response is not complete\n");
 		return -1;
@@ -343,10 +322,10 @@ static int mei_recv_msg(void *header, int header_bytes,
 		*data++ = read_cb();
 
 	/* Tell the ME that we have consumed the response */
-	read_host_csr(&host);
+	host = read_host_csr();
 	host.interrupt_status = 1;
 	host.interrupt_generate = 1;
-	write_host_csr(&host);
+	write_host_csr(host);
 
 	return mei_wait_for_me_ready();
 }
@@ -419,14 +398,14 @@ static inline int mei_sendrecv_icc(struct icc_header *icc,
  */
 static void intel_me_mbp_give_up(struct device *dev)
 {
-	struct mei_csr csr;
+	union mei_csr csr;
 
 	pci_write_config32(dev, PCI_ME_H_GS2, PCI_ME_MBP_GIVE_UP);
 
-	read_host_csr(&csr);
+	csr = read_host_csr();
 	csr.reset = 1;
 	csr.interrupt_generate = 1;
-	write_host_csr(&csr);
+	write_host_csr(csr);
 }
 
 /*
@@ -436,11 +415,11 @@ static void intel_me_mbp_give_up(struct device *dev)
 static void intel_me_mbp_clear(struct device *dev)
 {
 	int count;
-	struct me_hfs2 hfs2;
+	union me_hfs2 hfs2;
 
 	/* Wait for the mbp_cleared indicator */
 	for (count = ME_RETRY; count > 0; --count) {
-		pci_read_dword_ptr(dev, &hfs2, PCI_ME_HFS2);
+		hfs2.raw = pci_read_config32(dev, PCI_ME_HFS2);
 		if (hfs2.mbp_cleared)
 			break;
 		udelay(ME_DELAY);
@@ -595,8 +574,6 @@ static int mkhi_hmrfpo_lock_noack(void)
 
 static void intel_me_finalize(struct device *dev)
 {
-	u16 reg16;
-
 	/* S3 path will have hidden this device already */
 	if (!mei_base_address || mei_base_address == (u8 *)0xfffffff0)
 		return;
@@ -605,10 +582,8 @@ static void intel_me_finalize(struct device *dev)
 		return;
 
 	/* Make sure IO is disabled */
-	reg16 = pci_read_config16(dev, PCI_COMMAND);
-	reg16 &= ~(PCI_COMMAND_MASTER |
-		   PCI_COMMAND_MEMORY | PCI_COMMAND_IO);
-	pci_write_config16(dev, PCI_COMMAND, reg16);
+	pci_and_config16(dev, PCI_COMMAND,
+			 ~(PCI_COMMAND_MASTER | PCI_COMMAND_MEMORY | PCI_COMMAND_IO));
 
 	/* Hide the PCI device */
 	RCBA32_OR(FD2, PCH_DISABLE_MEI1);
@@ -641,14 +616,11 @@ static int me_icc_set_clock_enables(u32 mask)
 static enum me_bios_path intel_me_path(struct device *dev)
 {
 	enum me_bios_path path = ME_DISABLE_BIOS_PATH;
-	struct me_hfs hfs;
-	struct me_hfs2 hfs2;
+	union me_hfs hfs = { .raw = pci_read_config32(dev, PCI_ME_HFS) };
+	union me_hfs2 hfs2 = { .raw = pci_read_config32(dev, PCI_ME_HFS2) };
 
 	/* Check and dump status */
 	intel_me_status();
-
-	pci_read_dword_ptr(dev, &hfs, PCI_ME_HFS);
-	pci_read_dword_ptr(dev, &hfs2, PCI_ME_HFS2);
 
 	/* Check Current Working State */
 	switch (hfs.working_state) {
@@ -709,7 +681,7 @@ static enum me_bios_path intel_me_path(struct device *dev)
 static int intel_mei_setup(struct device *dev)
 {
 	struct resource *res;
-	struct mei_csr host;
+	union mei_csr host;
 
 	/* Find the MMIO base for the ME interface */
 	res = probe_resource(dev, PCI_BASE_ADDRESS_0);
@@ -723,11 +695,11 @@ static int intel_mei_setup(struct device *dev)
 	pci_or_config16(dev, PCI_COMMAND, PCI_COMMAND_MASTER | PCI_COMMAND_MEMORY);
 
 	/* Clean up status for next message */
-	read_host_csr(&host);
+	host = read_host_csr();
 	host.interrupt_generate = 1;
 	host.ready = 1;
 	host.reset = 0;
-	write_host_csr(&host);
+	write_host_csr(host);
 
 	return 0;
 }
@@ -735,11 +707,10 @@ static int intel_mei_setup(struct device *dev)
 /* Read the Extend register hash of ME firmware */
 static int intel_me_extend_valid(struct device *dev)
 {
-	union me_heres status;
+	union me_heres status = { .raw = pci_read_config32(dev, PCI_ME_HERES) };
 	u32 extend[8] = {0};
 	int i, count = 0;
 
-	pci_read_dword_ptr(dev, &status, PCI_ME_HERES);
 	if (!status.extend_feature_present) {
 		printk(BIOS_ERR, "ME: Extend Feature not present\n");
 		return -1;
@@ -797,8 +768,7 @@ static void intel_me_print_mbp(struct me_bios_payload *mbp_data)
 
 static u32 me_to_host_words_pending(void)
 {
-	struct mei_csr me;
-	read_me_csr(&me);
+	union mei_csr me = read_me_csr();
 	if (!me.ready)
 		return 0;
 	return (me.buffer_write_ptr - me.buffer_read_ptr) &
@@ -806,7 +776,7 @@ static u32 me_to_host_words_pending(void)
 }
 
 struct mbp_payload {
-	struct mbp_header header;
+	union mbp_header header;
 	u32 data[];
 };
 
@@ -819,15 +789,13 @@ struct mbp_payload {
  */
 static int intel_me_read_mbp(struct me_bios_payload *mbp_data, struct device *dev)
 {
-	struct mbp_header mbp_hdr;
+	union mbp_header mbp_hdr;
 	u32 me2host_pending;
-	struct mei_csr host;
-	struct me_hfs2 hfs2;
+	union mei_csr host;
+	union me_hfs2 hfs2 = { .raw = pci_read_config32(dev, PCI_ME_HFS2) };
 	struct mbp_payload *mbp;
 	int i;
 	int ret = 0;
-
-	pci_read_dword_ptr(dev, &hfs2, PCI_ME_HFS2);
 
 	if (!hfs2.mbp_rdy) {
 		printk(BIOS_ERR, "ME: MBP not ready\n");
@@ -843,7 +811,7 @@ static int intel_me_read_mbp(struct me_bios_payload *mbp_data, struct device *de
 	}
 
 	/* we know for sure that at least the header is there */
-	mei_read_dword_ptr(&mbp_hdr, MEI_ME_CB_RW);
+	mbp_hdr.raw = read_cb();
 
 	if ((mbp_hdr.num_entries > (mbp_hdr.mbp_size / 2)) ||
 	    (me2host_pending < mbp_hdr.mbp_size)) {
@@ -865,11 +833,11 @@ static int intel_me_read_mbp(struct me_bios_payload *mbp_data, struct device *de
 
 	i = 0;
 	while (i != me2host_pending) {
-		mei_read_dword_ptr(&mbp->data[i], MEI_ME_CB_RW);
+		mbp->data[i] = read_cb();
 		i++;
 	}
 
-	read_host_csr(&host);
+	host = read_host_csr();
 
 	/* Check that read and write pointers are equal. */
 	if (host.buffer_read_ptr != host.buffer_write_ptr) {
@@ -879,7 +847,7 @@ static int intel_me_read_mbp(struct me_bios_payload *mbp_data, struct device *de
 		/* Tell ME that the host has finished reading the MBP. */
 		host.interrupt_generate = 1;
 		host.reset = 0;
-		write_host_csr(&host);
+		write_host_csr(host);
 
 		/* Wait for the mbp_cleared indicator. */
 		intel_me_mbp_clear(dev);
@@ -936,6 +904,11 @@ static int intel_me_read_mbp(struct me_bios_payload *mbp_data, struct device *de
 
 		case MBP_IDENT(NFC, SUPPORT_DATA):
 			ASSIGN_FIELD_PTR(nfc_data, &mbp->data[i+1]);
+
+		default:
+			printk(BIOS_ERR, "ME MBP: unknown item 0x%x @ "
+			       "dw offset 0x%x\n", mbp->data[i], i);
+			break;
 		}
 		i += item->length;
 	}
@@ -951,9 +924,6 @@ static void intel_me_init(struct device *dev)
 	const struct southbridge_intel_wildcatpoint_config *config = config_of(dev);
 	enum me_bios_path path = intel_me_path(dev);
 	struct me_bios_payload mbp_data;
-	int mbp_ret;
-	struct me_hfs hfs;
-	struct mei_csr csr;
 
 	/* Do initial setup and determine the BIOS path */
 	printk(BIOS_NOTICE, "ME: BIOS path: %s\n", me_bios_path_values[path]);
@@ -975,7 +945,7 @@ static void intel_me_init(struct device *dev)
 		return;
 
 	/* Read ME MBP data */
-	mbp_ret = intel_me_read_mbp(&mbp_data, dev);
+	int mbp_ret = intel_me_read_mbp(&mbp_data, dev);
 	if (mbp_ret < 0)
 		return;
 	intel_me_print_mbp(&mbp_data);
@@ -985,7 +955,7 @@ static void intel_me_init(struct device *dev)
 		me_icc_set_clock_enables(config->icc_clock_disable);
 
 	/* Make sure ME is in a mode that expects EOP */
-	pci_read_dword_ptr(dev, &hfs, PCI_ME_HFS);
+	union me_hfs hfs = { .raw = pci_read_config32(dev, PCI_ME_HFS) };
 
 	/* Abort and leave device alone if not normal mode */
 	if (hfs.fpt_bad ||
@@ -1006,10 +976,10 @@ static void intel_me_init(struct device *dev)
 		mkhi_end_of_post_noack();
 
 		/* Assert reset and interrupt */
-		read_host_csr(&csr);
+		union mei_csr csr = read_host_csr();
 		csr.interrupt_generate = 1;
 		csr.reset = 1;
-		write_host_csr(&csr);
+		write_host_csr(csr);
 	} else {
 		/*
 		 * MBP Cleared wait was not skipped

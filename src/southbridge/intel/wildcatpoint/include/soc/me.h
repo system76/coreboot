@@ -45,7 +45,8 @@
 #define  ME_HFS_ACK_GBL_RESET	6
 #define  ME_HFS_ACK_CONTINUE	7
 
-struct me_hfs {
+union me_hfs {
+	struct __packed {
 		u32 working_state: 4;
 		u32 mfg_mode: 1;
 		u32 fpt_bad: 1;
@@ -59,7 +60,9 @@ struct me_hfs {
 		u32 boot_options_present: 1;
 		u32 ack_data: 3;
 		u32 bios_msg_ack: 4;
-} __packed;
+	};
+	u32 raw;
+};
 
 #define PCI_ME_UMA		0x44
 
@@ -170,7 +173,8 @@ union me_did {
 #define  ME_HFS2_PMEVENT_PWR_CYCLE_RESET_MOFF 0xb
 #define  ME_HFS2_PMEVENT_SXMX_SXMOFF 0xc
 
-struct me_hfs2 {
+union me_hfs2 {
+	struct __packed {
 		u32 bist_in_progress: 1;
 		u32 icc_prog_sts: 2;
 		u32 invoke_mebx: 1;
@@ -187,7 +191,9 @@ struct me_hfs2 {
 		u32 current_state: 8;
 		u32 current_pmevent: 4;
 		u32 progress_code: 4;
-} __packed;
+	};
+	u32 raw;
+};
 
 #define PCI_ME_HFS5		0x68
 
@@ -218,7 +224,8 @@ union me_heres {
 #define MEI_ME_CB_RW		0x08
 #define MEI_ME_CSR_HA		0x0c
 
-struct mei_csr {
+union mei_csr {
+	struct __packed {
 		u32 interrupt_enable: 1;
 		u32 interrupt_status: 1;
 		u32 interrupt_generate: 1;
@@ -228,7 +235,9 @@ struct mei_csr {
 		u32 buffer_read_ptr: 8;
 		u32 buffer_write_ptr: 8;
 		u32 buffer_depth: 8;
-} __packed;
+	};
+	u32 raw;
+};
 
 #define MEI_ADDRESS_CORE	0x01
 #define MEI_ADDRESS_AMT		0x02
@@ -240,13 +249,16 @@ struct mei_csr {
 
 #define MEI_HOST_ADDRESS	0
 
-struct mei_header {
+union mei_header {
+	struct __packed {
 		u32 client_address: 8;
 		u32 host_address: 8;
 		u32 length: 9;
 		u32 reserved: 6;
 		u32 is_complete: 1;
-} __packed;
+	};
+	u32 raw;
+};
 
 #define MKHI_GROUP_ID_CBM	0x00
 #define  MKHI_GLOBAL_RESET	0x0b
@@ -355,11 +367,14 @@ enum me_bios_path {
 #define MBP_IDENT(appid, item) \
 	MBP_MAKE_IDENT(MBP_APPID_##appid, MBP_##appid##_##item##_ITEM)
 
-struct mbp_header {
+union mbp_header {
+	struct __packed {
 		u32 mbp_size    : 8;
 		u32 num_entries : 8;
 		u32 rsvd        : 16;
-} __packed;
+	};
+	u32 raw;
+};
 
 struct mbp_item_header {
 	u32  app_id  : 8;

@@ -3,7 +3,6 @@
 #include <device/pci_ops.h>
 #include <console/console.h>
 #include <device/pci.h>
-#include <string.h>
 #include <soc/pci_devs.h>
 #include <soc/me.h>
 #include <delay.h>
@@ -12,12 +11,6 @@
 	(((__index__) < ARRAY_SIZE((__array__))) ? \
 		(__array__)[(__index__)] : \
 		(__default__))
-
-static inline void me_read_dword_ptr(void *ptr, int offset)
-{
-	u32 dword = pci_read_config32(PCH_DEV_ME, offset);
-	memcpy(ptr, &dword, sizeof(dword));
-}
 
 /* HFS1[3:0] Current Working State Values */
 static const char *me_cws_values[] = {
@@ -196,95 +189,92 @@ void intel_me_status(void)
 	if (CONFIG_DEFAULT_CONSOLE_LOGLEVEL < BIOS_DEBUG)
 		return;
 
-	struct me_hfs _hfs, *hfs = &_hfs;
-	struct me_hfs2 _hfs2, *hfs2 = &_hfs2;
-
-	me_read_dword_ptr(hfs, PCI_ME_HFS);
-	me_read_dword_ptr(hfs2, PCI_ME_HFS2);
+	union me_hfs hfs = { .raw = pci_read_config32(PCH_DEV_ME, PCI_ME_HFS) };
+	union me_hfs2 hfs2 = { .raw = pci_read_config32(PCH_DEV_ME, PCI_ME_HFS2) };
 
 	/* Check Current States */
 	printk(BIOS_DEBUG, "ME: FW Partition Table      : %s\n",
-	       hfs->fpt_bad ? "BAD" : "OK");
+	       hfs.fpt_bad ? "BAD" : "OK");
 	printk(BIOS_DEBUG, "ME: Bringup Loader Failure  : %s\n",
-	       hfs->ft_bup_ld_flr ? "YES" : "NO");
+	       hfs.ft_bup_ld_flr ? "YES" : "NO");
 	printk(BIOS_DEBUG, "ME: Firmware Init Complete  : %s\n",
-	       hfs->fw_init_complete ? "YES" : "NO");
+	       hfs.fw_init_complete ? "YES" : "NO");
 	printk(BIOS_DEBUG, "ME: Manufacturing Mode      : %s\n",
-	       hfs->mfg_mode ? "YES" : "NO");
+	       hfs.mfg_mode ? "YES" : "NO");
 	printk(BIOS_DEBUG, "ME: Boot Options Present    : %s\n",
-	       hfs->boot_options_present ? "YES" : "NO");
+	       hfs.boot_options_present ? "YES" : "NO");
 	printk(BIOS_DEBUG, "ME: Update In Progress      : %s\n",
-	       hfs->update_in_progress ? "YES" : "NO");
+	       hfs.update_in_progress ? "YES" : "NO");
 	printk(BIOS_DEBUG, "ME: Current Working State   : %s\n",
 	       ARRAY_TO_ELEMENT(me_cws_values,
-				hfs->working_state,
+				hfs.working_state,
 				"Unknown (OOB)"));
 	printk(BIOS_DEBUG, "ME: Current Operation State : %s\n",
 	       ARRAY_TO_ELEMENT(me_opstate_values,
-				hfs->operation_state,
+				hfs.operation_state,
 				"Unknown (OOB)"));
 	printk(BIOS_DEBUG, "ME: Current Operation Mode  : %s\n",
 	       ARRAY_TO_ELEMENT(me_opmode_values,
-				hfs->operation_mode,
+				hfs.operation_mode,
 				"Unknown (OOB)"));
 	printk(BIOS_DEBUG, "ME: Error Code              : %s\n",
 	       ARRAY_TO_ELEMENT(me_error_values,
-				hfs->error_code,
+				hfs.error_code,
 				"Unknown (OOB)"));
 	printk(BIOS_DEBUG, "ME: Progress Phase          : %s\n",
 	       ARRAY_TO_ELEMENT(me_progress_values,
-				hfs2->progress_code,
+				hfs2.progress_code,
 				"Unknown (OOB)"));
 	printk(BIOS_DEBUG, "ME: Power Management Event  : %s\n",
 	       ARRAY_TO_ELEMENT(me_pmevent_values,
-				hfs2->current_pmevent,
+				hfs2.current_pmevent,
 				"Unknown (OOB)"));
 
 	printk(BIOS_DEBUG, "ME: Progress Phase State    : ");
-	switch (hfs2->progress_code) {
+	switch (hfs2.progress_code) {
 	case ME_HFS2_PHASE_ROM:		/* ROM Phase */
 		printk(BIOS_DEBUG, "%s",
 		       ARRAY_TO_ELEMENT(me_progress_rom_values,
-					hfs2->current_state,
+					hfs2.current_state,
 					"Unknown (OOB)"));
 		break;
 
 	case ME_HFS2_PHASE_UKERNEL:	/* uKernel Phase */
-		printk(BIOS_DEBUG, "0x%02x", hfs2->current_state);
+		printk(BIOS_DEBUG, "0x%02x", hfs2.current_state);
 		break;
 
 	case ME_HFS2_PHASE_BUP:		/* Bringup Phase */
 		if (ARRAY_TO_ELEMENT(me_progress_bup_values,
-					hfs2->current_state, NULL))
+					hfs2.current_state, NULL))
 			printk(BIOS_DEBUG, "%s",
 			       ARRAY_TO_ELEMENT(me_progress_bup_values,
-						hfs2->current_state,
+						hfs2.current_state,
 						NULL));
 		else
-			printk(BIOS_DEBUG, "0x%02x", hfs2->current_state);
+			printk(BIOS_DEBUG, "0x%02x", hfs2.current_state);
 		break;
 
 	case ME_HFS2_PHASE_POLICY:	/* Policy Module Phase */
 		if (ARRAY_TO_ELEMENT(me_progress_policy_values,
-					hfs2->current_state, NULL))
+					hfs2.current_state, NULL))
 			printk(BIOS_DEBUG, "%s",
 			       ARRAY_TO_ELEMENT(me_progress_policy_values,
-						hfs2->current_state,
+						hfs2.current_state,
 						NULL));
 		else
-			printk(BIOS_DEBUG, "0x%02x", hfs2->current_state);
+			printk(BIOS_DEBUG, "0x%02x", hfs2.current_state);
 		break;
 
 	case ME_HFS2_PHASE_HOST_COMM:	/* Host Communication Phase */
-		if (!hfs2->current_state)
+		if (!hfs2.current_state)
 			printk(BIOS_DEBUG, "Host communication established");
 		else
-			printk(BIOS_DEBUG, "0x%02x", hfs2->current_state);
+			printk(BIOS_DEBUG, "0x%02x", hfs2.current_state);
 		break;
 
 	default:
 		printk(BIOS_DEBUG, "Unknown phase: 0x%02x state: 0x%02x",
-		       hfs2->progress_code, hfs2->current_state);
+		       hfs2.progress_code, hfs2.current_state);
 	}
 	printk(BIOS_DEBUG, "\n");
 }
@@ -293,7 +283,6 @@ void intel_me_hsio_version(uint16_t *version, uint16_t *checksum)
 {
 	int count;
 	u32 hsiover;
-	struct me_hfs hfs;
 
 	/* Query for HSIO version, overloads H_GS and HFS */
 	pci_write_config32(PCH_DEV_ME, PCI_ME_H_GS,
@@ -301,7 +290,7 @@ void intel_me_hsio_version(uint16_t *version, uint16_t *checksum)
 
 	/* Must wait for ME acknowledgement */
 	for (count = ME_RETRY; count > 0; --count) {
-		me_read_dword_ptr(&hfs, PCI_ME_HFS);
+		union me_hfs hfs = { .raw = pci_read_config32(PCH_DEV_ME, PCI_ME_HFS) };
 		if (hfs.bios_msg_ack)
 			break;
 		udelay(ME_DELAY);
