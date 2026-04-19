@@ -346,11 +346,51 @@ static void systemagent_init(struct device *dev)
 	set_power_limits(28);
 }
 
+/*
+ * 16.6 System Agent Configuration Locking
+ * "5th Generation Intel Core Processor Family BIOS Specification"
+ * Document Number 535094
+ * Revision 2.2.0, August 2014
+ *
+ * To ease reading, first lock PCI registers, then MCHBAR registers.
+ * Write the MC Lock register first, since more than one bit gets set.
+ */
+static void northbridge_final(struct device *dev)
+{
+	pci_or_config16(dev, GGC,         1 << 0);
+	pci_or_config32(dev, DPR,         1 << 0);
+	pci_or_config32(dev, MESEG_LIMIT, 1 << 10);
+	pci_or_config32(dev, REMAPBASE,   1 << 0);
+	pci_or_config32(dev, REMAPLIMIT,  1 << 0);
+	pci_or_config32(dev, TOM,         1 << 0);
+	pci_or_config32(dev, TOUUD,       1 << 0);
+	pci_or_config32(dev, BDSM,        1 << 0);
+	pci_or_config32(dev, BGSM,        1 << 0);
+	pci_or_config32(dev, TSEG,        1 << 0);
+	pci_or_config32(dev, TOLUD,       1 << 0);
+
+	mchbar_setbits32(0x50fc, 0x8f);		/* MC */
+	mchbar_setbits32(0x5500, 1 << 0);	/* PAVP */
+	mchbar_setbits32(0x5880, 1 << 5);	/* DDR PTM */
+	mchbar_setbits32(0x7000, 1 << 31);
+	mchbar_setbits32(0x77fc, 1 << 0);
+	mchbar_setbits32(0x7ffc, 1 << 0);
+	mchbar_setbits32(0x6800, 1 << 31);
+	mchbar_setbits32(0x6020, 1 << 0);		/* UMA GFX */
+	mchbar_setbits32(0x63fc, 1 << 0);		/* VTDTRK */
+
+	/* Read+write the following */
+	mchbar_setbits32(0x6030, 0);
+	mchbar_setbits32(0x6034, 0);
+	mchbar_setbits32(0x6008, 0);
+}
+
 static struct device_operations systemagent_ops = {
 	.read_resources   = systemagent_read_resources,
 	.set_resources    = pci_dev_set_resources,
 	.enable_resources = pci_dev_enable_resources,
 	.init             = systemagent_init,
+	.final            = northbridge_final,
 	.ops_pci          = &pci_dev_ops_pci,
 };
 

@@ -1,5 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+#include <bootstate.h>
+#include <commonlib/console/post_codes.h>
 #include <device/pci_ops.h>
 #include <spi-generic.h>
 #include <soc/pci_devs.h>
@@ -9,7 +11,7 @@
 #include <soc/spi.h>
 #include <southbridge/intel/common/spi.h>
 
-void broadwell_pch_finalize(void)
+static void broadwell_pch_finalize(void)
 {
 	spi_finalize_ops();
 
@@ -41,3 +43,14 @@ void broadwell_pch_finalize(void)
 	/* Read+Write this R/WO register */
 	RCBA32(LCAP) = RCBA32(LCAP);
 }
+
+static void broadwell_finalize(void *unused)
+{
+	broadwell_pch_finalize();
+
+	/* Indicate finalize step with post code */
+	post_code(POSTCODE_OS_BOOT);
+}
+
+BOOT_STATE_INIT_ENTRY(BS_OS_RESUME, BS_ON_ENTRY, broadwell_finalize, NULL);
+BOOT_STATE_INIT_ENTRY(BS_PAYLOAD_LOAD, BS_ON_EXIT, broadwell_finalize, NULL);
