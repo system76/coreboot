@@ -4,7 +4,7 @@
 #include <cpu/intel/haswell/cfr.h>
 #include <drivers/intel/oc_mailbox/cfr.h>
 #include <drivers/option/cfr_frontend.h>
-#include <soc/cfr.h>
+#include <southbridge/intel/lynxpoint/cfr.h>
 
 static const struct sm_object tdp_pl1_override = SM_DECLARE_NUMBER({
 	.opt_name	= "tdp_pl1_override",

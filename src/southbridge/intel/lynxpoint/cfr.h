@@ -1,14 +1,14 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
 /*
- * CFR enums and structs for sb/lynxpoint
+ * CFR enums and structs for sb/intel/lynxpoint
  */
 
 #ifndef _LYNXPOINT_CFR_H_
 #define _LYNXPOINT_CFR_H_
 
 #include <drivers/option/cfr_frontend.h>
-#include "pch.h"
+#include "pch_minimal.h"
 
 /* Power state after power loss */
 static const struct sm_object power_on_after_fail = SM_DECLARE_ENUM({
@@ -35,6 +35,11 @@ static const struct sm_object me_disable = SM_DECLARE_ENUM({
 				SM_ENUM_VALUE_END	},
 });
 
+/*
+ * Wildcat Point code does not implement the NMI option, so do not expose it
+ * TODO: Clean this up after unification, possibly drop the NMI option altogether
+ */
+#if CONFIG(SOUTHBRIDGE_INTEL_LYNXPOINT)
 enum {
 	NMI_OFF = 0,
 	NMI_ON,
@@ -51,5 +56,6 @@ static const struct sm_object nmi = SM_DECLARE_ENUM({
 				{ "Enabled",	NMI_ON	},
 				SM_ENUM_VALUE_END	},
 });
+#endif
 
 #endif /* _LYNXPOINT_CFR_H_ */

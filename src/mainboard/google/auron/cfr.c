@@ -3,7 +3,7 @@
 #include <boot/coreboot_tables.h>
 #include <drivers/option/cfr_frontend.h>
 #include <ec/google/chromeec/cfr.h>
-#include <soc/cfr.h>
+#include <southbridge/intel/lynxpoint/cfr.h>
 
 static const struct sm_object touchscreen = SM_DECLARE_BOOL({
 	.opt_name	= "touchscreen",
