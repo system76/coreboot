@@ -184,13 +184,10 @@ static const char *me_progress_policy_values[] = {
 	"Required VSCC values for flash parts do not match",
 };
 
-void intel_me_status(void)
+void intel_me_status(union me_hfs hfs, union me_hfs2 hfs2)
 {
 	if (CONFIG_DEFAULT_CONSOLE_LOGLEVEL < BIOS_DEBUG)
 		return;
-
-	union me_hfs hfs = { .raw = pci_read_config32(PCH_DEV_ME, PCI_ME_HFS) };
-	union me_hfs2 hfs2 = { .raw = pci_read_config32(PCH_DEV_ME, PCI_ME_HFS2) };
 
 	/* Check Current States */
 	printk(BIOS_DEBUG, "ME: FW Partition Table      : %s\n",

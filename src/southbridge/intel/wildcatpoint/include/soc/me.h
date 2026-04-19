@@ -504,6 +504,6 @@ struct me_fwcaps {
 void intel_me_hsio_version(uint16_t *version, uint16_t *checksum);
 
 /* Defined in me_status.c for both romstage and ramstage */
-void intel_me_status(void);
+void intel_me_status(union me_hfs hfs, union me_hfs2 hfs2);
 
 #endif
