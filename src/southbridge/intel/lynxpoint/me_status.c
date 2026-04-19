@@ -3,15 +3,29 @@
 #include <console/console.h>
 #include "me.h"
 
+#define ARRAY_TO_ELEMENT(__array__, __index__, __default__) \
+	(((__index__) < ARRAY_SIZE((__array__))) ? \
+		(__array__)[(__index__)] : \
+		(__default__))
+
 /* HFS1[3:0] Current Working State Values */
 static const char *me_cws_values[] = {
 	[ME_HFS_CWS_RESET]	= "Reset",
 	[ME_HFS_CWS_INIT]	= "Initializing",
 	[ME_HFS_CWS_REC]	= "Recovery",
+	[3]			= "Unknown (3)",
+	[4]			= "Unknown (4)",
 	[ME_HFS_CWS_NORMAL]	= "Normal",
 	[ME_HFS_CWS_WAIT]	= "Platform Disable Wait",
 	[ME_HFS_CWS_TRANS]	= "OP State Transition",
 	[ME_HFS_CWS_INVALID]	= "Invalid CPU Plugged In",
+	[9]			= "Unknown (9)",
+	[10]			= "Unknown (10)",
+	[11]			= "Unknown (11)",
+	[12]			= "Unknown (12)",
+	[13]			= "Unknown (13)",
+	[14]			= "Unknown (14)",
+	[15]			= "Unknown (15)",
 };
 
 /* HFS1[8:6] Current Operation State Values */
@@ -142,39 +156,61 @@ void intel_me_status(union me_hfs hfs, union me_hfs2 hfs2)
 	printk(BIOS_DEBUG, "ME: Update In Progress      : %s\n",
 	       hfs.update_in_progress ? "YES" : "NO");
 	printk(BIOS_DEBUG, "ME: Current Working State   : %s\n",
-	       me_cws_values[hfs.working_state]);
+	       ARRAY_TO_ELEMENT(me_cws_values,
+				hfs.working_state,
+				"Unknown (OOB)"));
 	printk(BIOS_DEBUG, "ME: Current Operation State : %s\n",
-	       me_opstate_values[hfs.operation_state]);
+	       ARRAY_TO_ELEMENT(me_opstate_values,
+				hfs.operation_state,
+				"Unknown (OOB)"));
 	printk(BIOS_DEBUG, "ME: Current Operation Mode  : %s\n",
-	       me_opmode_values[hfs.operation_mode]);
+	       ARRAY_TO_ELEMENT(me_opmode_values,
+				hfs.operation_mode,
+				"Unknown (OOB)"));
 	printk(BIOS_DEBUG, "ME: Error Code              : %s\n",
-	       me_error_values[hfs.error_code]);
+	       ARRAY_TO_ELEMENT(me_error_values,
+				hfs.error_code,
+				"Unknown (OOB)"));
 	printk(BIOS_DEBUG, "ME: Progress Phase          : %s\n",
-	       me_progress_values[hfs2.progress_code]);
+	       ARRAY_TO_ELEMENT(me_progress_values,
+				hfs2.progress_code,
+				"Unknown (OOB)"));
 	printk(BIOS_DEBUG, "ME: Power Management Event  : %s\n",
-	       me_pmevent_values[hfs2.current_pmevent]);
+	       ARRAY_TO_ELEMENT(me_pmevent_values,
+				hfs2.current_pmevent,
+				"Unknown (OOB)"));
 
 	printk(BIOS_DEBUG, "ME: Progress Phase State    : ");
 	switch (hfs2.progress_code) {
 	case ME_HFS2_PHASE_ROM:		/* ROM Phase */
 		printk(BIOS_DEBUG, "%s",
-		       me_progress_rom_values[hfs2.current_state]);
+		       ARRAY_TO_ELEMENT(me_progress_rom_values,
+					hfs2.current_state,
+					"Unknown (OOB)"));
+		break;
+
+	case ME_HFS2_PHASE_UKERNEL:	/* uKernel Phase */
+		printk(BIOS_DEBUG, "0x%02x", hfs2.current_state);
 		break;
 
 	case ME_HFS2_PHASE_BUP:		/* Bringup Phase */
-		if (hfs2.current_state < ARRAY_SIZE(me_progress_bup_values)
-		    && me_progress_bup_values[hfs2.current_state])
+		if (ARRAY_TO_ELEMENT(me_progress_bup_values,
+					hfs2.current_state, NULL))
 			printk(BIOS_DEBUG, "%s",
-			       me_progress_bup_values[hfs2.current_state]);
+			       ARRAY_TO_ELEMENT(me_progress_bup_values,
+						hfs2.current_state,
+						NULL));
 		else
 			printk(BIOS_DEBUG, "0x%02x", hfs2.current_state);
 		break;
 
 	case ME_HFS2_PHASE_POLICY:	/* Policy Module Phase */
-		if (hfs2.current_state < ARRAY_SIZE(me_progress_policy_values)
-		    && me_progress_policy_values[hfs2.current_state])
+		if (ARRAY_TO_ELEMENT(me_progress_policy_values,
+					hfs2.current_state, NULL))
 			printk(BIOS_DEBUG, "%s",
-			       me_progress_policy_values[hfs2.current_state]);
+			       ARRAY_TO_ELEMENT(me_progress_policy_values,
+						hfs2.current_state,
+						NULL));
 		else
 			printk(BIOS_DEBUG, "0x%02x", hfs2.current_state);
 		break;
