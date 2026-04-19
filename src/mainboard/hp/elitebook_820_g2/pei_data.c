@@ -11,8 +11,6 @@ void mb_get_spd_map(struct spd_info *spdi)
 
 void mainboard_fill_pei_data(struct pei_data *pei_data)
 {
-	pei_data->ec_present = 1;
-
 	/* P1 */
 	pei_data_usb2_port(pei_data, 0, 0x0040, 1, USB_OC_PIN_SKIP, USB_PORT_BACK_PANEL);
 	/* P2: left side port, USB debug */
