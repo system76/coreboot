@@ -289,9 +289,9 @@ static void i82801gx_spi_init(void)
 {
 	u16 spicontrol;
 
-	spicontrol = RCBA16(SPIBASE + 2);
+	spicontrol = RCBA16(SPIBAR_SPIC);
 	spicontrol &= ~(1 << 0); // SPI Access Request
-	RCBA16(SPIBASE + 2) = spicontrol;
+	RCBA16(SPIBAR_SPIC) = spicontrol;
 }
 
 static void i82801gx_fixups(struct device *dev)
@@ -402,7 +402,7 @@ static void lpc_final(struct device *dev)
 		spi_finalize_ops();
 
 	/* Lock SPIBAR */
-	SPIBAR16(0) = SPIBAR16(0) | (1 << 15);
+	RCBA16(SPIBAR_SPIS) |= 1 << 15;
 
 	/* BIOS Interface Lockdown */
 	RCBA32(0x3410) |= 1 << 0;

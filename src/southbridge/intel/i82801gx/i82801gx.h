@@ -9,10 +9,6 @@
 
 #include <southbridge/intel/common/rcba.h> /* IWYU pragma: export */
 
-#define SPIBASE 0x3020
-#define SPIBAR16(x) RCBA16(SPIBASE + x)
-#define SPIBAR32(x) RCBA32(SPIBASE + x)
-
 #ifndef __ACPI__
 #include <device/device.h>
 
@@ -212,6 +208,9 @@ void ich7_setup_cir(void);
 #define IOTR3		0x1e98	/* 64bit */
 
 #define TCTL		0x3000	/*  8bit */
+
+#define SPIBAR_SPIS	0x3020	/* 16bit */
+#define SPIBAR_SPIC	0x3020	/* 16bit */
 
 #define D31IP		0x3100	/* 32bit */
 #define D30IP		0x3104	/* 32bit */
