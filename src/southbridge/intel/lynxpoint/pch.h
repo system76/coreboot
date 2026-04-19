@@ -94,6 +94,11 @@ struct usb2_port_config {
 struct usb3_port_config {
 	bool enable;
 	unsigned int oc_pin;
+	/*
+	 * Set to 0 if trace length is > 5 inches
+	 * Set to 1 if trace length is <= 5 inches
+	 */
+	uint8_t fixed_eq;
 };
 
 /* Mainboard-specific USB configuration */

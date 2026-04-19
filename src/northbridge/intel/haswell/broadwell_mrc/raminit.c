@@ -223,6 +223,7 @@ void perform_raminit(const bool s3resume)
 		const uint8_t oc_pin = mainboard_usb3_ports[i].oc_pin;
 		pei_data.usb3_ports[i].enable	= mainboard_usb3_ports[i].enable;
 		pei_data.usb3_ports[i].oc_pin	= map_to_pei_oc_pin(oc_pin);
+		pei_data.usb3_ports[i].fixed_eq = mainboard_usb3_ports[i].fixed_eq;
 	}
 
 	/* Broadwell MRC uses ACPI values for boot_mode */
