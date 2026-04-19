@@ -428,17 +428,8 @@ unsigned int smbios_processor_external_clock(void)
 static void model_206ax_report(void)
 {
 	static const char *const mode[] = {"NOT ", ""};
-	char processor_name[49];
 	int vt, txt, aes;
-	uint32_t cpu_id, cpu_feature_flag;
-
-	/* Print processor name */
-	fill_processor_name(processor_name);
-	printk(BIOS_INFO, "CPU: %s.\n", processor_name);
-
-	/* CPUID and features */
-	cpu_id = cpu_get_cpuid();
-	printk(BIOS_INFO, "CPU: cpuid(1) 0x%x\n", cpu_id);
+	uint32_t cpu_feature_flag;
 
 	cpu_feature_flag = cpu_get_feature_flags_ecx();
 	aes = (cpu_feature_flag & CPUID_AES) ? 1 : 0;
@@ -454,12 +445,6 @@ static void model_206ax_init(struct device *cpu)
 	/* Clear out pending MCEs */
 	/* This should only be done on a cold boot */
 	mca_clear_status();
-
-	/* Print infos */
-	model_206ax_report();
-
-	/* Setup Page Attribute Tables (PAT) */
-	// TODO set up PAT
 
 	enable_lapic_tpr();
 
@@ -490,6 +475,9 @@ static void model_206ax_init(struct device *cpu)
 /* MP initialization support. */
 static void pre_mp_init(void)
 {
+	/* Print infos */
+	model_206ax_report();
+
 	const void *microcode_patch = intel_microcode_find();
 	intel_microcode_load_unlocked(microcode_patch);
 

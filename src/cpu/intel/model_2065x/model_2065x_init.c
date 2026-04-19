@@ -73,20 +73,9 @@ static void set_max_ratio(void)
 
 static void model_2065x_init(struct device *cpu)
 {
-	char processor_name[49];
-
 	/* Clear out pending MCEs */
 	/* This should only be done on a cold boot */
 	mca_clear_status();
-
-	/* Print processor name */
-	fill_processor_name(processor_name);
-	printk(BIOS_INFO, "CPU: %s.\n", processor_name);
-	printk(BIOS_INFO, "CPU:lapic=%d, boot_cpu=%d\n", lapicid(),
-		boot_cpu());
-
-	/* Setup Page Attribute Tables (PAT) */
-	// TODO set up PAT
 
 	enable_lapic_tpr();
 
