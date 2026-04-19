@@ -52,23 +52,17 @@ static void ABI_X86 send_to_console(unsigned char b)
  */
 static void sdram_initialize(struct pei_data *pei_data)
 {
-	size_t mrc_size;
-	pei_wrapper_entry_t entry;
-	int ret;
-
 	/* Assume boot device is memory mapped. */
 	assert(CONFIG(BOOT_DEVICE_MEMORY_MAPPED));
 
-	pei_data->saved_data =
-		mrc_cache_current_mmap_leak(MRC_TRAINING_DATA, 0,
-					    &mrc_size);
+	size_t mrc_size;
+	pei_data->saved_data = mrc_cache_current_mmap_leak(MRC_TRAINING_DATA, 0, &mrc_size);
 	if (pei_data->saved_data) {
 		/* MRC cache found */
 		pei_data->saved_data_size = mrc_size;
 	} else if (pei_data->boot_mode == ACPI_S3) {
 		/* Waking from S3 and no cache. */
-		printk(BIOS_DEBUG,
-		       "No MRC cache found in S3 resume path.\n");
+		printk(BIOS_DEBUG, "No MRC cache found in S3 resume path.\n");
 		post_code(POSTCODE_RESUME_FAILURE);
 		system_reset();
 	} else {
@@ -76,7 +70,7 @@ static void sdram_initialize(struct pei_data *pei_data)
 	}
 
 	/*
-	 * Do not use saved pei data.  Can be set by mainboard romstage
+	 * Do not use saved pei data. Can be set by mainboard romstage
 	 * to force a full train of memory on every boot.
 	 */
 	if (pei_data->disable_saved_data) {
@@ -86,13 +80,13 @@ static void sdram_initialize(struct pei_data *pei_data)
 	}
 
 	/* We don't care about leaking the mapping */
-	entry = cbfs_ro_map("mrc.bin", NULL);
+	pei_wrapper_entry_t entry = cbfs_ro_map("mrc.bin", NULL);
 	if (entry == NULL)
 		die("mrc.bin not found!");
 
 	printk(BIOS_DEBUG, "Starting Memory Reference Code\n");
 
-	ret = entry(pei_data);
+	int ret = entry(pei_data);
 	if (ret < 0)
 		die("pei_data version mismatch\n");
 

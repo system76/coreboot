@@ -147,14 +147,10 @@ struct map_entry {
 
 static void read_map_entry(struct device *dev, struct map_entry *entry, uint64_t *result)
 {
-	uint64_t value;
-	uint64_t mask;
-
 	/* All registers have a 1MiB granularity */
-	mask = ((1ULL << 20) - 1);
-	mask = ~mask;
+	const uint64_t mask = ~((1ULL << 20) - 1);
 
-	value = 0;
+	uint64_t value = 0;
 
 	if (entry->is_64_bit) {
 		value = pci_read_config32(dev, entry->reg + 4);
@@ -212,16 +208,14 @@ static struct map_entry memory_map[NUM_MAP_ENTRIES] = {
 
 static void mc_read_map_entries(struct device *dev, uint64_t *values)
 {
-	int i;
-	for (i = 0; i < NUM_MAP_ENTRIES; i++) {
+	for (int i = 0; i < NUM_MAP_ENTRIES; i++) {
 		read_map_entry(dev, &memory_map[i], &values[i]);
 	}
 }
 
 static void mc_report_map_entries(struct device *dev, uint64_t *values)
 {
-	int i;
-	for (i = 0; i < NUM_MAP_ENTRIES; i++) {
+	for (int i = 0; i < NUM_MAP_ENTRIES; i++) {
 		printk(BIOS_DEBUG, "MC MAP: %s: 0x%llx\n",
 		       memory_map[i].description, values[i]);
 	}
@@ -231,12 +225,11 @@ static void mc_report_map_entries(struct device *dev, uint64_t *values)
 
 static void mc_add_dram_resources(struct device *dev, int *resource_cnt)
 {
-	int index;
 	uint64_t mc_values[NUM_MAP_ENTRIES];
 
 	/* Read in the MAP registers and report their values */
-	mc_read_map_entries(dev, &mc_values[0]);
-	mc_report_map_entries(dev, &mc_values[0]);
+	mc_read_map_entries(dev, mc_values);
+	mc_report_map_entries(dev, mc_values);
 
 	/*
 	 * DMA Protected Range can be reserved below TSEG for PCODE patch
@@ -275,14 +268,13 @@ static void mc_add_dram_resources(struct device *dev, int *resource_cnt)
 	 *
 	 * The resource index starts low and should not meet or exceed PCI_BASE_ADDRESS_0.
 	 */
-	index = *resource_cnt;
+	int index = *resource_cnt;
 
 	/*
 	 * 0 - > 0xa0000: RAM
 	 * 0xa0000 - 0xbffff: Legacy VGA
 	 * 0xc0000 - 0xfffff: RAM
 	 */
-
 	ram_range(dev, index++, 0, 0xa0000);
 	mmio_from_to(dev, index++, 0xa0000, 0xc0000);
 	reserved_ram_from_to(dev, index++, 0xc0000, 1 * MiB);
