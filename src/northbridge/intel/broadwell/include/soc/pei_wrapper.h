@@ -12,13 +12,6 @@ typedef int ABI_X86(*pei_wrapper_entry_t)(struct pei_data *pei_data);
 extern const struct usb2_port_setting mainboard_usb2_ports[MAX_USB2_PORTS];
 extern const struct usb3_port_setting mainboard_usb3_ports[MAX_USB3_PORTS];
 
-/* Temporary, to minimise changes to mainboard code */
-#define pei_data_usb2_port(pei_data, port, length, enable, oc_pin, location)	\
-	{ length, enable, oc_pin, location }
-
-#define pei_data_usb3_port(pei_data, port, enable, oc_pin, fixed_eq)		\
-	{ enable, oc_pin, fixed_eq }
-
 #define SPD_MEMORY_DOWN	0xff
 
 struct spd_info {
