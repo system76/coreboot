@@ -13,10 +13,6 @@
  * Management Engine PCI registers
  */
 
-#define PCI_CPU_DEVICE		PCI_DEV(0,0,0)
-#define PCI_CPU_MEBASE_L	0x70	/* Set by MRC */
-#define PCI_CPU_MEBASE_H	0x74	/* Set by MRC */
-
 #define PCI_ME_HFS		0x40
 #define  ME_HFS_CWS_RESET	0
 #define  ME_HFS_CWS_INIT	1

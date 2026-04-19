@@ -6,7 +6,9 @@
 #include <console/console.h>
 #include <delay.h>
 #include <halt.h>
+#include <northbridge/intel/haswell/haswell.h>
 #include <timer.h>
+
 #include "me.h"
 #include "pch.h"
 
@@ -118,7 +120,6 @@ int intel_early_me_init_done(u8 status)
 {
 	u8 reset;
 	int count;
-	u32 mebase_l, mebase_h;
 	union me_hfs hfs;
 	union me_did did = {
 		.init_done = ME_INIT_DONE,
@@ -126,8 +127,8 @@ int intel_early_me_init_done(u8 status)
 	};
 
 	/* MEBASE from MESEG_BASE[35:20] */
-	mebase_l = pci_read_config32(PCI_CPU_DEVICE, PCI_CPU_MEBASE_L);
-	mebase_h = pci_read_config32(PCI_CPU_DEVICE, PCI_CPU_MEBASE_H) & 0xf;
+	const u32 mebase_l = pci_read_config32(HOST_BRIDGE, MESEG_BASE + 0);
+	const u32 mebase_h = pci_read_config32(HOST_BRIDGE, MESEG_BASE + 4) & 0xf;
 	did.uma_base = (mebase_l >> 20) | (mebase_h << 12);
 
 	/* Send message to ME */
