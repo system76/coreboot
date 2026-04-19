@@ -21,6 +21,13 @@ config HAVE_SHARED_PS2_PORT
 	  port. This one port usually works for keyboards only. Add the nvram/CFR option
 	  "ps2_port_role" to allow changing this port into a mouse port.
 
+config SUPERIO_NUVOTON_COMMON_HWM
+	bool
+	help
+	  Shared hardware monitor helpers for Nuvoton super I/Os whose HWM
+	  block uses the banked-register interface (NCT67xx family). Provides
+	  PECI enable, PECI calibration, and SmartFan IV fan-curve programming.
+
 config SUPERIO_NUVOTON_PNP_BASE
 	hex
 	depends on SUPERIO_NUVOTON_COMMON_PRE_RAM
