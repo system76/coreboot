@@ -30,7 +30,7 @@
 #include <vendorcode/google/chromeos/chromeos.h>
 
 /* Path that the BIOS should take based on ME state */
-static const char *me_bios_path_values[] = {
+static const char *const me_bios_path_values[] = {
 	[ME_NORMAL_BIOS_PATH]		= "Normal",
 	[ME_S3WAKE_BIOS_PATH]		= "S3 Wake",
 	[ME_ERROR_BIOS_PATH]		= "Error",
@@ -454,7 +454,7 @@ static void intel_me_mbp_clear(struct device *dev)
 	}
 }
 
-static void me_print_fw_version(mbp_fw_version_name *vers_name)
+static void me_print_fw_version(struct mbp_fw_version_name *vers_name)
 {
 	if (!vers_name) {
 		printk(BIOS_ERR, "ME: mbp missing version report\n");
@@ -473,7 +473,7 @@ static inline void print_cap(const char *name, int state)
 }
 
 /* Get ME Firmware Capabilities */
-static int mkhi_get_fwcaps(mbp_mefwcaps *cap)
+static int mkhi_get_fwcaps(struct mbp_mefwcaps *cap)
 {
 	u32 rule_id = 0;
 	struct me_fwcaps cap_msg;
@@ -493,9 +493,9 @@ static int mkhi_get_fwcaps(mbp_mefwcaps *cap)
 }
 
 /* Get ME Firmware Capabilities */
-static void me_print_fwcaps(mbp_mefwcaps *cap)
+static void me_print_fwcaps(struct mbp_mefwcaps *cap)
 {
-	mbp_mefwcaps local_caps;
+	struct mbp_mefwcaps local_caps;
 	if (!cap) {
 		cap = &local_caps;
 		printk(BIOS_ERR, "ME: mbp missing fwcaps report\n");
@@ -638,9 +638,9 @@ static int me_icc_set_clock_enables(u32 mask)
 }
 
 /* Determine the path that we should take based on ME status */
-static me_bios_path intel_me_path(struct device *dev)
+static enum me_bios_path intel_me_path(struct device *dev)
 {
-	me_bios_path path = ME_DISABLE_BIOS_PATH;
+	enum me_bios_path path = ME_DISABLE_BIOS_PATH;
 	struct me_hfs hfs;
 	struct me_hfs2 hfs2;
 
@@ -735,7 +735,7 @@ static int intel_mei_setup(struct device *dev)
 /* Read the Extend register hash of ME firmware */
 static int intel_me_extend_valid(struct device *dev)
 {
-	struct me_heres status;
+	union me_heres status;
 	u32 extend[8] = {0};
 	int i, count = 0;
 
@@ -778,7 +778,7 @@ static int intel_me_extend_valid(struct device *dev)
 	return 0;
 }
 
-static void intel_me_print_mbp(me_bios_payload *mbp_data)
+static void intel_me_print_mbp(struct me_bios_payload *mbp_data)
 {
 	me_print_fw_version(mbp_data->fw_version_name);
 
@@ -806,7 +806,7 @@ static u32 me_to_host_words_pending(void)
 }
 
 struct mbp_payload {
-	mbp_header header;
+	struct mbp_header header;
 	u32 data[];
 };
 
@@ -817,9 +817,9 @@ struct mbp_payload {
  * Return 0 to indicate success (send LOCK+EOP)
  * Return 1 to indicate success (send LOCK+EOP with NOACK)
  */
-static int intel_me_read_mbp(me_bios_payload *mbp_data, struct device *dev)
+static int intel_me_read_mbp(struct me_bios_payload *mbp_data, struct device *dev)
 {
-	mbp_header mbp_hdr;
+	struct mbp_header mbp_hdr;
 	u32 me2host_pending;
 	struct mei_csr host;
 	struct me_hfs2 hfs2;
@@ -877,12 +877,12 @@ static int intel_me_read_mbp(me_bios_payload *mbp_data, struct device *dev)
 		printk(BIOS_INFO, "ME: MBP Waiting for MBP cleared flag\n");
 
 		/* Tell ME that the host has finished reading the MBP. */
-	host.interrupt_generate = 1;
+		host.interrupt_generate = 1;
 		host.reset = 0;
-	write_host_csr(&host);
+		write_host_csr(&host);
 
-	/* Wait for the mbp_cleared indicator. */
-	intel_me_mbp_clear(dev);
+		/* Wait for the mbp_cleared indicator. */
+		intel_me_mbp_clear(dev);
 	} else {
 		/* Indicate NOACK messages should be used. */
 		ret = 1;
@@ -904,7 +904,7 @@ static int intel_me_read_mbp(me_bios_payload *mbp_data, struct device *dev)
 
 	/* Setup the pointers in the me_bios_payload structure. */
 	for (i = 0; i < mbp->header.mbp_size - 1;) {
-		mbp_item_header *item = (void *)&mbp->data[i];
+		struct mbp_item_header *item = (void *)&mbp->data[i];
 
 		switch (MBP_MAKE_IDENT(item->app_id, item->item_id)) {
 		case MBP_IDENT(KERNEL, FW_VER):
@@ -949,8 +949,8 @@ static int intel_me_read_mbp(me_bios_payload *mbp_data, struct device *dev)
 static void intel_me_init(struct device *dev)
 {
 	const struct southbridge_intel_wildcatpoint_config *config = config_of(dev);
-	me_bios_path path = intel_me_path(dev);
-	me_bios_payload mbp_data;
+	enum me_bios_path path = intel_me_path(dev);
+	struct me_bios_payload mbp_data;
 	int mbp_ret;
 	struct me_hfs hfs;
 	struct mei_csr csr;
@@ -961,7 +961,7 @@ static void intel_me_init(struct device *dev)
 	if (path == ME_NORMAL_BIOS_PATH) {
 		/* Validate the extend register */
 		intel_me_extend_valid(dev);
-}
+	}
 
 	memset(&mbp_data, 0, sizeof(mbp_data));
 
