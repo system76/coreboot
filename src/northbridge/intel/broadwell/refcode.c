@@ -44,7 +44,6 @@ void broadwell_run_reference_code(void)
 	struct pei_data pei_data;
 
 	memset(&pei_data, 0, sizeof(pei_data));
-	mainboard_fill_pei_data(&pei_data);
 	broadwell_fill_pei_data(&pei_data);
 
 	pei_data.boot_mode = acpi_is_wakeup_s3() ? ACPI_S3 : 0;

@@ -33,4 +33,7 @@ void broadwell_fill_pei_data(struct pei_data *pei_data)
 	pei_data->dq_pins_interleaved = cfg->dq_pins_interleaved,
 	pei_data->tx_byte = &send_to_console;
 	pei_data->ddr_refresh_2x = 1;
+
+	memcpy(pei_data->usb2_ports, mainboard_usb2_ports, sizeof(pei_data->usb2_ports));
+	memcpy(pei_data->usb3_ports, mainboard_usb3_ports, sizeof(pei_data->usb3_ports));
 }

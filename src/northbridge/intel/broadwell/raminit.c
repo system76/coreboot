@@ -184,8 +184,6 @@ void perform_raminit(const struct chipset_power_state *const power_state)
 
 	struct pei_data pei_data = { 0 };
 
-	mainboard_fill_pei_data(&pei_data);
-
 	if (CONFIG(BROADWELL_LPDDR3)) {
 		const struct lpddr3_dq_dqs_map *lpddr3_map = mb_get_lpddr3_dq_dqs_map();
 		assert(lpddr3_map);

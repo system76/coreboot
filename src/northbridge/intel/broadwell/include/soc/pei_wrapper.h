@@ -4,25 +4,20 @@
 #define _BROADWELL_PEI_WRAPPER_H_
 
 #include <soc/pei_data.h>
+#include <string.h>
 
 typedef int ABI_X86(*pei_wrapper_entry_t)(struct pei_data *pei_data);
 
-static inline void pei_data_usb2_port(struct pei_data *pei_data, int port, uint16_t length,
-				      uint8_t enable, uint8_t oc_pin, uint8_t location)
-{
-	pei_data->usb2_ports[port].length   = length;
-	pei_data->usb2_ports[port].enable   = enable;
-	pei_data->usb2_ports[port].oc_pin   = oc_pin;
-	pei_data->usb2_ports[port].location = location;
-}
+/* TODO: Should be moved to PCH code */
+extern const struct usb2_port_setting mainboard_usb2_ports[MAX_USB2_PORTS];
+extern const struct usb3_port_setting mainboard_usb3_ports[MAX_USB3_PORTS];
 
-static inline void pei_data_usb3_port(struct pei_data *pei_data, int port, uint8_t enable,
-				      uint8_t oc_pin, uint8_t fixed_eq)
-{
-	pei_data->usb3_ports[port].enable   = enable;
-	pei_data->usb3_ports[port].oc_pin   = oc_pin;
-	pei_data->usb3_ports[port].fixed_eq = fixed_eq;
-}
+/* Temporary, to minimise changes to mainboard code */
+#define pei_data_usb2_port(pei_data, port, length, enable, oc_pin, location)	\
+	{ length, enable, oc_pin, location }
+
+#define pei_data_usb3_port(pei_data, port, enable, oc_pin, fixed_eq)		\
+	{ enable, oc_pin, fixed_eq }
 
 #define SPD_MEMORY_DOWN	0xff
 
@@ -43,7 +38,6 @@ void mb_get_spd_map(struct spd_info *spdi);
 const struct lpddr3_dq_dqs_map *mb_get_lpddr3_dq_dqs_map(void);
 
 void broadwell_fill_pei_data(struct pei_data *pei_data);
-void mainboard_fill_pei_data(struct pei_data *pei_data);
 
 void copy_spd(struct pei_data *pei_data, struct spd_info *spdi);
 
