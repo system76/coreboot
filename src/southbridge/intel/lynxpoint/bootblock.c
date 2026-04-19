@@ -25,18 +25,18 @@ static void set_spi_speed(void)
 	u8 ssfc;
 
 	/* Observe SPI Descriptor Component Section 0 */
-	SPIBAR32(FDOC) = 0x1000;
+	RCBA32(SPIBAR_FDOC) = 0x1000;
 
 	/* Extract the Write/Erase SPI Frequency from descriptor */
-	fdod = SPIBAR32(FDOD);
+	fdod = RCBA32(SPIBAR_FDOD);
 	fdod >>= 24;
 	fdod &= 7;
 
 	/* Set Software Sequence frequency to match */
-	ssfc = SPIBAR8(SSFC + 2);
+	ssfc = RCBA8(SPIBAR_SSFC + 2);
 	ssfc &= ~7;
 	ssfc |= fdod;
-	SPIBAR8(SSFC + 2) = ssfc;
+	RCBA8(SPIBAR_SSFC + 2) = ssfc;
 }
 
 void bootblock_early_southbridge_init(void)

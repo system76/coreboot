@@ -713,21 +713,7 @@ void mainboard_config_rcba(void);
 #define LP_GPE0_EN_3	0x98
 #define LP_GPE0_EN_4	0x9c
 
-/*
- * SPI Opcode Menu setup for SPIBAR lockdown
- * should support most common flash chips.
- */
-
-#define SPIBAR_OFFSET 0x3800
-#define SPIBAR8(x) RCBA8((x) + SPIBAR_OFFSET)
-#define SPIBAR16(x) RCBA16((x) + SPIBAR_OFFSET)
-#define SPIBAR32(x) RCBA32((x) + SPIBAR_OFFSET)
-
-/* Registers within the SPIBAR */
-#define SSFC 0x91
-#define FDOC 0xb0
-#define FDOD 0xb4
-
+/* Registers within SPIBAR */
 #define SPIBAR_HSFS                 0x3804   /* SPI hardware sequence status */
 #define  SPIBAR_HSFS_SCIP           (1 << 5) /* SPI Cycle In Progress */
 #define  SPIBAR_HSFS_AEL            (1 << 2) /* SPI Access Error Log */
@@ -741,6 +727,10 @@ void mainboard_config_rcba(void);
 #define  SPIBAR_HSFC_GO             (1 << 0) /* GO: start SPI transaction */
 #define SPIBAR_FADDR                0x3808   /* SPI flash address */
 #define SPIBAR_FDATA(n)             (0x3810 + (4 * (n))) /* SPI flash data */
+
+#define SPIBAR_SSFC                 0x3891
+#define SPIBAR_FDOC                 0x38b0
+#define SPIBAR_FDOD                 0x38b4
 
 #endif /* __ACPI__ */
 #endif /* SOUTHBRIDGE_INTEL_LYNXPOINT_PCH_H */

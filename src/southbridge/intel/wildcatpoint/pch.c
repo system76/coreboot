@@ -47,15 +47,15 @@ u32 pch_read_soft_strap(int id)
 {
 	u32 fdoc;
 
-	fdoc = SPIBAR32(SPIBAR_FDOC);
+	fdoc = RCBA32(SPIBAR_FDOC);
 	fdoc &= ~0x00007ffc;
-	SPIBAR32(SPIBAR_FDOC) = fdoc;
+	RCBA32(SPIBAR_FDOC) = fdoc;
 
 	fdoc |= 0x00004000;
 	fdoc |= id * 4;
-	SPIBAR32(SPIBAR_FDOC) = fdoc;
+	RCBA32(SPIBAR_FDOC) = fdoc;
 
-	return SPIBAR32(SPIBAR_FDOD);
+	return RCBA32(SPIBAR_FDOD);
 }
 
 #ifndef __SIMPLE_DEVICE__
