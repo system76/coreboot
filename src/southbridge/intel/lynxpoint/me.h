@@ -331,17 +331,6 @@ enum me_bios_path {
 	ME_FIRMWARE_UPDATE_BIOS_PATH,
 };
 
-/* Defined in me_status.c for both romstage and ramstage */
-void intel_me_status(union me_hfs hfs, union me_hfs2 hfs2);
-
-void intel_early_me_status(void);
-int intel_early_me_init(void);
-bool intel_early_me_cpu_replacement_check(void);
-int intel_early_me_uma_size(void);
-int intel_early_me_init_done(u8 status);
-
-void intel_me_finalize(struct device *dev);
-
 /*
  * ME to BIOS Payload Datastructures and definitions. The ordering of the
  * structures follows the ordering in the ME9 BWG.
@@ -506,5 +495,16 @@ struct me_fwcaps {
 	struct mbp_mefwcaps caps_sku;
 	u8 reserved[3];
 } __packed;
+
+/* Defined in me_status.c for both romstage and ramstage */
+void intel_me_status(union me_hfs hfs, union me_hfs2 hfs2);
+
+void intel_early_me_status(void);
+int intel_early_me_init(void);
+bool intel_early_me_cpu_replacement_check(void);
+int intel_early_me_uma_size(void);
+int intel_early_me_init_done(u8 status);
+
+void intel_me_finalize(struct device *dev);
 
 #endif /* _INTEL_ME_H */
