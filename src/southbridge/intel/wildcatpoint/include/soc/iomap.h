@@ -3,8 +3,6 @@
 #ifndef _BROADWELL_IOMAP_H_
 #define _BROADWELL_IOMAP_H_
 
-#include <northbridge/intel/haswell/memmap.h>
-
 #define ACPI_BASE_ADDRESS	0x1000
 #define ACPI_BASE_SIZE		0x100
 
