@@ -272,7 +272,7 @@ cbfs-files-y += $(CPUCP_DTBS_CBFS)
 ################################################################################
 # ADSP (Audio DSP) Lite Firmware for Off-mode charging
 ################################################################################
-ADSP_LITE_FILE := $(X1P42100_BLOB)/adsp/adsp.mbn
+ADSP_LITE_FILE := $(X1P42100_BLOB)/adsp/mainboard/$(call tolower,$(CONFIG_MAINBOARD_PART_NUMBER))/adsp.mbn
 ADSP_LITE_CBFS := $(CONFIG_CBFS_PREFIX)/adsp_lite
 $(ADSP_LITE_CBFS)-file := $(ADSP_LITE_FILE)
 $(ADSP_LITE_CBFS)-type := payload
@@ -280,7 +280,7 @@ $(ADSP_LITE_CBFS)-compression := $(CBFS_COMPRESS_FLAG)
 cbfs-files-y += $(ADSP_LITE_CBFS)
 
 ################################################################################
-ADSP_DTBS_FILE := $(X1P42100_BLOB)/adsp/adsp_dtbs.elf
+ADSP_DTBS_FILE := $(X1P42100_BLOB)/adsp/mainboard/$(call tolower,$(CONFIG_MAINBOARD_PART_NUMBER))/adsp_dtbs.elf
 ADSP_DTBS_CBFS := $(CONFIG_CBFS_PREFIX)/adsp_dtbs
 $(ADSP_DTBS_CBFS)-file := $(ADSP_DTBS_FILE)
 $(ADSP_DTBS_CBFS)-type := payload
