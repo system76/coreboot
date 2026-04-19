@@ -85,6 +85,10 @@ union me_uma {
 #define  ME_INIT_STATUS_ERROR	2
 #define  ME_INIT_STATUS_SUCCESS_OTHER 3 /* SEE ME9 BWG */
 
+#define ME_HSIO_MESSAGE		(7 << 28)
+#define ME_HSIO_CMD_GETHSIOVER	1
+#define ME_HSIO_CMD_CLOSE	0
+
 union me_did {
 	struct __packed {
 		u32 uma_base: 16;
@@ -191,6 +195,8 @@ union me_hfs2 {
 	};
 	u32 raw;
 };
+
+#define PCI_ME_HFS5		0x68
 
 #define PCI_ME_H_GS2		0x70
 #define   PCI_ME_MBP_GIVE_UP	0x01
@@ -495,6 +501,7 @@ struct me_fwcaps {
 	struct mbp_mefwcaps caps_sku;
 	u8 reserved[3];
 } __packed;
+void intel_me_hsio_version(uint16_t *version, uint16_t *checksum);
 
 /* Defined in me_status.c for both romstage and ramstage */
 void intel_me_status(union me_hfs hfs, union me_hfs2 hfs2);

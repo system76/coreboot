@@ -196,3 +196,38 @@ int intel_early_me_init_done(u8 status)
 	}
 	return -1;
 }
+
+void intel_me_hsio_version(uint16_t *version, uint16_t *checksum)
+{
+	int count;
+	u32 hsiover;
+
+	/* Query for HSIO version, overloads H_GS and HFS */
+	pci_write_config32(PCH_ME_DEV, PCI_ME_H_GS,
+			   ME_HSIO_MESSAGE | ME_HSIO_CMD_GETHSIOVER);
+
+	/* Must wait for ME acknowledgement */
+	for (count = ME_RETRY; count > 0; --count) {
+		union me_hfs hfs = { .raw = pci_read_config32(PCH_ME_DEV, PCI_ME_HFS) };
+		if (hfs.bios_msg_ack)
+			break;
+		udelay(ME_DELAY);
+	}
+	if (!count) {
+		printk(BIOS_ERR, "ME failed to respond\n");
+		return;
+	}
+
+	/* HSIO version should be in HFS_5 */
+	hsiover = pci_read_config32(PCH_ME_DEV, PCI_ME_HFS5);
+	*version = hsiover >> 16;
+	*checksum = hsiover & 0xffff;
+
+	printk(BIOS_DEBUG, "ME: HSIO Version            : %d (CRC 0x%04x)\n",
+	       *version, *checksum);
+
+	/* Reset registers to normal behavior */
+	/* TODO: Should this be ME_HSIO_CMD_CLOSE instead? */
+	pci_write_config32(PCH_ME_DEV, PCI_ME_H_GS,
+			   ME_HSIO_MESSAGE | ME_HSIO_CMD_GETHSIOVER);
+}
