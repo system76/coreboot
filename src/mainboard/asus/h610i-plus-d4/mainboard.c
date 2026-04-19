@@ -10,84 +10,49 @@
 #include <bootstate.h>
 #include <superio/nuvoton/common/hwm.h>
 
-// This is the base address of the HWM registers (set in the device tree)
+/* HWM base address, set in devicetree.cb. */
 #define HWM_IOBASE		0x290
 
-// The registers below are in a separate bank for each fan
-// On the H610I-PLUS and H610M-K only SYSFAN and CPUFAN are wired up
+/* Alder Lake desktop Tjmax in degrees Celsius. */
+#define CPU_TJMAX		100
+
+/* Per-fan register banks. Only SYSFAN and CPUFAN are wired up. */
 #define BANK_SYSFAN		1
 #define BANK_CPUFAN		2
 
-#define FAN_SOURCE		0x00		// Fan control temperature source
-# define FAN_SOURCE_PECI0       0x10		// PECI Agent 0
-# define FAN_SOURCE_PECI0_CAL	0x1c		// PECI Agent 0 Calibration
-
-#define FAN_MODE_TEMP_TOLERANCE	0x02		// [7:4] = mode [2:0] temperature tolerance
-# define FAN_MODE_SFIV		4		// SmartFan IV
-#define FAN_STEP_UP_TIME	0x03		// In 0.1 sec
-#define FAN_STEP_DOWN_TIME	0x04		// In 0.1 sec
-#define FAN_DUTY_PER_STEP	0x66		// [7:4] step up val [3:0] step down val
-
-#define FAN_TEMP(i)		(0x21 + (i))	// Temperature points on the curve (4 points)
-#define FAN_DUTY(i)		(0x27 + (i))	// Corresponding duty for each temperature point
-
-#define FAN_CRIT_TEMP		0x35		// Critical temperature
-#define FAN_CRIT_DUTY_EN	0x36		// Use critical duty (or default to 255)
-#define FAN_CRIT_DUTY		0x37		// Critical duty
-#define FAN_CRIT_TEMP_TOLERANCE	0x38		// Critical temperature tolerance
-
-struct nct_fan {
-	const char *name;
-	uint8_t bank;
-
-	// Temperature source
-	uint8_t source;
-
-	// Temperature x duty cycle curve points
-	uint8_t temp[4];
-	uint8_t duty[4];
-
-	// Temperature tolerance
-	uint8_t temp_tolerance;
-
-	// Step up and down smoothing
-	uint8_t step_up_time;
-	uint8_t step_down_time;
-	uint8_t duty_per_step_up;
-	uint8_t duty_per_step_down;
-
-	// Critical mode
-	uint8_t crit_temp;
-	uint8_t crit_duty_en;
-	uint8_t crit_duty;
-	uint8_t crit_temp_tolerance;
-};
-
-#define PERCENT_TO_DUTY(perc)	((perc) * 255 / 100)
-
-// These fan curves have been adjusted from Mate Kukri's original values (for his i3-12100), and work well with my i7-12700
-static const struct nct_fan NCT_FANS[] = {
+/* Fan profiles tuned for an i7-12700. */
+static const struct nuvoton_fan_curve fans[] = {
 	{
-		.name = "SYSFAN",
-		.bank = BANK_SYSFAN,
-		.source = FAN_SOURCE_PECI0,
-		.temp = {40, 60, 75, 90},
-		.duty = {PERCENT_TO_DUTY(20), PERCENT_TO_DUTY(40), PERCENT_TO_DUTY(70), PERCENT_TO_DUTY(100)},
-		.crit_temp = 100,
-		.crit_duty_en = 1,
-		.crit_duty = 255,
-		.crit_temp_tolerance = 2,
+		.name			= "SYSFAN",
+		.bank			= BANK_SYSFAN,
+		.source			= NUVOTON_FAN_SOURCE_PECI0,
+		.temp			= { 40, 60, 75, 90 },
+		.duty			= {
+			NUVOTON_PERCENT_TO_DUTY(20),
+			NUVOTON_PERCENT_TO_DUTY(40),
+			NUVOTON_PERCENT_TO_DUTY(70),
+			NUVOTON_PERCENT_TO_DUTY(100),
+		},
+		.crit_temp		= 100,
+		.crit_duty_en		= 1,
+		.crit_duty		= 255,
+		.crit_temp_tolerance	= 2,
 	},
 	{
-		.name = "CPUFAN",
-		.bank = BANK_CPUFAN,
-		.source = FAN_SOURCE_PECI0,
-		.temp = {40, 60, 75, 90},
-		.duty = {PERCENT_TO_DUTY(20), PERCENT_TO_DUTY(40), PERCENT_TO_DUTY(70), PERCENT_TO_DUTY(100)},
-		.crit_temp = 100,
-		.crit_duty_en = 1,
-		.crit_duty = 255,
-		.crit_temp_tolerance = 2,
+		.name			= "CPUFAN",
+		.bank			= BANK_CPUFAN,
+		.source			= NUVOTON_FAN_SOURCE_PECI0,
+		.temp			= { 40, 60, 75, 90 },
+		.duty			= {
+			NUVOTON_PERCENT_TO_DUTY(20),
+			NUVOTON_PERCENT_TO_DUTY(40),
+			NUVOTON_PERCENT_TO_DUTY(70),
+			NUVOTON_PERCENT_TO_DUTY(100),
+		},
+		.crit_temp		= 100,
+		.crit_duty_en		= 1,
+		.crit_duty		= 255,
+		.crit_temp_tolerance	= 2,
 	},
 };
 
@@ -187,54 +152,14 @@ struct chip_operations mainboard_ops = {
 	.enable_dev = mainboard_enable,
 };
 
-static void nct6798d_hwm_init(void *arg)
+static void hwm_init(void *arg)
 {
-	printk(BIOS_DEBUG, "NCT6798D HWM configuration\n");
+	/* Devicetree must set superio pin 121 to PECI mode first. */
+	nuvoton_hwm_enable_peci(HWM_IOBASE, CPU_TJMAX);
+	nuvoton_hwm_enable_peci_calibration(HWM_IOBASE);
 
-	// Setup PECI
-	// Devicetree must set pin 121 to PECI mode first
-	nuvoton_hwm_select_bank(HWM_IOBASE, 7);
-	pnp_write_hwm5_index(HWM_IOBASE, 1, 0x85);
-	pnp_write_hwm5_index(HWM_IOBASE, 2, 0x02);
-	pnp_write_hwm5_index(HWM_IOBASE, 3, 0x10);
-	pnp_write_hwm5_index(HWM_IOBASE, 4, 0x00);
-	pnp_write_hwm5_index(HWM_IOBASE, 9, 0x64);
-
-	// Enable PECI temp reading
-	nuvoton_hwm_select_bank(HWM_IOBASE, 0);
-	pnp_write_hwm5_index(HWM_IOBASE, 0xae, 1);
-
-	// Program PECI Agent 0 Calibration
-	nuvoton_hwm_select_bank(HWM_IOBASE, 4);
-	pnp_write_hwm5_index(HWM_IOBASE, 0xf8, 0x50);
-	pnp_write_hwm5_index(HWM_IOBASE, 0xfa, 0x51);
-
-
-	// Program fan control profiles
-	for (const struct nct_fan *fan = NCT_FANS; fan < NCT_FANS + ARRAY_SIZE(NCT_FANS); ++fan) {
-		printk(BIOS_DEBUG, "Configuring NCT6798D fan %s\n", fan->name);
-
-		nuvoton_hwm_select_bank(HWM_IOBASE, fan->bank);
-
-		pnp_write_hwm5_index(HWM_IOBASE, FAN_SOURCE, fan->source);
-
-		for (size_t i = 0; i < 4; ++i)
-			pnp_write_hwm5_index(HWM_IOBASE, FAN_TEMP(i), fan->temp[i]);
-		for (size_t i = 0; i < 4; ++i)
-			pnp_write_hwm5_index(HWM_IOBASE, FAN_DUTY(i), fan->duty[i]);
-
-		pnp_write_hwm5_index(HWM_IOBASE, FAN_CRIT_TEMP, fan->crit_temp);
-		pnp_write_hwm5_index(HWM_IOBASE, FAN_CRIT_DUTY_EN, fan->crit_duty_en);
-		pnp_write_hwm5_index(HWM_IOBASE, FAN_CRIT_DUTY, fan->crit_duty);
-		pnp_write_hwm5_index(HWM_IOBASE, FAN_CRIT_TEMP_TOLERANCE, fan->crit_temp_tolerance);
-
-		pnp_write_hwm5_index(HWM_IOBASE, FAN_STEP_UP_TIME, fan->step_up_time);
-		pnp_write_hwm5_index(HWM_IOBASE, FAN_STEP_DOWN_TIME, fan->step_down_time);
-		pnp_write_hwm5_index(HWM_IOBASE, FAN_DUTY_PER_STEP, fan->duty_per_step_up << 4 | fan->duty_per_step_down);
-
-		// There are other modes supported by hardware, but always use SmartFan IV mode here
-		pnp_write_hwm5_index(HWM_IOBASE, FAN_MODE_TEMP_TOLERANCE, (FAN_MODE_SFIV << 4) | fan->temp_tolerance);
-	}
+	for (size_t i = 0; i < ARRAY_SIZE(fans); i++)
+		nuvoton_hwm_configure_fan(HWM_IOBASE, &fans[i]);
 }
 
-BOOT_STATE_INIT_ENTRY(BS_POST_DEVICE, BS_ON_EXIT, nct6798d_hwm_init, NULL);
+BOOT_STATE_INIT_ENTRY(BS_POST_DEVICE, BS_ON_EXIT, hwm_init, NULL);
