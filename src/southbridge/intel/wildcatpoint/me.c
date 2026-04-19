@@ -20,11 +20,11 @@
 #include <delay.h>
 #include <elog.h>
 #include <option.h>
-#include <soc/me.h>
 #include <soc/lpc.h>
 #include <soc/pch.h>
 #include <soc/pci_devs.h>
 #include <soc/rcba.h>
+#include <southbridge/intel/lynxpoint/me.h>
 #include <southbridge/intel/wildcatpoint/chip.h>
 
 #include <vendorcode/google/chromeos/chromeos.h>

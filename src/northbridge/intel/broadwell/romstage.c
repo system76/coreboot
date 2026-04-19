@@ -6,11 +6,11 @@
 #include <device/pci_ops.h>
 #include <elog.h>
 #include <romstage_handoff.h>
-#include <soc/me.h>
 #include <soc/pci_devs.h>
 #include <soc/pm.h>
 #include <soc/romstage.h>
 #include <southbridge/intel/lynxpoint/lp_gpio.h>
+#include <southbridge/intel/lynxpoint/me.h>
 #include <stdint.h>
 
 __weak void mainboard_post_raminit(const bool s3resume)
@@ -45,9 +45,7 @@ void mainboard_romstage_entry(void)
 	setup_pch_lp_gpios(mainboard_lp_gpio_map);
 
 	/* Print ME state before MRC */
-	union me_hfs hfs = { .raw = pci_read_config32(PCH_DEV_ME, PCI_ME_HFS) };
-	union me_hfs2 hfs2 = { .raw = pci_read_config32(PCH_DEV_ME, PCI_ME_HFS2) };
-	intel_me_status(hfs, hfs2);
+	intel_early_me_status();
 
 	/* Save ME HSIO version */
 	intel_me_hsio_version(&power_state->hsio_version, &power_state->hsio_checksum);
