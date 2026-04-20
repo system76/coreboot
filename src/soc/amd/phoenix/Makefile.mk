@@ -229,6 +229,9 @@ OPT_RECOVERY_AB_SINGLE_COPY=$(if $(CONFIG_VBOOT_SLOTS_RW_AB), --recovery-ab-sing
 
 OPT_AMDFW_BODY_LOCATION=$(call add_opt_prefix, $(FMAP_AMDFW_BODY_LOCATION), --body-location)
 
+OPT_BIOS_AMDCOMPRESS=$(if $(CONFIG_CBFS_VERIFICATION), --elfcopy, --compress)
+OPT_BIOS_FWCOMPRESS=$(if $(CONFIG_CBFS_VERIFICATION), --bios-bin-uncomp)
+
 MANIFEST_FILE=$(obj)/amdfw_manifest
 OPT_MANIFEST=$(call add_opt_prefix, $(MANIFEST_FILE), --output-manifest)
 
@@ -253,6 +256,7 @@ AMDFW_COMMON_ARGS=$(OPT_PSP_APCB_FILES) \
 		$(OPT_EFS_SPI_READ_MODE) \
 		$(OPT_EFS_SPI_SPEED) \
 		$(OPT_EFS_SPI_MICRON_FLAG) \
+		$(OPT_BIOS_FWCOMPRESS) \
 		--config $(CONFIG_AMDFW_CONFIG_FILE) \
 		--flashsize $(CONFIG_ROM_SIZE) \
 		$(OPT_RECOVERY_AB_SINGLE_COPY) \
@@ -295,8 +299,8 @@ endif
 $(PSP_BIOSBIN_FILE): $(PSP_ELF_FILE) $(AMDCOMPRESS)
 	rm -f $@
 	@printf "    AMDCOMPRS  $(subst $(obj)/,,$(@))\n"
-	$(AMDCOMPRESS) --infile $(PSP_ELF_FILE) --outfile $@ --compress \
-		--maxsize $(PSP_BIOSBIN_SIZE)
+	$(AMDCOMPRESS) --infile $(PSP_ELF_FILE) --outfile $@ \
+		$(OPT_BIOS_AMDCOMPRESS) --maxsize $(PSP_BIOSBIN_SIZE)
 
 $(obj)/amdfw_a.rom: $(obj)/amdfw.rom
 	rm -f $@

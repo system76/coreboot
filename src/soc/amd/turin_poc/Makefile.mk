@@ -127,6 +127,9 @@ OPT_PSP_SOFTFUSE=$(call add_opt_prefix, $(PSP_SOFTFUSE), --soft-fuse)
 OPT_WHITELIST_FILE=$(call add_opt_prefix, $(PSP_WHITELIST_FILE), --whitelist)
 OPT_SPL_TABLE_FILE=$(call add_opt_prefix, $(SPL_TABLE_FILE), --spl-table)
 
+OPT_BIOS_AMDCOMPRESS=$(if $(CONFIG_CBFS_VERIFICATION), --elfcopy, --compress)
+OPT_BIOS_FWCOMPRESS=$(if $(CONFIG_CBFS_VERIFICATION), --bios-bin-uncomp)
+
 OPT_UCODE_FILES=$(foreach i, $(shell seq $(words $(amd_microcode_bins))), \
 	$(call add_opt_prefix, $(word $(i), $(amd_microcode_bins)), \
 	--instance $(shell printf "%x" $$(($(i)-1))) --ucode))
@@ -143,6 +146,7 @@ AMDFW_COMMON_ARGS=$(OPT_PSP_APCB_FILES) \
 		$(OPT_PSP_SOFTFUSE) \
 		--use-pspsecureos \
 		--load-s0i3 \
+		$(OPT_BIOS_FWCOMPRESS) \
 		$(OPT_TOKEN_UNLOCK) \
 		$(OPT_WHITELIST_FILE) \
 		$(OPT_SPL_TABLE_FILE) \
@@ -178,8 +182,8 @@ $(obj)/amdfw.rom:	$(call strip_quotes, $(PSP_BIOSBIN_FILE)) \
 $(PSP_BIOSBIN_FILE): $(PSP_ELF_FILE) $(AMDCOMPRESS)
 	rm -f $@
 	@printf "    AMDCOMPRS  $(subst $(obj)/,,$(@))\n"
-	$(AMDCOMPRESS) --infile $(PSP_ELF_FILE) --outfile $@ --compress \
-		--maxsize $(PSP_BIOSBIN_SIZE)
+	$(AMDCOMPRESS) --infile $(PSP_ELF_FILE) --outfile $@ \
+		$(OPT_BIOS_AMDCOMPRESS) --maxsize $(PSP_BIOSBIN_SIZE)
 
 else
 # Set FIRMWARE_LOCATION to get the microcode files

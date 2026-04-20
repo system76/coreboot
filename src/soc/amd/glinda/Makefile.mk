@@ -210,6 +210,8 @@ OPT_SPL_RW_AB_TABLE_FILE=$(call add_opt_prefix, $(SPL_RW_AB_TABLE_FILE), --spl-t
 
 # If vboot uses 2 RW slots, then 2 copies of PSP binaries are redundant
 OPT_RECOVERY_AB_SINGLE_COPY=$(if $(CONFIG_VBOOT_SLOTS_RW_AB), --recovery-ab-single-copy)
+OPT_BIOS_AMDCOMPRESS=$(if $(CONFIG_CBFS_VERIFICATION), --elfcopy, --compress)
+OPT_BIOS_FWCOMPRESS=$(if $(CONFIG_CBFS_VERIFICATION), --bios-bin-uncomp)
 
 OPT_BIOS_NV_ST_BASE=$(call add_opt_prefix, $(PSP_BIOS_NV_ST_BASE), --variable-nvram-base)
 OPT_BIOS_NV_ST_SIZE=$(call add_opt_prefix, $(PSP_BIOS_NV_ST_SIZE), --variable-nvram-size)
@@ -239,7 +241,8 @@ AMDFW_COMMON_ARGS=$(OPT_PSP_APCB_FILES) \
 		--flashsize $(CONFIG_ROM_SIZE) \
 		$(OPT_RECOVERY_AB_SINGLE_COPY) \
 		$(OPT_BIOS_NV_ST_BASE) \
-		$(OPT_BIOS_NV_ST_SIZE)
+		$(OPT_BIOS_NV_ST_SIZE) \
+		$(OPT_BIOS_FWCOMPRESS)
 
 $(obj)/amdfw.rom:	$(call strip_quotes, $(PSP_BIOSBIN_FILE)) \
 			$(PSP_VERSTAGE_FILE) \
@@ -271,8 +274,8 @@ $(obj)/amdfw.rom:	$(call strip_quotes, $(PSP_BIOSBIN_FILE)) \
 $(PSP_BIOSBIN_FILE): $(PSP_ELF_FILE) $(AMDCOMPRESS)
 	rm -f $@
 	@printf "    AMDCOMPRS  $(subst $(obj)/,,$(@))\n"
-	$(AMDCOMPRESS) --infile $(PSP_ELF_FILE) --outfile $@ --compress \
-		--maxsize $(PSP_BIOSBIN_SIZE)
+	$(AMDCOMPRESS) --infile $(PSP_ELF_FILE) --outfile $@ \
+		$(OPT_BIOS_AMDCOMPRESS) --maxsize $(PSP_BIOSBIN_SIZE)
 
 $(obj)/amdfw_a.rom: $(obj)/amdfw.rom
 	rm -f $@
