@@ -31,6 +31,12 @@ void fill_lb_gpios(struct lb_gpios *gpios)
 		{GPIO_AP_EC_INT.addr, ACTIVE_LOW, gpio_get(GPIO_AP_EC_INT),
 			"EC interrupt"},
 #endif
+		{GPIO_PANEL_POWER_ON.addr, ACTIVE_HIGH, gpio_get(GPIO_PANEL_POWER_ON),
+			"Panel VDD en"},
+#if CONFIG_MAINBOARD_GPIO_PIN_FOR_TOUCHSCREEN_POWER
+		{GPIO_TS_POWER_EN.addr, ACTIVE_HIGH, gpio_get(GPIO_TS_POWER_EN),
+			"Panel VTSP en"},
+#endif
 #if CONFIG(TPM_GOOGLE_TI50)
 		{GPIO_GSC_AP_INT.addr, ACTIVE_HIGH, gpio_get(GPIO_GSC_AP_INT),
 			"TPM interrupt"},
