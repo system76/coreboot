@@ -8,7 +8,17 @@
 #include <soc/pcie.h>
 #include <soc/clock.h>
 #include <soc/cpucp.h>
+#include <soc/variant.h>
 #include <program_loading.h>
+
+/*
+ * Weak implementation of mainboard-specific display initialization.
+ * This can be overridden by mainboard-specific code.
+ */
+__weak void mainboard_soc_init(void)
+{
+	/* Default implementation: do nothing */
+}
 
 static struct device_operations pci_domain_ops = {
 	.read_resources = noop_read_resources,
@@ -78,6 +88,7 @@ struct chip_operations soc_qualcomm_calypso_ops = {
 static void soc_late_init(void *unused)
 {
 	/* placeholder code in sync w/ x1p42100 SoC */
+	mainboard_soc_init();
 }
 
 BOOT_STATE_INIT_ENTRY(BS_WRITE_TABLES, BS_ON_ENTRY, soc_late_init, NULL);
