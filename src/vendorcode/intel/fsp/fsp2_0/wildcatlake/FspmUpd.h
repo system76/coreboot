@@ -3567,9 +3567,11 @@ typedef struct {
 **/
   UINT8                       EcoreHysteresisWindow;
 
-/** Offset 0x094B - Reserved
+/** Offset 0x094B - VCCSA Shutdown
+  Enable/Disable VCCSA Shutdown hopping. 0: Disable; <b>1: Enable</b>.
+  $EN_DIS
 **/
-  UINT8                       Reserved31;
+  UINT8                       VccsaShutdown;
 
 /** Offset 0x094C - DLVR RFI Frequency
   DLVR RFI Frequency in MHz. <b>0: 2227 MHz</b> , 1: 2140MHZ.
@@ -3615,7 +3617,7 @@ typedef struct {
 
 /** Offset 0x0955 - Reserved
 **/
-  UINT8                       Reserved32;
+  UINT8                       Reserved31;
 
 /** Offset 0x0956 - VR Fast Vmode ICC Limit support
   Voltage Regulator Fast Vmode ICC Limit. A value of 400 = 100A. A value of 0 corresponds
@@ -3640,7 +3642,7 @@ typedef struct {
 
 /** Offset 0x096E - Reserved
 **/
-  UINT8                       Reserved33[2];
+  UINT8                       Reserved32[2];
 
 /** Offset 0x0970 - Vsys Full Scale
   Vsys Full Scale, Range is 0-255000mV
@@ -3664,7 +3666,7 @@ typedef struct {
 
 /** Offset 0x0980 - Reserved
 **/
-  UINT8                       Reserved34[8];
+  UINT8                       Reserved33[8];
 
 /** Offset 0x0988 - IOE Debug Enable
   Enable/Disable IOE Debug. When enabled, IOE D2D Dfx link will keep up and clock
@@ -3706,7 +3708,7 @@ typedef struct {
 
 /** Offset 0x098E - Reserved
 **/
-  UINT8                       Reserved35[2];
+  UINT8                       Reserved34[2];
 
 /** Offset 0x0990 - PMR Size
   Size of PMR memory buffer. 0x400000 for normal boot and 0x200000 for S3 boot
@@ -3743,7 +3745,7 @@ typedef struct {
 
 /** Offset 0x09BC - Reserved
 **/
-  UINT8                       Reserved36[4];
+  UINT8                       Reserved35[4];
 
 /** Offset 0x09C0 - MMIO Size
   Size of MMIO space reserved for devices. 0(Default)=Auto, non-Zero=size in MB
@@ -3825,7 +3827,7 @@ typedef struct {
 
 /** Offset 0x09FA - Reserved
 **/
-  UINT8                       Reserved37[2];
+  UINT8                       Reserved36[2];
 
 /** Offset 0x09FC - StreamTracer Mode
   Disable: Disable StreamTracer, Advanced Tracing: StreamTracer size 512MB - Recommended
@@ -3870,7 +3872,7 @@ typedef struct {
 
 /** Offset 0x0A19 - Reserved
 **/
-  UINT8                       Reserved38;
+  UINT8                       Reserved37;
 
 /** Offset 0x0A1A - Static Content at 4GB Location
   0 (Default): No Allocation, 0x20:32MB, 0x40:64MB, 0x80:128MB, 0x100:256MB, 0x200:512MB,
@@ -3900,7 +3902,7 @@ typedef struct {
 
 /** Offset 0x0A1E - Reserved
 **/
-  UINT8                       Reserved39[13];
+  UINT8                       Reserved38[13];
 
 /** Offset 0x0A2B - Program GPIOs for LFP on DDI port-A device
   0=Disabled,1(Default)=eDP, 2=MIPI DSI
@@ -4011,7 +4013,7 @@ typedef struct {
 
 /** Offset 0x0A3E - Reserved
 **/
-  UINT8                       Reserved40[2];
+  UINT8                       Reserved39[2];
 
 /** Offset 0x0A40 - Temporary MMIO address for GMADR
   The reference code will use this as Temporary MMIO address space to access GMADR
@@ -4063,7 +4065,7 @@ typedef struct {
 
 /** Offset 0x0A56 - Reserved
 **/
-  UINT8                       Reserved41[2];
+  UINT8                       Reserved40[2];
 
 /** Offset 0x0A58 - Intel Graphics VBT (Video BIOS Table) Size
   Size of Internal Graphics VBT Image
@@ -4072,7 +4074,7 @@ typedef struct {
 
 /** Offset 0x0A5C - Reserved
 **/
-  UINT8                       Reserved42[4];
+  UINT8                       Reserved41[4];
 
 /** Offset 0x0A60 - Graphics Configuration Ptr
   Points to VBT
@@ -4250,7 +4252,7 @@ typedef struct {
 
 /** Offset 0x0ACB - Reserved
 **/
-  UINT8                       Reserved43;
+  UINT8                       Reserved42;
 
 /** Offset 0x0ACC - Rx DQS Delay Comp Support
   Enables/Disable Rx DQS Delay Comp Support
@@ -4260,7 +4262,7 @@ typedef struct {
 
 /** Offset 0x0ACD - Reserved
 **/
-  UINT8                       Reserved44[2];
+  UINT8                       Reserved43[2];
 
 /** Offset 0x0ACF - Mrc Failure On Unsupported Dimm
   Enables/Disable Mrc Failure On Unsupported Dimm
@@ -4537,7 +4539,7 @@ typedef struct {
 
 /** Offset 0x0B09 - Reserved
 **/
-  UINT8                       Reserved45;
+  UINT8                       Reserved44;
 
 /** Offset 0x0B0A - SubCh Hash Mask
   Set the BIT(s) to be included in the XOR function. NOTE BIT mask corresponds to
@@ -4553,7 +4555,7 @@ typedef struct {
 
 /** Offset 0x0B0D - Reserved
 **/
-  UINT8                       Reserved46[3];
+  UINT8                       Reserved45[3];
 
 /** Offset 0x0B10 - Disable Zq
   Enable/Disable Zq Calibration: 0:Enabled, 1:Disabled
@@ -4663,7 +4665,7 @@ typedef struct {
 
 /** Offset 0x0B4A - Reserved
 **/
-  UINT8                       Reserved47[30];
+  UINT8                       Reserved46[30];
 } FSP_M_CONFIG;
 
 /** Fsp M UPD Configuration
