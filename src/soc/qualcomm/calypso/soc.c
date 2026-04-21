@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+#include <bootstate.h>
 #include <device/device.h>
 #include <soc/mmu.h>
 #include <soc/mmu_common.h>
@@ -73,3 +74,10 @@ struct chip_operations soc_qualcomm_calypso_ops = {
 	.name = "Calypso",
 	.enable_dev = enable_soc_dev,
 };
+
+static void soc_late_init(void *unused)
+{
+	/* placeholder code in sync w/ x1p42100 SoC */
+}
+
+BOOT_STATE_INIT_ENTRY(BS_WRITE_TABLES, BS_ON_ENTRY, soc_late_init, NULL);
