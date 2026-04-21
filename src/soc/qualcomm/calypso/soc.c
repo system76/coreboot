@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
 #include <bootstate.h>
+#include <cbfs.h>
 #include <device/device.h>
 #include <soc/mmu.h>
 #include <soc/mmu_common.h>
@@ -10,6 +11,22 @@
 #include <soc/cpucp.h>
 #include <soc/variant.h>
 #include <program_loading.h>
+
+static void preload_bl31(void)
+{
+	if (!CONFIG(ARM64_USE_ARM_TRUSTED_FIRMWARE) || !CONFIG(CBFS_PRELOAD))
+		return;
+
+	cbfs_preload(CONFIG_CBFS_PREFIX"/bl31");
+}
+
+static void preload_bl32(void)
+{
+	if (!CONFIG(ARM64_USE_SECURE_OS) || !CONFIG(CBFS_PRELOAD))
+		return;
+
+	cbfs_preload(CONFIG_CBFS_PREFIX"/secure_os");
+}
 
 /*
  * Weak implementation of mainboard-specific display initialization.
@@ -60,6 +77,8 @@ static void soc_init(struct device *dev)
 {
 	cpucp_fw_load_reset();
 	qtee_fw_config_load();
+	preload_bl31();
+	preload_bl32();
 }
 
 static struct device_operations soc_ops = {
