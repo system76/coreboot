@@ -302,7 +302,7 @@ cbfs-files-y += $(APDP_CBFS)
 ################################################################################
 # Rule to create apdp_meta from apdp.mbn
 # This rule depends on apdp.mbn being built and the extractor script existing.
-$(obj)/mainboard/$(MAINBOARDDIR)/apdp_meta: $(CALYPSO_BLOB)/qtee/apdp.mbn util/qualcomm/elf_segment_extractor.py
+$(obj)/mainboard/$(MAINBOARDDIR)/apdp_meta: $(CALYPSO_BLOB)/$(BLOB_VARIANT)/apdp/apdp.mbn util/qualcomm/elf_segment_extractor.py
 	@echo "Extracting ELF headers and hash table segment from $< to $@"
 	@util/qualcomm/elf_segment_extractor.py --eh --pht --hashtable $< $@
 
