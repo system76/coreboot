@@ -226,7 +226,7 @@ static const struct pad_config gpio_table[] = {
 	/* GPP_E18:     TCHPAD_INT# */
 	PAD_CFG_GPI_APIC(GPP_E18, NONE, PLTRST, LEVEL, INVERT),
 	/* GPP_E19:     FPMCU_PWREN */
-	PAD_CFG_GPO(GPP_E19, 1, DEEP),
+	PAD_CFG_GPO(GPP_E19, 1, PLTRST),
 	/* GPP_E20:     NC */
 	PAD_NC(GPP_E20, NONE),
 	/* GPP_E21:     I2C_PMC_PD_INT_N */
