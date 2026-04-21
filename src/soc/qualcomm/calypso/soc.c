@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+#include <bl31.h>
 #include <bootstate.h>
 #include <cbfs.h>
 #include <device/device.h>
@@ -11,6 +12,12 @@
 #include <soc/cpucp.h>
 #include <soc/variant.h>
 #include <program_loading.h>
+
+/* TODO: Add any housekeeping stuffs before handing over to the BL31 */
+void soc_prepare_bl31_handoff(void)
+{
+	printk(BIOS_WARNING, "Inside %s:\n", __func__);
+}
 
 static void preload_bl31(void)
 {
