@@ -34,6 +34,7 @@ romstage-y += ../common/watchdog.c
 romstage-y += mmu.c
 romstage-y += ../common/aop_load_reset.c
 romstage-$(CONFIG_DRIVERS_UART) += ../common/qupv3_uart.c
+romstage-$(CONFIG_SOC_QUALCOMM_CDT) += ../common/cdt.c
 
 ################################################################################
 ramstage-y += soc.c
