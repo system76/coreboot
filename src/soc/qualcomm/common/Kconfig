@@ -115,4 +115,17 @@ config QC_SANITIZE_MEMCHIP_INFO
 
 	  If unsure, say N.
 
+config QC_QDUTT_ENABLE
+	bool
+	default n
+	prompt "Enable QDUTT for DRAM Eye Diagram Testing"
+	help
+	  QDUTT provides specialized utilities for DDR PHY training and
+	  margin analysis.
+
+	  Enable this option to allow the collection of DRAM eye diagram
+	  data during the bootloader training phase. This is essential for
+	  validating signal integrity and optimizing DRAM performance
+	  on new hardware iterations.
+
 endif
