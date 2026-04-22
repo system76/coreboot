@@ -197,11 +197,20 @@ cbfs-files-y += $(AOP_DEVCFG_META_CBFS)
 
 ################################################################################
 CPUCP_FILE := $(CALYPSO_BLOB)/cpucp/cpucp.elf
-CPUCP_CBFS := $(CONFIG_CBFS_PREFIX)/cpucp
-$(CPUCP_CBFS)-file := $(CPUCP_FILE)
-$(CPUCP_CBFS)-type := payload
-$(CPUCP_CBFS)-compression := none
-cbfs-files-y += $(CPUCP_CBFS)
+
+CPUCP_CBFS_RW := $(CONFIG_CBFS_PREFIX)/cpucp_rw
+regions-for-file-$(CPUCP_CBFS_RW) = FW_MAIN_A,FW_MAIN_B
+$(CPUCP_CBFS_RW)-file := $(CPUCP_FILE)
+$(CPUCP_CBFS_RW)-type := payload
+$(CPUCP_CBFS_RW)-compression := none
+cbfs-files-y += $(CPUCP_CBFS_RW)
+
+CPUCP_CBFS_RO := $(CONFIG_CBFS_PREFIX)/cpucp_ro
+regions-for-file-$(CPUCP_CBFS_RO) = COREBOOT
+$(CPUCP_CBFS_RO)-file := $(CPUCP_FILE)
+$(CPUCP_CBFS_RO)-type := payload
+$(CPUCP_CBFS_RO)-compression := $(CBFS_COMPRESS_FLAG)
+cbfs-files-y += $(CPUCP_CBFS_RO)
 
 ################################################################################
 # Rule to create cpucp_meta from cpucp.elf
