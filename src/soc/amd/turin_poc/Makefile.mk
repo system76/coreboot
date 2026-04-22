@@ -169,7 +169,6 @@ $(obj)/amdfw.rom:	$(call strip_quotes, $(PSP_BIOSBIN_FILE)) \
 	$(AMDFWTOOL) \
 		$(AMDFW_COMMON_ARGS) \
 		--location $(CONFIG_AMD_FWM_POSITION) \
-		--multilevel \
 		--output $@
 
 #

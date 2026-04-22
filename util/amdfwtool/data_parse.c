@@ -803,6 +803,36 @@ static bool needs_ish(enum platform platform_type)
 		return false;
 }
 
+/* Returns true when the PSP requires 'PSP L1' and 'PSP L2' directory tables. */
+static bool is_multi_level(enum platform platform_type)
+{
+	// FIXME: Add turin here as well.
+
+	/*
+	 * SoCs older than Family 17h don't support multi level PSP directories.
+	 *
+	 * Raven and Picasso only support multi-level through PSP Combo directories.
+	 * Combo directory generation isn't supported by this tool and different from
+	 * the later EFS -> PSP L1 -> PSP L2 multilevel layout.
+	 *
+	 * Starting from Cezanne 'One Level PSP Directory Layout' is deprecated.
+	 */
+	switch (platform_type) {
+	case PLATFORM_MENDOCINO:
+	case PLATFORM_PHOENIX:
+	case PLATFORM_STRIX:
+	case PLATFORM_KRACKAN2E:
+	case PLATFORM_STRIXHALO:
+	case PLATFORM_GENOA:
+	case PLATFORM_LUCIENNE:
+	case PLATFORM_CEZANNE:
+	case PLATFORM_RENOIR:
+		return true;
+	default:
+		return false;
+	}
+}
+
 static bool is_second_gen(enum platform platform_type)
 {
 	switch (platform_type) {
@@ -899,8 +929,7 @@ uint8_t process_config(FILE *config, amd_cb_config *cb_config)
 	if (cb_config->need_ish)
 		cb_config->recovery_ab = true;
 
-	if (cb_config->recovery_ab)
-		cb_config->multi_level = true;
+	cb_config->multi_level = is_multi_level(cb_config->soc_id);
 
 	if (dir[0] == '\0') {
 		fprintf(stderr, "No line with FIRMWARE_LOCATION\n");

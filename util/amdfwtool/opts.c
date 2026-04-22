@@ -23,7 +23,6 @@ enum {
 	AMDFW_OPT_GEC,
 	AMDFW_OPT_RECOVERY_AB,
 	AMDFW_OPT_RECOVERY_AB_SINGLE_COPY,
-	AMDFW_OPT_MULTILEVEL,
 	AMDFW_OPT_NVRAM,
 
 	AMDFW_OPT_FUSE,
@@ -82,7 +81,6 @@ static struct option long_options[] = {
 	/* PSP Directory Table items */
 	{"recovery-ab",            no_argument, 0, AMDFW_OPT_RECOVERY_AB },
 	{"recovery-ab-single-copy", no_argument, 0, AMDFW_OPT_RECOVERY_AB_SINGLE_COPY },
-	{"multilevel",             no_argument, 0, AMDFW_OPT_MULTILEVEL },
 	{"nvram",            required_argument, 0, AMDFW_OPT_NVRAM },
 	{"variable-nvram-base",     required_argument, 0, AMDFW_OPT_VARIABLE_NVRAM_BASE },
 	{"variable-nvram-size",     required_argument, 0, AMDFW_OPT_VARIABLE_NVRAM_SIZE },
@@ -144,7 +142,6 @@ static void usage(void)
 	printf("--gec <FILE>                    Add GEC blob\n");
 
 	printf("\nPSP options:\n");
-	printf("--multilevel                    Generate primary and secondary tables\n");
 	printf("--nvram <FILE>                  Add nvram binary\n");
 	printf("--soft-fuse                     Set soft fuse\n");
 	printf("--token-unlock                  Set token unlock\n");
@@ -354,9 +351,6 @@ int amdfwtool_getopt(int argc, char *argv[], amd_cb_config *cb_config, context *
 		case AMDFW_OPT_RECOVERY_AB_SINGLE_COPY:
 			cb_config->recovery_ab = true;
 			cb_config->recovery_ab_single_copy = true;
-			break;
-		case AMDFW_OPT_MULTILEVEL:
-			cb_config->multi_level = true;
 			break;
 		case AMDFW_OPT_UNLOCK:
 			register_fw_token_unlock();

@@ -241,7 +241,6 @@ $(obj)/amdfw.rom:	$(call strip_quotes, $(PSP_BIOSBIN_FILE)) \
 		$(OPT_VERSTAGE_SIG_FILE) \
 		$(OPT_BIOS_FWCOMPRESS) \
 		--location $(CONFIG_AMD_FWM_POSITION) \
-		--multilevel \
 		--output $@
 
 #
@@ -266,7 +265,6 @@ $(obj)/amdfw_a.rom: $(obj)/amdfw.rom
 		$(OPT_APOB_NV_BASE) \
 		--location $(call _tohex,$(CEZANNE_FW_A_POSITION)) \
 		--anywhere \
-		--multilevel \
 		--output $@
 
 $(obj)/amdfw_b.rom: $(obj)/amdfw.rom
@@ -278,7 +276,6 @@ $(obj)/amdfw_b.rom: $(obj)/amdfw.rom
 		$(OPT_APOB_NV_BASE) \
 		--location $(call _tohex,$(CEZANNE_FW_B_POSITION)) \
 		--anywhere \
-		--multilevel \
 		--output $@
 
 
