@@ -23,8 +23,6 @@ enum {
 	AMDFW_OPT_GEC,
 	AMDFW_OPT_RECOVERY_AB,
 	AMDFW_OPT_RECOVERY_AB_SINGLE_COPY,
-	AMDFW_OPT_USE_COMBO,
-	AMDFW_OPT_COMBO1_CONFIG,
 	AMDFW_OPT_MULTILEVEL,
 	AMDFW_OPT_NVRAM,
 
@@ -41,7 +39,6 @@ enum {
 
 	AMDFW_OPT_INSTANCE,
 	AMDFW_OPT_APCB,
-	AMDFW_OPT_APCB_COMBO1,
 	AMDFW_OPT_APOBBASE,
 	AMDFW_OPT_BIOSBIN,
 	AMDFW_OPT_BIOSBIN_SOURCE,
@@ -85,8 +82,6 @@ static struct option long_options[] = {
 	/* PSP Directory Table items */
 	{"recovery-ab",            no_argument, 0, AMDFW_OPT_RECOVERY_AB },
 	{"recovery-ab-single-copy", no_argument, 0, AMDFW_OPT_RECOVERY_AB_SINGLE_COPY },
-	{"use-combo",              no_argument, 0, AMDFW_OPT_USE_COMBO },
-	{"combo-config1",    required_argument, 0, AMDFW_OPT_COMBO1_CONFIG },
 	{"multilevel",             no_argument, 0, AMDFW_OPT_MULTILEVEL },
 	{"nvram",            required_argument, 0, AMDFW_OPT_NVRAM },
 	{"variable-nvram-base",     required_argument, 0, AMDFW_OPT_VARIABLE_NVRAM_BASE },
@@ -108,7 +103,6 @@ static struct option long_options[] = {
 	/* BIOS Directory Table items */
 	{"instance",         required_argument, 0, AMDFW_OPT_INSTANCE },
 	{"apcb",             required_argument, 0, AMDFW_OPT_APCB },
-	{"apcb-combo1",      required_argument, 0, AMDFW_OPT_APCB_COMBO1 },
 	{"apob-base",        required_argument, 0, AMDFW_OPT_APOBBASE },
 	{"bios-bin",         required_argument, 0, AMDFW_OPT_BIOSBIN },
 	{"bios-bin-src",     required_argument, 0, AMDFW_OPT_BIOSBIN_SOURCE },
@@ -150,8 +144,6 @@ static void usage(void)
 	printf("--gec <FILE>                    Add GEC blob\n");
 
 	printf("\nPSP options:\n");
-	printf("--use-combo                     Use the COMBO layout\n");
-	printf("--combo-config1 <config file>   Config for 1st combo entry\n");
 	printf("--multilevel                    Generate primary and secondary tables\n");
 	printf("--nvram <FILE>                  Add nvram binary\n");
 	printf("--soft-fuse                     Set soft fuse\n");
@@ -173,7 +165,6 @@ static void usage(void)
 	printf("--instance <number>             Sets instance field for the next BIOS\n");
 	printf("                                firmware\n");
 	printf("--apcb <FILE>                   Add AGESA PSP customization block\n");
-	printf("--apcb-combo1 <FILE>            Add APCB for 1st combo\n");
 	printf("--apob-base <HEX_VAL>           Destination for AGESA PSP output block\n");
 	printf("--apob-nv-base <HEX_VAL>        Location of S3 resume data\n");
 	printf("--apob-nv-size <HEX_VAL>        Size of S3 resume data\n");
@@ -325,30 +316,6 @@ static void register_fw_fuse(char *str)
 	}
 }
 
-void register_apcb_combo(amd_cb_config *cb_config, int combo_index, context *ctx)
-{
-	if (ctx->combo_apcb[combo_index].filename != NULL) {
-		register_bdt_data(AMD_BIOS_APCB,
-			ctx->combo_apcb[combo_index].sub,
-			ctx->combo_apcb[combo_index].ins & 0xF,
-			ctx->combo_apcb[combo_index].filename);
-		if (cb_config->have_apcb_bk)
-			register_bdt_data(AMD_BIOS_APCB_BK,
-				ctx->combo_apcb_bk[combo_index].sub,
-				ctx->combo_apcb_bk[combo_index].ins & 0xF,
-				ctx->combo_apcb_bk[combo_index].filename);
-	} else {
-		/* Use main APCB if no Combo APCB is provided */
-		register_bdt_data(AMD_BIOS_APCB, ctx->combo_apcb[0].sub,
-			ctx->combo_apcb[0].ins & 0xF, ctx->combo_apcb[0].filename);
-		if (cb_config->have_apcb_bk)
-			register_bdt_data(AMD_BIOS_APCB_BK,
-				ctx->combo_apcb_bk[0].sub,
-				ctx->combo_apcb_bk[0].ins & 0xF,
-				ctx->combo_apcb_bk[0].filename);
-	}
-}
-
 int amdfwtool_getopt(int argc, char *argv[], amd_cb_config *cb_config, context *ctx)
 {
 	int c;
@@ -388,14 +355,6 @@ int amdfwtool_getopt(int argc, char *argv[], amd_cb_config *cb_config, context *
 			cb_config->recovery_ab = true;
 			cb_config->recovery_ab_single_copy = true;
 			break;
-		case AMDFW_OPT_USE_COMBO:
-			cb_config->use_combo = true;
-			break;
-		case AMDFW_OPT_COMBO1_CONFIG:
-			cb_config->use_combo = true;
-			/* assert_fw_entry(1, MAX_COMBO_ENTRIES, &ctx); */
-			cb_config->combo_config[1] = optarg;
-			break;
 		case AMDFW_OPT_MULTILEVEL:
 			cb_config->multi_level = true;
 			break;
@@ -425,29 +384,9 @@ int amdfwtool_getopt(int argc, char *argv[], amd_cb_config *cb_config, context *
 		case AMDFW_OPT_APCB:
 			if ((instance & 0xF0) == 0) {
 				register_bdt_data(AMD_BIOS_APCB, sub, instance & 0xF, optarg);
-				ctx->combo_apcb[0].filename = optarg;
-				ctx->combo_apcb[0].ins = instance;
-				ctx->combo_apcb[0].sub = sub;
 			} else {
 				register_bdt_data(AMD_BIOS_APCB_BK, sub,
 					instance & 0xF, optarg);
-				ctx->combo_apcb_bk[0].filename = optarg;
-				ctx->combo_apcb_bk[0].ins = instance;
-				ctx->combo_apcb_bk[0].sub = sub;
-				cb_config->have_apcb_bk = 1;
-			}
-			sub = instance = 0;
-			break;
-		case AMDFW_OPT_APCB_COMBO1:
-			/* assert_fw_entry(1, MAX_COMBO_ENTRIES, &ctx); */
-			if ((instance & 0xF0) == 0) {
-				ctx->combo_apcb[1].filename = optarg;
-				ctx->combo_apcb[1].ins = instance;
-				ctx->combo_apcb[1].sub = sub;
-			} else {
-				ctx->combo_apcb_bk[1].filename = optarg;
-				ctx->combo_apcb_bk[1].ins = instance;
-				ctx->combo_apcb_bk[1].sub = sub;
 				cb_config->have_apcb_bk = 1;
 			}
 			sub = instance = 0;

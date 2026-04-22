@@ -803,11 +803,6 @@ static bool needs_ish(enum platform platform_type)
 		return false;
 }
 
-static bool needs_new_combo_layout(enum platform soc_id)
-{
-	return needs_ish(soc_id);
-}
-
 static bool is_second_gen(enum platform platform_type)
 {
 	switch (platform_type) {
@@ -903,9 +898,6 @@ uint8_t process_config(FILE *config, amd_cb_config *cb_config)
 
 	if (cb_config->need_ish)
 		cb_config->recovery_ab = true;
-
-	if (cb_config->use_combo && needs_new_combo_layout(cb_config->soc_id))
-		cb_config->combo_new_rab = true;
 
 	if (cb_config->recovery_ab)
 		cb_config->multi_level = true;

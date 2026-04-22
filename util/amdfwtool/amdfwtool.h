@@ -269,7 +269,6 @@ typedef struct _psp_combo_directory {
 	psp_combo_entry entries[];
 } __attribute__((packed, aligned(16))) psp_combo_directory;
 
-#define MAX_COMBO_ENTRIES 2
 typedef struct _bios_directory_hdr {
 	uint32_t cookie;
 	uint32_t checksum;
@@ -462,8 +461,6 @@ typedef struct _amd_cb_config {
 	bool recovery_ab;
 	bool recovery_ab_single_copy;
 	bool need_ish;
-	bool use_combo;
-	bool combo_new_rab;	/* new combo layout for recovery A/B */
 	bool have_apcb_bk;
 	enum platform soc_id;
 
@@ -473,7 +470,6 @@ typedef struct _amd_cb_config {
 	char *manifest_file;
 	const char *signed_output_file;
 	char *output, *config;
-	char *combo_config[MAX_COMBO_ENTRIES];
 	int debug;
 } amd_cb_config;
 
@@ -484,18 +480,11 @@ typedef struct _context {
 	uint32_t current;	/* pointer within flash & proxy buffer */
 	uint32_t current_pointer_saved;
 	uint32_t current_table;
-	uint32_t combo_index;
 	void *amd_psp_fw_table_clean;
 	void *amd_bios_table_clean;
-	struct _combo_apcb {
-		char *filename;
-		uint8_t ins;
-		uint8_t sub;
-	} combo_apcb[MAX_COMBO_ENTRIES], combo_apcb_bk[MAX_COMBO_ENTRIES];
 	embedded_firmware *amd_romsig_ptr;
 	psp_directory_table *pspdir, *pspdir_bak, *pspdir2, *pspdir2_b;
 	bios_directory_table *biosdir, *biosdir2, *biosdir2_b;
-	psp_combo_directory *psp_combo_dir, *bhd_combo_dir;
 	ish_directory_table *ish_a_dir, *ish_b_dir;
 } context;
 
@@ -521,6 +510,5 @@ ssize_t copy_blob(void *dest, const char *src_file, size_t room);
 #define LINE_TOO_LONG (2)
 
 int amdfwtool_getopt(int argc, char *argv[], amd_cb_config *cb_config, context *ctx);
-void register_apcb_combo(amd_cb_config *cb_config, int combo_index, context *ctx);
 
 #endif	/* _AMD_FW_TOOL_H_ */
