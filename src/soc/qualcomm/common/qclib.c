@@ -5,6 +5,7 @@
 #include <cbfs.h>
 #include <cbmem.h>
 #include <commonlib/bsd/mem_chip_info.h>
+#include <commonlib/region.h>
 #include <console/cbmem_console.h>
 #include <console/console.h>
 #include <fmap.h>
@@ -118,6 +119,26 @@ static void add_mem_chip_info(int unused)
 }
 
 CBMEM_CREATION_HOOK(add_mem_chip_info);
+
+static int qdutt_find_flash(size_t *offset, size_t *size)
+{
+	const char *name = "RW_QDUTT";
+	struct region_device rdev;
+
+	/* Find the region in FMAP */
+	if (fmap_locate_area_as_rdev_rw(name, &rdev)) {
+		printk(BIOS_ERR, "Unable to find FMAP region %s\n", name);
+		return -1;
+	}
+
+	*offset = region_device_offset(&rdev);
+	*size = region_device_sz(&rdev);
+
+	printk(BIOS_INFO, "QDUTT found at offset 0x%zx size 0x%zx\n",
+		*offset, *size);
+
+	return 0;
+}
 
 struct qclib_cb_if_table qclib_cb_if_table;
 
@@ -333,6 +354,12 @@ void qclib_load_and_run(void)
 	ssize_t data_size;
 
 	timestamp_add_now(TS_QUALCOMM_QCLIB_INIT_START);
+
+	if (CONFIG(QC_QDUTT_ENABLE)) {
+		size_t qdutt_offset, qdutt_size;
+		if (qdutt_find_flash(&qdutt_offset, &qdutt_size) < 0)
+			return;
+	}
 
 	/* zero ddr_information SRAM region, needs new data each boot */
 	memset(ddr_region, 0, sizeof(struct region));
