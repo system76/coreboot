@@ -1,5 +1,5 @@
 Vendor name: Google
-Board name: Mensa reference board with Calypso SoC
+Board name: Calypso reference board with Qualcomm Calypso SoC
 Category: eval
 ROM protocol: SPI
 ROM socketed: n
