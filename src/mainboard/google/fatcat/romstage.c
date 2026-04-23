@@ -69,12 +69,4 @@ void platform_romstage_pre_mem(void)
 	 */
 	if (CONFIG(EC_GOOGLE_CHROMEEC_LED_CONTROL))
 		google_chromeec_lightbar_on();
-
-	/*
-	 * Only alert the user (set LED to red in color) if the lid is closed and the battery
-	 * is critically low without AC power.
-	 */
-	if (CONFIG(EC_GOOGLE_CHROMEEC) && CONFIG(VBOOT_LID_SWITCH) && !get_lid_switch() &&
-			 google_chromeec_is_critically_low_on_battery())
-		google_chromeec_set_lightbar_rgb(0xff, 0xff, 0x00, 0x00);
 }
