@@ -816,8 +816,16 @@ int google_chromeec_reboot(enum ec_reboot_cmd type, uint8_t flags)
 
 void google_chromeec_ap_poweroff(void)
 {
-	if (ec_cmd_ap_shutdown(PLAT_EC))
-		printk(BIOS_ERR, "Failed to power off the AP.\n");
+	if (ec_cmd_ap_shutdown(PLAT_EC)) {
+		printk(BIOS_ERR, "Standard shutdown failed. Trying forced AP Off...\n");
+		/*
+		 * Fallback (2nd attempt): If the standard shutdown command fails,
+		 * force a cold reboot with the 'AP OFF' flag. This is a more
+		 * aggressive hardware-level trigger to ensure the system doesn't
+		 * remain powered on in an undefined state.
+		 */
+		google_chromeec_reboot(EC_REBOOT_COLD_AP_OFF, 0);
+	}
 	halt();
 }
 
