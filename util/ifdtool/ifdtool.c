@@ -272,6 +272,8 @@ static enum ich_chipset ifd2_platform_to_chipset(const int pindex)
 		return CHIPSET_800_SERIES_METEOR_LAKE;
 	case PLATFORM_PTL:
 		return CHIPSET_900_SERIES_PANTHER_LAKE;
+	case PLATFORM_NVL:
+		return CHIPSET_900_SERIES_NOVA_LAKE;
 	case PLATFORM_ICL:
 		return CHIPSET_400_SERIES_ICE_POINT;
 	case PLATFORM_LBG:
@@ -308,6 +310,7 @@ static int is_platform_ifd_2(void)
 		PLATFORM_IFD2,
 		PLATFORM_MTL,
 		PLATFORM_PTL,
+		PLATFORM_NVL,
 		PLATFORM_WBG,
 	};
 	unsigned int i;
@@ -565,6 +568,7 @@ static void decode_spi_frequency(unsigned int freq)
 	case CHIPSET_500_600_SERIES_TIGER_ALDER_POINT:
 	case CHIPSET_800_SERIES_METEOR_LAKE:
 	case CHIPSET_900_SERIES_PANTHER_LAKE:
+	case CHIPSET_900_SERIES_NOVA_LAKE:
 		_decode_spi_frequency_500_series(freq);
 		break;
 	default:
@@ -649,6 +653,7 @@ static void decode_espi_frequency(unsigned int freq)
 		break;
 	case CHIPSET_800_SERIES_METEOR_LAKE:
 	case CHIPSET_900_SERIES_PANTHER_LAKE:
+	case CHIPSET_900_SERIES_NOVA_LAKE:
 		_decode_espi_frequency_800_series(freq);
 		break;
 	default:
@@ -703,7 +708,7 @@ static int is_platform_with_pch(void)
 static int is_platform_with_100x_series_pch(void)
 {
 	if (chipset >= CHIPSET_100_200_SERIES_SUNRISE_POINT &&
-			chipset <= CHIPSET_900_SERIES_PANTHER_LAKE)
+			chipset <= CHIPSET_900_SERIES_NOVA_LAKE)
 		return 1;
 
 	return 0;
@@ -1041,7 +1046,8 @@ static void dump_fd(char *image, int size)
 
 	if (chipset == CHIPSET_500_600_SERIES_TIGER_ALDER_POINT ||
 		 chipset == CHIPSET_800_SERIES_METEOR_LAKE ||
-		 chipset == CHIPSET_900_SERIES_PANTHER_LAKE) {
+		 chipset == CHIPSET_900_SERIES_PANTHER_LAKE ||
+		 chipset == CHIPSET_900_SERIES_NOVA_LAKE) {
 		printf("FLMAP3:    0x%08x\n", fdb->flmap3);
 		printf("  Minor Revision ID:     0x%04x\n", (fdb->flmap3 >> 14) & 0x7f);
 		printf("  Major Revision ID:     0x%04x\n", (fdb->flmap3 >> 21) & 0x7ff);
@@ -1414,6 +1420,7 @@ static bool platform_has_extended_regions(void)
 	case PLATFORM_ADL:
 	case PLATFORM_MTL:
 	case PLATFORM_PTL:
+	case PLATFORM_NVL:
 		return true;
 	default:
 		return false;
@@ -1479,6 +1486,7 @@ static void lock_descriptor(const char *filename, char *image, int size)
 	case PLATFORM_IFD2:
 	case PLATFORM_MTL:
 	case PLATFORM_PTL:
+	case PLATFORM_NVL:
 		/* CPU/BIOS can read descriptor and BIOS. */
 		fmba->flmstr1 |= (1 << REGION_DESC) << rd_shift;
 		fmba->flmstr1 |= (1 << REGION_BIOS) << rd_shift;
@@ -1633,6 +1641,7 @@ static uint8_t get_cse_data_partition_offset(void)
 	case PLATFORM_ADL:
 	case PLATFORM_MTL:
 	case PLATFORM_PTL:
+	case PLATFORM_NVL:
 		data_offset = 0x18;
 		break;
 	default:
@@ -1663,6 +1672,9 @@ static uint32_t get_gpr0_offset(void)
 		break;
 	case PLATFORM_PTL:
 		gpr0_offset = 0x76;
+		break;
+	case PLATFORM_NVL:
+		gpr0_offset = 0x3C;
 		break;
 	default:
 		break;
@@ -2250,6 +2262,8 @@ static void print_usage(const char *name)
 	       "                                         mtl    - Meteor Lake\n"
 	       "                                         sklkbl - Sky Lake/Kaby Lake\n"
 	       "                                         tgl    - Tiger Lake\n"
+	       "                                         ptl    - Panther Lake\n"
+	       "                                         nvl    - Nova Lake\n"
 	       "                                         wbg    - Wellsburg\n"
 	       "   -S | --setpchstrap                    Write a PCH strap\n"
 	       "   -V | --newvalue                       The new value to write into PCH strap specified by -S\n"
@@ -2550,6 +2564,8 @@ int main(int argc, char *argv[])
 				platform = PLATFORM_MTL;
 			} else if (!strcmp(optarg, "ptl")) {
 				platform = PLATFORM_PTL;
+			} else if (!strcmp(optarg, "nvl")) {
+				platform = PLATFORM_NVL;
 			} else if (!strcmp(optarg, "wbg")) {
 				platform = PLATFORM_WBG;
 			} else {
