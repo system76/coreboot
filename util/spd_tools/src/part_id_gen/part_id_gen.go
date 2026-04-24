@@ -44,6 +44,7 @@ var supportedPlatforms = [...]string{
 	"MTL",
 	"PHX",
 	"PTL",
+	"NVL",
 }
 
 var supportedMemTechs = [...]string{
