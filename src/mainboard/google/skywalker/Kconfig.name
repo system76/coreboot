@@ -29,6 +29,9 @@ config BOARD_GOOGLE_PADME
 config BOARD_GOOGLE_R2D2
 	bool "->  R2d2"
 
+config BOARD_GOOGLE_SHEEV
+	bool "->  Sheev"
+
 config BOARD_GOOGLE_SKYWALKER
 	bool "->  Skywalker"
 
