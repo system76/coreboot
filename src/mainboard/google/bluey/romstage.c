@@ -142,7 +142,7 @@ static void edp_configure_gpios(void)
 	gpio_output(GPIO_PANEL_POWER_ON, 1);
 
 	/* Panel HPD GPIO enable */
-	gpio_input_pulldown(GPIO_PANEL_HPD);
+	gpio_input(GPIO_PANEL_HPD);
 }
 
 /* Perform romstage early hardware initialization */
