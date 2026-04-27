@@ -79,7 +79,6 @@ bool is_off_mode(void);
 void configure_parallel_charging(void);
 void configure_parallel_charging_late(void);
 void configure_debug_access_port(void);
-void configure_dam_on_system_state_change(bool poweron);
 void enable_slow_battery_charging(void);
 void disable_slow_battery_charging(void);
 void launch_charger_applet(void);

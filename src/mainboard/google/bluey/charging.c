@@ -35,9 +35,6 @@
 #define SCHG_TYPE_C_SUSPEND_LEGACY_CHARGERS 0x2B90
 #define SMBx_SCHG_TYPE_C_SUSPEND_LEGACY_CHARGERS(x) \
 (((x) << 16) | SCHG_TYPE_C_SUSPEND_LEGACY_CHARGERS)
-#define SCHG_TYPE_C_TYPE_C_CRUDE_SENSOR_CFG 0x2B4E
-#define SMBx_SCHG_TYPE_C_TYPE_C_CRUDE_SENSOR_CFG(x) \
-(((x) << 16) | SCHG_TYPE_C_TYPE_C_CRUDE_SENSOR_CFG)
 
 #define SCHG_CHGR_CHARGING_FCC 0x260A
 #define SMB1_CHGR_CHARGING_FCC ((SMB1_SLAVE_ID << 16) | SCHG_CHGR_CHARGING_FCC)
@@ -70,20 +67,6 @@ enum charging_status {
 	CHRG_DISABLE,
 	CHRG_ENABLE,
 };
-
-void configure_dam_on_system_state_change(bool poweron)
-{
-	if (!CONFIG(HAVE_DEBUG_ACCESS_PORT_SOURCE_SINK))
-		return;
-
-	uint8_t value = (uint8_t)spmi_read8(SMBx_SCHG_TYPE_C_TYPE_C_CRUDE_SENSOR_CFG
-						(CONFIG_DAP_SMB_SLAVE_ID));
-	if (poweron)
-		value |= BIT(0);
-	else
-		value &= ~BIT(0);
-	spmi_write8(SMBx_SCHG_TYPE_C_TYPE_C_CRUDE_SENSOR_CFG(CONFIG_DAP_SMB_SLAVE_ID), value);
-}
 
 static int get_battery_icurr_ma(void)
 {
@@ -192,7 +175,6 @@ void launch_charger_applet(void)
 			if (detect_ac_unplug_event())
 				indicate_charging_status();
 			google_chromeec_offmode_heartbeat();
-			configure_dam_on_system_state_change(false);
 			google_chromeec_ap_poweroff();
 		}
 		mdelay(200);
@@ -225,7 +207,6 @@ void launch_charger_applet(void)
 			if (stopwatch_expired(&sw)) {
 				printk(BIOS_INFO, "Issuing power-off as switching from slow charging "
 						"to fast charging mode.\n");
-				configure_dam_on_system_state_change(false);
 				google_chromeec_ap_poweroff();
 			}
 		}
@@ -238,7 +219,6 @@ void launch_charger_applet(void)
 			if (detect_ac_unplug_event())
 				indicate_charging_status();
 			google_chromeec_offmode_heartbeat();
-			configure_dam_on_system_state_change(false);
 			google_chromeec_ap_poweroff();
 		}
 
@@ -261,7 +241,6 @@ void launch_charger_applet(void)
 		if (has_crossed_threshold) {
 			printk(BIOS_INFO, "Issuing power-off due to temperature trip.\n");
 			google_chromeec_offmode_heartbeat();
-			configure_dam_on_system_state_change(false);
 			google_chromeec_ap_poweroff();
 		}
 	} while (true);
@@ -287,8 +266,6 @@ void configure_debug_access_port(void)
 {
 	if (!CONFIG(HAVE_DEBUG_ACCESS_PORT_SOURCE_SINK))
 		return;
-
-	configure_dam_on_system_state_change(true);
 
 	printk(BIOS_INFO, "Enable support of source and sink modes for debug access port\n");
 	spmi_write8(SMBx_SCHG_TYPE_C_TYPE_C_DEBUG_ACCESS_SRC_CFG(CONFIG_DAP_SMB_SLAVE_ID),
