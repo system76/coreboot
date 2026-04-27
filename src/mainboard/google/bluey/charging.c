@@ -68,6 +68,30 @@ enum charging_status {
 	CHRG_ENABLE,
 };
 
+static struct sdam_config {
+uint32_t addr;
+uint8_t mask;
+uint8_t value;
+} default_sdam_config[] = {
+	{PMIC_PD_NEGOTIATION_FLAG, SKIP_PORT_RESET, 0},
+	{PMIC0_SDAM16_MEM_030, SDAM16_INIT_MASK, (BOOT_REASON_FRESHBOOT << 4) | OS_TYPE_BOOTLOADER},
+#if CONFIG(DAM_SINK_SENSOR_Z1_OPTIMIZATION)
+	{PMIC_SDAM3_PSI_VARIANT_MAJOR, 0xFF, PMIC_PSI_WORKAROUND_ENABLE},
+#endif
+};
+
+/*
+ * Initialize SDAM to default values at boot
+ */
+void init_sdam_config(void)
+{
+	printk(BIOS_INFO, "Initializing SDAM config at boot\n");
+	size_t count = ARRAY_SIZE(default_sdam_config);
+	for (size_t i = 0; i < count; i++)
+		spmi_rmw8(default_sdam_config[i].addr, default_sdam_config[i].mask,
+				default_sdam_config[i].value);
+}
+
 static int get_battery_icurr_ma(void)
 {
 	/* Read battery i-current value */
@@ -323,18 +347,6 @@ static void adsp_skip_port_reset(void)
 }
 
 /*
- * Set ADSP boot reason to fresh boot and OS type to bootloader.
- */
-static void adsp_boot_reason_init(void)
-{
-	uint8_t val = (uint8_t)spmi_read8(PMIC0_SDAM16_MEM_030);
-	spmi_write8(PMIC0_SDAM16_MEM_030,
-		    (val & ~SDAM16_INIT_MASK) |
-		    (BOOT_REASON_FRESHBOOT << 4) |
-		    OS_TYPE_BOOTLOADER);
-}
-
-/*
  * Enable fast battery charging with ADSP support.
  *
  * This function loads ADSP firmware and configures fast charging.
@@ -345,8 +357,6 @@ void enable_fast_battery_charging(void)
 
 	/* Load ADSP firmware first */
 	adsp_fw_load();
-
-	adsp_boot_reason_init();
 
 	/* Bring up LPASS/QDSP6 (ADSP) for ADSP-dependent charging support */
 	if (lpass_bring_up() != CB_SUCCESS) {

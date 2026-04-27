@@ -211,8 +211,7 @@ void platform_romstage_main(void)
 	/* QCLib: DDR init & train */
 	qclib_load_and_run();
 
-	if (CONFIG(DAM_SINK_SENSOR_Z1_OPTIMIZATION))
-		spmi_write8(PMIC_SDAM3_PSI_VARIANT_MAJOR, PMIC_PSI_WORKAROUND_ENABLE);
+	init_sdam_config();
 
 	/* Underlying PMIC registers are accessible only at this point */
 	set_boot_mode();

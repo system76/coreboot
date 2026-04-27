@@ -84,5 +84,6 @@ void disable_slow_battery_charging(void);
 void launch_charger_applet(void);
 bool platform_get_battery_soc_information(uint32_t *batt_pct);
 void enable_fast_battery_charging(void);
+void init_sdam_config(void);
 
 #endif /* MAINBOARD_GOOGLE_BLUEY_BOARD_H */
