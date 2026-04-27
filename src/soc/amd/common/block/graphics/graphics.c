@@ -41,10 +41,10 @@ struct atif_brightness_output {
 	uint16_t size; /* Size of this object, including size field. */
 	uint16_t flags; /* Currently all reserved. */
 	uint8_t error_code;
-	/* default brightness fields currently ignored by Linux driver. */
+	/* Linux uses these values as the initial backlight brightness. */
 	uint8_t default_brightness_ac; /* Percentage brightness when connected to AC. */
 	uint8_t default_brightness_dc; /* Percentage brightness when connected to DC. */
-	/* The following 2 fields are the only ones honored by Linux driver currently. */
+	/* Linux uses these values to scale the backlight range. */
 	uint8_t min_input_signal_level; /* 0-255 corresponding to 0% */
 	uint8_t max_input_signal_level; /* 0-255 corresponding to 100% */
 	/* Array of data points consisting of:
@@ -69,6 +69,8 @@ static void generate_atif(const struct device *dev)
 	struct atif_brightness_output brightness_out = {
 		.size = sizeof(brightness_out),
 		.error_code = ATIF_QBTC_ERROR_CODE_SUCCESS,
+		.default_brightness_ac = 90,
+		.default_brightness_dc = 60,
 		.min_input_signal_level = 0,
 		.max_input_signal_level = 255,
 	};
