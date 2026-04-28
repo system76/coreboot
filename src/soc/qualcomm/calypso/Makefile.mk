@@ -70,6 +70,16 @@ else
 BL31_MAKEARGS += QTISECLIB_PATH=$(CALYPSO_BLOB)/qtiseclib/libqtisec.a
 endif # CONFIG_QC_SDI_ENABLE
 
+ifeq ($(CONFIG_QC_QDUTT_ENABLE),y)
+QCLIB_FILE := $(CALYPSO_BLOB)/QDUTT/boot/QcDdi.elf
+DCB_FILE := $(CALYPSO_BLOB)/QDUTT/boot/$(DTB_DCB_BLOB_PATH)/dcb.bin
+SHRM_FILE := $(CALYPSO_BLOB)/QDUTT/$(BLOB_VARIANT)/shrm/shrm.elf
+else
+QCLIB_FILE := $(CALYPSO_BLOB)/boot/QcLib.elf
+DCB_FILE := $(CALYPSO_BLOB)/boot/$(DTB_DCB_BLOB_PATH)/dcb.bin
+SHRM_FILE := $(CALYPSO_BLOB)/$(BLOB_VARIANT)/shrm/shrm.elf
+endif # CONFIG_QC_QDUTT_ENABLE
+
 ################################################################################
 ifeq ($(CONFIG_QC_SDI_ENABLE),y)
 QCSDI_FILE := $(CALYPSO_BLOB)/boot/QcSdi.elf
@@ -96,7 +106,6 @@ $(objcbfs)/bootblock.bin: $(objcbfs)/bootblock.raw.elf
 		$(objcbfs)/bootblock.bin
 
 ################################################################################
-QCLIB_FILE := $(CALYPSO_BLOB)/boot/QcLib.elf
 QCLIB_CBFS := $(CONFIG_CBFS_PREFIX)/qclib
 $(QCLIB_CBFS)-file := $(QCLIB_FILE)
 $(QCLIB_CBFS)-type := stage
@@ -104,7 +113,6 @@ $(QCLIB_CBFS)-compression := $(CBFS_PRERAM_COMPRESS_FLAG)
 cbfs-files-y += $(QCLIB_CBFS)
 
 ################################################################################
-DCB_FILE := $(CALYPSO_BLOB)/boot/$(DTB_DCB_BLOB_PATH)/dcb.bin
 DCB_CBFS := $(CONFIG_CBFS_PREFIX)/dcb
 $(DCB_CBFS)-file := $(DCB_FILE)
 $(DCB_CBFS)-type := raw
@@ -235,7 +243,6 @@ $(CPUCP_DTBS_CBFS)-compression := $(CBFS_COMPRESS_FLAG)
 cbfs-files-y += $(CPUCP_DTBS_CBFS)
 
 ################################################################################
-SHRM_FILE := $(CALYPSO_BLOB)/$(BLOB_VARIANT)/shrm/shrm.elf
 SHRM_CBFS := $(CONFIG_CBFS_PREFIX)/shrm
 $(SHRM_CBFS)-file := $(SHRM_FILE)
 $(SHRM_CBFS)-type := payload
@@ -245,7 +252,7 @@ cbfs-files-y += $(SHRM_CBFS)
 ################################################################################
 # Rule to create shrm_meta from shrm.elf
 # This rule depends on shrm.elf being built and the extractor script existing.
-$(obj)/mainboard/$(MAINBOARDDIR)/shrm_meta: $(CALYPSO_BLOB)/$(BLOB_VARIANT)/shrm/shrm.elf util/qualcomm/elf_segment_extractor.py
+$(obj)/mainboard/$(MAINBOARDDIR)/shrm_meta: $(SHRM_FILE) util/qualcomm/elf_segment_extractor.py
 	@echo "Extracting ELF headers and hash table segment from $< to $@"
 	@util/qualcomm/elf_segment_extractor.py --eh --pht --hashtable $< $@
 
