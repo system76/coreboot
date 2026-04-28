@@ -168,3 +168,19 @@ int spmi_read8_safe(uint32_t reg)
 
 	return ERROR_SPMI_READ_FAILED;
 }
+
+int spmi_rmw8(uint32_t addr, uint8_t mask, uint8_t value)
+{
+	int spmi_result;
+	uint8_t data;
+
+	spmi_result = spmi_read8(addr);
+	if (spmi_result < 0)
+		return -1;
+	data = spmi_result & 0xff;
+
+	data &= ~mask;
+	data |= value;
+	spmi_result = spmi_write8(addr, data);
+	return (spmi_result < 0) ? -1 : 0;
+}
