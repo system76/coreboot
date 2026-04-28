@@ -1,0 +1,43 @@
+# SPDX-License-Identifier: GPL-2.0-only
+
+chip soc/intel/pantherlake
+	# Enable Enhanced Intel SpeedStep
+	register "eist_enable" = "true"
+
+	# Thermal
+	register "tcc_offset" = "8"
+
+	# Enable Energy Reporting
+	register "pch_pm_energy_report_enable" = "true"
+
+	device domain 0 on
+		device ref npu on end
+		device ref iaa off end
+		device ref pmc_shared_sram on end
+		device ref cnvi_wifi on
+			register "cnvi_wifi_core" = "true"
+			register "cnvi_bt_core" = "true"
+			register "cnvi_bt_audio_offload" = "true"
+			chip drivers/wifi/generic
+				register "wake" = "GPE0_PME_B0"
+				device generic 0 on end
+			end
+		end
+		device ref soc_espi on
+			register "gen1_dec" = "0x00040069" # EC PM channel
+			register "gen2_dec" = "0x00fc0e01" # AP/EC command
+			register "gen3_dec" = "0x00fc0f01" # AP/EC debug
+			chip drivers/pc80/tpm
+				device pnp 0c31.0 on end
+			end
+		end
+		device ref hda on
+			register "pch_hda_audio_link_hda_enable" = "1"
+			register "pch_hda_sdi_enable[0]" = "true"
+			register "pch_hda_idisp_codec_enable" = "1"
+			register "pch_hda_idisp_link_frequency" = "HDA_LINKFREQ_96MHZ"
+			register "pch_hda_idisp_link_tmode" = "HDA_TMODE_8T"
+		end
+		device ref smbus on end
+	end
+end
