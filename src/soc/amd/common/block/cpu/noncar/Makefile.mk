@@ -24,7 +24,7 @@ $(objcbfs)/bootblock_fixed_data.elf: $(objcbfs)/bootblock.elf
 	@printf "    OBJCOPY    $(notdir $(@))\n"
 	$(OBJCOPY_bootblock) --dump-section .data=$(objcbfs)/data.section $<
 	cp $< $@
-	$(OBJCOPY_bootblock) --set-section-flags .datacopy=load \
+	$(OBJCOPY_bootblock) --set-section-flags .datacopy=load,alloc \
 		--set-section-flags .bss=noload --set-section-flags .data=noload $@
 	$(OBJCOPY_bootblock) --update-section .datacopy=$(objcbfs)/data.section $@
 
