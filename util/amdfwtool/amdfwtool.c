@@ -384,7 +384,6 @@ amd_bios_entry amd_bios_table[] = {
 #define BUFF_TO_RUN(ctx, ptr) RUN_OFFSET((ctx), ((char *)(ptr) - (ctx).rom))
 #define BUFF_TO_RUN_MODE(ctx, ptr, mode) RUN_OFFSET_MODE((ctx), ((char *)(ptr) - (ctx).rom), \
 		(ctx).address_mode < (mode) ? (ctx).address_mode : (mode))
-#define BUFF_ROOM(ctx) ((ctx).rom_size - (ctx).current)
 /* AMD PSP Spec: Only set the address mode in entry if the table is mode 2 or 3. */
 /* For address mode 3, it is not be used in any SOC family yet.
    For address mode 1, we can use it to store and transfer the address mode.
@@ -748,8 +747,7 @@ static void integrate_firmwares(context *ctx,
 				break;
 			}
 
-			bytes = copy_blob(BUFF_CURRENT(*ctx),
-					fw_table[i].filename, BUFF_ROOM(*ctx));
+			bytes = copy_blob(ctx, fw_table[i].filename);
 			if (bytes < 0) {
 				amdfwtool_cleanup(ctx);
 				exit(1);
@@ -1060,8 +1058,7 @@ static void integrate_psp_firmwares(context *ctx,
 				}
 			} else {
 				adjust_current_pointer(ctx, 0, ERASE_ALIGNMENT);
-				bytes = copy_blob(BUFF_CURRENT(*ctx),
-						fw_table[i].filename, BUFF_ROOM(*ctx));
+				bytes = copy_blob(ctx, fw_table[i].filename);
 				if (bytes <= 0) {
 					amdfwtool_cleanup(ctx);
 					exit(1);
@@ -1091,8 +1088,7 @@ static void integrate_psp_firmwares(context *ctx,
 							SET_ADDR_MODE_BY_TABLE(pspdir);
 				bytes = fw_table[i].file_size;
 			} else {
-				bytes = copy_blob(BUFF_CURRENT(*ctx),
-						fw_table[i].filename, BUFF_ROOM(*ctx));
+				bytes = copy_blob(ctx, fw_table[i].filename);
 				if (bytes < 0) {
 					amdfwtool_cleanup(ctx);
 					exit(1);
@@ -1472,8 +1468,7 @@ static void integrate_bios_firmwares(context *ctx,
 			if (!fw_table[i].filename)
 				break;
 
-			bytes = copy_blob(BUFF_CURRENT(*ctx),
-					fw_table[i].filename, BUFF_ROOM(*ctx));
+			bytes = copy_blob(ctx, fw_table[i].filename);
 			if (bytes <= 0) {
 				amdfwtool_cleanup(ctx);
 				exit(1);
@@ -1495,8 +1490,7 @@ static void integrate_bios_firmwares(context *ctx,
 			if (fw_table[i].type == AMD_BIOS_APCB ||
 					fw_table[i].type == AMD_BIOS_APCB_BK)
 				adjust_current_pointer(ctx, 0, ERASE_ALIGNMENT);
-			bytes = copy_blob(BUFF_CURRENT(*ctx),
-					fw_table[i].filename, BUFF_ROOM(*ctx));
+			bytes = copy_blob(ctx, fw_table[i].filename);
 			if (bytes <= 0) {
 				amdfwtool_cleanup(ctx);
 				exit(1);

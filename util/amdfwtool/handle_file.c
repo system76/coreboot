@@ -131,7 +131,8 @@ ssize_t write_body(char *output, void *body_offset, ssize_t body_size)
 	return bytes;
 }
 
-ssize_t copy_blob(void *dest, const char *src_file, size_t room)
+/* Copy the contents of the source file into the rom at current position */
+ssize_t copy_blob(context *ctx, const char *src_file)
 {
 	int fd;
 	struct stat fd_stat;
@@ -150,13 +151,13 @@ ssize_t copy_blob(void *dest, const char *src_file, size_t room)
 		return -2;
 	}
 
-	if ((size_t)fd_stat.st_size > room) {
+	if ((size_t)fd_stat.st_size > (ctx->rom_size - ctx->current)) {
 		fprintf(stderr, "Error: %s will not fit.  Exiting.\n", src_file);
 		close(fd);
 		return -3;
 	}
 
-	bytes = read(fd, dest, (size_t)fd_stat.st_size);
+	bytes = read(fd, ctx->rom + ctx->current, (size_t)fd_stat.st_size);
 	close(fd);
 	if (bytes != (ssize_t)fd_stat.st_size) {
 		fprintf(stderr, "Error while reading %s\n", src_file);
