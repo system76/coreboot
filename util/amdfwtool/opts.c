@@ -565,6 +565,11 @@ int amdfwtool_getopt(int argc, char *argv[], amd_cb_config *cb_config, context *
 		}
 	}
 
+	if (!cb_config->config) {
+		fprintf(stderr, "Error: No configuration file given\n");
+		retval = 1;
+	}
+
 	if (!fuse_defined)
 		register_fw_fuse(DEFAULT_SOFT_FUSE_CHAIN);
 

@@ -1595,21 +1595,19 @@ static int open_process_config(char *config, amd_cb_config *cb_config)
 {
 	FILE *config_handle;
 
-	if (config) {
-		config_handle = fopen(config, "r");
-		if (config_handle == NULL) {
-			fprintf(stderr, "Can not open file %s for reading: %s\n",
-				config, strerror(errno));
-			return 1;
-		}
-		if (process_config(config_handle, cb_config) == 0) {
-			fprintf(stderr, "Configuration file %s parsing error\n",
-					config);
-			fclose(config_handle);
-			return 1;
-		}
-		fclose(config_handle);
+	config_handle = fopen(config, "r");
+	if (config_handle == NULL) {
+		fprintf(stderr, "Can not open file %s for reading: %s\n",
+			config, strerror(errno));
+		return 1;
 	}
+	if (process_config(config_handle, cb_config) == 0) {
+		fprintf(stderr, "Configuration file %s parsing error\n",
+				config);
+		fclose(config_handle);
+		return 1;
+	}
+	fclose(config_handle);
 
 	/* For debug. */
 	if (cb_config->debug) {
