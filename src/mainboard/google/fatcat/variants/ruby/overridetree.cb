@@ -87,6 +87,9 @@ chip soc/intel/pantherlake
 	register "pcore_hysteresis_window_ms" = "3"
 	register "ecore_hysteresis_window_ms" = "3"
 
+	# VCCSA Shutdown mitigation setting
+	register "vccsa_shutdown" = "1"
+
 	register "usb2_ports[0]" = "USB2_PORT_TYPE_C(OC_SKIP)"	# USB2_C0
 	register "usb2_ports[1]" = "USB2_PORT_TYPE_C(OC_SKIP)"	# USB2_C1
 	register "usb2_ports[2]" = "USB2_PORT_MID(OC_SKIP)" # USB HUB (USB2 Camera)
