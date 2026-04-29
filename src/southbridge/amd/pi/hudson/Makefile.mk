@@ -53,55 +53,15 @@ else
 HUDSON_FWM_POSITION=0x720000
 endif
 
-ifeq ($(CONFIG_HUDSON_PSP), y)
-
-ifeq ($(CONFIG_CPU_AMD_PI_00730F01), y)
-FIRMWARE_TYPE=
-
-endif
-
-#PUBSIGNEDKEY_FILE=$(top)/$(FIRMWARE_LOCATION)/RtmPubSigned$(FIRMWARE_TYPE).key
-#PSPNVRAM_FILE=$(top)/$(FIRMWARE_LOCATION)/PspNvram$(FIRMWARE_TYPE).bin
-#PSPSECUREDEBUG_FILE=$(top)/$(FIRMWARE_LOCATION)/PspSecureDebug$(FIRMWARE_TYPE).Key
-
-endif
-
 add_opt_prefix=$(if $(call strip_quotes, $(1)), $(2) $(call strip_quotes, $(1)), )
 
 OPT_HUDSON_XHCI_FWM_FILE=$(call add_opt_prefix, $(CONFIG_HUDSON_XHCI_FWM_FILE), --xhci)
 OPT_HUDSON_IMC_FWM_FILE=$(call add_opt_prefix, $(CONFIG_HUDSON_IMC_FWM_FILE), --imc)
-OPT_HUDSON_GEC_FWM_FILE=$(call add_opt_prefix, $(CONFIG_HUDSON_GEC_FWM_FILEddd), --gec)
-
-OPT_AMD_PUBKEY_FILE=$(call add_opt_prefix, $(CONFIG_AMD_PUBKEY_FILE), --pubkey)
-OPT_PSPBTLDR_FILE=$(call add_opt_prefix, $(PSPBTLDR_FILE), --bootloader)
-OPT_SMUFWM_FILE=$(call add_opt_prefix, $(SMUFWM_FILE), --smufirmware)
-OPT_PSPRCVR_FILE=$(call add_opt_prefix, $(PSPRCVR_FILE), --recovery)
-OPT_PUBSIGNEDKEY_FILE=$(call add_opt_prefix, $(PUBSIGNEDKEY_FILE), --rtmpubkey)
-OPT_PSPSECUREOS_FILE=$(call add_opt_prefix, $(PSPSECUREOS_FILE), --secureos)
-OPT_PSPNVRAM_FILE=$(call add_opt_prefix, $(PSPNVRAM_FILE), --nvram)
-OPT_PSPSECUREDEBUG_FILE=$(call add_opt_prefix, $(PSPSECUREDEBUG_FILE), --securedebug)
-OPT_PSPTRUSTLETS_FILE=$(call add_opt_prefix, $(PSPTRUSTLETS_FILE), --trustlets)
-OPT_TRUSTLETKEY_FILE=$(call add_opt_prefix, $(TRUSTLETKEY_FILE), --trustletkey)
-OPT_SMUFIRMWARE2_FILE=$(call add_opt_prefix, $(SMUFIRMWARE2_FILE), --smufirmware2)
-OPT_SMUSCS_FILE=$(call add_opt_prefix, $(SMUSCS_FILE), --smuscs)
+OPT_HUDSON_GEC_FWM_FILE=$(call add_opt_prefix, $(CONFIG_HUDSON_GEC_FWM_FILE), --gec)
 
 $(obj)/amdfw.rom:	$(call strip_quotes, $(CONFIG_HUDSON_XHCI_FWM_FILE)) \
 			$(call strip_quotes, $(CONFIG_HUDSON_IMC_FWM_FILE)) \
 			$(call strip_quotes, $(CONFIG_HUDSON_GEC_FWM_FILE)) \
-			$(call strip_quotes, $(AMD_PUBKEY2_FILE)) \
-			$(call strip_quotes, $(PUBSIGNEDKEY2_FILE)) \
-			$(call strip_quotes, $(PSPBTLDR2_FILE)) \
-			$(call strip_quotes, $(SMUFWM2_FILE)) \
-			$(call strip_quotes, $(SMUFWM2_FN_FILE)) \
-			$(call strip_quotes, $(PSPRCVR2_FILE)) \
-			$(call strip_quotes, $(PSPSECUREOS2_FILE)) \
-			$(call strip_quotes, $(PSPNVRAM2_FILE)) \
-			$(call strip_quotes, $(SMUSCS2_FILE)) \
-			$(call strip_quotes, $(PSPSECUREDEBUG2_FILE)) \
-			$(call strip_quotes, $(PSPTRUSTLETS2_FILE)) \
-			$(call strip_quotes, $(TRUSTLETKEY2_FILE)) \
-			$(call strip_quotes, $(SMUFIRMWARE2_2_FILE)) \
-			$(call strip_quotes, $(SMUFIRMWARE2_2_FN_FILE)) \
 			$(DEP_FILES) \
 			$(AMDFWTOOL)
 	rm -f $@
@@ -110,20 +70,6 @@ $(obj)/amdfw.rom:	$(call strip_quotes, $(CONFIG_HUDSON_XHCI_FWM_FILE)) \
 		$(OPT_HUDSON_XHCI_FWM_FILE) \
 		$(OPT_HUDSON_IMC_FWM_FILE) \
 		$(OPT_HUDSON_GEC_FWM_FILE) \
-		$(OPT_2AMD_PUBKEY_FILE) \
-		$(OPT_2PSPBTLDR_FILE) \
-		$(OPT_2SMUFWM_FILE) \
-		$(OPT_2SMUFWM_FN_FILE) \
-		$(OPT_2PSPRCVR_FILE) \
-		$(OPT_2PUBSIGNEDKEY_FILE) \
-		$(OPT_2PSPSECUREOS_FILE) \
-		$(OPT_2PSPNVRAM_FILE) \
-		$(OPT_2PSPSECUREDEBUG_FILE) \
-		$(OPT_2PSPTRUSTLETS_FILE) \
-		$(OPT_2TRUSTLETKEY_FILE) \
-		$(OPT_2SMUFIRMWARE2_FILE) \
-		$(OPT_2SMUFIRMWARE2_FN_FILE) \
-		$(OPT_2SMUSCS_FILE) \
 		--flashsize $(CONFIG_ROM_SIZE) \
 		--location $(HUDSON_FWM_POSITION) \
 		--config $(CONFIG_AMDFW_CONFIG_FILE) \
