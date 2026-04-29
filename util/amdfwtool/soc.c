@@ -80,6 +80,44 @@ bool platform_is_multi_level(enum platform platform_type)
 	}
 }
 
+/*
+ * For some SOC generations the APOB_NV binary seems to be treated special regarding the
+ * interpretaion of the source address. No matter the address_mode specified for the address
+ * the memory ABL always seems to the interpret the source address as MMIO address even if
+ * AMD_ADDR_REL_BIOS is specified. So for them we need to always use an MMIO address.
+ * This seems to be a bug which affects all SOCs before phoenix generation.
+ */
+bool platform_has_apob_nv_quirk(enum platform platform_type)
+{
+	switch (platform_type) {
+	case PLATFORM_CARRIZO:
+	case PLATFORM_STONEYRIDGE:
+	case PLATFORM_RAVEN:
+	case PLATFORM_PICASSO:
+	case PLATFORM_RENOIR:
+	case PLATFORM_CEZANNE:
+	case PLATFORM_MENDOCINO:
+	case PLATFORM_LUCIENNE:
+		return true;
+	default:
+		return false;
+	}
+}
+
+bool platform_is_initial_alignment_required(enum platform platform_type)
+{
+	switch (platform_type) {
+	case PLATFORM_MENDOCINO:
+	case PLATFORM_PHOENIX:
+	case PLATFORM_STRIX:
+	case PLATFORM_KRACKAN2E:
+	case PLATFORM_STRIXHALO:
+		return false;
+	default:
+		return true;
+	}
+}
+
 bool platform_is_second_gen(enum platform platform_type)
 {
 	switch (platform_type) {
@@ -120,4 +158,48 @@ bool platform_has_dir_header_v1(enum platform platform_type)
 	default:
 		return false;
 	}
+}
+
+uint32_t platform_get_psp_id(enum platform platform_type)
+{
+	uint32_t psp_id;
+	switch (platform_type) {
+	case PLATFORM_RAVEN:
+	case PLATFORM_PICASSO:
+		psp_id = 0xBC0A0000;
+		break;
+	case PLATFORM_RENOIR:
+	case PLATFORM_LUCIENNE:
+		psp_id = 0xBC0C0000;
+		break;
+	case PLATFORM_CEZANNE:
+		psp_id = 0xBC0C0140;
+		break;
+	case PLATFORM_MENDOCINO:
+		psp_id = 0xBC0D0900;
+		break;
+	case PLATFORM_STONEYRIDGE:
+		psp_id = 0x10220B00;
+		break;
+	case PLATFORM_STRIX:
+		psp_id = 0xBC0E0200;
+		break;
+	case PLATFORM_PHOENIX:
+		psp_id = 0xBC0D0400;
+		break;
+	case PLATFORM_GENOA:
+		psp_id = 0xBC0C0111;
+		break;
+	case PLATFORM_KRACKAN2E:
+		psp_id = 0xbc0e1000;
+		break;
+	case PLATFORM_STRIXHALO:
+		psp_id = 0xbc0e0900;
+		break;
+	case PLATFORM_CARRIZO:
+	default:
+		psp_id = 0;
+		break;
+	}
+	return psp_id;
 }

@@ -517,5 +517,8 @@ bool platform_needs_ish(enum platform platform_type);
 bool platform_is_multi_level(enum platform platform_type);
 bool platform_is_second_gen(enum platform platform_type);
 bool platform_has_dir_header_v1(enum platform platform_type);
+bool platform_has_apob_nv_quirk(enum platform platform_type);
+uint32_t platform_get_psp_id(enum platform platform_type);
+bool platform_is_initial_alignment_required(enum platform platform_type);
 
 #endif	/* _AMD_FW_TOOL_H_ */

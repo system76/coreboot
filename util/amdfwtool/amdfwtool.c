@@ -543,30 +543,6 @@ static void *new_ish_dir(context *ctx)
 	return ptr;
 }
 
-/*
- * For some SOC generations the APOB_NV binary seems to be treated special regarding the
- * interpretaion of the source address. No matter the address_mode specified for the address
- * the memory ABL always seems to the interpret the source address as MMIO address even if
- * AMD_ADDR_REL_BIOS is specified. So for them we need to always use an MMIO address.
- * This seems to be a bug which affects all SOCs before phoenix generation.
- */
-static bool has_apob_nv_quirk(enum platform platform_type)
-{
-	switch (platform_type) {
-	case PLATFORM_CARRIZO:
-	case PLATFORM_STONEYRIDGE:
-	case PLATFORM_RAVEN:
-	case PLATFORM_PICASSO:
-	case PLATFORM_RENOIR:
-	case PLATFORM_CEZANNE:
-	case PLATFORM_MENDOCINO:
-	case PLATFORM_LUCIENNE:
-		return true;
-	default:
-		return false;
-	}
-}
-
 static void copy_psp_header(void *bak, void *orig)
 {
 	uint32_t count = ((psp_directory_header *)orig)->num_entries;
@@ -753,50 +729,6 @@ static void fill_bios_directory_to_efs(embedded_firmware *amd_romsig, void *bios
 	}
 }
 
-static uint32_t get_psp_id(enum platform soc_id)
-{
-	uint32_t psp_id;
-	switch (soc_id) {
-	case PLATFORM_RAVEN:
-	case PLATFORM_PICASSO:
-		psp_id = 0xBC0A0000;
-		break;
-	case PLATFORM_RENOIR:
-	case PLATFORM_LUCIENNE:
-		psp_id = 0xBC0C0000;
-		break;
-	case PLATFORM_CEZANNE:
-		psp_id = 0xBC0C0140;
-		break;
-	case PLATFORM_MENDOCINO:
-		psp_id = 0xBC0D0900;
-		break;
-	case PLATFORM_STONEYRIDGE:
-		psp_id = 0x10220B00;
-		break;
-	case PLATFORM_STRIX:
-		psp_id = 0xBC0E0200;
-		break;
-	case PLATFORM_PHOENIX:
-		psp_id = 0xBC0D0400;
-		break;
-	case PLATFORM_GENOA:
-		psp_id = 0xBC0C0111;
-		break;
-	case PLATFORM_KRACKAN2E:
-		psp_id = 0xbc0e1000;
-		break;
-	case PLATFORM_STRIXHALO:
-		psp_id = 0xbc0e0900;
-		break;
-	case PLATFORM_CARRIZO:
-	default:
-		psp_id = 0;
-		break;
-	}
-	return psp_id;
-}
-
 static void integrate_firmwares(context *ctx,
 				embedded_firmware *romsig,
 				amd_fw_entry *fw_table)
@@ -957,7 +889,7 @@ static void integrate_psp_ab(context *ctx, psp_directory_table *pspdir,
 		ish->boot_priority = ab == AMD_FW_RECOVERYAB_A ? 0xFFFFFFFF : 1;
 		ish->update_retry_count = 2;
 		ish->glitch_retry_count = 0;
-		ish->psp_id = get_psp_id(soc_id);
+		ish->psp_id = platform_get_psp_id(soc_id);
 		ish->checksum = fletcher32(&ish->boot_priority,
 				sizeof(ish_directory_table) - sizeof(uint32_t));
 		pspdir->entries[count].addr =
@@ -1503,7 +1435,7 @@ static void integrate_bios_firmwares(context *ctx,
 			break;
 		case AMD_BIOS_APOB_NV:
 		case AMD_BIOS_NV_ST:
-			if (has_apob_nv_quirk(cb_config->soc_id)) {
+			if (platform_has_apob_nv_quirk(cb_config->soc_id)) {
 				/*
 				 * once ROM3 mapping (>16MiB) is used on any SOC that
 				 * has the apob quirk, this needs to be updated, since
@@ -1700,20 +1632,6 @@ void open_process_config(char *config, amd_cb_config *cb_config)
 	}
 }
 
-static bool is_initial_alignment_required(enum platform soc_id)
-{
-	switch (soc_id) {
-	case PLATFORM_MENDOCINO:
-	case PLATFORM_PHOENIX:
-	case PLATFORM_STRIX:
-	case PLATFORM_KRACKAN2E:
-	case PLATFORM_STRIXHALO:
-		return false;
-	default:
-		return true;
-	}
-}
-
 int main(int argc, char **argv)
 {
 	int retval = 0;
@@ -1774,7 +1692,7 @@ int main(int argc, char **argv)
 
 	integrate_firmwares(&ctx, ctx.amd_romsig_ptr, amd_fw_table);
 
-	if (is_initial_alignment_required(cb_config.soc_id)) {
+	if (platform_is_initial_alignment_required(cb_config.soc_id)) {
 		/* TODO: Check for older platforms. */
 		adjust_current_pointer(&ctx, 0, 0x10000U);
 	}
