@@ -888,11 +888,6 @@ string &lt;expr&gt; \[if &lt;expr&gt;\]
         string
         default "southbridge/amd/pi/hudson/bootblock.c"
 
-    config HUDSON_GEC_FWM_FILE
-        string "GEC firmware path and filename"
-        depends on HUDSON_GEC_FWM
-
-
 ##### Notes:
 - Putting the prompt after the 'string' keyword is the same as using a 'prompt'
 keyword later. See the prompt keyword for more notes.

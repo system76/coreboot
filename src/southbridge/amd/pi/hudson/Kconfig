@@ -54,13 +54,6 @@ config HUDSON_IMC_FWM
 	help
 	  Add Hudson 2/3/4 IMC Firmware to support the onboard fan control
 
-config HUDSON_GEC_FWM
-	bool
-	default n
-	help
-	  Add Hudson 2/3/4 GEC Firmware to support the onboard gigabit Ethernet MAC.
-	  Must be connected to a Broadcom B50610 or B50610M PHY on the motherboard.
-
 config HUDSON_PSP
 	bool
 	default y if CPU_AMD_PI_00730F01
@@ -78,10 +71,6 @@ config HUDSON_IMC_FWM_FILE
 	string "IMC firmware path and filename"
 	default "3rdparty/blobs/southbridge/amd/avalon/imc.bin"
 	depends on HUDSON_IMC_FWM
-
-config HUDSON_GEC_FWM_FILE
-	string "GEC firmware path and filename"
-	depends on HUDSON_GEC_FWM
 
 config AMD_PUBKEY_FILE
 	depends on HUDSON_PSP

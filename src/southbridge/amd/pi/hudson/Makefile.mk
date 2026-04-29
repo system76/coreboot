@@ -53,11 +53,10 @@ add_opt_prefix=$(if $(call strip_quotes, $(1)), $(2) $(call strip_quotes, $(1)),
 
 OPT_HUDSON_XHCI_FWM_FILE=$(call add_opt_prefix, $(CONFIG_HUDSON_XHCI_FWM_FILE), --xhci)
 OPT_HUDSON_IMC_FWM_FILE=$(call add_opt_prefix, $(CONFIG_HUDSON_IMC_FWM_FILE), --imc)
-OPT_HUDSON_GEC_FWM_FILE=$(call add_opt_prefix, $(CONFIG_HUDSON_GEC_FWM_FILE), --gec)
 
 $(obj)/amdfw.rom:	$(call strip_quotes, $(CONFIG_HUDSON_XHCI_FWM_FILE)) \
 			$(call strip_quotes, $(CONFIG_HUDSON_IMC_FWM_FILE)) \
-			$(call strip_quotes, $(CONFIG_HUDSON_GEC_FWM_FILE)) \
+			$(call strip_quotes, $(CONFIG_AMD_PUBKEY_FILE)) \
 			$(DEP_FILES) \
 			$(AMDFWTOOL)
 	rm -f $@
@@ -65,7 +64,6 @@ $(obj)/amdfw.rom:	$(call strip_quotes, $(CONFIG_HUDSON_XHCI_FWM_FILE)) \
 	$(AMDFWTOOL) \
 		$(OPT_HUDSON_XHCI_FWM_FILE) \
 		$(OPT_HUDSON_IMC_FWM_FILE) \
-		$(OPT_HUDSON_GEC_FWM_FILE) \
 		--flashsize $(CONFIG_ROM_SIZE) \
 		--location $(HUDSON_FWM_POSITION) \
 		--config $(CONFIG_AMDFW_CONFIG_FILE) \
