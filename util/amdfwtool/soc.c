@@ -14,6 +14,8 @@ enum platform platform_identify(char *soc_name)
 		return PLATFORM_STONEYRIDGE;
 	else if (!strcasecmp(soc_name, "Carrizo"))
 		return PLATFORM_CARRIZO;
+	else if (!strcasecmp(soc_name, "Mullins"))
+		return PLATFORM_MULLINS;
 	else if (!strcasecmp(soc_name, "Raven"))
 		return PLATFORM_RAVEN;
 	else if (!strcasecmp(soc_name, "Picasso"))
@@ -90,6 +92,7 @@ bool platform_is_multi_level(enum platform platform_type)
 bool platform_has_apob_nv_quirk(enum platform platform_type)
 {
 	switch (platform_type) {
+	case PLATFORM_MULLINS:
 	case PLATFORM_CARRIZO:
 	case PLATFORM_STONEYRIDGE:
 	case PLATFORM_RAVEN:
@@ -121,6 +124,7 @@ bool platform_is_initial_alignment_required(enum platform platform_type)
 bool platform_is_second_gen(enum platform platform_type)
 {
 	switch (platform_type) {
+	case PLATFORM_MULLINS:
 	case PLATFORM_CARRIZO:
 	case PLATFORM_STONEYRIDGE:
 	case PLATFORM_RAVEN:
@@ -197,6 +201,7 @@ uint32_t platform_get_psp_id(enum platform platform_type)
 		psp_id = 0xbc0e0900;
 		break;
 	case PLATFORM_CARRIZO:
+	case PLATFORM_MULLINS:
 	default:
 		psp_id = 0;
 		break;

@@ -658,7 +658,7 @@ static void fill_psp_directory_to_efs(embedded_firmware *amd_romsig, void *pspdi
 	context *ctx, amd_cb_config *cb_config)
 {
 	switch (cb_config->soc_id) {
-	case PLATFORM_UNKNOWN:
+	case PLATFORM_MULLINS:
 		amd_romsig->psp_directory =
 			BUFF_TO_RUN_MODE(*ctx, pspdir, AMD_ADDR_REL_BIOS);
 		break;
@@ -1659,13 +1659,13 @@ int main(int argc, char **argv)
 	ctx.amd_romsig_ptr->gec_entry = 0;
 	ctx.amd_romsig_ptr->xhci_entry = 0;
 
-	if (cb_config.soc_id != PLATFORM_UNKNOWN) {
+	if (cb_config.soc_id != PLATFORM_MULLINS) {
 		retval = set_efs_table(cb_config.soc_id, &cb_config, ctx.amd_romsig_ptr);
 		if (retval) {
 			fprintf(stderr, "ERROR: Failed to initialize EFS table!\n");
 			return retval;
 		}
-	} else {
+	} else if (cb_config.soc_id == PLATFORM_UNKNOWN) {
 		fprintf(stderr, "WARNING: No SOC name specified.\n");
 	}
 
