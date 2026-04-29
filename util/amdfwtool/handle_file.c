@@ -157,7 +157,7 @@ ssize_t copy_blob(context *ctx, const char *src_file)
 		return -3;
 	}
 
-	bytes = read(fd, ctx->rom + ctx->current, (size_t)fd_stat.st_size);
+	bytes = read_from_file_to_buf(fd, ctx->rom + ctx->current, (size_t)fd_stat.st_size);
 	close(fd);
 	if (bytes != (ssize_t)fd_stat.st_size) {
 		fprintf(stderr, "Error while reading %s\n", src_file);
