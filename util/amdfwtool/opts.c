@@ -136,7 +136,7 @@ static struct option long_options[] = {
 static void usage(void)
 {
 	printf("amdfwtool: Create AMD Firmware combination\n");
-	printf("Usage: amdfwtool [options] --flashsize <size> --output <filename>\n");
+	printf("Usage: amdfwtool [options] --config <file> --flashsize <size> --output <filename>\n");
 	printf("--xhci <FILE>                   Add XHCI blob\n");
 	printf("--imc <FILE>                    Add IMC blob\n");
 	printf("--gec <FILE>                    Add GEC blob\n");
@@ -170,8 +170,8 @@ static void usage(void)
 	printf("--bios-bin-src <HEX_VAL>        Address in flash of source if -V not used\n");
 	printf("--bios-bin-dest <HEX_VAL>       Destination for uncompressed BIOS\n");
 	printf("--bios-uncomp-size <HEX>        Uncompressed size of BIOS image\n");
-	printf("--output <filename>             output filename\n");
-	printf("--flashsize <HEX_VAL>           ROM size in bytes\n");
+	printf("--output <filename>             output filename [MANDATORY]\n");
+	printf("--flashsize <HEX_VAL>           ROM size in bytes [MANDATORY]\n");
 	printf("                                size must be larger than %dKB\n",
 		MIN_ROM_KB);
 	printf("                                and must a multiple of 1024\n");
@@ -189,6 +189,7 @@ static void usage(void)
 	printf("                                0x3 16.66MHz\n");
 	printf("                                0x4 100MHz\n");
 	printf("                                0x5 800KHz\n");
+	printf("                                [MANDATORY, except for Mullins]n");
 	printf("--spi-read-mode <HEX_VAL>       SPI read mode to place in EFS Table\n");
 	printf("                                0x0 Normal Read (up to 33M)\n");
 	printf("                                0x1 Reserved\n");
@@ -198,13 +199,14 @@ static void usage(void)
 	printf("                                0x5 Quad IO (1-4-4)\n");
 	printf("                                0x6 Normal Read (up to 66M)\n");
 	printf("                                0x7 Fast Read\n");
+	printf("                                [MANDATORY, except for Mullins]n");
 	printf("--spi-micron-flag <HEX_VAL>     Micron SPI part support for RV and later SOC\n");
 	printf("                                0x0 Micron parts are not used\n");
 	printf("                                0x1 Micron parts are always used\n");
 	printf("                                0x2 Micron parts optional, this option is only\n");
 	printf("                                   supported with RN/LCN SOC\n");
 	printf("\nGeneral options:\n");
-	printf("-c|--config <config file>       Config file\n");
+	printf("-c|--config <config file>       Config file [MANDATORY]\n");
 	printf("-d|--debug                      Print debug message\n");
 	printf("-h|--help                       Show this help\n");
 }
