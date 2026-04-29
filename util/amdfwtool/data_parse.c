@@ -774,6 +774,7 @@ uint8_t process_config(FILE *config, amd_cb_config *cb_config)
 	regmatch_t match[N_MATCHES];
 	char dir[MAX_LINE_SIZE] = {'\0'};
 	uint32_t dir_len;
+	char *platform_name = NULL;
 	int index;
 
 	for (index = 0; index < N_MATCHES; index++) {
@@ -799,11 +800,21 @@ uint8_t process_config(FILE *config, amd_cb_config *cb_config)
 				snprintf(dir, MAX_LINE_SIZE, "%.*s", dir_len,
 					&(oneline[match[FW_FILE].rm_so]));
 			} else if (strcmp(&(oneline[match[FW_TYPE].rm_so]), SOC_NAME) == 0) {
-				cb_config->soc_id = platform_identify(
-							&(oneline[match[FW_FILE].rm_so]));
+				platform_name = strdup(&(oneline[match[FW_FILE].rm_so]));
+				cb_config->soc_id = platform_identify(platform_name);
 			}
 		}
 	}
+
+	if (!platform_name) {
+		fprintf(stderr, "AMDFWTOOL: Platform not specified in config\n");
+		return 0;
+	} else if (cb_config->soc_id == PLATFORM_UNKNOWN) {
+		fprintf(stderr, "AMDFWTOOL: Unknown platform '%s'\n", platform_name);
+		free(platform_name);
+		return 0;
+	}
+	free(platform_name);
 
 	cb_config->second_gen = platform_is_second_gen(cb_config->soc_id);
 	cb_config->directory_header_aif_v1 = platform_has_dir_header_v1(cb_config->soc_id);

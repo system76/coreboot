@@ -1665,8 +1665,6 @@ int main(int argc, char **argv)
 			fprintf(stderr, "ERROR: Failed to initialize EFS table!\n");
 			return retval;
 		}
-	} else if (cb_config.soc_id == PLATFORM_UNKNOWN) {
-		fprintf(stderr, "WARNING: No SOC name specified.\n");
 	}
 
 	if (cb_config.need_ish)
