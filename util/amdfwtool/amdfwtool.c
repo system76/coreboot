@@ -1597,7 +1597,7 @@ static int set_efs_table(uint8_t soc_id, amd_cb_config *cb_config,
 	return 0;
 }
 
-void open_process_config(char *config, amd_cb_config *cb_config)
+static int open_process_config(char *config, amd_cb_config *cb_config)
 {
 	FILE *config_handle;
 
@@ -1606,13 +1606,13 @@ void open_process_config(char *config, amd_cb_config *cb_config)
 		if (config_handle == NULL) {
 			fprintf(stderr, "Can not open file %s for reading: %s\n",
 				config, strerror(errno));
-			exit(1);
+			return 1;
 		}
 		if (process_config(config_handle, cb_config) == 0) {
 			fprintf(stderr, "Configuration file %s parsing error\n",
 					config);
 			fclose(config_handle);
-			exit(1);
+			return 1;
 		}
 		fclose(config_handle);
 	}
@@ -1622,6 +1622,7 @@ void open_process_config(char *config, amd_cb_config *cb_config)
 		dump_psp_firmwares(amd_psp_fw_table);
 		dump_bdt_firmwares(amd_bios_table);
 	}
+	return 0;
 }
 
 int main(int argc, char **argv)
@@ -1642,7 +1643,11 @@ int main(int argc, char **argv)
 		return retval;
 	}
 
-	open_process_config(cb_config.config, &cb_config);
+	retval = open_process_config(cb_config.config, &cb_config);
+	if (retval) {
+		amdfwtool_cleanup(&ctx);
+		return retval;
+	}
 
 	ctx.rom = malloc(ctx.rom_size);
 	if (!ctx.rom) {
