@@ -511,4 +511,11 @@ ssize_t copy_blob(void *dest, const char *src_file, size_t room);
 
 int amdfwtool_getopt(int argc, char *argv[], amd_cb_config *cb_config, context *ctx);
 
+
+enum platform platform_identify(char *soc_name);
+bool platform_needs_ish(enum platform platform_type);
+bool platform_is_multi_level(enum platform platform_type);
+bool platform_is_second_gen(enum platform platform_type);
+bool platform_has_dir_header_v1(enum platform platform_type);
+
 #endif	/* _AMD_FW_TOOL_H_ */

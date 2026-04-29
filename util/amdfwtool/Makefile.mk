@@ -2,7 +2,7 @@
 
 ifneq ($(BUILD_ALL_TOOLS)$(CONFIG_USE_AMDFWTOOL),)
 
-amdfwtoolobj = amdfwtool.o data_parse.o signed_psp.o handle_file.o opts.o
+amdfwtoolobj = amdfwtool.o data_parse.o signed_psp.o handle_file.o opts.o soc.o
 amdfwreadobj = amdfwread.o
 amdfwheader = amdfwtool.h
 
