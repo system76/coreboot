@@ -23,6 +23,5 @@ chip soc/intel/alderlake
 		device ref igpu on end
 		device ref crashlog off end
 		device ref p2sb on end
-		device ref smbus on end
 	end
 end
