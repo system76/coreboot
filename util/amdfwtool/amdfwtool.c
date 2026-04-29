@@ -1517,9 +1517,16 @@ static void integrate_bios_firmwares(context *ctx,
 	ctx->current_table = current_table_save;
 }
 
-static int set_efs_table(uint8_t soc_id, amd_cb_config *cb_config,
-			 embedded_firmware *amd_romsig)
+static int fill_efs_table(const amd_cb_config *cb_config, embedded_firmware *amd_romsig)
 {
+	amd_romsig->signature = EMBEDDED_FW_SIGNATURE;
+	amd_romsig->imc_entry = 0;
+	amd_romsig->gec_entry = 0;
+	amd_romsig->xhci_entry = 0;
+
+	if (cb_config->soc_id == PLATFORM_MULLINS)
+		return 0;
+
 	if ((cb_config->efs_spi_readmode == 0xFF) || (cb_config->efs_spi_speed == 0xFF)) {
 		fprintf(stderr, "Error: EFS read mode and SPI speed must be set\n");
 		return 1;
@@ -1535,7 +1542,7 @@ static int set_efs_table(uint8_t soc_id, amd_cb_config *cb_config,
 		amd_romsig->efs_gen.reserved = ~0;
 	}
 
-	switch (soc_id) {
+	switch (cb_config->soc_id) {
 	case PLATFORM_CARRIZO:
 	case PLATFORM_STONEYRIDGE:
 		amd_romsig->spi_readmode_f15_mod_60_6f = cb_config->efs_spi_readmode;
@@ -1650,19 +1657,13 @@ int main(int argc, char **argv)
 
 	romsig_offset = cb_config.efs_location ? cb_config.efs_location : AMD_ROMSIG_OFFSET;
 	set_current_pointer(&ctx, romsig_offset);
-
 	ctx.amd_romsig_ptr = BUFF_OFFSET(ctx, romsig_offset);
-	ctx.amd_romsig_ptr->signature = EMBEDDED_FW_SIGNATURE;
-	ctx.amd_romsig_ptr->imc_entry = 0;
-	ctx.amd_romsig_ptr->gec_entry = 0;
-	ctx.amd_romsig_ptr->xhci_entry = 0;
 
-	if (cb_config.soc_id != PLATFORM_MULLINS) {
-		retval = set_efs_table(cb_config.soc_id, &cb_config, ctx.amd_romsig_ptr);
-		if (retval) {
-			fprintf(stderr, "ERROR: Failed to initialize EFS table!\n");
-			return retval;
-		}
+	/* Fill EFS with defaults, eSPI and SPI configuration. Pointers are added later. */
+	retval = fill_efs_table(&cb_config, ctx.amd_romsig_ptr);
+	if (retval) {
+		fprintf(stderr, "ERROR: Failed to initialize EFS table!\n");
+		return retval;
 	}
 
 	if (cb_config.need_ish)
