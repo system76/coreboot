@@ -413,11 +413,7 @@ static void free_psp_firmware_filenames(amd_fw_entry *fw_table)
 	amd_fw_entry *index;
 
 	for (index = fw_table; index->type != AMD_FW_INVALID; index++) {
-		if (index->filename &&
-				index->type != AMD_FW_VERSTAGE_SIG &&
-				index->type != AMD_FW_PSP_VERSTAGE &&
-				index->type != AMD_FW_SPL &&
-				index->type != AMD_FW_PSP_WHITELIST) {
+		if (index->filename) {
 			free(index->filename);
 			index->filename = NULL;
 		}
@@ -429,11 +425,7 @@ static void free_bdt_firmware_filenames(amd_bios_entry *fw_table)
 	amd_bios_entry *index;
 
 	for (index = fw_table; index->type != AMD_BIOS_INVALID; index++) {
-		if (index->filename &&
-				index->type != AMD_BIOS_APCB &&
-				index->type != AMD_BIOS_BIN &&
-				index->type != AMD_BIOS_APCB_BK &&
-				index->type != AMD_BIOS_UCODE) {
+		if (index->filename) {
 			free(index->filename);
 			index->filename = NULL;
 		}

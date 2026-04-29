@@ -270,7 +270,7 @@ static void register_fw_filename(amd_fw_type type, uint8_t sub, char filename[])
 
 	for (i = 0; amd_fw_table[i].type != AMD_FW_INVALID; i++) {
 		if (amd_fw_table[i].type == type) {
-			amd_fw_table[i].filename = filename;
+			amd_fw_table[i].filename = strdup(filename);
 			return;
 		}
 	}
@@ -280,7 +280,7 @@ static void register_fw_filename(amd_fw_type type, uint8_t sub, char filename[])
 			continue;
 
 		if (amd_psp_fw_table[i].subprog == sub) {
-			amd_psp_fw_table[i].filename = filename;
+			amd_psp_fw_table[i].filename = strdup(filename);
 			return;
 		}
 	}
@@ -292,9 +292,9 @@ static void register_bdt_data(amd_bios_type type, int sub, int ins, char name[])
 
 	for (i = 0; amd_bios_table[i].type != AMD_BIOS_INVALID; i++) {
 		if (amd_bios_table[i].type == type
-					&& amd_bios_table[i].inst == ins
-					&& amd_bios_table[i].subpr == sub) {
-			amd_bios_table[i].filename = name;
+		    && amd_bios_table[i].inst == ins
+		    && amd_bios_table[i].subpr == sub) {
+			amd_bios_table[i].filename = strdup(name);
 			return;
 		}
 	}
