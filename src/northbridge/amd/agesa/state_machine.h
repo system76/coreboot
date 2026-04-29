@@ -88,8 +88,7 @@ void platform_AfterS3Save(struct sysinfo *cb, AMD_S3SAVE_PARAMS *S3Save);
 
 /* FCH callouts, not used with CIMx. */
 #define HAS_AGESA_FCH_OEM_CALLOUT \
-	CONFIG(SOUTHBRIDGE_AMD_PI_AVALON) || \
-	CONFIG(SOUTHBRIDGE_AMD_PI_KERN)
+	CONFIG(SOUTHBRIDGE_AMD_PI_AVALON)
 
 #if HAS_AGESA_FCH_OEM_CALLOUT
 /* FIXME:  Structures included here were supposed to be private to AGESA. */

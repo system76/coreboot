@@ -35,9 +35,7 @@ Device(SBUS) {
 #include "usb.asl"
 
 /* 0:14.2 - HD Audio */
-#if !CONFIG(SOUTHBRIDGE_AMD_PI_KERN)
 #include "audio.asl"
-#endif
 
 /* 0:14.3 - LPC */
 #include "lpc.asl"

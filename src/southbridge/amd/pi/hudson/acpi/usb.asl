@@ -36,8 +36,7 @@ Device(UOH6) {
 	Name(_PRW, Package() {0x0B, 3})
 } /* end UOH5 */
 
-#if !CONFIG(SOUTHBRIDGE_AMD_PI_AVALON) && \
-	!CONFIG(SOUTHBRIDGE_AMD_PI_KERN)
+#if !CONFIG(SOUTHBRIDGE_AMD_PI_AVALON)
 /* 0:14.5 - OHCI */
 Device(UEH1) {
 	Name(_ADR, 0x00140005)
@@ -51,8 +50,7 @@ Device(XHC0) {
 	Name(_PRW, Package() {0x0B, 4})
 } /* end XHC0 */
 
-#if !CONFIG(SOUTHBRIDGE_AMD_PI_AVALON) && \
-	!CONFIG(SOUTHBRIDGE_AMD_PI_KERN)
+#if !CONFIG(SOUTHBRIDGE_AMD_PI_AVALON)
 /* 0:10.1 - XHCI 1*/
 Device(XHC1) {
 	Name(_ADR, 0x00100001)
