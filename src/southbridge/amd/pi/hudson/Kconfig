@@ -141,13 +141,6 @@ config HUDSON_FADT_8042
 	  Select if there is an 8042-compatible keyboard controller in the
 	  system.
 
-config AMDFW_OUTSIDE_CBFS
-	def_bool n
-	help
-	  The AMDFW (PSP) is typically locatable in cbfs.  Select this
-	  option to manually attach the generated amdfw.rom at an
-	  offset of 0x20000 from the bottom of the coreboot ROM image.
-
 config SERIRQ_CONTINUOUS_MODE
 	bool
 	default n

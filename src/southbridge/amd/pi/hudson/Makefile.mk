@@ -47,11 +47,7 @@ CPPFLAGS_common += -I$(src)/southbridge/amd/pi/hudson/include
 #
 # EC ROM should be 64K aligned.
 
-ifeq ($(CONFIG_AMDFW_OUTSIDE_CBFS),y)
-HUDSON_FWM_POSITION=0x20000
-else
 HUDSON_FWM_POSITION=0x720000
-endif
 
 add_opt_prefix=$(if $(call strip_quotes, $(1)), $(2) $(call strip_quotes, $(1)), )
 
@@ -75,17 +71,7 @@ $(obj)/amdfw.rom:	$(call strip_quotes, $(CONFIG_HUDSON_XHCI_FWM_FILE)) \
 		--config $(CONFIG_AMDFW_CONFIG_FILE) \
 		--output	$@
 
-ifeq ($(CONFIG_AMDFW_OUTSIDE_CBFS),y)
-$(call add_intermediate, add_amdfw, $(obj)/amdfw.rom)
-	printf "    DD         Adding AMD Firmware\n"
-	dd if=$(obj)/amdfw.rom \
-		of=$< conv=notrunc bs=1 seek=131072 >/dev/null 2>&1
-
-else # ifeq ($(CONFIG_AMDFW_OUTSIDE_CBFS),y)
-
 cbfs-files-y += apu/amdfw
 apu/amdfw-file := $(obj)/amdfw.rom
 apu/amdfw-position := $(HUDSON_FWM_POSITION)
 apu/amdfw-type := raw
-
-endif # ifeq ($(CONFIG_AMDFW_OUTSIDE_CBFS),y)
