@@ -454,14 +454,10 @@ typedef struct _amd_cb_config {
 	bool unlock_secure;
 	bool use_secureos;
 	bool load_mp2_fw;
-	bool multi_level;
 	bool s0i3;
-	bool second_gen;
-	bool directory_header_aif_v1;	/* Additional Info Field version */
 	bool have_mb_spl;
 	bool recovery_ab;
 	bool recovery_ab_single_copy;
-	bool need_ish;
 	bool have_apcb_bk;
 	enum platform soc_id;
 

@@ -816,16 +816,8 @@ uint8_t process_config(FILE *config, amd_cb_config *cb_config)
 	}
 	free(platform_name);
 
-	cb_config->second_gen = platform_is_second_gen(cb_config->soc_id);
-	cb_config->directory_header_aif_v1 = platform_has_dir_header_v1(cb_config->soc_id);
-
 	if (platform_needs_ish(cb_config->soc_id))
-		cb_config->need_ish = true;
-
-	if (cb_config->need_ish)
 		cb_config->recovery_ab = true;
-
-	cb_config->multi_level = platform_is_multi_level(cb_config->soc_id);
 
 	if (dir[0] == '\0') {
 		fprintf(stderr, "No line with FIRMWARE_LOCATION\n");

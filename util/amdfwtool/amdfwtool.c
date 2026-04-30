@@ -492,7 +492,7 @@ static void *new_psp_dir(context *ctx, const amd_cb_config *cb_config,
 	 * updatable table, so alignment ensures primary can stay intact
 	 * if secondary is reprogrammed.
 	 */
-	if (cb_config->multi_level)
+	if (platform_is_multi_level(cb_config->soc_id))
 		adjust_current_pointer(ctx, 0, TABLE_ERASE_ALIGNMENT);
 	else
 		adjust_current_pointer(ctx, 0, TABLE_ALIGNMENT);
@@ -504,7 +504,7 @@ static void *new_psp_dir(context *ctx, const amd_cb_config *cb_config,
 	psp->additional_info = 0;
 
 	/* Updated in fill_dir_header() after filling the table. */
-	if (cb_config->directory_header_aif_v1) {
+	if (platform_has_dir_header_v1(cb_config->soc_id)) {
 		psp->additional_info_fields_v1.version = 1;
 		psp->additional_info_fields_v1.dir_size = 0;
 		psp->additional_info_fields_v1.spi_block_size = 0;
@@ -979,9 +979,9 @@ static void integrate_psp_firmwares(context *ctx,
 		if (recovery_ab)
 			ctx->pspdir_bak = new_psp_dir(ctx, cb_config, cookie);
 		/* The ISH tables are with PSP L1. */
-		if (cb_config->need_ish && ctx->ish_a_dir == NULL)	/* Need ISH */
+		if (platform_needs_ish(cb_config->soc_id) && ctx->ish_a_dir == NULL)
 			ctx->ish_a_dir = new_ish_dir(ctx);
-		if (cb_config->need_ish && ctx->ish_b_dir == NULL)	/* Need ISH */
+		if (platform_needs_ish(cb_config->soc_id) && ctx->ish_b_dir == NULL)
 			ctx->ish_b_dir = new_ish_dir(ctx);
 	} else if (cookie == PSPL2_COOKIE) {
 		if (ctx->pspdir2 == NULL) {
@@ -996,7 +996,7 @@ static void integrate_psp_firmwares(context *ctx,
 		goto out;
 	}
 
-	if (!cb_config->multi_level)
+	if (!platform_is_multi_level(cb_config->soc_id))
 		level = PSP_BOTH;
 	else if (cookie == PSPL2_COOKIE)
 		level = PSP_LVL2;
@@ -1298,7 +1298,7 @@ static void integrate_bios_firmwares(context *ctx,
 	uint32_t current_table_save;
 	bios_directory_table *biosdir;
 
-	biosdir = new_bios_dir(ctx, cb_config->multi_level, cookie);
+	biosdir = new_bios_dir(ctx, platform_is_multi_level(cb_config->soc_id), cookie);
 
 	if (cookie == BHD_COOKIE)
 		ctx->biosdir = biosdir;
@@ -1315,7 +1315,7 @@ static void integrate_bios_firmwares(context *ctx,
 	 * is passed, clearly a 2nd-level table is intended.  However, a
 	 * 1st-level cookie may indicate level 1 or flattened.
 	 */
-	if (!cb_config->multi_level)
+	if (!platform_is_multi_level(cb_config->soc_id))
 		level = BDT_BOTH;
 	else if (cookie == BHDL2_COOKIE)
 		level = BDT_LVL2;
@@ -1534,7 +1534,7 @@ static int fill_efs_table(const amd_cb_config *cb_config, embedded_firmware *amd
 
 	/* amd_romsig->efs_gen introduced after RAVEN/PICASSO.
 	 * Leave as 0xffffffff for first gen */
-	if (cb_config->second_gen) {
+	if (platform_is_second_gen(cb_config->soc_id)) {
 		amd_romsig->efs_gen.gen = EFS_SECOND_GEN;
 		amd_romsig->efs_gen.reserved = 0;
 	} else {
@@ -1666,9 +1666,9 @@ int main(int argc, char **argv)
 		return retval;
 	}
 
-	if (cb_config.need_ish)
+	if (platform_needs_ish(cb_config.soc_id))
 		ctx.address_mode = AMD_ADDR_REL_TAB;
-	else if (cb_config.second_gen)
+	else if (platform_is_second_gen(cb_config.soc_id))
 		ctx.address_mode = AMD_ADDR_REL_BIOS;
 	else
 		ctx.address_mode = AMD_ADDR_PHYSICAL;
@@ -1704,7 +1704,7 @@ int main(int argc, char **argv)
 	ctx.ish_a_dir = NULL;
 	ctx.ish_b_dir = NULL;
 
-	if (cb_config.multi_level) {
+	if (platform_is_multi_level(cb_config.soc_id)) {
 		/* PSP L1 */
 		integrate_psp_firmwares(&ctx, amd_psp_fw_table, PSP_COOKIE, &cb_config);
 		/* PSP L2 & BIOS L2 (if AB recovery) */
@@ -1731,7 +1731,7 @@ int main(int argc, char **argv)
 	fill_psp_bak_directory_to_efs(ctx.amd_romsig_ptr, ctx.pspdir_bak, &ctx, &cb_config);
 
 	if (have_bios_tables(amd_bios_table) && !cb_config.recovery_ab) {
-		if (cb_config.multi_level) {
+		if (platform_is_multi_level(cb_config.soc_id)) {
 			integrate_bios_firmwares(&ctx, amd_bios_table, BHD_COOKIE, &cb_config);
 			integrate_bios_firmwares(&ctx, amd_bios_table, BHDL2_COOKIE, &cb_config);
 			integrate_bios_levels(&ctx, &cb_config);
