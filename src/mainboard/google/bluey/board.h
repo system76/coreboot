@@ -64,6 +64,9 @@
 #define GPIO_USB_C1_EN_PP0900		GPIO(188)
 #define GPIO_USB_C1_RETIMER_RESET_L	GPIO(176)
 
+#define GPIO_USB_C0_EN_L	GPIO(108)
+#define GPIO_USB_C1_EN_L	GPIO(180)
+
 /* GPIO for controlling the panel backlight */
 #define BACKLIGHT_CONTROL_PMIC_GPIO 4
 #define BACKLIGHT_CONTROL_PMIC_ID PMIC_D_SLAVE_ID
