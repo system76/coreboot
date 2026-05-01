@@ -221,13 +221,22 @@ static void dtbt_enable(struct device *dev)
 	}
 }
 
+static void dtbt_scan_bridge(struct device *dev)
+{
+	if (CONFIG(PCIEXP_HOTPLUG) && dev->upstream && dev->upstream->dev &&
+	    dev->upstream->dev->ops == &dtbt_device_ops)
+		pciexp_hotplug_scan_bridge(dev);
+	else
+		pciexp_scan_bridge(dev);
+}
+
 static struct device_operations dtbt_device_ops = {
 	.read_resources   = pci_bus_read_resources,
 	.set_resources    = pci_dev_set_resources,
 	.enable_resources = pci_bus_enable_resources,
 	.acpi_fill_ssdt   = dtbt_fill_ssdt,
 	.acpi_name        = dtbt_acpi_name,
-	.scan_bus         = pciexp_scan_bridge,
+	.scan_bus         = dtbt_scan_bridge,
 	.reset_bus        = pci_bus_reset,
 	.enable           = dtbt_enable
 };
