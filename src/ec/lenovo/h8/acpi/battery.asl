@@ -32,8 +32,7 @@ Field (ERAM, ByteAcc, NoLock, Preserve)
 Field (ERAM, ByteAcc, NoLock, Preserve)
 {
 	Offset(0xa0),
-			    , 15,
-			BAMA,  1,
+			BAMA, 16,		/* 16-bit read required; 8-bit access at 0xa1 returns garbage! */
 }
 
 /* PAGE == 0x02 */
@@ -95,8 +94,9 @@ Method(BSTA, 4, NotSerialized)
 {
 	Acquire(ECLK, 0xffff)
 	Local0 = 0
-	^BPAG(Arg0 | 1)
+	^BPAG(Arg0 | 1) /* Battery static information */
 	Local1 = BAMA
+	Local1 >>= 0x0f
 	^BPAG(Arg0) /* Battery dynamic information */
 
 	/*
@@ -133,6 +133,10 @@ Method(BSTA, 4, NotSerialized)
 
 	Arg1 [0] = Local0
 
+	/*
+	 * Values are in mAh but we want mWh.
+	 * This is required to match PowerUnit!
+	 */
 	if (Local1) {
 		Arg1 [2] = BARC * 10
 		Local2 *= BAVO
@@ -149,9 +153,9 @@ Method(BSTA, 4, NotSerialized)
 Method(BINF, 2, Serialized)
 {
 	Acquire(ECLK, 0xffff)
-	^BPAG(1 | Arg1) /* Battery 0 static information */
-	Arg0 [0] = BAMA ^ 1
+	^BPAG(1 | Arg1) /* Battery static information */
 	Local0 = BAMA
+	Local0 >>= 0x0f
 	^BPAG(Arg1)
 	Local2 = BAFC
 	^BPAG(Arg1 | 2)
@@ -163,6 +167,7 @@ Method(BINF, 2, Serialized)
 		Local2 *= 10
 	}
 
+	Arg0 [0] = Local0 ^ 1	// PowerUnit (mWh/mAh)
 	Arg0 [1] = Local1	// Design Capacity
 	Arg0 [2] = Local2	// Last full charge capacity
 	Arg0 [4] = BADV		// Design Voltage
