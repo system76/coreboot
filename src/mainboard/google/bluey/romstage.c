@@ -18,6 +18,8 @@
 #include <soc/watchdog.h>
 
 static enum boot_mode_t boot_mode = LB_BOOT_MODE_NORMAL;
+static bool battery_present = true;
+static bool battery_below_threshold = false;
 
 /*
  * is_off_mode - Check if the system is booting due to an off-mode power event.
@@ -44,9 +46,9 @@ static enum boot_mode_t set_boot_mode(void)
 
 	if (google_chromeec_is_rtc_event()) {
 		boot_mode_new = LB_BOOT_MODE_RTC_WAKE;
-	} else if (is_off_mode() && google_chromeec_is_battery_present()) {
+	} else if (is_off_mode() && battery_present) {
 		boot_mode_new = LB_BOOT_MODE_OFFMODE_CHARGING;
-	} else if (google_chromeec_is_below_critical_threshold()) {
+	} else if (battery_below_threshold) {
 		if (google_chromeec_is_charger_present())
 			boot_mode_new = LB_BOOT_MODE_LOW_BATTERY_CHARGING;
 		else
@@ -72,8 +74,7 @@ static bool is_pd_sync_required(void)
 	if (!(ec_events & EC_HOST_EVENT_MASK(EC_HOST_EVENT_AC_CONNECTED)))
 		return false;
 
-	if (!(ec_events & manual_pwron_event_mask) ||
-		google_chromeec_is_below_critical_threshold() || !google_chromeec_is_battery_present())
+	if (!(ec_events & manual_pwron_event_mask) || battery_below_threshold || !battery_present)
 		return true;
 
 	return false;
@@ -145,10 +146,26 @@ static void edp_configure_gpios(void)
 	gpio_input(GPIO_PANEL_HPD);
 }
 
+/**
+ * Update and cache battery status from the EC.
+ * This should be called once, early in the boot process,
+ * after the EC is reachable.
+ */
+static void update_battery_status(void)
+{
+	if (!CONFIG(EC_GOOGLE_CHROMEEC))
+		return;
+
+	battery_present = google_chromeec_is_battery_present();
+	battery_below_threshold = google_chromeec_is_below_critical_threshold();
+}
+
 /* Perform romstage early hardware initialization */
 static void mainboard_setup_peripherals_early(void)
 {
 	platform_init_lightbar();
+
+	update_battery_status();
 
 	/*
 	 * Power on NVMe early so that the DDR init and other operations
