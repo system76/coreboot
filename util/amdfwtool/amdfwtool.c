@@ -561,15 +561,15 @@ static uint8_t bdt_directory_aif_version(const bios_directory_table *dir)
 static int psp_directory_size_from_aif(const psp_directory_table *dir)
 {
 	if (psp_directory_aif_version(dir) == 1)
-		return dir->header.additional_info_fields_v1.dir_size;
-	return dir->header.additional_info_fields.dir_size;
+		return dir->header.additional_info_fields_v1.dir_size * TABLE_GRANULARITY;
+	return dir->header.additional_info_fields.dir_size * TABLE_GRANULARITY;
 }
 
 static int bdt_directory_size_from_aif(const bios_directory_table *dir)
 {
 	if (bdt_directory_aif_version(dir) == 1)
-		return dir->header.additional_info_fields_v1.dir_size;
-	return dir->header.additional_info_fields.dir_size;
+		return dir->header.additional_info_fields_v1.dir_size * TABLE_GRANULARITY;
+	return dir->header.additional_info_fields.dir_size * TABLE_GRANULARITY;
 }
 
 static void fill_dir_header(void *directory, uint32_t count, context *ctx)
