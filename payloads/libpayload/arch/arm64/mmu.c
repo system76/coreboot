@@ -651,10 +651,11 @@ static void mmu_add_fb_range(struct mmu_ranges *mmu_ranges)
 
 	/* framebuffer address has been set already, so just add it as DMA */
 	if (framebuffer->physical_address) {
-		if (mmu_add_memrange(mmu_ranges,
-		    framebuffer->physical_address,
-		    fb_size,
-		    TYPE_DMA_MEM) == NULL)
+		if (mmu_add_memrange(mmu_ranges, framebuffer->physical_address,
+				     fb_size, TYPE_DMA_MEM) == NULL)
+			mmu_error();
+		if (mmu_add_memrange(&usedmem_ranges, framebuffer->physical_address,
+				     fb_size, TYPE_DMA_MEM) == NULL)
 			mmu_error();
 		return;
 	}
