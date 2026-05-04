@@ -54,6 +54,7 @@ chip northbridge/intel/sandybridge
 					register "config0" = "0xa6"
 					register "config1" = "0x09"
 					register "config3" = "0xc0"
+					register "has_keyboard_backlight" = "1"
 					register "evente_enable" = "0x1d"
 				end
 			end

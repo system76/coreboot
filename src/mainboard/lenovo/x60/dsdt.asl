@@ -38,6 +38,7 @@ DefinitionBlock(
 	}
 
 	#include <southbridge/intel/common/acpi/sleepstates.asl>
+	#include <ec/lenovo/h8/acpi/thinklight.asl>
 
 	// Dock support code
 	#include "acpi/dock.asl"

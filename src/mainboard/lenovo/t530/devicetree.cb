@@ -98,6 +98,7 @@ chip northbridge/intel/sandybridge
 					register "config2" = "0xa0"
 					register "config3" = "0xc2"
 
+					register "has_thinklight" = "1"
 					register "has_keyboard_backlight" = "1"
 
 					register "beepmask0" = "0x00"

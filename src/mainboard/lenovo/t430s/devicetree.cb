@@ -97,8 +97,6 @@ chip northbridge/intel/sandybridge
 					register "config2" = "0xa0"
 					register "config3" = "0xe2"
 
-					register "has_keyboard_backlight" = "1"
-
 					register "beepmask0" = "0x00"
 					register "beepmask1" = "0x86"
 					register "has_power_management_beeps" = "0"

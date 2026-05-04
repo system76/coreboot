@@ -35,5 +35,8 @@ DefinitionBlock(
 	}
 
 	#include <southbridge/intel/common/acpi/sleepstates.asl>
+
+	#if CONFIG(BOARD_LENOVO_X230) || CONFIG(BOARD_LENOVO_X230_EDP)
 	#include <ec/lenovo/h8/acpi/thinklight.asl>
+	#endif
 }

@@ -51,6 +51,8 @@ chip northbridge/intel/sandybridge
 
 					register "event5_enable" = "0x3c"
 					register "evente_enable" = "0x3d"
+
+					register "has_keyboard_backlight" = "1"
 				end
 			end
 		end

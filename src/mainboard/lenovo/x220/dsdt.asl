@@ -35,5 +35,8 @@ DefinitionBlock(
 	}
 
 	#include <southbridge/intel/common/acpi/sleepstates.asl>
+
+	#if CONFIG(BOARD_LENOVO_X220) || CONFIG(BOARD_LENOVO_X220I)
 	#include <ec/lenovo/h8/acpi/thinklight.asl>
+	#endif
 }
