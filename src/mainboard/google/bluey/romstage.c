@@ -197,14 +197,6 @@ void platform_romstage_main(void)
 {
 	mainboard_setup_peripherals_early();
 
-	if (CONFIG(EC_GOOGLE_CHROMEEC) && CONFIG(CONSOLE_SERIAL)) {
-		uint32_t batt_pct;
-		if (platform_get_battery_soc_information(&batt_pct))
-			printk(BIOS_INFO, "Battery state-of-charge %d%%\n", batt_pct);
-		else
-			printk(BIOS_WARNING, "Failed to get battery level\n");
-	}
-
 	if (!qclib_check_dload_mode())
 		shrm_fw_load_reset();
 
