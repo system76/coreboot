@@ -121,6 +121,19 @@ config CAR_HAS_L3_PROTECTED_WAYS
 	  L3 ways in Non-Inclusive eNEM mode. Hence, MSR 0xc85 is to program
 	  the data ways.
 
+config SOC_INTEL_COMMON_BLOCK_CAR_ENHANCED_NEM
+	bool
+	default y if !INTEL_CAR_NEM
+	select CAR_HAS_L3_PROTECTED_WAYS
+	select CAR_HAS_SF_MASKS
+	select COS_MAPPED_TO_MSB
+	select INTEL_CAR_ENEM_USE_EFFECTIVE_WAY_SIZE
+	select INTEL_CAR_NEM_ENHANCED
+	help
+	  Common Enhanced NEM (eNEM) configuration for ADL and newer platforms.
+	  Enables INTEL_CAR_NEM_ENHANCED along with the associated cache way
+	  protection and snoop filter mask settings required by these SoCs.
+
 config USE_INTEL_FSP_MP_INIT
 	bool "Perform MP Initialization by FSP"
 	default n
