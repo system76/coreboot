@@ -838,26 +838,43 @@ static void dump_bdt_firmwares(amd_bios_entry *fw_table)
 	}
 }
 
+static void dump_psp_table(context *ctx, psp_directory_table *t, const char *name)
+{
+	uint32_t s = BUFF_TO_RUN(*ctx, t);
+	uint32_t e = s + psp_directory_size_from_aif(t);
+
+	printf("PSP %-20s: [%06x-%06x)\n", name, s, e);
+}
+
+static void dump_bdt_table(context *ctx, bios_directory_table *t, const char *name)
+{
+	uint32_t s = BUFF_TO_RUN(*ctx, t);
+	uint32_t e = s + bdt_directory_size_from_aif(t);
+
+	printf("BHD %-20s: [%06x-%06x)\n", name, s, e);
+}
+
 static void dump_image_addresses(context *ctx)
 {
-	printf("romsig offset:%lx\n", BUFF_TO_RUN(*ctx, ctx->amd_romsig_ptr));
-	printf("PSP L1 offset:%lx\n", BUFF_TO_RUN(*ctx, ctx->pspdir));
+	printf("romsig offset           : %lx\n", BUFF_TO_RUN(*ctx, ctx->amd_romsig_ptr));
+
+	dump_psp_table(ctx, ctx->pspdir, "L1 offset");
 	if (ctx->pspdir_bak != NULL)
-		printf("PSP L1 backup offset:%lx\n", BUFF_TO_RUN(*ctx, ctx->pspdir_bak));
+		dump_psp_table(ctx, ctx->pspdir_bak, "L1 backup offset");
 	if (ctx->pspdir2 != NULL)
-		printf("PSP L2(A) offset:%lx\n", BUFF_TO_RUN(*ctx, ctx->pspdir2));
+		dump_psp_table(ctx, ctx->pspdir2, "L2(A) offset");
 	if (ctx->ish_a_dir != NULL)
-		printf("ISHA offset:%lx\n", BUFF_TO_RUN(*ctx, ctx->ish_a_dir));
+		printf("ISH %-20s: %lx\n", "ISHA offset", BUFF_TO_RUN(*ctx, ctx->ish_a_dir));
 	if (ctx->ish_b_dir != NULL)
-		printf("ISHB offset:%lx\n", BUFF_TO_RUN(*ctx, ctx->ish_b_dir));
+		printf("ISH %-20s: %lx\n", "ISHB offset", BUFF_TO_RUN(*ctx, ctx->ish_b_dir));
 	if (ctx->pspdir2_b != NULL)
-		printf("PSP L2B offset:%lx\n", BUFF_TO_RUN(*ctx, ctx->pspdir2_b));
+		dump_psp_table(ctx, ctx->pspdir2_b, "L2B offset");
 	if (ctx->biosdir != NULL)
-		printf("BHD offset:%lx\n", BUFF_TO_RUN(*ctx, ctx->biosdir));
+		dump_bdt_table(ctx, ctx->biosdir, "offset");
 	if (ctx->biosdir2 != NULL)
-		printf("BHD L2(A) offset:%lx\n", BUFF_TO_RUN(*ctx, ctx->biosdir2));
+		dump_bdt_table(ctx, ctx->biosdir2, "L2(A) offset");
 	if (ctx->biosdir2_b != NULL)
-		printf("BHD L2B offset:%lx\n", BUFF_TO_RUN(*ctx, ctx->biosdir2_b));
+		dump_bdt_table(ctx, ctx->biosdir2_b, "L2B offset");
 }
 
 static void integrate_psp_ab(context *ctx, psp_directory_table *pspdir,
