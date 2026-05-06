@@ -97,7 +97,7 @@ chip soc/intel/pantherlake
 		end
 
 		device ref i2c4 on
-			# Smart Amplifier I2C bus
+			# Smart Amplifier
 			register "serial_io_i2c_mode[PchSerialIoIndexI2C4]" = "PchSerialIoPci"
 			chip drivers/i2c/tas5825m
 				register "id" = "0"
@@ -105,7 +105,7 @@ chip soc/intel/pantherlake
 			end
 		end
 		device ref i2c5 on
-			# Touchpad I2C bus
+			# Touchpad
 			register "serial_io_i2c_mode[PchSerialIoIndexI2C5]" = "PchSerialIoPci"
 			chip drivers/i2c/hid
 				register "generic.hid" = ""ELAN0412""
@@ -126,29 +126,49 @@ chip soc/intel/pantherlake
 		end
 
 		device ref pcie_rp1 on
-			# CPU RP#1 x4, Clock 6 (SSD1)
+			# SSD
 			register "pcie_rp[PCIE_RP(1)]" = "{
 				.clk_src = 6,
 				.clk_req = 6,
-				.flags = PCIE_RP_LTR | PCIE_RP_AER,
+				.flags = PCIE_RP_CLK_REQ_DETECT | PCIE_RP_LTR | PCIE_RP_AER,
 			}"
+			chip soc/intel/common/block/pcie/rtd3
+				register "is_storage" = "true"
+				register "enable_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_B10)"
+				register "reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_B09)"
+				register "srcclk_pin" = "6"
+				device generic 0 on end
+			end
 			smbios_slot_desc "SlotTypeM2Socket3" "SlotLengthOther" "M.2/M 2280 (J_SSD1)" "SlotDataBusWidth4X"
 		end
 		device ref pcie_rp7 on
-			# PCH RP#7 x1, Clock 3 (CARD)
+			# CARD
 			register "pcie_rp[PCH_RP(7)]" = "{
 				.clk_src = 3,
 				.clk_req = 3,
-				.flags = PCIE_RP_LTR | PCIE_RP_AER,
+				.flags = PCIE_RP_CLK_REQ_DETECT | PCIE_RP_LTR | PCIE_RP_AER,
 			}"
+			chip soc/intel/common/block/pcie/rtd3
+				register "enable_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_A08)"
+				register "enable_delay_ms" = "100"
+				register "reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_D19)"
+				register "reset_delay_ms" = "20"
+				register "srcclk_pin" = "3"
+				device generic 0 on end
+			end
 		end
 		device ref pcie_rp8 on
-			# PCH RP#8 x1, Clock 4 (WLAN)
+			# WLAN
 			register "pcie_rp[PCH_RP(8)]" = "{
 				.clk_src = 4,
 				.clk_req = 4,
-				.flags = PCIE_RP_LTR | PCIE_RP_AER,
+				.flags = PCIE_RP_CLK_REQ_DETECT | PCIE_RP_LTR | PCIE_RP_AER,
 			}"
+			chip soc/intel/common/block/pcie/rtd3
+				register "reset_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_LOW(GPP_A11)"
+				register "srcclk_pin" = "4"
+				device generic 0 on end
+			end
 			smbios_slot_desc "SlotTypeM2Socket1_SD" "SlotLengthOther" "M.2/E 2230 (J_WLAN1)" "SlotDataBusWidth1X"
 		end
 	end
