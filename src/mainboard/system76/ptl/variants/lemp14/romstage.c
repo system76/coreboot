@@ -63,8 +63,6 @@ static const struct mb_cfg board_cfg = {
 	},
 };
 
-
-
 static size_t get_spd_index(void)
 {
 	// 0: Foresee 16 GiB
@@ -85,7 +83,6 @@ static size_t get_spd_index(void)
 
 void mainboard_memory_init_params(FSPM_UPD *mupd)
 {
-
 	const struct mem_spd spd_info = {
 		.topo = MEM_TOPO_MEMORY_DOWN,
 		.cbfs_index = get_spd_index(),
