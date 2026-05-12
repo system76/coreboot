@@ -26,7 +26,7 @@ static const struct pad_config gpio_table[] = {
 	PAD_CFG_NF(GPP_B01, NONE, DEEP, NF1), // TBT_I2C_SDA
 	PAD_NC(GPP_B02, NONE),
 	PAD_NC(GPP_B03, NONE),
-	PAD_CFG_GPO(GPP_B04, 0, PLTRST), // Flash Descriptor Security Override strap
+	PAD_CFG_GPO(GPP_B04, 0, RSMRST), // Flash Descriptor Security Override strap
 	PAD_NC(GPP_B05, NONE),
 	PAD_CFG_GPO(GPP_B06, 0, DEEP), // ROM_I2C_EN
 	PAD_NC(GPP_B07, NONE),
@@ -45,16 +45,16 @@ static const struct pad_config gpio_table[] = {
 	PAD_CFG_GPO(GPP_B20, 1, PLTRST), // LTE_RST_N
 	PAD_CFG_GPO(GPP_B21, 1, DEEP), // DG_FORCE_PWR
 	PAD_NC(GPP_B22, NONE),
-	PAD_CFG_GPO(GPP_B23, 0, PLTRST), // strap
+	PAD_CFG_GPO(GPP_B23, 0, RSMRST), // Reserved strap
 	PAD_NC(GPP_B24, NONE),
 	PAD_NC(GPP_B25, NONE),
 
 	//PAD_CFG_GPI(GPP_C00, UP_20K, PLTRST), // BOARD_ID5
 	//PAD_CFG_GPI(GPP_C01, UP_20K, PLTRST), // BOARD_ID6
-	PAD_CFG_GPO(GPP_C02, 1, PLTRST), // TLS confidentiality strap
+	PAD_CFG_GPO(GPP_C02, 1, RSMRST), // TLS confidentiality strap
 	PAD_CFG_NF(GPP_C03, NONE, DEEP, NF1), // SML0_CLK
 	PAD_CFG_NF(GPP_C04, NONE, DEEP, NF1), // SML0_DATA
-	PAD_CFG_GPO(GPP_C05, 0, PLTRST), // eSPI disable strap
+	PAD_CFG_GPO(GPP_C05, 0, RSMRST), // eSPI disable strap
 	PAD_NC(GPP_C06, NONE),
 	PAD_NC(GPP_C07, NONE),
 	PAD_NC(GPP_C08, NONE),
@@ -64,7 +64,7 @@ static const struct pad_config gpio_table[] = {
 	PAD_CFG_NF(GPP_C12, NONE, DEEP, NF1), // CARD_CLKREQ#_N
 	PAD_CFG_NF(GPP_C13, NONE, DEEP, NF1), // WLAN_CLKREQ#_N
 	PAD_CFG_NF(GPP_C14, NONE, DEEP, NF1), // 5G_PCIE_CLKREQ#_N
-	PAD_NC(GPP_C15, NONE), // Reserved strap
+	PAD_CFG_GPO(GPP_C15, 0, RSMRST), // Reserved strap
 	PAD_CFG_NF(GPP_C16, NONE, DEEP, NF1), // TBTA_LSX0_TXD
 	PAD_CFG_NF(GPP_C17, NONE, DEEP, NF1), // TBTA_LSX0_RXD
 	PAD_NC(GPP_C18, NONE),
@@ -105,7 +105,7 @@ static const struct pad_config gpio_table[] = {
 	PAD_CFG_NF(GPP_E02, NONE, DEEP, NF2), // VRALERT#
 	PAD_NC(GPP_E03, NONE),
 	PAD_NC(GPP_E05, NONE),
-	PAD_CFG_GPO(GPP_E06, 0, PLTRST), // JTAG ODT strap
+	PAD_CFG_GPO(GPP_E06, 0, RSMRST), // JTAG ODT strap
 	PAD_NC(GPP_E07, NONE),
 	PAD_CFG_GPI(GPP_E08, NONE, DEEP), // WAKE_ON_WWAN_N
 	PAD_CFG_GPI(GPP_E09, NONE, PLTRST), // USB_OC0#
@@ -142,14 +142,14 @@ static const struct pad_config gpio_table[] = {
 	PAD_CFG_GPO(GPP_F16, 1, PLTRST), // CCD_WP#
 	PAD_NC(GPP_F17, NONE),
 	PAD_CFG_GPI_APIC_LOW(GPP_F18, NONE, PLTRST), // TP_ATTN#_N
-	PAD_CFG_GPO(GPP_F19, 1, DEEP), // Reserved strap
+	PAD_CFG_GPO(GPP_F19, 0, RSMRST), // Reserved strap
 	PAD_NC(GPP_F20, NONE),
 	PAD_NC(GPP_F22, NONE),
 	PAD_NC(GPP_F23, NONE),
 
-	PAD_CFG_GPO(GPP_H00, 0, PLTRST), // eSPI Flash Sharing strap (MAFS/SAFS)
-	PAD_CFG_GPO(GPP_H01, 0, PLTRST), // Flash Descriptor Recovery strap
-	PAD_CFG_GPO(GPP_H02, 0, PLTRST), // Reserved strap
+	PAD_CFG_GPO(GPP_H00, 0, RSMRST), // eSPI Flash Sharing strap (MAFS/SAFS)
+	PAD_CFG_GPO(GPP_H01, 0, RSMRST), // Flash Descriptor Recovery strap
+	PAD_CFG_GPO(GPP_H02, 0, RSMRST), // Reserved strap
 	PAD_CFG_GPO(GPP_H03, 0, DEEP), // PCH_MUTE
 	PAD_CFG_NF(GPP_H04, NONE, DEEP, NF2), // CNVI_MFUART2_RXD
 	PAD_CFG_NF(GPP_H05, NONE, DEEP, NF2), // CNVI_MFUART2_TXD
