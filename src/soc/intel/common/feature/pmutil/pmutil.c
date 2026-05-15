@@ -111,6 +111,118 @@ const char *const *soc_std_gpe_sts_array(size_t *a)
 	return gpe_sts_bits;
 }
 
+#if CONFIG(SOC_INTEL_COMMON_BLOCK_ACPI_USE_GPE1)
+const char *const *soc_std_gpe1_sts_array(int idx, size_t *a)
+{
+	static const char *const gpe1_sts_bits[GPE1_REG_MAX][32] = {
+		/* 0x10  GPE1_31_0   General Purpose Event 1 Status [31:0] */
+		[0] = {                           /* GPE# dec   hex   GPE1 bit position */
+			[18] = "CNVI_BT_PME_B0",      /*   146      0x92       [18]         */
+			[17] = "TC_IOM_PME_B0",       /*   145      0x91       [17]         */
+			[16] = "TC_TBT1_PME_B0",      /*   144      0x90       [16]         */
+			[15] = "TC_TBT0_PME_B0",      /*   143      0x8F       [15]         */
+			[14] = "LPSS_PME_B0",         /*   142      0x8E       [14]         */
+			[13] = "CSE_PME_B0",          /*   141      0x8D       [13]         */
+			[12] = "XDCI_PME_B0",         /*   140      0x8C       [12]         */
+			[10] = "ACE_PME_B0",          /*   138      0x8A       [10]         */
+			[9] = "XHCI_PME_B0",          /*   137      0x89       [9]          */
+			[8] = "SATA_PME_B0",          /*   136      0x88       [8]          */
+			[7] = "CSME_PME_B0",          /*   135      0x87       [7]          */
+			[6] = "GBE_PME_B0",           /*   134      0x86       [6]          */
+			[5] = "CNVI_PME_B0",          /*   133      0x85       [5]          */
+			[4] = "OSSE_PME_B0",          /*   132      0x84       [4]          */
+			[1] = "TBTLSX_PME_B0",        /*   129      0x81       [1]          */
+		},
+		/* 0x14  GPE1_63_32 General Purpose Event 1 Status [63:32] */
+		[1] = {                            /* GPE# dec  hex   GPE1 bit position */
+			[31] = "PG5_PMA0_HOT_PLUG_3",  /*  191      0xBF       [63]         */
+			[30] = "PG5_PMA0_HOT_PLUG_2",  /*  190      0xBE       [62]         */
+			[29] = "PG5_PMA0_HOT_PLUG_1",  /*  189      0xBD       [61]         */
+			[28] = "PG5_PMA0_HOT_PLUG_0",  /*  188      0xBC       [60]         */
+			[27] = "PG5_PMA1_HOT_PLUG_3",  /*  187      0xBB       [59]         */
+			[26] = "PG5_PMA1_HOT_PLUG_2",  /*  186      0xBA       [58]         */
+			[25] = "PG5_PMA1_HOT_PLUG_1",  /*  185      0xB9       [57]         */
+			[24] = "PG5_PMA1_HOT_PLUG_0",  /*  184      0xB8       [56]         */
+			[13] = "TC_TBT1_HOT_PLUG",     /*  173      0xAD       [45]         */
+			[12] = "TC_TBT0_HOT_PLUG",     /*  172      0xAC       [44]         */
+			[11] = "TC_PCIE3_HOT_PLUG",    /*  171      0xAB       [43]         */
+			[10] = "TC_PCIE2_HOT_PLUG",    /*  170      0xAA       [42]         */
+			[9]  = "TC_PCIE1_HOT_PLUG",    /*  169      0xA9       [41]         */
+			[8]  = "TC_PCIE0_HOT_PLUG",    /*  168      0xA8       [40]         */
+			[7]  = "IOE_HOT_PLUG",         /*  167      0xA7       [39]         */
+			[1]  = "SPB_HOT_PLUG",         /*  161      0xA1       [33]         */
+			[0]  = "SPA_HOT_PLUG",         /*  160      0xA0       [32]         */
+		},
+		/* 0x18  GPE1_95_64 General Purpose Event 1 Status [63:32] */
+		[2] = {                            /* GPE# dec  hex   GPE1 bit position */
+			[31] = "PG5_PMA0_PCI_EXP_3",   /*  223      0xDF       [95]         */
+			[30] = "PG5_PMA0_PCI_EXP_2",   /*  222      0xDE       [94]         */
+			[29] = "PG5_PMA0_PCI_EXP_1",   /*  221      0xDD       [93]         */
+			[28] = "PG5_PMA0_PCI_EXP_0",   /*  220      0xDC       [92]         */
+			[27] = "PG5_PMA1_PCI_EXP_3",   /*  219      0xDB       [91]         */
+			[26] = "PG5_PMA1_PCI_EXP_2",   /*  218      0xDA       [90]         */
+			[25] = "PG5_PMA1_PCI_EXP_1",   /*  217      0xD9       [89]         */
+			[24] = "PG5_PMA1_PCI_EXP_0",   /*  216      0xD8       [88]         */
+			[13] = "TC_TBT1_PCI_EXP",      /*  205      0xCD       [77]         */
+			[12] = "TC_TBT0_PCI_EXP",      /*  204      0xCC       [76]         */
+			[11] = "TC_PCIE3_PCI_EXP",     /*  203      0xCb       [75]         */
+			[10] = "TC_PCIE2_PCI_EXP",     /*  202      0xCA       [74]         */
+			[9]  = "TC_PCIE1_PCI_EXP",     /*  201      0xC9       [73]         */
+			[8]  = "TC_PCIE0_PCI_EXP",     /*  200      0xC8       [72]         */
+			[7]  = "IOE_PCI_EXP",          /*  199      0xC7       [71]         */
+			[1]  = "SPB_PCI_EXP",          /*  193      0xC1       [65]         */
+			[0]  = "SPA_PCI_EXP",          /*  192      0xC0       [64]         */
+		}
+	};
+	*a = ARRAY_SIZE(gpe1_sts_bits[idx]);
+	return gpe1_sts_bits[idx];
+}
+
+/* disable the corresponding GPE1 bits based on STD GPE0 bits */
+void soc_pmc_disable_std_gpe1(uint32_t std_gpe0_mask)
+{
+	if (std_gpe0_mask & PME_B0_EN)
+		pmc_disable_gpe1(GPE1_EN(0), GPE1_PME_B0_EVENT_EN_BITS);
+
+	if (std_gpe0_mask & TC_PME_B0_EN)
+		pmc_disable_gpe1(GPE1_EN(0), GPE1_TC_PME_B0_EVENT_EN_BITS);
+
+	if (std_gpe0_mask & HOT_PLUG_STS)
+		pmc_disable_gpe1(GPE1_EN(1), GPE1_HOT_PLUG_EVENT_EN_BITS);
+
+	if (std_gpe0_mask & TC_HOT_PLUG_EN)
+		pmc_disable_gpe1(GPE1_EN(1), GPE1_TC_HOT_PLUG_EVENT_EN_BITS);
+
+	if (std_gpe0_mask & PCI_EXP_EN)
+		pmc_disable_gpe1(GPE1_EN(2), GPE1_PCI_EXP_EVENT_EN_BITS);
+
+	if (std_gpe0_mask & TC_PCI_EXP_EN)
+		pmc_disable_gpe1(GPE1_EN(2), GPE1_TC_PCI_EXP_EVENT_EN_BITS);
+}
+
+/* enable the corresponding GPE1 bits based on STD GPE0 bits */
+void soc_pmc_enable_std_gpe1(uint32_t std_gpe0_mask)
+{
+	if (std_gpe0_mask & PME_B0_EN)
+		pmc_enable_gpe1(GPE1_EN(0), GPE1_PME_B0_EVENT_EN_BITS);
+
+	if (std_gpe0_mask & TC_PME_B0_EN)
+		pmc_enable_gpe1(GPE1_EN(0), GPE1_TC_PME_B0_EVENT_EN_BITS);
+
+	if (std_gpe0_mask & HOT_PLUG_STS)
+		pmc_enable_gpe1(GPE1_EN(1), GPE1_HOT_PLUG_EVENT_EN_BITS);
+
+	if (std_gpe0_mask & TC_HOT_PLUG_EN)
+		pmc_enable_gpe1(GPE1_EN(1), GPE1_TC_HOT_PLUG_EVENT_EN_BITS);
+
+	if (std_gpe0_mask & PCI_EXP_EN)
+		pmc_enable_gpe1(GPE1_EN(2), GPE1_PCI_EXP_EVENT_EN_BITS);
+
+	if (std_gpe0_mask & TC_PCI_EXP_EN)
+		pmc_enable_gpe1(GPE1_EN(2), GPE1_TC_PCI_EXP_EVENT_EN_BITS);
+}
+#endif
+
 void pmc_set_disb(void)
 {
 	/* Set the DISB after DRAM init */

@@ -289,39 +289,68 @@ uint32_t pmc_clear_tco_status(void)
 }
 
 /* GPE */
-static void pmc_enable_gpe(int gpe, uint32_t mask)
+static void pmc_enable_gpe0(int gpe, uint32_t mask)
 {
 	uint32_t gpe0_en = inl(ACPI_BASE_ADDRESS + GPE0_EN(gpe));
 	gpe0_en |= mask;
 	outl(gpe0_en, ACPI_BASE_ADDRESS + GPE0_EN(gpe));
 }
 
-static void pmc_disable_gpe(int gpe, uint32_t mask)
+void pmc_enable_gpe1(int gpe, uint32_t mask)
+{
+	uint32_t gpe1_en = inl(ACPI_BASE_ADDRESS + GPE1_EN(gpe));
+	gpe1_en |= mask;
+	outl(gpe1_en, ACPI_BASE_ADDRESS + GPE1_EN(gpe));
+}
+
+static void pmc_disable_gpe0(int gpe, uint32_t mask)
 {
 	uint32_t gpe0_en = inl(ACPI_BASE_ADDRESS + GPE0_EN(gpe));
 	gpe0_en &= ~mask;
 	outl(gpe0_en, ACPI_BASE_ADDRESS + GPE0_EN(gpe));
 }
 
+void pmc_disable_gpe1(int gpe, uint32_t mask)
+{
+	uint32_t gpe1_en = inl(ACPI_BASE_ADDRESS + GPE1_EN(gpe));
+	gpe1_en &= ~mask;
+	outl(gpe1_en, ACPI_BASE_ADDRESS + GPE1_EN(gpe));
+}
+
 void pmc_enable_std_gpe(uint32_t mask)
 {
-	pmc_enable_gpe(GPE_STD, mask);
+	pmc_enable_gpe0(GPE_STD, mask);
+
+	if (!CONFIG(SOC_INTEL_COMMON_BLOCK_ACPI_USE_GPE1))
+		return;
+
+	soc_pmc_enable_std_gpe1(mask);
 }
 
 void pmc_disable_std_gpe(uint32_t mask)
 {
-	pmc_disable_gpe(GPE_STD, mask);
+	pmc_disable_gpe0(GPE_STD, mask);
+
+	if (!CONFIG(SOC_INTEL_COMMON_BLOCK_ACPI_USE_GPE1))
+		return;
+
+	soc_pmc_disable_std_gpe1(mask);
 }
 
 void pmc_disable_all_gpe(void)
 {
 	int i;
 	for (i = 0; i < GPE0_REG_MAX; i++)
-		pmc_disable_gpe(i, ~0);
+		pmc_disable_gpe0(i, ~0);
+
+	if (!CONFIG(SOC_INTEL_COMMON_BLOCK_ACPI_USE_GPE1))
+		return;
+	for (i = 0; i < GPE1_REG_MAX; i++)
+		pmc_disable_gpe1(i, ~0);
 }
 
 /* Clear the gpio gpe0 status bits in ACPI registers */
-static void pmc_clear_gpi_gpe_status(void)
+static void pmc_clear_gpi_gpe0_status(void)
 {
 	int i;
 
@@ -334,14 +363,25 @@ static void pmc_clear_gpi_gpe_status(void)
 	}
 }
 
-static uint32_t reset_std_gpe_status(void)
+static uint32_t reset_std_gpe0_status(void)
 {
 	uint32_t gpe_sts = inl(ACPI_BASE_ADDRESS + GPE0_STS(GPE_STD));
 	outl(gpe_sts, ACPI_BASE_ADDRESS + GPE0_STS(GPE_STD));
 	return gpe_sts;
 }
 
-static uint32_t print_std_gpe_sts(uint32_t gpe_sts)
+/* Clear the gpio GPE1 status bits in ACPI registers */
+static void reset_std_gpe1_status(uint32_t *gpe_sts)
+{
+	if (gpe_sts == NULL)
+		return;
+	for (int i = 0; i < GPE1_REG_MAX; i++) {
+		gpe_sts[i] = inl(ACPI_BASE_ADDRESS + GPE1_STS(i));
+		outl(gpe_sts[i], ACPI_BASE_ADDRESS + GPE1_STS(i));
+	}
+}
+
+static uint32_t print_std_gpe0_sts(uint32_t gpe_sts)
 {
 	size_t array_size;
 	const char *const *sts_arr;
@@ -358,15 +398,35 @@ static uint32_t print_std_gpe_sts(uint32_t gpe_sts)
 	return gpe_sts;
 }
 
+static void print_std_gpe1_sts(uint32_t *gpe_sts)
+{
+	size_t array_size;
+	const char *const *sts_arr;
+	if (gpe_sts == NULL)
+		return;
+	for (int i = 0; i < GPE1_REG_MAX; i++) {
+		sts_arr = soc_std_gpe1_sts_array(i, &array_size);
+		printk(BIOS_DEBUG, "GPE1 STD STS[%d]: ", i);
+		print_num_status_bits(array_size, gpe_sts[i], sts_arr);
+	}
+	printk(BIOS_DEBUG, "\n");
+}
+
 static void pmc_clear_std_gpe_status(void)
 {
-	print_std_gpe_sts(reset_std_gpe_status());
+	print_std_gpe0_sts(reset_std_gpe0_status());
+	if (!CONFIG(SOC_INTEL_COMMON_BLOCK_ACPI_USE_GPE1))
+		return;
+	uint32_t gpe1_sts[GPE1_REG_MAX];
+
+	reset_std_gpe1_status(gpe1_sts);
+	print_std_gpe1_sts(gpe1_sts);
 }
 
 void pmc_clear_all_gpe_status(void)
 {
 	pmc_clear_std_gpe_status();
-	pmc_clear_gpi_gpe_status();
+	pmc_clear_gpi_gpe0_status();
 }
 
 __weak
@@ -506,7 +566,14 @@ void pmc_fill_pm_reg_info(struct chipset_power_state *ps)
 		printk(BIOS_DEBUG, "gpe0_sts[%d]: %08x gpe0_en[%d]: %08x\n",
 		       i, ps->gpe0_sts[i], i, ps->gpe0_en[i]);
 	}
-
+#if CONFIG(SOC_INTEL_COMMON_BLOCK_ACPI_USE_GPE1)
+	for (i = 0; i < GPE1_REG_MAX; i++) {
+		ps->gpe1_sts[i] = inl(ACPI_BASE_ADDRESS + GPE1_STS(i));
+		ps->gpe1_en[i] = inl(ACPI_BASE_ADDRESS + GPE1_EN(i));
+		printk(BIOS_DEBUG, "gpe1_sts[%d]: %08x gpe1_en[%d]: %08x\n",
+			i, ps->gpe1_sts[i], i, ps->gpe1_en[i]);
+	}
+#endif
 	soc_fill_power_state(ps);
 }
 
