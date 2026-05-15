@@ -20,6 +20,14 @@ chip soc/intel/pantherlake
 			register "cnvi_bt_audio_offload" = "true"
 			chip drivers/wifi/generic
 				register "wake" = "GPE0_PME_B0"
+				register "enable_cnvi_ddr_rfim" = "true"
+				use cnvi_bluetooth as bluetooth_companion
+				device generic 0 on end
+			end
+		end
+		device ref cnvi_bluetooth on
+			chip soc/intel/common/block/cnvi
+				register "wake" = "GPE0_PME_B0"
 				device generic 0 on end
 			end
 		end
