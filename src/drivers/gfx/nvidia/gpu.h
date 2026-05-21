@@ -8,6 +8,8 @@
 struct nvidia_gpu_config {
 	/* GPIO for GPU_PWR_EN */
 	unsigned int power_gpio;
+	/* GPIO for GPU_PWRGD */
+	unsigned int power_good_gpio;
 	/* GPIO for GPU_RST# */
 	unsigned int reset_gpio;
 	/* Enable or disable GPU power */
