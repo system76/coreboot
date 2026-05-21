@@ -71,7 +71,22 @@ Method (_ON, 0, Serialized) {
 	} Else {
 		Printf("    Standard RTD3 power on")
 		STXS(DGPU_PWR_EN)
-		Sleep(5)
+
+		// Wait for rails to stabilize
+#if DGPU_PWRGD
+		Local0 = 500
+		While (GRXS(DGPU_PWRGD) != 1) {
+			If (Local0 == 0) {
+				Break
+			}
+
+			Stall(100)
+			Local0--
+		}
+#else
+		Sleep(50)
+#endif
+
 		GC6O()
 	}
 

@@ -7,6 +7,7 @@
 
 #define DGPU_RST_N	GPP_R16
 #define DGPU_PWR_EN	GPP_F9
+#define DGPU_PWRGD	GPP_R8
 #define DGPU_GC6	GPP_F8
 #define DGPU_SSID	0xa6711558
 

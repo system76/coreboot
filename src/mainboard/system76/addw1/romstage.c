@@ -24,6 +24,9 @@ void mainboard_memory_init_params(FSPM_UPD *memupd)
 {
 	const struct nvidia_gpu_config config = {
 		.power_gpio = DGPU_PWR_EN,
+#ifdef DGPU_PWRGD
+		.power_good_gpio = DGPU_PWRGD,
+#endif
 		.reset_gpio = DGPU_RST_N,
 		.enable = true,
 	};

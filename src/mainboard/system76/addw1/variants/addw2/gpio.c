@@ -254,7 +254,7 @@ static const struct pad_config gpio_table[] = {
 	PAD_NC(GPP_K20, NONE),
 	PAD_NC(GPP_K21, NONE),
 	PAD_CFG_GPO(GPP_K22, 0, DEEP), // DGPU_OVRM
-	PAD_CFG_GPI(GPP_K23, NONE, DEEP), // DGPU_PWR_OK
+	//PAD_CFG_GPI(GPP_K23, NONE, DEEP), // DGPU_PWR_OK
 };
 
 void variant_configure_gpios(void)
