@@ -12,9 +12,11 @@
 
 Scope (\_SB) {
 	#include "sleep.asl"
+#if !CONFIG(EC_SYSTEM76_EC_OLED)
 	Scope (PCI0) {
 		#include "backlight.asl"
 	}
+#endif
 }
 
 Scope (\_GPE) {
