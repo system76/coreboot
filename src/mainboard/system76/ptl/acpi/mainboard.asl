@@ -7,6 +7,9 @@
 Scope (\_SB) {
 	#include "sleep.asl"
 	Scope (PCI0) {
+#if !CONFIG(EC_SYSTEM76_EC_OLED)
 		#include "backlight.asl"
+#endif
+		/* TODO: Add NVIDIA include */
 	}
 }
