@@ -25,7 +25,7 @@ chip soc/intel/meteorlake
 			register "ddi_port_A_config" = "1"
 			register "ddi_ports_config" = "{
 				[DDI_PORT_A] = DDI_ENABLE_HPD,
-				[DDI_PORT_2] = DDI_ENABLE_HPD | DDI_ENABLE_DDC,
+				[DDI_PORT_3] = DDI_ENABLE_HPD | DDI_ENABLE_DDC,
 			}"
 
 			register "gfx" = "GMA_DEFAULT_PANEL(0)"
