@@ -262,7 +262,7 @@ static const struct pad_config gpio_table[] = {
 	PAD_NC(GPP_R5, NONE),
 	PAD_NC(GPP_R6, NONE),
 	PAD_CFG_GPO(GPP_R7, 1, DEEP), // GPP_R7_TBT_RTD3
-	// GPP_R8 (DGPU_PWRGD) configured in bootblock
+	//PAD_CFG_GPI(GPP_R8, NONE, DEEP), // DGPU_PWRGD
 	PAD_CFG_NF(GPP_R9, NONE, DEEP, NF1), // EDP_HPD
 	PAD_NC(GPP_R10, NONE),
 	PAD_NC(GPP_R11, NONE),

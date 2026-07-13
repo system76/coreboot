@@ -32,6 +32,7 @@ config BOARD_SYSTEM76_DARP7
 
 config BOARD_SYSTEM76_GALP5
 	select BOARD_SYSTEM76_TGL_U_COMMON
+	select DRIVERS_GFX_NVIDIA
 	select EC_SYSTEM76_EC_DGPU
 
 config BOARD_SYSTEM76_LEMP10
@@ -81,5 +82,16 @@ config UART_FOR_CONSOLE
 # PM Timer Disabled, saves power
 config USE_PM_ACPI_TIMER
 	default n
+
+# For galp5 with dGPU
+if DRIVERS_GFX_NVIDIA
+
+config ONBOARD_VGA_IS_PRIMARY
+	default y
+
+config DRIVERS_GFX_NVIDIA_BRIDGE
+	default 0x1c
+
+endif # DRIVERS_GFX_NVIDIA
 
 endif
