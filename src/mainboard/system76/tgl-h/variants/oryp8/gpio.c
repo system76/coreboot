@@ -231,7 +231,7 @@ static const struct pad_config gpio_table[] = {
 	/* ------- GPIO Group GPP_K ------- */
 	PAD_CFG_GPO(GPP_K0, 0, DEEP), // OVRM
 	PAD_NC(GPP_K1, NONE),
-	PAD_CFG_GPI(GPP_K2, NONE, DEEP), // DGPU_PWRGD_R
+	//PAD_CFG_GPI(GPP_K2, NONE, DEEP), // DGPU_PWRGD_R
 	PAD_NC(GPP_K3, NONE),
 	PAD_NC(GPP_K4, NONE),
 	PAD_NC(GPP_K5, NONE),
