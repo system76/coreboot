@@ -5,6 +5,7 @@
 
 static const struct pad_config early_gpio_table[] = {
 	PAD_CFG_GPO(GPP_A14, 0, DEEP), // DGPU_PWR_EN
+	PAD_CFG_GPI(GPP_A19, NONE, DEEP), // DGPU_PWRGD_R
 	PAD_CFG_GPO(GPP_B2, 0, DEEP), // DGPU_RST#_PCH
 };
 
