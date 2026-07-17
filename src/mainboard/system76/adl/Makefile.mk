@@ -2,6 +2,10 @@
 
 CPPFLAGS_common += -I$(src)/mainboard/$(MAINBOARDDIR)/include
 
+ifeq ($(CONFIG_DRIVERS_GFX_NVIDIA),y)
+CPPFLAGS_common += -I$(src)/mainboard/$(MAINBOARDDIR)/variants/$(VARIANT_DIR)/include
+endif
+
 bootblock-y += bootblock.c
 bootblock-y += variants/$(VARIANT_DIR)/gpio_early.c
 
