@@ -12,8 +12,23 @@ chip soc/intel/alderlake
 		device ref tbt_pcie_rp0 on end
 		device ref tcss_xhci on
 			register "tcss_ports[0]" = "TCSS_PORT_DEFAULT(OC_SKIP)"
+			chip drivers/usb/acpi
+				device ref tcss_root_hub on
+					chip drivers/usb/acpi
+						register "desc" = ""TBT Type-C""
+						register "type" = "UPC_TYPE_C_USB2_SS_SWITCH"
+						device ref tcss_usb3_port1 on end
+					end
+				end
+			end
 		end
-		device ref tcss_dma0 on end
+		device ref tcss_dma0 on
+			chip drivers/intel/usb4/retimer
+				register "dfp[0].power_gpio" = "ACPI_GPIO_OUTPUT_ACTIVE_HIGH(GPP_E4)"
+				use tcss_usb3_port1 as dfp[0].typec_port
+				device generic 0 on end
+			end
+		end
 		device ref xhci on
 			register "usb2_ports" = "{
 				[0] = USB2_PORT_MID(OC_SKIP),		/* Type-A Left */
@@ -28,6 +43,56 @@ chip soc/intel/alderlake
 				[1] = USB3_PORT_DEFAULT(OC_SKIP),	/* Type-A Right */
 				[3] = USB3_PORT_DEFAULT(OC_SKIP),	/* 3G/LTE */
 			}"
+			# ACPI
+			chip drivers/usb/acpi
+				device ref xhci_root_hub on
+					chip drivers/usb/acpi
+						register "desc" = ""USB2 Type-A Left""
+						register "type" = "UPC_TYPE_A"
+						device ref usb2_port1 on end
+					end
+					chip drivers/usb/acpi
+						register "desc" = ""USB2 Type-A Right""
+						register "type" = "UPC_TYPE_A"
+						device ref usb2_port2 on end
+					end
+					chip drivers/usb/acpi
+						register "desc" = ""USB2 Type-C""
+						register "type" = "UPC_TYPE_C_USB2_SS_SWITCH"
+						device ref usb2_port3 on end
+					end
+					chip drivers/usb/acpi
+						register "desc" = ""USB2 3G/LTE""
+						register "type" = "UPC_TYPE_INTERNAL"
+						device ref usb2_port4 on end
+					end
+					chip drivers/usb/acpi
+						register "desc" = ""USB2 Camera""
+						register "type" = "UPC_TYPE_INTERNAL"
+						device ref usb2_port7 on end
+					end
+					chip drivers/usb/acpi
+						register "desc" = ""USB2 Bluetooth""
+						register "type" = "UPC_TYPE_INTERNAL"
+						device ref usb2_port10 on end
+					end
+					chip drivers/usb/acpi
+						register "desc" = ""USB3 Type-A Left""
+						register "type" = "UPC_TYPE_A"
+						device ref usb3_port1 on end
+					end
+					chip drivers/usb/acpi
+						register "desc" = ""USB3 Type-A Right""
+						register "type" = "UPC_TYPE_A"
+						device ref usb3_port2 on end
+					end
+					chip drivers/usb/acpi
+						register "desc" = ""USB3 Type-C""
+						register "type" = "UPC_TYPE_C_USB2_SS_SWITCH"
+						device ref usb3_port3 on end
+					end
+				end
+			end
 		end
 
 		device ref i2c0 on
@@ -83,6 +148,18 @@ chip soc/intel/alderlake
 				.flags = PCIE_RP_LTR,
 				.pcie_rp_detect_timeout_ms = 50,
 			}"
+		end
+		device ref pmc hidden
+			chip drivers/intel/pmc_mux
+				device generic 0 on
+					chip drivers/intel/pmc_mux/conn
+						# J_TYPEC1
+						use usb2_port3 as usb2_port
+						use tcss_usb3_port1 as usb3_port
+						device generic 0 alias conn0 on end
+					end
+				end
+			end
 		end
 	end
 end
