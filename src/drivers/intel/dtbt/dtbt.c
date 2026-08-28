@@ -184,16 +184,6 @@ static void dtbt_enable(struct device *dev)
 	if (!is_dev_enabled(dev) || dev->path.pci.devfn != 0)
 		return;
 
-	/*
-	 * Only the upstream bridge has the firmware mailbox (PCIE2TBT/TBT2PCIE
-	 * registers). Downstream bridges behind it share the same PCI device ID
-	 * but have no mailbox, so sending commands to them will timeout. Skip any
-	 * bridge whose parent is also a dTBT bridge (i.e. a downstream bridge).
-	 */
-	if (dev->upstream && dev->upstream->dev &&
-	    dev->upstream->dev->ops == &dtbt_device_ops)
-		return;
-
 	printk(BIOS_INFO, "dTBT controller found at %s\n", dev_path(dev));
 
 	/* Set security level (Table 37/428); failure aborts enable */
