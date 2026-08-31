@@ -154,6 +154,32 @@ Device (S76D) {
 		Return ((Local1 << 8) | Local0)
 	}
 
+	// Set fan duty
+	// - Arg0: Fan select
+	// - Arg1: PWM duty (0-255)
+	Method (SFD, 2, Serialized) {
+		If (^^PCI0.LPCB.EC0.ECOK) {
+			// Fail here, but EC will also ignore writes if fan is
+			// set to automatic control.
+			If (^^PCI0.LPCB.EC0.FCTL == 0) {
+				Return (0xFF)
+			}
+
+			If (ToInteger (Arg0) == 0) {
+				^^PCI0.LPCB.EC0.DUT1 = Arg1
+				Return (0x00)
+			}
+#if CONFIG(EC_SYSTEM76_EC_FAN2)
+			If (ToInteger (Arg0) == 1) {
+				^^PCI0.LPCB.EC0.DUT2 = Arg1
+				Return (0x00)
+			}
+#endif
+		}
+
+		Return (0xFF)
+	}
+
 	// Temperature names
 	Method (NTMP, 0, Serialized) {
 		Return (Package() {
@@ -166,7 +192,7 @@ Device (S76D) {
 
 	// Get temperature
 	Method (GTMP, 1, Serialized) {
-		Local0 = 0;
+		Local0 = 0
 		If (^^PCI0.LPCB.EC0.ECOK) {
 			If (Arg0 == 0) {
 				Local0 = ^^PCI0.LPCB.EC0.TMP1
@@ -175,5 +201,35 @@ Device (S76D) {
 			}
 		}
 		Return (Local0)
+	}
+
+	// Get fan control mode
+	// - 0: EC automatic control
+	// - 1: Host control via target PWM
+	// - 2: Host control via target RPM
+	Method (GFCM, 0, Serialized) {
+		Local0 = 0xFF
+		If (^^PCI0.LPCB.EC0.ECOK) {
+			Local0 = ^^PCI0.LPCB.EC0.FCTL
+		}
+		Return (Local0)
+	}
+
+	// Set fan control mode
+	// - 0: EC automatic control
+	// - 1: Host control via target PWM
+	// - 2: Host control via target RPM
+	Method (SFCM, 1, Serialized) {
+		If (^^PCI0.LPCB.EC0.ECOK) {
+			Switch (ToInteger (Arg0)) {
+				Case (0x00) {
+					^^PCI0.LPCB.EC0.FCTL = Arg0
+				}
+
+				Case (0x01) {
+					^^PCI0.LPCB.EC0.FCTL = Arg0
+				}
+			}
+		}
 	}
 }
