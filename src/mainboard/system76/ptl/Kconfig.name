@@ -1,5 +1,8 @@
 ## SPDX-License-Identifier: GPL-2.0-only
 
+config BOARD_SYSTEM76_ADDP6
+	bool "addp6"
+
 config BOARD_SYSTEM76_LEMP14
 	bool "lemp14"
 
