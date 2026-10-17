@@ -11,8 +11,6 @@
 Scope (\_SB) {
 	#include "sleep.asl"
 	Scope (PCI0) {
-		#include "backlight.asl"
-
 #if CONFIG(DRIVERS_GFX_NVIDIA)
 		Scope (PEG2) {
 			#include <drivers/gfx/nvidia/acpi/tigerlake.asl>
