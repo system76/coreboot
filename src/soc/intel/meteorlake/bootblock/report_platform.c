@@ -23,6 +23,8 @@ static struct {
 	{ CPUID_METEORLAKE_B0,   "MeteorLake B0" },
 	{ CPUID_METEORLAKE_C0,   "MeteorLake C0" },
 	{ CPUID_ARROWLAKE_H_A0,   "ArrowLake-H A0" },
+	{ CPUID_ARROWLAKE_S_A0,   "ArrowLake-S A0" },
+	{ CPUID_ARROWLAKE_S_B0,   "ArrowLake-S B0" },
 };
 
 static struct {
@@ -37,6 +39,9 @@ static struct {
 	{ PCI_DID_INTEL_MTL_P_ID_5, "MeteorLake P" },
 	{ PCI_DID_INTEL_ARL_H_ID_1, "ArrowLake-H" },
 	{ PCI_DID_INTEL_ARL_H_ID_2, "ArrowLake-H" },
+	{ PCI_DID_INTEL_ARL_HX_ID_1, "ArrowLake-HX (8+16)" },
+	{ PCI_DID_INTEL_ARL_HX_ID_2, "ArrowLake-HX (8+12)" },
+	{ PCI_DID_INTEL_ARL_HX_ID_3, "ArrowLake-HX (6+8)" },
 };
 
 static struct {
@@ -54,6 +59,38 @@ static struct {
 	{ PCI_DID_INTEL_ARL_H_ESPI_0, "ArrowLake-H SOC" },
 	{ PCI_DID_INTEL_ARL_H_ESPI_1, "ArrowLake-H SOC" },
 	{ PCI_DID_INTEL_ARL_U_ESPI_0, "ArrowLake-U SOC" },
+	{ PCI_DID_INTEL_ARP_S_ESPI_0, "ArrowLake-S PCH" },
+	{ PCI_DID_INTEL_ARP_S_ESPI_1, "ArrowLake-S PCH" },
+	{ PCI_DID_INTEL_ARP_S_ESPI_2, "ArrowLake-S PCH" },
+	{ PCI_DID_INTEL_ARP_S_ESPI_3, "ArrowLake-S Q870" },
+	{ PCI_DID_INTEL_ARP_S_ESPI_4, "ArrowLake-S Z890" },
+	{ PCI_DID_INTEL_ARP_S_ESPI_5, "ArrowLake-S PCH" },
+	{ PCI_DID_INTEL_ARP_S_ESPI_6, "ArrowLake-S B860" },
+	{ PCI_DID_INTEL_ARP_S_ESPI_7, "ArrowLake-S H810" },
+	{ PCI_DID_INTEL_ARP_S_ESPI_8, "ArrowLake-S W880" },
+	{ PCI_DID_INTEL_ARP_S_ESPI_9, "ArrowLake-S W890" },
+	{ PCI_DID_INTEL_ARP_S_ESPI_10, "ArrowLake-S PCH" },
+	{ PCI_DID_INTEL_ARP_S_ESPI_11, "ArrowLake-S PCH" },
+	{ PCI_DID_INTEL_ARP_S_ESPI_12, "ArrowLake-S HM870" },
+	{ PCI_DID_INTEL_ARP_S_ESPI_13, "ArrowLake-S WM880" },
+	{ PCI_DID_INTEL_ARP_S_ESPI_14, "ArrowLake-S PCH" },
+	{ PCI_DID_INTEL_ARP_S_ESPI_15, "ArrowLake-S PCH" },
+	{ PCI_DID_INTEL_ARP_S_ESPI_16, "ArrowLake-S PCH" },
+	{ PCI_DID_INTEL_ARP_S_ESPI_17, "ArrowLake-S PCH" },
+	{ PCI_DID_INTEL_ARP_S_ESPI_18, "ArrowLake-S PCH" },
+	{ PCI_DID_INTEL_ARP_S_ESPI_19, "ArrowLake-S PCH" },
+	{ PCI_DID_INTEL_ARP_S_ESPI_20, "ArrowLake-S PCH" },
+	{ PCI_DID_INTEL_ARP_S_ESPI_21, "ArrowLake-S PCH" },
+	{ PCI_DID_INTEL_ARP_S_ESPI_22, "ArrowLake-S PCH" },
+	{ PCI_DID_INTEL_ARP_S_ESPI_23, "ArrowLake-S PCH" },
+	{ PCI_DID_INTEL_ARP_S_ESPI_24, "ArrowLake-S PCH" },
+	{ PCI_DID_INTEL_ARP_S_ESPI_25, "ArrowLake-S PCH" },
+	{ PCI_DID_INTEL_ARP_S_ESPI_26, "ArrowLake-S PCH" },
+	{ PCI_DID_INTEL_ARP_S_ESPI_27, "ArrowLake-S PCH" },
+	{ PCI_DID_INTEL_ARP_S_ESPI_28, "ArrowLake-S PCH" },
+	{ PCI_DID_INTEL_ARP_S_ESPI_29, "ArrowLake-S PCH" },
+	{ PCI_DID_INTEL_ARP_S_ESPI_30, "ArrowLake-S PCH" },
+	{ PCI_DID_INTEL_ARP_S_ESPI_31, "ArrowLake-S PCH" },
 };
 
 static struct {
@@ -68,6 +105,7 @@ static struct {
 	{ PCI_DID_INTEL_MTL_P_GT2_5, "Meteorlake-P GT2" },
 	{ PCI_DID_INTEL_ARL_H_GT2_1, "ArrowLake-H GT2" },
 	{ PCI_DID_INTEL_ARL_H_GT2_2, "ArrowLake-H GT2" },
+	{ PCI_DID_INTEL_ARL_HX_GT2, "ArrowLake-HX GT2" },
 };
 
 static inline uint8_t get_dev_revision(pci_devfn_t dev)
