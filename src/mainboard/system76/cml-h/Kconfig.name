@@ -6,6 +6,9 @@ config BOARD_SYSTEM76_ADDW1
 config BOARD_SYSTEM76_ADDW2
 	bool "addw2"
 
+config BOARD_SYSTEM76_BONW14
+	bool "bonw14"
+
 config BOARD_SYSTEM76_GAZE14
 	bool "gaze14"
 

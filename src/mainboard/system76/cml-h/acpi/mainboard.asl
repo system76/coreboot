@@ -21,3 +21,7 @@ Scope (\_SB) {
 Scope (\_GPE) {
 	#include "gpe.asl"
 }
+
+#if CONFIG(BOARD_SYSTEM76_BONW14)
+#include "dgpu.asl"
+#endif
