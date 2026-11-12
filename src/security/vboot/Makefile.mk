@@ -68,6 +68,7 @@ verstage-y += bootmode.c
 postcar-y += bootmode.c
 
 verstage-generic-ccopts += -D__VERSTAGE__
+verstage-generic-rsopts += --cfg='env="verstage"'
 
 bootblock-y += vbnv.c
 verstage-y += vbnv.c

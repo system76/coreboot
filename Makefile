@@ -265,8 +265,8 @@ add-special-class= \
 	$(eval special-classes+=$(1))
 
 # Converts one or more source file paths to their corresponding build/ paths.
-# Only .ads, adb, .c and .S get converted to .o, other files (like .ld) keep
-# their name.
+# Only .ads, adb, .c, .rs, and .S get converted to .o, other files (like .ld)
+# keep their name.
 # $1 stage name
 # $2 file path (list)
 src-to-obj=\
@@ -277,8 +277,9 @@ src-to-obj=\
 	$(patsubst %.ads,%.o,\
 	$(patsubst %.adb,%.o,\
 	$(patsubst %.c,%.o,\
+	$(patsubst %.rs,%.o,\
 	$(patsubst %.S,%.o,\
-	$(subst .$(1),,$(2))))))))))
+	$(subst .$(1),,$(2)))))))))))
 
 # Converts one or more source file paths to the corresponding build/ paths
 # of their Ada library information (.ali) files.
@@ -419,9 +420,31 @@ en$(EMPTY)def
 end$(EMPTY)if
 endef
 
+# XXX: create_cc_template for Rust, as generic-ccopts are not usable
+define create_rs_template
+ifn$(EMPTY)def $(1)-objs_$(2)_template
+de$(EMPTY)fine $(1)-objs_$(2)_template
+$$(call src-to-obj,$1,$$(1).$2): $$(1).$2 $(KCONFIG_AUTOHEADER) $(4) | $(5)
+	@printf "    RUSTC      $$$$(subst $$$$(obj)/,,$$$$(@))\n"
+	$(RUSTC) $$$$(RUSTFLAGS_$(1)) $(3) \
+		-Zcrate-attr=no_std \
+		--crate-type=rlib \
+		-L $$$$(obj)/rust \
+		--out-dir=$$$$(dir $$$$@) \
+		--emit=obj,dep-info \
+		--sysroot=/dev/null \
+		$$$$<
+en$(EMPTY)def
+end$(EMPTY)if
+endef
+
 filetypes-of-class=$(subst .,,$(sort $(suffix $($(1)-srcs))))
 $(foreach class,$(classes), \
-	$(foreach type,$(call filetypes-of-class,$(class)), \
+	$(foreach type,$(filter rs,$(call filetypes-of-class,$(class))), \
+		$(eval $(class)-$(type)-rsopts += $(generic-$(type)-rsopts) $($(class)-generic-rsopts)) \
+		$(if $(generic-objs_$(type)_template_gen),$(eval $(call generic-objs_$(type)_template_gen,$(class))),\
+		$(eval $(call create_rs_template,$(class),$(type),$($(class)-$(type)-rsopts),$($(class)-$(type)-deps),$($(class)-$(type)-gen-deps))))) \
+	$(foreach type,$(filter-out rs,$(call filetypes-of-class,$(class))), \
 		$(eval $(class)-$(type)-ccopts += $(generic-$(type)-ccopts) $($(class)-generic-ccopts)) \
 		$(if $(generic-objs_$(type)_template_gen),$(eval $(call generic-objs_$(type)_template_gen,$(class))),\
 		$(eval $(call create_cc_template,$(class),$(type),$($(class)-$(type)-ccopts),$($(class)-$(type)-deps),$($(class)-$(type)-gen-deps))))))

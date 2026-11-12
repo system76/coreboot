@@ -91,6 +91,12 @@ CFLAGS_riscv	+= -Wstack-usage=1536
 CFLAGS_ppc64	+= -Wstack-usage=1536
 endif
 
+# TODO: Custom toolchain files
+# e.g. i686-unknown-coreboot, or even i686-unknown-coreboot-<stage>?
+RUSTFLAGS_arm64 += --target aarch64-unknown-linux-gnu
+RUSTFLAGS_x86_32 += --target i686-unknown-linux-gnu
+RUSTFLAGS_x86_64 += --target x86_64-unknown-linux-gnu
+
 toolchain_to_dir = \
 	$(foreach arch,$(ARCH_SUPPORTED),\
 	$(eval CPPFLAGS_$(arch) += \
@@ -140,6 +146,12 @@ CPPFLAGS_$(1) = $$(CPPFLAGS_common) $$(CPPFLAGS_$(2)) -D__ARCH_$(2)__
 COMPILER_RT_$(1) := $$(COMPILER_RT_$(2))
 COMPILER_RT_FLAGS_$(1) := $$(COMPILER_RT_FLAGS_$(2))
 LDFLAGS_$(1) = $$(LDFLAGS_common) $$(LDFLAGS_$(2))
+RUSTC := rustc
+RUSTDOC := rustdoc
+RUSTFMT := rustfmt
+CLIPPY_DRIVER := clippy-driver
+BINDGEN := bindgen
+RUSTFLAGS_$(1) = $$(RUSTFLAGS_common) $$(RUSTFLAGS_$(2))
 endef
 
 # define_class: Allows defining any program as dynamic class and compiler tool

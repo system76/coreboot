@@ -127,6 +127,7 @@ PHONY+= clean-abuild coreboot check-style build_complete
 # site-local Makefile.mk must go first to override default locations (for binaries etc.)
 subdirs-y := site-local
 
+subdirs-y += src/rust # TODO: Conditionally include
 subdirs-y += src/lib src/commonlib/ src/console src/device src/acpi src/superio/common
 subdirs-$(CONFIG_EC_ACPI) += src/ec/intel
 subdirs-y += src/ec/acpi $(wildcard src/ec/*/*) $(wildcard src/southbridge/*/*)
@@ -248,6 +249,12 @@ ramstage-generic-ccopts += -D__RAMSTAGE__
 ifeq ($(CONFIG_COVERAGE),y)
 ramstage-c-ccopts += -fprofile-arcs -ftest-coverage
 endif
+
+decompressor-generic-rsopts += --cfg='env="decompressor"'
+bootblock-generic-ropts += --cfg='env="bootblock"'
+romstage-generic-rsopts += --cfg='env="romstage"'
+ramstage-generic-rsopts += --cfg='env="ramstage"'
+
 ifneq ($(GIT),)
 ifneq ($(UPDATED_SUBMODULES),1)
 $(info Updating git submodules.)
@@ -650,6 +657,20 @@ endif
 ifeq ($(CONFIG_DEBUG_ADA_CODE),y)
 ADAFLAGS_common += -gnata
 endif
+
+# TODO: Check more options to set from `rustc --help` and `rustc -C help`
+# or from <https://doc.rust-lang.org/stable/rustc/>
+RUSTFLAGS_common := --edition=2024
+RUSTFLAGS_common += -Cpanic=abort
+RUSTFLAGS_common += -Cdebuginfo=2
+RUSTFLAGS_common += -Ccodegen-units=1
+RUSTFLAGS_common += -Copt-level=2
+ifeq ($(CONFIG_LTO),y)
+RUSTFLAGS_common += -Clto=y
+else
+RUSTFLAGS_common += -Cembed-bitcode=n
+endif
+RUSTFLAGS_common += -Crelocation-model=static
 
 additional-dirs += $(objutil)/cbfstool $(objutil)/ifdtool \
 		   $(objutil)/options $(objutil)/amdfwtool \

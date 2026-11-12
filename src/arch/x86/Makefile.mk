@@ -190,6 +190,7 @@ else
 $(eval $(call create_class_compiler,postcar,x86_64))
 endif
 postcar-generic-ccopts += -D__POSTCAR__
+postcar-generic-rsopts += --cfg='env="postcar"'
 
 postcar-y += boot.c
 postcar-$(CONFIG_DEBUG_HW_BREAKPOINTS_IN_ALL_STAGES) += breakpoint.c

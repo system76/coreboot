@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: CC-PDDC
+
+# TODO: Replace with `rustup override set <version>` command
+# or pass directly to compiler with `rustc +<version>`.
+
+[toolchain]
+channel = "nightly" # TODO: Pin specific version
+components = ["clippy", "rustfmt", "rust-src"]
+profile = "minimal"

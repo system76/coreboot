@@ -17,6 +17,9 @@ smmstub-generic-ccopts += -D__SMM__
 smm-generic-ccopts += -D__SMM__
 smm-c-deps+=$$(OPTION_TABLE_H)
 
+smmstub-generic-rsopts += --cfg='env="smm"'
+smm-generic-rsopts += --cfg='env="smm"'
+
 $(obj)/smm/smm.a: $$(smm-objs)
 	$(AR_smm) rcsT $@.tmp $(filter-out %.ld, $(smm-objs))
 	mv $@.tmp $@
